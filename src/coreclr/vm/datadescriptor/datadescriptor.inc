@@ -44,6 +44,8 @@ CDAC_TYPE_FIELD(Thread, /*pointer*/, Frame, cdac_data<Thread>::Frame)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, CachedStackBase, cdac_data<Thread>::CachedStackBase)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, CachedStackLimit, cdac_data<Thread>::CachedStackLimit)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, DebuggerFilterContext, cdac_data<Thread>::DebuggerFilterContext)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, ProfilerFilterContext, cdac_data<Thread>::ProfilerFilterContext)
 CDAC_TYPE_FIELD(Thread, GCHandle, GCHandle, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, GCHandle, LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, pointer, LinkNext, cdac_data<Thread>::Link)
@@ -132,13 +134,19 @@ CDAC_TYPE_END(Exception)
 
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObjectHandle, offsetof(ExInfo, m_hThrowable))
-CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
+CDAC_TYPE_FIELD(ExceptionInfo, /*uint32*/, ExceptionFlags, cdac_data<ExInfo>::ExceptionFlagsValue)
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, StackLowBound, cdac_data<ExInfo>::StackLowBound)
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, StackHighBound, cdac_data<ExInfo>::StackHighBound)
 #ifndef TARGET_UNIX
-CDAC_TYPE_FIELD(ExceptionWatsonBucketTrackerBuckets, /*pointer*/, ExceptionWatsonBucketTrackerBuckets, cdac_data<ExInfo>::ExceptionWatsonBucketTrackerBuckets)
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ExceptionWatsonBucketTrackerBuckets, cdac_data<ExInfo>::ExceptionWatsonBucketTrackerBuckets)
 #endif // TARGET_UNIX
+CDAC_TYPE_FIELD(ExceptionInfo, /*uint8*/, PassNumber, offsetof(ExInfo, m_passNumber))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CSFEHClause, offsetof(ExInfo, m_csfEHClause))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CSFEnclosingClause, offsetof(ExInfo, m_csfEnclosingClause))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, CallerOfActualHandlerFrame, offsetof(ExInfo, m_sfCallerOfActualHandlerFrame))
 CDAC_TYPE_END(ExceptionInfo)
-
 
 CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
@@ -353,6 +361,15 @@ CDAC_TYPE_INDETERMINATE(SystemDomain)
 CDAC_TYPE_FIELD(SystemDomain, /*GlobalLoaderAllocator*/, GlobalLoaderAllocator, cdac_data<SystemDomain>::GlobalLoaderAllocator)
 CDAC_TYPE_FIELD(SystemDomain, /*pointer*/, SystemAssembly, cdac_data<SystemDomain>::SystemAssembly)
 CDAC_TYPE_END(SystemDomain)
+
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+CDAC_TYPE_BEGIN(Debugger)
+CDAC_TYPE_INDETERMINATE(Debugger)
+CDAC_TYPE_FIELD(Debugger, /*int32*/, LeftSideInitialized, offsetof(Debugger, m_fLeftSideInitialized))
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, Defines, offsetof(Debugger, m_defines))
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, MDStructuresVersion, offsetof(Debugger, m_mdDataStructureVersion))
+CDAC_TYPE_END(Debugger)
+#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 
 CDAC_TYPE_BEGIN(ArrayListBase)
 CDAC_TYPE_INDETERMINATE(ArrayListBase)
@@ -685,6 +702,7 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, /*uint32*/, NumHotColdMap, cdac_data<ReadyToRunI
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, HotColdMap, cdac_data<ReadyToRunInfo>::HotColdMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, DelayLoadMethodCallThunks, cdac_data<ReadyToRunInfo>::DelayLoadMethodCallThunks)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, DebugInfoSection, cdac_data<ReadyToRunInfo>::DebugInfoSection)
+CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, ExceptionInfoSection, cdac_data<ReadyToRunInfo>::ExceptionInfoSection)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*HashMap*/, EntryPointToMethodDescMap, cdac_data<ReadyToRunInfo>::EntryPointToMethodDescMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, LoadedImageBase, cdac_data<ReadyToRunInfo>::LoadedImageBase)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, Composite, cdac_data<ReadyToRunInfo>::Composite)
@@ -786,10 +804,10 @@ CDAC_TYPE_BEGIN(RealCodeHeader)
 CDAC_TYPE_INDETERMINATE(RealCodeHeader)
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, DebugInfo, offsetof(RealCodeHeader, phdrDebugInfo))
+CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, EHInfo, offsetof(RealCodeHeader, phdrJitEHInfo))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, GCInfo, offsetof(RealCodeHeader, phdrJitGCInfo))
 CDAC_TYPE_FIELD(RealCodeHeader, /*uint32*/, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
 CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
-CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, JitEHInfo, offsetof(RealCodeHeader, phdrJitEHInfo))
 CDAC_TYPE_END(RealCodeHeader)
 
 CDAC_TYPE_BEGIN(EEExceptionClause)
@@ -817,13 +835,35 @@ CDAC_TYPE_INDETERMINATE(EEILException)
 CDAC_TYPE_FIELD(EEILException, /* EE_ILEXCEPTION_CLAUSE */, Clauses, offsetof(EE_ILEXCEPTION, Clauses))
 CDAC_TYPE_END(EEILException)
 
+CDAC_TYPE_BEGIN(PatchpointInfo)
+CDAC_TYPE_SIZE(sizeof(PatchpointInfo))
+CDAC_TYPE_FIELD(PatchpointInfo, /*uint32*/, LocalCount, cdac_data<PatchpointInfo>::LocalCount)
+CDAC_TYPE_END(PatchpointInfo)
+
 CDAC_TYPE_BEGIN(CodeHeapListNode)
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Next, offsetof(HeapList, hpNext))
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, StartAddress, offsetof(HeapList, startAddress))
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, EndAddress, offsetof(HeapList, endAddress))
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, MapBase, offsetof(HeapList, mapBase))
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, HeaderMap, offsetof(HeapList, pHdrMap))
+CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Heap, offsetof(HeapList, pHeap))
 CDAC_TYPE_END(CodeHeapListNode)
+
+CDAC_TYPE_BEGIN(CodeHeap)
+CDAC_TYPE_INDETERMINATE(CodeHeap)
+CDAC_TYPE_FIELD(CodeHeap, /*uint8*/, HeapType, cdac_data<CodeHeap>::HeapType)
+CDAC_TYPE_END(CodeHeap)
+
+CDAC_TYPE_BEGIN(LoaderCodeHeap)
+CDAC_TYPE_INDETERMINATE(LoaderCodeHeap)
+CDAC_TYPE_FIELD(LoaderCodeHeap, /*pointer*/, LoaderHeap, cdac_data<LoaderCodeHeap>::LoaderHeap)
+CDAC_TYPE_END(LoaderCodeHeap)
+
+CDAC_TYPE_BEGIN(HostCodeHeap)
+CDAC_TYPE_INDETERMINATE(HostCodeHeap)
+CDAC_TYPE_FIELD(HostCodeHeap, /*pointer*/, BaseAddress, cdac_data<HostCodeHeap>::BaseAddress)
+CDAC_TYPE_FIELD(HostCodeHeap, /*pointer*/, CurrentAddress, cdac_data<HostCodeHeap>::CurrentAddress)
+CDAC_TYPE_END(HostCodeHeap)
 
 #ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_BEGIN(ILCodeVersioningState)
@@ -1296,6 +1336,13 @@ CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomainPtr)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
+CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
+#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#ifdef FEATURE_METADATA_UPDATER
+CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
+#endif
 
 // Add FrameIdentifier for all defined Frame types. Used to differentiate Frame objects.
 #define FRAME_TYPE_NAME(frameType) \
@@ -1444,6 +1491,9 @@ CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(ConditionalWeakTable, 1)
 CDAC_GLOBAL_CONTRACT(DacStreams, 1)
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+CDAC_GLOBAL_CONTRACT(Debugger, 1)
+#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 CDAC_GLOBAL_CONTRACT(DebugInfo, 2)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
 CDAC_GLOBAL_CONTRACT(Exception, 1)

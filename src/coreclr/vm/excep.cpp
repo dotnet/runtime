@@ -10098,35 +10098,107 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
 // Throw an InvalidCastException
 //==========================================================================
 
-VOID GetAssemblyDetailInfo(SString    &sType,
-                           SString    &sAssemblyDisplayName,
-                           PEAssembly *pPEAssembly,
-                           SString    &sAssemblyDetailInfo)
+static VOID GetAssemblyDetailInfo(SString    &sType,
+                                  SString    &sAssemblyDisplayName,
+                                  PEAssembly *pPEAssembly,
+                                  SString    &sAssemblyDetailInfo)
 {
-    WRAPPER_NO_CONTRACT;
-
-    SString detailsUtf8;
+    STANDARD_VM_CONTRACT;
 
     SString sAlcName;
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
     SString assemblyPath{ pPEAssembly->GetPath() };
+
+    SString resStr;
+    SString formatted;
     if (assemblyPath.IsEmpty())
     {
-        detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' in a byte array",
-                                   sType.GetUTF8(),
-                                   sAssemblyDisplayName.GetUTF8(),
-                                   sAlcName.GetUTF8());
+        if (resStr.LoadResource(IDS_EE_CANNOTCASTSAME_DETAIL_BYTE_ARRAY))
+        {
+            formatted.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)resStr, 0, 0,
+                                    sType, sAssemblyDisplayName, sAlcName);
+            sAssemblyDetailInfo.Append(formatted);
+        }
     }
     else
     {
-        detailsUtf8.Printf("Type %s originates from '%s' in the context '%s' at location '%s'",
-                                   sType.GetUTF8(),
-                                   sAssemblyDisplayName.GetUTF8(),
-                                   sAlcName.GetUTF8(),
-                                   assemblyPath.GetUTF8());
+        if (resStr.LoadResource(IDS_EE_CANNOTCASTSAME_DETAIL_LOCATION))
+        {
+            formatted.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)resStr, 0, 0,
+                                    sType, sAssemblyDisplayName, sAlcName, assemblyPath);
+            sAssemblyDetailInfo.Append(formatted);
+        }
+    }
+}
+
+static VOID GetGenericArgAssemblyDetailInfo(SString    &sType,
+                                            SString    &sGenericArgName,
+                                            SString    &sAssemblyDisplayName,
+                                            PEAssembly *pPEAssembly,
+                                            SString    &sAssemblyDetailInfo)
+{
+    STANDARD_VM_CONTRACT;
+
+    SString sAlcName;
+    pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
+    SString assemblyPath{ pPEAssembly->GetPath() };
+
+    SString resStr;
+    SString formatted;
+    if (assemblyPath.IsEmpty())
+    {
+        if (resStr.LoadResource(IDS_EE_CANNOTCASTSAME_GENARG_BYTE_ARRAY))
+        {
+            formatted.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)resStr, 0, 0,
+                                    sType, sGenericArgName, sAssemblyDisplayName, sAlcName);
+            sAssemblyDetailInfo.Append(formatted);
+        }
+    }
+    else
+    {
+        if (resStr.LoadResource(IDS_EE_CANNOTCASTSAME_GENARG_LOCATION))
+        {
+            formatted.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)resStr, 0, 0,
+                                    sType, sGenericArgName, sAssemblyDisplayName, sAlcName, assemblyPath);
+            sAssemblyDetailInfo.Append(formatted);
+        }
+    }
+}
+
+static BOOL FindFirstDifferingGenericArgument(TypeHandle thFrom, TypeHandle thTo,
+                                              TypeHandle *pthArgFrom, TypeHandle *pthArgTo,
+                                              DWORD depth = 0)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (depth > 8)
+        return FALSE;
+
+    Instantiation instFrom = thFrom.GetInstantiation();
+    Instantiation instTo = thTo.GetInstantiation();
+
+    if (instFrom.IsEmpty() || instTo.IsEmpty() || instFrom.GetNumArgs() != instTo.GetNumArgs())
+        return FALSE;
+
+    for (DWORD i = 0; i < instFrom.GetNumArgs(); i++)
+    {
+        if (instFrom[i] == instTo[i])
+            continue;
+
+        Module *pModFrom = instFrom[i].GetModule();
+        Module *pModTo = instTo[i].GetModule();
+        if (pModFrom != NULL && pModTo != NULL && pModFrom == pModTo)
+        {
+            if (FindFirstDifferingGenericArgument(instFrom[i], instTo[i], pthArgFrom, pthArgTo, depth + 1))
+                return TRUE;
+        }
+
+        *pthArgFrom = instFrom[i];
+        *pthArgTo = instTo[i];
+        return TRUE;
     }
 
-    sAssemblyDetailInfo.Append(detailsUtf8.GetUnicode());
+    return FALSE;
 }
 
 VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
@@ -10165,6 +10237,60 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
 
          thCastFrom.GetName(strCastFromName);
          thCastTo.GetName(strCastToName);
+
+         // If the outermost types come from the same module, the actual difference
+         // must be in their generic type arguments. Report the differing generic
+         // argument's assembly info instead, which is more helpful to the user.
+         TypeHandle thDifferingArgFrom, thDifferingArgTo;
+         if (pModuleTypeFrom == pModuleTypeTo &&
+             FindFirstDifferingGenericArgument(thCastFrom, thCastTo, &thDifferingArgFrom, &thDifferingArgTo))
+         {
+             Module *pModuleArgFrom = thDifferingArgFrom.GetModule();
+             Module *pModuleArgTo = thDifferingArgTo.GetModule();
+
+             if ((pModuleArgFrom != NULL) && (pModuleArgTo != NULL))
+             {
+                 StackSString sGenericArgName;
+                 thDifferingArgFrom.GetName(sGenericArgName);
+
+                 Assembly *pAssemblyArgFrom = pModuleArgFrom->GetAssembly();
+                 Assembly *pAssemblyArgTo = pModuleArgTo->GetAssembly();
+
+                 _ASSERTE(pAssemblyArgFrom != NULL);
+                 _ASSERTE(pAssemblyArgTo != NULL);
+
+                 PEAssembly *pPEAssemblyArgFrom = pAssemblyArgFrom->GetPEAssembly();
+                 PEAssembly *pPEAssemblyArgTo = pAssemblyArgTo->GetPEAssembly();
+
+                 _ASSERTE(pPEAssemblyArgFrom != NULL);
+                 _ASSERTE(pPEAssemblyArgTo != NULL);
+
+                 StackSString sArgAssemblyFromDisplayName;
+                 StackSString sArgAssemblyToDisplayName;
+                 pPEAssemblyArgFrom->GetDisplayName(sArgAssemblyFromDisplayName);
+                 pPEAssemblyArgTo->GetDisplayName(sArgAssemblyToDisplayName);
+
+                 SString typeA = SL(W("A"));
+                 GetGenericArgAssemblyDetailInfo(typeA,
+                                                 sGenericArgName,
+                                                 sArgAssemblyFromDisplayName,
+                                                 pPEAssemblyArgFrom,
+                                                 sAssemblyDetailInfoFrom);
+                 SString typeB = SL(W("B"));
+                 GetGenericArgAssemblyDetailInfo(typeB,
+                                                 sGenericArgName,
+                                                 sArgAssemblyToDisplayName,
+                                                 pPEAssemblyArgTo,
+                                                 sAssemblyDetailInfoTo);
+
+                 COMPlusThrow(kInvalidCastException,
+                              IDS_EE_CANNOTCASTSAME,
+                              strCastFromName.GetUnicode(),
+                              strCastToName.GetUnicode(),
+                              sAssemblyDetailInfoFrom.GetUnicode(),
+                              sAssemblyDetailInfoTo.GetUnicode());
+             }
+         }
 
          SString typeA = SL(W("A"));
          GetAssemblyDetailInfo(typeA,

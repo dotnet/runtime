@@ -65,4 +65,5 @@ extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pM
 
 extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::ObjectHandleOnStack element, INT32 count);
 
+extern "C" void QCALLTYPE StubHelpers_CreateLayoutClassMarshalStubs(QCall::TypeHandle th, PCODE* pConvertToUnmanaged, PCODE* pConvertToManaged, PCODE* pFree);
 #endif  // __STUBHELPERS_h__
