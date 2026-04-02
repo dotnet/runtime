@@ -176,20 +176,30 @@ done:
     return ret;
 }
 
-static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
+// Accessor callbacks for extracting RSA key components.
+// All accessors return owned BIGNUM copies that must be freed by the caller.
+typedef bool (*RsaGetKeyFn)(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d);
+typedef bool (*RsaGetFactorsFn)(const void* key, BIGNUM** p, BIGNUM** q);
+typedef bool (*RsaGetCrtParamsFn)(const void* key, BIGNUM** dp, BIGNUM** dq, BIGNUM** inverseQ);
+
+static int32_t QuickRsaCheckCore(const void* key,
+                                 bool isPublic,
+                                 RsaGetKeyFn getKey,
+                                 RsaGetFactorsFn getFactors,
+                                 RsaGetCrtParamsFn getCrtParams)
 {
     // This method does some lightweight key consistency checks on an RSA key to make sure all supplied values are
     // sensible. This is not intended to be a strict key check that verifies a key conforms to any particular set
     // of criteria or standards.
 
-    const BIGNUM* n = NULL;
-    const BIGNUM* e = NULL;
-    const BIGNUM* d = NULL;
-    const BIGNUM* p = NULL;
-    const BIGNUM* q = NULL;
-    const BIGNUM* dp = NULL;
-    const BIGNUM* dq = NULL;
-    const BIGNUM* inverseQ = NULL;
+    BIGNUM* n = NULL;
+    BIGNUM* e = NULL;
+    BIGNUM* d = NULL;
+    BIGNUM* p = NULL;
+    BIGNUM* q = NULL;
+    BIGNUM* dp = NULL;
+    BIGNUM* dq = NULL;
+    BIGNUM* inverseQ = NULL;
     BN_CTX* ctx = NULL;
 
     // x and y are scratch integers that receive the result of some operations.
@@ -202,7 +212,11 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
     BIGNUM* qM1 = NULL;
     int ret = 0;
 
-    RSA_get0_key(rsa, &n, &e, &d);
+    if (!getKey(key, &n, &e, &d))
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        goto done;
+    }
 
     // Always need public parameters.
     if (!n || !e)
@@ -240,21 +254,18 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
         goto done;
     }
 
-    // We do not support validating multi-prime RSA. Multi-prime RSA is not common. For these, we fall back to the
-    // OpenSSL key check.
-    if (RSA_get_multi_prime_extra_count(rsa) != 0)
+    // Need all the private parameters now. If we cannot get them, fall back to the OpenSSL key check so the provider
+    // or engine routine can be used.
+    if (!d)
     {
         ret = -1;
         goto done;
     }
 
     // Get the private components now that we've moved on to checking the private parameters.
-    RSA_get0_factors(rsa, &p, &q);
-
-    // Need all the private parameters now. If we cannot get them, fall back to the OpenSSL key check so the provider
-    // or engine routine can be used.
-    if (!d || !p || !q)
+    if (!getFactors(key, &p, &q) || !p || !q)
     {
+        ERR_clear_error();
         ret = -1;
         goto done;
     }
@@ -320,9 +331,7 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
 
     // Move on to checking the CRT parameters. In compatibility with what OpenSSL does,
     // these are optional and only check them if all are present.
-    RSA_get0_crt_params(rsa, &dp, &dq, &inverseQ);
-
-    if (dp && dq && inverseQ)
+    if (getCrtParams(key, &dp, &dq, &inverseQ) && dp && dq && inverseQ)
     {
         // Check dp = d % (p-1)
         // compute d % (p-1) and put in x
@@ -363,171 +372,13 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
             goto done;
         }
     }
-
-    // If we made it to the end, everything looks good.
-    ret = 1;
-done:
-    if (x) BN_clear_free(x);
-    if (y) BN_clear_free(y);
-    if (pM1) BN_clear_free(pM1);
-    if (qM1) BN_clear_free(qM1);
-    if (ctx) BN_CTX_free(ctx);
-    return ret;
-}
-
-// EVP-based version of QuickRsaCheck for OpenSSL 3.0+ where legacy RSA APIs may not be available.
-// Uses EVP_PKEY_get_bn_param to extract RSA key components.
-static int32_t QuickRsaCheckEvp(const EVP_PKEY* pkey, bool isPublic)
-{
-    BIGNUM* n = NULL;
-    BIGNUM* e = NULL;
-    BIGNUM* d = NULL;
-    BIGNUM* p = NULL;
-    BIGNUM* q = NULL;
-    BIGNUM* dp = NULL;
-    BIGNUM* dq = NULL;
-    BIGNUM* inverseQ = NULL;
-    BN_CTX* ctx = NULL;
-    BIGNUM* x = NULL;
-    BIGNUM* y = NULL;
-    BIGNUM* pM1 = NULL;
-    BIGNUM* qM1 = NULL;
-    int ret = 0;
-
-    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_N, &n) ||
-        !EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_E, &e))
-    {
-        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
-        goto done;
-    }
-
-    if (BN_is_zero(n))
-    {
-        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DECODE_ERROR, __FILE__, __LINE__);
-        goto done;
-    }
-
-    if (BN_num_bits(n) > OPENSSL_RSA_MAX_MODULUS_BITS)
-    {
-        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_MODULUS_TOO_LARGE, __FILE__, __LINE__);
-        goto done;
-    }
-
-    if (BN_is_one(e) || !BN_is_odd(e))
-    {
-        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_BAD_E_VALUE, __FILE__, __LINE__);
-        goto done;
-    }
-
-    if (isPublic)
-    {
-        ret = 1;
-        goto done;
-    }
-
-    // Try to get private key parameter d. If not available, fall back to EVP_PKEY_check.
-    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_D, &d))
-    {
-        ERR_clear_error();
-        ret = -1;
-        goto done;
-    }
-
-    // Try to get factors p and q.
-    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR1, &p) ||
-        !EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR2, &q))
-    {
-        ERR_clear_error();
-        ret = -1;
-        goto done;
-    }
-
-    if (BN_cmp(d, n) >= 0)
-    {
-        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DECODE_ERROR, __FILE__, __LINE__);
-        goto done;
-    }
-
-    if ((ctx = BN_CTX_new()) == NULL ||
-        (x = BN_new()) == NULL ||
-        (y = BN_new()) == NULL ||
-        (pM1 = BN_new()) == NULL ||
-        (qM1 = BN_new()) == NULL)
-    {
-        goto done;
-    }
-
-    if (!BN_mul(x, p, q, ctx))
-    {
-        goto done;
-    }
-
-    if (BN_cmp(x, n) != 0)
-    {
-        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_N_DOES_NOT_EQUAL_P_Q, __FILE__, __LINE__);
-        goto done;
-    }
-
-    if (!BN_sub(pM1, p, BN_value_one()) || !BN_sub(qM1, q, BN_value_one()) || !Lcm(pM1, qM1, ctx, x))
-    {
-        goto done;
-    }
-
-    if (!BN_mod_mul(y, d, e, x, ctx))
-    {
-        goto done;
-    }
-
-    if (!BN_is_one(y))
-    {
-        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_D_E_NOT_CONGRUENT_TO_1, __FILE__, __LINE__);
-        goto done;
-    }
-
-    // CRT parameters are optional.
-    if (EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_EXPONENT1, &dp) &&
-        EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_EXPONENT2, &dq) &&
-        EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_COEFFICIENT1, &inverseQ))
-    {
-        if (!BN_div(NULL, x, d, pM1, ctx))
-        {
-            goto done;
-        }
-
-        if (BN_cmp(x, dp) != 0)
-        {
-            ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_DMP1_NOT_CONGRUENT_TO_D, __FILE__, __LINE__);
-            goto done;
-        }
-
-        if (!BN_div(NULL, x, d, qM1, ctx))
-        {
-            goto done;
-        }
-
-        if (BN_cmp(x, dq) != 0)
-        {
-            ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_DMQ1_NOT_CONGRUENT_TO_D, __FILE__, __LINE__);
-            goto done;
-        }
-
-        if (!BN_mod_inverse(x, q, p, ctx))
-        {
-            goto done;
-        }
-
-        if (BN_cmp(x, inverseQ) != 0)
-        {
-            ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_IQMP_NOT_INVERSE_OF_Q, __FILE__, __LINE__);
-            goto done;
-        }
-    }
     else
     {
         // If we couldn't get all CRT params, clear errors from the attempts and skip CRT checks.
         ERR_clear_error();
     }
 
+    // If we made it to the end, everything looks good.
     ret = 1;
 done:
     BN_clear_free(n);
@@ -544,6 +395,141 @@ done:
     if (qM1) BN_clear_free(qM1);
     if (ctx) BN_CTX_free(ctx);
     return ret;
+}
+
+// Legacy RSA accessors: duplicate shared pointers into owned copies.
+static bool RsaLegacyGetKey(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d)
+{
+    const RSA* rsa = (const RSA*)key;
+    const BIGNUM* sharedN = NULL;
+    const BIGNUM* sharedE = NULL;
+    const BIGNUM* sharedD = NULL;
+    RSA_get0_key(rsa, &sharedN, &sharedE, &sharedD);
+
+    if (!sharedN || !sharedE)
+        return false;
+
+    *n = BN_dup(sharedN);
+    *e = BN_dup(sharedE);
+    *d = sharedD ? BN_dup(sharedD) : NULL;
+
+    if (!*n || !*e || (sharedD && !*d))
+    {
+        BN_clear_free(*n);
+        BN_clear_free(*e);
+        BN_clear_free(*d);
+        *n = *e = *d = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+static bool RsaLegacyGetFactors(const void* key, BIGNUM** p, BIGNUM** q)
+{
+    const RSA* rsa = (const RSA*)key;
+    const BIGNUM* sharedP = NULL;
+    const BIGNUM* sharedQ = NULL;
+    RSA_get0_factors(rsa, &sharedP, &sharedQ);
+
+    if (!sharedP || !sharedQ)
+        return false;
+
+    *p = BN_dup(sharedP);
+    *q = BN_dup(sharedQ);
+
+    if (!*p || !*q)
+    {
+        BN_clear_free(*p);
+        BN_clear_free(*q);
+        *p = *q = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+static bool RsaLegacyGetCrtParams(const void* key, BIGNUM** dp, BIGNUM** dq, BIGNUM** inverseQ)
+{
+    const RSA* rsa = (const RSA*)key;
+    const BIGNUM* sharedDp = NULL;
+    const BIGNUM* sharedDq = NULL;
+    const BIGNUM* sharedInverseQ = NULL;
+    RSA_get0_crt_params(rsa, &sharedDp, &sharedDq, &sharedInverseQ);
+
+    if (!sharedDp || !sharedDq || !sharedInverseQ)
+        return false;
+
+    *dp = BN_dup(sharedDp);
+    *dq = BN_dup(sharedDq);
+    *inverseQ = BN_dup(sharedInverseQ);
+
+    if (!*dp || !*dq || !*inverseQ)
+    {
+        BN_clear_free(*dp);
+        BN_clear_free(*dq);
+        BN_clear_free(*inverseQ);
+        *dp = *dq = *inverseQ = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
+{
+    // We do not support validating multi-prime RSA. Multi-prime RSA is not common. For these, we fall back to the
+    // OpenSSL key check.
+    if (!isPublic && RSA_get_multi_prime_extra_count(rsa) != 0)
+    {
+        return -1;
+    }
+
+    return QuickRsaCheckCore(rsa, isPublic, RsaLegacyGetKey, RsaLegacyGetFactors, RsaLegacyGetCrtParams);
+}
+
+// EVP accessors for OpenSSL 3.0+: return owned copies (must be freed).
+static bool RsaEvpGetKey(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d)
+{
+    const EVP_PKEY* pkey = (const EVP_PKEY*)key;
+
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_N, n) ||
+        !EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_E, e))
+    {
+        return false;
+    }
+
+    // d is optional; not available for public keys.
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_D, d))
+    {
+        ERR_clear_error();
+        *d = NULL;
+    }
+
+    return true;
+}
+
+static bool RsaEvpGetFactors(const void* key, BIGNUM** p, BIGNUM** q)
+{
+    const EVP_PKEY* pkey = (const EVP_PKEY*)key;
+
+    return EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR1, p) &&
+           EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR2, q);
+}
+
+static bool RsaEvpGetCrtParams(const void* key, BIGNUM** dp, BIGNUM** dq, BIGNUM** inverseQ)
+{
+    const EVP_PKEY* pkey = (const EVP_PKEY*)key;
+
+    return EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_EXPONENT1, dp) &&
+           EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_EXPONENT2, dq) &&
+           EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_COEFFICIENT1, inverseQ);
+}
+
+// EVP-based version of QuickRsaCheck for OpenSSL 3.0+ where legacy RSA APIs may not be available.
+static int32_t QuickRsaCheckEvp(const EVP_PKEY* pkey, bool isPublic)
+{
+    return QuickRsaCheckCore(pkey, isPublic, RsaEvpGetKey, RsaEvpGetFactors, RsaEvpGetCrtParams);
 }
 
 static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*check_func)(EVP_PKEY_CTX*))
