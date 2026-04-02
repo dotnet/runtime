@@ -918,15 +918,13 @@ namespace System.Numerics
             {
                 int size = dividend._bits.Length;
                 Span<nuint> quotient = RentedBuffer.Create(size, out RentedBuffer quotientBuffer);
+                using var _ = quotientBuffer;
 
-                using (quotientBuffer)
-                {
-                    // may throw DivideByZeroException
-                    BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign), quotient, out nuint rest);
+                // may throw DivideByZeroException
+                BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign), quotient, out nuint rest);
 
-                    remainder = dividend._sign < 0 ? -(long)rest : (long)rest;
-                    return new BigInteger(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
-                }
+                remainder = dividend._sign < 0 ? -(long)rest : (long)rest;
+                return new BigInteger(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
             }
 
             Debug.Assert(divisor._bits is not null);
