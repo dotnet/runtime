@@ -53,13 +53,24 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         {
             if (runOptions is BlazorRunOptions bro && bro.CheckCounter)
             {
-                await page.Locator("text=Counter").ClickAsync();
-                var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+                // Wait for the Counter nav link to be visible and stable before clicking.
+                // On slow CI machines (Windows Docker containers), Blazor's layout reflows
+                // can prevent the element from being considered "stable" within the default
+                // Playwright timeout, causing flaky TimeoutExceptions.
+                var counterLink = page.Locator("text=Counter");
+                await counterLink.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 60_000 });
+                await counterLink.ClickAsync(new() { Timeout = 60_000 });
+
+                var status = page.Locator("p[role='status']");
+                await status.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 60_000 });
+                var txt = await status.InnerHTMLAsync();
                 Assert.Equal("Current count: 0", txt);
 
-                await page.Locator("text=\"Click me\"").ClickAsync();
+                var clickMe = page.Locator("text=\"Click me\"");
+                await clickMe.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 60_000 });
+                await clickMe.ClickAsync(new() { Timeout = 60_000 });
                 await Task.Delay(300);
-                txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+                txt = await status.InnerHTMLAsync();
                 Assert.Equal("Current count: 1", txt);
             }
         };
