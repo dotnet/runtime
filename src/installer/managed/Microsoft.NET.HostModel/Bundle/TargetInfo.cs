@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using Microsoft.NET.HostModel.MachO;
 using Microsoft.NET.HostModel.AppHost;
 using System;
@@ -35,7 +33,7 @@ namespace Microsoft.NET.HostModel.Bundle
         {
             OS = os;
             Arch = arch;
-            FrameworkVersion = targetFrameworkVersion;
+            FrameworkVersion = targetFrameworkVersion ?? Environment.Version;
 
             if (FrameworkVersion.Major >= 6)
             {
