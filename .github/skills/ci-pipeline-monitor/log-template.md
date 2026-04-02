@@ -30,22 +30,11 @@ Load Pipeline Definitions
 Fetch Latest Builds
 ================================================================================
 
-[HH:mm:ss] Fetching builds for <N> pipelines (7 parallel per batch)...
-
---- Batch 1/3 ---
-[HH:mm:ss] GET get_builds(project="public", definitions=[<defId>], branchName="refs/heads/main", top=1)
-           → Build <buildId> (<buildNumber>) result=<succeeded|partiallySucceeded> finished=<date>
-           → URL: https://dev.azure.com/dnceng-public/public/_build/results?buildId=<buildId>
-[HH:mm:ss] GET get_builds(project="public", definitions=[<defId>], branchName="refs/heads/main", top=1)
-           → Build <buildId> (<buildNumber>) result=<succeeded|partiallySucceeded> finished=<date>
-           → URL: https://dev.azure.com/dnceng-public/public/_build/results?buildId=<buildId>
-... (repeat for each pipeline in batch)
-
---- Batch 2/3 ---
-... (repeat)
-
---- Batch 3/3 ---
-... (repeat)
+[HH:mm:ss] Running: python scripts/setup_and_fetch_builds.py --pipelines pipelines.md --db scripts/monitor.db
+[HH:mm:ss]   PASS  <pipeline_name> — build <buildId> (succeeded)
+[HH:mm:ss]   FAIL  <pipeline_name> — build <buildId> (failed)
+[HH:mm:ss]   SKIP  <pipeline_name> (private)
+... (repeat for each pipeline)
 
 [HH:mm:ss] Build results: <P> PASS, <F> FAIL
 [HH:mm:ss] Failing pipelines: <pipeline1>, <pipeline2>, ...
@@ -111,20 +100,6 @@ Fetch Helix Console Logs → helix-logs/
 [HH:mm:ss] All console logs downloaded.
 [HH:mm:ss] Files saved to: helix-logs/ (<M> files, <N> total rows updated)
 [HH:mm:ss] Remaining with console_log_path IS NULL: <should be 0>
-
-================================================================================
-Fallback — Build Log Parsing (if needed)
-================================================================================
-
-[HH:mm:ss] Test Results API failed for <pipeline> — falling back to log parsing
-[HH:mm:ss] GET get_build_log(project="public", buildId=<buildId>)
-           → <N> log entries
-[HH:mm:ss] Candidate logs (lineCount 100-2000): <list of logIds>
-[HH:mm:ss] GET get_build_log_by_id(project="public", buildId=<buildId>, logId=<logId>, startLine=0, endLine=1)
-           → "##[section]Starting: <step name>"
-           → Match: YES/NO
-[HH:mm:ss] GET get_build_log_by_id(project="public", buildId=<buildId>, logId=<logId>)
-           → Full log (<N> lines), found <M> errors
 
 ================================================================================
 Triage — Read Console Logs + Classify + Group + Search GitHub
