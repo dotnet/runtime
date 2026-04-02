@@ -125,10 +125,8 @@ namespace Microsoft.NET.HostModel.Bundle
                 "x86" => Architecture.X86,
                 "arm64" => Architecture.Arm64,
                 "arm" => Architecture.Arm,
-#if !NETFRAMEWORK
                 "riscv64" => Architecture.RiscV64,
                 "loongarch64" => Architecture.LoongArch64,
-#endif
                 _ => throw new ArgumentException($"Unknown architecture '{archStr}' in runtime identifier: {runtimeIdentifier}"),
             };
 
@@ -184,6 +182,7 @@ namespace Microsoft.NET.HostModel.Bundle
         extension(Architecture)
         {
             public static Architecture LoongArch64 => (Architecture)6;
+            public static Architecture RiscV64 => (Architecture)9;
         }
 #endif
     }
