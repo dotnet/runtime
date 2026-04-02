@@ -31,7 +31,6 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 return false;
             }
 
-            // Containerized systemd services: PID 1 with systemd notify/listen environment variables.
             int processId = Environment.ProcessId;
 
             // Preferred detection method: compare SYSTEMD_EXEC_PID to the current PID.
@@ -50,9 +49,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 // Malformed value: don't trust it, fall through to legacy detection.
             }
 
-            // To support containerized systemd services (e.g. Podman with --sdnotify=container),
-            // check if we're the main process (PID 1) and if there are systemd environment
-            // variables defined for notifying the service manager, or passing listen handles.
+            // To support containerized systemd services (e.g. Podman with --sdnotify=container)
             if (processId == 1)
             {
                 return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(SystemdConstants.NotifySocket)) ||

@@ -34,32 +34,6 @@ namespace Microsoft.Extensions.Hosting
                 .Build();
         }
 
-        [Fact]
-        public void AddSystemd_DefaultsToOffOutsideOfService()
-        {
-            // Simulate running outside of a systemd service
-            // SystemdLifetime and SystemdLogger should not be registered, even if AddSystemd() is used.
-            using IHost host = BuildHostWithAddSystemd();
-            var lifetime = host.Services.GetRequiredService<IHostLifetime>();
-            Assert.NotNull(lifetime);
-            Assert.IsNotType<SystemdLifetime>(lifetime);
-            var options = host.Services.GetRequiredService<IOptions<ConsoleLoggerOptions>>().Value;
-            Assert.NotEqual(ConsoleFormatterNames.Systemd, options.FormatterName);
-        }
-
-        [Fact]
-        public void UseSystemd_DefaultsToOffOutsideOfService()
-        {
-            // Simulate running outside of a systemd service
-            // SystemdLifetime and SystemdLogger should not be registered, even if UseSystemd is called.
-            using IHost host = BuildHostWithUseSystemd();
-            var lifetime = host.Services.GetRequiredService<IHostLifetime>();
-            Assert.NotNull(lifetime);
-            Assert.IsNotType<SystemdLifetime>(lifetime);
-            var options = host.Services.GetRequiredService<IOptions<ConsoleLoggerOptions>>().Value;
-            Assert.NotEqual(ConsoleFormatterNames.Systemd, options.FormatterName);
-        }
-
         [ConditionalFact(typeof(UseSystemdTests), nameof(IsRemoteExecutorSupportedOnLinux))]
         public void AddSystemd_SystemdLoggerIsNotConfiguredAndSystemdLifetimeIsNotRegisteredWhenIsSystemdServiceIsFalse()
         {
