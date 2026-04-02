@@ -26,7 +26,6 @@
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
 #include "dbgtransportsession.h"
-#include "twowaypipe.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
 #ifdef TEST_DATA_CONSISTENCY

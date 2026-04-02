@@ -41,6 +41,12 @@ HRESULT ConnectToChannel(
 // Debugger::Startup() in debugger.cpp).
 DbgTransportSession *g_pDbgTransport = NULL;
 
+#ifdef HOST_UNIX
+// Callback set by TwoWayPipe::CreateServer() once server pipe names are initialized.
+// Called from Debugger::CleanupTransportSocket() to unlink the server pipes.
+void (*g_pfnAbortTransportCallback)(void) = nullptr;
+#endif // HOST_UNIX
+
 #include "ddmarshalutil.h"
 #endif // !RIGHT_SIDE_COMPILE
 

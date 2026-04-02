@@ -102,10 +102,3 @@ private:
 };
 
 #endif //TwoWayPipe_H
-
-#ifdef HOST_UNIX
-// Callback set by TwoWayPipe::CreateServer() once server pipe names are initialized.
-// Can be called at any time (including from signal handlers) to unlink the server pipes.
-// NULL until CreateServer() has been called.
-extern void (*g_pfnAbortTransportCallback)(void);
-#endif // HOST_UNIX

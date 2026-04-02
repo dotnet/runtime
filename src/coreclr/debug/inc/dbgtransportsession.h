@@ -841,6 +841,13 @@ private:
 // The one and only transport instance for the left side. Allocated and initialized during EE startup (from
 // Debugger::Startup() in debugger.cpp).
 extern DbgTransportSession *g_pDbgTransport;
+
+#ifdef HOST_UNIX
+// Callback set by TwoWayPipe::CreateServer() once server pipe names are initialized.
+// Called from Debugger::CleanupTransportSocket() to unlink the server pipes.
+// NULL until CreateServer() has been called.
+extern void (*g_pfnAbortTransportCallback)(void);
+#endif // HOST_UNIX
 #endif // !RIGHT_SIDE_COMPILE
 
 #endif // defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)

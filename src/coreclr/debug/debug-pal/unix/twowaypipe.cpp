@@ -24,9 +24,8 @@ static void AbortPipeServerImpl()
     unlink(s_serverOutPipeName);
 }
 
-// Callback set to AbortPipeServerImpl once CreateServer() has initialized the pipe names.
-// Declared in twowaypipe.h; called from Debugger::CleanupTransportSocket().
-void (*g_pfnAbortTransportCallback)(void) = nullptr;
+// Forward declaration - defined in dbgtransportsession.cpp.
+extern void (*g_pfnAbortTransportCallback)(void);
 
 // Creates a server side of the pipe.
 // Id is used to create pipes names and uniquely identify the pipe on the machine.
