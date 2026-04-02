@@ -38,10 +38,7 @@ namespace System.Diagnostics
         /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
         public static ProcessInfo? GetProcessInfo(int processId, string machineName)
         {
-            if (IsRemoteMachine(machineName))
-            {
-                throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
-            }
+            HandleRemoteMachineSupport(machineName);
             return CreateProcessInfo(processId);
         }
 
@@ -53,10 +50,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static int[] GetProcessIds(string machineName)
         {
-            if (IsRemoteMachine(machineName))
-            {
-                throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
-            }
+            HandleRemoteMachineSupport(machineName);
             return GetProcessIds();
         }
 
