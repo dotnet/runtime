@@ -1272,6 +1272,11 @@ namespace System.Diagnostics
             ProcessStartInfo startInfo = StartInfo;
             startInfo.ThrowIfInvalid(out bool anyRedirection);
 
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
 
@@ -1312,7 +1317,7 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out childInputHandle, out parentInputPipeHandle);
                         }
-                        else if (!OperatingSystem.IsAndroid())
+                        else if (ProcessUtils.PlatformSupportsConsole)
                         {
                             childInputHandle = Console.OpenStandardInputHandle();
                         }
@@ -1325,7 +1330,7 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputHandle, asyncRead: OperatingSystem.IsWindows());
                         }
-                        else if (!OperatingSystem.IsAndroid())
+                        else if (ProcessUtils.PlatformSupportsConsole)
                         {
                             childOutputHandle = Console.OpenStandardOutputHandle();
                         }
@@ -1338,7 +1343,7 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorHandle, asyncRead: OperatingSystem.IsWindows());
                         }
-                        else if (!OperatingSystem.IsAndroid())
+                        else if (ProcessUtils.PlatformSupportsConsole)
                         {
                             childErrorHandle = Console.OpenStandardErrorHandle();
                         }

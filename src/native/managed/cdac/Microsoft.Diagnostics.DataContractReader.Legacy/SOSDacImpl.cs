@@ -867,8 +867,89 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.GetCodeHeapList(ClrDataAddress jitManager, uint count, void* codeHeaps, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetCodeHeapList(jitManager, count, codeHeaps, pNeeded) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetCodeHeapList(ClrDataAddress jitManager, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpJitCodeHeapInfo[]? codeHeaps, uint* pNeeded)
+    {
+        // returns the code heap list from the single global EEJitManager.
+        int hr = HResults.S_OK;
+        try
+        {
+            if (jitManager == 0 || (codeHeaps == null && pNeeded == null))
+                throw new ArgumentException();
+
+            IExecutionManager em = _target.Contracts.ExecutionManager;
+#if DEBUG
+            Contracts.JitManagerInfo jitManagerInfo = em.GetEEJitManagerInfo();
+            Debug.Assert(jitManager.ToTargetPointer(_target) == jitManagerInfo.ManagerAddress);
+#endif
+
+            List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+            int i = 0;
+            if (codeHeaps is not null)
+            {
+                for (; i < heapInfos.Count && i < count; i++)
+                {
+                    codeHeaps[i] = default;
+                    switch (heapInfos[i])
+                    {
+                        case Contracts.LoaderCodeHeapInfo loader:
+                            codeHeaps[i].codeHeapType = DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_LOADER;
+                            codeHeaps[i].LoaderHeap = loader.LoaderHeapAddress.ToClrDataAddress(_target);
+                            break;
+                        case Contracts.HostCodeHeapInfo host:
+                            codeHeaps[i].codeHeapType = DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_HOST;
+                            codeHeaps[i].baseAddr    = host.BaseAddress.ToClrDataAddress(_target);
+                            codeHeaps[i].currentAddr = host.CurrentAddress.ToClrDataAddress(_target);
+                            break;
+                        default:
+                            codeHeaps[i].codeHeapType = DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_UNKNOWN;
+                            break;
+                    }
+                }
+            }
+
+            if (pNeeded is not null)
+                *pNeeded = codeHeaps is not null ? (uint)i : (uint)heapInfos.Count;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint neededLocal = 0;
+            DacpJitCodeHeapInfo[]? legacyHeaps = codeHeaps is not null ? new DacpJitCodeHeapInfo[(int)count] : null;
+            int hrLocal = _legacyImpl.GetCodeHeapList(jitManager, count, legacyHeaps, codeHeaps is null && pNeeded is null ? null : &neededLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                if (pNeeded != null)
+                {
+                    Debug.Assert(*pNeeded == neededLocal, $"cDAC count: {(*pNeeded):x}, DAC count: {neededLocal:x}");
+                }
+                if (codeHeaps != null && legacyHeaps != null)
+                {
+                    for (uint i = 0; i < neededLocal && i < count; i++)
+                    {
+                        Debug.Assert(codeHeaps[i].codeHeapType == legacyHeaps![i].codeHeapType,
+                            $"cDAC heap[{i}] type: {codeHeaps[i].codeHeapType}, DAC: {legacyHeaps[i].codeHeapType}");
+                        if (codeHeaps[i].codeHeapType == DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_LOADER)
+                            Debug.Assert(codeHeaps[i].LoaderHeap == legacyHeaps[i].LoaderHeap,
+                                $"cDAC heap[{i}] LoaderHeap: {codeHeaps[i].LoaderHeap:x}, DAC: {legacyHeaps[i].LoaderHeap:x}");
+                        else if (codeHeaps[i].codeHeapType == DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_HOST)
+                        {
+                            Debug.Assert(codeHeaps[i].baseAddr == legacyHeaps[i].baseAddr,
+                                $"cDAC heap[{i}] baseAddr: {codeHeaps[i].baseAddr:x}, DAC: {legacyHeaps[i].baseAddr:x}");
+                            Debug.Assert(codeHeaps[i].currentAddr == legacyHeaps[i].currentAddr,
+                                $"cDAC heap[{i}] currentAddr: {codeHeaps[i].currentAddr:x}, DAC: {legacyHeaps[i].currentAddr:x}");
+                        }
+                    }
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetDacModuleHandle(void* phModule)
         => _legacyImpl is not null ? _legacyImpl.GetDacModuleHandle(phModule) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetDomainFromContext(ClrDataAddress context, ClrDataAddress* domain)
@@ -2621,10 +2702,10 @@ public sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            if (frameAddr == 0 || ppMD == null)
+            if (frameAddr == 0 || ppMD is null)
                 throw new ArgumentException();
 
-            IStackWalk stackWalkContract = _target.Contracts.StackWalk;
+            Contracts.IStackWalk stackWalkContract = _target.Contracts.StackWalk;
             TargetPointer methodDescPtr = stackWalkContract.GetMethodDescPtr(frameAddr.ToTargetPointer(_target));
             if (methodDescPtr == TargetPointer.Null)
                 throw new ArgumentException();
@@ -3902,8 +3983,79 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSStackRefEnum : ISOSStackRefEnum
+    {
+        private readonly SOSStackRefData[] _refs;
+        private uint _index;
+
+        public SOSStackRefEnum(SOSStackRefData[] refs)
+        {
+            _refs = refs;
+        }
+
+        int ISOSStackRefEnum.Next(uint count, SOSStackRefData[] refs, uint* pFetched)
+        {
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pFetched is null || refs is null)
+                    throw new NullReferenceException();
+
+                count = Math.Min(count, (uint)refs.Length);
+                uint written = 0;
+                while (written < count && _index < _refs.Length)
+                    refs[written++] = _refs[(int)_index++];
+
+                *pFetched = written;
+                // COMPAT: S_FALSE means more items remain, S_OK means enumeration is complete.
+                // This is the inverse of the standard COM IEnumXxx convention, but matches
+                // the legacy DAC behavior (see SOSHandleEnum.Next).
+                hr = _index < _refs.Length ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+
+            return hr;
+        }
+
+        int ISOSStackRefEnum.EnumerateErrors(DacComNullableByRef<ISOSStackRefErrorEnum> ppEnum)
+        {
+            return HResults.E_NOTIMPL;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _index = Math.Min(_index + count, (uint)_refs.Length);
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            _index = 0;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            if (pCount is null) return HResults.E_POINTER;
+            *pCount = (uint)_refs.Length;
+            return HResults.S_OK;
+        }
+    }
+
     int ISOSDacInterface.GetStackReferences(int osThreadID, DacComNullableByRef<ISOSStackRefEnum> ppEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
+    {
+        // Stack reference enumeration is not yet complete in the cDAC — capital-F Frame
+        // GC root scanning (ScanFrameRoots) is still pending. Fall through to the legacy
+        // DAC so that consumers (dump tests, SOS) continue to work while the implementation
+        // is in progress.
+        return _legacyImpl is not null
+            ? _legacyImpl.GetStackReferences(osThreadID, ppEnum)
+            : HResults.E_NOTIMPL;
+    }
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
     {
