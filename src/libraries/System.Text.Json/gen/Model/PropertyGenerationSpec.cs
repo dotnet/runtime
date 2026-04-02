@@ -153,6 +153,12 @@ namespace System.Text.Json.SourceGeneration
         public required TypeRef? ConverterType { get; init; }
 
         /// <summary>
+        /// Whether this property represents a flattened tuple element.
+        /// When true, the property is always included in serialization regardless of IncludeFields settings.
+        /// </summary>
+        public bool IsTupleElement { get; init; }
+
+        /// <summary>
         /// Determines if the specified property should be included in the fast-path method body.
         /// </summary>
         public bool ShouldIncludePropertyForFastPath(ContextGenerationSpec contextSpec)
@@ -167,6 +173,12 @@ namespace System.Text.Json.SourceGeneration
             if (!CanUseGetter)
             {
                 return false;
+            }
+
+            // Tuple elements are always included regardless of IncludeFields
+            if (IsTupleElement)
+            {
+                return true;
             }
 
             // Discard fields when JsonInclude or IncludeFields aren't enabled.

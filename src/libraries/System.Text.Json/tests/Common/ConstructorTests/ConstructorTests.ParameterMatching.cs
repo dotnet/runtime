@@ -519,23 +519,18 @@ namespace System.Text.Json.Serialization.Tests
             var obj = await Serializer.DeserializeWrapper<Tuple<int, int, int, int, int, int, int>>(json);
             Assert.Equal(json, await Serializer.SerializeWrapper(obj));
 
-#if !BUILDING_SOURCE_GENERATOR_TESTS // Source-gen implementations aren't binding with tuples with more than 7 generic args
-            // More than seven arguments needs special casing and can be revisted.
-            // Newtonsoft.Json fails in the same way.
-            json = await Serializer.SerializeWrapper(Tuple.Create(1, 2, 3, 4, 5, 6, 7, 8));
-            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Tuple<int, int, int, int, int, int, int, int>>(json));
-
-            // Invalid JSON representing a tuple with more than seven items yields an ArgumentException from the constructor.
-            // System.ArgumentException : The last element of an eight element tuple must be a Tuple.
-            // We pass the number 8, not a new Tuple<int>(8).
-            // Fixing this needs special casing. Newtonsoft behaves the same way.
-            string invalidJson = """{"Item1":1,"Item2":2,"Item3":3,"Item4":4,"Item5":5,"Item6":6,"Item7":7,"Item1":8}""";
-            await Assert.ThrowsAsync<ArgumentException>(() => Serializer.DeserializeWrapper<Tuple<int, int, int, int, int, int, int, int>>(invalidJson));
-#endif
+            // More than seven: round-trip now works with flattened tuple metadata
+            var tuple8 = new Tuple<int, int, int, int, int, int, int, Tuple<int>>(1, 2, 3, 4, 5, 6, 7, new Tuple<int>(8));
+            json = await Serializer.SerializeWrapper(tuple8);
+            Assert.Contains("\"Item8\":8", json);
+            Assert.DoesNotContain("Rest", json);
+            var obj8 = await Serializer.DeserializeWrapper<Tuple<int, int, int, int, int, int, int, Tuple<int>>>(json);
+            Assert.Equal(json, await Serializer.SerializeWrapper(obj8));
         }
 
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,,>))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<>))]
         public async Task TupleDeserialization_DefaultValuesUsed_WhenJsonMissing()
         {
             // Seven items; only three provided.
@@ -576,11 +571,52 @@ namespace System.Text.Json.Serialization.Tests
                 "Z":0
                 """, serialized);
 
-            // Although no Json is provided for the 8th item, ArgumentException is still thrown as we use default(int) as the argument/
-            // System.ArgumentException : The last element of an eight element tuple must be a Tuple.
-            // We pass the number 8, not a new Tuple<int>(default(int)).
-            // Fixing this needs special casing. Newtonsoft behaves the same way.
-            await Assert.ThrowsAsync<ArgumentException>(() => Serializer.DeserializeWrapper<Tuple<int, string, int, string, string, int, Point_3D_Struct, int>>(input));
+            // With flattened metadata, 8th item now works correctly with default values
+            var obj8 = await Serializer.DeserializeWrapper<Tuple<int, string, int, string, string, int, Point_3D_Struct, Tuple<int>>>(input);
+            Assert.Equal(0, obj8.Rest.Item1); // default(int) for the 8th item
+        }
+
+        [Fact]
+        public async Task ValueTupleRoundTrip_TenElements()
+        {
+            var tuple = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+            string json = await Serializer.SerializeWrapper(tuple);
+
+            for (int i = 1; i <= 10; i++)
+            {
+                Assert.Contains($"\"Item{i}\":{i}", json);
+            }
+
+            Assert.DoesNotContain("Rest", json);
+
+            // Verify a smaller ValueTuple (<=7 elements) round-trips correctly
+            var small = (1, 2, 3);
+            string smallJson = await Serializer.SerializeWrapper(small);
+            var smallDeserialized = await Serializer.DeserializeWrapper<(int, int, int)>(smallJson);
+            Assert.Equal(small, smallDeserialized);
+        }
+
+        [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,,>))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,>))]
+        public async Task ReferenceTupleRoundTrip_TenElements()
+        {
+            var tuple = new Tuple<int, int, int, int, int, int, int, Tuple<int, int, int>>(
+                1, 2, 3, 4, 5, 6, 7, new Tuple<int, int, int>(8, 9, 10));
+            string json = await Serializer.SerializeWrapper(tuple);
+
+            for (int i = 1; i <= 10; i++)
+            {
+                Assert.Contains($"\"Item{i}\":{i}", json);
+            }
+
+            Assert.DoesNotContain("Rest", json);
+
+            var deserialized = await Serializer.DeserializeWrapper<Tuple<int, int, int, int, int, int, int, Tuple<int, int, int>>>(json);
+            Assert.Equal(tuple.Item1, deserialized.Item1);
+            Assert.Equal(tuple.Item7, deserialized.Item7);
+            Assert.Equal(tuple.Rest.Item1, deserialized.Rest.Item1);
+            Assert.Equal(tuple.Rest.Item3, deserialized.Rest.Item3);
         }
 
         [Fact]

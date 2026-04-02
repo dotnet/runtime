@@ -149,12 +149,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public virtual void RoundTripValueTuple()
         {
-            bool isIncludeFieldsEnabled = DefaultContext.IsIncludeFieldsEnabled;
-
             var tuple = (Label1: "string", Label2: 42, true);
-            string expectedJson = isIncludeFieldsEnabled
-                ? "{\"Item1\":\"string\",\"Item2\":42,\"Item3\":true}"
-                : "{}";
+            // Tuple elements are always serialized regardless of IncludeFields
+            string expectedJson = "{\"Item1\":\"string\",\"Item2\":42,\"Item3\":true}";
 
             string json = JsonSerializer.Serialize(tuple, DefaultContext.ValueTupleStringInt32Boolean);
             Assert.Equal(expectedJson, json);
@@ -162,21 +159,12 @@ namespace System.Text.Json.SourceGeneration.Tests
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
                 // Deserialization not supported in fast path serialization only mode
-                // but if there are no fields we won't throw because we throw on the property lookup
-                if (isIncludeFieldsEnabled)
-                {
-                    Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean));
-                }
-                else
-                {
-                    (string, int, bool) obj = JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean);
-                    Assert.Equal(default((string, int, bool)), obj);
-                }
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean));
             }
             else
             {
                 var deserializedTuple = JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean);
-                Assert.Equal(isIncludeFieldsEnabled ? tuple : default, deserializedTuple);
+                Assert.Equal(tuple, deserializedTuple);
             }
         }
 

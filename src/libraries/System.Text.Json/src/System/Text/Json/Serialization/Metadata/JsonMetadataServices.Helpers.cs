@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Reflection;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -155,7 +156,7 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
-                if (jsonPropertyInfo.MemberType == MemberTypes.Field && !jsonPropertyInfo.SrcGen_HasJsonInclude && !typeInfo.Options.IncludeFields)
+                if (jsonPropertyInfo.MemberType == MemberTypes.Field && !jsonPropertyInfo.SrcGen_HasJsonInclude && !typeInfo.Options.IncludeFields && !typeInfo.Type.IsTupleType())
                 {
                     continue;
                 }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -97,8 +97,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(List<Tuple<string, double>>))]
         [JsonSerializable(typeof(Tuple<int, int, int, int, int, int, int>))]
         [JsonSerializable(typeof(Tuple<int, int, int, int, int, int, int, int>))]
+        [JsonSerializable(typeof(Tuple<int, int, int, int, int, int, int, Tuple<int>>))]
         [JsonSerializable(typeof(Tuple<int, string, int, string, string, int, Point_3D_Struct>))]
-        [JsonSerializable(typeof(Tuple<int, string, int, string, string, int, Point_3D_Struct, int>))]
+        [JsonSerializable(typeof(Tuple<int, string, int, string, string, int, Point_3D_Struct, Tuple<int>>))]
+        [JsonSerializable(typeof(Tuple<int, int, int, int, int, int, int, Tuple<int, int, int>>))]
+        [JsonSerializable(typeof((int, int, int, int, int, int, int, int, int, int)))]
+        [JsonSerializable(typeof((int, int, int)))]
         [JsonSerializable(typeof(Point_3D[]))]
         [JsonSerializable(typeof(Struct_With_Ctor_With_64_Params))]
         [JsonSerializable(typeof(Class_With_Ctor_With_64_Params))]
@@ -268,9 +272,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(List<Tuple<string, double>>))]
         [JsonSerializable(typeof(Tuple<int, int, int, int, int, int, int>))]
         [JsonSerializable(typeof(Tuple<int, int, int, int, int, int, int, int>))]
+        [JsonSerializable(typeof(Tuple<int, int, int, int, int, int, int, Tuple<int>>))]
         [JsonSerializable(typeof(Tuple<int, string, int, string, string, int, Point_3D_Struct>))]
-        [JsonSerializable(typeof(Tuple<int, string, int, string, string, int, Point_3D_Struct, int>))]
+        [JsonSerializable(typeof(Tuple<int, string, int, string, string, int, Point_3D_Struct, Tuple<int>>))]
+        [JsonSerializable(typeof(Tuple<int, int, int, int, int, int, int, Tuple<int, int, int>>))]
         [JsonSerializable(typeof(Point_3D[]))]
+        [JsonSerializable(typeof((int, int, int, int, int, int, int, int, int, int)))]
+        [JsonSerializable(typeof((int, int, int)))]
         [JsonSerializable(typeof(Struct_With_Ctor_With_64_Params))]
         [JsonSerializable(typeof(Class_With_Ctor_With_64_Params))]
         [JsonSerializable(typeof(Class_With_Ctor_With_65_Params))]

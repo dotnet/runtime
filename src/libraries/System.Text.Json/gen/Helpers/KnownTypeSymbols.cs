@@ -363,6 +363,55 @@ namespace System.Text.Json.SourceGeneration
             return false;
         }
 
+        /// <summary>
+        /// Determines whether the specified type symbol is a System.Tuple generic type.
+        /// </summary>
+        public bool IsReferenceTupleType(INamedTypeSymbol type)
+        {
+            if (!type.IsGenericType)
+            {
+                return false;
+            }
+
+            INamedTypeSymbol def = type.ConstructedFrom;
+            return def.Arity switch
+            {
+                1 => SymbolEqualityComparer.Default.Equals(def, TupleOfT1Type),
+                2 => SymbolEqualityComparer.Default.Equals(def, TupleOfT2Type),
+                3 => SymbolEqualityComparer.Default.Equals(def, TupleOfT3Type),
+                4 => SymbolEqualityComparer.Default.Equals(def, TupleOfT4Type),
+                5 => SymbolEqualityComparer.Default.Equals(def, TupleOfT5Type),
+                6 => SymbolEqualityComparer.Default.Equals(def, TupleOfT6Type),
+                7 => SymbolEqualityComparer.Default.Equals(def, TupleOfT7Type),
+                8 => SymbolEqualityComparer.Default.Equals(def, TupleOfT8Type),
+                _ => false,
+            };
+        }
+
+        public INamedTypeSymbol? TupleOfT1Type => GetOrResolveType("System.Tuple`1", ref _TupleOfT1Type);
+        private Option<INamedTypeSymbol?> _TupleOfT1Type;
+
+        public INamedTypeSymbol? TupleOfT2Type => GetOrResolveType("System.Tuple`2", ref _TupleOfT2Type);
+        private Option<INamedTypeSymbol?> _TupleOfT2Type;
+
+        public INamedTypeSymbol? TupleOfT3Type => GetOrResolveType("System.Tuple`3", ref _TupleOfT3Type);
+        private Option<INamedTypeSymbol?> _TupleOfT3Type;
+
+        public INamedTypeSymbol? TupleOfT4Type => GetOrResolveType("System.Tuple`4", ref _TupleOfT4Type);
+        private Option<INamedTypeSymbol?> _TupleOfT4Type;
+
+        public INamedTypeSymbol? TupleOfT5Type => GetOrResolveType("System.Tuple`5", ref _TupleOfT5Type);
+        private Option<INamedTypeSymbol?> _TupleOfT5Type;
+
+        public INamedTypeSymbol? TupleOfT6Type => GetOrResolveType("System.Tuple`6", ref _TupleOfT6Type);
+        private Option<INamedTypeSymbol?> _TupleOfT6Type;
+
+        public INamedTypeSymbol? TupleOfT7Type => GetOrResolveType("System.Tuple`7", ref _TupleOfT7Type);
+        private Option<INamedTypeSymbol?> _TupleOfT7Type;
+
+        public INamedTypeSymbol? TupleOfT8Type => GetOrResolveType("System.Tuple`8", ref _TupleOfT8Type);
+        private Option<INamedTypeSymbol?> _TupleOfT8Type;
+
         private INamedTypeSymbol? GetOrResolveType(Type type, ref Option<INamedTypeSymbol?> field)
             => GetOrResolveType(type.FullName!, ref field);
 

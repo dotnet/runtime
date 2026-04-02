@@ -29,6 +29,10 @@ namespace System.Text.Json.Serialization.Metadata
 
         public abstract Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo);
 
+        public abstract Func<object, TProperty> CreateTupleElementGetter<TProperty>(MemberInfo[] memberChain);
+
+        public abstract Action<object, TProperty> CreateTupleElementSetter<TProperty>(MemberInfo[] memberChain);
+
         public virtual void Clear() { }
     }
 }
