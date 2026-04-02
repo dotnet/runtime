@@ -1048,8 +1048,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process GetProcessById(int processId)
         {
-            // Avoid calling GetProcessById(processId, ".") so that the remote machine code path
-            // (reachable from the 2-arg overload) is not included when only local machine support is needed.
+            // Avoid calling GetProcessById(processId, ".") so that remote machine code is not included when only local machine support is needed.
             if (!ProcessManager.IsProcessRunning(processId))
             {
                 throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
@@ -1071,8 +1070,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName)
         {
-            // Avoid calling GetProcessesByName(processName, ".") so that the remote machine code path
-            // (reachable from the 2-arg overload on Windows) is not included when only local machine support is needed.
+            // Avoid calling GetProcessesByName(processName, ".") so that remote machine code is not included when only local machine support is needed.
             ProcessInfo[] processInfos = ProcessManager.GetLocalProcessInfos(processName);
             Process[] processes = new Process[processInfos.Length];
             for (int i = 0; i < processInfos.Length; i++)
@@ -1094,8 +1092,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses()
         {
-            // Avoid calling GetProcesses(".") so that the remote machine code path
-            // (reachable from the 1-arg overload on Windows) is not included when only local machine support is needed.
+            // Avoid calling GetProcesses(".") so that remote machine code is not included when only local machine support is needed.
             ProcessInfo[] processInfos = ProcessManager.GetLocalProcessInfos(processNameFilter: null);
             Process[] processes = new Process[processInfos.Length];
             for (int i = 0; i < processInfos.Length; i++)
