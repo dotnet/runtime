@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA1);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L1024_N160_SHA256_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA256);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L1024_N160_SHA384_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA384);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L1024_N160_SHA384_4()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -167,7 +167,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA384);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L1024_N160_SHA512_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA512);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L1024_N160_SHA512_4()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -247,7 +247,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA512);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L2048_N256_SHA256_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -304,7 +304,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA256);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L2048_N256_SHA384_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -361,7 +361,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA384);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L2048_N256_SHA1_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -418,7 +418,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA1);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L2048_N256_SHA384_3()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -475,7 +475,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA384);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L3072_N256_SHA256_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -544,7 +544,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA256);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L3072_N256_SHA384_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -613,7 +613,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA384);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L3072_N256_SHA512_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
@@ -682,7 +682,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA512);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSASignVerify), nameof(SupportsFips186_3))]
         public void Fips186_3_L3072_N256_SHA512_12()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip

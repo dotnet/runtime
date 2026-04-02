@@ -48,7 +48,7 @@ namespace System.Net.Quic.Tests
     }
 
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest), nameof(QuicTestBase.IsNotAzureLinux3VM))]
     public class MsQuicTests : QuicTestBase, IClassFixture<CertificateSetup>
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();

@@ -434,6 +434,9 @@
       <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'">
         <Type>NoMonoAot</Type>
       </MarkerFile>
+      <MarkerFile Include="$(IntermediateOutputPath)\ExpectedExitCode.txt" Condition="'$(ExpectedExitCode)' != '' and ('$(IsMergedTestRunnerAssembly)' == 'true' or '$(BuildAllTestsAsStandalone)' == 'true') and '$(CLRTestKind)' != 'SharedLibrary'">
+        <Type>$(ExpectedExitCode)</Type>
+      </MarkerFile>
       <Content Include="@(MarkerFile)" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 

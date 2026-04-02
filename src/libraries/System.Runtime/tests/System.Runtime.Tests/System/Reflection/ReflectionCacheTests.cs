@@ -77,6 +77,7 @@ namespace System.Reflection.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50978", TestRuntimes.Mono)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataUpdateSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void InvokeClearCache_NoExceptions()
         {
             Action<Type[]> clearCache = GetClearCacheMethod();

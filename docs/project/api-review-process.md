@@ -67,7 +67,7 @@ APIs and some code samples that show how it should be used. If changes are neces
 * **Fast track**. If you need to bypass the backlog apply both `api-ready-for-review` and `blocking`. All blocking issues are looked at before we walk the backlog.
 * **Dedicated review**. This only applies to area owners. If an issue you are the area owner for needs an hour or longer, send an email to FXDC and we book dedicated time. Rule of thumb: if the API proposal has more than a dozen APIs and/or the APIs have complex policy, then you need 60 min or more. When in doubt, send mail to FXDC.
 
-API Review meetings typically occur twice per week, on Tuesdays and Thursdays from 10am to 12pm Pacific Time. The schedule is available at https://apireview.net/schedule.
+API Review meetings typically occur once per week, on Tuesdays from 10am to 12pm Pacific Time. The schedule is available at https://apireview.net/schedule.
 
 ## Pull requests
 

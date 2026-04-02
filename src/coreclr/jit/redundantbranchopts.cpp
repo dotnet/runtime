@@ -85,7 +85,7 @@ PhaseStatus Compiler::optRedundantBranches()
                     for (BasicBlock* succ : bbTrue->Succs())
                     {
                         JITDUMP("Will retry RBO in " FMT_BB "; pred " FMT_BB " now unreachable\n", succ->bbNum,
-                                bbFalse->bbNum);
+                                bbTrue->bbNum);
                         m_compiler->optRedundantBranch(succ);
                     }
                 }
@@ -377,7 +377,8 @@ static const RelopImplicationRule s_implicationRules[] =
 // clang-format on
 
 //------------------------------------------------------------------------
-// optRedundantBranch: try and optimize a possibly redundant branch
+// optRelopImpliesRelop: determine if a dominating relop implies the value
+//   of another relop.
 //
 // Arguments:
 //   rii - struct with relop implication information
@@ -589,12 +590,12 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 }
 
 //------------------------------------------------------------------------
-// optRelopTryInferWithOneEqualOperand: Given a domnating relop R(x, y) and
+// optRelopTryInferWithOneEqualOperand: Given a dominating relop R(x, y) and
 // another relop R*(a, b) that share an operand, try to see if we can infer
 // something about R*(a, b).
 //
 // Arguments:
-//   domApp  - The dominating relop R*(x, y)
+//   domApp  - The dominating relop R(x, y)
 //   treeApp - The dominated relop R*(a, b)
 //   rii     - [out] struct with relop implication information
 //
@@ -1056,6 +1057,9 @@ struct JumpThreadInfo
 // Arguments:
 //   block - block in question
 //   domBlock - dom block used in inferencing (if any)
+//
+// Returns:
+//   True if the block is suitable for jump threading.
 //
 bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock)
 {
@@ -1566,7 +1570,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
         //
         if (vnStore->IsVNConstant(substVN))
         {
-            const bool relopIsTrue = (substVN == vnStore->VNZeroForType(TYP_INT)) ? 0 : 1;
+            const bool relopIsTrue = (substVN != vnStore->VNZeroForType(TYP_INT));
             JITDUMP("... substituted VN implies relop is %d when coming from pred " FMT_BB "\n", relopIsTrue,
                     predBlock->bbNum);
 
@@ -1605,7 +1609,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
             jti.m_numAmbiguousPreds++;
 
             // If this was the first ambiguous pred, remember the substVN
-            // and the block that providced it, case we can use later to
+            // and the block that provided it, in case we can use later to
             // sharpen the predicate's liberal normal VN.
             //
             if ((jti.m_numAmbiguousPreds == 1) && (substVN != treeNormVN))
@@ -2243,7 +2247,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 //   including paths involving EH flow.
 //
 // Arguments:
-//    fromBlock     - staring block
+//    fromBlock     - starting block
 //    toBlock       - ending block
 //    excludedBlock - ignore paths that flow through this block
 //
@@ -2269,7 +2273,7 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
 //   including paths involving EH flow. Same as optReachable, but with a budget check.
 //
 // Arguments:
-//    fromBlock     - staring block
+//    fromBlock     - starting block
 //    toBlock       - ending block
 //    excludedBlock - ignore paths that flow through this block
 //    pBudget       - number of blocks to examine before returning BudgetExceeded
@@ -2312,46 +2316,27 @@ Compiler::ReachabilityResult Compiler::optReachableWithBudget(BasicBlock* const 
         {
             continue;
         }
-        BasicBlockVisit result;
         bool            budgetExceeded = false;
-        if (pBudget == nullptr)
-        {
-            result = nextBlock->VisitAllSuccs(this, [this, toBlock, &stack](BasicBlock* succ) {
-                if (succ == toBlock)
-                {
-                    return BasicBlockVisit::Abort;
-                }
+        BasicBlockVisit result =
+            nextBlock->VisitAllSuccs(this, [this, toBlock, &stack, &budgetExceeded, pBudget](BasicBlock* succ) {
+            if (succ == toBlock)
+            {
+                return BasicBlockVisit::Abort;
+            }
 
-                if (BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
-                {
-                    stack.Push(succ);
-                }
-                return BasicBlockVisit::Continue;
-            });
-        }
-        else
-        {
-            result =
-                nextBlock->VisitAllSuccs(this, [this, toBlock, &stack, &budgetExceeded, pBudget](BasicBlock* succ) {
-                if (succ == toBlock)
-                {
-                    return BasicBlockVisit::Abort;
-                }
+            if ((pBudget != nullptr) && (--(*pBudget) <= 0))
+            {
+                budgetExceeded = true;
+                return BasicBlockVisit::Abort;
+            }
 
-                if (--(*pBudget) <= 0)
-                {
-                    budgetExceeded = true;
-                    return BasicBlockVisit::Abort;
-                }
+            if (BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
+            {
+                stack.Push(succ);
+            }
 
-                if (BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
-                {
-                    stack.Push(succ);
-                }
-
-                return BasicBlockVisit::Continue;
-            });
-        }
+            return BasicBlockVisit::Continue;
+        });
 
         if (result == BasicBlockVisit::Abort)
         {

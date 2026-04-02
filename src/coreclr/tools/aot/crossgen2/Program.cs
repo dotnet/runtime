@@ -87,7 +87,7 @@ namespace ILCompiler
             TargetOS targetOS = Get(_command.TargetOS);
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
-            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst)
+            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser)
             {
                 // These platforms do not support jitted code, so we want to ensure that we don't
                 // need to fall back to the interpreter for any hardware-intrinsic optimizations.
@@ -624,6 +624,8 @@ namespace ILCompiler
                     nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
                     nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
+                    nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
+                    nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
 
                     builder
                         .UseMapFile(Get(_command.Map))

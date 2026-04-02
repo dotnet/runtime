@@ -391,17 +391,40 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '^':
-                        _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Bol : RegexNodeKind.Beginning, _options);
+                        if ((_options & (RegexOptions.AnyNewLine | RegexOptions.Multiline)) == (RegexOptions.AnyNewLine | RegexOptions.Multiline))
+                        {
+                            _unit = AnyNewLineBolNode();
+                        }
+                        else
+                        {
+                            _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Bol : RegexNodeKind.Beginning, _options);
+                        }
                         break;
 
                     case '$':
-                        _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
+                        if ((_options & RegexOptions.AnyNewLine) != 0)
+                        {
+                            _unit = (_options & RegexOptions.Multiline) != 0 ? AnyNewLineEolNode() : AnyNewLineEndZNode();
+                        }
+                        else
+                        {
+                            _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
+                        }
                         break;
 
                     case '.':
-                        _unit = (_options & RegexOptions.Singleline) != 0 ?
-                            new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass) :
-                            new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
+                        if ((_options & RegexOptions.Singleline) != 0)
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass);
+                        }
+                        else if ((_options & RegexOptions.AnyNewLine) != 0)
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.NotAnyNewLineClass);
+                        }
+                        else
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
+                        }
                         break;
 
                     case '{':
@@ -543,7 +566,11 @@ namespace System.Text.RegularExpressions
             return _concatenation;
         }
 
-        /// <summary>Scans contents of [] (not including []'s), and converts to a RegexCharClass</summary>
+        /// <summary>Scans contents of [] (not including []'s), and converts to a RegexCharClass.</summary>
+        /// <remarks>
+        /// Character class subtractions (e.g. [a-z-[aeiou]]) are handled iteratively using an
+        /// explicit parent stack to avoid stack overflow with deeply nested subtractions.
+        /// </remarks>
         private RegexCharClass? ScanCharClass(bool caseInsensitive, bool scanOnly)
         {
             char ch;
@@ -551,6 +578,9 @@ namespace System.Text.RegularExpressions
             bool inRange = false;
             bool firstChar = true;
             bool closed = false;
+            bool startingNewLevel = false;
+
+            List<RegexCharClass?>? parents = null;
 
             RegexCharClass? charClass = scanOnly ? null : new RegexCharClass();
 
@@ -569,12 +599,60 @@ namespace System.Text.RegularExpressions
 
             for (; _pos < _pattern.Length; firstChar = false)
             {
+                // When entering a new subtraction level, reset state for the nested character class.
+                if (startingNewLevel)
+                {
+                    startingNewLevel = false;
+                    firstChar = true;
+                    if (_pos < _pattern.Length && _pattern[_pos] == '^')
+                    {
+                        _pos++;
+                        if (!scanOnly)
+                        {
+                            charClass!.Negate = true;
+                        }
+                        if ((_options & RegexOptions.ECMAScript) != 0 && _pos < _pattern.Length && _pattern[_pos] == ']')
+                        {
+                            firstChar = false;
+                        }
+                    }
+                    if (_pos >= _pattern.Length)
+                    {
+                        break;
+                    }
+                }
+
                 bool translatedChar = false;
                 ch = _pattern[_pos++];
                 if (ch == ']')
                 {
                     if (!firstChar)
                     {
+                        // Finalize this character class level.
+                        if (!scanOnly && caseInsensitive)
+                        {
+                            charClass!.AddCaseEquivalences(_culture);
+                        }
+
+                        // If there are parent levels, pop back to the parent and set the
+                        // current class as its subtraction.
+                        if (parents is { Count: > 0 })
+                        {
+                            RegexCharClass? parent = parents[parents.Count - 1];
+                            parents.RemoveAt(parents.Count - 1);
+                            if (!scanOnly)
+                            {
+                                parent!.AddSubtraction(charClass!);
+
+                                if (_pos < _pattern.Length && _pattern[_pos] != ']')
+                                {
+                                    throw MakeException(RegexParseError.ExclusionGroupNotLast, SR.ExclusionGroupNotLast);
+                                }
+                            }
+                            charClass = parent;
+                            continue;
+                        }
+
                         closed = true;
                         break;
                     }
@@ -675,14 +753,13 @@ namespace System.Text.RegularExpressions
                         {
                             // We thought we were in a range, but we're actually starting a subtraction.
                             // In that case, we'll add chPrev to our char class, skip the opening [, and
-                            // scan the new character class recursively.
+                            // scan the new character class iteratively.
                             charClass!.AddChar(chPrev);
-                            charClass.AddSubtraction(ScanCharClass(caseInsensitive, scanOnly)!);
-
-                            if (_pos < _pattern.Length && _pattern[_pos] != ']')
-                            {
-                                throw MakeException(RegexParseError.ExclusionGroupNotLast, SR.ExclusionGroupNotLast);
-                            }
+                            (parents ??= new List<RegexCharClass?>()).Add(charClass);
+                            charClass = new RegexCharClass();
+                            chPrev = '\0';
+                            startingNewLevel = true;
+                            continue;
                         }
                         else
                         {
@@ -707,16 +784,14 @@ namespace System.Text.RegularExpressions
                     // we aren't in a range, and now there is a subtraction.  Usually this happens
                     // only when a subtraction follows a range, like [a-z-[b]]
                     _pos++;
-                    RegexCharClass? rcc = ScanCharClass(caseInsensitive, scanOnly);
+                    (parents ??= new List<RegexCharClass?>()).Add(scanOnly ? null : charClass);
                     if (!scanOnly)
                     {
-                        charClass!.AddSubtraction(rcc!);
-
-                        if (_pos < _pattern.Length && _pattern[_pos] != ']')
-                        {
-                            throw MakeException(RegexParseError.ExclusionGroupNotLast, SR.ExclusionGroupNotLast);
-                        }
+                        charClass = new RegexCharClass();
                     }
+                    chPrev = '\0';
+                    startingNewLevel = true;
+                    continue;
                 }
                 else
                 {
@@ -730,11 +805,6 @@ namespace System.Text.RegularExpressions
             if (!closed)
             {
                 throw MakeException(RegexParseError.UnterminatedBracket, SR.UnterminatedBracket);
-            }
-
-            if (!scanOnly && caseInsensitive)
-            {
-                charClass!.AddCaseEquivalences(_culture);
             }
 
             return charClass;
@@ -1000,8 +1070,9 @@ namespace System.Text.RegularExpressions
                         --_pos;
 
                         nodeType = RegexNodeKind.Group;
-                        // Disallow options in the children of a testgroup node
-                        if (_group!.Kind != RegexNodeKind.ExpressionConditional)
+                        // While parsing the test of a conditional (ExpressionConditional with no children yet),
+                        // disallow inline options; allow them once the test has been parsed and in the yes/no branches.
+                        if (_group!.Kind != RegexNodeKind.ExpressionConditional || _group.ChildCount() > 0)
                         {
                             ScanOptions();
                         }
@@ -1084,11 +1155,15 @@ namespace System.Text.RegularExpressions
                 case 'B':
                 case 'A':
                 case 'G':
-                case 'Z':
                 case 'z':
                     _pos++;
                     return scanOnly ? null :
                         new RegexNode(TypeFromCode(ch), _options);
+
+                case 'Z':
+                    _pos++;
+                    return scanOnly ? null :
+                        (_options & RegexOptions.AnyNewLine) != 0 ? AnyNewLineEndZNode() : new RegexNode(RegexNodeKind.EndZ, _options);
 
                 case 'w':
                     _pos++;
@@ -1647,6 +1722,125 @@ namespace System.Text.RegularExpressions
             }
 
             return capname;
+        }
+
+        /// <summary>
+        /// Creates (?!(?&lt;=\r)\n) — a negative lookahead that blocks matching
+        /// between \r and \n of a \r\n sequence. Used as a guard by all
+        /// AnyNewLine anchor lowerings to prevent anchors from firing
+        /// at the \r\n boundary.
+        /// </summary>
+        private RegexNode AnyNewLineCrLfGuardNode()
+        {
+            RegexOptions lookaheadOpts = _options & ~RegexOptions.RightToLeft;
+            RegexOptions lookbehindOpts = _options | RegexOptions.RightToLeft;
+            RegexOptions lookaheadOptsNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lookbehindOptsNoCase = lookbehindOpts & ~RegexOptions.IgnoreCase;
+
+            // (?<=\r)
+            var lookbehindCr = new RegexNode(RegexNodeKind.PositiveLookaround, lookbehindOpts);
+            lookbehindCr.AddChild(new RegexNode(RegexNodeKind.One, lookbehindOptsNoCase, '\r'));
+
+            // (?<=\r)\n
+            var crThenLf = new RegexNode(RegexNodeKind.Concatenate, lookaheadOpts);
+            crThenLf.AddChild(lookbehindCr);
+            crThenLf.AddChild(new RegexNode(RegexNodeKind.One, lookaheadOptsNoCase, '\n'));
+
+            // (?!(?<=\r)\n)
+            var guard = new RegexNode(RegexNodeKind.NegativeLookaround, lookaheadOpts);
+            guard.AddChild(crThenLf);
+
+            return guard;
+        }
+
+        /// <summary>
+        /// Builds a tree equivalent to $ or \Z with AnyNewLine (non-Multiline).
+        /// Matches at end of string, or before any newline at end of string,
+        /// but not between \r and \n.
+        /// Equivalent to: (?=\r\n\z|[\n\r\v\f\u0085\u2028\u2029]?\z)(?!(?&lt;=\r)\n)
+        /// </summary>
+        private RegexNode AnyNewLineEndZNode()
+        {
+            RegexOptions opts = _options;
+            RegexOptions lookaheadOpts = opts & ~RegexOptions.RightToLeft;
+            RegexOptions lookaheadOptsNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
+
+            // \r\n\z
+            var crlfEnd = new RegexNode(RegexNodeKind.Concatenate, lookaheadOpts);
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, lookaheadOptsNoCase, '\r'));
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, lookaheadOptsNoCase, '\n'));
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
+
+            // [\n\r\v\f\u0085\u2028\u2029]?\z — optional any-newline followed by end of string
+            var anyNewLineOptEnd = new RegexNode(RegexNodeKind.Concatenate, lookaheadOpts);
+            anyNewLineOptEnd.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadOptsNoCase, RegexCharClass.AnyNewLineClass).MakeQuantifier(false, 0, 1));
+            anyNewLineOptEnd.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
+
+            // (?=\r\n\z|[\n\r\v\f\u0085\u2028\u2029]?\z)
+            var innerAlt = new RegexNode(RegexNodeKind.Alternate, lookaheadOpts);
+            innerAlt.AddChild(crlfEnd);
+            innerAlt.AddChild(anyNewLineOptEnd);
+            var lookahead = new RegexNode(RegexNodeKind.PositiveLookaround, lookaheadOpts);
+            lookahead.AddChild(innerAlt);
+
+            // (?=\r\n\z|[\n\r\v\f\u0085\u2028\u2029]?\z)(?!(?<=\r)\n)
+            var result = new RegexNode(RegexNodeKind.Concatenate, opts);
+            result.AddChild(lookahead);
+            result.AddChild(AnyNewLineCrLfGuardNode());
+
+            return result;
+        }
+
+        /// <summary>
+        /// Builds a tree equivalent to $ with AnyNewLine and Multiline.
+        /// Matches before any newline or at end of string, but not between \r and \n.
+        /// Equivalent to: (?=[\n\r\v\f\u0085\u2028\u2029]|\z)(?!(?&lt;=\r)\n)
+        /// </summary>
+        private RegexNode AnyNewLineEolNode()
+        {
+            RegexOptions opts = _options;
+            RegexOptions lookaheadOpts = opts & ~RegexOptions.RightToLeft;
+            RegexOptions lookaheadOptsNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
+
+            // (?=[\n\r\v\f\u0085\u2028\u2029]|\z)
+            var innerAlt = new RegexNode(RegexNodeKind.Alternate, lookaheadOpts);
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadOptsNoCase, RegexCharClass.AnyNewLineClass));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
+            var lookahead = new RegexNode(RegexNodeKind.PositiveLookaround, lookaheadOpts);
+            lookahead.AddChild(innerAlt);
+
+            // (?=[\n\r\v\f\u0085\u2028\u2029]|\z)(?!(?<=\r)\n)
+            var result = new RegexNode(RegexNodeKind.Concatenate, opts);
+            result.AddChild(lookahead);
+            result.AddChild(AnyNewLineCrLfGuardNode());
+
+            return result;
+        }
+
+        /// <summary>
+        /// Builds a tree equivalent to ^ with AnyNewLine and Multiline.
+        /// Matches after any newline or at start of string, but not between \r and \n.
+        /// Equivalent to: (?&lt;=[\n\r\v\f\u0085\u2028\u2029]|\A)(?!(?&lt;=\r)\n)
+        /// </summary>
+        private RegexNode AnyNewLineBolNode()
+        {
+            RegexOptions opts = _options;
+            RegexOptions lookbehindOpts = opts | RegexOptions.RightToLeft;
+            RegexOptions lookbehindOptsNoCase = lookbehindOpts & ~RegexOptions.IgnoreCase;
+
+            // (?<=[\n\r\v\f\u0085\u2028\u2029]|\A)
+            var innerAlt = new RegexNode(RegexNodeKind.Alternate, lookbehindOpts);
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookbehindOptsNoCase, RegexCharClass.AnyNewLineClass));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Beginning, lookbehindOpts));
+            var lookbehind = new RegexNode(RegexNodeKind.PositiveLookaround, lookbehindOpts);
+            lookbehind.AddChild(innerAlt);
+
+            // (?<=[\n\r\v\f\u0085\u2028\u2029]|\A)(?!(?<=\r)\n)
+            var result = new RegexNode(RegexNodeKind.Concatenate, opts);
+            result.AddChild(lookbehind);
+            result.AddChild(AnyNewLineCrLfGuardNode());
+
+            return result;
         }
 
         /// <summary>Returns the node kind for zero-length assertions with a \ code.</summary>

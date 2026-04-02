@@ -40,6 +40,8 @@ public struct X86Context : IPlatformContext
     public readonly uint Size => 0x2cc;
     public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
+    public readonly int StackPointerRegister => 4;
+
     public TargetPointer StackPointer
     {
         readonly get => new(Esp);
@@ -60,6 +62,109 @@ public struct X86Context : IPlatformContext
     {
         X86Unwinder unwinder = new(target);
         unwinder.Unwind(ref this);
+    }
+
+    public bool TrySetRegister(string name, TargetNUInt value)
+    {
+        if (name.Equals("dr0", StringComparison.OrdinalIgnoreCase)) { Dr0 = (uint)value.Value; return true; }
+        if (name.Equals("dr1", StringComparison.OrdinalIgnoreCase)) { Dr1 = (uint)value.Value; return true; }
+        if (name.Equals("dr2", StringComparison.OrdinalIgnoreCase)) { Dr2 = (uint)value.Value; return true; }
+        if (name.Equals("dr3", StringComparison.OrdinalIgnoreCase)) { Dr3 = (uint)value.Value; return true; }
+        if (name.Equals("dr6", StringComparison.OrdinalIgnoreCase)) { Dr6 = (uint)value.Value; return true; }
+        if (name.Equals("dr7", StringComparison.OrdinalIgnoreCase)) { Dr7 = (uint)value.Value; return true; }
+        if (name.Equals("controlword", StringComparison.OrdinalIgnoreCase)) { ControlWord = (uint)value.Value; return true; }
+        if (name.Equals("statusword", StringComparison.OrdinalIgnoreCase)) { StatusWord = (uint)value.Value; return true; }
+        if (name.Equals("tagword", StringComparison.OrdinalIgnoreCase)) { TagWord = (uint)value.Value; return true; }
+        if (name.Equals("erroroffset", StringComparison.OrdinalIgnoreCase)) { ErrorOffset = (uint)value.Value; return true; }
+        if (name.Equals("errorselector", StringComparison.OrdinalIgnoreCase)) { ErrorSelector = (uint)value.Value; return true; }
+        if (name.Equals("dataoffset", StringComparison.OrdinalIgnoreCase)) { DataOffset = (uint)value.Value; return true; }
+        if (name.Equals("dataselector", StringComparison.OrdinalIgnoreCase)) { DataSelector = (uint)value.Value; return true; }
+        if (name.Equals("cr0npxstate", StringComparison.OrdinalIgnoreCase)) { Cr0NpxState = (uint)value.Value; return true; }
+        if (name.Equals("gs", StringComparison.OrdinalIgnoreCase)) { Gs = (uint)value.Value; return true; }
+        if (name.Equals("fs", StringComparison.OrdinalIgnoreCase)) { Fs = (uint)value.Value; return true; }
+        if (name.Equals("es", StringComparison.OrdinalIgnoreCase)) { Es = (uint)value.Value; return true; }
+        if (name.Equals("ds", StringComparison.OrdinalIgnoreCase)) { Ds = (uint)value.Value; return true; }
+        if (name.Equals("edi", StringComparison.OrdinalIgnoreCase)) { Edi = (uint)value.Value; return true; }
+        if (name.Equals("esi", StringComparison.OrdinalIgnoreCase)) { Esi = (uint)value.Value; return true; }
+        if (name.Equals("ebx", StringComparison.OrdinalIgnoreCase)) { Ebx = (uint)value.Value; return true; }
+        if (name.Equals("edx", StringComparison.OrdinalIgnoreCase)) { Edx = (uint)value.Value; return true; }
+        if (name.Equals("ecx", StringComparison.OrdinalIgnoreCase)) { Ecx = (uint)value.Value; return true; }
+        if (name.Equals("eax", StringComparison.OrdinalIgnoreCase)) { Eax = (uint)value.Value; return true; }
+        if (name.Equals("ebp", StringComparison.OrdinalIgnoreCase)) { Ebp = (uint)value.Value; return true; }
+        if (name.Equals("eip", StringComparison.OrdinalIgnoreCase)) { Eip = (uint)value.Value; return true; }
+        if (name.Equals("cs", StringComparison.OrdinalIgnoreCase)) { Cs = (uint)value.Value; return true; }
+        if (name.Equals("eflags", StringComparison.OrdinalIgnoreCase)) { EFlags = (uint)value.Value; return true; }
+        if (name.Equals("esp", StringComparison.OrdinalIgnoreCase)) { Esp = (uint)value.Value; return true; }
+        if (name.Equals("ss", StringComparison.OrdinalIgnoreCase)) { Ss = (uint)value.Value; return true; }
+        return false;
+    }
+
+    public bool TryReadRegister(string name, out TargetNUInt value)
+    {
+        value = default;
+        if (name.Equals("dr0", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr0); return true; }
+        if (name.Equals("dr1", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr1); return true; }
+        if (name.Equals("dr2", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr2); return true; }
+        if (name.Equals("dr3", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr3); return true; }
+        if (name.Equals("dr6", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr6); return true; }
+        if (name.Equals("dr7", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Dr7); return true; }
+        if (name.Equals("controlword", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(ControlWord); return true; }
+        if (name.Equals("statusword", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(StatusWord); return true; }
+        if (name.Equals("tagword", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(TagWord); return true; }
+        if (name.Equals("erroroffset", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(ErrorOffset); return true; }
+        if (name.Equals("errorselector", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(ErrorSelector); return true; }
+        if (name.Equals("dataoffset", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(DataOffset); return true; }
+        if (name.Equals("dataselector", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(DataSelector); return true; }
+        if (name.Equals("cr0npxstate", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Cr0NpxState); return true; }
+        if (name.Equals("gs", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Gs); return true; }
+        if (name.Equals("fs", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Fs); return true; }
+        if (name.Equals("es", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Es); return true; }
+        if (name.Equals("ds", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ds); return true; }
+        if (name.Equals("edi", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Edi); return true; }
+        if (name.Equals("esi", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Esi); return true; }
+        if (name.Equals("ebx", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ebx); return true; }
+        if (name.Equals("edx", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Edx); return true; }
+        if (name.Equals("ecx", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ecx); return true; }
+        if (name.Equals("eax", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Eax); return true; }
+        if (name.Equals("ebp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ebp); return true; }
+        if (name.Equals("eip", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Eip); return true; }
+        if (name.Equals("cs", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Cs); return true; }
+        if (name.Equals("eflags", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(EFlags); return true; }
+        if (name.Equals("esp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Esp); return true; }
+        if (name.Equals("ss", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ss); return true; }
+        return false;
+    }
+
+    public bool TrySetRegister(int number, TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: Eax = (uint)value.Value; return true;
+            case 1: Ecx = (uint)value.Value; return true;
+            case 2: Edx = (uint)value.Value; return true;
+            case 3: Ebx = (uint)value.Value; return true;
+            case 4: Esp = (uint)value.Value; return true;
+            case 5: Ebp = (uint)value.Value; return true;
+            case 6: Esi = (uint)value.Value; return true;
+            case 7: Edi = (uint)value.Value; return true;
+            default: return false;
+        }
+    }
+
+    public bool TryReadRegister(int number, out TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: value = new TargetNUInt(Eax); return true;
+            case 1: value = new TargetNUInt(Ecx); return true;
+            case 2: value = new TargetNUInt(Edx); return true;
+            case 3: value = new TargetNUInt(Ebx); return true;
+            case 4: value = new TargetNUInt(Esp); return true;
+            case 5: value = new TargetNUInt(Ebp); return true;
+            case 6: value = new TargetNUInt(Esi); return true;
+            case 7: value = new TargetNUInt(Edi); return true;
+            default: value = default; return false;
+        }
     }
 
     // Control flags

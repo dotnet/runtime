@@ -177,14 +177,17 @@ namespace System.Collections.Immutable.Tests
             ImmutableList<int> singleElementList = ImmutableList.Create(10);
             Assert.Equal(0, this.GetListQuery(singleElementList).FindLastIndex(0, 1, n => n == 10));
             Assert.Equal(-1, this.GetListQuery(singleElementList).FindLastIndex(0, 1, n => n == 99));
-            Assert.Throws<ArgumentOutOfRangeException>(() => this.GetListQuery(singleElementList).FindLastIndex(1, n => n == 10));
-            Assert.Throws<ArgumentOutOfRangeException>(() => this.GetListQuery(singleElementList).FindLastIndex(1, 1, n => n == 10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(singleElementList).FindLastIndex(1, n => n == 10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(singleElementList).FindLastIndex(1, 1, n => n == 10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => this.GetListQuery(singleElementList).FindLastIndex(0, 2, n => n == 10));
 
             ImmutableList<int> multipleElementList = ImmutableList.Create(1, 2, 3, 4);
             Assert.Equal(2, this.GetListQuery(multipleElementList).FindLastIndex(3, 4, n => n == 3));
-            Assert.Throws<ArgumentOutOfRangeException>(() => this.GetListQuery(multipleElementList).FindLastIndex(4, n => n == 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => this.GetListQuery(multipleElementList).FindLastIndex(4, 1, n => n == 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => this.GetListQuery(multipleElementList).FindLastIndex(4, 4, n => n == 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(multipleElementList).FindLastIndex(4, n => n == 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => this.GetListQuery(multipleElementList).FindLastIndex(2, 4, n => n == 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(multipleElementList).FindLastIndex(4, 1, n => n == 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(multipleElementList).FindLastIndex(4, 4, n => n == 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => this.GetListQuery(multipleElementList).FindLastIndex(3, 5, n => n == 1));
 
             // Create a list with contents: 100,101,102,103,104,100,101,102,103,104
             ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(100, 5).Concat(Enumerable.Range(100, 5)));

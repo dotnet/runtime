@@ -12,7 +12,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class TaskRtTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void RunRunTests()
         {
@@ -128,7 +128,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(taskWithResult2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task<int>(unwrapped) w/ uncanceled token did not end in RanToCompletion state.");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void RunRunTests_Cancellation_Negative()
         {
@@ -168,7 +168,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(taskWithResult3.IsCanceled, "    > FAILED.  Task<int>(unwrapped) w/ canceled token should have ended in Canceled state");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunRunTests_FastPathTests()
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -254,7 +254,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunRunTests_Unwrap_NegativeCases()
         {
             //
@@ -580,7 +580,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsCanceled);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunDelayTests()
         {
             //
@@ -617,7 +617,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(task7.IsCompleted, "RunDelayTests:    > FAILED.  Delay(10000) appears to have completed too soon(2).");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunDelayTests_NegativeCases()
         {
             CancellationTokenSource disposedCTS = new CancellationTokenSource();
@@ -682,7 +682,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TaskDelay_Cancellation_ContinuationsInvokedAsynchronously()
         {
             var cts = new CancellationTokenSource();
@@ -702,7 +702,7 @@ namespace System.Threading.Tasks.Tests
 
         // Test that exceptions are properly wrapped when thrown in various scenarios.
         // Make sure that "indirect" logic does not add superfluous exception wrapping.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunExceptionWrappingTest()
         {
             Action throwException = delegate { throw new InvalidOperationException(); };
@@ -850,7 +850,7 @@ namespace System.Threading.Tasks.Tests
             AsyncExceptionChecker(asyncTaskWithResult, "Task<TResult>-based FromAsync(beginMethod, ...)");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunHideSchedulerTests()
         {
             TaskScheduler[] schedules = new TaskScheduler[2];
@@ -920,7 +920,7 @@ namespace System.Threading.Tasks.Tests
                () => { new TaskCompletionSource<int>(TaskCreationOptions.HideScheduler); });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunDenyChildAttachTests()
         {
             // StartNew, Task and Task<TResult>

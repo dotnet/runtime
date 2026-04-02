@@ -5,7 +5,7 @@
 .assembly extern xunit.core {}
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern mscorlib { }
-.assembly UnitTest { }
+.assembly Covariant_InterfaceUnitTest { }
 
 // ========================================================================================
 // Types that will be used as return types on the various methods

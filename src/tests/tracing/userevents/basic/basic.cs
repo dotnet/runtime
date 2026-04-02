@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Threading;
 using Tracing.UserEvents.Tests.Common;
 using Microsoft.Diagnostics.Tracing;
@@ -25,12 +26,19 @@ namespace Tracing.UserEvents.Tests.Basic
             }
         }
 
-        private readonly static Func<EventPipeEventSource, bool> s_traceValidator = source =>
+        private readonly static Func<int, EventPipeEventSource, bool> s_traceValidator = (traceePid, source) =>
         {
             bool allocationSampledEventFound = false;
+            int eventsFromOtherProcesses = 0;
 
             source.Dynamic.All += (TraceEvent e) =>
             {
+                if (e.ProcessID != traceePid)
+                {
+                    eventsFromOtherProcesses++;
+                    return;
+                }
+
                 if (e.ProviderName == "Microsoft-Windows-DotNETRuntime")
                 {
                     // TraceEvent's ClrTraceEventParser does not know about the AllocationSampled Event, so it shows up as "Unknown(303)"
@@ -43,12 +51,30 @@ namespace Tracing.UserEvents.Tests.Basic
 
             source.Process();
 
+            if (eventsFromOtherProcesses > 0)
+            {
+                Console.WriteLine($"Ignored {eventsFromOtherProcesses} events from processes other than tracee (PID {traceePid}).");
+            }
+
             if (!allocationSampledEventFound)
             {
-                Console.Error.WriteLine("The trace did not contain an AllocationSampled event.");
+                Console.Error.WriteLine($"The trace did not contain an AllocationSampled event from tracee PID {traceePid}.");
             }
             return allocationSampledEventFound;
         };
+
+        private static EventSource FindNativeRuntimeEventSource()
+        {
+            foreach (EventSource source in EventSource.GetSources())
+            {
+                if (string.Equals(source.Name, "Microsoft-Windows-DotNETRuntime", StringComparison.Ordinal))
+                {
+                    return source;
+                }
+            }
+
+            throw new InvalidOperationException("NativeRuntimeEventSource should always be registered and found in EventSource.GetSources().");
+        }
 
         public static int Main(string[] args)
         {
@@ -56,7 +82,8 @@ namespace Tracing.UserEvents.Tests.Basic
                 args,
                 "basic",
                 BasicTracee,
-                s_traceValidator);
+                s_traceValidator,
+                FindNativeRuntimeEventSource());
         }
     }
 }

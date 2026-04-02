@@ -20,15 +20,9 @@ struct StructMarshalStubs
 {
     static const DWORD MANAGED_STRUCT_ARGIDX = 0;
     static const DWORD NATIVE_STRUCT_ARGIDX = 1;
-    static const DWORD OPERATION_ARGIDX = 2;
-    static const DWORD CLEANUP_WORK_LIST_ARGIDX = 3;
+    static const DWORD CLEANUP_WORK_LIST_ARGIDX = 2;
 
-    enum MarshalOperation
-    {
-        Marshal,
-        Unmarshal,
-        Cleanup
-    };
+    static bool TryGenerateStructMarshallingMethod(MethodDesc* pMD, DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
 };
 
 struct LocalDesc

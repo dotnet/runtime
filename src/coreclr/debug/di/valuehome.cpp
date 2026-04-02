@@ -882,7 +882,7 @@ CORDB_ADDRESS HandleValueHome::GetAddress()
     CORDB_ADDRESS handle = PTR_TO_CORDB_ADDRESS((void *)NULL);
     EX_TRY
     {
-        handle = m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle);
+        IfFailThrow(m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle, &handle));
     }
     EX_CATCH
     {
@@ -897,7 +897,7 @@ void HandleValueHome::GetValue(MemoryRange dest)
 {
     _ASSERTE((m_pProcess != NULL) && !m_vmObjectHandle.IsNull());
     CORDB_ADDRESS objPtr = PTR_TO_CORDB_ADDRESS((void *)NULL);
-    objPtr = m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle);
+    IfFailThrow(m_pProcess->GetDAC()->GetHandleAddressFromVmHandle(m_vmObjectHandle, &objPtr));
 
     _ASSERTE(dest.Size() <= sizeof(void *));
     _ASSERTE(dest.StartAddress() != NULL);

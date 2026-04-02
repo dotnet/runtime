@@ -92,6 +92,8 @@ DEFINE_DACVAR(PTR_InterpreterCodeManager, ExecutionManager__m_pInterpreterCodeMa
 
 DEFINE_DACVAR_NO_DUMP(VMHELPDEF *, dac__hlpFuncTable, ::hlpFuncTable)
 DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
+DEFINE_DACVAR(VMAUXILIARYSYMBOLDEF *, dac__hlpAuxiliarySymbolTable, ::hlpAuxiliarySymbolTable)
+DEFINE_DACVAR(DWORD, dac__g_auxiliarySymbolCount, ::g_auxiliarySymbolCount)
 
 DEFINE_DACVAR(PTR_StubManager, StubManager__g_pFirstManager, StubManager::g_pFirstManager)
 DEFINE_DACVAR(PTR_PrecodeStubManager, PrecodeStubManager__g_pManager, PrecodeStubManager::g_pManager)
@@ -120,6 +122,9 @@ DEFINE_DACVAR(PTR_SystemDomain, SystemDomain__m_pSystemDomain, SystemDomain::m_p
 DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
 DEFINE_DACVAR(DWORD, dac__g_TlsIndex, g_TlsIndex)
+#ifdef TARGET_WINDOWS
+DEFINE_DACVAR(DWORD, dac___tls_index, ::_tls_index)
+#endif
 DEFINE_DACVAR(DWORD, dac__g_offsetOfCurrentThreadInfo, g_offsetOfCurrentThreadInfo)
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)

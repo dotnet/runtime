@@ -284,7 +284,16 @@
   </Target>
 
   <Target Name="_AppleNativeAotCompile"
-          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile;$(_IlcLibraryBuildDependsOn)" />
+          DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile;$(_IlcLibraryBuildDependsOn);_PublishNativeBinary" />
+
+  <!-- Copy the NativeAOT-produced native binary to the publish directory for library mode builds. -->
+  <Target Name="_PublishNativeBinary"
+          Condition="'$(_IsLibraryMode)' == 'true' and '$(UseNativeAOTRuntime)' == 'true'">
+
+    <Copy SourceFiles="$(NativeBinary)"
+          DestinationFolder="$(PublishDir)" />
+
+  </Target>
 
   <Target Name="_AppleGenerateAppBundle"
           Condition="'$(AppleGenerateAppBundle)' == 'true'"

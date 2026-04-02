@@ -502,6 +502,8 @@ enum class AddressExposedReason
     EXTERNALLY_VISIBLE_IMPLICITLY, // Local is visible externally without explicit escape in JIT IR.
                                    // For example because it is used by GC or is the outgoing arg area
                                    // that belongs to callees.
+    SMALL_TYPE_PARTIAL_DEF,        // A small-typed local has a partial def that doesn't cover the full
+                                   // local, so we must treat it as normalize-on-load.
 };
 
 #endif // DEBUG
@@ -2240,6 +2242,157 @@ public:
 #endif // DEBUG
 };
 
+class FlowGraphTryRegions;
+
+// Represents a try region in a method. Currently fairly lightweight.
+class FlowGraphTryRegion
+{
+    friend class FlowGraphTryRegions;
+    FlowGraphTryRegions* m_regions;
+    FlowGraphTryRegion* m_parent;
+    EHblkDsc* m_ehDsc;
+    BitVec m_blocks;
+
+    // Edges from blocks outside the try region to blocks inside the try region.
+    // This includes edges from any catch handler, and edges from some ancestor
+    // region to some descendant region.
+    jitstd::vector<FlowEdge*> m_entryEdges;
+
+    bool m_requiresRuntimeResumption;
+    bool m_hasSideEntry;
+
+    FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions);
+
+    void SetRequiresRuntimeResumption()
+    {
+        m_requiresRuntimeResumption = true;
+    }
+
+    void SetHasSideEntry()
+    {
+        m_hasSideEntry = true;
+    }
+
+    bool IsMutualProtectWith(FlowGraphTryRegion* other) const
+    {
+        return EHblkDsc::ebdIsSameTry(this->m_ehDsc, other->m_ehDsc);
+    }
+
+    void AddEntryEdge(FlowEdge* edge)
+    {
+        m_entryEdges.push_back(edge);
+    }
+
+public:
+
+    template<typename TFunc>
+    BasicBlockVisit VisitTryRegionBlocksReversePostOrder(TFunc func);
+
+    unsigned NumBlocks() const;
+
+    bool HasCatchHandler() const
+    {
+        return m_ehDsc->HasCatchHandler();
+    }
+
+    const jitstd::vector<FlowEdge*>& EntryEdges() const
+    {
+        return m_entryEdges;
+    }
+
+    // True if resumption from a catch in this or in an enclosed
+    // try region requires runtime support.
+    //
+    bool RequiresRuntimeResumption() const
+    {
+        return m_requiresRuntimeResumption;
+    }
+
+    // True if control can enter the try via some block other than the header block.
+    //
+    bool HasSideEntry() const
+    {
+        return m_hasSideEntry;
+    }
+
+    FlowGraphTryRegion* EnclosingRegion() const;
+
+    BasicBlock* GetHeaderBlock() const
+    {
+        return m_ehDsc->ebdTryBeg;
+    }
+
+    bool CanEnumerateInReversePostOrder() const;
+
+#ifdef DEBUG
+    static void Dump(FlowGraphTryRegion* region);
+#endif
+};
+
+// Represents the try regions in a method
+class FlowGraphTryRegions
+{
+private:
+    Compiler* m_compiler;
+    FlowGraphDfsTree* m_dfsTree;
+    // Collection of try regions that were found, indexed by EhID
+    jitstd::vector<FlowGraphTryRegion*> m_tryRegions;
+
+    FlowGraphTryRegions(Compiler* comp, FlowGraphDfsTree* dfs, unsigned numRegions);
+
+    unsigned m_numRegions;
+    unsigned m_numTryCatchRegions;
+    bool m_tryRegionsIncludeHandlerBlocks;
+    bool m_hasMultipleEntryTryRegions;
+    BitVecTraits m_traits;
+
+    void SetHasMultipleEntryTryRegions()
+    {
+        m_hasMultipleEntryTryRegions = true;
+    }
+
+public:
+
+    static FlowGraphTryRegions* Build(Compiler* comp, FlowGraphDfsTree* dfs, bool includeHandlerBlocks = false);
+
+    BitVecTraits* GetBlockBitVecTraits()
+    {
+        return &m_traits;
+    }
+
+    unsigned GetBlockIndex(BasicBlock* block) const
+    {
+        if (m_dfsTree != nullptr)
+        {
+            return block->bbPostorderNum;
+        }
+        else
+        {
+            return block->bbNum;
+        }
+    }
+
+    Compiler* GetCompiler() const
+    {
+        return m_compiler;
+    }
+
+    FlowGraphTryRegion* GetTryRegionByHeader(BasicBlock* block);
+
+    unsigned NumTryRegions() const { return m_numRegions; }
+    unsigned NumTryCatchRegions() const { return m_numTryCatchRegions; }
+
+    FlowGraphDfsTree* GetDfsTree() const { return m_dfsTree; }
+
+    bool TryRegionsIncludeHandlerBlocks() const { return m_tryRegionsIncludeHandlerBlocks; }
+
+    bool HasMultipleEntryTryRegions() const { return m_hasMultipleEntryTryRegions; }
+
+#ifdef DEBUG
+    static void Dump(FlowGraphTryRegions* regions);
+#endif
+};
+
 // Represents the dominator tree of the flow graph.
 class FlowGraphDominatorTree
 {
@@ -2847,9 +3000,9 @@ public:
 #ifdef TARGET_WASM
     // Once we have run wasm layout, try regions may no longer be contiguous.
     //
-    bool fgTrysNotContiguous() { return fgIndexToBlockMap != nullptr; }
+    bool fgTrysContiguous() { return fgIndexToBlockMap == nullptr; }
 #else
-    bool fgTrysNotContiguous() { return false; }
+    bool fgTrysContiguous() { return true; }
 #endif
 
     FlowEdge* BlockPredsWithEH(BasicBlock* blk);
@@ -3021,6 +3174,7 @@ public:
 
     GenTreeFlags gtTokenToIconFlags(unsigned token);
 
+    GenTree* gtNewIconEmbHndNode(CORINFO_CONST_LOOKUP* pLookup, GenTreeFlags flags, void* compileTimeHandle);
     GenTree* gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags flags, void* compileTimeHandle);
 
     GenTree* gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd);
@@ -4119,6 +4273,8 @@ public:
     // located on the original method stack frame.
     bool lvaIsOSRLocal(unsigned varNum);
 
+    int lvaOSRLocalTier0FrameOffset(unsigned varNum);
+
     //------------------------ For splitting types ----------------------------
 
     void lvaInitTypeRef();
@@ -4206,6 +4362,17 @@ public:
     unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
     ValueSize lvaLclValueSize(unsigned varNum);
+
+    //-----------------------------------------------------------------------------
+    // lvaIsUnknownSizeLocal: Does the local have an unknown size at compile-time?
+    //
+    // Returns:
+    //     True if the local does not have an exact size, else false.
+    //
+    bool lvaIsUnknownSizeLocal(unsigned varNum)
+    {
+        return !lvaLclValueSize(varNum).IsExact();
+    }
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 
@@ -4603,6 +4770,8 @@ protected:
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
+    bool impCanReorderWithNullCheck(GenTree* tree);
+
     bool impCanPInvokeInline();
     bool impCanPInvokeInlineCallSite(BasicBlock* block);
     void impCheckForPInvokeCall(
@@ -4809,7 +4978,7 @@ protected:
 
     GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
-    GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
+    GenTree* impMethodPointer(CORINFO_CALL_INFO* pCallInfo);
 
     GenTree* impTransformThis(GenTree*                thisPtr,
                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -4870,23 +5039,18 @@ public:
         return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, true);
     }
 
-    GenTree* impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                             CORINFO_LOOKUP*         pLookup,
+    GenTree* impLookupToTree(CORINFO_LOOKUP*         pLookup,
                              GenTreeFlags            flags,
                              void*                   compileTimeHandle);
 
     GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind);
 
-    GenTree* impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    CORINFO_LOOKUP*         pLookup,
+    GenTree* impRuntimeLookupToTree(CORINFO_LOOKUP*         pLookup,
                                     void*                   compileTimeHandle);
-
-    GenTree* impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup, GenTreeFlags flags, void* compileTimeHandle);
 
     GenTreeCall* impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CorInfoHelpFunc         helper,
                                            var_types               type,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr,
                                            GenTree*                arg1               = nullptr);
 
     bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
@@ -5242,6 +5406,8 @@ public:
 #ifdef TARGET_WASM
     jitstd::vector<WasmInterval*>* fgWasmIntervals = nullptr;
     BasicBlock** fgIndexToBlockMap = nullptr;
+    bool fgWasmHasCatchResumptions = false;
+    FlowGraphTryRegions* fgTryRegions = nullptr;
 #endif
 
     FlowGraphDfsTree* m_dfsTree = nullptr;
@@ -5920,7 +6086,7 @@ public:
         }
     }
 
-    bool GetImmutableDataFromAddress(GenTree* address, int size, uint8_t* pValue);
+    bool GetImmutableDataFromAddress(GenTree* address, int size, CompAllocator alloc, uint8_t** ppValue);
     bool GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORINFO_OBJECT_HANDLE* pObj);
 
     // Convert a BYTE which represents the VM's CorInfoGCtype to the JIT's var_types
@@ -6204,6 +6370,8 @@ public:
 
 #ifdef TARGET_WASM
     FlowGraphDfsTree* fgWasmDfs();
+    PhaseStatus fgWasmEhFlow();
+    void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
 #ifdef DEBUG
@@ -6228,11 +6396,15 @@ public:
     template <typename TFunc>
     void fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func);
 
+    template <typename TFunc>
+    void fgVisitBlocksInTryAwareLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphTryRegions* tryRegions, FlowGraphNaturalLoops* loops, TFunc func);
+
     void fgRemoveReturnBlock(BasicBlock* block);
 
     void fgConvertBBToThrowBB(BasicBlock* block);
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
+    bool fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow = false);
 
     void fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB);
     void fgLoopCallMark();
@@ -6877,6 +7049,8 @@ private:
 public:
     bool fgIsBigOffset(size_t offset);
     bool IsValidLclAddr(unsigned lclNum, unsigned offset);
+    bool IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize accessSize);
+    bool IsWideAccess(unsigned lclNum, unsigned offset, ValueSize accessSize);
     bool IsPotentialGCSafePoint(GenTree* tree) const;
 
 private:
@@ -7596,7 +7770,7 @@ public:
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*> LocalNumberToNullCheckTreeMap;
 
-    GenTree*    getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
+    GenTree*    getArrayLengthFromAllocation(GenTree* tree);
     GenTree*    optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTree*    optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
     GenTree*    optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
@@ -8455,6 +8629,7 @@ public:
     GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call);
 
     AssertionIndex GetAssertionCount()
     {
@@ -8684,6 +8859,11 @@ public:
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
 
+    Lowering* GetLowering() const
+    {
+        return m_pLowering;
+    }
+
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -8814,7 +8994,7 @@ public:
     // Get the offset of a MDArray's lower bound for a given dimension.
     static unsigned eeGetMDArrayLowerBoundOffset(unsigned rank, unsigned dimension);
 
-    GenTree* eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig);
+    CORINFO_CONST_LOOKUP eeConvertToLookup(void* value, void* pValue);
 
     // Returns the page size for the target machine as reported by the EE.
     target_size_t eeGetPageSize()
@@ -11006,12 +11186,6 @@ public:
         unsigned         compMethodHash() const;
 #endif // defined(DEBUG)
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-        // things for pseudorandom nop insertion
-        unsigned  compChecksum;
-        CLRRandom compRNG;
-#endif
-
         // The following holds the FLG_xxxx flags for the method we're compiling.
         unsigned compFlags;
 
@@ -11441,6 +11615,7 @@ public:
         unsigned m_wideIndir;
         unsigned m_stressPoisonImplicitByrefs;
         unsigned m_externallyVisibleImplicitly;
+        unsigned m_smallTypePartialDef;
 
     public:
         void RecordLocal(const LclVarDsc* varDsc);
@@ -12182,14 +12357,13 @@ public:
             case GT_PHI_ARG:
             case GT_JMPTABLE:
             case GT_PHYSREG:
-            case GT_EMITNOP:
-            case GT_PINVOKE_PROLOG:
-            case GT_PINVOKE_EPILOG:
             case GT_IL_OFFSET:
             case GT_RECORD_ASYNC_RESUME:
             case GT_NOP:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
+            case GT_WASM_THROW_REF:
+            case GT_WASM_JEXCEPT:
                 break;
 
             // Lclvar unary operators
@@ -12342,15 +12516,6 @@ public:
 
                 if (call->gtCallType == CT_INDIRECT)
                 {
-                    if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
-                    {
-                        result = WalkTree(&call->gtCallCookie, call);
-                        if (result == fgWalkResult::WALK_ABORT)
-                        {
-                            return result;
-                        }
-                    }
-
                     result = WalkTree(&call->gtCallAddr, call);
                     if (result == fgWalkResult::WALK_ABORT)
                     {

@@ -152,7 +152,6 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92624", TestPlatforms.Windows)]
         // macOS fcntl doc does not mention ENOSPC error: https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fcntl.2.html
         // But depending on the OS version, it might actually return it.
         // Since we don't want to have unstable tests, it's better to not run it on macOS at all.

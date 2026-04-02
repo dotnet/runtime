@@ -77,15 +77,20 @@ namespace System.Formats.Tar
                     header.ReadPosixAndGnuSharedAttributes(buffer);
 
                     Debug.Assert(header._format is TarEntryFormat.Ustar or TarEntryFormat.Pax or TarEntryFormat.Gnu);
-                    if (header._format == TarEntryFormat.Ustar)
+                    if (header._format is TarEntryFormat.Ustar or TarEntryFormat.Pax)
                     {
+                        // PAX extends USTAR and uses the same header layout including the
+                        // prefix field.  When an actual entry follows a PAX extended
+                        // attributes header, the entry's prefix may still carry part of
+                        // the path.  The PAX "path" extended attribute, if present, will
+                        // override the combined prefix/name afterward in
+                        // ReplaceNormalAttributesWithExtended.
                         header.ReadUstarAttributes(buffer);
                     }
                     else if (header._format == TarEntryFormat.Gnu)
                     {
                         header.ReadGnuAttributes(buffer);
                     }
-                    // In PAX, there is nothing to read in this section (empty space)
                 }
                 // Finished reading the header metadata, next byte belongs to the data section, save the position
                 SetDataOffset(header, archiveStream);
@@ -98,16 +103,24 @@ namespace System.Formats.Tar
         // If any of the dictionary entries use the name of a standard attribute, that attribute's value gets replaced with the one from the dictionary.
         // Unlike the historic header, numeric values in extended attributes are stored using decimal, not octal.
         // Throws if any conversion from string to the expected data type fails.
-        internal void ReplaceNormalAttributesWithExtended(Dictionary<string, string>? dictionaryFromExtendedAttributesHeader)
+        internal void ReplaceNormalAttributesWithExtended(IEnumerable<KeyValuePair<string, string>>? extendedAttributes)
         {
-            if (dictionaryFromExtendedAttributesHeader == null || dictionaryFromExtendedAttributesHeader.Count == 0)
+            if (extendedAttributes == null)
             {
                 return;
             }
 
-            AddExtendedAttributes(dictionaryFromExtendedAttributesHeader);
+            AddExtendedAttributes(extendedAttributes);
 
-            // Find all the extended attributes with known names and save them in the expected standard attribute.
+            if (_ea == null || _ea.Count == 0)
+            {
+                // no extended attributes were added, so we can skip the rest of the processing
+                return;
+            }
+
+            // Find all the extended attributes with known names and save them
+            // in the expected standard attribute. Extended attributes are preserved
+            // as-is to avoid data loss during roundtripping.
 
             // The 'name' header field only fits 100 bytes, so we always store the full name text to the dictionary.
             if (ExtendedAttributes.TryGetValue(PaxEaName, out string? paxEaName))
@@ -116,7 +129,9 @@ namespace System.Formats.Tar
             }
 
             // The 'linkName' header field only fits 100 bytes, so we always store the full linkName text to the dictionary.
-            if (ExtendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
+            // Only apply to link entries to avoid setting _linkName on non-link entry types.
+            if (_typeFlag is TarEntryType.HardLink or TarEntryType.SymbolicLink &&
+                ExtendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
             {
                 _linkName = paxEaLinkName;
             }

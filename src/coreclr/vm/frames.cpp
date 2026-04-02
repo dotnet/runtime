@@ -635,15 +635,17 @@ void Frame::PopIfChained()
 #endif // TARGET_UNIX && !DACCESS_COMPILE
 
 #if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
-/* static */
-void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
+
+void Frame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targetSP)
 {
+    LIMITED_METHOD_CONTRACT;
+    // Default implementation unwinds floating point registers to target SP
     _ASSERTE(!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)));
 
     do
     {
 #ifdef TARGET_UNIX
-        PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+        PAL_VirtualUnwind(pRD->pCurrentContext);
 #else
         Thread::VirtualUnwindCallFrame(pRD);
 #endif
@@ -653,13 +655,25 @@ void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
     _ASSERTE(::GetSP(pRD->pCurrentContext) == targetSP);
 }
 
-void InlinedCallFrame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
+void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
+{
+    switch (GetFrameIdentifier())
+    {
+#define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->UpdateFloatingPointRegisters_Impl(pRD, targetSP); }
+#include "FrameTypes.h"
+    default:
+        FRAME_POLYMORPHIC_DISPATCH_UNREACHABLE();
+        return;
+    }
+}
+
+void InlinedCallFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targetSP)
 {
 #ifdef FEATURE_INTERPRETER
     if (IsInInterpreter())
     {
         InterpreterFrame *pInterpreterFrame = (InterpreterFrame *)m_Next;
-        Frame::UpdateFloatingPointRegisters(pRD, pInterpreterFrame->GetInterpExecMethodSP());
+        pInterpreterFrame->UpdateFloatingPointRegisters(pRD, pInterpreterFrame->GetInterpExecMethodSP());
         pInterpreterFrame->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
         return;
     }
@@ -669,7 +683,7 @@ void InlinedCallFrame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
         while (!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)))
         {
     #ifdef TARGET_UNIX
-            PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+            PAL_VirtualUnwind(pRD->pCurrentContext);
     #else
             Thread::VirtualUnwindCallFrame(pRD);
     #endif
@@ -1862,7 +1876,6 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
 #endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
-
 VOID InlinedCallFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
@@ -1873,17 +1886,6 @@ VOID InlinedCallFrame::Init()
     m_pCallSiteSP = NULL;
     m_pCallerReturnAddress = (TADDR)NULL;
 }
-
-
-#ifdef FEATURE_COMINTEROP
-void UnmanagedToManagedFrame::ExceptionUnwind_Impl()
-{
-    WRAPPER_NO_CONTRACT;
-
-    AppDomain::ExceptionUnwind(this);
-}
-#endif // FEATURE_COMINTEROP
-
 #endif // !DACCESS_COMPILE
 
 #ifdef FEATURE_COMINTEROP
@@ -1964,6 +1966,7 @@ void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 {
     SyncRegDisplayToCurrentContext(pRD);
     TransitionFrame::UpdateRegDisplay_Impl(pRD, updateFloats);
+
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
     // Update the SSP to match the updated regdisplay
     size_t *targetSSP = (size_t *)GetInterpExecMethodSSP();
@@ -2229,11 +2232,14 @@ void ComputeCallRefMap(MethodDesc* pMD,
         {
             msig.SetHasParamTypeArg();
         }
+    }
 
-        if (pMD->IsAsyncMethod())
-        {
-            msig.SetIsAsyncCall();
-        }
+    // The async continuation is a caller-side argument that is always passed
+    // regardless of whether the dispatch target has been resolved, unlike the
+    // instantiation argument which is an implementation detail of shared generics.
+    if (pMD->IsAsyncMethod())
+    {
+        msig.SetIsAsyncCall();
     }
 
     ArgIterator argit(&msig);
