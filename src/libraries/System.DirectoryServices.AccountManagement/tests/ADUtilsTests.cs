@@ -25,11 +25,20 @@ namespace System.DirectoryServices.AccountManagement.Tests
         [InlineData("", "")]
         [InlineData("nothingspecial123", "nothingspecial123")]
         [InlineData("CN=user,OU=test (lab),DC=contoso,DC=com", @"CN=user,OU=test \28lab\29,DC=contoso,DC=com")]
+        [InlineData("membername))", @"membername\29\29")]
         public void EscapeRFC2254SpecialChars_EscapesCorrectly(string input, string expected)
         {
             string result = EscapeRFC2254SpecialChars(input);
 
             Assert.Equal(expected, result);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void EscapeRFC2254SpecialChars_EscapesNulCharacter()
+        {
+            string result = EscapeRFC2254SpecialChars("\0");
+
+            Assert.Equal(@"\00", result);
         }
     }
 }
