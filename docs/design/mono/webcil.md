@@ -108,11 +108,11 @@ of the `WebcilHeader`.
   ;; Set the table base, if the amount of data to write is large enough
     local.get 1
     i32.const 32 ;; the amount of bytes required so that the write below does not overflow the size specified
-    i32.lt_s
-    if 0
+    i32.ge_s
+    if
      local.get 0
      global.get 2 ;; get the tableBase from the global assigned during instantiate
-     i32.store 28
+     i32.store offset=28
     end
     )
   (func (export "fillWebcilTable") (result)
