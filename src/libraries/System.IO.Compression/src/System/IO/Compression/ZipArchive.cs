@@ -793,6 +793,28 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>
+        /// Precompute end offsets for original entries in a single reverse pass.
+        /// The end of each original entry is the start of the next original entry (or
+        /// the central directory for the last one). This correctly includes any trailing
+        /// data descriptor bytes.
+        /// </summary>
+        private long[] ComputeEntryEndOffsets()
+        {
+            long[] entryEndOffsets = new long[_entries.Count];
+            long nextOriginalOffset = _centralDirectoryStart;
+            for (int i = _entries.Count - 1; i >= 0; i--)
+            {
+                if (_entries[i].OriginallyInArchive)
+                {
+                    entryEndOffsets[i] = nextOriginalOffset;
+                    nextOriginalOffset = _entries[i].OffsetOfLocalHeader;
+                }
+            }
+
+            return entryEndOffsets;
+        }
+
         private void WriteFileUpdateModeFinalWork(long startingOffset, long nextFileOffset)
         {
             // If the offset of entries to write from is still at long.MaxValue, then we know that nothing has been deleted,
@@ -834,6 +856,8 @@ namespace System.IO.Compression
                 completeRewriteStartingOffset = startingOffset;
                 entriesToWrite = new(_entries.Count);
 
+                long[] entryEndOffsets = ComputeEntryEndOffsets();
+
                 for (int i = 0; i < _entries.Count; i++)
                 {
                     ZipArchiveEntry entry = _entries[i];
@@ -844,19 +868,7 @@ namespace System.IO.Compression
                     }
                     else
                     {
-                        // Compute the end offset of this entry: the start of the next original entry, or the central directory,
-                        // including any trailing data descriptor bytes.
-                        long entryEndOffset = _centralDirectoryStart;
-                        for (int j = i + 1; j < _entries.Count; j++)
-                        {
-                            if (_entries[j].OriginallyInArchive)
-                            {
-                                entryEndOffset = _entries[j].OffsetOfLocalHeader;
-                                break;
-                            }
-                        }
-
-                        WriteFileCalculateOffsets(entry, entryEndOffset, ref startingOffset, ref nextFileOffset);
+                        WriteFileCalculateOffsets(entry, entryEndOffsets[i], ref startingOffset, ref nextFileOffset);
 
                         // We want to re-write entries which are after the starting offset of the first entry which has pending data to write.
                         // NB: the existing ZipArchiveEntries are sorted in _entries by their position ascending.

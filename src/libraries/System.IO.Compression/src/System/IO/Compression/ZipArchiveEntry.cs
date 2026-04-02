@@ -1274,18 +1274,25 @@ namespace System.IO.Compression
         {
             Span<byte> signatureBuffer = stackalloc byte[sizeof(uint)];
             _archive.ArchiveStream.ReadExactly(signatureBuffer);
+            _archive.ArchiveStream.Seek(GetDataDescriptorSkipBytes(signatureBuffer), SeekOrigin.Current);
+        }
 
-            bool hasSignature = signatureBuffer.SequenceEqual(ZipLocalFileHeader.DataDescriptorSignatureConstantBytes);
+        /// <summary>
+        /// Given the first 4 bytes read after the compressed data, returns the number of
+        /// remaining bytes to seek past the data descriptor. Detects the optional signature
+        /// and uses 32-bit or 64-bit field sizes as appropriate.
+        /// </summary>
+        private int GetDataDescriptorSkipBytes(ReadOnlySpan<byte> leadingBytes)
+        {
+            bool hasSignature = leadingBytes.SequenceEqual(ZipLocalFileHeader.DataDescriptorSignatureConstantBytes);
 
-            int bytesToSkip = AreSizesTooLarge
+            return AreSizesTooLarge
                 ? (hasSignature
                     ? ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.Crc32 + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize
                     : ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize)
                 : (hasSignature
                     ? ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.Crc32 + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.UncompressedSize
                     : ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.UncompressedSize);
-
-            _archive.ArchiveStream.Seek(bytesToSkip, SeekOrigin.Current);
         }
 
         private const int MetadataBufferLength = ZipLocalFileHeader.FieldLengths.VersionNeededToExtract + ZipLocalFileHeader.FieldLengths.GeneralPurposeBitFlags;

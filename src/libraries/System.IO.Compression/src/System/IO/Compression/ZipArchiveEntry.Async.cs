@@ -425,18 +425,7 @@ public partial class ZipArchiveEntry
     {
         byte[] signatureBuffer = new byte[sizeof(uint)];
         await _archive.ArchiveStream.ReadExactlyAsync(signatureBuffer, cancellationToken).ConfigureAwait(false);
-
-        bool hasSignature = signatureBuffer.AsSpan().SequenceEqual(ZipLocalFileHeader.DataDescriptorSignatureConstantBytes);
-
-        int bytesToSkip = AreSizesTooLarge
-            ? (hasSignature
-                ? ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.Crc32 + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize
-                : ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize)
-            : (hasSignature
-                ? ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.Crc32 + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.UncompressedSize
-                : ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.UncompressedSize);
-
-        _archive.ArchiveStream.Seek(bytesToSkip, SeekOrigin.Current);
+        _archive.ArchiveStream.Seek(GetDataDescriptorSkipBytes(signatureBuffer), SeekOrigin.Current);
     }
 
     // Using _offsetOfLocalHeader, seeks back to where CRC and sizes should be in the header,
