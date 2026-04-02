@@ -196,11 +196,8 @@ namespace Internal.IL
         {
             bool regularCrossModuleInlineable = (!_compilationModuleGroup.VersionsWithMethodBody(method)
                     && _compilationModuleGroup.CrossModuleInlineable(method));
-            // Async thunks and resumption stubs always need wrapping because they use
-            // compiler-generated IL with synthetic tokens that must be rewritten into the
-            // MutableModule. This is required regardless of whether CoreLib is in the
-            // version bubble (e.g. composite mode).
-            bool requiredCrossModuleInliningForAsync = NeedsTaskReturningThunk(method) || NeedsAsyncThunk(method) || method is AsyncResumptionStub;
+            bool requiredCrossModuleInliningForAsync = (NeedsTaskReturningThunk(method) || NeedsAsyncThunk(method) || method is AsyncResumptionStub)
+                     && !_compilationModuleGroup.VersionsWithModule(method.Context.SystemModule);
             if ((regularCrossModuleInlineable || requiredCrossModuleInliningForAsync)
                 && !_manifestModuleWrappedMethods.ContainsKey(method))
             {
