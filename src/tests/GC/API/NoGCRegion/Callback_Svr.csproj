@@ -23,4 +23,7 @@
   <ItemGroup>
     <Compile Include="Callback.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
