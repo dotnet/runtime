@@ -77,7 +77,7 @@ def main():
         total += 1
         missing = conn.execute("""
             SELECT p.name FROM pipelines p
-            WHERE p.result IN ('failed', 'partiallySucceeded')
+            WHERE p.result = 'failed'
             AND p.name NOT IN (SELECT DISTINCT pipeline_name FROM test_results)
         """).fetchall()
         ok = check("Every failing pipeline has test_results",
@@ -556,7 +556,7 @@ def main():
             total += 1
             failing_pipelines = conn.execute("""
                 SELECT name FROM pipelines
-                WHERE result IN ('failed', 'partiallySucceeded')
+                WHERE result = 'failed'
             """).fetchall()
             missing_in_report = [r['name'] for r in failing_pipelines
                                   if r['name'] not in report_text]

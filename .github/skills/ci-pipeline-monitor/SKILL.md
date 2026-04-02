@@ -87,7 +87,7 @@ CREATE TABLE pipelines (
     name            TEXT PRIMARY KEY,
     build_id        INTEGER,
     build_number    TEXT,
-    result          TEXT NOT NULL,  -- succeeded | failed | partiallySucceeded | skipped
+    result          TEXT NOT NULL,  -- succeeded | failed | inconclusive | skipped
     skip_reason     TEXT
 );
 

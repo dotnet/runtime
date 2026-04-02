@@ -57,10 +57,10 @@ class ReportGenerator:
     def _header(self, out):
         cur = self.conn.cursor()
         total = cur.execute("SELECT COUNT(*) FROM pipelines").fetchone()[0]
-        truly_skipped = cur.execute(
-            "SELECT COUNT(*) FROM pipelines WHERE result = 'skipped' AND skip_reason = 'private'"
+        skipped = cur.execute(
+            "SELECT COUNT(*) FROM pipelines WHERE result = 'skipped'"
         ).fetchone()[0]
-        monitored = total - truly_skipped
+        monitored = total - skipped
 
         out.append("=" * 80)
         out.append("CI Pipeline Monitor — Test Report")
@@ -68,7 +68,7 @@ class ReportGenerator:
         out.append(f"Org:        {ADO_ORG}")
         out.append(f"Project:    {ADO_PROJECT}")
         out.append(f"Branch:     refs/heads/main")
-        out.append(f"Pipelines:  {total} total ({monitored} monitored, {truly_skipped} skipped)")
+        out.append(f"Pipelines:  {total} total ({monitored} monitored, {skipped} skipped)")
         out.append("=" * 80)
         out.append("")
 
@@ -82,7 +82,7 @@ class ReportGenerator:
             "SELECT COUNT(*) FROM pipelines WHERE result IN ('failed','partiallySucceeded')"
         ).fetchone()[0]
         inconclusive_count = cur.execute(
-            "SELECT COUNT(*) FROM pipelines WHERE result = 'skipped' AND skip_reason != 'private'"
+            "SELECT COUNT(*) FROM pipelines WHERE result = 'inconclusive'"
         ).fetchone()[0]
         monitored = passed_count + failed_count + inconclusive_count
 
@@ -153,10 +153,10 @@ class ReportGenerator:
                         out.append(f"     - [{fid}] [New] ... and {remaining} more")
             out.append("")
 
-        # Inconclusive pipelines (build failed, 0 test failures from API)
+        # Inconclusive pipelines (build failed/canceled, 0 test failures from API)
         for p in cur.execute(
             "SELECT name, build_id, build_number, skip_reason FROM pipelines "
-            "WHERE result = 'skipped' AND skip_reason != 'private' ORDER BY name"
+            "WHERE result = 'inconclusive' ORDER BY name"
         ):
             bn = p["build_number"] or ""
             reason = p["skip_reason"] or "unknown"
@@ -166,9 +166,9 @@ class ReportGenerator:
             else:
                 out.append(f"  ⚠️ {p['name']}: INCONCLUSIVE ({reason})")
 
-        # Skipped pipelines (private/intentional opt-out)
+        # Skipped pipelines (private/intentional opt-out — never fetched)
         for p in cur.execute(
-            "SELECT name FROM pipelines WHERE result = 'skipped' AND skip_reason = 'private' ORDER BY name"
+            "SELECT name FROM pipelines WHERE result = 'skipped' ORDER BY name"
         ):
             out.append(f"  ⏭️ {p['name']}: SKIPPED (private)")
 

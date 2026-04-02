@@ -235,7 +235,7 @@ def main():
     conn = sqlite3.connect(args.db)
     conn.row_factory = sqlite3.Row
     rows = conn.execute(
-        "SELECT name, build_id FROM pipelines WHERE result IN ('failed', 'partiallySucceeded') ORDER BY name"
+        "SELECT name, build_id FROM pipelines WHERE result = 'failed' ORDER BY name"
     ).fetchall()
     builds = [(r["build_id"], r["name"]) for r in rows]
     conn.close()
@@ -262,15 +262,15 @@ def main():
     conn = sqlite3.connect(args.db)
     insert_into_db(args.db, all_failures)
 
-    # Mark pipelines with 0 test results as skipped
+    # Mark pipelines with 0 test results as inconclusive
     for name in zero_result_pipelines:
         conn.execute(
-            "UPDATE pipelines SET result = 'skipped', skip_reason = 'Build reported failed but Test Results API returned 0 test method failures' WHERE name = ?",
+            "UPDATE pipelines SET result = 'inconclusive', skip_reason = 'Build failed but no test failures detected via Test Results API' WHERE name = ?",
             (name,)
         )
     if zero_result_pipelines:
         conn.commit()
-        print(f"Marked {len(zero_result_pipelines)} pipelines as skipped (0 test failures from API)", file=sys.stderr)
+        print(f"Marked {len(zero_result_pipelines)} pipelines as inconclusive (0 test failures from API)", file=sys.stderr)
 
     conn.close()
 

@@ -203,20 +203,15 @@ def main():
             )
             passed += 1
             print(f"  PASS  {name} — build {build_id} ({result})", file=sys.stderr)
-        elif result in ("failed", "partiallySucceeded"):
+        else:
+            # failed, partiallySucceeded, canceled, etc. — store as 'failed'.
+            # extract_failed_tests.py will refine to 'inconclusive' if 0 test failures.
             conn.execute(
                 "INSERT INTO pipelines (name, build_id, build_number, result) VALUES (?, ?, ?, ?)",
-                (name, build_id, build_number, result)
+                (name, build_id, build_number, "failed")
             )
             failed += 1
             print(f"  FAIL  {name} — build {build_id} ({result})", file=sys.stderr)
-        else:
-            conn.execute(
-                "INSERT INTO pipelines (name, build_id, build_number, result, skip_reason) VALUES (?, ?, ?, 'skipped', ?)",
-                (name, build_id, build_number, result)
-            )
-            skipped += 1
-            print(f"  SKIP  {name} — build {build_id} ({result})", file=sys.stderr)
         conn.commit()
 
     conn.close()
