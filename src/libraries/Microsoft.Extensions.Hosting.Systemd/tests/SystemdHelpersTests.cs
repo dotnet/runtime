@@ -93,5 +93,56 @@ namespace Microsoft.Extensions.Hosting
                 Assert.True(secondEvaluation);
             });
         }
+
+        [ConditionalFact(typeof(SystemdHelpersTests), nameof(IsRemoteExecutorSupportedOnLinux))]
+        public void IsSystemdServiceCachesFirstNegativeEvaluation()
+        {
+            using var _ = RemoteExecutor.Invoke(static () =>
+            {
+                Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", null);
+                Environment.SetEnvironmentVariable("NOTIFY_SOCKET", null);
+                Environment.SetEnvironmentVariable("LISTEN_PID", null);
+
+                var firstEvaluation = SystemdHelpers.IsSystemdService();
+
+                string processId = Environment.ProcessId.ToString(CultureInfo.InvariantCulture);
+                Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", processId);
+
+                var secondEvaluation = SystemdHelpers.IsSystemdService();
+                Assert.False(firstEvaluation);
+                Assert.False(secondEvaluation);
+            });
+        }
+
+        [ConditionalFact(typeof(SystemdHelpersTests), nameof(IsRemoteExecutorSupportedOnLinux))]
+        public void IsSystemdServiceReturnsFalseWhenSystemdExecPidDoesNotMatchAndNotifySocketIsSet()
+        {
+            // Child process scenario: SYSTEMD_EXEC_PID is set but doesn't match the current PID,
+            // while NOTIFY_SOCKET is inherited from the parent service.
+            // The mismatch falls through to legacy detection (not PID 1, parent not named "systemd"),
+            // which returns false. NOTIFY_SOCKET is only considered in the PID 1 container path.
+            using var _ = RemoteExecutor.Invoke(static () =>
+            {
+                int nonMatchingPid = int.MaxValue;
+                Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", nonMatchingPid.ToString(CultureInfo.InvariantCulture));
+                Environment.SetEnvironmentVariable("NOTIFY_SOCKET", "/run/systemd/notify");
+                Environment.SetEnvironmentVariable("LISTEN_PID", null);
+
+                Assert.False(SystemdHelpers.IsSystemdService());
+            });
+        }
+
+        [ConditionalFact(typeof(SystemdHelpersTests), nameof(IsRemoteExecutorSupportedOnLinux))]
+        public void IsSystemdServiceReturnsFalseWhenNotifySocketIsEmpty()
+        {
+            using var _ = RemoteExecutor.Invoke(static () =>
+            {
+                Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", null);
+                Environment.SetEnvironmentVariable("NOTIFY_SOCKET", "");
+                Environment.SetEnvironmentVariable("LISTEN_PID", null);
+
+                Assert.False(SystemdHelpers.IsSystemdService());
+            });
+        }
     }
 }

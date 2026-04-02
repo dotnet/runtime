@@ -35,66 +35,43 @@ namespace Microsoft.Extensions.Hosting
         }
 
         [Fact]
-        public void UseSystemd_DefaultsToOffOutsideOfService()
-        {
-            using IHost host = BuildHostWithUseSystemd();
-            var lifetime = host.Services.GetRequiredService<IHostLifetime>();
-            Assert.NotNull(lifetime);
-            Assert.IsNotType<SystemdLifetime>(lifetime);
-        }
-
-        [Fact]
         public void AddSystemd_DefaultsToOffOutsideOfService()
         {
+            // Simulate running outside of a systemd service
+            // SystemdLifetime and SystemdLogger should not be registered, even if UseSystemd is called.
             using IHost host = BuildHostWithAddSystemd();
             var lifetime = host.Services.GetRequiredService<IHostLifetime>();
             Assert.NotNull(lifetime);
             Assert.IsNotType<SystemdLifetime>(lifetime);
+            var options = host.Services.GetRequiredService<IOptions<ConsoleLoggerOptions>>().Value;
+            Assert.NotEqual(ConsoleFormatterNames.Systemd, options.FormatterName);
+        }
+
+        [Fact]
+        public void UseSystemd_DefaultsToOffOutsideOfService()
+        {
+            // Simulate running outside of a systemd service
+            // SystemdLifetime and SystemdLogger should not be registered, even if UseSystemd is called.
+            using IHost host = BuildHostWithUseSystemd();
+            var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+            Assert.NotNull(lifetime);
+            Assert.IsNotType<SystemdLifetime>(lifetime);
+            var options = host.Services.GetRequiredService<IOptions<ConsoleLoggerOptions>>().Value;
+            Assert.NotEqual(ConsoleFormatterNames.Systemd, options.FormatterName);
         }
 
         [ConditionalFact(typeof(UseSystemdTests), nameof(IsRemoteExecutorSupportedOnLinux))]
-        public void AddSystemd_SystemdLifetimeIsRegisteredWhenNotifySocketIsSet()
+        public void AddSystemd_SystemdLoggerIsNotConfiguredAndSystemdLifetimeIsNotRegisteredWhenIsSystemdServiceIsFalse()
         {
+            // Simulate running outside of a systemd service
             using var _ = RemoteExecutor.Invoke(static () =>
             {
-                Environment.SetEnvironmentVariable("NOTIFY_SOCKET", "/run/systemd/notify");
                 Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", null);
-
-                using IHost host = BuildHostWithAddSystemd();
-
-                Assert.Null(Environment.GetEnvironmentVariable("NOTIFY_SOCKET")); // Verify that the socket path is cleared from the environment after reading, to avoid inheritance by child processes.
-
-                var lifetime = host.Services.GetRequiredService<IHostLifetime>();
-                Assert.IsType<SystemdLifetime>(lifetime);
-            });
-        }
-
-        [ConditionalFact(typeof(UseSystemdTests), nameof(IsRemoteExecutorSupportedOnLinux))]
-        public void UseSystemd_SystemdLifetimeIsRegisteredWhenNotifySocketIsSet()
-        {
-            using var _ = RemoteExecutor.Invoke(static () =>
-            {
-                Environment.SetEnvironmentVariable("NOTIFY_SOCKET", "/run/systemd/notify");
-                Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", null);
-
-                using IHost host = BuildHostWithUseSystemd();
-
-                Assert.Null(Environment.GetEnvironmentVariable("NOTIFY_SOCKET"));
-
-                var lifetime = host.Services.GetRequiredService<IHostLifetime>();
-                Assert.IsType<SystemdLifetime>(lifetime);
-            });
-        }
-
-        [ConditionalFact(typeof(UseSystemdTests), nameof(IsRemoteExecutorSupportedOnLinux))]
-        public void AddSystemd_SystemdLifetimeIsNotRegisteredWhenNotifySocketIsAbsent()
-        {
-            using var _ = RemoteExecutor.Invoke(static () =>
-            {
                 Environment.SetEnvironmentVariable("NOTIFY_SOCKET", null);
-                Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", null);
 
                 using IHost host = BuildHostWithAddSystemd();
+                var options = host.Services.GetRequiredService<IOptions<ConsoleLoggerOptions>>().Value;
+                Assert.NotEqual(ConsoleFormatterNames.Systemd, options.FormatterName);
 
                 var lifetime = host.Services.GetRequiredService<IHostLifetime>();
                 Assert.IsNotType<SystemdLifetime>(lifetime);
@@ -102,14 +79,17 @@ namespace Microsoft.Extensions.Hosting
         }
 
         [ConditionalFact(typeof(UseSystemdTests), nameof(IsRemoteExecutorSupportedOnLinux))]
-        public void UseSystemd_SystemdLifetimeIsNotRegisteredWhenNotifySocketIsAbsent()
+        public void UseSystemd_SystemdLoggerIsNotConfiguredAndSystemdLifetimeIsNotRegisteredWhenIsSystemdServiceIsFalse()
         {
+            // Simulate running outside of a systemd service
             using var _ = RemoteExecutor.Invoke(static () =>
             {
-                Environment.SetEnvironmentVariable("NOTIFY_SOCKET", null);
                 Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", null);
+                Environment.SetEnvironmentVariable("NOTIFY_SOCKET", null);
 
                 using IHost host = BuildHostWithUseSystemd();
+                var options = host.Services.GetRequiredService<IOptions<ConsoleLoggerOptions>>().Value;
+                Assert.NotEqual(ConsoleFormatterNames.Systemd, options.FormatterName);
 
                 var lifetime = host.Services.GetRequiredService<IHostLifetime>();
                 Assert.IsNotType<SystemdLifetime>(lifetime);
@@ -117,8 +97,9 @@ namespace Microsoft.Extensions.Hosting
         }
 
         [ConditionalFact(typeof(UseSystemdTests), nameof(IsRemoteExecutorSupportedOnLinux))]
-        public void AddSystemd_SystemdLoggerIsConfiguredWhenIsSystemdServiceIsTrue()
+        public void AddSystemd_SystemdLoggerIsConfiguredAndSystemdLifetimeIsRegisteredWhenIsSystemdServiceIsTrue()
         {
+            // Simulates: Type=simple with SYSTEMD_EXEC_PID (e.g. systemd >= v248) nominal case.
             using var _ = RemoteExecutor.Invoke(static () =>
             {
                 Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID",
@@ -128,12 +109,16 @@ namespace Microsoft.Extensions.Hosting
                 using IHost host = BuildHostWithAddSystemd();
                 var options = host.Services.GetRequiredService<IOptions<ConsoleLoggerOptions>>().Value;
                 Assert.Equal(ConsoleFormatterNames.Systemd, options.FormatterName);
+
+                var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+                Assert.IsType<SystemdLifetime>(lifetime);
             });
         }
 
         [ConditionalFact(typeof(UseSystemdTests), nameof(IsRemoteExecutorSupportedOnLinux))]
-        public void UseSystemd_SystemdLoggerIsConfiguredWhenIsSystemdServiceIsTrue()
+        public void UseSystemd_SystemdLoggerIsConfiguredAndSystemdLifetimeIsRegisteredWhenIsSystemdServiceIsTrue()
         {
+            // Simulates: Type=simple with SYSTEMD_EXEC_PID (e.g. systemd >= v248) nominal case.
             using var _ = RemoteExecutor.Invoke(static () =>
             {
                 Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID",
@@ -143,18 +128,27 @@ namespace Microsoft.Extensions.Hosting
                 using IHost host = BuildHostWithUseSystemd();
                 var options = host.Services.GetRequiredService<IOptions<ConsoleLoggerOptions>>().Value;
                 Assert.Equal(ConsoleFormatterNames.Systemd, options.FormatterName);
+
+                var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+                Assert.IsType<SystemdLifetime>(lifetime);
             });
         }
 
         [ConditionalFact(typeof(UseSystemdTests), nameof(IsRemoteExecutorSupportedOnLinux))]
-        public void AddSystemd_SystemdLoggerIsNotConfiguredWhenOnlyNotifySocketIsSet()
+        public void AddSystemd_SystemdLifetimeIsRegisteredAndLoggerIsNotConfiguredWhenOnlyNotifySocketIsSet()
         {
+            // Simulates: Type=notify without SYSTEMD_EXEC_PID (e.g. containerized, Podman --sdnotify=container, systemd < v248).
             using var _ = RemoteExecutor.Invoke(static () =>
             {
-                Environment.SetEnvironmentVariable("NOTIFY_SOCKET", "/run/systemd/notify");
                 Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", null);
+                Environment.SetEnvironmentVariable("NOTIFY_SOCKET", "/run/systemd/notify");
 
                 using IHost host = BuildHostWithAddSystemd();
+
+                Assert.Null(Environment.GetEnvironmentVariable("NOTIFY_SOCKET")); // Cleared to prevent child process inheritance.
+
+                var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+                Assert.IsType<SystemdLifetime>(lifetime);
 
                 var options = host.Services.GetRequiredService<IOptions<ConsoleLoggerOptions>>().Value;
                 Assert.NotEqual(ConsoleFormatterNames.Systemd, options.FormatterName);
@@ -162,14 +156,20 @@ namespace Microsoft.Extensions.Hosting
         }
 
         [ConditionalFact(typeof(UseSystemdTests), nameof(IsRemoteExecutorSupportedOnLinux))]
-        public void UseSystemd_SystemdLoggerIsNotConfiguredWhenOnlyNotifySocketIsSet()
+        public void UseSystemd_SystemdLifetimeIsRegisteredAndLoggerIsNotConfiguredWhenOnlyNotifySocketIsSet()
         {
+            // Simulates: Type=notify without SYSTEMD_EXEC_PID (e.g. containerized, Podman --sdnotify=container, systemd < v248).
             using var _ = RemoteExecutor.Invoke(static () =>
             {
-                Environment.SetEnvironmentVariable("NOTIFY_SOCKET", "/run/systemd/notify");
                 Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", null);
+                Environment.SetEnvironmentVariable("NOTIFY_SOCKET", "/run/systemd/notify");
 
                 using IHost host = BuildHostWithUseSystemd();
+
+                Assert.Null(Environment.GetEnvironmentVariable("NOTIFY_SOCKET")); // Cleared to prevent child process inheritance.
+
+                var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+                Assert.IsType<SystemdLifetime>(lifetime);
 
                 var options = host.Services.GetRequiredService<IOptions<ConsoleLoggerOptions>>().Value;
                 Assert.NotEqual(ConsoleFormatterNames.Systemd, options.FormatterName);
@@ -179,6 +179,7 @@ namespace Microsoft.Extensions.Hosting
         [ConditionalFact(typeof(UseSystemdTests), nameof(IsRemoteExecutorSupportedOnLinux))]
         public void AddSystemd_SystemdLoggerAndLifetimeAreBothRegisteredWhenBothConditionsAreMet()
         {
+            // Simulates: Type=notify with SYSTEMD_EXEC_PID (systemd >= v248).
             using var _ = RemoteExecutor.Invoke(static () =>
             {
                 Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID",
@@ -198,6 +199,7 @@ namespace Microsoft.Extensions.Hosting
         [ConditionalFact(typeof(UseSystemdTests), nameof(IsRemoteExecutorSupportedOnLinux))]
         public void UseSystemd_SystemdLoggerAndLifetimeAreBothRegisteredWhenBothConditionsAreMet()
         {
+            // Simulates: Type=notify with SYSTEMD_EXEC_PID (systemd >= v248).
             using var _ = RemoteExecutor.Invoke(static () =>
             {
                 Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID",
