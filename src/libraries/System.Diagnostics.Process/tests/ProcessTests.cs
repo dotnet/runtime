@@ -402,14 +402,14 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, and MacCatalyst.")]
         public void ProcessStart_TryOpenFolder_UseShellExecuteIsFalse_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, and MacCatalyst.")]
         public void TestStartWithBadWorkingDirectory()
         {
             string program;

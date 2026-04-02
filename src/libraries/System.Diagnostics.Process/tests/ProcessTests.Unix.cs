@@ -519,7 +519,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, or MacCatalyst.")]
         public void TestStartOnUnixWithBadPermissions()
         {
             string path = GetTestFilePath();

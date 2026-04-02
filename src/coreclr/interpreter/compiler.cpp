@@ -4693,23 +4693,26 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         if (!m_isSynchronized && !m_isAsyncMethodWithContextSaveRestore)
             NO_WAY("INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED_OR_ASYNC used in a non-synchronized or async method");
 
-        INTERP_DUMP("INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED_OR_ASYNC with synchronized ret val var V%d\n", (int)m_synchronizedOrAsyncRetValVarIndex);
-
-        if (m_synchronizedOrAsyncRetValVarIndex != -1)
+        if (m_synchronizedOrAsyncRetValVarIndex == -1)
         {
-            // If the function returns a value, and we've processed a ret instruction, we'll have a var to load
-            EmitLoadVar(m_synchronizedOrAsyncRetValVarIndex);
-        }
-        else
-        {
+            // Code inside for-loops, for example, is not emitted in the first pass, so we can reach the async
+            // epilog with m_synchronizedOrAsyncRetValVarIndex uninitialized.
             CORINFO_SIG_INFO sig = m_methodInfo->args;
             InterpType retType = GetInterpType(sig.retType);
             if (retType != InterpTypeVoid)
             {
-                // Push... something so the codegen of the ret doesn't fail. It doesn't matter, as this code will never be reached.
-                // This should only be possible in valid IL when the method always will throw
-                PushInterpType(InterpTypeI, NULL);
+                CORINFO_CLASS_HANDLE retClsHnd = (retType == InterpTypeVT) ? sig.retTypeClass : NULL;
+                PushInterpType(retType, retClsHnd);
+                m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
+                m_pStackPointer--;
+                INTERP_DUMP("Created ret val var V%d (pre-created in epilog)\n", m_synchronizedOrAsyncRetValVarIndex);
             }
+        }
+
+        INTERP_DUMP("INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED_OR_ASYNC with ret val var V%d\n", (int)m_synchronizedOrAsyncRetValVarIndex);
+        if (m_synchronizedOrAsyncRetValVarIndex != -1)
+        {
+            EmitLoadVar(m_synchronizedOrAsyncRetValVarIndex);
         }
         m_ip += 5;
         return;

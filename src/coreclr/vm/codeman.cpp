@@ -2268,6 +2268,7 @@ LoaderCodeHeap::LoaderCodeHeap(bool fMakeExecutable)
     m_cbMinNextPad(0)
 {
     WRAPPER_NO_CONTRACT;
+    m_heapType = CodeHeapType::LoaderCodeHeap;
 }
 
 void ThrowOutOfMemoryWithinRange()
