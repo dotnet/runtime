@@ -14,6 +14,9 @@
 static char s_serverInPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
 static char s_serverOutPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
 
+// Cleans up the named pipe connection so no tmp files are left behind. Does only
+// the minimum and must be safe to call at any time. Called during PAL ExitProcess,
+// TerminateProcess and for unhandled native exceptions and asserts.
 static void AbortPipeServerImpl()
 {
     // IMPORTANT NOTE: This function must not call any signal unsafe functions
