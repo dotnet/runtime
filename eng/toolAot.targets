@@ -12,17 +12,11 @@
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <_TrueTargetRid>$(RuntimeIdentifier)</_TrueTargetRid>
-    <!--
-      NativeAOT's targets don't handle cross-targeting to a non-portable RID.
-      Change the RID when importing the NativeAOT targets to the corresponding portable RID.
-    -->
-    <RuntimeIdentifier>$(PortableTargetRid)</RuntimeIdentifier>
-  </PropertyGroup>
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(PublishAot)' == 'true' and '$(UseBootstrapLayout)' == 'true'" />
-  <PropertyGroup>
-    <RuntimeIdentifier>$(_TrueTargetRid)</RuntimeIdentifier>
+  <!-- Use the SDK's ILCompilerTargetsPath hook to import ILC targets in the correct order,
+       matching how the shipping SDK imports them. -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true' and '$(UseBootstrapLayout)' == 'true'">
+    <_IlcReferencedAsPackage>false</_IlcReferencedAsPackage>
+    <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
   </PropertyGroup>
 
 

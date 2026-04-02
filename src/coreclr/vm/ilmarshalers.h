@@ -358,6 +358,18 @@ protected:
         return (0 != (dwMarshalFlags & MARSHAL_FLAG_FIELD));
     }
 
+    static inline bool IsNoCleanup(DWORD dwMarshalFlags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (0 != (dwMarshalFlags & MARSHAL_FLAG_NO_CLEANUP));
+    }
+
+    static inline bool IsCleanupOnly(DWORD dwMarshalFlags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (0 != (dwMarshalFlags & MARSHAL_FLAG_CLEANUP_ONLY));
+    }
+
     static void EmitLoadNativeLocalAddrForByRefDispatch(ILCodeStream* pslILEmit, DWORD local)
     {
         WRAPPER_NO_CONTRACT;
@@ -475,14 +487,12 @@ public:
                 UINT            argidx,
                 UINT32          managedOffset,
                 UINT32          nativeOffset,
+                DWORD           dwMarshalFlags,
                 OverrideProcArgs*  pargs)
     {
         STANDARD_VM_CONTRACT;
 
-        // Struct marshaling stubs are always in, and out
-        // since we generate a single stub for all three operations (managed->native, native->managed, cleanup)
-        // we set the clr-to-native flag so the marshal phase is CLR->Native and the unmarshal phase is Native->CLR
-        Init(pcsMarshal, pcsUnmarshal, argidx, MARSHAL_FLAG_IN | MARSHAL_FLAG_OUT | MARSHAL_FLAG_CLR_TO_NATIVE | MARSHAL_FLAG_FIELD, pargs);
+        Init(pcsMarshal, pcsUnmarshal, argidx, dwMarshalFlags | MARSHAL_FLAG_FIELD, pargs);
 
         EmitCreateMngdMarshaler(m_pslPInvoke->GetSetupCodeStream());
 
@@ -506,6 +516,9 @@ public:
         STANDARD_VM_CONTRACT;
 
         Init(pcsMarshal, pcsUnmarshal, argidx, dwMarshalFlags, pargs);
+
+        _ASSERTE(!IsFieldMarshal(dwMarshalFlags)); // should be using EmitMarshalField for field marshaling
+        _ASSERTE(!IsNoCleanup(dwMarshalFlags) && !IsCleanupOnly(dwMarshalFlags)); // Cleanup-only and no-cleanup modes are for field marshalling only.
 
         // We could create the marshaler in the marshal stream right before it's needed (i.e. within the try block),
         // or in the setup stream (outside of the try block). For managed-to-unmanaged marshaling it does not actually
@@ -588,6 +601,9 @@ public:
         STANDARD_VM_CONTRACT;
 
         Init(pcsMarshal, pcsUnmarshal, argidx, dwMarshalFlags, pargs);
+
+        _ASSERTE(!IsFieldMarshal(dwMarshalFlags)); // should be using EmitMarshalField for field marshaling
+        _ASSERTE(!IsNoCleanup(dwMarshalFlags) && !IsCleanupOnly(dwMarshalFlags)); // Cleanup-only and no-cleanup modes are for field marshalling only.
 
         LocalDesc nativeType = GetNativeType();
         LocalDesc managedType = GetManagedType();
@@ -1013,16 +1029,37 @@ protected:
         pcsSetup->EmitNOP("// } field setup");
     }
 
-    virtual void EmitMarshalFieldSpaceAndContents()
+    void EmitMarshalFieldSpaceAndContents()
     {
         STANDARD_VM_CONTRACT;
 
-        EmitConvertSpaceAndContentsCLRToNative(m_pcsMarshal);
-        EmitConvertSpaceAndContentsNativeToCLR(m_pcsUnmarshal);
-        if (NeedsClearNative())
+        _ASSERTE(IsFieldMarshal(m_dwMarshalFlags));
+        // It does not make sense to request only generating cleanup code
+        // and at the same time request to not generate cleanup code.
+        _ASSERTE(!(IsCleanupOnly(m_dwMarshalFlags) && IsNoCleanup(m_dwMarshalFlags)));
+        _ASSERTE(IsCLRToNative(m_dwMarshalFlags)); // currently field marshaling expects to be marked as managed-to-native.
+
+        if (!IsCleanupOnly(m_dwMarshalFlags))
         {
-            ILCodeStream* pcsCleanup = m_pslPInvoke->GetCleanupCodeStream();
-            EmitClearNative(pcsCleanup);
+            if (IsCLRToNative(m_dwMarshalFlags) && IsIn(m_dwMarshalFlags))
+            {
+                EmitConvertSpaceAndContentsCLRToNative(m_pslPInvoke->GetMarshalCodeStream());
+            }
+
+            if (IsCLRToNative(m_dwMarshalFlags) && IsOut(m_dwMarshalFlags))
+            {
+                EmitConvertSpaceAndContentsNativeToCLR(m_pslPInvoke->GetUnmarshalCodeStream());
+            }
+        }
+
+        if (NeedsClearNative() && !IsNoCleanup(m_dwMarshalFlags))
+        {
+            EmitClearNative(m_pslPInvoke->GetCleanupCodeStream());
+        }
+
+        if (NeedsClearCLR() && !IsNoCleanup(m_dwMarshalFlags))
+        {
+            EmitClearCLR(m_pslPInvoke->GetCleanupCodeStream());
         }
     }
 
@@ -1455,13 +1492,8 @@ protected:
         EmitLoadManagedValue(pslILEmit);
     }
 
-    void EmitKeepAliveManagedValue()
+    void EmitKeepAliveManagedValue(ILCodeStream* pslILEmit)
     {
-        // Don't use the cleanup work list to avoid any extra allocations.
-        m_pslPInvoke->SetCleanupNeeded();
-
-        ILCodeStream* pslILEmit = m_pslPInvoke->GetCleanupCodeStream();
-
         ILCodeLabel* pNoManagedValueLabel = nullptr;
         if (IsFieldMarshal(m_dwMarshalFlags))
         {
@@ -1862,6 +1894,17 @@ protected:
     LocalDesc GetManagedType() override;
     void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
+
+    bool NeedsClearNative() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsCLRToNative(m_dwMarshalFlags) && IsIn(m_dwMarshalFlags);
+    }
+
+    void EmitClearNative(ILCodeStream* pslILEmit) override
+    {
+        EmitKeepAliveManagedValue(pslILEmit);
+    }
 };
 
 class ILReflectionObjectMarshaler : public ILMarshaler
@@ -1881,6 +1924,18 @@ protected:
     virtual BinderFieldID GetStructureFieldID() { LIMITED_METHOD_CONTRACT; return (BinderFieldID)0; }
     virtual BinderFieldID GetObjectFieldID() = 0;
     virtual BinderClassID GetManagedTypeBinderID() = 0;
+
+    bool NeedsClearNative() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsCLRToNative(m_dwMarshalFlags) && IsIn(m_dwMarshalFlags);
+    }
+
+    void EmitClearNative(ILCodeStream* pslILEmit) override
+    {
+        EmitKeepAliveManagedValue(pslILEmit);
+    }
+
     void EmitLoadValueToKeepAlive(ILCodeStream* pslILEmit) override
     {
         BinderFieldID structField = GetStructureFieldID();
@@ -3270,7 +3325,6 @@ struct MngdNativeArrayMarshaler
 {
     MethodTable*            m_pElementMT;
     TypeHandle              m_Array;
-    PCODE                   m_pManagedMarshaler;
     BOOL                    m_NativeDataValid;
     BOOL                    m_BestFitMap;
     BOOL                    m_ThrowOnUnmappableChar;
@@ -3326,7 +3380,6 @@ protected:
 struct MngdFixedArrayMarshaler
 {
     MethodTable* m_pElementMT;
-    PCODE        m_pManagedElementMarshaler;
     TypeHandle   m_Array;
     BOOL         m_BestFitMap;
     BOOL         m_ThrowOnUnmappableChar;
@@ -3412,14 +3465,13 @@ public:
     };
 
     MethodTable*    m_pElementMT;
-    PCODE           m_pManagedMarshaler;
     int             m_iRank;
     VARTYPE         m_vt;
     BYTE            m_fStatic;     // StaticCheckStateFlags
     BYTE            m_nolowerbounds;
 };
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler);
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags);
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged);
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);

@@ -54,7 +54,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public void Kill()
         {
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }

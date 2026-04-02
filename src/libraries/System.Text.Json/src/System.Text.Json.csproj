@@ -401,9 +401,9 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs" Link="Common\System\IO\StreamExtensions.netstandard.cs" />
-    <Compile Include="$(CommonPath)System\Text\StringBuilderExtensions.cs" Link="Common\System\Text\StringBuilderExtensions.cs" />
-    <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StreamMemoryPolyfills.cs" Link="Common\Polyfills\StreamMemoryPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StringBuilderPolyfills.cs" Link="Common\Polyfills\StringBuilderPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StackPolyfills.cs" Link="Common\Polyfills\StackPolyfills.cs" />
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />

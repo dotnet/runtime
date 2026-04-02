@@ -98,6 +98,11 @@ namespace Microsoft.Win32.SafeHandles
                 throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
             }
 
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
 
             SafeFileHandle? childInputHandle = startInfo.StandardInputHandle;
@@ -106,17 +111,17 @@ namespace Microsoft.Win32.SafeHandles
 
             if (!startInfo.UseShellExecute)
             {
-                if (childInputHandle is null && !OperatingSystem.IsAndroid())
+                if (childInputHandle is null && ProcessUtils.PlatformSupportsConsole)
                 {
                     childInputHandle = Console.OpenStandardInputHandle();
                 }
 
-                if (childOutputHandle is null && !OperatingSystem.IsAndroid())
+                if (childOutputHandle is null && ProcessUtils.PlatformSupportsConsole)
                 {
                     childOutputHandle = Console.OpenStandardOutputHandle();
                 }
 
-                if (childErrorHandle is null && !OperatingSystem.IsAndroid())
+                if (childErrorHandle is null && ProcessUtils.PlatformSupportsConsole)
                 {
                     childErrorHandle = Console.OpenStandardErrorHandle();
                 }
