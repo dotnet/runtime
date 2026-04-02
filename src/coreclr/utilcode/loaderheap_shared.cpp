@@ -15,6 +15,7 @@ RandomForLoaderHeap s_randomForLoaderHeap;
 INDEBUG(DWORD UnlockedLoaderHeapBase::s_dwNumInstancesOfLoaderHeaps = 0;)
 
 UnlockedLoaderHeapBase::UnlockedLoaderHeapBase(LoaderHeapImplementationKind kind) : 
+    m_backout(this),
     m_kind(kind),
     m_dwTotalAlloc(0),
     m_pAllocPtr(NULL),

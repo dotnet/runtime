@@ -70,6 +70,11 @@ internal partial class MockDescriptors
         ]
     };
 
+    private static readonly TypeFields ObjectHeaderFields = new TypeFields()
+    {
+        DataType = DataType.ObjectHeader,
+    };
+
     private static readonly TypeFields StringFields = new TypeFields()
     {
         DataType = DataType.String,
@@ -120,6 +125,7 @@ internal partial class MockDescriptors
             new(nameof(Data.SyncBlock.Lock), DataType.pointer),
             new(nameof(Data.SyncBlock.ThinLock), DataType.uint32),
             new(nameof(Data.SyncBlock.LinkNext), DataType.pointer),
+            new(nameof(Data.SyncBlock.HashCode), DataType.uint32),
         ]
     };
 
@@ -239,12 +245,37 @@ internal partial class MockDescriptors
         Dictionary<DataType, Target.TypeInfo> types = new();
         foreach (var toAdd in typeFields)
         {
-            TargetTestHelpers.LayoutResult layout = GetLayout(helpers, toAdd);
-            types[toAdd.DataType] = new Target.TypeInfo()
+            if (toAdd.DataType == DataType.ObjectHeader)
             {
-                Fields = layout.Fields,
-                Size = layout.Stride,
-            };
+                List<TargetTestHelpers.Field> objectHeaderFields = new();
+                if (helpers.Arch.Is64Bit)
+                    objectHeaderFields.Add(new("Padding", DataType.uint32));
+                objectHeaderFields.Add(new(nameof(Data.ObjectHeader.SyncBlockValue), DataType.uint32));
+                TargetTestHelpers.Field[] fields = objectHeaderFields.ToArray();
+                TypeFields objectHeaderTypeFields = new TypeFields()
+                {
+                    DataType = DataType.ObjectHeader,
+                    Fields = fields,
+                };
+
+                TargetTestHelpers.LayoutResult layout = GetLayout(helpers, objectHeaderTypeFields);
+
+                types[toAdd.DataType] = new Target.TypeInfo()
+                {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+                };
+            }
+            else
+            {
+                TargetTestHelpers.LayoutResult layout = GetLayout(helpers, toAdd);
+                types[toAdd.DataType] = new Target.TypeInfo()
+                {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+                };
+            }
+
         }
         return types;
 

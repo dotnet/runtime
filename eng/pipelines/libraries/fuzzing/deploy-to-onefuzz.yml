@@ -25,7 +25,7 @@ extends:
         timeoutInMinutes: 600
         pool:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals windows.vs2026preview.scout.amd64
+          demands: ImageOverride -equals windows.vs2026.amd64
 
         steps:
         - checkout: self

@@ -195,7 +195,7 @@ namespace System.Net.Security
                 consumed -= inputBuffers._item1.Token.Length;
             }
 
-            bool allowTlsResume = sslAuthenticationOptions.AllowTlsResume && !SslStream.DisableTlsResume;
+            bool allowTlsResume = sslAuthenticationOptions.AllowTlsResume && !LocalAppContextSwitches.DisableTlsResume;
 
             if (!allowTlsResume && newContext && context != null)
             {
@@ -299,7 +299,7 @@ namespace System.Net.Security
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
             Interop.SspiCli.CredentialUse direction;
 
-            bool allowTlsResume = authOptions.AllowTlsResume && !SslStream.DisableTlsResume;
+            bool allowTlsResume = authOptions.AllowTlsResume && !LocalAppContextSwitches.DisableTlsResume;
 
             if (!isServer)
             {
@@ -374,7 +374,7 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS.Flags flags;
             Interop.SspiCli.CredentialUse direction;
 
-            bool allowTlsResume = authOptions.AllowTlsResume && !SslStream.DisableTlsResume;
+            bool allowTlsResume = authOptions.AllowTlsResume && !LocalAppContextSwitches.DisableTlsResume;
 
             if (isServer)
             {

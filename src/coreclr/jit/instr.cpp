@@ -86,7 +86,8 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrs.h"
 
 #elif defined(TARGET_WASM)
-        #define INST(id, nm, info, fmt, opcode) nm,
+        #define INST(id, nm, info, fmt, opcode         ) nm,
+        #define INST2(id, nm, info, fmt, prefix, opcode) nm,
         #include "instrs.h"
 
 #else

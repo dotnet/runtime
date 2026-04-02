@@ -20,7 +20,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 {
     int IXCLRDataProcess.Flush()
     {
-        _target.ProcessedData.Clear();
+        _target.Flush();
 
         // As long as any part of cDAC falls back to the legacy DAC, we need to propagate the Flush call
         if (_legacyProcess is not null)

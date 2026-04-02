@@ -43,16 +43,16 @@ namespace System.Speech.Internal.SrgsCompiler
 
         IElementText IElementFactory.CreateText(IElement parent, string value)
         {
-            return null;
+            return null!;
         }
 
-        IToken IElementFactory.CreateToken(IElement parent, string content, string pronunciation, string display, float reqConfidence)
+        IToken IElementFactory.CreateToken(IElement parent, string content, string? pronunciation, string? display, float reqConfidence)
         {
             ParseToken((ParseElementCollection)parent, content, pronunciation, display, reqConfidence);
-            return null;
+            return null!;
         }
 
-        IItem IElementFactory.CreateItem(IElement parent, IRule rule, int minRepeat, int maxRepeat, float repeatProbability, float weight)
+        IItem IElementFactory.CreateItem(IElement? parent, IRule rule, int minRepeat, int maxRepeat, float repeatProbability, float weight)
         {
             return new Item(_backend, (Rule)rule, minRepeat, maxRepeat, repeatProbability, weight);
         }
@@ -62,7 +62,7 @@ namespace System.Speech.Internal.SrgsCompiler
             throw new NotImplementedException();
         }
 
-        IRuleRef IElementFactory.CreateRuleRef(IElement parent, Uri srgsUri, string semanticKey, string parameters)
+        IRuleRef IElementFactory.CreateRuleRef(IElement parent, Uri srgsUri, string? semanticKey, string? parameters)
         {
             return new RuleRef((ParseElementCollection)parent, _backend, srgsUri, _grammar.UndefRules, semanticKey, parameters);
         }
@@ -72,7 +72,7 @@ namespace System.Speech.Internal.SrgsCompiler
             ((RuleRef)specialRule).InitSpecialRuleRef(_backend, (ParseElementCollection)parent);
         }
 
-        IOneOf IElementFactory.CreateOneOf(IElement parent, IRule rule)
+        IOneOf IElementFactory.CreateOneOf(IElement? parent, IRule rule)
         {
             return new OneOf((Rule)rule, _backend);
         }
@@ -87,7 +87,7 @@ namespace System.Speech.Internal.SrgsCompiler
             ((GrammarElement)grammar).AddScript(rule, code);
         }
 
-        string IElementFactory.AddScript(IGrammar grammar, string rule, string code, string filename, int line)
+        string IElementFactory.AddScript(IGrammar grammar, string rule, string code, string? filename, int line)
         {
             // add the #line information
             if (line >= 0)
@@ -106,7 +106,7 @@ namespace System.Speech.Internal.SrgsCompiler
             return code;
         }
 
-        void IElementFactory.AddScript(IGrammar grammar, string script, string filename, int line)
+        void IElementFactory.AddScript(IGrammar grammar, string script, string? filename, int line)
         {
             // add the #line information
             if (line >= 0)
@@ -209,7 +209,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// AddTransition(NormalizedToken, Parent.EndState, NewState)
         /// Parent.EndState = NewState
         /// </summary>
-        private void ParseToken(ParseElementCollection parent, string sToken, string pronunciation, string display, float reqConfidence)
+        private void ParseToken(ParseElementCollection parent, string sToken, string? pronunciation, string? display, float reqConfidence)
         {
             int requiredConfidence = (parent != null) ? parent._confidence : CfgGrammar.SP_NORMAL_CONFIDENCE;
 
@@ -219,6 +219,8 @@ namespace System.Speech.Internal.SrgsCompiler
             {
                 return;
             }
+
+            System.Diagnostics.Debug.Assert(parent is not null);
 
             // "sapi:reqconf" Attribute
             parent._confidence = CfgGrammar.SP_NORMAL_CONFIDENCE;  // Default to normal
@@ -246,7 +248,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 if (pronunciation != null)
                 {
                     // Garbage transition is optional whereas Wildcard is not.  So we need additional epsilon transition.
-                    OneOf oneOf = pronunciation.Contains(';') ? new OneOf(parent._rule, _backend) : null;
+                    OneOf? oneOf = pronunciation.Contains(';') ? new OneOf(parent._rule, _backend) : null;
 
                     for (int iCurPron = 0, iDeliminator = 0; iCurPron < pronunciation.Length; iCurPron = iDeliminator + 1)
                     {
@@ -258,7 +260,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         }
 
                         string pron = pronunciation.Substring(iCurPron, iDeliminator - iCurPron);
-                        string sSubPron = null;
+                        string? sSubPron = null;
                         switch (_backend.Alphabet)
                         {
                             case AlphabetType.Sapi:

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.InteropServices
@@ -13,6 +14,7 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
 
@@ -21,6 +23,7 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
 
@@ -29,6 +32,7 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
             => throw new PlatformNotSupportedException();
     }

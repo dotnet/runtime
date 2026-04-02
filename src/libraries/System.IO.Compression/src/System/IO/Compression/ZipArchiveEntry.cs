@@ -1084,14 +1084,14 @@ namespace System.IO.Compression
             return uncompressedStream;
         }
 
-        private Stream OpenInReadMode(bool checkOpenable, ReadOnlySpan<char> password = default)
+        private CrcValidatingReadStream OpenInReadMode(bool checkOpenable, ReadOnlySpan<char> password = default)
         {
             if (checkOpenable)
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: false);
             return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData(), password);
         }
 
-        private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlySpan<char> password = default)
+        private CrcValidatingReadStream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlySpan<char> password = default)
         {
             Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offsetOfCompressedData, _compressedSize);
             Stream streamToDecompress;
@@ -1109,7 +1109,7 @@ namespace System.IO.Compression
             // Get decompressed stream
             Stream decompressedStream = GetDataDecompressor(streamToDecompress);
 
-            return decompressedStream;
+            return new CrcValidatingReadStream(decompressedStream, _crc32, _uncompressedSize);
         }
         private WrappedStream OpenInWriteMode()
         {

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -29,6 +30,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         INibbleMap nibbleMap = T.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
+    }
+
+    public void Flush()
+    {
+        _codeInfos.Clear();
     }
 
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
@@ -64,6 +70,14 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         TYPE_INTERPRETER = 3
     };
 
+    private enum ExceptionClauseFlags_1 : uint
+    {
+        Filter = 0x1,
+        Finally = 0x2,
+        Fault = 0x4,
+        CachedClass = 0x10000000,
+    }
+
     private abstract class JitManager
     {
         public Target Target { get; }
@@ -83,6 +97,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         public abstract TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
         public abstract TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte);
         public abstract void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion);
+        public abstract void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
     }
 
     private sealed class RangeSection
@@ -366,5 +381,105 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeInfoHandle.Address.Value);
         return range;
+    }
+
+    private static ExceptionClauseInfo.ExceptionClauseFlags GetExceptionClauseFlags(uint flags)
+    {
+        if ((flags & (uint)ExceptionClauseFlags_1.Fault) != 0) return ExceptionClauseInfo.ExceptionClauseFlags.Fault;
+        if ((flags & (uint)ExceptionClauseFlags_1.Finally) != 0) return ExceptionClauseInfo.ExceptionClauseFlags.Finally;
+        if ((flags & (uint)ExceptionClauseFlags_1.Filter) != 0) return ExceptionClauseInfo.ExceptionClauseFlags.Filter;
+        return ExceptionClauseInfo.ExceptionClauseFlags.Typed;
+    }
+
+    private static bool IsFilterHandler(ExceptionClauseInfo.ExceptionClauseFlags flags) => flags == ExceptionClauseInfo.ExceptionClauseFlags.Filter;
+    private static bool IsTypedHandler(ExceptionClauseInfo.ExceptionClauseFlags flags) => flags == ExceptionClauseInfo.ExceptionClauseFlags.Typed;
+    private static bool HasCachedTypeHandle(IExceptionClauseData clause) => (clause.Flags & (uint)ExceptionClauseFlags_1.CachedClass) != 0;
+
+    private bool IsObjectType(TargetPointer moduleAddr, uint classToken)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle module = loader.GetModuleHandleFromModulePtr(moduleAddr);
+        ModuleLookupTables tables = loader.GetLookupTables(module);
+
+        TargetPointer resolvedMethodTable = (EcmaMetadataUtils.TokenType)(classToken & EcmaMetadataUtils.TokenTypeMask) switch
+        {
+            EcmaMetadataUtils.TokenType.mdtTypeDef => loader.GetModuleLookupMapElement(tables.TypeDefToMethodTable, classToken, out _),
+            EcmaMetadataUtils.TokenType.mdtTypeRef => loader.GetModuleLookupMapElement(tables.TypeRefToMethodTable, classToken, out _),
+            _ => TargetPointer.Null,
+        };
+
+        if (resolvedMethodTable == TargetPointer.Null)
+            return false;
+
+        TargetPointer objectMethodTable = _target.ReadPointer(
+            _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
+
+        return resolvedMethodTable == objectMethodTable;
+    }
+
+    List<ExceptionClauseInfo> IExecutionManager.GetExceptionClauses(CodeBlockHandle codeInfoHandle)
+    {
+        RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
+        if (range.Data == null)
+            return new List<ExceptionClauseInfo>();
+
+        JitManager jitManager = GetJitManager(range.Data);
+        jitManager.GetExceptionClauses(range, codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
+        bool isR2R = jitManager is ReadyToRunJitManager;
+        DataType clauseType = isR2R ? DataType.R2RExceptionClause : DataType.EEExceptionClause;
+        uint clauseSize = _target.GetTypeInfo(clauseType).Size!.Value;
+        TargetPointer methodDescPtr = ((IExecutionManager)this).GetMethodDesc(codeInfoHandle);
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
+        TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
+        TypeHandle th = rts.GetTypeHandle(mtPtr);
+        TargetPointer handleModuleAddr = rts.GetModule(th);
+
+        List<ExceptionClauseInfo> exceptionClauses = new List<ExceptionClauseInfo>();
+        for (TargetPointer addr = startAddr; addr < endAddr; addr += clauseSize)
+        {
+            IExceptionClauseData entry = isR2R
+                ? _target.ProcessedData.GetOrAdd<R2RExceptionClause>(addr)
+                : _target.ProcessedData.GetOrAdd<EEExceptionClause>(addr);
+
+            ExceptionClauseInfo.ExceptionClauseFlags flags = GetExceptionClauseFlags(entry.Flags);
+            uint? filterOffset = IsFilterHandler(flags) ? entry.FilterOffset : null;
+            TargetNUInt? typeHandle = null;
+            bool? isCatchAllHandler = null;
+            TargetPointer? moduleAddr = null;
+            uint? classToken = null;
+
+            if (IsTypedHandler(flags))
+            {
+                if (HasCachedTypeHandle(entry) && !isR2R) // Dynamic method path: we only have a cached type handle, no token.
+                {
+                    typeHandle = ((EEExceptionClause)entry).TypeHandle;
+                    TargetPointer objectMethodTable = _target.ReadPointer(
+                        _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
+                    isCatchAllHandler = typeHandle.Value.Value == objectMethodTable.Value;
+                }
+                else
+                {
+                    isCatchAllHandler = IsObjectType(handleModuleAddr, entry.ClassToken);
+                    moduleAddr = handleModuleAddr;
+                    classToken = entry.ClassToken;
+                }
+            }
+
+            exceptionClauses.Add(new ExceptionClauseInfo
+            {
+                ClauseType = flags,
+                IsCatchAllHandler = isCatchAllHandler,
+                TryStartPC = entry.TryStartPC,
+                TryEndPC = entry.TryEndPC,
+                HandlerStartPC = entry.HandlerStartPC,
+                HandlerEndPC = entry.HandlerEndPC,
+                FilterOffset = filterOffset,
+                ClassToken = classToken,
+                TypeHandle = typeHandle,
+                ModuleAddr = moduleAddr,
+            });
+        }
+        return exceptionClauses;
     }
 }

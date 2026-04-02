@@ -115,7 +115,7 @@ public class WebcilConverter
         var peHeader = headers.PEHeader!;
         var coffHeader = headers.CoffHeader!;
         var sections = headers.SectionHeaders;
-        WebcilHeader header;
+        WebcilHeader header = default;
         header.Id[0] = (byte)'W';
         header.Id[1] = (byte)'b';
         header.Id[2] = (byte)'I';

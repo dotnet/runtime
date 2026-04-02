@@ -2752,6 +2752,7 @@ AGAIN:
             case GT_ASYNC_RESUME_INFO:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
+            case GT_WASM_THROW_REF:
                 return true;
 
             default:
@@ -6843,6 +6844,8 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
+        case GT_WASM_THROW_REF:
+        case GT_WASM_JEXCEPT:
             return false;
 
         // Standard unary operators
@@ -7357,6 +7360,9 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
         case GT_CKFINITE:
             return ExceptionSetFlags::ArithmeticException;
+
+        case GT_WASM_THROW_REF:
+            return ExceptionSetFlags::UnknownException;
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -9717,6 +9723,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_LABEL:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
+            case GT_WASM_THROW_REF:
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
 
@@ -10495,6 +10502,8 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
+        case GT_WASM_THROW_REF:
+        case GT_WASM_JEXCEPT:
             m_state = -1;
             return;
 
@@ -12536,6 +12545,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_JMPTABLE:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
+        case GT_WASM_THROW_REF:
+        case GT_WASM_JEXCEPT:
             break;
 
         case GT_RET_EXPR:

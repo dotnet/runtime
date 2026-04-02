@@ -289,4 +289,14 @@ public abstract class Target
     /// A cache of the contracts for the target process
     /// </summary>
     public abstract ContractRegistry Contracts { get; }
+
+    /// <summary>
+    /// Clear all cached data held by this target, including processed data and contract caches.
+    /// Called when the target process state may have changed (e.g. on resume).
+    /// </summary>
+    public void Flush()
+    {
+        ProcessedData.Clear();
+        Contracts.Flush();
+    }
 }

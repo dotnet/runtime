@@ -1344,7 +1344,7 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(2.297f), (BFloat16)(8.938f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(10))
             yield return new object[] { (BFloat16)(2.719f), (BFloat16)(14.19f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (e)
             yield return new object[] { (BFloat16)(3.141f), (BFloat16)(22.12f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (pi)
-            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0 };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
         [Theory]
@@ -1388,7 +1388,7 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(2.297f), (BFloat16)(4.906f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (ln(10))
             yield return new object[] { (BFloat16)(2.719f), (BFloat16)(6.594f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (e)
             yield return new object[] { (BFloat16)(3.141f), (BFloat16)(8.812f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi)
-            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0f };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
         [Theory]
@@ -1550,8 +1550,8 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(-0.5078f), (BFloat16)(-0.707f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
             yield return new object[] { (BFloat16)(-0.5f), (BFloat16)(-0.6914f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
             yield return new object[] { (BFloat16)(-0.4707f), (BFloat16)(-0.6367f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), 0.0f };
-            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), 0.0f };
+            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), (BFloat16)0.0f };
             yield return new object[] { (BFloat16)(0.375f), (BFloat16)(0.3184f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
             yield return new object[] { (BFloat16)(0.543f), (BFloat16)(0.4336f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))
             yield return new object[] { (BFloat16)(0.8906f), (BFloat16)(0.6367f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
@@ -1714,7 +1714,7 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.Zero, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.One, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.E, BFloat16.PositiveInfinity, BFloat16.Zero };
-            yield return new object[] { BFloat16.PositiveInfinity, 10.0f, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, (BFloat16)10.0f, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.Zero };
         }
 

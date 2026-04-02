@@ -411,6 +411,9 @@
   <data name="SerializationConverterOnAttributeNotCompatible" xml:space="preserve">
     <value>The converter specified on '{0}' is not compatible with the type '{1}'.</value>
   </data>
+  <data name="SerializationConverterOnAttributeOpenGenericNotCompatible" xml:space="preserve">
+    <value>The open generic converter type '{1}' specified on '{0}' cannot be instantiated because the target type is not a generic type with a matching number of type parameters.</value>
+  </data>
   <data name="SerializationConverterOnAttributeInvalid" xml:space="preserve">
     <value>The converter specified on '{0}' does not derive from JsonConverter or have a public parameterless constructor.</value>
   </data>

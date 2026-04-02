@@ -17,10 +17,6 @@
 #elif HAVE_MALLOC_USABLE_SIZE_NP
     #include <malloc_np.h>
     #define MALLOC_SIZE(s) malloc_usable_size(s)
-#elif defined(TARGET_SUNOS)
-    #define MALLOC_SIZE(s) (*((size_t*)(s)-1))
-#else
-    #error "Platform doesn't support malloc_usable_size or malloc_size"
 #endif
 
 void* SystemNative_AlignedAlloc(uintptr_t alignment, uintptr_t size)
@@ -48,10 +44,23 @@ void* SystemNative_AlignedRealloc(void* ptr, uintptr_t alignment, uintptr_t new_
 
     if (result != NULL)
     {
+#ifdef MALLOC_SIZE
         uintptr_t old_size = MALLOC_SIZE(ptr);
         assert((ptr != NULL) || (old_size == 0));
 
-        memcpy(result, ptr, (new_size < old_size) ? new_size : old_size);
+        uintptr_t size_to_copy = (new_size < old_size) ? new_size : old_size;
+#else
+        // Less efficient implementation for platforms that do not provide MALLOC_SIZE.
+        ptr = realloc(ptr, new_size);
+        if (ptr == NULL)
+        {
+            SystemNative_AlignedFree(result);
+            return NULL;
+        }
+        uintptr_t size_to_copy = new_size;
+#endif
+
+        memcpy(result, ptr, size_to_copy);
         SystemNative_AlignedFree(ptr);
     }
 
