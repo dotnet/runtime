@@ -90,8 +90,8 @@ The skill combines **Python scripts** (deterministic data collection) with
 | 2. Fetch Latest Builds | Create DB, fetch latest build per pipeline | Script (`setup_and_fetch_builds.py`) | AzDO Builds API (no auth) |
 | 3. Extract Failed Tests and Fetch Logs | Extract failed test methods, download Helix console logs | Script (`extract_failed_tests.py`, `fetch_helix_logs.py`) | AzDO Test Results API (Bearer token), Helix API (no auth) |
 | 4. Triage Failures | Read logs, extract errors verbatim, classify, group, search GitHub | Agent | GitHub MCP (`search_issues`, `issue_read`) |
-| 5. Generate Report | Generate markdown report from DB | Script (`generate_report.py`) | None (reads DB only) |
-| 6. Validate Report | Validate DB completeness and report accuracy | Script (`validate_results.py`) | GitHub Search API (unauthenticated spot-checks) |
+| 5. Validate DB | Validate DB completeness and accuracy | Script (`validate_results.py`) | GitHub Search API (unauthenticated spot-checks) |
+| 6. Generate Report | Generate markdown report from DB | Script (`generate_report.py`) | None (reads DB only) |
 | 7. Bisect Regressions | Identify regressing commit/PR (on request) | Agent | GitHub MCP (`list_commits`, `search_pull_requests`) |
 
 Generated output (logs, reports, DB) stays local — nothing is committed to the repo.
