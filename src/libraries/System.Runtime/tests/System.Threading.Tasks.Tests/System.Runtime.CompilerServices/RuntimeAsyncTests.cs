@@ -15,14 +15,12 @@ namespace System.Threading.Tasks.Tests
     {
         private static bool IsRemoteExecutorAndRuntimeAsyncSupported => RemoteExecutor.IsSupported && PlatformDetection.IsRuntimeAsyncSupported;
 
-        // NOTE: This depends on private implementation details generally only used by the debugger.
-        // If those ever change, this test will need to be updated as well.
-        private static readonly FieldInfo AsyncDebuggingEnabledField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_asyncDebuggingEnabled");
-        private static readonly FieldInfo TaskTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncTaskTimestamps");
-        private static readonly FieldInfo ContinuationTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncContinuationTimestamps");
-        private static readonly FieldInfo ActiveTasksField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_currentActiveTasks");
-        private static readonly FieldInfo TplEventSourceLogField = GetCorLibClassStaticField("System.Threading.Tasks.TplEventSource", "Log");
-        private static readonly FieldInfo ActiveFlagsField = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "_activeFlags");
+        private static readonly FieldInfo s_asyncDebuggingEnabledField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_asyncDebuggingEnabled");
+        private static readonly FieldInfo s_taskTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncTaskTimestamps");
+        private static readonly FieldInfo s_continuationTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncContinuationTimestamps");
+        private static readonly FieldInfo s_activeTasksField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_currentActiveTasks");
+        private static readonly FieldInfo s_tplEventSourceLogField = GetCorLibClassStaticField("System.Threading.Tasks.TplEventSource", "Log");
+        private static readonly FieldInfo s_activeFlagsField = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "_activeFlags");
 
         private static object _debuggerLock = new object();
         private static TestEventListener? _debuggerTplInstance;
@@ -37,30 +35,30 @@ namespace System.Threading.Tasks.Tests
             lock (_debuggerLock)
             {
                 // Touch TplEventSource.Log making sure provider is initialized.
-                TplEventSourceLogField.GetValue(null);
+                s_tplEventSourceLogField.GetValue(null);
 
-                long flags = Convert.ToInt64(ActiveFlagsField.GetValue(null));
+                long flags = Convert.ToInt64(s_activeFlagsField.GetValue(null));
                 Assert.True(flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {DisabledInstrumentationFlags}");
 
                 _debuggerTplInstance = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose);
-                AsyncDebuggingEnabledField.SetValue(null, true);
+                s_asyncDebuggingEnabledField.SetValue(null, true);
 
-                flags = Convert.ToInt64(ActiveFlagsField.GetValue(null));
+                flags = Convert.ToInt64(s_activeFlagsField.GetValue(null));
                 Assert.True(flags == EnabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {EnabledInstrumentationFlags}");
 
                 // Initialize collections.
                 Func().GetAwaiter().GetResult();
 
-                flags = Convert.ToInt64(ActiveFlagsField.GetValue(null));
+                flags = Convert.ToInt64(s_activeFlagsField.GetValue(null));
                 Assert.True(flags == EnabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {EnabledInstrumentationFlags}");
 
-                var activeTasks = (Dictionary<int, Task>)ActiveTasksField.GetValue(null);
+                var activeTasks = (Dictionary<int, Task>)s_activeTasksField.GetValue(null);
                 Assert.True(activeTasks != null, "Expected active tasks dictionary to be initialized");
 
-                var taskTimestamps = (Dictionary<int, long>)TaskTimestampsField.GetValue(null);
+                var taskTimestamps = (Dictionary<int, long>)s_taskTimestampsField.GetValue(null);
                 Assert.True(taskTimestamps != null, "Expected tasks timestamps dictionary to be initialized");
 
-                var continuationTimestamps = (Dictionary<object, long>)ContinuationTimestampsField.GetValue(null);
+                var continuationTimestamps = (Dictionary<object, long>)s_continuationTimestampsField.GetValue(null);
                 Assert.True(continuationTimestamps != null, "Expected continuation timestamps dictionary to be initialized");
             }
         }
@@ -70,11 +68,11 @@ namespace System.Threading.Tasks.Tests
             // Simulate a debugger detach from process.
             lock (_debuggerLock)
             {
-                AsyncDebuggingEnabledField.SetValue(null, false);
+                s_asyncDebuggingEnabledField.SetValue(null, false);
                 _debuggerTplInstance.Dispose();
                 _debuggerTplInstance = null;
 
-                long flags = Convert.ToInt64(ActiveFlagsField.GetValue(null));
+                long flags = Convert.ToInt64(s_activeFlagsField.GetValue(null));
                 Assert.True(flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {DisabledInstrumentationFlags}");
             }
         }
@@ -97,10 +95,10 @@ namespace System.Threading.Tasks.Tests
         }
 
         private static int GetTaskTimestampCount() =>
-            TaskTimestampsField.GetValue(null) is Dictionary<int, long> dict ? dict.Count : 0;
+            s_taskTimestampsField.GetValue(null) is Dictionary<int, long> dict ? dict.Count : 0;
 
         private static int GetContinuationTimestampCount() =>
-            ContinuationTimestampsField.GetValue(null) is Dictionary<object, long> dict ? dict.Count : 0;
+            s_continuationTimestampsField.GetValue(null) is Dictionary<object, long> dict ? dict.Count : 0;
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         static async Task Func()
@@ -242,7 +240,7 @@ namespace System.Threading.Tasks.Tests
             {
                 AttachDebugger();
 
-                var activeTasks = (Dictionary<int, Task>)ActiveTasksField.GetValue(null);
+                var activeTasks = (Dictionary<int, Task>)s_activeTasksField.GetValue(null);
 
                 // Use an in-flight task to deterministically verify tracking is active
                 var tcs = new TaskCompletionSource();
@@ -256,7 +254,7 @@ namespace System.Threading.Tasks.Tests
 
                 // Complete the first await so it resumes and sets a task timestamp
                 tcs.SetResult();
-                var taskTimestamps = (Dictionary<int, long>)TaskTimestampsField.GetValue(null);
+                var taskTimestamps = (Dictionary<int, long>)s_taskTimestampsField.GetValue(null);
 
                 bool seenTimestamp = SpinWait.SpinUntil(() =>
                 {
@@ -378,7 +376,7 @@ namespace System.Threading.Tasks.Tests
                 Task inflight = FuncThatWaitsTwice(tcs1, tcs2);
 
                 // Task is suspended on tcs1 — should be in active tasks
-                var activeTasks = (Dictionary<int, Task>)ActiveTasksField.GetValue(null);
+                var activeTasks = (Dictionary<int, Task>)s_activeTasksField.GetValue(null);
 
                 lock (activeTasks)
                 {
@@ -390,7 +388,7 @@ namespace System.Threading.Tasks.Tests
 
                 // Poll until the dispatch loop has resumed and re-suspended on tcs2,
                 // which sets the task timestamp via ResumeRuntimeAsyncMethod.
-                var taskTimestamps = (Dictionary<int, long>)TaskTimestampsField.GetValue(null);
+                var taskTimestamps = (Dictionary<int, long>)s_taskTimestampsField.GetValue(null);
 
                 bool seenTimestamp = SpinWait.SpinUntil(() =>
                 {
@@ -444,7 +442,7 @@ namespace System.Threading.Tasks.Tests
                     // This callback runs inside the resumed async method body, after
                     // ResumeRuntimeAsyncMethod but before SuspendRuntimeAsyncContext/CompleteRuntimeAsyncMethod.
                     // The continuation timestamp for the current continuation should still be in the dictionary.
-                    var continuationTimestamps = (Dictionary<object, long>)ContinuationTimestampsField.GetValue(null);
+                    var continuationTimestamps = (Dictionary<object, long>)s_continuationTimestampsField.GetValue(null);
                     lock (continuationTimestamps)
                     {
                         continuationTimestampObserved = continuationTimestamps.Count > 0;
@@ -476,8 +474,8 @@ namespace System.Threading.Tasks.Tests
                 // Attach the debugger mid-flight — this enables instrumentation.
                 AttachDebugger();
 
-                var activeTasks = (Dictionary<int, Task>)ActiveTasksField.GetValue(null);
-                var taskTimestamps = (Dictionary<int, long>)TaskTimestampsField.GetValue(null);
+                var activeTasks = (Dictionary<int, Task>)s_activeTasksField.GetValue(null);
+                var taskTimestamps = (Dictionary<int, long>)s_taskTimestampsField.GetValue(null);
 
                 // The in-flight task was NOT tracked at creation (no instrumentation then).
                 lock (activeTasks)
