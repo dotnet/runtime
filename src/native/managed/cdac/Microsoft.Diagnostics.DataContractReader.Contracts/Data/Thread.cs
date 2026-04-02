@@ -40,6 +40,9 @@ internal sealed class Thread : IData<Thread>
             ? target.ReadPointer(address + (ulong)watsonFieldInfo.Offset)
             : TargetPointer.Null;
         ThreadLocalDataPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(ThreadLocalDataPtr)].Offset);
+
+        DebuggerFilterContext = target.ReadPointer(address + (ulong)type.Fields[nameof(DebuggerFilterContext)].Offset);
+        ProfilerFilterContext = target.ReadPointer(address + (ulong)type.Fields[nameof(ProfilerFilterContext)].Offset);
     }
 
     public uint Id { get; init; }
@@ -56,4 +59,6 @@ internal sealed class Thread : IData<Thread>
     public TargetPointer ExceptionTracker { get; init; }
     public TargetPointer UEWatsonBucketTrackerBuckets { get; init; }
     public TargetPointer ThreadLocalDataPtr { get; init; }
+    public TargetPointer DebuggerFilterContext { get; init; }
+    public TargetPointer ProfilerFilterContext { get; init; }
 }

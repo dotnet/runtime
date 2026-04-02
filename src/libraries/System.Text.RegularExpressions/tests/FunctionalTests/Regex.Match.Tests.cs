@@ -46,6 +46,12 @@ namespace System.Text.RegularExpressions.Tests
             // Testing control character escapes???: "2", "(\u0032)"
             yield return ("(\u0034)", "4", RegexOptions.None, 0, 1, true, "4");
 
+            // Patterns with literal U+2028, U+2029, and U+FFFE to validate source generator XML doc comment escaping
+            yield return ("ab\u2028", "ab\u2028", RegexOptions.None, 0, 3, true, "ab\u2028");
+            yield return ("ab\u2029", "ab\u2029", RegexOptions.None, 0, 3, true, "ab\u2029");
+            yield return ("ab\uFFFE", "ab\uFFFE", RegexOptions.None, 0, 3, true, "ab\uFFFE");
+            yield return ("[\u2028\u2029\uFFFE]", "x\u2029y", RegexOptions.None, 0, 3, true, "\u2029");
+
             // Using long loop prefix
             yield return (@"a{10}", new string('a', 10), RegexOptions.None, 0, 10, true, new string('a', 10));
             yield return (@"a{100}", new string('a', 100), RegexOptions.None, 0, 100, true, new string('a', 100));
@@ -267,6 +273,20 @@ namespace System.Text.RegularExpressions.Tests
                     // Alternations
                     yield return (Case("(?>hi|hello|hey)hi"), "hellohi", options, 0, 0, false, string.Empty);
                     yield return (Case("(?>hi|hello|hey)hi"), "hihi", options, 0, 4, true, "hihi");
+
+                    // Atomic wrapping non-backtrackable nodes (reduction removes the Atomic wrapper but preserves match behavior)
+                    yield return (Case("(?>a)b"), "ab", options, 0, 2, true, "ab");
+                    yield return (Case("(?>a)b"), "cb", options, 0, 2, false, "");
+                    yield return (Case("(?>[abc])x"), "bx", options, 0, 2, true, "bx");
+                    yield return (Case("(?>abc)d"), "abcd", options, 0, 4, true, "abcd");
+
+                    // Shared-prefix extraction past non-text branches
+                    yield return (Case("[^x]|ab|ac"), "a", options, 0, 1, true, "a");
+                    yield return (Case("[^x]|ab|ac"), "ab", options, 0, 2, true, "a");
+                    yield return (Case("[^x]|ab|ac"), "ac", options, 0, 2, true, "a");
+                    yield return (Case("[^x]|ab|ac"), "x", options, 0, 1, false, "");
+                    yield return (Case("[x]|ab|ac"), "ab", options, 0, 2, true, "ab");
+                    yield return (Case("[x]|ab|ac"), "ac", options, 0, 2, true, "ac");
                 }
             }
 
@@ -398,6 +418,67 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"\w+(\(\w+!\))?,", "Foo(abc!),", RegexOptions.None, 0, 10, true, "Foo(abc!),");
 
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you m you", RegexOptions.None, 0, 9, true, "m");
+
+            // Greedy set loop followed by literal in loop's set followed by word boundary.
+            // The backtracking short-circuit optimization should apply: only the last consumed
+            // position needs to be checked, avoiding repeated LastIndexOf calls.
+            yield return (@"\b\w+n\b", "barn door", RegexOptions.None, 0, 9, true, "barn");
+            yield return (@"\b\w+n\b", "bark door", RegexOptions.None, 0, 9, false, string.Empty);
+            yield return (@"\b\w+n\b", "inn keeper", RegexOptions.None, 0, 10, true, "inn");
+            yield return (@"\b\w+n\b", "can of worms", RegexOptions.None, 0, 12, true, "can");
+            yield return (@"\b\w+n\b", "frozen chicken", RegexOptions.None, 0, 14, true, "frozen");
+            yield return (@"\b\w+n\b", "nope barn", RegexOptions.None, 0, 9, true, "barn");
+            yield return (@"\b\d+0\b", "abc 120 def", RegexOptions.None, 0, 11, true, "120");
+            yield return (@"\b\d+0\b", "abc 123 def", RegexOptions.None, 0, 11, false, string.Empty);
+            yield return (@"\b[a-z]+x\b", "the fox jumps", RegexOptions.None, 0, 13, true, "fox");
+            yield return (@"\b\w+\d\b", "abc test9 def", RegexOptions.None, 0, 13, true, "test9");
+            yield return (@"\b\w+\d\b", "abc test def", RegexOptions.None, 0, 12, false, string.Empty);
+            yield return (@"\b\w+[aeiou]\b", "by the tube", RegexOptions.None, 0, 11, true, "the");
+            // Literal inside a capture group — FindStartingLiteralNode must descend through Capture.
+            yield return (@"\b\w+(n)\b", "barn door", RegexOptions.None, 0, 9, true, "barn");
+            // Literal inside a non-capturing group.
+            yield return (@"\b\w+(?:n\b)", "barn door", RegexOptions.None, 0, 9, true, "barn");
+            // Subsequent is a disjoint set, not a boundary — \d loop, '5' in \d, [a-z] disjoint from \d.
+            yield return (@"\d+5[a-z]", "xx12345abc", RegexOptions.None, 0, 10, true, "12345a");
+            yield return (@"\d+5[a-z]", "xx12346abc", RegexOptions.None, 0, 10, false, string.Empty);
+            // End-of-line anchor as the disjoint constraint.
+            yield return (@"\w+n$", "barn", RegexOptions.None, 0, 4, true, "barn");
+            yield return (@"\w+n$", "bark", RegexOptions.None, 0, 4, false, string.Empty);
+            // Optimization should NOT apply: subsequent overlaps with loop set.
+            yield return (@"\w+n\w+", "canopy", RegexOptions.None, 0, 6, true, "canopy");
+            // Second backtrack forced — \b succeeds but subsequent literal fails, must not re-enter.
+            yield return (@"\b\w+n\b!", "barn door", RegexOptions.None, 0, 9, false, string.Empty);
+            yield return (@"\b\w+n\b ", "barn door", RegexOptions.None, 0, 9, true, "barn ");
+            // Inside an outer loop — tests stack save/restore with the zeroed endingPos.
+            yield return (@"(?:\b\w+n\b\s*)+", "barn can ", RegexOptions.None, 0, 9, true, "barn can ");
+            // Minimum > 1.
+            yield return (@"\b\w{2,}n\b", "barn door", RegexOptions.None, 0, 9, true, "barn");
+            yield return (@"\b\w{2,}n\b", "n door", RegexOptions.None, 0, 6, false, string.Empty);
+            // Multi literal after greedy loop — first char in loop's set, second char NOT.
+            // The single-position backtrack optimization should apply to the Multi case.
+            yield return (@"\d+0x", "abc1230x99", RegexOptions.None, 0, 10, true, "1230x");
+            yield return (@"\d+0x", "abc12399", RegexOptions.None, 0, 8, false, string.Empty);
+            yield return (@"[a-f]+a9", "xbca93", RegexOptions.None, 0, 6, true, "bca9");
+            yield return (@"[a-f]+a9", "xbcb93", RegexOptions.None, 0, 6, false, string.Empty);
+            // Longer Multi literal — first char subsumed, second disjoint, rest doesn't matter.
+            yield return (@"\d+0abc", "x1230abcx", RegexOptions.None, 0, 9, true, "1230abc");
+            yield return (@"\d+0abc", "x123xabc", RegexOptions.None, 0, 8, false, string.Empty);
+            // Set literal subsumed by loop's class, followed by disjoint constraint.
+            yield return (@"\d+[0-9]\s", "abc123 ", RegexOptions.None, 0, 7, true, "123 ");
+            yield return (@"\d+[0-9]\s", "abc123x", RegexOptions.None, 0, 7, false, string.Empty);
+            yield return (@"\d+[0-9][a-z]", "abc123a", RegexOptions.None, 0, 7, true, "123a");
+            yield return (@"\d+[0-9][a-z]", "abc1234", RegexOptions.None, 0, 7, false, string.Empty);
+            // Nothing after literal — optimization should NOT fire (earlier positions could succeed).
+            yield return (@"\w+n", "canyon", RegexOptions.None, 0, 6, true, "canyon");
+            yield return (@"\w+n", "can opener", RegexOptions.None, 0, 10, true, "can");
+            yield return (@"\d+5", "12345", RegexOptions.None, 0, 5, true, "12345");
+            // Notoneloop — [^x]+ is a Notoneloop, 'a' != 'x' so it's in the loop's set.
+            yield return (@"[^x]+a\b", "banana boat", RegexOptions.None, 0, 11, true, "banana");
+            yield return (@"[^x]+a\b", "xyz", RegexOptions.None, 0, 3, false, string.Empty);
+            // Minimum 0 (star not plus) — greedy loop still consumes maximally.
+            yield return (@"\w*n\b", "barn door", RegexOptions.None, 0, 9, true, "barn");
+            yield return (@"\w*n\b", "n door", RegexOptions.None, 0, 6, true, "n");
+            yield return (@"\w*n\b", "bark door", RegexOptions.None, 0, 9, false, string.Empty);
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you and you", RegexOptions.None, 0, 11, false, "");
@@ -908,6 +989,16 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?(\w+)\w+)dog", "catdog", RegexOptions.None, 0, 6, true, "catdog");
                 yield return (@"(?(abc)\w+|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
                 yield return (@"(?(abc)cat|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
+
+                // Inline options inside conditional branches
+                yield return (@"(?(cat)(?i)CAT|dog)", "cat", RegexOptions.None, 0, 3, true, "cat");
+                yield return (@"(?(cat)(?i)cat|dog)", "dog", RegexOptions.None, 0, 3, true, "dog");
+                yield return (@"(?(cat)cat|(?i)dog)", "DOG", RegexOptions.None, 0, 3, true, "DOG");
+                yield return (@"(?(cat)(?i:CAT)|dog)", "cat", RegexOptions.None, 0, 3, true, "cat");
+                yield return (@"(?(?=cat)(?i)CAT|dog)", "cat", RegexOptions.None, 0, 3, true, "cat");
+                yield return (@"(cat)?(?(1)(?i)dog|pig)", "catDOG", RegexOptions.None, 0, 6, true, "catDOG");
+                yield return (@"(cat)?(?(1)(?i)dog|pig)", "pig", RegexOptions.None, 0, 3, true, "pig");
+                yield return (@"(?((?i)cat)CAT|dog)", "CAT", RegexOptions.None, 0, 3, true, "CAT");
                 yield return ("(a|ab|abc|abcd)d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
 
                 yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.None, 0, 4, false, string.Empty);
@@ -1261,6 +1352,17 @@ namespace System.Text.RegularExpressions.Tests
             // Test with something after the \z trailing anchor
             yield return (@"^1234\zx", "1234", RegexOptions.None, 0, 4, false, "");
             yield return (@"^1234\zx", "1234x", RegexOptions.None, 0, 5, false, "");
+
+            // Greedy loop with a subsumed literal followed by a nullable subsequent.
+            // The loop's character class includes the literal that follows it, and the
+            // subsequent element is nullable (min=0) and disjoint from the loop. The
+            // backtracking optimization must not reduce to a single position check because
+            // multiple backtrack positions can succeed when the post-literal part is nullable.
+            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "2+_", RegexOptions.None, 0, 3, true, "2+");
+            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "2+", RegexOptions.None, 0, 2, true, "2+");
+            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "abc+xyz+()", RegexOptions.None, 0, 10, true, "abc+xyz+()");
+            yield return (@"[\w+]+\+\s*", "a+b+ ", RegexOptions.None, 0, 5, true, "a+b+ ");
+            yield return (@"\w+a\s*", "ba", RegexOptions.None, 0, 2, true, "ba");
         }
 
         [OuterLoop("Takes several seconds to run")]
@@ -2642,7 +2744,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // deep nesting exhausts address space on 32-bit
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix is not available on .NET Framework")]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task CharClassSubtraction_DeepNesting_DoesNotStackOverflow(RegexEngine engine)

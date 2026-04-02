@@ -5,9 +5,6 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
-#if !NET
-using System.Diagnostics;
-#endif
 
 namespace Microsoft.Extensions.Hosting.Systemd
 {
@@ -34,11 +31,10 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 return false;
             }
 
-#if NET
+            // To support containerized systemd services, check if we're the main process (PID 1)
+            // and if there are systemd environment variables defined for notifying the service
+            // manager, or passing listen handles.
             int processId = Environment.ProcessId;
-#else
-            int processId = Process.GetCurrentProcess().Id;
-#endif
 
             // Preferred detection method: compare SYSTEMD_EXEC_PID to the current PID.
             // Works even when ProtectProc=invisible hides /proc entries.

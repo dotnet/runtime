@@ -998,29 +998,44 @@ check_symbol_exists(
     "unistd.h;sys/types.h;sys/socket.h"
     HAVE_GETPEEREID)
 
-check_symbol_exists(
-    getdomainname
-    unistd.h
-    HAVE_GETDOMAINNAME)
+set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+if (CLR_CMAKE_TARGET_SUNOS)
+    # On SunOS, getdomainname is in libnsl but not declared in any header
+    set(CMAKE_REQUIRED_LIBRARIES socket nsl)
+    check_function_exists(
+        getdomainname
+        HAVE_GETDOMAINNAME)
+else()
+    check_symbol_exists(
+        getdomainname
+        unistd.h
+        HAVE_GETDOMAINNAME)
+endif()
 
-# getdomainname on OSX takes an 'int' instead of a 'size_t'
-# check if compiling with 'size_t' would cause a warning
-set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
-check_c_source_compiles(
-    "
-    #include <unistd.h>
-    int main(void)
-    {
-        size_t namelen = 20;
-        char name[20];
-        int dummy = getdomainname(name, namelen);
-        (void)dummy;
-        return 0;
-    }
-    "
-    HAVE_GETDOMAINNAME_SIZET)
-set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
+# Some platforms (e.g. macOS, SunOS) define getdomainname with an 'int' length parameter
+# Check whether using 'size_t' for the length parameter would cause a warning
+if (CLR_CMAKE_TARGET_SUNOS)
+    # SunOS uses int, not size_t
+    set (HAVE_GETDOMAINNAME_SIZET 0)
+else()
+    set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+    set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
+    check_c_source_compiles(
+        "
+        #include <unistd.h>
+        int main(void)
+        {
+            size_t namelen = 20;
+            char name[20];
+            int dummy = getdomainname(name, namelen);
+            (void)dummy;
+            return 0;
+        }
+        "
+        HAVE_GETDOMAINNAME_SIZET)
+    set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
+endif()
+set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
 if (HAVE_SYS_INOTIFY_H AND (CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD))

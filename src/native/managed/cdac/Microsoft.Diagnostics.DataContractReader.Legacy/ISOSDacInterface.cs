@@ -387,13 +387,6 @@ public struct DacpGcHeapAnalyzeData
     public int heap_analyze_success; // BOOL
 }
 
-public struct DacpCOMInterfacePointerData
-{
-    public ClrDataAddress methodTable;
-    public ClrDataAddress interfacePtr;
-    public ClrDataAddress comContext;
-}
-
 [GeneratedComInterface]
 [Guid("286CA186-E763-4F61-9760-487D43AE4341")]
 public unsafe partial interface ISOSEnum
@@ -449,6 +442,21 @@ public struct DacpJitManagerInfo
     public ClrDataAddress managerAddr;
     public uint codeType;
     public ClrDataAddress ptrHeapList;
+};
+
+[StructLayout(LayoutKind.Explicit, Size = 0x18)]
+public struct DacpJitCodeHeapInfo
+{
+    public enum CodeHeapType : uint
+    {
+        CODEHEAP_LOADER = 0,
+        CODEHEAP_HOST,
+        CODEHEAP_UNKNOWN,
+    }
+    [FieldOffset(0)]    public CodeHeapType codeHeapType;
+    [FieldOffset(8)]    public ClrDataAddress LoaderHeap;    // valid when codeHeapType == CODEHEAP_LOADER
+    [FieldOffset(8)]    public ClrDataAddress baseAddr;      // valid when codeHeapType == CODEHEAP_HOST
+    [FieldOffset(0x10)] public ClrDataAddress currentAddr;  // valid when codeHeapType == CODEHEAP_HOST
 };
 
 public struct DacpSyncBlockData
@@ -526,7 +534,7 @@ public struct DACEHInfo
 public enum SOSStackSourceType : uint
 {
     SOS_StackSourceIP = 0,
-    SOS_StackSourceFrame = 1
+    SOS_StackSourceFrame = 1,
 }
 
 public struct SOSStackRefData
@@ -582,6 +590,30 @@ public unsafe partial interface ISOSMemoryEnum : ISOSEnum
 {
     [PreserveSig]
     int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegions, uint* pNeeded);
+}
+
+public struct DacpCCWData
+{
+    public ClrDataAddress outerIUnknown;
+    public ClrDataAddress managedObject;
+    public ClrDataAddress handle;
+    public ClrDataAddress ccwAddress;
+    public int refCount;
+    public int interfaceCount;
+    public Interop.BOOL isNeutered;
+    public int jupiterRefCount;
+    public Interop.BOOL isPegged;
+    public Interop.BOOL isGlobalPegged;
+    public Interop.BOOL hasStrongRef;
+    public Interop.BOOL isExtendsCOMObject;
+    public Interop.BOOL isAggregated;
+}
+
+public struct DacpCOMInterfacePointerData
+{
+    public ClrDataAddress methodTable;
+    public ClrDataAddress interfacePtr;
+    public ClrDataAddress comContext;
 }
 
 public struct DacpRCWData
@@ -784,7 +816,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*VISITHEAP*/ void* pCallback);
     [PreserveSig]
-    int GetCodeHeapList(ClrDataAddress jitManager, uint count, /*struct DacpJitCodeHeapInfo*/ void* codeHeaps, uint* pNeeded);
+    int GetCodeHeapList(ClrDataAddress jitManager, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpJitCodeHeapInfo[]? codeHeaps, uint* pNeeded);
     [PreserveSig]
     int TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, /*VCSHeapType*/ int heaptype, /*VISITHEAP*/ void* pCallback);
 
@@ -804,7 +836,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
-    int GetCCWData(ClrDataAddress ccw, /*struct DacpCCWData */ void* data);
+    int GetCCWData(ClrDataAddress ccw, DacpCCWData* data);
     [PreserveSig]
     int GetCCWInterfaces(ClrDataAddress ccw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
@@ -1028,7 +1060,7 @@ public partial interface ISOSDacInterface9
 public unsafe partial interface ISOSDacInterface10
 {
     [PreserveSig]
-    int GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded);
+    int GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[]? mowList, uint* pNeeded);
     [PreserveSig]
     int IsComWrappersCCW(ClrDataAddress ccw, Interop.BOOL* isComWrappersCCW);
     [PreserveSig]
