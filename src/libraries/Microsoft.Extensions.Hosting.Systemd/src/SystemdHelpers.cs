@@ -79,13 +79,11 @@ namespace Microsoft.Extensions.Hosting.Systemd
         }
 
         private static readonly bool _isSystemdNotify = GetIsSystemdNotify();
+
         /// <summary>
         /// Checks if the current process has systemd notify enabled.
         /// </summary>
-        /// <returns>
-        /// <see langword="true" /> if the current process has systemd notify enabled; otherwise, <see langword="false" />.
-        /// </returns>
-        internal static bool IsSystemdNotify() => _isSystemdNotify;
+        private static bool IsSystemdNotify() => _isSystemdNotify;
 
         private static bool GetIsSystemdNotify()
         {
@@ -98,5 +96,17 @@ namespace Microsoft.Extensions.Hosting.Systemd
             string? socketPath = Environment.GetEnvironmentVariable(SystemdConstants.NotifySocket);
             return !string.IsNullOrEmpty(socketPath);
         }
+
+        /// <summary>
+        /// Checks if the systemd journal log formatter should be enabled.
+        /// </summary>
+        /// <remarks>Will use <c>$JOURNAL_STREAM</c> + fstat in a follow-up.</remarks>
+        internal static bool IsSystemdLogger() => IsSystemdService();
+
+        /// <summary>
+        /// Checks if <see cref="SystemdLifetime"/> and <see cref="SystemdNotifier"/> should be registered.
+        /// </summary>
+        /// <remarks><see cref="SystemdNotifier"/> is a noop when <c>NOTIFY_SOCKET</c> is absent.</remarks>
+        internal static bool IsSystemdLifetime() => IsSystemdService() || IsSystemdNotify();
     }
 }

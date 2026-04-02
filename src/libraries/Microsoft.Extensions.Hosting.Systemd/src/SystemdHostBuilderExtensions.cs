@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Hosting
         {
             ArgumentNullException.ThrowIfNull(hostBuilder);
 
-            if (SystemdHelpers.IsSystemdService())
+            if (SystemdHelpers.IsSystemdLogger())
             {
                 hostBuilder.ConfigureServices((hostContext, services) =>
                 {
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Hosting
                 });
             }
 
-            if (SystemdHelpers.IsSystemdNotify())
+            if (SystemdHelpers.IsSystemdLifetime())
             {
                 hostBuilder.ConfigureServices((hostContext, services) =>
                 {
@@ -77,12 +77,12 @@ namespace Microsoft.Extensions.Hosting
         {
             ArgumentNullException.ThrowIfNull(services);
 
-            if (SystemdHelpers.IsSystemdService())
+            if (SystemdHelpers.IsSystemdLogger())
             {
                 AddSystemdLogger(services);
             }
 
-            if (SystemdHelpers.IsSystemdNotify())
+            if (SystemdHelpers.IsSystemdLifetime())
             {
                 AddSystemdLifetime(services);
             }
