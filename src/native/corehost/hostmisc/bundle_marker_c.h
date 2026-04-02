@@ -22,6 +22,20 @@ static inline bool bundle_marker_is_bundle(void)
 
 #ifdef __cplusplus
 }
+
+// C++ wrapper for backward compatibility with existing C++ code (e.g., corehost.cpp).
+struct bundle_marker_t
+{
+    static int64_t header_offset()
+    {
+        return bundle_marker_header_offset();
+    }
+
+    static bool is_bundle()
+    {
+        return bundle_marker_is_bundle();
+    }
+};
 #endif
 
 #endif // BUNDLE_MARKER_C_H

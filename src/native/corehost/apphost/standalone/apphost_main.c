@@ -9,6 +9,10 @@
 #include "error_codes.h"
 #include "hostfxr.h"
 
+#if defined(_WIN32)
+#include "apphost.windows.h"
+#endif
+
 #include <string.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -328,9 +332,17 @@ int main(const int argc, const char* argv[])
         trace_info("}");
     }
 
+#if defined(_WIN32)
+    apphost_buffer_errors();
+#endif
+
     int exit_code = exe_start(argc, argv);
 
     trace_flush();
+
+#if defined(_WIN32)
+    apphost_write_buffered_errors(exit_code);
+#endif
 
     return exit_code;
 }

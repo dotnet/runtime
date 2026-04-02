@@ -19,12 +19,15 @@ typedef struct c_fx_ver
     int major;
     int minor;
     int patch;
-    pal_char_t pre[256];   // prerelease label with leading '-', or empty
-    pal_char_t build[256]; // build label with leading '+', or empty
+    pal_char_t* pre;   // prerelease label with leading '-', or NULL/empty
+    pal_char_t* build; // build label with leading '+', or NULL/empty
 } c_fx_ver_t;
 
 // Initialize a version to empty (-1.-1.-1)
 void c_fx_ver_init(c_fx_ver_t* ver);
+
+// Free dynamically allocated fields
+void c_fx_ver_cleanup(c_fx_ver_t* ver);
 
 // Initialize a version with major.minor.patch
 void c_fx_ver_set(c_fx_ver_t* ver, int major, int minor, int patch);

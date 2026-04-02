@@ -8,13 +8,32 @@
 #include <ctype.h>
 #include <minipal/utils.h>
 
+static pal_char_t* pal_strdup_c(const pal_char_t* s)
+{
+    if (s == NULL)
+        return NULL;
+    size_t len = pal_strlen(s);
+    pal_char_t* dup = (pal_char_t*)malloc((len + 1) * sizeof(pal_char_t));
+    if (dup != NULL)
+        memcpy(dup, s, (len + 1) * sizeof(pal_char_t));
+    return dup;
+}
+
 void c_fx_ver_init(c_fx_ver_t* ver)
 {
     ver->major = -1;
     ver->minor = -1;
     ver->patch = -1;
-    ver->pre[0] = _X('\0');
-    ver->build[0] = _X('\0');
+    ver->pre = NULL;
+    ver->build = NULL;
+}
+
+void c_fx_ver_cleanup(c_fx_ver_t* ver)
+{
+    free(ver->pre);
+    ver->pre = NULL;
+    free(ver->build);
+    ver->build = NULL;
 }
 
 void c_fx_ver_set(c_fx_ver_t* ver, int major, int minor, int patch)
@@ -22,8 +41,10 @@ void c_fx_ver_set(c_fx_ver_t* ver, int major, int minor, int patch)
     ver->major = major;
     ver->minor = minor;
     ver->patch = patch;
-    ver->pre[0] = _X('\0');
-    ver->build[0] = _X('\0');
+    free(ver->pre);
+    ver->pre = NULL;
+    free(ver->build);
+    ver->build = NULL;
 }
 
 bool c_fx_ver_is_empty(const c_fx_ver_t* ver)
@@ -33,15 +54,23 @@ bool c_fx_ver_is_empty(const c_fx_ver_t* ver)
 
 pal_char_t* c_fx_ver_as_str(const c_fx_ver_t* ver, pal_char_t* out_str, size_t out_str_len)
 {
-    if (ver->pre[0] != _X('\0') && ver->build[0] != _X('\0'))
+    bool has_pre = ver->pre != NULL && ver->pre[0] != _X('\0');
+    bool has_build = ver->build != NULL && ver->build[0] != _X('\0');
+
+    if (has_pre && has_build)
     {
         pal_str_printf(out_str, out_str_len, _X("%d.%d.%d") _X("%s") _X("%s"),
             ver->major, ver->minor, ver->patch, ver->pre, ver->build);
     }
-    else if (ver->pre[0] != _X('\0'))
+    else if (has_pre)
     {
         pal_str_printf(out_str, out_str_len, _X("%d.%d.%d") _X("%s"),
             ver->major, ver->minor, ver->patch, ver->pre);
+    }
+    else if (has_build)
+    {
+        pal_str_printf(out_str, out_str_len, _X("%d.%d.%d") _X("%s"),
+            ver->major, ver->minor, ver->patch, ver->build);
     }
     else
     {
@@ -216,12 +245,12 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
     const pal_char_t* pre_start = pat_start + pat_non_numeric;
     const pal_char_t* build_start = pal_strchr(pre_start, _X('+'));
 
-    pal_char_t pre_buf[256];
-    pre_buf[0] = _X('\0');
+    pal_char_t* pre_buf = NULL;
     if (build_start != NULL)
     {
         size_t pre_len = (size_t)(build_start - pre_start);
-        if (pre_len >= ARRAY_SIZE(pre_buf))
+        pre_buf = (pal_char_t*)malloc((pre_len + 1) * sizeof(pal_char_t));
+        if (pre_buf == NULL)
             return false;
         memcpy(pre_buf, pre_start, pre_len * sizeof(pal_char_t));
         pre_buf[pre_len] = _X('\0');
@@ -229,30 +258,41 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
     else
     {
         size_t pre_len = pal_strlen(pre_start);
-        if (pre_len >= ARRAY_SIZE(pre_buf))
+        pre_buf = (pal_char_t*)malloc((pre_len + 1) * sizeof(pal_char_t));
+        if (pre_buf == NULL)
             return false;
         memcpy(pre_buf, pre_start, (pre_len + 1) * sizeof(pal_char_t));
     }
 
     if (!valid_identifiers(pre_buf))
+    {
+        free(pre_buf);
         return false;
+    }
 
-    pal_char_t build_buf[256];
-    build_buf[0] = _X('\0');
+    pal_char_t* build_buf = NULL;
     if (build_start != NULL)
     {
         size_t build_len = pal_strlen(build_start);
-        if (build_len >= ARRAY_SIZE(build_buf))
+        build_buf = (pal_char_t*)malloc((build_len + 1) * sizeof(pal_char_t));
+        if (build_buf == NULL)
+        {
+            free(pre_buf);
             return false;
+        }
         memcpy(build_buf, build_start, (build_len + 1) * sizeof(pal_char_t));
 
         if (!valid_identifiers(build_buf))
+        {
+            free(pre_buf);
+            free(build_buf);
             return false;
+        }
     }
 
     c_fx_ver_set(out_ver, (int)major_val, (int)minor_val, (int)patch_val);
-    memcpy(out_ver->pre, pre_buf, (pal_strlen(pre_buf) + 1) * sizeof(pal_char_t));
-    memcpy(out_ver->build, build_buf, (pal_strlen(build_buf) + 1) * sizeof(pal_char_t));
+    out_ver->pre = pre_buf;
+    out_ver->build = build_buf;
     return true;
 }
 
@@ -283,8 +323,8 @@ int c_fx_ver_compare(const c_fx_ver_t* a, const c_fx_ver_t* b)
     if (a->patch != b->patch)
         return (a->patch > b->patch) ? 1 : -1;
 
-    bool a_empty = (a->pre[0] == _X('\0'));
-    bool b_empty = (b->pre[0] == _X('\0'));
+    bool a_empty = (a->pre == NULL || a->pre[0] == _X('\0'));
+    bool b_empty = (b->pre == NULL || b->pre[0] == _X('\0'));
 
     if (a_empty || b_empty)
     {

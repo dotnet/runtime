@@ -67,22 +67,22 @@ bool fx_ver_t::operator >=(const fx_ver_t& b) const
 pal::string_t fx_ver_t::as_str() const
 {
     c_fx_ver_t c_ver;
-    c_fx_ver_set(&c_ver, m_major, m_minor, m_patch);
+    c_fx_ver_init(&c_ver);
+    c_ver.major = m_major;
+    c_ver.minor = m_minor;
+    c_ver.patch = m_patch;
 
-    size_t pre_len = m_pre.size();
-    size_t build_len = m_build.size();
-    if (pre_len >= ARRAY_SIZE(c_ver.pre))
-        pre_len = ARRAY_SIZE(c_ver.pre) - 1;
-    if (build_len >= ARRAY_SIZE(c_ver.build))
-        build_len = ARRAY_SIZE(c_ver.build) - 1;
-
-    memcpy(c_ver.pre, m_pre.c_str(), pre_len * sizeof(pal_char_t));
-    c_ver.pre[pre_len] = _X('\0');
-    memcpy(c_ver.build, m_build.c_str(), build_len * sizeof(pal_char_t));
-    c_ver.build[build_len] = _X('\0');
+    // Point to the C++ string data directly (read-only use by c_fx_ver_as_str)
+    c_ver.pre = const_cast<pal_char_t*>(m_pre.c_str());
+    c_ver.build = const_cast<pal_char_t*>(m_build.c_str());
 
     pal_char_t buf[512];
     c_fx_ver_as_str(&c_ver, buf, ARRAY_SIZE(buf));
+
+    // Don't call c_fx_ver_cleanup - we borrowed pointers from m_pre/m_build
+    c_ver.pre = NULL;
+    c_ver.build = NULL;
+
     return pal::string_t(buf);
 }
 
@@ -90,36 +90,46 @@ pal::string_t fx_ver_t::as_str() const
 int fx_ver_t::compare(const fx_ver_t& a, const fx_ver_t& b)
 {
     c_fx_ver_t c_a, c_b;
-    c_fx_ver_set(&c_a, a.m_major, a.m_minor, a.m_patch);
-    c_fx_ver_set(&c_b, b.m_major, b.m_minor, b.m_patch);
+    c_fx_ver_init(&c_a);
+    c_fx_ver_init(&c_b);
+    c_a.major = a.m_major;
+    c_a.minor = a.m_minor;
+    c_a.patch = a.m_patch;
+    c_b.major = b.m_major;
+    c_b.minor = b.m_minor;
+    c_b.patch = b.m_patch;
 
-    size_t a_pre_len = a.m_pre.size();
-    size_t b_pre_len = b.m_pre.size();
-    if (a_pre_len >= ARRAY_SIZE(c_a.pre))
-        a_pre_len = ARRAY_SIZE(c_a.pre) - 1;
-    if (b_pre_len >= ARRAY_SIZE(c_b.pre))
-        b_pre_len = ARRAY_SIZE(c_b.pre) - 1;
+    // Point to the C++ string data directly (read-only use by c_fx_ver_compare)
+    c_a.pre = const_cast<pal_char_t*>(a.m_pre.c_str());
+    c_b.pre = const_cast<pal_char_t*>(b.m_pre.c_str());
 
-    memcpy(c_a.pre, a.m_pre.c_str(), a_pre_len * sizeof(pal_char_t));
-    c_a.pre[a_pre_len] = _X('\0');
-    memcpy(c_b.pre, b.m_pre.c_str(), b_pre_len * sizeof(pal_char_t));
-    c_b.pre[b_pre_len] = _X('\0');
+    int result = c_fx_ver_compare(&c_a, &c_b);
 
-    return c_fx_ver_compare(&c_a, &c_b);
+    // Don't call c_fx_ver_cleanup - we borrowed pointers from m_pre
+    c_a.pre = NULL;
+    c_b.pre = NULL;
+
+    return result;
 }
 
 /* static */
 bool fx_ver_t::parse(const pal::string_t& ver, fx_ver_t* fx_ver, bool parse_only_production)
 {
     c_fx_ver_t c_ver;
+    c_fx_ver_init(&c_ver);
 
     if (!c_fx_ver_parse(ver.c_str(), &c_ver, parse_only_production))
+    {
+        c_fx_ver_cleanup(&c_ver);
         return false;
+    }
 
-    pal::string_t pre(c_ver.pre);
-    pal::string_t build(c_ver.build);
+    pal::string_t pre(c_ver.pre != NULL ? c_ver.pre : _X(""));
+    pal::string_t build(c_ver.build != NULL ? c_ver.build : _X(""));
 
     *fx_ver = fx_ver_t(c_ver.major, c_ver.minor, c_ver.patch, pre, build);
+
+    c_fx_ver_cleanup(&c_ver);
 
     assert(fx_ver->as_str() == ver);
     return true;

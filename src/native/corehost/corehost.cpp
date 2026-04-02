@@ -12,7 +12,7 @@
 #include <cinttypes>
 
 #if defined(FEATURE_APPHOST)
-#include "bundle_marker.h"
+#include "bundle_marker_c.h"
 
 #if defined(_WIN32)
 #include "apphost/apphost.windows.h"
@@ -326,7 +326,7 @@ int main(const int argc, const pal::char_t* argv[])
 
 #if defined(_WIN32) && defined(FEATURE_APPHOST)
     // Buffer errors to use them later.
-    apphost::buffer_errors();
+    apphost_buffer_errors();
 #endif
 
     int exit_code = exe_start(argc, argv);
@@ -336,7 +336,7 @@ int main(const int argc, const pal::char_t* argv[])
 
 #if defined(_WIN32) && defined(FEATURE_APPHOST)
     // No need to unregister the error writer since we're exiting anyway.
-    apphost::write_buffered_errors(exit_code);
+    apphost_write_buffered_errors(exit_code);
 #endif
 
     return exit_code;

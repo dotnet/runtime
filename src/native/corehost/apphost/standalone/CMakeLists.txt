@@ -12,7 +12,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     )
 
     set(HEADERS
-        ../bundle_marker.h
+        ../../hostmisc/bundle_marker_c.h
         ../../hostmisc/bundle_marker_c.h
         ../../hostfxr_resolver.h
     )
