@@ -70,6 +70,10 @@ namespace System.Diagnostics.Tests
             {
                 using (Process childProcess = CreateProcess(() =>
                 {
+                    Assert.True(Console.OpenStandardInputHandle().IsInvalid);
+                    Assert.False(Console.OpenStandardOutputHandle().IsInvalid);
+                    Assert.True(Console.OpenStandardErrorHandle().IsInvalid);
+
                     Console.Write("hello");
 
                     return RemoteExecutor.SuccessExitCode;

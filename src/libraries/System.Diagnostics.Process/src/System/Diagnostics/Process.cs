@@ -1246,7 +1246,7 @@ namespace System.Diagnostics
             Close();
 
             ProcessStartInfo startInfo = StartInfo;
-            startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
+            startInfo.ThrowIfInvalid(out bool anyRedirection);
 
             if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
@@ -1333,7 +1333,7 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles))
+                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle))
                 {
                     return false;
                 }

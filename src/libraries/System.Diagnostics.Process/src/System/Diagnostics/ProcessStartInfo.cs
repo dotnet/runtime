@@ -350,7 +350,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal void ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles)
+        internal void ThrowIfInvalid(out bool anyRedirection)
         {
             if (FileName.Length == 0)
             {
@@ -396,15 +396,11 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
             }
 
-            // Snapshot the list to prevent TOCTOU races: a caller could mutate InheritedHandles
-            // between validation and the actual CreateProcess/fork-exec call.
             if (InheritedHandles is not null)
             {
-                IList<SafeHandle> list = InheritedHandles;
-                var snapshot = new SafeHandle[list.Count];
-                for (int i = 0; i < snapshot.Length; i++)
+                for (int i = 0; i < InheritedHandles.Count; i++)
                 {
-                    SafeHandle? handle = list[i];
+                    SafeHandle? handle = InheritedHandles[i];
                     if (handle is null)
                     {
                         throw new ArgumentNullException("item", SR.InheritedHandlesMayNotContainNull);
@@ -414,13 +410,7 @@ namespace System.Diagnostics
                         throw new ArgumentException(SR.Arg_InvalidHandle, nameof(InheritedHandles));
                     }
                     ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
-                    snapshot[i] = handle;
                 }
-                inheritedHandles = snapshot;
-            }
-            else
-            {
-                inheritedHandles = null;
             }
 
             if (anyHandle)

@@ -21,8 +21,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static Func<ProcessStartInfo, SafeProcessHandle>? s_startWithShellExecute;
 
-        internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
-            SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles = null)
+        internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             if (startInfo.UseShellExecute)
             {
@@ -50,7 +49,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeFileHandle? inheritableStdoutHandle = null;
             SafeFileHandle? inheritableStderrHandle = null;
 
-            bool hasInheritedHandles = inheritedHandles is not null;
+            bool hasInheritedHandles = startInfo.InheritedHandles is not null;
 
             // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance.
             // For that, we need a reader lock (concurrent starts with different explicit lists are safe).
@@ -117,7 +116,7 @@ namespace Microsoft.Win32.SafeHandles
                 int handleCount = 0;
                 if (hasInheritedHandles)
                 {
-                    int maxHandleCount = 3 + inheritedHandles!.Length;
+                    int maxHandleCount = 3 + startInfo.InheritedHandles!.Count;
                     handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
                     Span<nint> handlesToInheritSpan = new Span<nint>(handlesToInherit, maxHandleCount);
 
@@ -126,7 +125,7 @@ namespace Microsoft.Win32.SafeHandles
                     AddHandleToInheritList(inheritableStdoutHandle ?? stdoutHandle, handlesToInheritSpan, ref handleCount);
                     AddHandleToInheritList(inheritableStderrHandle ?? stderrHandle, handlesToInheritSpan, ref handleCount);
 
-                    PrepareHandleAllowList(inheritedHandles, handlesToInheritSpan, ref handleCount, ref handlesToRelease);
+                    PrepareHandleAllowList(startInfo.InheritedHandles, handlesToInheritSpan, ref handleCount, ref handlesToRelease);
                     BuildProcThreadAttributeList(handlesToInherit, handleCount, ref attributeListBuffer);
                 }
 
@@ -457,12 +456,12 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private static void PrepareHandleAllowList(
-            SafeHandle[] inheritedHandles,
+            IList<SafeHandle> inheritedHandles,
             Span<nint> handlesToInherit,
             ref int handleCount,
             ref SafeHandle?[]? handlesToRelease)
         {
-            handlesToRelease = new SafeHandle[inheritedHandles.Length];
+            handlesToRelease = new SafeHandle[inheritedHandles.Count];
             int handleIndex = 0;
 
             foreach (SafeHandle handle in inheritedHandles)
@@ -529,16 +528,22 @@ namespace Microsoft.Win32.SafeHandles
                     break;
                 }
 
-                // Remove the inheritance flag so they are not unintentionally inherited by
-                // other processes started after this point.
-                // Ignore failures: the handle may have been closed by the time we get here
-                // (if the owner created a copy of it).
-                Interop.Kernel32.SetHandleInformation(
-                    safeHandle,
-                    Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
-                    0);
-
-                safeHandle.DangerousRelease();
+                try
+                {
+                    // Remove the inheritance flag so they are not unintentionally inherited by
+                    // other processes started after this point.
+                    if (!Interop.Kernel32.SetHandleInformation(
+                        safeHandle,
+                        Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
+                        0))
+                    {
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                    }
+                }
+                finally
+                {
+                    safeHandle.DangerousRelease();
+                }
             }
         }
 
