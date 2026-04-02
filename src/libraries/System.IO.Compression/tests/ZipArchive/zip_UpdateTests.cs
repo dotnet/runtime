@@ -1388,35 +1388,60 @@ namespace System.IO.Compression.Tests
                 zipBytes = backing.ToArray();
             }
 
-            // Step 2: Validate the raw bytes - verify bit 3 is set and data descriptor signatures exist.
-            // This byte scan is safe because NoCompression stores raw bytes, and our payload [0..15, i]
-            // cannot contain the 'PK' (0x50,0x4B) prefix used in ZIP signatures.
+            // Step 2: Validate the raw bytes structurally - verify bit 3 is set and that each entry
+            // has a data descriptor immediately following its data.
+            const uint EndOfCentralDirectorySignature = 0x06054B50;
+            const uint CentralDirectoryFileHeaderSignature = 0x02014B50;
+
+            ReadOnlySpan<byte> zipSpan = zipBytes.AsSpan();
+
+            // Locate End of Central Directory (EOCD) by scanning backwards from the end.
+            int eocdOffset = -1;
+            for (int i = zipBytes.Length - 22; i >= 0; i--)
+            {
+                if (BinaryPrimitives.ReadUInt32LittleEndian(zipSpan.Slice(i)) == EndOfCentralDirectorySignature)
+                {
+                    eocdOffset = i;
+                    break;
+                }
+            }
+            Assert.True(eocdOffset >= 0, "End of Central Directory record not found.");
+
+            // EOCD+16 = offset of central directory
+            int centralDirOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(zipSpan.Slice(eocdOffset + 16)));
+
+            // Walk the central directory to collect each entry's local header offset and compressed size.
+            List<(int LocalHeaderOffset, uint CompressedSize)> entries = new();
+            int cdOffset = centralDirOffset;
+            for (int i = 0; i < originalEntryCount; i++)
+            {
+                Assert.Equal(CentralDirectoryFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(zipSpan.Slice(cdOffset)));
+                uint compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(zipSpan.Slice(cdOffset + 20));
+                ushort fileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(zipSpan.Slice(cdOffset + 28));
+                ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(zipSpan.Slice(cdOffset + 30));
+                ushort fileCommentLength = BinaryPrimitives.ReadUInt16LittleEndian(zipSpan.Slice(cdOffset + 32));
+                uint localHeaderOffset = BinaryPrimitives.ReadUInt32LittleEndian(zipSpan.Slice(cdOffset + 42));
+                entries.Add((checked((int)localHeaderOffset), compressedSize));
+                cdOffset += 46 + fileNameLength + extraFieldLength + fileCommentLength;
+            }
+
+            // Walk local file headers and verify data descriptors at expected positions.
             int dataDescriptorCount = 0;
             int localHeaderCount = 0;
-            int offset = 0;
-
-            while (offset < zipBytes.Length - 4)
+            foreach ((int localHeaderOffset, uint compressedSize) in entries)
             {
-                uint signature = BinaryPrimitives.ReadUInt32LittleEndian(zipBytes.AsSpan(offset));
+                Assert.Equal(LocalFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(zipSpan.Slice(localHeaderOffset)));
+                ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(zipSpan.Slice(localHeaderOffset + 6));
+                Assert.True((flags & DataDescriptorBitFlag) != 0,
+                    $"Bit 3 (data descriptor flag) should be set for entry created via non-seekable stream. Flags: 0x{flags:X4}");
 
-                if (signature == LocalFileHeaderSignature)
-                {
-                    localHeaderCount++;
-                    // General purpose bit flag is at offset 6 from the local file header signature
-                    ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(zipBytes.AsSpan(offset + 6));
-                    Assert.True((flags & DataDescriptorBitFlag) != 0,
-                        $"Bit 3 (data descriptor flag) should be set for entry created via non-seekable stream. Flags: 0x{flags:X4}");
-                    offset += 4;
-                }
-                else if (signature == DataDescriptorSignature)
-                {
-                    dataDescriptorCount++;
-                    offset += 4;
-                }
-                else
-                {
-                    offset++;
-                }
+                ushort localFileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(zipSpan.Slice(localHeaderOffset + 26));
+                ushort localExtraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(zipSpan.Slice(localHeaderOffset + 28));
+                int descriptorOffset = localHeaderOffset + 30 + localFileNameLength + localExtraFieldLength + (int)compressedSize;
+                Assert.Equal(DataDescriptorSignature, BinaryPrimitives.ReadUInt32LittleEndian(zipSpan.Slice(descriptorOffset)));
+
+                localHeaderCount++;
+                dataDescriptorCount++;
             }
 
             Assert.Equal(originalEntryCount, localHeaderCount);
@@ -1446,36 +1471,57 @@ namespace System.IO.Compression.Tests
                 updatedZipBytes = ms.ToArray();
             }
 
-            // Step 4: Validate the updated archive - original entries should still have data descriptors.
-            // This byte scan is safe because NoCompression stores raw bytes, and our payload cannot
-            // contain the 'PK' (0x50,0x4B) prefix used in ZIP signatures.
+            // Step 4: Validate the updated archive structurally - original entries should still have
+            // data descriptors at the expected positions.
+            ReadOnlySpan<byte> updatedSpan = updatedZipBytes.AsSpan();
+
+            int updatedEocdOffset = -1;
+            for (int i = updatedZipBytes.Length - 22; i >= 0; i--)
+            {
+                if (BinaryPrimitives.ReadUInt32LittleEndian(updatedSpan.Slice(i)) == EndOfCentralDirectorySignature)
+                {
+                    updatedEocdOffset = i;
+                    break;
+                }
+            }
+            Assert.True(updatedEocdOffset >= 0, "End of Central Directory record not found in updated archive.");
+
+            int updatedCentralDirOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(updatedSpan.Slice(updatedEocdOffset + 16)));
+            int updatedTotalEntries = BinaryPrimitives.ReadUInt16LittleEndian(updatedSpan.Slice(updatedEocdOffset + 10));
+
+            List<(int LocalHeaderOffset, uint CompressedSize)> updatedEntries = new();
+            int updatedCdOffset = updatedCentralDirOffset;
+            for (int i = 0; i < updatedTotalEntries; i++)
+            {
+                Assert.Equal(CentralDirectoryFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(updatedSpan.Slice(updatedCdOffset)));
+                uint compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(updatedSpan.Slice(updatedCdOffset + 20));
+                ushort fileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(updatedSpan.Slice(updatedCdOffset + 28));
+                ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(updatedSpan.Slice(updatedCdOffset + 30));
+                ushort fileCommentLength = BinaryPrimitives.ReadUInt16LittleEndian(updatedSpan.Slice(updatedCdOffset + 32));
+                uint localHeaderOffset = BinaryPrimitives.ReadUInt32LittleEndian(updatedSpan.Slice(updatedCdOffset + 42));
+                updatedEntries.Add((checked((int)localHeaderOffset), compressedSize));
+                updatedCdOffset += 46 + fileNameLength + extraFieldLength + fileCommentLength;
+            }
+
             dataDescriptorCount = 0;
             localHeaderCount = 0;
             int entriesWithDataDescriptorBit = 0;
-            offset = 0;
-
-            while (offset < updatedZipBytes.Length - 4)
+            foreach ((int localHeaderOffset, uint compressedSize) in updatedEntries)
             {
-                uint signature = BinaryPrimitives.ReadUInt32LittleEndian(updatedZipBytes.AsSpan(offset));
+                Assert.Equal(LocalFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(updatedSpan.Slice(localHeaderOffset)));
+                ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(updatedSpan.Slice(localHeaderOffset + 6));
+                localHeaderCount++;
 
-                if (signature == LocalFileHeaderSignature)
+                if ((flags & DataDescriptorBitFlag) != 0)
                 {
-                    localHeaderCount++;
-                    ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(updatedZipBytes.AsSpan(offset + 6));
-                    if ((flags & DataDescriptorBitFlag) != 0)
-                    {
-                        entriesWithDataDescriptorBit++;
-                    }
-                    offset += 4;
-                }
-                else if (signature == DataDescriptorSignature)
-                {
+                    entriesWithDataDescriptorBit++;
+
+                    ushort localFileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(updatedSpan.Slice(localHeaderOffset + 26));
+                    ushort localExtraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(updatedSpan.Slice(localHeaderOffset + 28));
+                    int descriptorOffset = localHeaderOffset + 30 + localFileNameLength + localExtraFieldLength + (int)compressedSize;
+                    Assert.Equal(DataDescriptorSignature, BinaryPrimitives.ReadUInt32LittleEndian(updatedSpan.Slice(descriptorOffset)));
+
                     dataDescriptorCount++;
-                    offset += 4;
-                }
-                else
-                {
-                    offset++;
                 }
             }
 
