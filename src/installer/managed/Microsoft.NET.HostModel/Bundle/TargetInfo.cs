@@ -6,7 +6,6 @@
 using Microsoft.NET.HostModel.MachO;
 using Microsoft.NET.HostModel.AppHost;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -32,17 +31,10 @@ namespace Microsoft.NET.HostModel.Bundle
         public readonly BundleOptions DefaultOptions;
         public readonly int AssemblyAlignment;
 
-        public TargetInfo(OSPlatform? os, Architecture? arch, Version? targetFrameworkVersion, string? runtimeIdentifier = null)
+        public TargetInfo(OSPlatform os, Architecture arch, Version? targetFrameworkVersion = null)
         {
-            if (runtimeIdentifier is not null)
-            {
-                (OSPlatform ridOS, Architecture ridArch) = ParseRuntimeIdentifier(runtimeIdentifier);
-                os ??= ridOS;
-                arch ??= ridArch;
-            }
-
-            OS = os ?? HostOS;
-            Arch = arch ?? RuntimeInformation.OSArchitecture;
+            OS = os;
+            Arch = arch;
             FrameworkVersion = targetFrameworkVersion ?? Environment.Version;
 
             if (FrameworkVersion.Major >= 6)
@@ -109,44 +101,6 @@ namespace Microsoft.NET.HostModel.Bundle
             string arch = Arch.ToString().ToLowerInvariant();
             return $"OS: {os} Arch: {arch} FrameworkVersion: {FrameworkVersion}";
         }
-
-        private static (OSPlatform os, Architecture arch) ParseRuntimeIdentifier(string runtimeIdentifier)
-        {
-            int separator = runtimeIdentifier.LastIndexOf('-');
-            if (separator <= 0 || separator == runtimeIdentifier.Length - 1)
-            {
-                throw new ArgumentException($"Invalid runtime identifier: {runtimeIdentifier}");
-            }
-
-            string archStr = runtimeIdentifier.Substring(separator + 1);
-            Architecture arch = archStr.ToLowerInvariant() switch
-            {
-                "x64" => Architecture.X64,
-                "x86" => Architecture.X86,
-                "arm64" => Architecture.Arm64,
-                "arm" => Architecture.Arm,
-                "riscv64" => Architecture.RiscV64,
-                "loongarch64" => Architecture.LoongArch64,
-                _ => throw new ArgumentException($"Unknown architecture '{archStr}' in runtime identifier: {runtimeIdentifier}"),
-            };
-
-            string platform = runtimeIdentifier.Substring(0, separator);
-            OSPlatform os =
-                platform.StartsWith("win", StringComparison.OrdinalIgnoreCase) ? OSPlatform.Windows :
-                platform.StartsWith("osx", StringComparison.OrdinalIgnoreCase) ? OSPlatform.OSX :
-                platform.StartsWith("freebsd", StringComparison.OrdinalIgnoreCase) ? OSPlatform.FreeBSD :
-                platform.StartsWith("illumos", StringComparison.OrdinalIgnoreCase) ? OSPlatform.Illumos :
-                platform.StartsWith("linux", StringComparison.OrdinalIgnoreCase) ? OSPlatform.Linux :
-                throw new ArgumentException($"Unknown OS platform '{platform}' in runtime identifier: {runtimeIdentifier}");
-
-            return (os, arch);
-        }
-
-        private static OSPlatform? _hostOS;
-        private static OSPlatform HostOS => _hostOS ??= RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
-            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX :
-            RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) ? OSPlatform.FreeBSD :
-            RuntimeInformation.IsOSPlatform(OSPlatform.Illumos) ? OSPlatform.Illumos : OSPlatform.Windows;
 
         public bool IsOSX => OS.Equals(OSPlatform.OSX);
         public bool IsWindows => OS.Equals(OSPlatform.Windows);

@@ -28,9 +28,14 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             sharedTestState = fixture;
         }
 
+        private static readonly OSPlatform s_currentOS =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? OSPlatform.Windows :
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX :
+            OSPlatform.Linux;
+
         private static string BundlerHostName = Binaries.GetExeName(SharedTestState.AppName);
         private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true, OSPlatform? targetOS = null)
-            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign, targetOS: targetOS);
+            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), targetOS ?? s_currentOS, RuntimeInformation.OSArchitecture, bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign);
 
         [Fact]
         public void EnableCompression_Before60_Fails()
@@ -259,7 +264,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 };
 
                 var bundleDir = new DirectoryInfo(app.GetUniqueSubdirectory("bundle"));
-                var bundler = new Bundler(hostName, bundleDir.FullName);
+                var bundler = new Bundler(hostName, bundleDir.FullName, s_currentOS, RuntimeInformation.OSArchitecture);
                 bundler.GenerateBundle(fileSpecs);
 
 
@@ -381,60 +386,6 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 // This should throw an exception due to the long file name exceeding the maximum allowed length
                 bundler.GenerateBundle(fileSpecs);
             });
-        }
-
-        [Theory]
-        [InlineData("win-x64", "Windows", Architecture.X64)]
-        [InlineData("win-x86", "Windows", Architecture.X86)]
-        [InlineData("win-arm64", "Windows", Architecture.Arm64)]
-        [InlineData("linux-x64", "Linux", Architecture.X64)]
-        [InlineData("linux-arm", "Linux", Architecture.Arm)]
-        [InlineData("linux-arm64", "Linux", Architecture.Arm64)]
-        [InlineData("linux-musl-x64", "Linux", Architecture.X64)]
-        [InlineData("linux-musl-arm64", "Linux", Architecture.Arm64)]
-        [InlineData("linux-bionic-arm64", "Linux", Architecture.Arm64)]
-        [InlineData("osx-x64", "OSX", Architecture.X64)]
-        [InlineData("osx-arm64", "OSX", Architecture.Arm64)]
-        [InlineData("freebsd-x64", "FREEBSD", Architecture.X64)]
-        [InlineData("illumos-x64", "ILLUMOS", Architecture.X64)]
-        [InlineData("linux-riscv64", "Linux", Architecture.RiscV64)]
-        [InlineData("linux-loongarch64", "Linux", Architecture.LoongArch64)]
-        public void RuntimeIdentifier_ParsesOSAndArch(string rid, string expectedOS, Architecture expectedArch)
-        {
-            var targetInfo = new TargetInfo(null, null, new Version(8, 0), rid);
-
-            Assert.Equal(OSPlatform.Create(expectedOS), targetInfo.OS);
-            Assert.Equal(expectedArch, targetInfo.Arch);
-        }
-
-        [Theory]
-        [InlineData("invalid")]
-        [InlineData("")]
-        [InlineData("-x64")]
-        [InlineData("linux-")]
-        [InlineData("linux-unknown")]
-        [InlineData("unknown-x64")]
-        public void RuntimeIdentifier_Invalid_Throws(string rid)
-        {
-            Assert.Throws<ArgumentException>(() => new TargetInfo(null, null, new Version(8, 0), rid));
-        }
-
-        [Fact]
-        public void RuntimeIdentifier_ExplicitOSOverridesRID()
-        {
-            var targetInfo = new TargetInfo(OSPlatform.Windows, null, new Version(8, 0), "linux-arm64");
-
-            Assert.Equal(OSPlatform.Windows, targetInfo.OS);
-            Assert.Equal(Architecture.Arm64, targetInfo.Arch);
-        }
-
-        [Fact]
-        public void RuntimeIdentifier_ExplicitArchOverridesRID()
-        {
-            var targetInfo = new TargetInfo(null, Architecture.X86, new Version(8, 0), "linux-arm64");
-
-            Assert.Equal(OSPlatform.Linux, targetInfo.OS);
-            Assert.Equal(Architecture.X86, targetInfo.Arch);
         }
 
         [Theory]

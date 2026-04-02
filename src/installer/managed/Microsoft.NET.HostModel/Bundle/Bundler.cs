@@ -42,14 +42,13 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public Bundler(string hostName,
                        string outputDir,
+                       OSPlatform targetOS,
+                       Architecture targetArch,
                        BundleOptions options = BundleOptions.None,
-                       OSPlatform? targetOS = null,
-                       Architecture? targetArch = null,
                        Version? targetFrameworkVersion = null,
                        bool diagnosticOutput = false,
                        string? appAssemblyName = null,
-                       bool macosCodesign = true,
-                       string? runtimeIdentifier = null)
+                       bool macosCodesign = true)
         {
             if (!string.IsNullOrEmpty(Path.GetDirectoryName(hostName)))
             {
@@ -58,7 +57,7 @@ namespace Microsoft.NET.HostModel.Bundle
             _tracer = new Trace(diagnosticOutput);
             _hostName = hostName;
             _outputDir = Path.GetFullPath(string.IsNullOrEmpty(outputDir) ? Environment.CurrentDirectory : outputDir);
-            _target = new TargetInfo(targetOS, targetArch, targetFrameworkVersion, runtimeIdentifier);
+            _target = new TargetInfo(targetOS, targetArch, targetFrameworkVersion);
 
             if (_target.BundleMajorVersion < 6 &&
                 (options & BundleOptions.EnableCompression) != 0)
