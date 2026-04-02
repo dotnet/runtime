@@ -180,7 +180,7 @@ class ReportGenerator:
         out.append("- ❌ = one or more test failures")
         out.append("- ⏭️ = skipped (private pipeline or marked skip). Non-private skipped pipelines include a build URL.")
         out.append("- EVERY pipeline (✅ and ❌) must include the build URL on the line after the name.")
-        out.append("- List ALL failing tests per pipeline — deduplicate by test name (show each unique test once).")
+        out.append("- List failing tests per pipeline, deduplicated by test name. Cap at 5 per failure group; show \"... and N more\" for the rest.")
         out.append("- [New] = no matching GitHub issue found — may need a new issue filed.")
         out.append("")
 

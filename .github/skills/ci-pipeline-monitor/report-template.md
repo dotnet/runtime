@@ -53,7 +53,7 @@ Notes:
 - ❌ = one or more test failures
 - ⏭️ = skipped (private pipeline or marked skip). Non-private skipped pipelines include a build URL.
 - EVERY pipeline (✅ and ❌) must include the build URL on the line after the name.
-- List ALL failing tests per pipeline — deduplicate by test name (show each unique test once).
+- List failing tests per pipeline, deduplicated by test name. Cap at 5 per failure group; show "... and N more" for the rest.
 - [N] maps to "FAILURE N" in the Failure Details section. Sorted by failure ID.
 - [New] = no matching GitHub issue found — may need a new issue filed.
 
