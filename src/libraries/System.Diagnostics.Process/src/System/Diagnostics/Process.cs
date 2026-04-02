@@ -145,12 +145,7 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         public int BasePriority
-        {
-            get
-            {
-                return GetProcessInfo().BasePriority;
-            }
-        }
+            => GetProcessInfo().BasePriority;
 
         /// <devdoc>
         ///    <para>
@@ -333,109 +328,49 @@ namespace System.Diagnostics
         }
 
         public long NonpagedSystemMemorySize64
-        {
-            get
-            {
-                return GetProcessInfo().PoolNonPagedBytes;
-            }
-        }
+            => GetProcessInfo().PoolNonPagedBytes;
 
         [Obsolete("Process.NonpagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.")]
         public int NonpagedSystemMemorySize
-        {
-            get
-            {
-                return unchecked((int)GetProcessInfo().PoolNonPagedBytes);
-            }
-        }
+            => unchecked((int)GetProcessInfo().PoolNonPagedBytes);
 
 
         public long PagedMemorySize64
-        {
-            get
-            {
-                return GetProcessInfo().PageFileBytes;
-            }
-        }
+            => GetProcessInfo().PageFileBytes;
 
         [Obsolete("Process.PagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedMemorySize64 instead.")]
         public int PagedMemorySize
-        {
-            get
-            {
-                return unchecked((int)GetProcessInfo().PageFileBytes);
-            }
-        }
+            => unchecked((int)GetProcessInfo().PageFileBytes);
 
 
         public long PagedSystemMemorySize64
-        {
-            get
-            {
-                return GetProcessInfo().PoolPagedBytes;
-            }
-        }
+            => GetProcessInfo().PoolPagedBytes;
 
         [Obsolete("Process.PagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedSystemMemorySize64 instead.")]
         public int PagedSystemMemorySize
-        {
-            get
-            {
-                return unchecked((int)GetProcessInfo().PoolPagedBytes);
-            }
-        }
+            => unchecked((int)GetProcessInfo().PoolPagedBytes);
 
 
         public long PeakPagedMemorySize64
-        {
-            get
-            {
-                return GetProcessInfo().PageFileBytesPeak;
-            }
-        }
+            => GetProcessInfo().PageFileBytesPeak;
 
         [Obsolete("Process.PeakPagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakPagedMemorySize64 instead.")]
         public int PeakPagedMemorySize
-        {
-            get
-            {
-                return unchecked((int)GetProcessInfo().PageFileBytesPeak);
-            }
-        }
+            => unchecked((int)GetProcessInfo().PageFileBytesPeak);
 
         public long PeakWorkingSet64
-        {
-            get
-            {
-                return GetProcessInfo().WorkingSetPeak;
-            }
-        }
+            => GetProcessInfo().WorkingSetPeak;
 
         [Obsolete("Process.PeakWorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakWorkingSet64 instead.")]
         public int PeakWorkingSet
-        {
-            get
-            {
-                return unchecked((int)GetProcessInfo().WorkingSetPeak);
-            }
-        }
+            => unchecked((int)GetProcessInfo().WorkingSetPeak);
 
         public long PeakVirtualMemorySize64
-        {
-            get
-            {
-                return GetProcessInfo().VirtualBytesPeak;
-            }
-        }
+            => GetProcessInfo().VirtualBytesPeak;
 
         [Obsolete("Process.PeakVirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.")]
         public int PeakVirtualMemorySize
-        {
-            get
-            {
-                return unchecked((int)GetProcessInfo().VirtualBytesPeak);
-            }
-        }
+            => unchecked((int)GetProcessInfo().VirtualBytesPeak);
 
         /// <devdoc>
         ///    <para>
@@ -494,21 +429,11 @@ namespace System.Diagnostics
         }
 
         public long PrivateMemorySize64
-        {
-            get
-            {
-                return GetProcessInfo().PrivateBytes;
-            }
-        }
+            => GetProcessInfo().PrivateBytes;
 
         [Obsolete("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
         public int PrivateMemorySize
-        {
-            get
-            {
-                return unchecked((int)GetProcessInfo().PrivateBytes);
-            }
-        }
+            => unchecked((int)GetProcessInfo().PrivateBytes);
 
         /// <devdoc>
         ///    <para>
@@ -538,12 +463,7 @@ namespace System.Diagnostics
         }
 
         public int SessionId
-        {
-            get
-            {
-                return GetProcessInfo().SessionId;
-            }
-        }
+            => GetProcessInfo().SessionId;
 
         /// <devdoc>
         ///    <para>
@@ -618,21 +538,11 @@ namespace System.Diagnostics
         partial void EnsureHandleCountPopulated();
 
         public long VirtualMemorySize64
-        {
-            get
-            {
-                return GetProcessInfo().VirtualBytes;
-            }
-        }
+            => GetProcessInfo().VirtualBytes;
 
         [Obsolete("Process.VirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.VirtualMemorySize64 instead.")]
         public int VirtualMemorySize
-        {
-            get
-            {
-                return unchecked((int)GetProcessInfo().VirtualBytes);
-            }
-        }
+            => unchecked((int)GetProcessInfo().VirtualBytes);
 
         /// <devdoc>
         ///    <para>
@@ -739,21 +649,11 @@ namespace System.Diagnostics
         }
 
         public long WorkingSet64
-        {
-            get
-            {
-                return GetProcessInfo().WorkingSet;
-            }
-        }
+            => GetProcessInfo().WorkingSet;
 
         [Obsolete("Process.WorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.WorkingSet64 instead.")]
         public int WorkingSet
-        {
-            get
-            {
-                return unchecked((int)GetProcessInfo().WorkingSet);
-            }
-        }
+            => unchecked((int)GetProcessInfo().WorkingSet);
 
         public event EventHandler Exited
         {
