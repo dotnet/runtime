@@ -19,6 +19,6 @@ namespace System.Diagnostics
 
         private static bool AreChildrenUsingTerminal => false;
 
-        internal static bool IsTerminal(SafeFileHandle? standardHandle) => false;
+        internal static bool IsTerminal(SafeFileHandle? _) => false;
     }
 }
