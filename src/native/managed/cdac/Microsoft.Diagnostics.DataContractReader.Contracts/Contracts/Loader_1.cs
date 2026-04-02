@@ -250,6 +250,8 @@ internal readonly struct Loader_1 : ILoader
         if (numSections == 0 || numSections > MaxWebcilSections)
             throw new InvalidOperationException("Invalid Webcil section count.");
 
+        if (webcilHeader.VersionMajor != 0 && webcilHeader.VersionMajor != 1)
+            throw new InvalidOperationException("Unsupported Webcil version.");
         TargetPointer sectionTableBase = headerBase + webcilHeader.Size; // See docs/design/mono/webcil.md
 
         for (int i = 0; i < numSections; i++)
