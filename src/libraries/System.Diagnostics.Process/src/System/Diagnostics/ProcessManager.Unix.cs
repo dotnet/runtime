@@ -13,6 +13,16 @@ namespace System.Diagnostics
         /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
         /// <param name="processId">The process ID.</param>
         /// <param name="machineName">The machine name.</param>
+        /// <param name="isRemoteMachine">Unused on Unix since remote machines are not supported.</param>
+        /// <returns>true if the process is running; otherwise, false.</returns>
+#pragma warning disable IDE0060
+        public static bool IsProcessRunning(int processId, string machineName, bool isRemoteMachine) =>
+            IsProcessRunning(processId);
+#pragma warning restore IDE0060
+
+        /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
         /// <returns>true if the process is running; otherwise, false.</returns>
         public static bool IsProcessRunning(int processId, string machineName)
         {
@@ -103,13 +113,13 @@ namespace System.Diagnostics
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <remarks>On Unix, <paramref name="isRemoteMachine"/> and <paramref name="machineName"/> are unused since remote machines are not supported.</remarks>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <param name="isRemoteMachine">Unused on Unix.</param>
         /// <param name="machineName">Unused on Unix.</param>
+        /// <param name="isRemoteMachine">Unused on Unix.</param>
         /// <returns>An array of process infos, one per found process.</returns>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
 #pragma warning disable IDE0060
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, bool isRemoteMachine, string machineName) =>
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName, bool isRemoteMachine) =>
             GetProcessInfos(processNameFilter);
 #pragma warning restore IDE0060
 

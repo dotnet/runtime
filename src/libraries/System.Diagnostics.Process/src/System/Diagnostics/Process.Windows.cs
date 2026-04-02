@@ -29,7 +29,7 @@ namespace System.Diagnostics
         {
             bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
 
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName, isRemoteMachine, machineName);
+            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName, machineName, isRemoteMachine);
             Process[] processes = new Process[processInfos.Length];
 
             for (int i = 0; i < processInfos.Length; i++)

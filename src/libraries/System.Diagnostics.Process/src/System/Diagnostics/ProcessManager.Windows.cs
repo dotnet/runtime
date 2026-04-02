@@ -77,33 +77,33 @@ namespace System.Diagnostics
         /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
         /// <param name="processId">The process ID.</param>
         /// <param name="machineName">The machine name.</param>
+        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
         /// <returns>true if the process is running; otherwise, false.</returns>
-        public static bool IsProcessRunning(int processId, string machineName)
+        public static bool IsProcessRunning(int processId, string machineName, bool isRemoteMachine)
         {
-            if (IsRemoteMachine(machineName))
+            if (isRemoteMachine)
             {
-                return Array.IndexOf(GetProcessIds(machineName), processId) >= 0;
+                return Array.IndexOf(GetProcessIds(machineName, isRemoteMachine), processId) >= 0;
             }
 
             return IsProcessRunning(processId);
         }
 
-        /// <summary>Gets process infos for each process on the specified machine.</summary>
-        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <param name="machineName">The target machine.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
+        /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
+        /// <returns>true if the process is running; otherwise, false.</returns>
+        public static bool IsProcessRunning(int processId, string machineName)
         {
-            bool isRemoteMachine = HandleRemoteMachineSupport(machineName);
-            return GetProcessInfos(processNameFilter, isRemoteMachine, machineName);
+            return IsProcessRunning(processId, machineName, IsRemoteMachine(machineName));
         }
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
         /// <param name="machineName">The target machine.</param>
+        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
         /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, bool isRemoteMachine, string machineName)
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName, bool isRemoteMachine)
         {
             if (!isRemoteMachine)
             {
@@ -197,10 +197,11 @@ namespace System.Diagnostics
 
         /// <summary>Gets the IDs of all processes on the specified machine.</summary>
         /// <param name="machineName">The machine to examine.</param>
+        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
         /// <returns>An array of process IDs from the specified machine.</returns>
-        public static int[] GetProcessIds(string machineName)
+        public static int[] GetProcessIds(string machineName, bool isRemoteMachine)
         {
-            if (!IsRemoteMachine(machineName))
+            if (!isRemoteMachine)
             {
                 return GetProcessIds();
             }

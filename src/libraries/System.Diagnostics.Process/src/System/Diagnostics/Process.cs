@@ -1033,7 +1033,7 @@ namespace System.Diagnostics
         public static Process GetProcessById(int processId, string machineName)
         {
             bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
-            if (!ProcessManager.IsProcessRunning(processId, machineName))
+            if (!ProcessManager.IsProcessRunning(processId, machineName, isRemoteMachine))
             {
                 throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
             }
@@ -1117,7 +1117,7 @@ namespace System.Diagnostics
         public static Process[] GetProcesses(string machineName)
         {
             bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processNameFilter: null, isRemoteMachine, machineName);
+            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processNameFilter: null, machineName, isRemoteMachine);
             Process[] processes = new Process[processInfos.Length];
             for (int i = 0; i < processInfos.Length; i++)
             {
