@@ -47,8 +47,8 @@ internal sealed class ClrMdDumpHost : IDisposable
             : string.Empty;
 
         string symbolPaths = localPaths.Length > 0
-            ? localPaths + ";" + SymbolPath.MicrosoftSymbolServerPath
-            : SymbolPath.MicrosoftSymbolServerPath;
+            ? localPaths + ";"
+            : string.Empty;
 
         DataTarget dataTarget = DataTarget.LoadDump(dumpPath, new DataTargetOptions(SymbolPaths = symbolPaths));
 

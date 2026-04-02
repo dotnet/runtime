@@ -180,12 +180,12 @@
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="mkdir %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\runtime" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="for /D %25%25v in (%25HELIX_CORRELATION_PAYLOAD%25\shared\Microsoft.NETCore.App\*) do copy &quot;%25%25v\System.Private.CoreLib.dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\runtime\&quot; &gt;nul" />
+          Include="for /D %25%25v in (%25HELIX_CORRELATION_PAYLOAD%25\shared\Microsoft.NETCore.App\*) do (echo === Processing folder: %25%25v === &amp; dir %25%25v &amp; echo Copying System.Private.CoreLib.dll &amp; copy &quot;%25%25v\System.Private.CoreLib.dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\runtime\&quot; &amp; echo === Done with %25%25v === &amp; echo)" />
       <!-- Windows: copy each debuggee DLL -->
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="@(_UniqueDebuggee->'mkdir %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)')" />
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="@(_UniqueDebuggee->'copy &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\%(Identity).dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot; &gt;nul')" />
+          Include="@(_UniqueDebuggee->'copy &quot;%25HELIX_WORKITEM_PAYLOAD%25\debuggees\%(Identity)\%(Identity).dll&quot; &quot;%25HELIX_WORKITEM_PAYLOAD%25\dumps\local\symbols\debuggees\%(Identity)\&quot;')" />
 
       <!-- Unix: copy SPC from testhost shared framework -->
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
