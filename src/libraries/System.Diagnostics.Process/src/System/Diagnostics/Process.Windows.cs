@@ -27,9 +27,9 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
-            bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
+            bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
 
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName, machineName);
+            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName, isRemoteMachine, machineName);
             Process[] processes = new Process[processInfos.Length];
 
             for (int i = 0; i < processInfos.Length; i++)

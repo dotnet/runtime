@@ -77,5 +77,29 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>
+        /// Validates that the machine supports remote queries. Throws <see cref="PlatformNotSupportedException"/> for remote machines on Unix.
+        /// </summary>
+        /// <param name="machineName">The target machine name.</param>
+        /// <returns>Always returns false on Unix since remote machines are not supported.</returns>
+        internal static bool HandleRemoteMachineSupport(string machineName)
+        {
+            ThrowIfRemoteMachine(machineName);
+            return false;
+        }
+
+        /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <remarks>On Unix, <paramref name="isRemoteMachine"/> and <paramref name="machineName"/> are unused since remote machines are not supported.</remarks>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
+        /// <param name="isRemoteMachine">Unused on Unix.</param>
+        /// <param name="machineName">Unused on Unix.</param>
+        /// <returns>An array of process infos, one per found process.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+#pragma warning disable IDE0060
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, bool isRemoteMachine, string machineName) =>
+            GetProcessInfos(processNameFilter);
+#pragma warning restore IDE0060
+
     }
 }

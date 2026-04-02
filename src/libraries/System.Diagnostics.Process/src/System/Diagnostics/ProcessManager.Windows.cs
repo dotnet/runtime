@@ -15,13 +15,24 @@ namespace System.Diagnostics
     internal static partial class ProcessManager
     {
         // Allows PerformanceCounterLib (and its dependencies) to be trimmed when remote machine
-        // support is not used. s_getRemoteProcessInfos is only assigned in EnsureRemoteMachineFuncs,
+        // support is not used. s_getRemoteProcessInfos is only assigned in HandleRemoteMachineSupport,
         // which is only called from public APIs that accept a remote machine name.
         private static Func<string, bool, ProcessInfo[]>? s_getRemoteProcessInfos;
 
-        // Called from public APIs that accept remote machine names to initialize remote machine support.
-        internal static void EnsureRemoteMachineFuncs() =>
-            s_getRemoteProcessInfos ??= NtProcessManager.GetProcessInfos;
+        /// <summary>
+        /// Validates that the machine supports remote queries and initializes remote machine support.
+        /// </summary>
+        /// <param name="machineName">The target machine name.</param>
+        /// <returns>true if the machine is remote; otherwise, false.</returns>
+        internal static bool HandleRemoteMachineSupport(string machineName)
+        {
+            if (IsRemoteMachine(machineName))
+            {
+                s_getRemoteProcessInfos ??= NtProcessManager.GetProcessInfos;
+                return true;
+            }
+            return false;
+        }
 
         /// <summary>Gets process infos for each process on the local machine.</summary>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
@@ -70,10 +81,6 @@ namespace System.Diagnostics
         {
             if (IsRemoteMachine(machineName))
             {
-                // Ensure the remote-machine delegate is initialized. GetProcessById will create a
-                // Process with this machine name, and the delegate must be set before that Process
-                // is used (e.g. via ToString() → GetProcessInfo).
-                EnsureRemoteMachineFuncs();
                 return Array.IndexOf(GetProcessIds(machineName), processId) >= 0;
             }
 
@@ -86,12 +93,22 @@ namespace System.Diagnostics
         /// <returns>An array of process infos, one per found process.</returns>
         public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
         {
-            if (!IsRemoteMachine(machineName))
+            bool isRemoteMachine = HandleRemoteMachineSupport(machineName);
+            return GetProcessInfos(processNameFilter, isRemoteMachine, machineName);
+        }
+
+        /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
+        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
+        /// <param name="machineName">The target machine.</param>
+        /// <returns>An array of process infos, one per found process.</returns>
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, bool isRemoteMachine, string machineName)
+        {
+            if (!isRemoteMachine)
             {
                 return GetProcessInfos(processNameFilter);
             }
 
-            EnsureRemoteMachineFuncs();
             ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
             if (string.IsNullOrEmpty(processNameFilter))
             {
@@ -119,7 +136,7 @@ namespace System.Diagnostics
             if (IsRemoteMachine(machineName))
             {
                 // remote case: we take the hit of looping through all results
-                // EnsureRemoteMachineFuncs() must have been called by the entry point that
+                // HandleRemoteMachineSupport must have been called by the entry point that
                 // created this remote Process (GetProcesses, GetProcessById, GetProcessesByName).
                 Debug.Assert(s_getRemoteProcessInfos is not null);
                 ProcessInfo[] processInfos = s_getRemoteProcessInfos(machineName, true);
