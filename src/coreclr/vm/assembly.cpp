@@ -1215,7 +1215,7 @@ static void RunMainInternal(Param* pParam)
 /* static */
 HRESULT RunMain(MethodDesc *pFD ,
                 INT32 *piRetVal,
-                PTRARRAYREF *stringArgs /*=NULL*/,
+                PTRARRAYREF *stringArgs,
                 bool captureException)
 {
     STATIC_CONTRACT_THROWS;
