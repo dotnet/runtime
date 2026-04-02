@@ -49,7 +49,7 @@ namespace System.Runtime.CompilerServices
             public static bool ResumeAsyncMethod(Flags flags) => (Flags.ResumeAsyncMethod & flags) != 0;
             public static bool CompleteAsyncMethod(Flags flags) => (Flags.CompleteAsyncMethod & flags) != 0;
             public static bool AsyncProfiler(Flags flags) => (Flags.AsyncProfiler & flags) != 0;
-            public static bool AsyncDebugger(Flags flags) => (Flags.AsyncDebugger & flags) != 0 && Task.s_asyncDebuggingEnabled;
+            public static bool AsyncDebugger(Flags flags) => (Flags.AsyncDebugger & flags) != 0;
         }
 
         public static Flags ActiveFlags => s_activeFlags;
@@ -102,6 +102,7 @@ namespace System.Runtime.CompilerServices
         private static Flags InitializeFlags()
         {
             _ = TplEventSource.Log; // Touch TplEventSource to trigger static constructor which will initialize TPL flags if EventSource is supported.
+            _ = AsyncProfilerBufferedEventSource.Log; // Touch AsyncProfilerBufferedEventSource to trigger static constructor which will initialize async profiler flags if EventSource is supported.
 
             lock (s_lock)
             {
