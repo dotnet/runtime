@@ -130,7 +130,7 @@ internal partial class MockDescriptors
             Builder.TargetTestHelpers.Write(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.Flags)].Offset, sizeof(uint)), isActive ? (uint)CodeVersions_1.NativeCodeVersionNodeFlags.IsActiveChild : 0u);
             Builder.TargetTestHelpers.WriteNUInt(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.ILVersionId)].Offset, Builder.TargetTestHelpers.PointerSize), ilVersionId);
             Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.GCCoverageInfo)].Offset, Builder.TargetTestHelpers.PointerSize), gcCoverageInfo ?? TargetPointer.Null);
-            uint optimizationTierValue = optimizationTier ?? (uint)OptimizationTier.OptimizationTierUnknown;
+            uint optimizationTierValue = optimizationTier ?? 0xFFFFFFFFu;
             Builder.TargetTestHelpers.Write(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.OptimizationTier)].Offset, sizeof(uint)), optimizationTierValue);
         }
 
