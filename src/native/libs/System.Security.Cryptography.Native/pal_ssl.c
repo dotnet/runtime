@@ -1052,6 +1052,7 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 }
 
 // This function generates key pair and creates simple certificate.
+// On success, the generated key is stored in *pEvp and the caller takes ownership.
 static int MakeSelfSignedCertificate(X509* cert, EVP_PKEY** pEvp)
 {
     ASN1_TIME* time = ASN1_TIME_new();

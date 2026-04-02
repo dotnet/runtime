@@ -23,7 +23,7 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey)
         return NULL;
     }
 
-    if (!EVP_PKEY_set1_RSA(pkey, currentKey))
+    if (!API_EXISTS(EVP_PKEY_set1_RSA) || !EVP_PKEY_set1_RSA(pkey, currentKey))
     {
         EVP_PKEY_free(pkey);
         return NULL;
@@ -362,6 +362,9 @@ done:
 // Returns 1 if the check passes, 0 if no private key.
 static int CheckLegacyPrivateKeyAvailable(EVP_PKEY* pkey)
 {
+    // This function is only called for OpenSSL < 3.0, where EVP_PKEY_get0_RSA is guaranteed
+    // to exist. The API_EXISTS check is a defensive guard that produces a proper error rather
+    // than a crash in the unexpected case that it is somehow unavailable.
     if (!API_EXISTS(EVP_PKEY_get0_RSA))
     {
         ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);

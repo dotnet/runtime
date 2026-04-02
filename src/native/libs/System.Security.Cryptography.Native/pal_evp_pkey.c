@@ -488,6 +488,7 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
     return QuickRsaCheckCore(rsa, isPublic, RsaLegacyGetKey, RsaLegacyGetFactors, RsaLegacyGetCrtParams);
 }
 
+#ifdef NEED_OPENSSL_3_0
 // EVP accessors for OpenSSL 3.0+: return owned copies (must be freed).
 static bool RsaEvpGetKey(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d)
 {
@@ -531,6 +532,7 @@ static int32_t QuickRsaCheckEvp(const EVP_PKEY* pkey, bool isPublic)
 {
     return QuickRsaCheckCore(pkey, isPublic, RsaEvpGetKey, RsaEvpGetFactors, RsaEvpGetCrtParams);
 }
+#endif // NEED_OPENSSL_3_0
 
 static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*check_func)(EVP_PKEY_CTX*))
 {
@@ -547,12 +549,15 @@ static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*chec
     {
         int32_t result;
 
+#ifdef NEED_OPENSSL_3_0
         if (API_EXISTS(EVP_PKEY_get_bn_param))
         {
             // OpenSSL 3.0+: use EVP_PKEY_get_bn_param to extract RSA components directly.
             result = QuickRsaCheckEvp(key, isPublic);
         }
-        else if (API_EXISTS(EVP_PKEY_get0_RSA))
+        else
+#endif
+        if (API_EXISTS(EVP_PKEY_get0_RSA))
         {
             const RSA* rsa = EVP_PKEY_get0_RSA(key);
 
