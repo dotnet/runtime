@@ -406,12 +406,17 @@ public partial class ZipArchiveEntry
                 await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, cancellationToken).ConfigureAwait(false);
 
                 // WriteLocalFileHeaderInitialize clears bit 3 for seekable streams, but in the metadata-only
-                // path the data descriptor bytes remain in the file. Restore bit 3 so the local header and
-                // central directory accurately indicate that a data descriptor follows the compressed data.
+                // path the data descriptor bytes remain in the file. Restore bit 3 in memory so the central
+                // directory stays consistent, and patch the on-disk header only if it was actually rewritten.
                 if (hadDataDescriptor)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
-                    PatchLocalFileHeaderBitFlags();
+
+                    bool headerWritten = !(_originallyInArchive && Changes == ZipArchive.ChangeState.Unchanged && !forceWrite);
+                    if (headerWritten)
+                    {
+                        PatchLocalFileHeaderBitFlags();
+                    }
                 }
 
                 // If we know that we need to update the file header (but don't need to load and update the data itself)
