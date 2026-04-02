@@ -69,7 +69,7 @@ namespace System.Threading.Tasks.Tests
             lock (_debuggerLock)
             {
                 s_asyncDebuggingEnabledField.SetValue(null, false);
-                _debuggerTplInstance.Dispose();
+                _debuggerTplInstance?.Dispose();
                 _debuggerTplInstance = null;
 
                 long flags = Convert.ToInt64(s_activeFlagsField.GetValue(null));
