@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_log.h"
+#include "pal_utilities.h"
 #import <Foundation/Foundation.h>
 
 #if __has_feature(objc_arc)
@@ -50,4 +51,21 @@ void SystemNative_Log (uint8_t* buffer, int32_t length)
 void SystemNative_LogError (uint8_t* buffer, int32_t length)
 {
     SystemNative_Log (buffer, length);
+}
+
+int32_t SystemNative_IsATty(intptr_t fd)
+{
+#if defined(TARGET_MACCATALYST)
+    return isatty(ToFileDescriptor(fd));
+#else
+    // there is no terminal on iOS or tvOS
+    (void)fd;
+    return 0;
+#endif
+}
+
+void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
+{
+    // Terminal reconfiguration is not supported on this platform.
+    (void)childUsesTerminal;
 }

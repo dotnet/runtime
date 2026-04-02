@@ -237,8 +237,8 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     }
 #endif
 
-#if defined(TARGET_OSX)
-    // Use posix_spawn on macOS when credentials don't need to be set,
+#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
+    // Use posix_spawn on macOS/MacCatalyst when credentials don't need to be set,
     // since macOS does not support setuid/setgid with posix_spawn.
     if (!setCredentials)
     {
