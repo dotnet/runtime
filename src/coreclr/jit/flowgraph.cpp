@@ -3175,15 +3175,11 @@ PhaseStatus Compiler::fgCreateFunclets()
             assert(funcIdx < funcCnt);
             funcInfo[funcIdx].funKind    = FUNC_FILTER;
             funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
-            funcInfo[funcIdx].funFirstBB = HBtab->ebdFilter;
-            funcInfo[funcIdx].funLastBB  = HBtab->BBFilterLast();
             funcIdx++;
         }
         assert(funcIdx < funcCnt);
         funcInfo[funcIdx].funKind    = FUNC_HANDLER;
         funcInfo[funcIdx].funEHIndex = (unsigned short)XTnum;
-        funcInfo[funcIdx].funFirstBB = HBtab->ebdHndBeg;
-        funcInfo[funcIdx].funLastBB  = HBtab->ebdHndLast;
         HBtab->ebdFuncIndex          = funcIdx;
         funcIdx++;
         fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
@@ -3191,9 +3187,6 @@ PhaseStatus Compiler::fgCreateFunclets()
 
     // We better have populated all of them by now
     assert(funcIdx == funcCnt);
-
-    funcInfo[0].funFirstBB = fgFirstBB;
-    funcInfo[0].funLastBB  = fgLastBBInMainFunction();
 
     // Publish
     compCurrFuncIdx   = 0;

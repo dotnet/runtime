@@ -113,8 +113,8 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
     }
     else
     {
-        BasicBlock* const startBlock = func->GetStartBlock();
-        BasicBlock* const lastBlock  = func->GetLastBlock();
+        BasicBlock* const startBlock = func->GetStartBlock(this);
+        BasicBlock* const lastBlock  = func->GetLastBlock(this);
 
         *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(startBlock));
         *ppEndLoc =

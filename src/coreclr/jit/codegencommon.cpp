@@ -1914,7 +1914,7 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
     // Check the current funclet index for correctness
     FuncInfoDsc* const currentFunc = m_compiler->funCurrentFunc();
     assert(currentFunc->funKind != FUNC_ROOT);
-    assert(currentFunc->GetStartBlock() == block);
+    assert(currentFunc->GetStartBlock(m_compiler) == block);
 }
 
 //----------------------------------------------------------------------
