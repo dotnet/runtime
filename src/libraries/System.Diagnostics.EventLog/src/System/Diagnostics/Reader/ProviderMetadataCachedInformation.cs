@@ -241,7 +241,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public IEnumerable<string>? GetKeywordDisplayNames(string ProviderName, EventLogHandle eventHandle)
+        public IEnumerable<string> GetKeywordDisplayNames(string ProviderName, EventLogHandle eventHandle)
         {
             lock (this)
             {

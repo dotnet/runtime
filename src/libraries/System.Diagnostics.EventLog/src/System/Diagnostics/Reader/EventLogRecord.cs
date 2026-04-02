@@ -350,7 +350,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public override IEnumerable<string>? KeywordsDisplayNames
+        public override IEnumerable<string> KeywordsDisplayNames
         {
             get
             {

@@ -983,7 +983,7 @@ namespace System.Diagnostics.Eventing.Reader
         }
 
         // The EvtFormatMessage used for the obtaining of the Keywords names.
-        public static IEnumerable<string>? EvtFormatMessageRenderKeywords(EventLogHandle pmHandle, EventLogHandle eventHandle, UnsafeNativeMethods.EvtFormatMessageFlags flag)
+        public static IEnumerable<string> EvtFormatMessageRenderKeywords(EventLogHandle pmHandle, EventLogHandle eventHandle, UnsafeNativeMethods.EvtFormatMessageFlags flag)
         {
             IntPtr buffer = IntPtr.Zero;
             int bufferNeeded;

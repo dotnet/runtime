@@ -356,7 +356,7 @@ namespace System.Diagnostics.Eventing.Reader
         public string? ContainerLog { get { throw null; } }
         public override int Id { get { throw null; } }
         public override long? Keywords { get { throw null; } }
-        public override System.Collections.Generic.IEnumerable<string>? KeywordsDisplayNames { get { throw null; } }
+        public override System.Collections.Generic.IEnumerable<string> KeywordsDisplayNames { get { throw null; } }
         public override byte? Level { get { throw null; } }
         public override string? LevelDisplayName { get { throw null; } }
         public override string? LogName { get { throw null; } }
@@ -458,7 +458,7 @@ namespace System.Diagnostics.Eventing.Reader
         public abstract System.Diagnostics.Eventing.Reader.EventBookmark Bookmark { get; }
         public abstract int Id { get; }
         public abstract long? Keywords { get; }
-        public abstract System.Collections.Generic.IEnumerable<string>? KeywordsDisplayNames { get; }
+        public abstract System.Collections.Generic.IEnumerable<string> KeywordsDisplayNames { get; }
         public abstract byte? Level { get; }
         public abstract string? LevelDisplayName { get; }
         public abstract string? LogName { get; }

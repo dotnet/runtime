@@ -43,7 +43,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public abstract string? OpcodeDisplayName { get; }
         public abstract string? TaskDisplayName { get; }
-        public abstract IEnumerable<string>? KeywordsDisplayNames { get; }
+        public abstract IEnumerable<string> KeywordsDisplayNames { get; }
 
         public abstract EventBookmark Bookmark { get; }
 
