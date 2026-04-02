@@ -354,8 +354,8 @@ namespace ILCompiler.ObjectWriter
             RegisterStubIndexAndSignature(body);
 
         }
-         private long ResolveSymbolRVA(WebcilSection[] sections, SymbolDefinition definition)
-         {
+        private long ResolveSymbolRVA(WebcilSection[] sections, SymbolDefinition definition)
+        {
             for (int i = 0; i < sections.Length; i++)
             {
                 WebcilSection section = sections[i];
@@ -366,7 +366,7 @@ namespace ILCompiler.ObjectWriter
             }
 
             return 0;
-         }
+        }
 
         public const int WebcilSectionAlignment = 16;
 
