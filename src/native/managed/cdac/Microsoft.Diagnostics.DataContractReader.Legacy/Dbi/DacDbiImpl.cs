@@ -338,8 +338,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             while (currentThread != TargetPointer.Null)
             {
                 Contracts.ThreadData threadData = threadContract.GetThreadData(currentThread);
-                // Match native: skip dead and unstarted threads
-                if ((threadData.State & (Contracts.ThreadState.Dead | Contracts.ThreadState.Unstarted)) == 0)
+                // Match native: skip dead and unstarted threads (ReportDead synthesizes Dead)
+                if ((threadData.State & (Contracts.ThreadState.Dead | Contracts.ThreadState.ReportDead | Contracts.ThreadState.Unstarted)) == 0)
                 {
                     callback(currentThread.Value, pUserData);
 #if DEBUG
@@ -390,7 +390,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
-            *pResult = (threadData.State & Contracts.ThreadState.Dead) != 0 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            // Match native GetSnapshotState: TS_ReportDead synthesizes TS_Dead
+            *pResult = (threadData.State & (Contracts.ThreadState.Dead | Contracts.ThreadState.ReportDead)) != 0 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {

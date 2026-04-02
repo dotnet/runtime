@@ -89,6 +89,30 @@ public unsafe class ThreadTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_ReportDead_IncludesDeadAndReportDeadFlags(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder);
+
+        TargetPointer addr = thread.AddThread(1, new TargetNUInt(1234));
+
+        // Set the thread state to ReportDead (0x00010000) - simulates WaitForOtherThreads
+        Target.TypeInfo threadType = thread.Types[DataType.Thread];
+        int stateOffset = threadType.Fields[nameof(Data.Thread.State)].Offset;
+        helpers.Write(
+            builder.BorrowAddressRange(addr + (ulong)stateOffset, sizeof(uint)),
+            (uint)ThreadState.ReportDead);
+
+        Target target = CreateTarget(thread);
+        IThread contract = target.Contracts.Thread;
+
+        ThreadData data = contract.GetThreadData(addr);
+        Assert.True((data.State & ThreadState.ReportDead) != 0, "ReportDead flag should be set");
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void IterateThreads(MockTarget.Architecture arch)
     {
         // Set up the target
