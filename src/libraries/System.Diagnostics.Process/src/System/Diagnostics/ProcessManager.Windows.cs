@@ -137,10 +137,7 @@ namespace System.Diagnostics
             if (IsRemoteMachine(machineName))
             {
                 // remote case: we take the hit of looping through all results
-                // HandleRemoteMachineSupport must have been called by the entry point that
-                // created this remote Process (GetProcesses, GetProcessById, GetProcessesByName).
-                Debug.Assert(s_getRemoteProcessInfos is not null);
-                ProcessInfo[] processInfos = s_getRemoteProcessInfos(machineName);
+                ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName);
                 foreach (ProcessInfo processInfo in processInfos)
                 {
                     if (processInfo.ProcessId == processId)
