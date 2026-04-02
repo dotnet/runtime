@@ -986,12 +986,15 @@ void WasmRegAlloc::ResolveReferences()
                     continue;
                 }
 
-                regNumber physReg;
+                // Since we now collect references for nodes with internal registers, we may see
+                // cases where the node itself does not have a valid reg.
+                //
+                regNumber physReg = REG_NA;
                 if (node->OperIs(GT_STORE_LCL_VAR))
                 {
                     physReg = m_compiler->lvaGetDesc(node->AsLclVarCommon())->GetRegNum();
                 }
-                else
+                else if (genIsValidReg(node->GetRegNum()))
                 {
                     assert(!node->OperIsLocal() || !m_compiler->lvaGetDesc(node->AsLclVarCommon())->lvIsRegCandidate());
                     WasmValueType type;
@@ -999,7 +1002,10 @@ void WasmRegAlloc::ResolveReferences()
                     physReg             = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
                 }
 
-                node->SetRegNum(physReg);
+                if (physReg != REG_NA)
+                {
+                    node->SetRegNum(physReg);
+                }
 
                 // If there are internal registers associated with this node, allocate them now.
                 //
