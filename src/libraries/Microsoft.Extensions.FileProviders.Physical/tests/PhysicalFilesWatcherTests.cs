@@ -407,15 +407,16 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await changed;
         }
 
-        [Fact]
-        public void CreateFileChangeToken_DoesNotThrow_WhenRootDeletedBeforeFirstWatch()
+        [Theory]
+        [MemberData(nameof(WatcherModeData))]
+        public void CreateFileChangeToken_DoesNotThrow_WhenRootDeletedBeforeFirstWatch(bool useActivePolling)
         {
             // Regression test for https://github.com/dotnet/runtime/issues/107700:
             // Root exists at construction time but is deleted before the first
             // CreateFileChangeToken call. Previously this threw FileNotFoundException.
             using var root = new TempDirectory(GetTestFilePath());
 
-            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling: false);
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling);
 
             Directory.Delete(root.Path, recursive: true);
 
