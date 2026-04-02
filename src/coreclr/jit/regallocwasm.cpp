@@ -711,7 +711,8 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 regNumber WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
 {
     regNumber reg = AllocateTemporaryRegister(type);
-    m_codeGen->internalRegisters.Add(m_currentFunclet, node, reg);
+    m_codeGen->internalRegisters.Add(node, reg);
+    CollectReference(node);
     return reg;
 }
 
@@ -1005,26 +1006,24 @@ void WasmRegAlloc::ResolveReferences()
                 }
 
                 node->SetRegNum(physReg);
-            }
-            refsCount = ARRAY_SIZE(refs->Nodes);
-        }
 
-        NodeInternalRegistersTable* const internalRegTable = m_codeGen->internalRegisters.GetTable(m_currentFunclet);
-        if (internalRegTable != nullptr)
-        {
-            for (NodeInternalRegistersTable::Node* nodeWithInternalRegs :
-                 m_codeGen->internalRegisters.Iterate(internalRegTable))
-            {
-                InternalRegs* regs  = &nodeWithInternalRegs->GetValueRef();
-                unsigned      count = regs->Count();
-                for (unsigned i = 0; i < count; i++)
+                // If there are internal registers associated with this node, allocate them now.
+                //
+                InternalRegs* const internalRegs = m_codeGen->internalRegisters.GetAll(node);
+
+                if (internalRegs != nullptr)
                 {
-                    WasmValueType type;
-                    unsigned      index   = UnpackWasmReg(regs->GetAt(i), &type);
-                    regNumber     physReg = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
-                    regs->SetAt(i, physReg);
+                    unsigned count = internalRegs->Count();
+                    for (unsigned i = 0; i < count; i++)
+                    {
+                        WasmValueType type;
+                        unsigned      index   = UnpackWasmReg(internalRegs->GetAt(i), &type);
+                        regNumber     physReg = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
+                        internalRegs->SetAt(i, physReg);
+                    }
                 }
             }
+            refsCount = ARRAY_SIZE(refs->Nodes);
         }
 
         FuncInfoDsc* const currentFunc = m_compiler->funGetFunc(m_currentFunclet);
