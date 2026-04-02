@@ -20,7 +20,7 @@
 
 enum ComCallFlags
 {
-    // unused                       = 0x0001,   // If true the method is virtual on the managed side
+    // unused                       = 0x0001,
     enum_IsFieldCall                = 0x0002,   // is field call
     enum_IsGetter                   = 0x0004,   // is field call getter
     enum_NativeInfoInitialized      = 0x0008,   // Has the native info been initialized
