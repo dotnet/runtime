@@ -142,6 +142,11 @@ static void propagate_error_writer_cleanup(propagate_error_writer_state_t* state
 
 static int exe_start(const int argc, const char* argv[])
 {
+#if defined(FEATURE_STATIC_HOST)
+    extern void apphost_static_init(void);
+    apphost_static_init();
+#endif
+
     // Use realpath to find the path of the host, resolving any symlinks.
     char* host_path = (char*)malloc(APPHOST_PATH_MAX);
     if (host_path == NULL)
@@ -281,6 +286,7 @@ static int exe_start(const int argc, const char* argv[])
 
             propagate_error_writer_cleanup(&propagate_state);
         }
+#if !defined(FEATURE_STATIC_HOST)
         else
         {
             if (requires_hostfxr_startupinfo_interface)
@@ -307,6 +313,7 @@ static int exe_start(const int argc, const char* argv[])
                 }
             }
         }
+#endif // !defined(FEATURE_STATIC_HOST)
     }
 
     hostfxr_resolver_cleanup(&fxr);

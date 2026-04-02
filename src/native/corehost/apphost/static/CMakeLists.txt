@@ -8,6 +8,7 @@ include_directories(..)
 include_directories(../..)
 include_directories(../../hostmisc)
 include_directories(../../json)
+include_directories(../standalone)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
@@ -31,17 +32,15 @@ endif()
 
 set(SOURCES
     ../../hostmisc/bundle_marker.c
-    ./hostfxr_resolver.cpp
+    ./apphost_hostfxr_resolver.cpp
     ./hostpolicy_resolver.cpp
     ../../hostpolicy/static/coreclr_resolver.cpp
-    ../../fxr_resolver.cpp
-    ../../corehost.cpp
+    ../standalone/apphost_main.c
 )
 
 set(HEADERS
     ../../hostmisc/bundle_marker_c.h
-    ../../hostmisc/bundle_marker_c.h
-    ../../hostfxr_resolver.h
+    ../standalone/apphost_hostfxr_resolver.h
     ../../fxr_resolver.h
 )
 
