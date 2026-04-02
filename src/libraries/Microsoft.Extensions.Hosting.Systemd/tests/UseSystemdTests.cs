@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Hosting
         public void AddSystemd_DefaultsToOffOutsideOfService()
         {
             // Simulate running outside of a systemd service
-            // SystemdLifetime and SystemdLogger should not be registered, even if UseSystemd is called.
+            // SystemdLifetime and SystemdLogger should not be registered, even if AddSystemd() is used.
             using IHost host = BuildHostWithAddSystemd();
             var lifetime = host.Services.GetRequiredService<IHostLifetime>();
             Assert.NotNull(lifetime);
