@@ -6031,12 +6031,8 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
     bool EBPbased;
     offset = lvaFrameAddress(lclNum, &EBPbased);
 
-#if HAS_FIXED_REGISTER_SET
-    baseReg = EBPbased ? codeGen->GetFramePointerReg() : codeGen->GetStackPointerReg();
-#else
-    // Just use the sp/fp from the function region
-    baseReg = EBPbased ? codeGen->GetFramePointerReg(0) : codeGen->GetStackPointerReg(0);
-#endif
+    // Use the sp/fp from the function region
+    baseReg = EBPbased ? codeGen->GetFramePointerReg(ROOT_FUNC_IDX) : codeGen->GetStackPointerReg(ROOT_FUNC_IDX);
 #endif // TARGET_ARM
 
     int printed =

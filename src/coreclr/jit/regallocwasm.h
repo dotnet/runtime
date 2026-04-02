@@ -84,9 +84,9 @@ class WasmRegAlloc : public RegAllocInterface
 
     // We need to allocate per funclet. This struct holds the per-funclet state.
     //
-    struct PerRegionData
+    struct PerFuncletData
     {
-        PerRegionData()
+        PerFuncletData()
             : m_spReg(REG_NA)
             , m_fpReg(REG_NA)
             , m_lastVirtualRegRefsCount(0)
@@ -111,7 +111,7 @@ class WasmRegAlloc : public RegAllocInterface
         VirtualRegReferences* m_virtualRegRefs;
     };
 
-    jitstd::vector<PerRegionData*> m_perRegionData;
+    jitstd::vector<PerFuncletData*> m_perFuncletData;
 
 public:
     WasmRegAlloc(Compiler* compiler);
@@ -154,7 +154,6 @@ private:
     void      CollectReferencesForBlockStore(GenTreeBlk* node);
     void      CollectReferencesForLclVar(GenTreeLclVar* lclVar);
     void      CollectReferencesForIndexAddr(GenTreeIndexAddr* indexAddrNode);
-    void      CollectReferencesForCatchArg(GenTree* node);
     void      RewriteLocalStackStore(GenTreeLclVarCommon* node);
     void      CollectReference(GenTree* node);
     void      RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);

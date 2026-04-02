@@ -272,21 +272,13 @@ public:
 
 #if !HAS_FIXED_REGISTER_SET
 
-public:
-    void      SetStackPointerReg(unsigned funcletIndex, regNumber reg);
-    void      SetFramePointerReg(unsigned funcletIndex, regNumber reg);
+    void SetStackPointerReg(unsigned funcletIndex, regNumber reg);
+    void SetFramePointerReg(unsigned funcletIndex, regNumber reg);
+
+#endif // !HAS_FIXED_REGISTER_SET
+
     regNumber GetStackPointerReg(unsigned funcletIndex) const;
     regNumber GetFramePointerReg(unsigned funcletIndex) const;
-#else  // HAS_FIXED_REGISTER_SET
-    regNumber GetStackPointerReg() const
-    {
-        return REG_SPBASE;
-    }
-    regNumber GetFramePointerReg() const
-    {
-        return REG_FPBASE;
-    }
-#endif // HAS_FIXED_REGISTER_SET
 
 public:
     int genCallerSPtoFPdelta() const;

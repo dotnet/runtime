@@ -58,7 +58,16 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 #endif // JIT32_GCENCODER
 }
 
-#if !HAS_FIXED_REGISTER_SET
+#if HAS_FIXED_REGISTER_SET
+regNumber CodeGenInterface::GetStackPointerReg(unsigned) const
+{
+    return REG_SPBASE;
+}
+regNumber CodeGenInterface::GetFramePointerReg(unsigned) const
+{
+    return REG_FPBASE;
+}
+#else
 void CodeGenInterface::SetStackPointerReg(unsigned funcletIndex, regNumber reg)
 {
     assert(funcletIndex < m_compiler->compFuncInfoCount);
