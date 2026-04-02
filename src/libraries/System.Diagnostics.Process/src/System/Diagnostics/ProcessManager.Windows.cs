@@ -79,21 +79,12 @@ namespace System.Diagnostics
         /// <returns>true if the process is running; otherwise, false.</returns>
         public static bool IsProcessRunning(int processId, string machineName, bool isRemoteMachine)
         {
-            if (isRemoteMachine)
+            if (!isRemoteMachine)
             {
-                return Array.IndexOf(GetProcessIds(machineName, isRemoteMachine), processId) >= 0;
+                return IsProcessRunning(processId);
             }
 
-            return IsProcessRunning(processId);
-        }
-
-        /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
-        /// <param name="processId">The process ID.</param>
-        /// <param name="machineName">The machine name.</param>
-        /// <returns>true if the process is running; otherwise, false.</returns>
-        public static bool IsProcessRunning(int processId, string machineName)
-        {
-            return IsProcessRunning(processId, machineName, IsRemoteMachine(machineName));
+            return Array.IndexOf(GetProcessIds(machineName, isRemoteMachine), processId) >= 0;
         }
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>

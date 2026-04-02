@@ -20,19 +20,6 @@ namespace System.Diagnostics
             IsProcessRunning(processId);
 #pragma warning restore IDE0060
 
-        /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
-        /// <param name="processId">The process ID.</param>
-        /// <param name="machineName">The machine name.</param>
-        /// <returns>true if the process is running; otherwise, false.</returns>
-        public static bool IsProcessRunning(int processId, string machineName)
-        {
-            if (IsRemoteMachine(machineName))
-            {
-                throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
-            }
-            return IsProcessRunning(processId);
-        }
-
         /// <summary>Gets whether the process with the specified ID is currently running.</summary>
         /// <param name="processId">The process ID.</param>
         /// <returns>true if the process is running; otherwise, false.</returns>
@@ -95,21 +82,6 @@ namespace System.Diagnostics
                 throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
             }
             return false;
-        }
-
-        /// <summary>Gets process infos for each process on the specified machine.</summary>
-        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <param name="machineName">The target machine.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
-        {
-            if (IsRemoteMachine(machineName))
-            {
-                throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
-            }
-            return GetProcessInfos(processNameFilter);
         }
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
