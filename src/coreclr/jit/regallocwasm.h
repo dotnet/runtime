@@ -135,7 +135,6 @@ private:
     void      InitializeStackPointer();
     void      AllocateStackPointer();
     void      AllocateFramePointer();
-    void      AllocateExceptionPointer();
     regNumber AllocateVirtualRegister(var_types type);
     regNumber AllocateVirtualRegister(WasmValueType type);
     regNumber AllocateTemporaryRegister(var_types type);

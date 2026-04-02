@@ -775,6 +775,7 @@ protected:
 
 #if defined(TARGET_WASM)
     void genCodeForConstant(GenTree* treeNode);
+    void genCatchArg(GenTree* treeNode);
 #endif
 
 #if defined(TARGET_X86)

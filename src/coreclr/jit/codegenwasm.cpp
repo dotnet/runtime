@@ -762,8 +762,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CATCH_ARG:
-            // Catch arg is always in wasm local 3.
-            GetEmitter()->emitIns_I(INS_local_get, EA_GCREF, 3);
+            genCatchArg(treeNode);
             break;
 
         default:
@@ -853,6 +852,20 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 
         GetEmitter()->emitIns_J(INS_label, EA_4BYTE, depth, caseTarget);
     }
+}
+
+//------------------------------------------------------------------------
+// genCatchArg: emit code for GT_CATCH_ARG
+//
+// Arguments:
+//    treeNode - catch arg node
+//
+void CodeGen::genCatchArg(GenTree* treeNode)
+{
+    assert(treeNode->OperIs(GT_CATCH_ARG));
+    // The catch arg is passed as the 3rd parameter, so has Wasm local index 2.
+    GetEmitter()->emitIns_I(INS_local_get, EA_GCREF, 2);
+    WasmProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
