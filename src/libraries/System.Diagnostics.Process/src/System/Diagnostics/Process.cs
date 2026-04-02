@@ -1072,14 +1072,16 @@ namespace System.Diagnostics
         public static Process[] GetProcessesByName(string? processName)
         {
             // Avoid calling GetProcessesByName(processName, ".") so that remote machine code is not included when only local machine support is needed.
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName);
-            Process[] processes = new Process[processInfos.Length];
-            for (int i = 0; i < processInfos.Length; i++)
+            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processNameFilter: null);
+            var processes = new List<Process>(processInfos.Length);
+            foreach (ProcessInfo processInfo in processInfos)
             {
-                ProcessInfo processInfo = processInfos[i];
-                processes[i] = new Process(".", false, processInfo.ProcessId, processInfo);
+                if (processName is null || string.Equals(processInfo.ProcessName, processName, StringComparison.OrdinalIgnoreCase))
+                {
+                    processes.Add(new Process(".", false, processInfo.ProcessId, processInfo));
+                }
             }
-            return processes;
+            return processes.ToArray();
         }
 
         /// <devdoc>

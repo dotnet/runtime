@@ -19,14 +19,15 @@ namespace System.Diagnostics
         /// <returns>An array of process infos, one per found process.</returns>
         public static ProcessInfo[] GetProcessInfos(string? processNameFilter)
         {
+            Debug.Assert(processNameFilter is null, "Not used on Linux");
+
             // Iterate through all process IDs to load information about each process
             IEnumerable<int> pids = EnumerateProcessIds();
             ArrayBuilder<ProcessInfo> processes = default;
             foreach (int pid in pids)
             {
                 ProcessInfo? pi = CreateProcessInfo(pid);
-                if (pi != null &&
-                    (processNameFilter is null || string.Equals(pi.ProcessName, processNameFilter, StringComparison.OrdinalIgnoreCase)))
+                if (pi != null)
                 {
                     processes.Add(pi);
                 }
