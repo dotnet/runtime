@@ -800,6 +800,7 @@ namespace System.Diagnostics
             ThreadState,
             ThreadWaitReason
         }
+
         private static ProcessModuleCollection GetModules(int processId, bool firstModuleOnly)
         {
             // preserving Everett behavior.
