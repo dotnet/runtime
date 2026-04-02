@@ -986,8 +986,7 @@ namespace ILCompiler.ObjectWriter
             uint dataPages = checked((uint)((contentSize + (1 << 16) - 1) >> 16));
             uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
 
-            // TODO-Wasm: decide on convention here; webcil spec states this should be "webcil"
-            WasmImport memoryImport = new WasmImport("env", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
+            WasmImport memoryImport = new WasmImport("webcil", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
             WriteImport(memoryImport);
         }
 
