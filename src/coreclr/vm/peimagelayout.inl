@@ -142,7 +142,7 @@ inline BOOL PEImageLayout::IsMapped() const
 inline BOOL PEImageLayout::IsRelocated() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    PE_OR_WEBCIL(IsRelocated(), FALSE)
+    DECODER_DISPATCH(IsRelocated())
 }
 
 inline void PEImageLayout::SetRelocated()

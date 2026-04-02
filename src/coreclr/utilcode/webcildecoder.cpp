@@ -768,8 +768,7 @@ BOOL WebcilDecoder::HasDirectoryEntry(int entry) const
 
     if (entry == IMAGE_DIRECTORY_ENTRY_BASERELOC && HasWebcilHeaders())
     {
-        const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-        return pHeader->Reserved0 != 0;
+        return HasBaseRelocations();
     }
 
     return FALSE;

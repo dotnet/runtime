@@ -764,7 +764,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
-        Dictionary<uint, List<ushort>> _baseRelocMap = new();
+        SortedDictionary<uint, List<ushort>> _baseRelocMap = new();
         // We group webcil relocs into 4kb blocks, similar to PE
         const uint WebcilRelocPageSize = 0x1000;
 
@@ -789,8 +789,8 @@ namespace ILCompiler.ObjectWriter
                 // an additional runtime reloc as well to add a base address.
                 // We defer the actual RVA computation to EmitObjectFile, where webcil section
                 // VirtualAddresses will have been assigned. Here we just record the raw info.
-                if (Relocation.GetFileRelocationType(reloc.Type) is RelocType fileRelocType &&
-                    fileRelocType is not RelocType.IMAGE_REL_BASED_ABSOLUTE)
+                RelocType fileRelocType = Relocation.GetFileRelocationType(reloc.Type);
+                if (fileRelocType is not RelocType.IMAGE_REL_BASED_ABSOLUTE)
                 {
                     Debug.Assert(_sections[sectionIndex] is WebcilSection);
                     _pendingBaseRelocs.Add(new PendingBaseReloc(sectionIndex, reloc.Offset, fileRelocType));
@@ -808,7 +808,8 @@ namespace ILCompiler.ObjectWriter
             foreach (PendingBaseReloc pending in _pendingBaseRelocs)
             {
                 Debug.Assert(_sections[pending.SectionIndex] is WebcilSection);
-                WebcilSection webcilSection = _sections[pending.SectionIndex] as WebcilSection;
+                WebcilSection webcilSection = (WebcilSection)_sections[pending.SectionIndex];
+                Debug.Assert(pending.Offset >= 0, "Pending base relocation has a negative offset.");
                 // Gather file-level relocations that need to go into the webcil .reloc
                 // section. We collect entries grouped by 4KB page into a map of
                 // (page RVA -> list of (type<<12 | offsetInPage) WORD entries).

@@ -433,9 +433,9 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             ThrowLastError();
 #endif // __APPLE__ && HOST_ARM64
     }
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
     PAL_LOADMarkSectionAsNotNeeded((void*)dir);
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !TARGET_WASM
 
     if (pFlushRegion != NULL)
     {
