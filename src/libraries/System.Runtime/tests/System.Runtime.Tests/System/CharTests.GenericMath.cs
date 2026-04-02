@@ -182,16 +182,16 @@ namespace System.Tests
         [Fact]
         public static void Log10Test()
         {
-            Assert.Equal((char)0x0000, BinaryIntegerHelper<char>.Log10((char)0x0000));
-            Assert.Equal((char)0x0000, BinaryIntegerHelper<char>.Log10((char)0x0001));
-            Assert.Equal((char)0x0000, BinaryIntegerHelper<char>.Log10((char)0x0009));
-            Assert.Equal((char)0x0001, BinaryIntegerHelper<char>.Log10((char)0x000A));
-            Assert.Equal((char)0x0002, BinaryIntegerHelper<char>.Log10((char)0x0064));
-            Assert.Equal((char)0x0002, BinaryIntegerHelper<char>.Log10((char)0x03E7));
-            Assert.Equal((char)0x0003, BinaryIntegerHelper<char>.Log10((char)0x270F));
-            Assert.Equal((char)0x0004, BinaryIntegerHelper<char>.Log10((char)0x7FFF));
-            Assert.Equal((char)0x0004, BinaryIntegerHelper<char>.Log10((char)0x8000));
-            Assert.Equal((char)0x0004, BinaryIntegerHelper<char>.Log10((char)0xFFFF));
+            Assert.Equal((char)0, BinaryIntegerHelper<char>.Log10((char)0));
+            Assert.Equal((char)0, BinaryIntegerHelper<char>.Log10((char)1));
+            Assert.Equal((char)0, BinaryIntegerHelper<char>.Log10((char)9));
+            Assert.Equal((char)1, BinaryIntegerHelper<char>.Log10((char)10));
+            Assert.Equal((char)2, BinaryIntegerHelper<char>.Log10((char)100));
+            Assert.Equal((char)2, BinaryIntegerHelper<char>.Log10((char)999));
+            Assert.Equal((char)3, BinaryIntegerHelper<char>.Log10((char)9999));
+            Assert.Equal((char)4, BinaryIntegerHelper<char>.Log10((char)32767));
+            Assert.Equal((char)4, BinaryIntegerHelper<char>.Log10((char)32768));
+            Assert.Equal((char)4, BinaryIntegerHelper<char>.Log10((char)65535));
         }
 
         [Fact]

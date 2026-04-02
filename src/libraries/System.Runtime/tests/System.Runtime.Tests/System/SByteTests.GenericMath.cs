@@ -195,15 +195,15 @@ namespace System.Tests
         [Fact]
         public static void Log10Test()
         {
-            Assert.Equal((sbyte)0x00, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x00));
-            Assert.Equal((sbyte)0x00, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x01));
-            Assert.Equal((sbyte)0x00, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x09));
-            Assert.Equal((sbyte)0x01, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x0A));
-            Assert.Equal((sbyte)0x01, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x63));
-            Assert.Equal((sbyte)0x02, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x64));
-            Assert.Equal((sbyte)0x02, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x7F));
-            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<sbyte>.Log10(unchecked((sbyte)0x80)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<sbyte>.Log10(unchecked((sbyte)0xFF)));
+            Assert.Equal((sbyte)0, BinaryIntegerHelper<sbyte>.Log10((sbyte)0));
+            Assert.Equal((sbyte)0, BinaryIntegerHelper<sbyte>.Log10((sbyte)1));
+            Assert.Equal((sbyte)0, BinaryIntegerHelper<sbyte>.Log10((sbyte)9));
+            Assert.Equal((sbyte)1, BinaryIntegerHelper<sbyte>.Log10((sbyte)10));
+            Assert.Equal((sbyte)1, BinaryIntegerHelper<sbyte>.Log10((sbyte)99));
+            Assert.Equal((sbyte)2, BinaryIntegerHelper<sbyte>.Log10((sbyte)100));
+            Assert.Equal((sbyte)2, BinaryIntegerHelper<sbyte>.Log10((sbyte)127));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<sbyte>.Log10((sbyte)(-128)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<sbyte>.Log10((sbyte)(-1)));
         }
 
         [Fact]

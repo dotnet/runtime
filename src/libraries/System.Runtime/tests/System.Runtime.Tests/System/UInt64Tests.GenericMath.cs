@@ -191,15 +191,15 @@ namespace System.Tests
         [Fact]
         public static void Log10Test()
         {
-            Assert.Equal((ulong)0x0000000000000000, BinaryIntegerHelper<ulong>.Log10((ulong)0x0000000000000000));
-            Assert.Equal((ulong)0x0000000000000000, BinaryIntegerHelper<ulong>.Log10((ulong)0x0000000000000001));
-            Assert.Equal((ulong)0x0000000000000000, BinaryIntegerHelper<ulong>.Log10((ulong)0x0000000000000009));
-            Assert.Equal((ulong)0x0000000000000001, BinaryIntegerHelper<ulong>.Log10((ulong)0x000000000000000A));
-            Assert.Equal((ulong)0x0000000000000002, BinaryIntegerHelper<ulong>.Log10((ulong)0x0000000000000064));
-            Assert.Equal((ulong)0x0000000000000012, BinaryIntegerHelper<ulong>.Log10((ulong)0x8AC7230489E7FFFF));
-            Assert.Equal((ulong)0x0000000000000012, BinaryIntegerHelper<ulong>.Log10((ulong)0x7FFFFFFFFFFFFFFF));
-            Assert.Equal((ulong)0x0000000000000012, BinaryIntegerHelper<ulong>.Log10((ulong)0x8000000000000000));
-            Assert.Equal((ulong)0x0000000000000013, BinaryIntegerHelper<ulong>.Log10((ulong)0xFFFFFFFFFFFFFFFF));
+            Assert.Equal((ulong)0, BinaryIntegerHelper<ulong>.Log10((ulong)0));
+            Assert.Equal((ulong)0, BinaryIntegerHelper<ulong>.Log10((ulong)1));
+            Assert.Equal((ulong)0, BinaryIntegerHelper<ulong>.Log10((ulong)9));
+            Assert.Equal((ulong)1, BinaryIntegerHelper<ulong>.Log10((ulong)10));
+            Assert.Equal((ulong)2, BinaryIntegerHelper<ulong>.Log10((ulong)100));
+            Assert.Equal((ulong)18, BinaryIntegerHelper<ulong>.Log10((ulong)9_999_999_999_999_999_999));
+            Assert.Equal((ulong)18, BinaryIntegerHelper<ulong>.Log10((ulong)9_223_372_036_854_775_807));
+            Assert.Equal((ulong)18, BinaryIntegerHelper<ulong>.Log10((ulong)9_223_372_036_854_775_808));
+            Assert.Equal((ulong)19, BinaryIntegerHelper<ulong>.Log10((ulong)18_446_744_073_709_551_615));
         }
 
         [Fact]

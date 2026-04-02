@@ -232,10 +232,10 @@ namespace System.Tests
         [Fact]
         public static void Log10Test()
         {
-            Assert.Equal(0x00, BinaryIntegerHelper<Int128>.Log10(Zero));
-            Assert.Equal(0x00, BinaryIntegerHelper<Int128>.Log10(One));
-            Assert.Equal(0x00, BinaryIntegerHelper<Int128>.Log10((Int128)9));
-            Assert.Equal(0x26, BinaryIntegerHelper<Int128>.Log10(MaxValue));
+            Assert.Equal(0, BinaryIntegerHelper<Int128>.Log10(Zero));
+            Assert.Equal(0, BinaryIntegerHelper<Int128>.Log10(One));
+            Assert.Equal(0, BinaryIntegerHelper<Int128>.Log10((Int128)9));
+            Assert.Equal(38, BinaryIntegerHelper<Int128>.Log10(MaxValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<Int128>.Log10(MinValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<Int128>.Log10(NegativeOne));
         }

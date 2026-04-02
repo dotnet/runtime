@@ -183,15 +183,15 @@ namespace System.Tests
         [Fact]
         public static void Log10Test()
         {
-            Assert.Equal((byte)0x00, BinaryIntegerHelper<byte>.Log10((byte)0x00));
-            Assert.Equal((byte)0x00, BinaryIntegerHelper<byte>.Log10((byte)0x01));
-            Assert.Equal((byte)0x00, BinaryIntegerHelper<byte>.Log10((byte)0x09));
-            Assert.Equal((byte)0x01, BinaryIntegerHelper<byte>.Log10((byte)0x0A));
-            Assert.Equal((byte)0x01, BinaryIntegerHelper<byte>.Log10((byte)0x63));
-            Assert.Equal((byte)0x02, BinaryIntegerHelper<byte>.Log10((byte)0x64));
-            Assert.Equal((byte)0x02, BinaryIntegerHelper<byte>.Log10((byte)0x7F));
-            Assert.Equal((byte)0x02, BinaryIntegerHelper<byte>.Log10((byte)0x80));
-            Assert.Equal((byte)0x02, BinaryIntegerHelper<byte>.Log10((byte)0xFF));
+            Assert.Equal((byte)0, BinaryIntegerHelper<byte>.Log10((byte)0));
+            Assert.Equal((byte)0, BinaryIntegerHelper<byte>.Log10((byte)1));
+            Assert.Equal((byte)0, BinaryIntegerHelper<byte>.Log10((byte)9));
+            Assert.Equal((byte)1, BinaryIntegerHelper<byte>.Log10((byte)10));
+            Assert.Equal((byte)1, BinaryIntegerHelper<byte>.Log10((byte)99));
+            Assert.Equal((byte)2, BinaryIntegerHelper<byte>.Log10((byte)100));
+            Assert.Equal((byte)2, BinaryIntegerHelper<byte>.Log10((byte)127));
+            Assert.Equal((byte)2, BinaryIntegerHelper<byte>.Log10((byte)128));
+            Assert.Equal((byte)2, BinaryIntegerHelper<byte>.Log10((byte)255));
         }
 
         [Fact]

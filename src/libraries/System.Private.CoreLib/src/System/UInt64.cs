@@ -298,6 +298,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Log10(ulong value)
         {
+            // Approximate log10 via log2, then correct with a powers of 10 lookup table.
+            // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10
             value |= 1;
             uint log2 = (uint)BitOperations.Log2(value) + 1;
             uint approx = (log2 * 1233) >> 12;

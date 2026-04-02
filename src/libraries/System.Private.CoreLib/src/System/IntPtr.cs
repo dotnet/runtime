@@ -328,11 +328,7 @@ namespace System
                 ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
 
-            if (Environment.Is64BitProcess)
-            {
-                return (nint)ulong.Log10((ulong)value);
-            }
-            return (nint)uint.Log10((uint)value);
+            return (nint)nuint.Log10((nuint)value);
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />

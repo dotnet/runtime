@@ -3177,10 +3177,12 @@ namespace System.Numerics
                 power /= 10;
             }
 
-            while (value >= power * 10)
+            BigInteger nextPower = power * 10;
+
+            while (value >= nextPower)
             {
                 approx++;
-                power *= 10;
+                nextPower *= 10;
             }
 
             return approx;

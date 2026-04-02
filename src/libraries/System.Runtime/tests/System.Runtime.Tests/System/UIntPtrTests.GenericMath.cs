@@ -356,25 +356,25 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.Equal(unchecked((nuint)0x0000000000000000), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x0000000000000000)));
-                Assert.Equal(unchecked((nuint)0x0000000000000000), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x0000000000000001)));
-                Assert.Equal(unchecked((nuint)0x0000000000000000), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x0000000000000009)));
-                Assert.Equal(unchecked((nuint)0x0000000000000001), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x000000000000000A)));
-                Assert.Equal(unchecked((nuint)0x0000000000000002), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x0000000000000064)));
-                Assert.Equal(unchecked((nuint)0x0000000000000012), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x7FFFFFFFFFFFFFFF)));
-                Assert.Equal(unchecked((nuint)0x0000000000000012), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x8000000000000000)));
-                Assert.Equal(unchecked((nuint)0x0000000000000013), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0xFFFFFFFFFFFFFFFF)));
+                Assert.Equal(unchecked((nuint)0), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0)));
+                Assert.Equal(unchecked((nuint)0), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)1)));
+                Assert.Equal(unchecked((nuint)0), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)9)));
+                Assert.Equal(unchecked((nuint)1), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)10)));
+                Assert.Equal(unchecked((nuint)2), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)100)));
+                Assert.Equal(unchecked((nuint)18), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)9_223_372_036_854_775_807)));
+                Assert.Equal(unchecked((nuint)18), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)9_223_372_036_854_775_808)));
+                Assert.Equal(unchecked((nuint)19), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)18_446_744_073_709_551_615)));
             }
             else
             {
-                Assert.Equal((nuint)0x00000000, BinaryIntegerHelper<nuint>.Log10((nuint)0x00000000));
-                Assert.Equal((nuint)0x00000000, BinaryIntegerHelper<nuint>.Log10((nuint)0x00000001));
-                Assert.Equal((nuint)0x00000000, BinaryIntegerHelper<nuint>.Log10((nuint)0x00000009));
-                Assert.Equal((nuint)0x00000001, BinaryIntegerHelper<nuint>.Log10((nuint)0x0000000A));
-                Assert.Equal((nuint)0x00000002, BinaryIntegerHelper<nuint>.Log10((nuint)0x00000064));
-                Assert.Equal((nuint)0x00000009, BinaryIntegerHelper<nuint>.Log10((nuint)0x7FFFFFFF));
-                Assert.Equal((nuint)0x00000009, BinaryIntegerHelper<nuint>.Log10((nuint)0x80000000));
-                Assert.Equal((nuint)0x00000009, BinaryIntegerHelper<nuint>.Log10((nuint)0xFFFFFFFF));
+                Assert.Equal((nuint)0, BinaryIntegerHelper<nuint>.Log10((nuint)0));
+                Assert.Equal((nuint)0, BinaryIntegerHelper<nuint>.Log10((nuint)1));
+                Assert.Equal((nuint)0, BinaryIntegerHelper<nuint>.Log10((nuint)9));
+                Assert.Equal((nuint)1, BinaryIntegerHelper<nuint>.Log10((nuint)10));
+                Assert.Equal((nuint)2, BinaryIntegerHelper<nuint>.Log10((nuint)100));
+                Assert.Equal((nuint)9, BinaryIntegerHelper<nuint>.Log10((nuint)2_147_483_647));
+                Assert.Equal((nuint)9, BinaryIntegerHelper<nuint>.Log10((nuint)2_147_483_648));
+                Assert.Equal((nuint)9, BinaryIntegerHelper<nuint>.Log10((nuint)4_294_967_295));
             }
         }
 

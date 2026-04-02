@@ -183,16 +183,16 @@ namespace System.Tests
         [Fact]
         public static void Log10Test()
         {
-            Assert.Equal((ushort)0x0000, BinaryIntegerHelper<ushort>.Log10((ushort)0x0000));
-            Assert.Equal((ushort)0x0000, BinaryIntegerHelper<ushort>.Log10((ushort)0x0001));
-            Assert.Equal((ushort)0x0000, BinaryIntegerHelper<ushort>.Log10((ushort)0x0009));
-            Assert.Equal((ushort)0x0001, BinaryIntegerHelper<ushort>.Log10((ushort)0x000A));
-            Assert.Equal((ushort)0x0002, BinaryIntegerHelper<ushort>.Log10((ushort)0x0064));
-            Assert.Equal((ushort)0x0002, BinaryIntegerHelper<ushort>.Log10((ushort)0x03E7));
-            Assert.Equal((ushort)0x0003, BinaryIntegerHelper<ushort>.Log10((ushort)0x270F));
-            Assert.Equal((ushort)0x0004, BinaryIntegerHelper<ushort>.Log10((ushort)0x7FFF));
-            Assert.Equal((ushort)0x0004, BinaryIntegerHelper<ushort>.Log10((ushort)0x8000));
-            Assert.Equal((ushort)0x0004, BinaryIntegerHelper<ushort>.Log10((ushort)0xFFFF));
+            Assert.Equal((ushort)0, BinaryIntegerHelper<ushort>.Log10((ushort)0));
+            Assert.Equal((ushort)0, BinaryIntegerHelper<ushort>.Log10((ushort)1));
+            Assert.Equal((ushort)0, BinaryIntegerHelper<ushort>.Log10((ushort)9));
+            Assert.Equal((ushort)1, BinaryIntegerHelper<ushort>.Log10((ushort)10));
+            Assert.Equal((ushort)2, BinaryIntegerHelper<ushort>.Log10((ushort)100));
+            Assert.Equal((ushort)2, BinaryIntegerHelper<ushort>.Log10((ushort)999));
+            Assert.Equal((ushort)3, BinaryIntegerHelper<ushort>.Log10((ushort)9999));
+            Assert.Equal((ushort)4, BinaryIntegerHelper<ushort>.Log10((ushort)32767));
+            Assert.Equal((ushort)4, BinaryIntegerHelper<ushort>.Log10((ushort)32768));
+            Assert.Equal((ushort)4, BinaryIntegerHelper<ushort>.Log10((ushort)65535));
         }
 
         [Fact]

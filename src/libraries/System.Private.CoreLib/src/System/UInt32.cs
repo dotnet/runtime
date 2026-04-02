@@ -302,6 +302,7 @@ namespace System
             // Use Log2 to get approximate Log10 via the relationship:
             // log10(x) ≈ (log2(x) + 1) * 1233 >> 12
             // Then correct with a powers-of-10 lookup table.
+            // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10
             value |= 1;
             uint log2 = (uint)BitOperations.Log2(value) + 1;
             uint approx = (log2 * 1233) >> 12;

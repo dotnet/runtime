@@ -348,23 +348,23 @@ namespace System.Tests
         {
             if (Environment.Is64BitProcess)
             {
-                Assert.Equal(unchecked((nint)0x0000000000000000), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x0000000000000000)));
-                Assert.Equal(unchecked((nint)0x0000000000000000), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x0000000000000001)));
-                Assert.Equal(unchecked((nint)0x0000000000000000), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x0000000000000009)));
-                Assert.Equal(unchecked((nint)0x0000000000000001), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x000000000000000A)));
-                Assert.Equal(unchecked((nint)0x0000000000000002), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x0000000000000064)));
-                Assert.Equal(unchecked((nint)0x0000000000000012), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.Equal(unchecked((nint)0), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0)));
+                Assert.Equal(unchecked((nint)0), BinaryIntegerHelper<nint>.Log10(unchecked((nint)1)));
+                Assert.Equal(unchecked((nint)0), BinaryIntegerHelper<nint>.Log10(unchecked((nint)9)));
+                Assert.Equal(unchecked((nint)1), BinaryIntegerHelper<nint>.Log10(unchecked((nint)10)));
+                Assert.Equal(unchecked((nint)2), BinaryIntegerHelper<nint>.Log10(unchecked((nint)100)));
+                Assert.Equal(unchecked((nint)18), BinaryIntegerHelper<nint>.Log10(unchecked((nint)9_223_372_036_854_775_807)));
                 Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x8000000000000000)));
                 Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
             }
             else
             {
-                Assert.Equal((nint)0x00000000, BinaryIntegerHelper<nint>.Log10((nint)0x00000000));
-                Assert.Equal((nint)0x00000000, BinaryIntegerHelper<nint>.Log10((nint)0x00000001));
-                Assert.Equal((nint)0x00000000, BinaryIntegerHelper<nint>.Log10((nint)0x00000009));
-                Assert.Equal((nint)0x00000001, BinaryIntegerHelper<nint>.Log10((nint)0x0000000A));
-                Assert.Equal((nint)0x00000002, BinaryIntegerHelper<nint>.Log10((nint)0x00000064));
-                Assert.Equal((nint)0x00000009, BinaryIntegerHelper<nint>.Log10((nint)0x7FFFFFFF));
+                Assert.Equal((nint)0, BinaryIntegerHelper<nint>.Log10((nint)0));
+                Assert.Equal((nint)0, BinaryIntegerHelper<nint>.Log10((nint)1));
+                Assert.Equal((nint)0, BinaryIntegerHelper<nint>.Log10((nint)9));
+                Assert.Equal((nint)1, BinaryIntegerHelper<nint>.Log10((nint)10));
+                Assert.Equal((nint)2, BinaryIntegerHelper<nint>.Log10((nint)100));
+                Assert.Equal((nint)9, BinaryIntegerHelper<nint>.Log10((nint)2_147_483_647));
                 Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x80000000)));
                 Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0xFFFFFFFF)));
             }

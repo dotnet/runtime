@@ -195,15 +195,15 @@ namespace System.Tests
         [Fact]
         public static void Log10Test()
         {
-            Assert.Equal((int)0x00000000, BinaryIntegerHelper<int>.Log10((int)0x00000000));
-            Assert.Equal((int)0x00000000, BinaryIntegerHelper<int>.Log10((int)0x00000001));
-            Assert.Equal((int)0x00000000, BinaryIntegerHelper<int>.Log10((int)0x00000009));
-            Assert.Equal((int)0x00000001, BinaryIntegerHelper<int>.Log10((int)0x0000000A));
-            Assert.Equal((int)0x00000002, BinaryIntegerHelper<int>.Log10((int)0x00000064));
-            Assert.Equal((int)0x00000008, BinaryIntegerHelper<int>.Log10((int)0x3B9AC9FF));
-            Assert.Equal((int)0x00000009, BinaryIntegerHelper<int>.Log10((int)0x7FFFFFFF));
-            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<int>.Log10(unchecked((int)0x80000000)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<int>.Log10(unchecked((int)0xFFFFFFFF)));
+            Assert.Equal(0, BinaryIntegerHelper<int>.Log10(0));
+            Assert.Equal(0, BinaryIntegerHelper<int>.Log10(1));
+            Assert.Equal(0, BinaryIntegerHelper<int>.Log10(9));
+            Assert.Equal(1, BinaryIntegerHelper<int>.Log10(10));
+            Assert.Equal(2, BinaryIntegerHelper<int>.Log10(100));
+            Assert.Equal(8, BinaryIntegerHelper<int>.Log10(999_999_999));
+            Assert.Equal(9, BinaryIntegerHelper<int>.Log10(2_147_483_647));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<int>.Log10(-2_147_483_648));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<int>.Log10(-1));
         }
 
         [Fact]

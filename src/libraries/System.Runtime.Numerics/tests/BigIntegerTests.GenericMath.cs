@@ -217,6 +217,7 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)2, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)100));
             Assert.Equal((BigInteger)2, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)999));
             Assert.Equal((BigInteger)18, BinaryIntegerHelper<BigInteger>.Log10(Int64MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<BigInteger>.Log10(NegativeOne));
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<BigInteger>.Log10(Int64MinValue));
         }
 

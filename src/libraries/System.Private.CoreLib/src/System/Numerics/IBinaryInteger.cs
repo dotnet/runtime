@@ -260,10 +260,11 @@ namespace System.Numerics
             return remainder;
         }
 
-        /// <summary>Computes the integer logarithm base-10 of a value.</summary>
-        /// <param name="value">The value whose integer logarithm base-10 is to be computed.</param>
-        /// <returns>The integer logarithm base-10 of <paramref name="value" />.</returns>
+        /// <summary>Computes the integer logarithm base 10 of a value.</summary>
+        /// <param name="value">The value whose integer logarithm base 10 is to be computed.</param>
+        /// <returns>The integer logarithm base 10 of <paramref name="value" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="value" /> is negative.</exception>
+        /// <remarks>The result of computing the integer logarithm base 10 of zero is zero.</remarks>
         static virtual TSelf Log10(TSelf value)
         {
             if (!typeof(TSelf).IsValueType)

@@ -184,15 +184,15 @@ namespace System.Tests
         [Fact]
         public static void Log10Test()
         {
-            Assert.Equal((uint)0x00000000, BinaryIntegerHelper<uint>.Log10((uint)0x00000000));
-            Assert.Equal((uint)0x00000000, BinaryIntegerHelper<uint>.Log10((uint)0x00000001));
-            Assert.Equal((uint)0x00000000, BinaryIntegerHelper<uint>.Log10((uint)0x00000009));
-            Assert.Equal((uint)0x00000001, BinaryIntegerHelper<uint>.Log10((uint)0x0000000A));
-            Assert.Equal((uint)0x00000002, BinaryIntegerHelper<uint>.Log10((uint)0x00000064));
-            Assert.Equal((uint)0x00000008, BinaryIntegerHelper<uint>.Log10((uint)0x3B9AC9FF));
-            Assert.Equal((uint)0x00000009, BinaryIntegerHelper<uint>.Log10((uint)0x7FFFFFFF));
-            Assert.Equal((uint)0x00000009, BinaryIntegerHelper<uint>.Log10((uint)0x80000000));
-            Assert.Equal((uint)0x00000009, BinaryIntegerHelper<uint>.Log10((uint)0xFFFFFFFF));
+            Assert.Equal((uint)0, BinaryIntegerHelper<uint>.Log10((uint)0));
+            Assert.Equal((uint)0, BinaryIntegerHelper<uint>.Log10((uint)1));
+            Assert.Equal((uint)0, BinaryIntegerHelper<uint>.Log10((uint)9));
+            Assert.Equal((uint)1, BinaryIntegerHelper<uint>.Log10((uint)10));
+            Assert.Equal((uint)2, BinaryIntegerHelper<uint>.Log10((uint)100));
+            Assert.Equal((uint)8, BinaryIntegerHelper<uint>.Log10((uint)999_999_999));
+            Assert.Equal((uint)9, BinaryIntegerHelper<uint>.Log10((uint)2_147_483_647));
+            Assert.Equal((uint)9, BinaryIntegerHelper<uint>.Log10((uint)2_147_483_648));
+            Assert.Equal((uint)9, BinaryIntegerHelper<uint>.Log10((uint)4_294_967_295));
         }
 
         [Fact]
