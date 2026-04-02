@@ -345,6 +345,30 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         [Theory]
         [MemberData(nameof(WatcherModeData))]
+        public async Task CreateFileChangeToken_IgnoresFileCreatedWithExpectedDirectoryName(bool useActivePolling)
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            string missingDir = Path.Combine(root.Path, "missingdir");
+            string targetFile = Path.Combine(missingDir, "file.txt");
+
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling);
+
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("missingdir/file.txt");
+            Task changed = WhenChanged(token);
+
+            File.WriteAllText(missingDir, string.Empty);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(changed.IsCompleted, "Token must not fire when a file is created with the expected directory name.");
+
+            File.Delete(missingDir);
+            Directory.CreateDirectory(missingDir);
+            File.WriteAllText(targetFile, string.Empty);
+
+            await changed;
+        }
+
+        [Theory]
+        [MemberData(nameof(WatcherModeData))]
         public async Task CreateFileChangeToken_FiresOnlyWhenFileIsCreated_WithMultipleMissingDirectories(bool useActivePolling)
         {
             using var root = new TempDirectory(GetTestFilePath());

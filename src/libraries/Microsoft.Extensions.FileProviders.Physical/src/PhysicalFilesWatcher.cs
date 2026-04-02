@@ -847,6 +847,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         return;
                     }
 
+                    if (!Directory.Exists(e.FullPath))
+                    {
+                        return;
+                    }
+
                     _watcher.Dispose();
                     _watcher = null;
 
