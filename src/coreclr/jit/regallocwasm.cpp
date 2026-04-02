@@ -98,11 +98,6 @@ void WasmRegAlloc::IdentifyCandidates()
     {
         AllocateFramePointer();
     }
-
-    if (m_compiler->compFuncInfoCount > 1)
-    {
-        AllocateExceptionPointer();
-    }
 }
 
 //------------------------------------------------------------------------
@@ -183,36 +178,6 @@ void WasmRegAlloc::AllocateFramePointer()
     for (unsigned i = 1; i < m_compiler->compFuncInfoCount; i++)
     {
         m_perRegionData[i]->m_fpReg = fpReg;
-    }
-}
-
-//------------------------------------------------------------------------
-// AllocateExceptionPointer: Allocate a virtual register for the exception pointer.
-//
-void WasmRegAlloc::AllocateExceptionPointer()
-{
-    regNumber exReg = REG_NA;
-
-    for (unsigned i = 0; i < m_compiler->compFuncInfoCount; i++)
-    {
-        const FuncInfoDsc& funcInfo = m_compiler->compFuncInfos[i];
-
-        if (funcInfo.funKind == FuncKind::FUNC_ROOT)
-        {
-            continue;
-        }
-
-        EHblkDsc* const ehDsc = m_compiler->ehGetDsc(funcInfo.funEHIndex);
-
-        if (ehDsc->HasCatchHandler())
-        {
-            if (exReg == REG_NA)
-            {
-                exReg = AllocateVirtualRegister(TYP_REF);
-            }
-
-            m_perRegionData[i]->m_exReg = exReg;
-        }
     }
 }
 
@@ -409,10 +374,6 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForIndexAddr(node->AsIndexAddr());
             break;
 
-        case GT_CATCH_ARG:
-            CollectReferencesForCatchArg(node);
-            break;
-
         default:
             assert(!node->OperIsLocalStore());
             break;
@@ -581,21 +542,6 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
         lclVar->AsPhysReg()->gtSrcReg = m_perRegionData[m_currentFunclet]->m_spReg;
         CollectReference(lclVar);
     }
-}
-
-//------------------------------------------------------------------------
-// CollectReferencesForCatchArg: Collect virtual register references for a CATCH_ARG node.
-//
-// Rewrites the CATCH_ARG node into a PHYS_REG that refers to the exception object.
-//
-// Arguments:
-//    catchArg - The CATCH_ARG node
-//
-void WasmRegAlloc::CollectReferencesForCatchArg(GenTree* catchArg)
-{
-    catchArg->ChangeOper(GT_PHYSREG);
-    catchArg->AsPhysReg()->gtSrcReg = m_perRegionData[m_currentFunclet]->m_exReg;
-    CollectReference(catchArg);
 }
 
 //------------------------------------------------------------------------
@@ -809,10 +755,12 @@ void WasmRegAlloc::ResolveReferences()
         unsigned Index;
     };
 
-    // Process funclet by funclet
+    // Resolve funclet by funclet, in reverse order, so that we process the main method region last.
     //
-    for (m_currentFunclet = 0; m_currentFunclet < m_compiler->compFuncInfoCount; m_currentFunclet++)
+    for (int i = static_cast<int>(m_compiler->compFuncInfoCount) - 1; i >= 0; i--)
     {
+        m_currentFunclet = static_cast<unsigned>(i);
+
         PhysicalRegBank virtToPhysRegMap[static_cast<unsigned>(WasmValueType::Count)];
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
@@ -901,45 +849,77 @@ void WasmRegAlloc::ResolveReferences()
             indexBase += physRegs.DeclaredCount;
         }
 
+        // Allocate all our virtual registers to physical ones.
+        //
+        regNumber spVirtReg = data->m_spReg;
+        regNumber fpVirtReg = data->m_fpReg;
+
         auto allocPhysReg = [&](regNumber virtReg, LclVarDsc* varDsc) {
-            regNumber physReg;
-            if ((varDsc != nullptr) && varDsc->lvIsRegArg && !varDsc->lvIsStructField)
+            regNumber physReg = REG_NA;
+
+            if (!inFunclet)
             {
-                unsigned                     lclNum  = m_compiler->lvaGetLclNum(varDsc);
-                const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
-                assert(abiInfo.HasExactlyOneRegisterSegment());
-                physReg = abiInfo.Segment(0).GetRegister();
-            }
-            else if ((varDsc != nullptr) && varDsc->lvIsParamRegTarget)
-            {
-                unsigned                             lclNum = m_compiler->lvaGetLclNum(varDsc);
-                const ParameterRegisterLocalMapping* mapping =
-                    m_compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
-                assert(mapping != nullptr);
-                physReg = mapping->RegisterSegment->GetRegister();
+                // ABI registers in the main method
+                //
+                if ((varDsc != nullptr) && varDsc->lvIsRegArg && !varDsc->lvIsStructField)
+                {
+                    unsigned                     lclNum = m_compiler->lvaGetLclNum(varDsc);
+                    const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
+                    assert(abiInfo.HasExactlyOneRegisterSegment());
+                    physReg = abiInfo.Segment(0).GetRegister();
+                }
+                else if ((varDsc != nullptr) && varDsc->lvIsParamRegTarget)
+                {
+                    unsigned                             lclNum = m_compiler->lvaGetLclNum(varDsc);
+                    const ParameterRegisterLocalMapping* mapping =
+                        m_compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
+                    assert(mapping != nullptr);
+                    physReg = mapping->RegisterSegment->GetRegister();
+                }
             }
             else
             {
-                WasmValueType type         = WasmRegToType(virtReg);
+                // ABI registers in the funclets
+                if (virtReg == spVirtReg)
+                {
+                    physReg = MakeWasmReg(0, TypeToWasmValueType(TYP_I_IMPL));
+                }
+                else if (virtReg == fpVirtReg)
+                {
+                    physReg = physReg = MakeWasmReg(1, TypeToWasmValueType(TYP_I_IMPL));
+                }
+            }
+
+            if (physReg == REG_NA)
+            {
+                WasmValueType type = WasmRegToType(virtReg);
                 unsigned      physRegIndex = virtToPhysRegMap[static_cast<unsigned>(type)].Index++;
-                physReg                    = MakeWasmReg(physRegIndex, type);
+                physReg = MakeWasmReg(physRegIndex, type);
             }
 
             assert(genIsValidReg(physReg));
             if ((varDsc != nullptr) && varDsc->lvIsRegCandidate())
             {
-                if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
+                if (!inFunclet && (varDsc->lvIsParam || varDsc->lvIsParamRegTarget))
                 {
                     // This is the register codegen will move the local from its ABI location in prolog.
                     varDsc->SetArgInitReg(physReg);
                 }
 
-                // This is the location for the "first" def. In our case all defs share the same register.
+                // This is the location for this local in this funclet. Since we process the main method region
+                // last, its assignment (if any, see below) will be the one that persists after RA.
                 //
-                // TODO-WASM: this may no longer hold with funclets. If a local has disjoint lifetimes that do not
-                // cross funclet boundaries, it may need to be allocated to different registers in different funclets.
+                // Funclets may well use different local numbers. Note that any local that is live across a
+                // funclet boundary should not be a register allocation candidate, so there is no need for funclet
+                // and main method assignments to match.
                 //
-                // assert(!varDsc->lvRegister);
+                // TODO-WASM: this will lead to incorrect debug info in funclets. We may need to track per funclet
+                // assignments somewhere.
+                //
+                // TODO-WASM: we should reset this info as we switch funclets, so if there's a local only live
+                // in a funclet we don't report it as living in a reg in the main method.
+                // Seems like this entails walking the full set of tracked locals.
+                //
                 varDsc->SetRegNum(physReg);
                 varDsc->lvRegister = true;
                 varDsc->lvOnFrame  = false;
@@ -947,11 +927,8 @@ void WasmRegAlloc::ResolveReferences()
             return physReg;
         };
 
-        // Allocate all our virtual registers to physical ones.
+        // Map SP and FP to physical registers.
         //
-        regNumber spVirtReg = data->m_spReg;
-        regNumber exVirtReg = data->m_exReg;
-
         if (!inFunclet)
         {
             if (spVirtReg != REG_NA)
@@ -959,16 +936,15 @@ void WasmRegAlloc::ResolveReferences()
                 data->m_spReg = allocPhysReg(spVirtReg, m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg));
             }
 
-            if (data->m_fpReg != REG_NA)
+            if (fpVirtReg != REG_NA)
             {
-                data->m_fpReg = (spVirtReg == data->m_fpReg) ? data->m_spReg : allocPhysReg(data->m_fpReg, nullptr);
+                data->m_fpReg = (spVirtReg == fpVirtReg) ? data->m_spReg : allocPhysReg(fpVirtReg, nullptr);
             }
-
-            assert(data->m_exReg == REG_NA);
         }
         else
         {
-            // Funclets always have SP and FP, and maybe EX.
+            // Funclets always have SP and FP.
+            // 
             // We do not have lclVars for funclet params.
             // SP is the same physreg as in the main method.
             //
@@ -978,11 +954,6 @@ void WasmRegAlloc::ResolveReferences()
 
             assert(data->m_fpReg != REG_NA);
             data->m_fpReg = MakeWasmReg(1, TypeToWasmValueType(TYP_I_IMPL));
-
-            if (data->m_exReg != REG_NA)
-            {
-                data->m_exReg = MakeWasmReg(2, TypeToWasmValueType(TYP_REF));
-            }
         }
 
         for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
@@ -1018,18 +989,8 @@ void WasmRegAlloc::ResolveReferences()
                 GenTree* node = refs->Nodes[i];
                 if (node->OperIs(GT_PHYSREG))
                 {
-                    if (node->AsPhysReg()->gtSrcReg == exVirtReg)
-                    {
-                        // Former CATCH_ARG -- should only see in funclets
-                        assert(inFunclet);
-                        node->AsPhysReg()->gtSrcReg = data->m_exReg;
-                    }
-                    else
-                    {
-                        assert(node->AsPhysReg()->gtSrcReg == spVirtReg);
-                        node->AsPhysReg()->gtSrcReg = data->m_spReg;
-                    }
-
+                    assert(node->AsPhysReg()->gtSrcReg == spVirtReg);
+                    node->AsPhysReg()->gtSrcReg = data->m_spReg;
                     assert(!genIsValidReg(node->GetRegNum())); // Currently we do not need to multi-use any PHYSREGs.
                     continue;
                 }

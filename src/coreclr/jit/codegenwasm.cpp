@@ -742,6 +742,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             GetEmitter()->emitIns(INS_unreachable);
             break;
 
+        case GT_CATCH_ARG:
+            // Catch arg is always in wasm local 3.
+            GetEmitter()->emitIns_I(INS_local_get, EA_GCREF, 3);
+            break;
+
         default:
 #ifdef DEBUG
             if (JitConfig.JitWasmNyiToR2RUnsupported())

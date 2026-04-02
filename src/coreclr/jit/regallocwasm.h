@@ -89,7 +89,6 @@ class WasmRegAlloc : public RegAllocInterface
         PerRegionData()
             : m_spReg(REG_NA)
             , m_fpReg(REG_NA)
-            , m_exReg(REG_NA)
             , m_lastVirtualRegRefsCount(0)
             , m_virtualRegRefs(nullptr)
         {
@@ -105,7 +104,6 @@ class WasmRegAlloc : public RegAllocInterface
         //
         regNumber m_spReg;
         regNumber m_fpReg;
-        regNumber m_exReg;
 
         // Chunked list of virtual reg references in this region.
         //
