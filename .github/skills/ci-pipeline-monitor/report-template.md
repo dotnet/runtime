@@ -29,7 +29,7 @@ Pipelines:  <N> total (<M> monitored, <K> skipped)
 Pipeline Summary
 ================================================================================
 
-Result: <P> PASS, <F> FAIL (of <M> monitored)
+Result: <P> PASS, <F> FAIL, <I> INCONCLUSIVE (of <M> monitored)
 
   ✅ <pipelines.name>                            <pipelines.build_number>
      https://dev.azure.com/dnceng-public/public/_build/results?buildId=<pipelines.build_id>
@@ -44,14 +44,15 @@ Result: <P> PASS, <F> FAIL (of <M> monitored)
      - [<N>] <failures.test_name> (#<N>, https://github.com/dotnet/runtime/issues/<N>)
      - [<N>] [New] <failures.test_name> (<brief error description>)
 
-  ⏭️ <pipelines.name>: SKIPPED (private)
+  ⚠️ [<pipelines.name> <pipelines.build_number>](https://dev.azure.com/dnceng-public/public/_build/results?buildId=<pipelines.build_id>): INCONCLUSIVE (<reason>)
 
-  ⏭️ [<pipelines.name> <pipelines.build_number>](https://dev.azure.com/dnceng-public/public/_build/results?buildId=<pipelines.build_id>): SKIPPED (<skip_reason, e.g. canceled>)
+  ⏭️ <pipelines.name>: SKIPPED (private)
 
 Notes:
 - ✅ = all tests passed
 - ❌ = one or more test failures
-- ⏭️ = skipped (private pipeline or marked skip). Non-private skipped pipelines include a build URL.
+- ⚠️ = inconclusive (build failed but no test failures detected via Test Results API)
+- ⏭️ = skipped (private pipeline)
 - EVERY pipeline (✅ and ❌) must include the build URL on the line after the name.
 - List failing tests per pipeline, deduplicated by test name. Cap at 5 per failure group; show "... and N more" for the rest.
 - [N] maps to "FAILURE N" in the Failure Details section. Sorted by failure ID.

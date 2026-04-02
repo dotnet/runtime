@@ -57,18 +57,10 @@ class ReportGenerator:
     def _header(self, out):
         cur = self.conn.cursor()
         total = cur.execute("SELECT COUNT(*) FROM pipelines").fetchone()[0]
-        # Only private/skip pipelines are truly skipped; pipelines with
-        # 0 test failures are still "monitored" even though they got
-        # re-marked as skipped by extract_failed_tests.py.
         truly_skipped = cur.execute(
             "SELECT COUNT(*) FROM pipelines WHERE result = 'skipped' AND skip_reason = 'private'"
         ).fetchone()[0]
         monitored = total - truly_skipped
-        skipped = truly_skipped
-        passed = cur.execute(
-            "SELECT COUNT(*) FROM pipelines WHERE result = 'succeeded'"
-        ).fetchone()[0]
-        failed = monitored - passed
 
         out.append("=" * 80)
         out.append("CI Pipeline Monitor — Test Report")
@@ -76,7 +68,7 @@ class ReportGenerator:
         out.append(f"Org:        {ADO_ORG}")
         out.append(f"Project:    {ADO_PROJECT}")
         out.append(f"Branch:     refs/heads/main")
-        out.append(f"Pipelines:  {total} total ({monitored} monitored, {skipped} skipped)")
+        out.append(f"Pipelines:  {total} total ({monitored} monitored, {truly_skipped} skipped)")
         out.append("=" * 80)
         out.append("")
 
@@ -89,17 +81,16 @@ class ReportGenerator:
         failed_count = cur.execute(
             "SELECT COUNT(*) FROM pipelines WHERE result IN ('failed','partiallySucceeded')"
         ).fetchone()[0]
-        # Pipelines re-marked as skipped (0 test failures) are still monitored
-        skipped_0_tests = cur.execute(
+        inconclusive_count = cur.execute(
             "SELECT COUNT(*) FROM pipelines WHERE result = 'skipped' AND skip_reason != 'private'"
         ).fetchone()[0]
-        monitored = passed_count + failed_count + skipped_0_tests
+        monitored = passed_count + failed_count + inconclusive_count
 
         out.append("=" * 80)
         out.append("Pipeline Summary")
         out.append("=" * 80)
         out.append("")
-        out.append(f"Result: {passed_count} PASS, {failed_count} FAIL (of {monitored} monitored)")
+        out.append(f"Result: {passed_count} PASS, {failed_count} FAIL, {inconclusive_count} INCONCLUSIVE (of {monitored} monitored)")
         out.append("")
 
         # Passed pipelines
@@ -162,23 +153,31 @@ class ReportGenerator:
                         out.append(f"     - [{fid}] [New] ... and {remaining} more")
             out.append("")
 
-        # Skipped pipelines
+        # Inconclusive pipelines (build failed, 0 test failures from API)
         for p in cur.execute(
-            "SELECT name, build_id, build_number, skip_reason FROM pipelines WHERE result = 'skipped' ORDER BY name"
+            "SELECT name, build_id, build_number, skip_reason FROM pipelines "
+            "WHERE result = 'skipped' AND skip_reason != 'private' ORDER BY name"
         ):
-            reason = p["skip_reason"] or "private"
             bn = p["build_number"] or ""
-            if p["build_id"] and reason != "private":
+            reason = p["skip_reason"] or "unknown"
+            if p["build_id"]:
                 url = f"https://dev.azure.com/{ADO_ORG}/{ADO_PROJECT}/_build/results?buildId={p['build_id']}"
-                out.append(f"  ⏭️ [{p['name']} {bn}]({url}): SKIPPED ({reason})")
+                out.append(f"  ⚠️ [{p['name']} {bn}]({url}): INCONCLUSIVE ({reason})")
             else:
-                out.append(f"  ⏭️ {p['name']}: SKIPPED ({reason})")
+                out.append(f"  ⚠️ {p['name']}: INCONCLUSIVE ({reason})")
+
+        # Skipped pipelines (private/intentional opt-out)
+        for p in cur.execute(
+            "SELECT name FROM pipelines WHERE result = 'skipped' AND skip_reason = 'private' ORDER BY name"
+        ):
+            out.append(f"  ⏭️ {p['name']}: SKIPPED (private)")
 
         out.append("")
         out.append("Notes:")
         out.append("- ✅ = all tests passed")
         out.append("- ❌ = one or more test failures")
-        out.append("- ⏭️ = skipped (private pipeline or marked skip). Non-private skipped pipelines include a build URL.")
+        out.append("- ⚠️ = inconclusive (build failed but no test failures detected via Test Results API)")
+        out.append("- ⏭️ = skipped (private pipeline)")
         out.append("- EVERY pipeline (✅ and ❌) must include the build URL on the line after the name.")
         out.append("- List failing tests per pipeline, deduplicated by test name. Cap at 5 per failure group; show \"... and N more\" for the rest.")
         out.append("- [New] = no matching GitHub issue found — may need a new issue filed.")
