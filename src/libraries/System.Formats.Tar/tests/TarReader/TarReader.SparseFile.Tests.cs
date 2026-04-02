@@ -106,6 +106,25 @@ namespace System.Formats.Tar.Tests
             return archive;
         }
 
+        // Builds a PAX 1.0 sparse archive with a custom sparse map text and arbitrary packed data.
+        // Used when specific packed data content (rather than index-filled segments) is needed.
+        private static MemoryStream BuildSparseArchiveWithPackedData(string realName, long realSize, string sparseMapContent, byte[] packedData)
+        {
+            byte[] mapBytes = Encoding.ASCII.GetBytes(sparseMapContent);
+            int padding = (512 - (mapBytes.Length % 512)) % 512;
+            byte[] rawData = new byte[mapBytes.Length + padding + packedData.Length];
+            mapBytes.CopyTo(rawData, 0);
+            packedData.CopyTo(rawData, mapBytes.Length + padding);
+
+            var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                WriteSparseEntry(writer, realName, realSize, rawData);
+            }
+            archive.Position = 0;
+            return archive;
+        }
+
         public static IEnumerable<object[]> SparseLayoutTestCases()
         {
             // (realSize, segments as flat array [off0, len0, off1, len1, ...], copyData, useAsync)
@@ -376,9 +395,11 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public void GnuSparse10Pax_NilSparseData(bool copyData)
         {
-            // pax-nil-sparse-data: one segment (offset=0, length=1000), realsize=1000, no holes.
-            // The packed data is 1000 bytes of "0123456789" repeating.
-            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-nil-sparse-data");
+            // Equivalent to golang "pax-nil-sparse-data": one segment (offset=0, length=1000),
+            // realsize=1000, no holes. The packed data is 1000 bytes of "0123456789" repeating.
+            byte[] packedData = new byte[1000];
+            for (int i = 0; i < 1000; i++) packedData[i] = (byte)('0' + i % 10);
+            using MemoryStream archiveStream = BuildSparseArchiveWithPackedData("sparse.db", 1000, "1\n0\n1000\n", packedData);
             using TarReader reader = new TarReader(archiveStream);
 
             TarEntry? entry = reader.GetNextEntry(copyData);
@@ -406,8 +427,9 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public void GnuSparse10Pax_NilSparseHole(bool copyData)
         {
-            // pax-nil-sparse-hole: one segment (offset=1000, length=0), realsize=1000, all zeros.
-            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-nil-sparse-hole");
+            // Equivalent to golang "pax-nil-sparse-hole": one segment (offset=1000, length=0),
+            // realsize=1000, all zeros (everything is a hole).
+            using MemoryStream archiveStream = BuildRawSparseArchive("1\n1000\n0\n", "sparse.db", 1000);
             using TarReader reader = new TarReader(archiveStream);
 
             TarEntry? entry = reader.GetNextEntry(copyData);
@@ -481,8 +503,9 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public void GnuSparse10Pax_SparseBig_NameAndLength(bool copyData)
         {
-            // pax-sparse-big: 6 segments scattered across a 60 GB virtual file, realsize=60000000000.
-            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "pax-sparse-big");
+            // Equivalent to golang "pax-sparse-big": a sparse entry with a 60 GB virtual file.
+            // Build with 0 segments (all holes) — the test only verifies name and length.
+            using MemoryStream archiveStream = BuildRawSparseArchive("0\n", "pax-sparse", 60000000000L);
             using TarReader reader = new TarReader(archiveStream);
 
             TarEntry? entry = reader.GetNextEntry(copyData);
