@@ -325,7 +325,7 @@ namespace System.Diagnostics
         }
     }
 
-        internal struct MainWindowFinder
+    internal struct MainWindowFinder
     {
         private const int GW_OWNER = 4;
         private IntPtr _bestHandle;
