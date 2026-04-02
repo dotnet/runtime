@@ -1066,6 +1066,7 @@ namespace System.IO.Compression
             if (isEmptyFile)
             {
                 CompressionMethod = ZipCompressionMethod.Stored;
+                _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
                 compressedSizeTruncated = 0;
                 uncompressedSizeTruncated = 0;
                 Debug.Assert(_uncompressedSize == 0);
