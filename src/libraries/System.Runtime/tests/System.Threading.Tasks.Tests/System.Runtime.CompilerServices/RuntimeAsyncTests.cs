@@ -20,7 +20,7 @@ namespace System.Threading.Tasks.Tests
         private static readonly FieldInfo s_continuationTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncContinuationTimestamps");
         private static readonly FieldInfo s_activeTasksField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_currentActiveTasks");
         private static readonly FieldInfo s_tplEventSourceLogField = GetCorLibClassStaticField("System.Threading.Tasks.TplEventSource", "Log");
-        private static readonly FieldInfo s_activeFlagsField = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "_activeFlags");
+        private static readonly FieldInfo s_activeFlagsField = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "s_activeFlags");
 
         private static object _debuggerLock = new object();
         private static TestEventListener? _debuggerTplInstance;

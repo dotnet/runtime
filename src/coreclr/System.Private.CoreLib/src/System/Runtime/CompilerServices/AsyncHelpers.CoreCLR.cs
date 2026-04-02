@@ -469,8 +469,7 @@ namespace System.Runtime.CompilerServices
                 public static bool InstrumentCheckPoint
                 {
                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                    get => AsyncInstrumentation.IsSupported
-                        && AsyncInstrumentation.ActiveFlags != AsyncInstrumentation.Flags.Disabled;
+                    get => AsyncInstrumentation.IsSupported && AsyncInstrumentation.ActiveFlags != AsyncInstrumentation.Flags.Disabled;
                 }
 
                 public static void CreateRuntimeAsyncContext(RuntimeAsyncTask<T> task, AsyncInstrumentation.Flags flags)

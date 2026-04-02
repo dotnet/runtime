@@ -41,7 +41,7 @@ namespace System.Runtime.CompilerServices
             public static bool DebuggerOrTpl(Flags flags) => Debugger(flags) || Tpl(flags);
         }
 
-        public static Flags ActiveFlags => _activeFlags;
+        public static Flags ActiveFlags => s_activeFlags;
 
         public static Flags UpdateAsyncProfilerFlags(Flags flags)
         {
@@ -50,12 +50,12 @@ namespace System.Runtime.CompilerServices
                 flags |= Flags.AsyncProfiler;
             }
 
-            lock (_lock)
+            lock (s_lock)
             {
-                _asyncProfilerActiveFlags = flags;
-                _activeFlags = _asyncProfilerActiveFlags | _tplActiveFlags | _debuggerActiveFlags;
+                s_asyncProfilerActiveFlags = flags;
+                s_activeFlags = s_asyncProfilerActiveFlags | s_tplActiveFlags | s_debuggerActiveFlags;
 
-                return _activeFlags;
+                return s_activeFlags;
             }
         }
 
@@ -83,25 +83,25 @@ namespace System.Runtime.CompilerServices
                 debuggerFlags |= DebuggerFlags | Flags.Debugger;
             }
 
-            lock (_lock)
+            lock (s_lock)
             {
-                _tplActiveFlags = tplFlags;
-                _debuggerActiveFlags = debuggerFlags;
-                _activeFlags = _asyncProfilerActiveFlags | _tplActiveFlags | _debuggerActiveFlags;
+                s_tplActiveFlags = tplFlags;
+                s_debuggerActiveFlags = debuggerFlags;
+                s_activeFlags = s_asyncProfilerActiveFlags | s_tplActiveFlags | s_debuggerActiveFlags;
 
-                return _activeFlags;
+                return s_activeFlags;
             }
         }
 
-        private static Flags _activeFlags;
+        private static Flags s_activeFlags;
 
-        private static Flags _asyncProfilerActiveFlags;
+        private static Flags s_asyncProfilerActiveFlags;
 
-        private static Flags _tplActiveFlags;
+        private static Flags s_tplActiveFlags;
 
-        private static Flags _debuggerActiveFlags;
+        private static Flags s_debuggerActiveFlags;
 
-        private static readonly object _lock = new object();
+        private static readonly object s_lock = new object();
 
         private const Flags DebuggerFlags =
             Flags.CreateAsyncContext | Flags.SuspendAsyncContext |
