@@ -1370,7 +1370,9 @@ namespace System.IO.Compression.Tests
 
                     for (int i = 0; i < originalEntryCount; i++)
                     {
-                        ZipArchiveEntry entry = createArchive.CreateEntry($"entry{i}.bin");
+                        // Use NoCompression so the stored bytes are deterministic and cannot
+                        // accidentally contain local-header or data-descriptor signature sequences.
+                        ZipArchiveEntry entry = createArchive.CreateEntry($"entry{i}.bin", CompressionLevel.NoCompression);
                         Stream s = await OpenEntryStream(async, entry);
                         if (async)
                             await s.WriteAsync(entryData);
@@ -1386,7 +1388,9 @@ namespace System.IO.Compression.Tests
                 zipBytes = backing.ToArray();
             }
 
-            // Step 2: Validate the raw bytes - verify bit 3 is set and data descriptor signatures exist
+            // Step 2: Validate the raw bytes - verify bit 3 is set and data descriptor signatures exist.
+            // This byte scan is safe because NoCompression stores raw bytes, and our payload [0..15, i]
+            // cannot contain the 'PK' (0x50,0x4B) prefix used in ZIP signatures.
             int dataDescriptorCount = 0;
             int localHeaderCount = 0;
             int offset = 0;
@@ -1442,7 +1446,9 @@ namespace System.IO.Compression.Tests
                 updatedZipBytes = ms.ToArray();
             }
 
-            // Step 4: Validate the updated archive - original entries should still have data descriptors
+            // Step 4: Validate the updated archive - original entries should still have data descriptors.
+            // This byte scan is safe because NoCompression stores raw bytes, and our payload cannot
+            // contain the 'PK' (0x50,0x4B) prefix used in ZIP signatures.
             dataDescriptorCount = 0;
             localHeaderCount = 0;
             int entriesWithDataDescriptorBit = 0;
@@ -1542,7 +1548,7 @@ namespace System.IO.Compression.Tests
 
                     for (int i = 0; i < originalEntryCount; i++)
                     {
-                        ZipArchiveEntry entry = createArchive.CreateEntry($"entry{i}.bin");
+                        ZipArchiveEntry entry = createArchive.CreateEntry($"entry{i}.bin", CompressionLevel.NoCompression);
                         Stream s = await OpenEntryStream(async, entry);
                         if (async)
                             await s.WriteAsync(entryData);
