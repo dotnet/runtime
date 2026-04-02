@@ -211,7 +211,6 @@ namespace Microsoft.Win32.SafeHandles
         // Unix applications expect the terminal to be in an echoing state by default.
         // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
         // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
-        // Handle can be null only for UseShellExecute or platforms that don't support Console.Open* methods like Android and MacCatalyst.
         private static bool UsesTerminal(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
             => ProcessUtils.IsTerminal(stdinHandle) || ProcessUtils.IsTerminal(stdoutHandle) || ProcessUtils.IsTerminal(stderrHandle);
 
