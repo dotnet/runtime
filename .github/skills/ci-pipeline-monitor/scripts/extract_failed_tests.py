@@ -201,9 +201,8 @@ def fetch_failed_tests(build_id, pipeline_name, token):
     return failures, None
 
 
-def insert_into_db(db_path, failures):
+def insert_into_db(conn, failures):
     """INSERT all failures into the test_results table."""
-    conn = sqlite3.connect(db_path)
     inserted = 0
     api_with_error = 0
     for f in failures:
@@ -222,7 +221,6 @@ def insert_into_db(db_path, failures):
         if f.get("error_message"):
             api_with_error += 1
     conn.commit()
-    conn.close()
     print(f"Inserted {inserted} rows into test_results ({api_with_error} with API error/stack)", file=sys.stderr)
 
 
@@ -260,7 +258,8 @@ def main():
     print(f"Total: {len(all_failures)} failed tests from {len(builds)} builds", file=sys.stderr)
 
     conn = sqlite3.connect(args.db)
-    insert_into_db(args.db, all_failures)
+    conn.row_factory = sqlite3.Row
+    insert_into_db(conn, all_failures)
 
     # Mark pipelines with 0 test results as inconclusive
     for name in zero_result_pipelines:
