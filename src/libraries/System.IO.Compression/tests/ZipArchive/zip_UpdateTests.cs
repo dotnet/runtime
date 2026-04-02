@@ -1518,5 +1518,117 @@ namespace System.IO.Compression.Tests
                 await DisposeZipArchive(async, readArchive);
             }
         }
+
+        /// <summary>
+        /// Creates a zip archive via a non-seekable stream (which forces data descriptor / bit 3),
+        /// reopens in Update mode, modifies only metadata (LastWriteTime) on a middle entry without
+        /// reading its data, adds a new entry, and verifies all entries are intact.
+        /// This exercises the metadata-only rewrite path which must seek past data descriptors.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_DataDescriptorWithMetadataOnlyChange_PreservesArchive(bool async)
+        {
+            byte[] entryData = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+            int originalEntryCount = 3;
+
+            // Step 1: Create a zip using a non-seekable stream, which forces bit 3 (data descriptor)
+            byte[] zipBytes;
+            using (MemoryStream backing = new MemoryStream())
+            {
+                using (var nonSeekable = new WrappedStream(backing, canRead: false, canWrite: true, canSeek: false))
+                {
+                    ZipArchive createArchive = await CreateZipArchive(async, nonSeekable, ZipArchiveMode.Create);
+
+                    for (int i = 0; i < originalEntryCount; i++)
+                    {
+                        ZipArchiveEntry entry = createArchive.CreateEntry($"entry{i}.bin");
+                        Stream s = await OpenEntryStream(async, entry);
+                        if (async)
+                            await s.WriteAsync(entryData);
+                        else
+                            s.Write(entryData);
+                        s.WriteByte((byte)i);
+                        await DisposeStream(async, s);
+                    }
+
+                    await DisposeZipArchive(async, createArchive);
+                }
+
+                zipBytes = backing.ToArray();
+            }
+
+            // Step 2: Reopen in Update mode, change metadata on the middle entry, and add a new entry
+            byte[] updatedZipBytes;
+            DateTimeOffset newTimestamp = new DateTimeOffset(2020, 6, 15, 12, 0, 0, TimeSpan.Zero);
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(zipBytes);
+                ms.Position = 0;
+
+                ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+                Assert.Equal(originalEntryCount, updateArchive.Entries.Count);
+
+                // Only change metadata — do NOT open the entry stream (exercises the metadata-only rewrite path)
+                ZipArchiveEntry middleEntry = updateArchive.GetEntry("entry1.bin");
+                Assert.NotNull(middleEntry);
+                middleEntry.LastWriteTime = newTimestamp;
+
+                ZipArchiveEntry added = updateArchive.CreateEntry("added.bin");
+                Stream addedStream = await OpenEntryStream(async, added);
+                if (async)
+                    await addedStream.WriteAsync(entryData);
+                else
+                    addedStream.Write(entryData);
+                addedStream.WriteByte(0xFF);
+                await DisposeStream(async, addedStream);
+
+                await DisposeZipArchive(async, updateArchive);
+
+                updatedZipBytes = ms.ToArray();
+            }
+
+            // Step 3: Reopen in Read mode and verify all entries are readable with correct data
+            using (MemoryStream ms = new MemoryStream(updatedZipBytes))
+            {
+                ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+                Assert.Equal(originalEntryCount + 1, readArchive.Entries.Count);
+
+                for (int i = 0; i < originalEntryCount; i++)
+                {
+                    ZipArchiveEntry entry = readArchive.GetEntry($"entry{i}.bin");
+                    Assert.NotNull(entry);
+                    byte[] expected = [.. entryData, (byte)i];
+                    byte[] actual = new byte[expected.Length];
+                    Stream rs = await OpenEntryStream(async, entry);
+                    if (async)
+                        await rs.ReadExactlyAsync(actual);
+                    else
+                        rs.ReadExactly(actual);
+                    Assert.Equal(expected, actual);
+                    await DisposeStream(async, rs);
+                }
+
+                // Verify the metadata change was preserved
+                ZipArchiveEntry verifyMiddle = readArchive.GetEntry("entry1.bin");
+                Assert.NotNull(verifyMiddle);
+                Assert.Equal(newTimestamp, verifyMiddle.LastWriteTime);
+
+                // Verify the newly added entry
+                ZipArchiveEntry verifyAdded = readArchive.GetEntry("added.bin");
+                Assert.NotNull(verifyAdded);
+                byte[] expectedAdded = [.. entryData, 0xFF];
+                byte[] actualAdded = new byte[expectedAdded.Length];
+                Stream addedRs = await OpenEntryStream(async, verifyAdded);
+                if (async)
+                    await addedRs.ReadExactlyAsync(actualAdded);
+                else
+                    addedRs.ReadExactly(actualAdded);
+                Assert.Equal(expectedAdded, actualAdded);
+                await DisposeStream(async, addedRs);
+
+                await DisposeZipArchive(async, readArchive);
+            }
+        }
     }
 }
