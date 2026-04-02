@@ -1354,10 +1354,10 @@ class DeadCodeElimination
 
                 ThrowIfNotPresent(typeof(TestInteropMapTrimming), nameof(ProxyFromGenUsed));
                 ThrowIfPresent(typeof(TestInteropMapTrimming), nameof(ProxyFromGenUnused));
-
-                [MethodImpl(MethodImplOptions.NoInlining)]
-                static Type GetObjectType() => typeof(object);
             }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetObjectType() => typeof(object);
         }
 
         public static Type GetProxyGeneric<T>(IReadOnlyDictionary<Type, Type> map) where T : class
