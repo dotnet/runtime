@@ -211,11 +211,7 @@ namespace System.Diagnostics
         /// which may lead to security or resource management issues.
         /// </para>
         /// <para>
-        /// Concurrent calls to <see cref="Process.Start()"/> or <see cref="SafeProcessHandle.Start(ProcessStartInfo)"/> that share the same <see cref="InheritedHandles"/> list instance
-        /// are not supported. The list must not be modified while a process start is in progress.
-        /// </para>
-        /// <para>
-        /// Two concurrent process starts that use different <see cref="InheritedHandles"/> list instances but contain the same <see cref="SafeHandle"/> object
+        /// Two concurrent process starts that pass same handle in <see cref="InheritedHandles"/>
         /// are not supported. The implementation temporarily modifies each handle's inheritance flags and this is not thread-safe across concurrent starts sharing the same handle.
         /// </para>
         /// <para>
@@ -224,7 +220,7 @@ namespace System.Diagnostics
         /// <para>
         /// On Windows, the implementation will temporarily enable inheritance on each handle in this list
         /// by modifying the handle's flags using <see href="https://learn.microsoft.com/windows/win32/api/handleapi/nf-handleapi-sethandleinformation">SetHandleInformation</see>.
-        /// After the child process is created, inheritance will be disabled on these handles to prevent them
+        /// After the child process is created, inheritance will be unconditionally disabled on these handles to prevent them
         /// from being inherited by other processes started with different APIs.
         /// The handles themselves are not duplicated; they are made inheritable and passed to the child process.
         /// </para>
