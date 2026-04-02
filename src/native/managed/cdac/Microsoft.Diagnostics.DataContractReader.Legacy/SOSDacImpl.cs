@@ -5082,22 +5082,22 @@ public sealed unsafe partial class SOSDacImpl
                         default:
                             nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.Unknown;
                             break;
-                        case NativeCodeVersionOptimizationTier.OptimizationTier0:
+                        case OptimizationTier.OptimizationTier0:
                             nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.QuickJitted;
                             break;
-                        case NativeCodeVersionOptimizationTier.OptimizationTier1:
+                        case OptimizationTier.OptimizationTier1:
                             nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.OptimizedTier1;
                             break;
-                        case NativeCodeVersionOptimizationTier.OptimizationTier1OSR:
+                        case OptimizationTier.OptimizationTier1OSR:
                             nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.OptimizedTier1OSR;
                             break;
-                        case NativeCodeVersionOptimizationTier.OptimizationTierOptimized:
+                        case OptimizationTier.OptimizationTierOptimized:
                             nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.Optimized;
                             break;
-                        case NativeCodeVersionOptimizationTier.OptimizationTier0Instrumented:
+                        case OptimizationTier.OptimizationTier0Instrumented:
                             nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.QuickJittedInstrumented;
                             break;
-                        case NativeCodeVersionOptimizationTier.OptimizationTier1Instrumented:
+                        case OptimizationTier.OptimizationTier1Instrumented:
                             nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.OptimizedTier1Instrumented;
                             break;
                     }

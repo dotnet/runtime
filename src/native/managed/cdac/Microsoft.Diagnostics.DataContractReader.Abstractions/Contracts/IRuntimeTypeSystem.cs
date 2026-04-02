@@ -78,7 +78,7 @@ public enum ArrayFunctionType
     Constructor = 3
 }
 
-public enum NativeCodeVersionOptimizationTier : uint
+public enum OptimizationTier : uint
 {
     OptimizationTierUnknown,
     OptimizationTier0,
@@ -220,7 +220,7 @@ public interface IRuntimeTypeSystem : IContract
 
     TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
-    NativeCodeVersionOptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
+    OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     bool IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs

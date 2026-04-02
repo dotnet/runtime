@@ -325,7 +325,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     }
 
-    private enum NativeCodeVersionOptimizationTier_1 : uint
+    private enum OptimizationTier_1 : uint
     {
         OptimizationTier0,
         OptimizationTier1,
@@ -1656,26 +1656,26 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return TargetPointer.Null;
     }
 
-    internal static NativeCodeVersionOptimizationTier GetOptimizationTier(uint? optimizationTier)
+    internal static OptimizationTier GetOptimizationTier(uint? optimizationTier)
     {
-        return (NativeCodeVersionOptimizationTier_1?)optimizationTier switch
+        return (OptimizationTier_1?)optimizationTier switch
         {
-            NativeCodeVersionOptimizationTier_1.OptimizationTier0 => NativeCodeVersionOptimizationTier.OptimizationTier0,
-            NativeCodeVersionOptimizationTier_1.OptimizationTier1 => NativeCodeVersionOptimizationTier.OptimizationTier1,
-            NativeCodeVersionOptimizationTier_1.OptimizationTier1OSR => NativeCodeVersionOptimizationTier.OptimizationTier1OSR,
-            NativeCodeVersionOptimizationTier_1.OptimizationTierOptimized => NativeCodeVersionOptimizationTier.OptimizationTierOptimized,
-            NativeCodeVersionOptimizationTier_1.OptimizationTier0Instrumented => NativeCodeVersionOptimizationTier.OptimizationTier0Instrumented,
-            NativeCodeVersionOptimizationTier_1.OptimizationTier1Instrumented => NativeCodeVersionOptimizationTier.OptimizationTier1Instrumented,
-            _ => NativeCodeVersionOptimizationTier.OptimizationTierUnknown,
+            OptimizationTier_1.OptimizationTier0 => OptimizationTier.OptimizationTier0,
+            OptimizationTier_1.OptimizationTier1 => OptimizationTier.OptimizationTier1,
+            OptimizationTier_1.OptimizationTier1OSR => OptimizationTier.OptimizationTier1OSR,
+            OptimizationTier_1.OptimizationTierOptimized => OptimizationTier.OptimizationTierOptimized,
+            OptimizationTier_1.OptimizationTier0Instrumented => OptimizationTier.OptimizationTier0Instrumented,
+            OptimizationTier_1.OptimizationTier1Instrumented => OptimizationTier.OptimizationTier1Instrumented,
+            _ => OptimizationTier.OptimizationTierUnknown,
         };
     }
 
-    NativeCodeVersionOptimizationTier IRuntimeTypeSystem.GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle)
+    OptimizationTier IRuntimeTypeSystem.GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         TargetPointer codeDataAddress = methodDesc.CodeData;
         if (codeDataAddress == TargetPointer.Null)
-            return NativeCodeVersionOptimizationTier.OptimizationTierUnknown;
+            return OptimizationTier.OptimizationTierUnknown;
 
         Data.MethodDescCodeData codeData = _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(codeDataAddress);
         return GetOptimizationTier(codeData.OptimizationTier);

@@ -728,19 +728,19 @@ public class CodeVersionsTests
         foreach (var archData in new MockTarget.StdArch())
         {
             var arch = (MockTarget.Architecture)archData[0];
-            yield return [arch, 0u, NativeCodeVersionOptimizationTier.OptimizationTier0];
-            yield return [arch, 1u, NativeCodeVersionOptimizationTier.OptimizationTier1];
-            yield return [arch, 2u, NativeCodeVersionOptimizationTier.OptimizationTier1OSR];
-            yield return [arch, 3u, NativeCodeVersionOptimizationTier.OptimizationTierOptimized];
-            yield return [arch, 4u, NativeCodeVersionOptimizationTier.OptimizationTier0Instrumented];
-            yield return [arch, 5u, NativeCodeVersionOptimizationTier.OptimizationTier1Instrumented];
-            yield return [arch, 0xFFFFFFFFu, NativeCodeVersionOptimizationTier.OptimizationTierUnknown];
+            yield return [arch, 0u, OptimizationTier.OptimizationTier0];
+            yield return [arch, 1u, OptimizationTier.OptimizationTier1];
+            yield return [arch, 2u, OptimizationTier.OptimizationTier1OSR];
+            yield return [arch, 3u, OptimizationTier.OptimizationTierOptimized];
+            yield return [arch, 4u, OptimizationTier.OptimizationTier0Instrumented];
+            yield return [arch, 5u, OptimizationTier.OptimizationTier1Instrumented];
+            yield return [arch, 0xFFFFFFFFu, OptimizationTier.OptimizationTierUnknown];
         }
     }
 
     [Theory]
     [MemberData(nameof(GetOptimizationTierValues))]
-    public void GetOptimizationTier_Explicit(MockTarget.Architecture arch, uint nativeTier, NativeCodeVersionOptimizationTier expectedTier)
+    public void GetOptimizationTier_Explicit(MockTarget.Architecture arch, uint nativeTier, OptimizationTier expectedTier)
     {
         MockCodeVersions builder = new(arch);
 
@@ -758,7 +758,7 @@ public class CodeVersionsTests
         var codeVersions = target.Contracts.CodeVersions;
 
         NativeCodeVersionHandle handle = NativeCodeVersionHandle.CreateExplicit(nativeCodeVersionNode);
-        NativeCodeVersionOptimizationTier tier = codeVersions.GetOptimizationTier(handle);
+        OptimizationTier tier = codeVersions.GetOptimizationTier(handle);
         Assert.Equal(expectedTier, tier);
     }
 
@@ -772,14 +772,14 @@ public class CodeVersionsTests
         Mock<IRuntimeTypeSystem> mockRTS = new();
         MethodDescHandle mdHandle = new(methodDescAddress);
         mockRTS.Setup(r => r.GetMethodDescHandle(methodDescAddress)).Returns(mdHandle);
-        mockRTS.Setup(r => r.GetMethodDescOptimizationTier(mdHandle)).Returns(NativeCodeVersionOptimizationTier.OptimizationTierOptimized);
+        mockRTS.Setup(r => r.GetMethodDescOptimizationTier(mdHandle)).Returns(OptimizationTier.OptimizationTierOptimized);
 
         var target = CreateTarget(arch, builder, mockRuntimeTypeSystem: mockRTS);
         var codeVersions = target.Contracts.CodeVersions;
 
         NativeCodeVersionHandle handle = NativeCodeVersionHandle.CreateSynthetic(methodDescAddress);
-        NativeCodeVersionOptimizationTier tier = codeVersions.GetOptimizationTier(handle);
-        Assert.Equal(NativeCodeVersionOptimizationTier.OptimizationTierOptimized, tier);
+        OptimizationTier tier = codeVersions.GetOptimizationTier(handle);
+        Assert.Equal(OptimizationTier.OptimizationTierOptimized, tier);
     }
 
     [Theory]
@@ -792,13 +792,13 @@ public class CodeVersionsTests
         Mock<IRuntimeTypeSystem> mockRTS = new();
         MethodDescHandle mdHandle = new(methodDescAddress);
         mockRTS.Setup(r => r.GetMethodDescHandle(methodDescAddress)).Returns(mdHandle);
-        mockRTS.Setup(r => r.GetMethodDescOptimizationTier(mdHandle)).Returns(NativeCodeVersionOptimizationTier.OptimizationTierUnknown);
+        mockRTS.Setup(r => r.GetMethodDescOptimizationTier(mdHandle)).Returns(OptimizationTier.OptimizationTierUnknown);
 
         var target = CreateTarget(arch, builder, mockRuntimeTypeSystem: mockRTS);
         var codeVersions = target.Contracts.CodeVersions;
 
         NativeCodeVersionHandle handle = NativeCodeVersionHandle.CreateSynthetic(methodDescAddress);
-        NativeCodeVersionOptimizationTier tier = codeVersions.GetOptimizationTier(handle);
-        Assert.Equal(NativeCodeVersionOptimizationTier.OptimizationTierUnknown, tier);
+        OptimizationTier tier = codeVersions.GetOptimizationTier(handle);
+        Assert.Equal(OptimizationTier.OptimizationTierUnknown, tier);
     }
 }

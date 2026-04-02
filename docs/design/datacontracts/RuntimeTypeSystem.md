@@ -127,7 +127,7 @@ public enum ArrayFunctionType
 ```
 
 ```csharp
-public enum NativeCodeVersionOptimizationTier
+public enum OptimizationTier
 {
     OptimizationTierUnknown,
     OptimizationTier0,
@@ -210,7 +210,7 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
 
     // Gets the optimization tier stored on the MethodDesc's code data
-    public virtual NativeCodeVersionOptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDesc);
+    public virtual OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDesc);
 
     // Returns true if the method is eligible for tiered compilation
     public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
@@ -445,7 +445,7 @@ The contract additionally depends on these data descriptors
 
 The value of the `NativeCodeVersionNode::OptimizationTier` field is one of:
 ```csharp
-private enum NativeCodeVersionOptimizationTier_1 : uint
+private enum OptimizationTier_1 : uint
 {
     OptimizationTier0 = 0,
     OptimizationTier1 = 1,

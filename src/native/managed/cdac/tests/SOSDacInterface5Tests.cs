@@ -21,7 +21,7 @@ public unsafe class SOSDacInterface5Tests
     private record struct VersionInfo(
         TargetCodePointer NativeCode,
         TargetPointer CodeVersionNodeAddress,
-        NativeCodeVersionOptimizationTier Tier);
+        OptimizationTier Tier);
 
     private static ISOSDacInterface5 CreateDac5(
         MockTarget.Architecture arch,
@@ -173,7 +173,7 @@ public unsafe class SOSDacInterface5Tests
         uint r2rSize = 0x1000;
         var versions = new[]
         {
-            new VersionInfo(new TargetCodePointer(0x5000_0100), new TargetPointer(0x7000_0001), NativeCodeVersionOptimizationTier.OptimizationTierOptimized),
+            new VersionInfo(new TargetCodePointer(0x5000_0100), new TargetPointer(0x7000_0001), OptimizationTier.OptimizationTierOptimized),
         };
 
         ISOSDacInterface5 dac5 = CreateDac5(arch, versions, isReadyToRun: true, r2rBase: r2rBase, r2rSize: r2rSize);
@@ -189,15 +189,15 @@ public unsafe class SOSDacInterface5Tests
     {
         get
         {
-            (NativeCodeVersionOptimizationTier, DacpTieredVersionData.OptimizationTier)[] tiers =
+            (OptimizationTier, DacpTieredVersionData.OptimizationTier)[] tiers =
             [
-                (NativeCodeVersionOptimizationTier.OptimizationTier0, DacpTieredVersionData.OptimizationTier.QuickJitted),
-                (NativeCodeVersionOptimizationTier.OptimizationTier1, DacpTieredVersionData.OptimizationTier.OptimizedTier1),
-                (NativeCodeVersionOptimizationTier.OptimizationTier1OSR, DacpTieredVersionData.OptimizationTier.OptimizedTier1OSR),
-                (NativeCodeVersionOptimizationTier.OptimizationTierOptimized, DacpTieredVersionData.OptimizationTier.Optimized),
-                (NativeCodeVersionOptimizationTier.OptimizationTier0Instrumented, DacpTieredVersionData.OptimizationTier.QuickJittedInstrumented),
-                (NativeCodeVersionOptimizationTier.OptimizationTier1Instrumented, DacpTieredVersionData.OptimizationTier.OptimizedTier1Instrumented),
-                (NativeCodeVersionOptimizationTier.OptimizationTierUnknown, DacpTieredVersionData.OptimizationTier.Unknown),
+                (OptimizationTier.OptimizationTier0, DacpTieredVersionData.OptimizationTier.QuickJitted),
+                (OptimizationTier.OptimizationTier1, DacpTieredVersionData.OptimizationTier.OptimizedTier1),
+                (OptimizationTier.OptimizationTier1OSR, DacpTieredVersionData.OptimizationTier.OptimizedTier1OSR),
+                (OptimizationTier.OptimizationTierOptimized, DacpTieredVersionData.OptimizationTier.Optimized),
+                (OptimizationTier.OptimizationTier0Instrumented, DacpTieredVersionData.OptimizationTier.QuickJittedInstrumented),
+                (OptimizationTier.OptimizationTier1Instrumented, DacpTieredVersionData.OptimizationTier.OptimizedTier1Instrumented),
+                (OptimizationTier.OptimizationTierUnknown, DacpTieredVersionData.OptimizationTier.Unknown),
             ];
 
             foreach (var arch in new MockTarget.StdArch())
@@ -214,7 +214,7 @@ public unsafe class SOSDacInterface5Tests
     [MemberData(nameof(TierMappingData))]
     public void GetTieredVersions_TieredCompilation(
         MockTarget.Architecture arch,
-        NativeCodeVersionOptimizationTier internalTier,
+        OptimizationTier internalTier,
         DacpTieredVersionData.OptimizationTier expectedTier)
     {
         var versions = new[]
@@ -237,7 +237,7 @@ public unsafe class SOSDacInterface5Tests
     {
         var versions = new[]
         {
-            new VersionInfo(new TargetCodePointer(0x6000_0100), new TargetPointer(0x7000_0001), NativeCodeVersionOptimizationTier.OptimizationTierOptimized),
+            new VersionInfo(new TargetCodePointer(0x6000_0100), new TargetPointer(0x7000_0001), OptimizationTier.OptimizationTierOptimized),
         };
 
         ISOSDacInterface5 dac5 = CreateDac5(arch, versions);
@@ -255,9 +255,9 @@ public unsafe class SOSDacInterface5Tests
     {
         var versions = new[]
         {
-            new VersionInfo(new TargetCodePointer(0x6000_0100), new TargetPointer(0x7000_0001), NativeCodeVersionOptimizationTier.OptimizationTier0),
-            new VersionInfo(new TargetCodePointer(0x6000_0200), new TargetPointer(0x7000_0002), NativeCodeVersionOptimizationTier.OptimizationTier1),
-            new VersionInfo(new TargetCodePointer(0x6000_0300), new TargetPointer(0x7000_0003), NativeCodeVersionOptimizationTier.OptimizationTierOptimized),
+            new VersionInfo(new TargetCodePointer(0x6000_0100), new TargetPointer(0x7000_0001), OptimizationTier.OptimizationTier0),
+            new VersionInfo(new TargetCodePointer(0x6000_0200), new TargetPointer(0x7000_0002), OptimizationTier.OptimizationTier1),
+            new VersionInfo(new TargetCodePointer(0x6000_0300), new TargetPointer(0x7000_0003), OptimizationTier.OptimizationTierOptimized),
         };
 
         ISOSDacInterface5 dac5 = CreateDac5(arch, versions, isEligibleForTieredCompilation: true);
@@ -276,7 +276,7 @@ public unsafe class SOSDacInterface5Tests
         var nodeAddr = new TargetPointer(0x7000_0001);
         var versions = new[]
         {
-            new VersionInfo(codeAddr, nodeAddr, NativeCodeVersionOptimizationTier.OptimizationTierOptimized),
+            new VersionInfo(codeAddr, nodeAddr, OptimizationTier.OptimizationTierOptimized),
         };
 
         ISOSDacInterface5 dac5 = CreateDac5(arch, versions);

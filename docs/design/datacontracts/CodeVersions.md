@@ -53,7 +53,7 @@ public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle);
 public virtual bool HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle);
 
 // Gets the optimization tier for a native code version
-public virtual NativeCodeVersionOptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle);
+public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle);
 ```
 
 ### Extension Methods

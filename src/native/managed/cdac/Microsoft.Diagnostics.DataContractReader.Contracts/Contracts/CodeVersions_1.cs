@@ -414,7 +414,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         return iLCodeVersionHandle.IsExplicit ? AsNode(iLCodeVersionHandle).ILAddress == TargetPointer.Null : true;
     }
 
-    NativeCodeVersionOptimizationTier ICodeVersions.GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle)
+    OptimizationTier ICodeVersions.GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle)
     {
         if (!codeVersionHandle.Valid)
         {
@@ -430,7 +430,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         {
             IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(codeVersionHandle.MethodDescAddress);
-            NativeCodeVersionOptimizationTier optimizationTier = rtsContract.GetMethodDescOptimizationTier(methodDescHandle);
+            OptimizationTier optimizationTier = rtsContract.GetMethodDescOptimizationTier(methodDescHandle);
             return optimizationTier;
         }
     }
