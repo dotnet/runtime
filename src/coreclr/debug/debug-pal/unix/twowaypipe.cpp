@@ -27,8 +27,8 @@ static void AbortPipeServerImpl()
     unlink(s_serverOutPipeName);
 }
 
-// Forward declaration - defined in dbgtransportsession.cpp.
-extern void (*g_pfnAbortTransportCallback)(void);
+// Defined here and extern-declared in dbgtransportsession.h for use by Debugger::CleanupTransportSocket().
+void (*g_pfnAbortTransportCallback)(void) = nullptr;
 
 // Creates a server side of the pipe.
 // Id is used to create pipes names and uniquely identify the pipe on the machine.
