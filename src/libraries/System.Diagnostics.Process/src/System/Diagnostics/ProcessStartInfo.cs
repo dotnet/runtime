@@ -206,6 +206,9 @@ namespace System.Diagnostics
         /// and the handles from this list. If the list is empty, only the standard handles are inherited.
         /// </para>
         /// <para>
+        /// These handles must not include any pseudo-handles (e.g. <c>GetCurrentProcess</c> on Windows).
+        /// </para>
+        /// <para>
         /// Handles in this list should not have inheritance enabled beforehand.
         /// If they do, they could be unintentionally inherited by other processes started concurrently with different APIs,
         /// which may lead to security or resource management issues.

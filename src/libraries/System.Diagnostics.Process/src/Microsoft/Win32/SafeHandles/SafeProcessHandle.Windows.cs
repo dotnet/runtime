@@ -21,10 +21,17 @@ namespace Microsoft.Win32.SafeHandles
 
         private static Func<ProcessStartInfo, SafeProcessHandle>? s_startWithShellExecute;
 
-        internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandlesSnapshot = null)
+        internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
+            SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles = null)
         {
             if (startInfo.UseShellExecute)
+            {
+                // Nulls are allowed only for ShellExecute.
+                Debug.Assert(stdinHandle is null && stdoutHandle is null && stderrHandle is null, "All of the standard handles must be null for ShellExecute.");
                 return s_startWithShellExecute!(startInfo);
+            }
+
+            Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null, "All of the standard handles must be provided.");
 
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
             //    * The handles are duplicated as inheritable before they are passed to CreateProcess so
@@ -43,7 +50,6 @@ namespace Microsoft.Win32.SafeHandles
             SafeFileHandle? inheritableStdoutHandle = null;
             SafeFileHandle? inheritableStderrHandle = null;
 
-            SafeHandle[]? inheritedHandles = inheritedHandlesSnapshot;
             bool hasInheritedHandles = inheritedHandles is not null;
 
             // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance.
@@ -70,21 +76,16 @@ namespace Microsoft.Win32.SafeHandles
             {
                 startupInfoEx.StartupInfo.cb = hasInheritedHandles ? sizeof(Interop.Kernel32.STARTUPINFOEX) : sizeof(Interop.Kernel32.STARTUPINFO);
 
-                if (stdinHandle is not null || stdoutHandle is not null || stderrHandle is not null)
-                {
-                    Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null, "All or none of the standard handles must be provided.");
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref inheritableStdinHandle);
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref inheritableStdoutHandle);
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref inheritableStderrHandle);
 
-                    ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref inheritableStdinHandle);
-                    ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref inheritableStdoutHandle);
-                    ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref inheritableStderrHandle);
+                startupInfoEx.StartupInfo.hStdInput = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
+                startupInfoEx.StartupInfo.hStdOutput = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
+                startupInfoEx.StartupInfo.hStdError = (inheritableStderrHandle ?? stderrHandle).DangerousGetHandle();
 
-                    startupInfoEx.StartupInfo.hStdInput = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
-                    startupInfoEx.StartupInfo.hStdOutput = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
-                    startupInfoEx.StartupInfo.hStdError = (inheritableStderrHandle ?? stderrHandle).DangerousGetHandle();
-
-                    // If STARTF_USESTDHANDLES is not set, the new process will inherit the standard handles.
-                    startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
-                }
+                // If STARTF_USESTDHANDLES is not set, the new process will inherit the standard handles.
+                startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
 
                 if (startInfo.WindowStyle != ProcessWindowStyle.Normal)
                 {
@@ -118,13 +119,14 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     int maxHandleCount = 3 + inheritedHandles!.Length;
                     handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
+                    Span<nint> handlesToInheritSpan = new Span<nint>(handlesToInherit, maxHandleCount);
 
                     // Add the effective stdio handles (already made inheritable via DuplicateAsInheritableIfNeeded)
-                    AddHandleToInheritList(inheritableStdinHandle ?? stdinHandle, handlesToInherit, ref handleCount);
-                    AddHandleToInheritList(inheritableStdoutHandle ?? stdoutHandle, handlesToInherit, ref handleCount);
-                    AddHandleToInheritList(inheritableStderrHandle ?? stderrHandle, handlesToInherit, ref handleCount);
+                    AddHandleToInheritList(inheritableStdinHandle ?? stdinHandle, handlesToInheritSpan, ref handleCount);
+                    AddHandleToInheritList(inheritableStdoutHandle ?? stdoutHandle, handlesToInheritSpan, ref handleCount);
+                    AddHandleToInheritList(inheritableStderrHandle ?? stderrHandle, handlesToInheritSpan, ref handleCount);
 
-                    PrepareHandleAllowList(inheritedHandles, handlesToInherit, ref handleCount, ref handlesToRelease);
+                    PrepareHandleAllowList(inheritedHandles, handlesToInheritSpan, ref handleCount, ref handlesToRelease);
                     BuildProcThreadAttributeList(handlesToInherit, handleCount, ref attributeListBuffer);
                 }
 
@@ -401,22 +403,25 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         /// Adds a handle to the inherit list if it is valid and not already present.
         /// </summary>
-        private static unsafe void AddHandleToInheritList(SafeFileHandle? handle, IntPtr* handlesToInherit, ref int handleCount)
+        private static void AddHandleToInheritList(SafeFileHandle handle, Span<nint> handlesToInherit, ref int handleCount)
         {
-            if (handle is null || handle.IsInvalid)
+            // The user can't specify invalid handle via ProcessStartInfo.Standard*Handle APIs.
+            // However, Console.OpenStandard*Handle() can return INVALID_HANDLE_VALUE for a process
+            // that was started with INVALID_HANDLE_VALUE as given standard handle.
+            if (handle.IsInvalid)
             {
                 return;
             }
 
-            IntPtr h = handle.DangerousGetHandle();
+            nint rawValue = handle.DangerousGetHandle();
             for (int i = 0; i < handleCount; i++)
             {
-                if (handlesToInherit[i] == h)
+                if (handlesToInherit[i] == rawValue)
                 {
                     return; // already in list
                 }
             }
-            handlesToInherit[handleCount++] = h;
+            handlesToInherit[handleCount++] = rawValue;
         }
 
         /// <summary>
@@ -451,9 +456,9 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static unsafe void PrepareHandleAllowList(
+        private static void PrepareHandleAllowList(
             SafeHandle[] inheritedHandles,
-            IntPtr* handlesToInherit,
+            Span<nint> handlesToInherit,
             ref int handleCount,
             ref SafeHandle?[]? handlesToRelease)
         {
@@ -462,25 +467,22 @@ namespace Microsoft.Win32.SafeHandles
 
             foreach (SafeHandle handle in inheritedHandles)
             {
-                if (handle is null || handle.IsInvalid || handle.IsClosed)
-                {
-                    continue;
-                }
+                Debug.Assert(handle is not null && !handle.IsInvalid);
 
-                // Prevent handle from being disposed while we use the raw pointer.
+                // Prevent handle from being disposed while we use the raw value.
                 // DangerousAddRef must be called before DangerousGetHandle to avoid a race
-                // where the handle is closed between the null check and the pointer read.
+                // where the handle is closed between the duplicate check and the value read.
                 bool refAdded = false;
                 try
                 {
                     handle.DangerousAddRef(ref refAdded);
-                    IntPtr handlePtr = handle.DangerousGetHandle();
+                    nint rawHandle = handle.DangerousGetHandle();
 
                     // Check if this handle is already in the list (avoid duplicates)
                     bool isDuplicate = false;
                     for (int i = 0; i < handleCount; i++)
                     {
-                        if (handlesToInherit[i] == handlePtr)
+                        if (handlesToInherit[i] == rawHandle)
                         {
                             isDuplicate = true;
                             break;
@@ -489,7 +491,10 @@ namespace Microsoft.Win32.SafeHandles
 
                     if (!isDuplicate)
                     {
-                        // Enable inheritance on this handle so the child process can use it
+                        // Enable inheritance on this handle so the child process can use it.
+                        // The following sys-call is going to throw for any pseudo handles (e.g. current process/thread), which cannot be inherited.
+                        // That's desired since such handles are not valid to be added to the allow list.
+                        // It's defacto our validation that the handles passed in the allow list are actually inheritable handles.
                         if (!Interop.Kernel32.SetHandleInformation(
                             handle,
                             Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
@@ -500,7 +505,7 @@ namespace Microsoft.Win32.SafeHandles
 
                         // Transfer ref ownership to handlesToRelease; CleanupHandles will release it.
                         handlesToRelease[handleIndex++] = handle;
-                        handlesToInherit[handleCount++] = handlePtr;
+                        handlesToInherit[handleCount++] = rawHandle;
                         refAdded = false; // ownership transferred — don't release in finally
                     }
                 }
@@ -524,20 +529,16 @@ namespace Microsoft.Win32.SafeHandles
                     break;
                 }
 
-                try
-                {
-                    // Remove the inheritance flag so they are not unintentionally inherited by
-                    // other processes started after this point.
-                    // Ignore failures — the handle may have been closed by the time we get here.
-                    Interop.Kernel32.SetHandleInformation(
-                        safeHandle,
-                        Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
-                        0);
-                }
-                finally
-                {
-                    safeHandle.DangerousRelease();
-                }
+                // Remove the inheritance flag so they are not unintentionally inherited by
+                // other processes started after this point.
+                // Ignore failures: the handle may have been closed by the time we get here
+                // (if the owner created a copy of it).
+                Interop.Kernel32.SetHandleInformation(
+                    safeHandle,
+                    Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
+                    0);
+
+                safeHandle.DangerousRelease();
             }
         }
 

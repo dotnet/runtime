@@ -13,7 +13,7 @@ using Xunit;
 namespace System.Diagnostics.Tests
 {
     [SkipOnPlatform(TestPlatforms.Android, "sh is not available on Android")]
-    public class ProcessHandlesTests : ProcessTestBase
+    public partial class ProcessHandlesTests : ProcessTestBase
     {
         [Theory]
         [InlineData(true, false)]

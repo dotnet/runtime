@@ -103,7 +103,8 @@ namespace Microsoft.Win32.SafeHandles
             return startedProcess;
         }
 
-        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandlesSnapshot, out ProcessWaitState.Holder? waitStateHolder)
+        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
+            SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder)
         {
             waitStateHolder = null;
 
@@ -154,11 +155,12 @@ namespace Microsoft.Win32.SafeHandles
                 startInfo, filename, argv, env, cwd,
                 setCredentials, userId, groupId, groups,
                 stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                inheritedHandlesSnapshot,
+                inheritedHandles,
                 out waitStateHolder);
         }
 
-        private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
+        private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
+            SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
         {
             IDictionary<string, string?> env = startInfo.Environment;
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
