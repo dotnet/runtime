@@ -2,4 +2,7 @@
   <ItemGroup>
     <Compile Include="gcbench.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

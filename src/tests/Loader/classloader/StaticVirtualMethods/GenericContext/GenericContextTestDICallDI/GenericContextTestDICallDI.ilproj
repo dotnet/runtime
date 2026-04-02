@@ -7,4 +7,7 @@
     <ProjectReference Include="../GenericContextCommonCs.csproj" />
     <Compile Include="GenericContextTestDICallDI.il" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

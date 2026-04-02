@@ -10,4 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="GCUtil_Pinning.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

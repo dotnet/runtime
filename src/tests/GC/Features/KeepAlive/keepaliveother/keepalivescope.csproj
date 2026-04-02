@@ -7,4 +7,7 @@
   <ItemGroup>
     <Compile Include="keepalivescope.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

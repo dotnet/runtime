@@ -2,4 +2,7 @@
   <ItemGroup>
     <Compile Include="arrcpy.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

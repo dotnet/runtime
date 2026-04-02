@@ -2,4 +2,7 @@
   <ItemGroup>
     <Compile Include="gcstress.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

@@ -2,4 +2,7 @@
   <ItemGroup>
     <Compile Include="lohcompactapi_exceptions.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

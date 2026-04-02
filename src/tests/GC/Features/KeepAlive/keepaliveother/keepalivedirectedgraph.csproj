@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="keepalivedirectedgraph.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

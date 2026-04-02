@@ -5,4 +5,7 @@
   <ItemGroup>
     <ProjectReference Include="GCUtil_HeapExpansion.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

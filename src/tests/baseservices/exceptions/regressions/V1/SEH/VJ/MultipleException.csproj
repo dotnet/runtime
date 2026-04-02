@@ -7,4 +7,7 @@
   <ItemGroup>
     <Compile Include="MultipleException.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

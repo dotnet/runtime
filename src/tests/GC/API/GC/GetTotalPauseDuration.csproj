@@ -17,4 +17,7 @@
   <ItemGroup>
     <Compile Include="GetTotalPauseDuration.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

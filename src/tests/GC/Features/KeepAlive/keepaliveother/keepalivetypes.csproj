@@ -7,4 +7,7 @@
   <ItemGroup>
     <Compile Include="keepalivetypes.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

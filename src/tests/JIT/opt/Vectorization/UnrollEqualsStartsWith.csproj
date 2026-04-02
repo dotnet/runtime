@@ -10,4 +10,7 @@
     <Compile Include="UnrollEqualsStartsWith.cs" />
     <Compile Include="UnrollEqualsStartsWith_Tests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

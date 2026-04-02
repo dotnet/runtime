@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="keepalivetry.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
