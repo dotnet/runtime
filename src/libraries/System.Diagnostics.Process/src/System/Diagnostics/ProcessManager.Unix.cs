@@ -26,7 +26,10 @@ namespace System.Diagnostics
         /// <returns>true if the process is running; otherwise, false.</returns>
         public static bool IsProcessRunning(int processId, string machineName)
         {
-            ThrowIfRemoteMachine(machineName);
+            if (IsRemoteMachine(machineName))
+            {
+                throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
+            }
             return IsProcessRunning(processId);
         }
 
@@ -48,7 +51,10 @@ namespace System.Diagnostics
         /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
         public static ProcessInfo? GetProcessInfo(int processId, string machineName)
         {
-            ThrowIfRemoteMachine(machineName);
+            if (IsRemoteMachine(machineName))
+            {
+                throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
+            }
             return CreateProcessInfo(processId);
         }
 
@@ -60,7 +66,10 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static int[] GetProcessIds(string machineName)
         {
-            ThrowIfRemoteMachine(machineName);
+            if (IsRemoteMachine(machineName))
+            {
+                throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
+            }
             return GetProcessIds();
         }
 
@@ -79,22 +88,12 @@ namespace System.Diagnostics
                 machineName != Interop.Sys.GetHostName();
         }
 
-        internal static void ThrowIfRemoteMachine(string machineName)
+        internal static bool HandleRemoteMachineSupport(string machineName)
         {
             if (IsRemoteMachine(machineName))
             {
                 throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
             }
-        }
-
-        /// <summary>
-        /// Validates that the machine supports remote queries. Throws <see cref="PlatformNotSupportedException"/> for remote machines on Unix.
-        /// </summary>
-        /// <param name="machineName">The target machine name.</param>
-        /// <returns>Always returns false on Unix since remote machines are not supported.</returns>
-        internal static bool HandleRemoteMachineSupport(string machineName)
-        {
-            ThrowIfRemoteMachine(machineName);
             return false;
         }
 
@@ -106,7 +105,10 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
         {
-            ThrowIfRemoteMachine(machineName);
+            if (IsRemoteMachine(machineName))
+            {
+                throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
+            }
             return GetProcessInfos(processNameFilter);
         }
 

@@ -108,7 +108,7 @@ namespace System.Diagnostics
                 return GetProcessInfos(processNameFilter);
             }
 
-            ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName);
+            ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName);
             if (string.IsNullOrEmpty(processNameFilter))
             {
                 return processInfos;

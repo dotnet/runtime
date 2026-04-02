@@ -18,7 +18,10 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
-            ProcessManager.ThrowIfRemoteMachine(machineName);
+            if (ProcessManager.IsRemoteMachine(machineName))
+            {
+                throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
+            }
 
             int[] procIds = ProcessManager.GetProcessIds();
             var processes = new ArrayBuilder<Process>(string.IsNullOrEmpty(processName) ? procIds.Length : 0);
