@@ -119,13 +119,15 @@ typedef char pal_char_t;
 #define pal_strlen_vprintf(fmt, args) _vscwprintf(fmt, args)
 #define pal_str_printf(buf, count, fmt, ...) _snwprintf_s(buf, count, _TRUNCATE, fmt, __VA_ARGS__)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+// Static inline helpers — no extern "C" needed (header-only, no linkage)
 static inline bool pal_getenv(const pal_char_t* name, pal_char_t* recv, size_t recv_len)
 {
-    return GetEnvironmentVariableW(name, recv, (DWORD)recv_len) > 0;
+    if (recv_len == 0) return false;
+    recv[0] = L'\0';
+    DWORD result = GetEnvironmentVariableW(name, recv, (DWORD)recv_len);
+    // result > 0 on success (chars written, not counting NUL); result >= recv_len means
+    // the buffer was too small (GetEnvironmentVariableW returns required size in that case).
+    return result > 0 && result < (DWORD)recv_len;
 }
 
 static inline int pal_xtoi(const pal_char_t* s) { return _wtoi(s); }

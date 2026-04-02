@@ -340,7 +340,7 @@ static int exe_start(const int argc, const pal_char_t* argv[])
 }
 
 #if defined(_WIN32)
-int __cdecl wmain(const int argc, const pal_char_t* argv[])
+int __cdecl wmain(int argc, pal_char_t* argv[])
 #else
 int main(const int argc, const pal_char_t* argv[])
 #endif

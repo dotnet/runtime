@@ -194,6 +194,12 @@ bool fxr_resolver_try_get_path(
                 {
                     trace_info(_X("Using app-relative location [%s] as runtime location."), resolved_buf);
                     dotnet_root = pal_strdup(resolved_buf);
+                    if (dotnet_root == NULL)
+                    {
+                        free(resolved_buf);
+                        free(app_relative_resolved);
+                        return false;
+                    }
 
                     pal_char_t* fxr_path = NULL;
                     if (utils_file_exists_in_dir_alloc(resolved_buf, LIBFXR_NAME, &fxr_path))

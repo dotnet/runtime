@@ -112,9 +112,10 @@ extern "C" bool pal_get_default_installation_dir(pal_char_t* recv, size_t recv_l
 
 extern "C" const pal_char_t* pal_get_dotnet_self_registered_config_location(pal_char_t* buf, size_t buf_len)
 {
-    // On Windows, the self-registered config location is stored in the registry,
-    // not in a file. Return empty string since the file-based lookup is not applicable.
-    if (buf_len > 0)
-        buf[0] = L'\0';
+    // On Windows, the installation location is stored in the registry under:
+    // HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation
+    // Use HKCU as fallback. Return a descriptive string for error messages.
+    pal_str_printf(buf, buf_len, _X("HKLM\\SOFTWARE\\dotnet\\Setup\\InstalledVersions\\%s\\InstallLocation"),
+        _STRINGIFY(CURRENT_ARCH_NAME));
     return buf;
 }
