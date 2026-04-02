@@ -111,7 +111,9 @@ namespace Microsoft.Extensions.Hosting
         private static void AddSystemdLifetime(IServiceCollection services)
         {
             // SystemdNotifier and SystemdLifetime are Unix-only; IsSystemdLifetime() ensures
-            // we only reach this code on platforms where systemd can run.
+            // we only reach this code when running on Unix and when the environment indicates
+            // systemd-style integration (for example, when NOTIFY_SOCKET is set or the process
+            // is detected as a systemd service).
 #pragma warning disable CA1416 // Validate platform compatibility
             services.AddSingleton<ISystemdNotifier, SystemdNotifier>();
             services.AddSingleton<IHostLifetime, SystemdLifetime>();
