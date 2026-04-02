@@ -1609,10 +1609,11 @@ namespace System.IO.Compression.Tests
                     await DisposeStream(async, rs);
                 }
 
-                // Verify the metadata change was preserved
+                // Verify the metadata change was preserved (compare DateTime only — DOS time format
+                // does not preserve timezone offset)
                 ZipArchiveEntry verifyMiddle = readArchive.GetEntry("entry1.bin");
                 Assert.NotNull(verifyMiddle);
-                Assert.Equal(newTimestamp, verifyMiddle.LastWriteTime);
+                Assert.Equal(newTimestamp.DateTime, verifyMiddle.LastWriteTime.DateTime);
 
                 // Verify the newly added entry
                 ZipArchiveEntry verifyAdded = readArchive.GetEntry("added.bin");
