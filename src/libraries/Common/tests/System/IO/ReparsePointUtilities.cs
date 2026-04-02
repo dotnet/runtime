@@ -253,12 +253,7 @@ public static partial class MountHelper
         if (!r)
         {
             int error = Marshal.GetLastWin32Error();
-            // Silently ignore expected cleanup errors:
-            // - 4390 (ERROR_NOT_A_REPARSE_POINT): directory exists but was never successfully
-            //   made a mount point, or the mount binding was already removed.
-            // - 3 (ERROR_PATH_NOT_FOUND): the mount point path is on a drive that is no longer
-            //   accessible (e.g., the other NTFS drive used in tests was removed).
-            if (error != 4390 && error != 3)
+            if (error != 4390 && error != 3 && error != 2)
                 throw new Exception(string.Format("Win32 error: {0}", error));
             Console.WriteLine(string.Format("Ignoring expected Win32 error {0} while unmounting {1}", error, mountPoint));
         }
