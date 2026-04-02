@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using SourceGenerators;
+using GenericAccessorEntry = (System.Text.Json.SourceGeneration.PropertyGenerationSpec Property, int Index, bool Disambiguate, bool NeedsGetter, bool NeedsSetter);
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -878,7 +879,7 @@ namespace System.Text.Json.SourceGeneration
                 HashSet<string> duplicateMemberNames = GetDuplicateMemberNames(properties);
                 bool needsAccessors = false;
                 bool needsValueTypeSetterDelegate = false;
-                Dictionary<string, List<(PropertyGenerationSpec Property, int Index, bool Disambiguate, bool NeedsGetter, bool NeedsSetter)>>? genericAccessorEntries = null;
+                Dictionary<string, List<GenericAccessorEntry>>? genericAccessorEntries = null;
 
                 for (int i = 0; i < properties.Count; i++)
                 {
@@ -910,7 +911,7 @@ namespace System.Text.Json.SourceGeneration
                             // Collect the accessor and emit the wrapper class after the loop.
                             string key = property.DeclaringType.FullyQualifiedName;
                             genericAccessorEntries ??= new();
-                            if (!genericAccessorEntries.TryGetValue(key, out var entries))
+                            if (!genericAccessorEntries.TryGetValue(key, out List<GenericAccessorEntry>? entries))
                             {
                                 entries = new();
                                 genericAccessorEntries[key] = entries;
@@ -1023,9 +1024,9 @@ namespace System.Text.Json.SourceGeneration
                 {
                     string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
 
-                    foreach (var kvp in genericAccessorEntries)
+                    foreach (KeyValuePair<string, List<GenericAccessorEntry>> kvp in genericAccessorEntries)
                     {
-                        var entries = kvp.Value;
+                        List<GenericAccessorEntry> entries = kvp.Value;
                         PropertyGenerationSpec firstProperty = entries[0].Property;
                         ImmutableEquatableArray<string> typeParams = firstProperty.DeclaringTypeParameterNames!;
                         string openDeclaringTypeFQN = firstProperty.OpenDeclaringTypeFQN!;
@@ -1037,7 +1038,7 @@ namespace System.Text.Json.SourceGeneration
                         writer.WriteLine('{');
                         writer.Indentation++;
 
-                        foreach (var entry in entries)
+                        foreach (GenericAccessorEntry entry in entries)
                         {
                             PropertyGenerationSpec property = entry.Property;
                             int index = entry.Index;

@@ -1127,9 +1127,11 @@ namespace System.Text.Json.SourceGeneration
                     AddPropertyWithConflictResolution(propertySpec, memberInfo, propertyIndex: properties.Count, ref state);
                     properties.Add(propertySpec);
 
-                    // Inaccessible [JsonInclude] properties are temporarily unsupported
-                    // (see https://github.com/dotnet/runtime/issues/124889). These properties are
-                    // silently omitted rather than flagging fast-path as invalid.
+                    // Note: ParsePropertyGenerationSpec intentionally does not mark inaccessible
+                    // [JsonInclude] members as invalid for fast-path generation. Some callers rely
+                    // on that omission to source-generate against experimental APIs without
+                    // introducing new warnings until https://github.com/dotnet/runtime/issues/124889
+                    // is completed.
                 }
 
                 bool PropertyIsOverriddenAndIgnored(IPropertySymbol property, Dictionary<string, ISymbol>? ignoredMembers)
@@ -1382,7 +1384,10 @@ namespace System.Text.Json.SourceGeneration
                     NumberHandling = numberHandling,
                     ObjectCreationHandling = objectCreationHandling,
                     Order = order,
-                    HasJsonInclude = hasJsonInclude && !hasJsonIncludeButIsInaccessible, // TODO: remove inaccessibility check once https://github.com/dotnet/runtime/issues/124889 is complete (tracking: https://github.com/dotnet/runtime/issues/88519)
+                    // TODO: remove the inaccessibility check once https://github.com/dotnet/runtime/issues/124889
+                    // is complete; some callers currently rely on this omission when source-generating
+                    // against experimental APIs (tracking: https://github.com/dotnet/runtime/issues/88519).
+                    HasJsonInclude = hasJsonInclude && !hasJsonIncludeButIsInaccessible,
                     CanUseUnsafeAccessors = _knownSymbols.UnsafeAccessorAttributeType is not null
                         && (memberInfo.ContainingType is not INamedTypeSymbol { IsGenericType: true }
                             || _knownSymbols.SupportsGenericUnsafeAccessors),

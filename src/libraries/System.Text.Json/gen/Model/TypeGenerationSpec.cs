@@ -91,7 +91,8 @@ namespace System.Text.Json.SourceGeneration
 
         /// <summary>
         /// Whether UnsafeAccessors can be used for the constructor.
-        /// False when the declaring type is generic or UnsafeAccessorAttribute is not available.
+        /// This is true for non-generic types on .NET 8+ and for generic types on .NET 9+
+        /// (using a generic wrapper class). False when <c>UnsafeAccessorAttribute</c> is not available.
         /// </summary>
         public required bool CanUseUnsafeAccessorForConstructor { get; init; }
 
