@@ -74,18 +74,20 @@ module without instantiating it to properly parse the ECMA-335 metadata in the W
 
 (**Note**: the wrapper may be versioned independently of the payload.)
 
-Version 1 of webcil adds an additional capability. If data segment 0 is at least 8 bytes
-in size, and the second 4 bytes has a non-zero value when interpreted as a 4 byte little endian
-value, then that second 4 bytes shall be the number of table entries required for the webassembly
-module to be loaded, and the module shall import a table, as well as stackPointer, tableBase, and
-imageBase globals. There shall also be a fillWebcilTable function which will initialilize the table
-with appropriate values. The getWebcilPayload api shall be enhanced to fill in the TableBase field
-of the WebcilHeader.
+Version 1 of Webcil adds an additional capability. If data segment 0 is at least 8 bytes
+in size, and the second 4 bytes has a non-zero value when interpreted as a 4-byte
+little-endian unsigned 32-bit integer, then data segment 0 encodes two little-endian
+u32 values: `payloadSize` (first 4 bytes) and `tableSize` (second 4 bytes). In this case,
+`tableSize` shall be the number of table entries required for the WebAssembly
+module to be loaded, and the module shall import a table, as well as `stackPointer`, `tableBase`, and
+`imageBase` globals. There shall also be a `fillWebcilTable` function which will initialize the table
+with appropriate values. The `getWebcilPayload` API shall be enhanced to fill in the `TableBase` field
+of the `WebcilHeader`.
 
 ``` wat
 (module
-  (data "\0f\00\00\00\01\00\00\00") ;; data segment 0: payload size as a 8 byte's of LE uint32. This specifies a webcilPayload of size 15 bytes with 1 table entry required
-  (data "webcil Payload\cc")  ;; data segment 1: webcil payload
+  (data "\0f\00\00\00\01\00\00\00") ;; data segment 0: two little-endian u32 values (payloadSize, tableSize). This specifies a Webcil payload of size 15 bytes with 1 required table entry
+  (data "webcil Payload\cc")  ;; data segment 1: Webcil payload
   (import "webcil" "memory" (memory (;0;) 1))
   (import "webcil" "stackPointer" (global (;0;) (mut i32)))
   (import "webcil" "imageBase" (global (;1;) i32))
