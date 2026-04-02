@@ -162,7 +162,7 @@ namespace System.Diagnostics
     }
     public partial class EventSourceCreationData
     {
-        public EventSourceCreationData(string source, string logName) { }
+        public EventSourceCreationData(string? source, string logName) { }
         public int CategoryCount { get { throw null; } set { } }
         public string? CategoryResourceFile { get { throw null; } set { } }
         public string LogName { get { throw null; } set { } }
@@ -394,10 +394,10 @@ namespace System.Diagnostics.Eventing.Reader
         public void ClearLog(string logName, string? backupPath) { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public void ExportLog(string path, System.Diagnostics.Eventing.Reader.PathType pathType, string query, string targetFilePath) { }
-        public void ExportLog(string path, System.Diagnostics.Eventing.Reader.PathType pathType, string query, string targetFilePath, bool tolerateQueryErrors) { }
-        public void ExportLogAndMessages(string path, System.Diagnostics.Eventing.Reader.PathType pathType, string query, string targetFilePath) { }
-        public void ExportLogAndMessages(string path, System.Diagnostics.Eventing.Reader.PathType pathType, string query, string targetFilePath, bool tolerateQueryErrors, System.Globalization.CultureInfo targetCultureInfo) { }
+        public void ExportLog(string path, System.Diagnostics.Eventing.Reader.PathType pathType, string? query, string targetFilePath) { }
+        public void ExportLog(string path, System.Diagnostics.Eventing.Reader.PathType pathType, string? query, string targetFilePath, bool tolerateQueryErrors) { }
+        public void ExportLogAndMessages(string path, System.Diagnostics.Eventing.Reader.PathType pathType, string? query, string targetFilePath) { }
+        public void ExportLogAndMessages(string path, System.Diagnostics.Eventing.Reader.PathType pathType, string? query, string targetFilePath, bool tolerateQueryErrors, System.Globalization.CultureInfo? targetCultureInfo) { }
         public System.Diagnostics.Eventing.Reader.EventLogInformation GetLogInformation(string logName, System.Diagnostics.Eventing.Reader.PathType pathType) { throw null; }
         public System.Collections.Generic.IEnumerable<string> GetLogNames() { throw null; }
         public System.Collections.Generic.IEnumerable<string> GetProviderNames() { throw null; }
@@ -418,7 +418,7 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogWatcher : System.IDisposable
     {
         public EventLogWatcher(System.Diagnostics.Eventing.Reader.EventLogQuery eventQuery) { }
-        public EventLogWatcher(System.Diagnostics.Eventing.Reader.EventLogQuery eventQuery, System.Diagnostics.Eventing.Reader.EventBookmark bookmark) { }
+        public EventLogWatcher(System.Diagnostics.Eventing.Reader.EventLogQuery eventQuery, System.Diagnostics.Eventing.Reader.EventBookmark? bookmark) { }
         public EventLogWatcher(System.Diagnostics.Eventing.Reader.EventLogQuery eventQuery, System.Diagnostics.Eventing.Reader.EventBookmark? bookmark, bool readExistingEvents) { }
         public EventLogWatcher(string path) { }
         public bool Enabled { get { throw null; } set { } }
