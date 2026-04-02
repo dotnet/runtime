@@ -1247,7 +1247,7 @@ namespace System.Diagnostics
             ProcessStartInfo startInfo = StartInfo;
             startInfo.ThrowIfInvalid(out bool anyRedirection);
 
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }

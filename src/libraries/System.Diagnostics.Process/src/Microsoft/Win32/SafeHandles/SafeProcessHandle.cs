@@ -98,7 +98,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
             }
 
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }

@@ -12,8 +12,8 @@ namespace System.Diagnostics
         internal static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
         internal static int s_cachedSerializationSwitch;
 
-        internal static bool PlatformDoesNotSupportProcessStartAndKill
-            => (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS();
+        internal static bool PlatformSupportsProcessStartAndKill
+            => !((OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS());
 
         internal static bool PlatformSupportsConsole
             => !(OperatingSystem.IsAndroid() || OperatingSystem.IsMacCatalyst());

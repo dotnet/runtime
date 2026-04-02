@@ -61,7 +61,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private bool SignalCore(PosixSignal signal)
         {
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
