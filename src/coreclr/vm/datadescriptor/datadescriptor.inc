@@ -45,7 +45,9 @@ CDAC_TYPE_FIELD(Thread, /*pointer*/, CachedStackBase, cdac_data<Thread>::CachedS
 CDAC_TYPE_FIELD(Thread, /*pointer*/, CachedStackLimit, cdac_data<Thread>::CachedStackLimit)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, DebuggerFilterContext, cdac_data<Thread>::DebuggerFilterContext)
+#ifdef PROFILING_SUPPORTED
 CDAC_TYPE_FIELD(Thread, /*pointer*/, ProfilerFilterContext, cdac_data<Thread>::ProfilerFilterContext)
+#endif // PROFILING_SUPPORTED
 CDAC_TYPE_FIELD(Thread, GCHandle, GCHandle, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, GCHandle, LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, pointer, LinkNext, cdac_data<Thread>::Link)
@@ -896,10 +898,12 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, /*pointer*/, ILAddress, cdac_data<ILCodeVersi
 CDAC_TYPE_END(ILCodeVersionNode)
 #endif // FEATURE_CODE_VERSIONING
 
+#ifdef PROFILING_SUPPORTED
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, /*uint64*/, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
 CDAC_TYPE_FIELD(ProfControlBlock, /*bool*/, RejitOnAttachEnabled, offsetof(ProfControlBlock, fRejitOnAttachEnabled))
 CDAC_TYPE_END(ProfControlBlock)
+#endif // PROFILING_SUPPORTED
 
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_BEGIN(GCCoverageInfo)
@@ -1450,7 +1454,9 @@ CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_CODE_VERSIONING)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
+#endif // PROFILING_SUPPORTED || FEATURE_CODE_VERSIONING
 CDAC_GLOBAL_POINTER(SyncBlockCache, &SyncBlockCache::s_pSyncBlockCache)
 CDAC_GLOBAL(SyncBlockMaskLockThreadId, uint32, SBLK_MASK_LOCK_THREADID)
 CDAC_GLOBAL(SyncBlockMaskLockRecursionLevel, uint32, SBLK_MASK_LOCK_RECLEVEL)
@@ -1504,7 +1510,9 @@ CDAC_GLOBAL_CONTRACT(Notifications, 1)
 CDAC_GLOBAL_CONTRACT(Object, 1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, 1)
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, 3)
+#ifdef PROFILING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(ReJIT, 1)
+#endif // PROFILING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
 CDAC_GLOBAL_CONTRACT(SHash, 1)
