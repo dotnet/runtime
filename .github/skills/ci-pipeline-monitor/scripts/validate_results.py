@@ -266,13 +266,22 @@ def main():
                 continue
             with open(log_path, encoding="utf-8", errors="replace") as lf:
                 log_content = lf.read()
-            # Parse exit code from log: use "Command exited with N" (final line)
-            # or "exit code N" from the test (not XUnitLogChecker).
-            exit_matches = re.findall(
-                r'(?:exit code |Command exited with )(-?\d+)', log_content
-            )
-            if exit_matches:
-                log_exit = int(exit_matches[-1])  # last match = final exit
+            # Parse exit code from log using the same logic as fetch_helix_logs.py:
+            # collect all exit codes, prefer first non-zero (actual test exit)
+            # over trailing zero from XUnitLogChecker or Helix wrapper cleanup.
+            exit_codes = []
+            for line in log_content.split('\n'):
+                m = re.search(r'exit code[:\s]+(-?\d+)', line, re.IGNORECASE)
+                if m:
+                    exit_codes.append(int(m.group(1)))
+                m2 = re.search(r'_commandExitCode=(\d+)', line)
+                if m2:
+                    exit_codes.append(int(m2.group(1)))
+                m3 = re.search(r'Exit Code:(\d+)', line)
+                if m3:
+                    exit_codes.append(int(m3.group(1)))
+            if exit_codes:
+                log_exit = next((c for c in exit_codes if c != 0), exit_codes[-1])
                 db_exit = r["exit_code"]
                 if db_exit is not None and db_exit != log_exit:
                     exit_mismatches.append(
