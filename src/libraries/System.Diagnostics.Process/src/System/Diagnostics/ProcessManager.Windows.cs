@@ -143,14 +143,13 @@ namespace System.Diagnostics
             return null;
         }
 
-        internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
+        internal static string? GetProcessName(int processId, string machineName, bool isRemoteMachine, ref ProcessInfo? processInfo)
         {
             if (processInfo is not null)
             {
                 return processInfo.ProcessName;
             }
 
-            bool isRemoteMachine = IsRemoteMachine(machineName);
             if (!isRemoteMachine)
             {
                 string? processName = Interop.Kernel32.GetProcessName((uint)processId);

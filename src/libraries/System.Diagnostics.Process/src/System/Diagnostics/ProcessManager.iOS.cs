@@ -31,7 +31,7 @@ namespace System.Diagnostics
             return new ProcessModuleCollection(0);
         }
 
-        internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
+        internal static string? GetProcessName(int processId, string machineName, bool isRemoteMachine, ref ProcessInfo? processInfo)
         {
             throw new PlatformNotSupportedException();
         }

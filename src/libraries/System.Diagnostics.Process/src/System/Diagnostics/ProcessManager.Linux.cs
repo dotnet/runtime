@@ -28,10 +28,10 @@ namespace System.Diagnostics
             }
         }
 
-        internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
+#pragma warning disable IDE0060
+        internal static string? GetProcessName(int processId, string machineName, bool isRemoteMachine, ref ProcessInfo? processInfo)
+#pragma warning restore IDE0060
         {
-            HandleRemoteMachineSupport(machineName);
-
             if (processInfo is not null)
             {
                 return processInfo.ProcessName;

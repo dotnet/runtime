@@ -257,7 +257,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveNonExitedId);
-                string? processName = _processName ??= ProcessManager.GetProcessName(_processId, _machineName, ref _processInfo);
+                string? processName = _processName ??= ProcessManager.GetProcessName(_processId, _machineName, _isRemoteMachine, ref _processInfo);
                 if (processName is null)
                 {
                     ThrowNoProcessInfo();
@@ -1418,7 +1418,7 @@ namespace System.Diagnostics
             {
                 if (Associated)
                 {
-                    string? processName = _processName ??= ProcessManager.GetProcessName(_processId, _machineName, ref _processInfo);
+                    string? processName = _processName ??= ProcessManager.GetProcessName(_processId, _machineName, _isRemoteMachine, ref _processInfo);
                     if (!string.IsNullOrEmpty(processName))
                     {
                         result = $"{result} ({processName})";
