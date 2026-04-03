@@ -497,7 +497,7 @@ namespace System.Diagnostics
 
             foreach (KeyValuePair<int, ProcessInfo> entry in processInfos)
             {
-                if (processNameFilter is null || string.Equals(processNameFilter, entry.Value.ProcessName, StringComparison.OrdinalIgnoreCase))
+                if (processNameFilter is null || processNameFilter.Equals(entry.Value.ProcessName, StringComparison.OrdinalIgnoreCase))
                     builder.Add(entry.Value);
             }
         }
