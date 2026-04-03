@@ -9,7 +9,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// <summary>
     /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/nativeformatreader.h">NativeFormat::NativeArray</a>
     /// </summary>
-    public class NativeArray
+    public class NativeSparseArray
     {
         private const int _blockSize = 16;
 
@@ -18,7 +18,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private uint _nElements;
         private byte _entryIndexSize;
 
-        public NativeArray(NativeReader reader, uint offset)
+        public NativeSparseArray(NativeReader reader, uint offset)
         {
             _reader = reader;
 

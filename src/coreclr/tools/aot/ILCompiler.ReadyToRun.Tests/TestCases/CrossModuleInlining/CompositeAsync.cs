@@ -6,6 +6,15 @@ using System.Threading.Tasks;
 
 public static class CompositeAsyncMain
 {
+    public static int Main()
+    {
+        int sync = CallCompositeSync();
+        if (sync != 99)
+            return 1;
+
+        return 0;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static async Task<int> CallCompositeAsync()
     {

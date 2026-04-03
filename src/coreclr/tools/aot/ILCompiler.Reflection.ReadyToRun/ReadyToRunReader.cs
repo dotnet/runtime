@@ -727,7 +727,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             int debugInfoSectionOffset = GetOffset(debugInfoSection.RelativeVirtualAddress);
 
-            NativeArray debugInfoArray = new NativeArray(ImageReader, (uint)debugInfoSectionOffset);
+            NativeSparseArray debugInfoArray = new NativeSparseArray(ImageReader, (uint)debugInfoSectionOffset);
             for (uint i = 0; i < debugInfoArray.GetCount(); ++i)
             {
                 int offset = 0;
@@ -849,7 +849,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             int assemblyIndex = GetAssemblyIndex(section);
             int methodDefEntryPointsOffset = GetOffset(section.RelativeVirtualAddress);
-            NativeArray methodEntryPoints = new NativeArray(ImageReader, (uint)methodDefEntryPointsOffset);
+            NativeSparseArray methodEntryPoints = new NativeSparseArray(ImageReader, (uint)methodDefEntryPointsOffset);
             uint nMethodEntryPoints = methodEntryPoints.GetCount();
 
             for (uint rid = 1; rid <= nMethodEntryPoints; rid++)
@@ -882,7 +882,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private void ParseMethodDefEntrypointsSectionCustom<TType, TMethod, TGenericContext>(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider, Dictionary<TMethod, ReadyToRunMethod> foundMethods, ReadyToRunSection section, IAssemblyMetadata metadataReader)
         {
             int methodDefEntryPointsOffset = GetOffset(section.RelativeVirtualAddress);
-            NativeArray methodEntryPoints = new NativeArray(ImageReader, (uint)methodDefEntryPointsOffset);
+            NativeSparseArray methodEntryPoints = new NativeSparseArray(ImageReader, (uint)methodDefEntryPointsOffset);
             uint nMethodEntryPoints = methodEntryPoints.GetCount();
 
             for (uint rid = 1; rid <= nMethodEntryPoints; rid++)

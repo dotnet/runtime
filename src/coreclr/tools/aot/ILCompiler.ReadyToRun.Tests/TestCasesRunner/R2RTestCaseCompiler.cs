@@ -57,8 +57,8 @@ internal sealed class R2RTestCaseCompiler
         string assemblyName,
         IEnumerable<string> sources,
         string outputPath,
-        IEnumerable<string>? additionalReferences = null,
-        OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary,
+        OutputKind outputKind,
+        IEnumerable<string> additionalReferences,
         IEnumerable<string>? additionalDefines = null,
         IEnumerable<KeyValuePair<string, string>>? features = null)
     {

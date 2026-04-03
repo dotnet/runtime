@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable xUnit1004 // Test methods should not be skipped — composite+async tests are intentionally deferred
-
 using System.Collections.Generic;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
+using Microsoft.CodeAnalysis;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -411,7 +411,8 @@ public class R2RTestSuites
     /// Composite mode with runtime-async methods in both assemblies.
     /// Validates async variants exist in composite output.
     /// </summary>
-    [Fact(Skip = "Runtime-async methods are not generated in composite mode")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/125337")]
+    [Fact]
     public void CompositeAsync()
     {
         var asyncCompositeLib = new CompiledAssembly
@@ -425,8 +426,11 @@ public class R2RTestSuites
             AssemblyName = "CompositeAsyncMain",
             SourceResourceNames = ["CrossModuleInlining/CompositeAsync.cs"],
             Features = { RuntimeAsyncFeature },
-            References = [asyncCompositeLib]
+            References = [asyncCompositeLib],
+            OutputKind = OutputKind.ConsoleApplication
         };
+
+        var compositeAsyncMainCG2 = new CrossgenAssembly(compositeAsyncMain);
 
         new R2RTestRunner(_output).Run(new R2RTestCase(
             nameof(CompositeAsync),
@@ -434,11 +438,12 @@ public class R2RTestSuites
                 new(nameof(CompositeAsync),
                 [
                     new CrossgenAssembly(asyncCompositeLib),
-                    new CrossgenAssembly(compositeAsyncMain),
+                    compositeAsyncMainCG2
                 ])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
                     Validate = Validate,
+                    Execute = compositeAsyncMainCG2,
                 },
             ]));
 
@@ -456,7 +461,8 @@ public class R2RTestSuites
     /// within a composite image, exercising MutableModule token encoding for
     /// cross-module async continuation layouts.
     /// </summary>
-    [Fact(Skip = "Runtime-async methods are not generated in composite mode")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/125337")]
+    [Fact]
     public void CompositeAsyncCrossModuleInlining()
     {
         var asyncCompositeLib = new CompiledAssembly
@@ -618,7 +624,8 @@ public class R2RTestSuites
     /// Composite + runtime-async + cross-module devirtualization.
     /// Interface defined in AsyncInterfaceLib, call sites in CompositeAsyncDevirtMain.
     /// </summary>
-    [Fact(Skip = "Runtime-async methods are not generated in composite mode")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/125337")]
+    [Fact]
     public void CompositeAsyncDevirtualize()
     {
         var asyncInterfaceLib = new CompiledAssembly
@@ -771,7 +778,8 @@ public class R2RTestSuites
     /// Composite + runtime-async + transitive (3 assemblies).
     /// Full combination of composite, async, and transitive references.
     /// </summary>
-    [Fact(Skip = "Runtime-async methods are not generated in composite mode")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/125337")]
+    [Fact]
     public void CompositeAsyncTransitive()
     {
         var asyncExternalLib = new CompiledAssembly
@@ -829,7 +837,8 @@ public class R2RTestSuites
     /// Step 1: Composite of async libs. Step 2: Non-composite consumer
     /// with cross-module inlining of async methods.
     /// </summary>
-    [Fact(Skip = "Runtime-async methods are not generated in composite mode")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/125337")]
+    [Fact]
     public void MultiStepCompositeAndNonCompositeAsync()
     {
         var asyncCompositeLib = new CompiledAssembly

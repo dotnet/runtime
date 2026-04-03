@@ -23,9 +23,12 @@
     <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
   </ItemGroup>
 
-  <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time -->
+  <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time.
+       Exclude them from Compile so they don't conflict with the test project itself (e.g., Main methods). -->
   <ItemGroup>
     <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Remove="TestCases/CrossModuleInlining/**/*.cs" />
+    <Compile Remove="TestCases/RuntimeAsync/**/*.cs" />
   </ItemGroup>
 
   <!-- Pass build-time paths to test runtime via RuntimeHostConfigurationOption -->
@@ -41,6 +44,9 @@
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRArtifactsDir">
       <Value>$(CoreCLRArtifactsPath)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.TestHostSharedFrameworkDir">
+      <Value>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</Value>
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="R2RTest.TargetArchitecture">
       <Value>$(TargetArchitecture)</Value>

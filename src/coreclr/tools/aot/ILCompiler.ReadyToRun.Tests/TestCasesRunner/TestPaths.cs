@@ -143,6 +143,43 @@ internal static class TestPaths
     public static string TargetTriple => $"{TargetOS.ToLowerInvariant()}-{TargetArchitecture.ToLowerInvariant()}";
 
     /// <summary>
+    /// Path to the testhost shared framework directory containing corerun,
+    /// libcoreclr, all managed framework DLLs, and native shims.
+    /// e.g. artifacts/bin/testhost/net11.0-linux-Release-x64/shared/Microsoft.NETCore.App/11.0.0/
+    /// </summary>
+    public static string TestHostSharedFrameworkDir
+    {
+        get
+        {
+            string dir = GetRequiredConfig("R2RTest.TestHostSharedFrameworkDir");
+            if (!Directory.Exists(dir))
+            {
+                foreach (string fallbackConfig in new[] { "Release", "Debug", "Checked" })
+                {
+                    string fallback = Regex.Replace(
+                        dir, @"-(Debug|Release|Checked)-", $"-{fallbackConfig}-");
+                    if (Directory.Exists(fallback))
+                        return fallback;
+                }
+            }
+
+            return dir;
+        }
+    }
+
+    /// <summary>
+    /// Path to the corerun executable inside the testhost shared framework.
+    /// </summary>
+    public static string CorerunPath
+    {
+        get
+        {
+            string exe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "corerun.exe" : "corerun";
+            return Path.Combine(TestHostSharedFrameworkDir, exe);
+        }
+    }
+
+    /// <summary>
     /// Returns all framework reference assembly paths (*.dll in the runtime pack).
     /// </summary>
     public static IEnumerable<string> GetFrameworkReferencePaths()

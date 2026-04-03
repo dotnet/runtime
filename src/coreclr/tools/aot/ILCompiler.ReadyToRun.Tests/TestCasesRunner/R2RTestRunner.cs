@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using ILCompiler.Reflection.ReadyToRun;
+using Microsoft.CodeAnalysis;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -33,6 +35,8 @@ internal sealed class CompiledAssembly
     /// References to other assemblies that this assembly depends on.
     /// </summary>
     public List<CompiledAssembly> References { get; init; } = new();
+
+    public OutputKind OutputKind {get; init;} = OutputKind.DynamicallyLinkedLibrary;
 
     private string? _outputDir = null;
     public string FilePath => _outputDir != null ? Path.Combine(_outputDir, "IL", AssemblyName + ".dll")
@@ -89,6 +93,14 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     /// </summary>
     public Action<ReadyToRunReader>? Validate { get; init; }
 
+    /// <summary>
+    /// When set, the R2R image is executed with corerun after validation.
+    /// The value is the name of the entry-point assembly (must have been
+    /// compiled as <see cref="OutputKind.ConsoleApplication"/>).
+    /// Exit code 0 = pass; non-zero fails the test.
+    /// </summary>
+    public CrossgenAssembly? Execute { get; init; } = null;
+
     public string Name => name;
 
     public bool IsComposite => Options.Contains(Crossgen2Option.Composite);
@@ -127,6 +139,9 @@ internal sealed class R2RTestCase(string name, List<CrossgenCompilation> compila
     /// </summary>
     public List<CrossgenCompilation> Compilations => compilations;
 
+    /// <summary>
+    /// Returns a list of assemblies to compile with Roslyn, in such an order that dependencies are compiled before the assemblies that depend on them.
+    /// </summary>
     public IEnumerable<CompiledAssembly> GetAssemblies()
     {
         // Should be a small number of assemblies, so a simple list is fine as an insertion-ordered set
@@ -207,6 +222,60 @@ internal sealed class R2RTestRunner
                     var reader = new ReadyToRunReader(new SimpleAssemblyResolver(), outputPath);
                     compilation.Validate(reader);
                 }
+                if (compilation.Execute is not null)
+                {
+                    string exeAssemblyName = compilation.Execute.ILAssembly.AssemblyName;
+                    string cg2Dir = Path.GetDirectoryName(outputPath)!;
+
+                    // Copy dependency IL assemblies next to the R2R exe so corerun can probe them.
+                    foreach (var asm in compilation.Assemblies)
+                    {
+                        if (asm == compilation.Execute)
+                            continue;
+                        string src = asm.ILAssembly.FilePath;
+                        string dest = Path.Combine(cg2Dir, Path.GetFileName(src));
+                        if (File.Exists(src) && !File.Exists(dest))
+                            File.Copy(src, dest);
+                    }
+
+                    string exePath = Path.Combine(cg2Dir, exeAssemblyName + ".dll");
+                    Assert.True(File.Exists(exePath), $"Entry-point assembly not found: {exePath}");
+
+                    // Use corerun from the testhost shared framework dir with CORE_ROOT
+                    // pointing there. It has corerun, libcoreclr, managed framework DLLs,
+                    // and native shims (libSystem.Native, etc.) — all in one directory.
+                    _output.WriteLine($"  Executing R2R image with corerun: {exePath}");
+                    var psi = new ProcessStartInfo(TestPaths.CorerunPath, [exePath])
+                    {
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                    };
+
+                    using var process = Process.Start(psi)!;
+                    var stdoutTask = process.StandardOutput.ReadToEndAsync();
+                    var stderrTask = process.StandardError.ReadToEndAsync();
+
+                    if (!process.WaitForExit(TimeSpan.FromSeconds(30)))
+                    {
+                        try { process.Kill(entireProcessTree: true); }
+                        catch { /* best effort */ }
+                        Assert.Fail($"Execution of '{exeAssemblyName}' timed out after 30 seconds");
+                    }
+
+                    string stdout = stdoutTask.GetAwaiter().GetResult();
+                    string stderr = stderrTask.GetAwaiter().GetResult();
+
+                    if (!string.IsNullOrWhiteSpace(stdout))
+                        _output.WriteLine($"  stdout: {stdout}");
+                    if (!string.IsNullOrWhiteSpace(stderr))
+                        _output.WriteLine($"  stderr: {stderr}");
+
+                    Assert.True(process.ExitCode == 0,
+                        $"Execution of '{exeAssemblyName}' failed (exit code {process.ExitCode}):\n{stderr}");
+                }
+
             }
         }
         finally
@@ -237,6 +306,7 @@ internal sealed class R2RTestRunner
                 asm.AssemblyName,
                 sources,
                 asm.FilePath,
+                asm.OutputKind,
                 additionalReferences: asm.References.Select(r => r.FilePath).ToList(),
                 features: asm.Features.Count > 0 ? asm.Features : null);
             paths[asm.AssemblyName] = ilPath;

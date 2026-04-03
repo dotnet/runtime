@@ -90,6 +90,24 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Asserts that the specified method has an entry in the import sections with a fixup for this method that has a ModuleOverride to the mutable module,
+    /// and method signature that resolves to the specified resolvedEntity
+    /// </summary>
+    public static void MethodHasMutableModuleFixupToken(ReadyToRunReader reader, string methodName, string resolvedEntity)
+    {
+        foreach(var section in reader.ImportSections)
+        {
+            foreach(var entry in section.Entries)
+            {
+            }
+        }
+
+        Assert.Fail($"Method '{methodName}' with mutable module fixup token '{resolvedEntity}' not found.");
+
+    }
+
+
+    /// <summary>
     /// Asserts that the CrossModuleInlineInfo section has an entry for an inlinee matching
     /// <paramref name="inlineeMethodName"/> with cross-module inliners whose resolved names
     /// contain each of the <paramref name="expectedInlinerNames"/>. This validates that

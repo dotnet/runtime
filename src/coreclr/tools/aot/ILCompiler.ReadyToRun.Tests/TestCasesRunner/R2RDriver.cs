@@ -98,13 +98,7 @@ internal sealed class R2RDriver
     /// <summary>
     /// Runs crossgen2 with the given arguments.
     /// </summary>
-    public R2RCompilationResult Compile(List<string> args)
-    {
-        var fullArgs = new List<string>(args);
-        return RunCrossgen2(fullArgs);
-    }
-
-    private R2RCompilationResult RunCrossgen2(List<string> crossgen2Args)
+    public R2RCompilationResult Compile(List<string> crossgen2Args)
     {
         var psi = new ProcessStartInfo(TestPaths.Crossgen2Exe, crossgen2Args)
         {
