@@ -258,7 +258,7 @@ namespace ILCompiler.ObjectWriter
         WasmInstructionGroup GetImageFunctionPointerBaseOffset(int offset)
         {
             return new WasmInstructionGroup([
-                Global.Get(ImageFunctionPointerBaseGlobalIndex),
+                Global.Get(TableBaseGlobalIndex),
                 I32.Const(offset),
                 I32.Add,
             ]);
@@ -305,7 +305,7 @@ namespace ILCompiler.ObjectWriter
         WasmFunctionBody FillWebcilTable(int tableSize) => new WasmFunctionBody(
             new WasmFuncType(new([]), new([])), // (func)
                 [
-                    Global.Get(WasmObjectWriter.ImageFunctionPointerBaseGlobalIndex),
+                    Global.Get(WasmObjectWriter.TableBaseGlobalIndex),
                     I32.Const(0),
                     I32.Const(tableSize),
                     Table.Init(0, 0)
@@ -324,7 +324,7 @@ namespace ILCompiler.ObjectWriter
                     I32.Ge_s,
                     Block.If(WasmBlockType.Empty),
                     Local.Get(0), // (local.get $d)
-                    Global.Get(WasmObjectWriter.ImageFunctionPointerBaseGlobalIndex), // (global.get $tableBase)
+                    Global.Get(WasmObjectWriter.TableBaseGlobalIndex), // (global.get $tableBase)
                     I32.Store((ulong)WebcilEncoder.TableBaseOffset), // i32.store offset=TableBaseOffset
                     Block.End
                 ]
@@ -388,7 +388,7 @@ namespace ILCompiler.ObjectWriter
         /// Assigns VirtualAddresses and related header fields to each webcil section based on the
         /// total section count and each section's stream length. This can be called before all
         /// sections have their final content as long as the section count is finalized, though
-        /// sections whose size changes later must come last they don't invalidate earlier VAs.
+        /// sections whose size changes later must come last so they don't invalidate earlier VAs.
         /// </summary>
         private static void AssignWebcilSectionVirtualAddresses(WebcilSection[] webcilSections)
         {
@@ -450,6 +450,20 @@ namespace ILCompiler.ObjectWriter
                 Debug.Assert(webcilSections[webcilSections.Length - 1].Name.ToString() == "reloc");
             }
             ushort relocSectionIdx = _baseRelocMap.Count > 0 ? checked((ushort)webcilSections.Length) : (ushort)0;
+
+            WebcilHeader header = new WebcilHeader
+            {
+                Id = WebcilConstants.WEBCIL_MAGIC,
+                VersionMajor = WebcilConstants.WC_VERSION_MAJOR,
+                VersionMinor = WebcilConstants.WC_VERSION_MINOR,
+                CoffSections = (ushort)webcilSections.Length,
+                // In Webcil v1.0, Reserved0 is used for the index of the image base reloc section
+                Reserved0 = relocSectionIdx,
+                PeCliHeaderRva = peCliHeaderRva,
+                PeCliHeaderSize = peCliHeaderSize,
+                PeDebugRva = peDebugRva,
+                PeDebugSize = peDebugSize
+            };
 
             return new WebcilSegment(header, webcilSections.ToArray());
         }
@@ -997,13 +1011,13 @@ namespace ILCompiler.ObjectWriter
 
         public const int StackPointerGlobalIndex = 0;
         public const int ImageBaseGlobalIndex = 1;
-        public const int ImageFunctionPointerBaseGlobalIndex = 2;
+        public const int TableBaseGlobalIndex = 2;
 
         private WasmImport[] _defaultGlobalImports = new[]
         {
             new WasmImport("webcil", "stackPointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
             new WasmImport("webcil", "imageBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
-            new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageFunctionPointerBaseGlobalIndex),
+            new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
             new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
         };
 

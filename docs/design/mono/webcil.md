@@ -2,8 +2,8 @@
 
 ## Version
 
-This is version 0.0 of the Webcil payload format.
-This is version 0 of the WebAssembly module Webcil wrapper.
+This described version 0.0, and 1.0 of the Webcil payload format.
+This describes version 0 and 1 of the WebAssembly module Webcil wrapper.
 
 ## Motivation
 
@@ -74,8 +74,9 @@ module without instantiating it to properly parse the ECMA-335 metadata in the W
 
 (**Note**: the wrapper may be versioned independently of the payload.)
 
-Version 1 of Webcil adds an additional capability. If data segment 0 is at least 8 bytes
-in size, and the second 4 bytes has a non-zero value when interpreted as a 4-byte
+#### WebAssembly module Webcil wrapper format version 1
+Version 1 of the WebAssembly module Webcil wrapper adds an additional capability and requirements.
+If data segment 0 is at least 8 bytes in size, and the second 4 bytes has a non-zero value when interpreted as a 4-byte
 little-endian unsigned 32-bit integer, then data segment 0 encodes two little-endian
 u32 values: `payloadSize` (first 4 bytes) and `tableSize` (second 4 bytes). In this case,
 `tableSize` shall be the number of table entries required for the WebAssembly
@@ -83,6 +84,8 @@ module to be loaded, and the module shall import a table, as well as `stackPoint
 `imageBase` globals. There shall also be a `fillWebcilTable` function which will initialize the table
 with appropriate values. The `getWebcilPayload` API shall be enhanced to fill in the `TableBase` field
 of the `WebcilHeader`.
+
+The memory of the WebcilPayload must also be allocated with 16 byte alignment.
 
 ``` wat
 (module
@@ -137,6 +140,10 @@ recopying the memory from the webassembly segment into the memory space.)
 the runtime to put a more complex implementation of the relocations scheme into the code which is part
 of the runtime's wasm code, reducing the volume of code needed in each webcil file.)
 
+(**Rationale**: Requiring an alignment of 16 bytes allows for both efficient memory usage for loading
+images into linear memory, as well as for allowing for efficient storage of 128 bit vector constants
+within the binary.)
+
 ### Webcil payload
 
 The webcil payload contains the ECMA-335 metadata, IL and resources comprising a .NET assembly.
@@ -179,7 +186,7 @@ struct WebcilHeader {
     uint16_t VersionMinor; // 0
     // 8 bytes
     uint16_t CoffSections;
-    uint16_t Reserved0; // 0
+    uint16_t Reserved0; // 0 OR WebCilSection of relocation table
     // 12 bytes
 
     uint32_t PeCliHeaderRva;
@@ -192,21 +199,21 @@ struct WebcilHeader {
 };
 ```
 
-#### Webcil Header (V1 Changes)
-For Webcil V1, the Reserved0 field may be used to store a 1-based index which corresponds to a
-base reloc section.
-```
-    uint16_t Reserved0; // 0, or 1-based index of .reloc webcil section
-```
-
 The Webcil header starts with the magic characters 'W' 'b' 'I' 'L' followed by the version in major
 minor format (must be 0 and 0).  Then a count of the section headers and two reserved bytes.
 
 The next pairs of integers are a subset of the PE Header data directory specifying the RVA and size
 of the CLI header, as well as the directory entry for the PE debug directory.
 
-If VersionMajor is 1, then the header structure has an additional `uint32_t` field called TableBase
-which is filled in with the value of the tableBase global value during execution of `getWebcilPayload`.
+#### Webcil Header (V1.0 Changes)
+For Webcil V1, the Reserved0 field may be used to store a 1-based index which corresponds to a
+base reloc section.
+```
+    uint16_t Reserved0; // 0, or 1-based index of .reloc webcil section
+```
+
+The header structure has an additional `uint32_t` field called TableBase which is filled in with the
+value of the tableBase global value during execution of `getWebcilPayload`.
 
 #### Section header table
 
@@ -255,18 +262,36 @@ Lossless conversion from Webcil back to PE is not intended to be supported.  The
 documented in order to support diagnostic tooling and utilities such as decompilers, disassemblers,
 file identification utilities, dependency analyzers, etc.
 
+### Special sections
 
-### Webcil V1 (Base Relocations)
+#### Webcil V1 (Base Relocations)
 It is possible to specify base relocations in the standard PE base relocation format in Webcil V1.
-Relocations are grouped by page (default 4kb), and each relocation entry is a `uint16_t` containing:
-
-- Relocation Type (upper 4 bits)
-  - IMAGE_REL_BASED_DIR64 (wasm64)
-  - IMAGE_REL_BASED_HIGHLOW (wasm32)
-  - IMAGE_REL_BASED_WASM32_TABLE (wasm32)
-  - IMAGE_REL_BASED_WASM64_TABLE (wasm64)
-- Offset (lower 12 bits)
+Valid relocation types
+| Relocation type | Value | Supported Wasm bitness | Purpose |
+| --- | --- | --- | --- |
+| IMAGE_REL_BASED_DIR64 | 10 | 64 bit only | Representing a pointer value of the loaded image in a 64 bit WebAssembly Memory |
+| IMAGE_REL_BASED_HIGHLOW | 3 | 32 bit only | Representing a pointer value of the loaded image in a 32 bit WebAssembly Memory |
+| IMAGE_REL_BASED_WASM32_TABLE | 12 | All | Representing a "function pointer" for 32 bits, and the minimal size for a function pointer on 64 bit webassembly (table sizes are limited to 32bits of entries even on 64 bit WebAssembly scenarios) |
+| IMAGE_REL_BASED_WASM64_TABLE | 13 | All | Representing a "function pointer" for 64 bits scenarios, but available on 32bit platform since its not impractical to implement. |
+| IMAGE_REL_BASED_ABSOLUTE | 0 | All | Used to put padding into the relocation block. |
 
 `IMAGE_REL_BASED_WASM{32, 64}_TABLE` relocations represent a "table base offset" fixup; They should be used to indicate places
 where function pointer table indices need to be offset after the Webcil payload has been loaded by the runtime. The offset will
 be dependent on the state of the table when an implementation's loader loads a Webcil module.
+
+The phyical layout of the section will be series of blocks. Each block must be is 4 byte aligned
+
+``` c
+struct IMAGE_BASE_RELOCATION {
+    uint32_t VirtualAddress;;
+    uint32_t SizeOfBlock;
+};
+```
+
+| Field name | Meaning |
+| --- | --- |
+| `VirtualAddress` | RVA into the loaded webcil image |
+| `SizeOfBlock` | Size of the block. This includes the size of the `IMAGE_BASE_RELOCATION` structure. |
+
+Each 2 byte word following `IMAGE_BASE_RELOCATION` is decoded as a `uint16_t` where then lower 12 bits
+indicate an offset from the `VirtualAddress` of the block, and the high 4 bits represents the relocation type.

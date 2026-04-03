@@ -72,7 +72,6 @@ void WebcilDecoder::Init(void *flatBase, COUNT_T size)
     else
     {
         m_sections = (const WebcilSectionHeader *)(((uint8_t*)flatBase) + (m_pHeader->VersionMajor >= 1 ? sizeof(WebcilHeader_1) : sizeof(WebcilHeader)));
-
     }
     m_pCorHeader = NULL;
     m_relocated = FALSE;
@@ -338,6 +337,9 @@ BOOL WebcilDecoder::HasCorHeader() const
     }
     CONTRACTL_END;
 
+    if (m_pCorHeader != NULL)
+        return TRUE;
+
     if (!HasWebcilHeaders())
         return FALSE;
 
@@ -402,6 +404,9 @@ IMAGE_COR20_HEADER *WebcilDecoder::GetCorHeader() const
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
+
+    if (m_pCorHeader != NULL)
+        RETURN m_pCorHeader;
 
     FindCorHeader();
     RETURN m_pCorHeader;
