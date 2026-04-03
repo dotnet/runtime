@@ -2656,8 +2656,8 @@ BOOL MethodDesc::MayHaveNativeCode()
         break;
     case mcFCall:           // FCalls do not have real native code.
         return FALSE;
-    case mcPInvoke:         // PInvoke never have native code (note that the PInvoke method
-        return FALSE;       //  does not appear as having a native code even for stubs as IL)
+    case mcPInvoke:         // Non vararg P/Invokes are treated as IL-backed. Vararg P/Invokes go through a stub.
+        return !IsVarArg();
     case mcEEImpl:          // Runtime provided implementation. No native code.
         return FALSE;
     case mcArray:           // Runtime provided implementation. No native code.
@@ -3082,7 +3082,10 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         !IsJitOptimizationLevelRequested() &&
 
         // Tiering the async thunk methods doesn't make sense
-        !IsAsyncThunkMethod()
+        !IsAsyncThunkMethod() &&
+
+        // Tiering P/Invoke methods doesn't make sense
+        !IsPInvoke()
         )
     {
         InterlockedUpdateFlags3(enum_flag3_IsEligibleForTieredCompilation, TRUE);
@@ -3657,7 +3660,12 @@ void PInvokeMethodDesc::EnsureStackArgumentSize()
         if (MarshalingRequired())
         {
             // Generating interop stub sets the stack size as side-effect in all cases
-            GetStubForInteropMethod(this, PINVOKESTUB_FL_FOR_NUMPARAMBYTES);
+            PInvokeStaticSigInfo sigInfo;
+            PInvoke::InitializeSigInfoAndPopulatePInvokeMethodDesc(pNMD, &sigInfo);
+            PInvoke::CreateCLRToNativeILStub(
+                &sigInfo,
+                dwStubFlags,
+                pNMD);
         }
     }
 }

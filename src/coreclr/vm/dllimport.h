@@ -113,6 +113,10 @@ public:
         _In_opt_ SigTypeContext* pTypeContext = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
 
+#ifdef TARGET_X86
+    static void CalculateStackArgumentSize(PInvokeMethodDesc* pMD);
+#endif
+
     static void PopulatePInvokeMethodDesc(_Inout_ PInvokeMethodDesc* pNMD);
     static void InitializeSigInfoAndPopulatePInvokeMethodDesc(_Inout_ PInvokeMethodDesc* pNMD, _Inout_ PInvokeStaticSigInfo* pSigInfo);
 
@@ -145,6 +149,8 @@ public:
 
     static PCODE            GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
+
+    static void ResolvePInvokeTarget(PInvokeMethodDesc* pNMD);
 
 private:
     PInvoke() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
@@ -183,9 +189,7 @@ enum PInvokeStubFlags
     // unused                               = 0x00200000,
     // unused                               = 0x00400000,
     // unused                               = 0x00800000,
-
-    // internal flags -- these won't ever show up in an PInvokeStubHashBlob
-    PINVOKESTUB_FL_FOR_NUMPARAMBYTES        = 0x10000000,   // do just enough to return the right value from Marshal.NumParamBytes
+    // unused                               = 0x10000000,
 
 #ifdef FEATURE_COMINTEROP
     PINVOKESTUB_FL_COMLATEBOUND             = 0x20000000,   // we use a generic stub for late bound calls
@@ -224,7 +228,6 @@ inline bool SF_IsHRESULTSwapping       (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsReverseStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_REVERSE_INTEROP)); }
 inline bool SF_IsDebuggableStub        (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_GENERATEDEBUGGABLEIL)); }
 inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_UNMANAGED_CALLI)); }
-inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_FOR_NUMPARAMBYTES)); }
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_STRUCT_MARSHAL)); }
 inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_CHECK_PENDING_EXCEPTION)); }
 inline bool SF_IsSharedStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_SHARED_STUB)); }

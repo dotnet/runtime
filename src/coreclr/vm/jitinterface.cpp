@@ -7732,7 +7732,7 @@ CEEInfo::getMethodInfo(
         getMethodInfoWorker(ftn, &header, methInfo, context);
         result = true;
     }
-    else if (ftn->IsIL() || ftn->IsDynamicMethod())
+    else if (ftn->IsIL() || ftn->IsPInvoke() || ftn->IsDynamicMethod())
     {
         // IL methods with no IL header indicate there is no implementation defined in metadata.
         getMethodInfoWorker(ftn, NULL, methInfo, context);

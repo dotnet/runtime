@@ -808,16 +808,16 @@ public:
             ConvertMethodDescSigToModuleIndependentSig(pStubMD);
         }
 
-        pResolver->SetStubTargetMethodSig(
-            GetStubTargetMethodSig(),
-            GetStubTargetMethodSigLength());
-
         if (hasTryCatchExceptionHandler)
         {
             EmitExceptionHandler(&nativeReturnType, &managedReturnType);
         }
 
         COR_ILMETHOD_DECODER* pILHeader = pResolver->FinalizeILStub(&m_slIL, jitFlags);
+
+        pResolver->SetStubTargetMethodSig(
+            GetStubTargetMethodSig(),
+            GetStubTargetMethodSigLength());
 
         // Extract resolved EH clause info for logging and ETW
         ILStubEHClause cleanupTryFinally{};
@@ -1181,7 +1181,7 @@ protected:
     DWORD               m_dwStubFlags;
 };
 
-class PInvoke_ILStubState : public ILStubState
+class PInvoke_ILStubState final : public ILStubState
 {
 public:
 
@@ -1256,6 +1256,58 @@ private:
             return FALSE;
 
         return TRUE;
+    }
+};
+
+// A stub state that doeson't actually generate IL but provides enough implementation
+// that we can use CreatePInvokeStubWorker to compute the argument stack size for a PInvoke call.
+class PInvoke_StackArgumentSize_ILStubState final : public ILStubState
+{
+public:
+    PInvoke_StackArgumentSize_ILStubState(Module* pStubModule, const Signature &signature, SigTypeContext *pTypeContext, DWORD dwStubFlags,
+                                            CorInfoCallConvExtension unmgdCallConv, int iLCIDParamIdx, MethodDesc* pTargetMD)
+        : ILStubState(
+                pStubModule,
+                signature,
+                pTypeContext,
+                dwStubFlags,
+                iLCIDParamIdx,
+                pTargetMD)
+    {
+        STANDARD_VM_CONTRACT;
+        m_slIL.SetCallingConvention(unmgdCallConv, SF_IsVarArgStub(dwStubFlags));
+    }
+
+    void BeginEmit(DWORD dwStubFlags)  // PInvoke with argument stack size computation IL
+    {
+        STANDARD_VM_CONTRACT;
+    }
+
+    void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD)
+    {
+        STANDARD_VM_CONTRACT;
+    }
+
+    void MarshalReturn(MarshalInfo* pInfo, int argOffset)
+    {
+        STANDARD_VM_CONTRACT;
+    }
+
+    void MarshalArgument(MarshalInfo* pInfo, int argOffset)
+    {
+        STANDARD_VM_CONTRACT;
+    }
+
+    void MarshalLCID(int argIdx)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    COR_ILMETHOD_DECODER* FinishEmit(MethodDesc* pStubMD, ILStubResolver* pResolver)
+    {
+        STANDARD_VM_CONTRACT;
+
+        return nullptr;
     }
 };
 
@@ -3922,8 +3974,22 @@ static COR_ILMETHOD_DECODER* CreatePInvokeStubWorker(
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
         if (fStubNeedsCOM)
             pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
-#endif
+#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
     }
+#ifdef TARGET_X86
+    else if (pMD->IsPInvoke())
+    {
+        PInvokeMethodDesc *pNMD = (PInvokeMethodDesc *)pMD;
+        pNMD->SetStackArgumentSize(static_cast<WORD>(nativeStackSize), unmgdCallConv);
+    }
+#ifdef FEATURE_COMINTEROP
+    else if (pMD->IsCLRToCOMCall())
+    {
+        CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)pMD;
+        pCMD->SetStackArgumentSize(static_cast<WORD>(nativeStackSize));
+    }
+#endif // FEATURE_COMINTEROP
+#endif // TARGET_X86
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
     // has been set in the stub MD (code:DynamicMethodDesc.SetNativeStackArgSize)
@@ -4085,43 +4151,6 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
     *methodILDecoder = ilResolver->FinalizeILStub(&slIL);
     *resolver = ilResolver.Extract();
     return true;
-}
-
-COR_ILMETHOD_DECODER* PInvoke::CreatePInvokeMethodIL(PInvokeMethodDesc* pMD, DynamicResolver** ppResolver)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(pMD != nullptr);
-
-    PInvokeStaticSigInfo sigInfo;
-    PInvoke::InitializeSigInfoAndPopulatePInvokeMethodDesc(pMD, &sigInfo);
-
-    StubSigDesc sigDesc(pMD, sigInfo.GetSignature(), sigInfo.GetModule());
-
-    DWORD       dwStubFlags = sigInfo.GetStubFlags();
-    int         iLCIDArg = 0;
-    int         numArgs = 0;
-    int         numParamTokens = 0;
-    mdParamDef* pParamTokenArray = NULL;
-
-    CreatePInvokeStubAccessMetadata(&sigDesc,
-                                    sigInfo.GetCallConv(),
-                                    &dwStubFlags,
-                                    &iLCIDArg,
-                                    &numArgs);
-
-    Module *pModule = sigDesc.m_pModule;
-    numParamTokens = numArgs + 1;
-    pParamTokenArray = (mdParamDef*)_alloca(numParamTokens * sizeof(mdParamDef));
-    CollateParamTokens(pModule->GetMDImport(), sigDesc.m_tkMethodDef, numArgs, pParamTokenArray);
-
-    MethodDesc *pMD = sigDesc.m_pMD;
-
-    NewHolder<ILStubState> pStubState = new PInvoke_ILStubState(pModule, sigDesc.m_sig, &sigDesc.m_typeContext, dwStubFlags, sigInfo.GetCallConv(), iLCIDArg, pMD);
-    NewHolder<ILStubResolver> pResolver = new ILStubResolver();
-    pResolver->SetStubMethodDesc(pMD);
-
-    return CreatePInvokeStubWorker(pStubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), dwStubFlags, pMD, pParamTokenArray, iLCIDArg);
 }
 
 static void CreateLayoutClassStub(MethodTable* pMT,
@@ -4660,6 +4689,83 @@ void PInvoke::InitializeSigInfoAndPopulatePInvokeMethodDesc(_Inout_ PInvokeMetho
 
     PopulatePInvokeMethodDescImpl(pNMD, *pSigInfo, szLibName, szEntryPointName);
 }
+
+
+COR_ILMETHOD_DECODER* PInvoke::CreatePInvokeMethodIL(PInvokeMethodDesc* pMD, DynamicResolver** ppResolver)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pMD != nullptr);
+
+    PInvokeStaticSigInfo sigInfo;
+    PInvoke::InitializeSigInfoAndPopulatePInvokeMethodDesc(pMD, &sigInfo);
+
+    StubSigDesc sigDesc(pMD, sigInfo.GetSignature(), sigInfo.GetModule());
+
+    DWORD       dwStubFlags = sigInfo.GetStubFlags();
+    int         iLCIDArg = 0;
+    int         numArgs = 0;
+    int         numParamTokens = 0;
+    mdParamDef* pParamTokenArray = NULL;
+
+    CreatePInvokeStubAccessMetadata(&sigDesc,
+                                    sigInfo.GetCallConv(),
+                                    &dwStubFlags,
+                                    &iLCIDArg,
+                                    &numArgs);
+
+    Module *pModule = sigDesc.m_pModule;
+    numParamTokens = numArgs + 1;
+    pParamTokenArray = (mdParamDef*)_alloca(numParamTokens * sizeof(mdParamDef));
+    CollateParamTokens(pModule->GetMDImport(), sigDesc.m_tkMethodDef, numArgs, pParamTokenArray);
+
+    PInvoke_ILStubState stubState(pModule, sigDesc.m_sig, &sigDesc.m_typeContext, dwStubFlags, sigInfo.GetCallConv(), iLCIDArg, pMD);
+    NewHolder<ILStubResolver> pResolver = new ILStubResolver();
+    pResolver->SetStubMethodDesc(pMD);
+
+    COR_ILMETHOD_DECODER* pIL = CreatePInvokeStubWorker(&stubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), dwStubFlags, pMD, pParamTokenArray, iLCIDArg);
+    *ppResolver = pResolver.Extract();
+    return pIL;
+}
+
+#ifdef TARGET_X86
+void PInvoke::CalculateStackArgumentSize(PInvokeMethodDesc* pMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pMD != nullptr);
+
+    PInvokeStaticSigInfo sigInfo;
+    PInvoke::InitializeSigInfoAndPopulatePInvokeMethodDesc(pMD, &sigInfo);
+
+    _ASSERTE(sigInfo.GetCallConv() == CorInfoCallConvExtension::Stdcall);
+
+    StubSigDesc sigDesc(pMD, sigInfo.GetSignature(), sigInfo.GetModule());
+
+    DWORD       dwStubFlags = sigInfo.GetStubFlags();
+    int         iLCIDArg = 0;
+    int         numArgs = 0;
+    int         numParamTokens = 0;
+    mdParamDef* pParamTokenArray = NULL;
+
+    CreatePInvokeStubAccessMetadata(&sigDesc,
+                                    sigInfo.GetCallConv(),
+                                    &dwStubFlags,
+                                    &iLCIDArg,
+                                    &numArgs);
+
+    Module *pModule = sigDesc.m_pModule;
+    numParamTokens = numArgs + 1;
+    pParamTokenArray = (mdParamDef*)_alloca(numParamTokens * sizeof(mdParamDef));
+    CollateParamTokens(pModule->GetMDImport(), sigDesc.m_tkMethodDef, numArgs, pParamTokenArray);
+
+    PInvoke_StackArgumentSize_ILStubState stubState(pModule, sigDesc.m_sig, &sigDesc.m_typeContext, dwStubFlags, sigInfo.GetCallConv(), iLCIDArg, pMD);
+    NewHolder<ILStubResolver> pResolver = new ILStubResolver();
+    pResolver->SetStubMethodDesc(pMD);
+
+    CreatePInvokeStubWorker(&stubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), dwStubFlags, pMD, pParamTokenArray, iLCIDArg);
+}
+#endif // TARGET_X86
 
 #ifdef FEATURE_COMINTEROP
 // Find the MethodDesc of the predefined IL stub method by either
@@ -5579,28 +5685,6 @@ MethodDesc* PInvoke::CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
 
 namespace
 {
-    MethodDesc* GetILStubMethodDesc(PInvokeMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags)
-    {
-        CONTRACTL
-        {
-            STANDARD_VM_CHECK;
-            PRECONDITION(pNMD != NULL);
-        }
-        CONTRACTL_END;
-
-        MethodDesc* pStubMD = NULL;
-
-        if (!pNMD->IsVarArgs() || SF_IsForNumParamBytes(dwStubFlags))
-        {
-            pStubMD = PInvoke::CreateCLRToNativeILStub(
-                pSigInfo,
-                dwStubFlags & ~PINVOKESTUB_FL_FOR_NUMPARAMBYTES,
-                pNMD);
-        }
-
-        return pStubMD;
-    }
-
     LPVOID PInvokeGetEntryPoint(PInvokeMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod)
     {
         // GetProcAddress cannot be called while preemptive GC is disabled.
@@ -5710,14 +5794,6 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
 {
     STANDARD_VM_CONTRACT;
 
-    if (SF_IsForNumParamBytes(dwStubFlags))
-    {
-        PInvokeStaticSigInfo sigInfo;
-        PInvoke::InitializeSigInfoAndPopulatePInvokeMethodDesc(pNMD, &sigInfo);
-        GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
-        return (PCODE)NULL;
-    }
-
     CONSISTENCY_CHECK(pNMD->IsVarArgs());
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
@@ -5728,6 +5804,28 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
     (void)pNMD->GetOrCreatePrecode();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+    ResolvePInvokeTarget(pNMD);
+
+    //
+    // varargs goes through vararg PInvoke stub
+    //
+    return TheVarargPInvokeStub(pNMD->HasRetBuffArg());
+}
+
+void PInvoke::ResolvePInvokeTarget(PInvokeMethodDesc* pNMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+
+        PRECONDITION(CheckPointer(pNMD));
+    }
+    CONTRACTL_END;
+
+    PopulatePInvokeMethodDesc(pNMD);
+
     if (pNMD->IsEarlyBound())
     {
         pNMD->InitEarlyBoundPInvokeTarget();
@@ -5736,11 +5834,6 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
     {
         PInvokeLink(pNMD);
     }
-
-    //
-    // varargs goes through vararg PInvoke stub
-    //
-    return TheVarargPInvokeStub(pNMD->HasRetBuffArg());
 }
 
 PCODE JitILStub(MethodDesc* pStubMD)
@@ -5817,6 +5910,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
     if (pMD->IsPInvoke())
     {
         PInvokeMethodDesc* pNMD = (PInvokeMethodDesc*)pMD;
+        CONSISTENCY_CHECK(pNMD->IsVarArgs()); // Non-varargs shouldn't be using stubs.
         pStub = PInvoke::GetStubForILStub(pNMD, &pStubMD, dwStubFlags);
     }
 #ifdef FEATURE_COMINTEROP

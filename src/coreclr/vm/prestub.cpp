@@ -311,7 +311,7 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
 
     // If other kinds of code need multi-versioning we could add more cases here,
     // but for now generation of all other code/stubs occurs in other code paths
-    _ASSERTE(IsIL() || IsNoMetadata());
+    _ASSERTE(IsIL() || IsNoMetadata() || IsPInvoke());
     PCODE pCode = PrepareILBasedCode(pConfig);
 
 #if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
@@ -375,7 +375,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 
     if (pConfig->MayUsePrecompiledCode() && (!IsPInvoke() || MayUsePrecompiledILStub()))
     {
-        _ASSERTE(!IsPInvoke() || GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs());
+        _ASSERTE(!IsPInvoke() || (!GetModule()->IsReadyToRun() || GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs()));
         if (pCode == (PCODE)NULL)
         {
             pCode = GetPrecompiledCode(pConfig, shouldTier);
@@ -725,7 +725,7 @@ namespace
             return pResolver->GetILHeader();
         }
 
-        _ASSERTE(pMD->IsNoMetadata());
+        _ASSERTE(pMD->IsNoMetadata() || pMD->IsPInvoke());
         return NULL;
     }
 }
@@ -2298,51 +2298,13 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
         if (IsPInvoke())
         {
-            PInvokeMethodDesc* pNMD = static_cast<PInvokeMethodDesc*>(this);
-            if (pNMD->IsEarlyBound())
-            {
-                pNMD->InitEarlyBoundPInvokeTarget();
-            }
-            else
-            {
-                PInvokeLink(pNMD);
-            }
+            PInvoke::ResolvePInvokeTarget(static_cast<PInvokeMethodDesc*>(this));
         }
     } // end else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()))
     else if (IsPInvoke())
     {
         _ASSERTE(static_cast<PInvokeMethodDesc*>(this)->IsVarArgs());
-        if (pCode == (PCODE)NULL)
-        {
-            pCode = GetStubForInteropMethod(this);
-
-#ifdef FEATURE_INTERPRETER
-            // Store the IL stub interpreter data on the P/Invoke MethodDesc so the
-            // interpreter can run the IL stub as a child frame with a single native
-            // transition. On WASM this is done for all P/Invokes; on ARM64 Apple it
-            // is needed specifically for Swift to avoid a stale SwiftError (x21).
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-            void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
-            _ASSERTE(ilStubInterpData != NULL);
-            SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
-#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
-            {
-                CorInfoCallConvExtension callConv;
-                PInvoke::GetCallingConvention_IgnoreErrors(this, &callConv, nullptr);
-                if (callConv == CorInfoCallConvExtension::Swift)
-                {
-                    TADDR ilStubInterpCode = GetInterpreterCodeFromInterpreterPrecodeIfPresent(pCode);
-                    if (ilStubInterpCode != (TADDR)pCode)
-                    {
-                        SetInterpreterCode(dac_cast<InterpByteCodeStart*>(ilStubInterpCode));
-                    }
-                }
-            }
-#endif // TARGET_APPLE && TARGET_ARM64
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
-#endif // FEATURE_INTERPRETER
-        }
+        pCode = GetStubForInteropMethod(this);
     }
     else if (IsFCall())
     {
