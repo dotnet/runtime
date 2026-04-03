@@ -1147,6 +1147,14 @@ public:
     operator Type() const { STATIC_CONTRACT_LEAF; return m_value; }
     Type* operator&() { STATIC_CONTRACT_LEAF; _ASSERTE(m_value == T::Default()); return &m_value; }
 
+    template <typename U = Type, typename = std::enable_if_t<std::is_pointer<U>::value>>
+    U operator->() const
+    {
+        STATIC_CONTRACT_LEAF;
+        _ASSERTE(m_value != NULL);
+        return m_value;
+    }
+
     void Free()
     {
         STATIC_CONTRACT_WRAPPER;
