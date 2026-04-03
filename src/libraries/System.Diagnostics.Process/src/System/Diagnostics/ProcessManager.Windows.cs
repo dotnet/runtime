@@ -21,7 +21,8 @@ namespace System.Diagnostics
         // Allows PerformanceCounterLib (and its dependencies) to be trimmed when remote machine
         // support is not used. s_getRemoteProcessInfos is only assigned in HandleRemoteMachineSupport,
         // which is only called from public APIs that accept a remote machine name.
-        private static Func<string, ProcessInfo[]>? s_getRemoteProcessInfos;
+        private delegate void GetRemoteProcessInfosDelegate(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter, string machineName);
+        private static GetRemoteProcessInfosDelegate? s_getRemoteProcessInfos;
 
         /// <summary>
         /// Initializes remote machine support if necessary. This method should be called in all public
@@ -108,14 +109,7 @@ namespace System.Diagnostics
                 return;
             }
 
-            ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName);
-            foreach (ProcessInfo pi in processInfos)
-            {
-                if (string.IsNullOrEmpty(processNameFilter) || string.Equals(processNameFilter, pi.ProcessName, StringComparison.OrdinalIgnoreCase))
-                {
-                    builder.Add(pi);
-                }
-            }
+            s_getRemoteProcessInfos!(ref builder, processNameFilter, machineName);
         }
 
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
@@ -128,13 +122,12 @@ namespace System.Diagnostics
             if (isRemoteMachine)
             {
                 // remote case: we take the hit of looping through all results
-                ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName);
-                foreach (ProcessInfo processInfo in processInfos)
+                ArrayBuilder<ProcessInfo> builder = default;
+                s_getRemoteProcessInfos!(ref builder, processNameFilter: null, machineName);
+                for (int i = 0; i < builder.Count; i++)
                 {
-                    if (processInfo.ProcessId == processId)
-                    {
-                        return processInfo;
-                    }
+                    if (builder[i].ProcessId == processId)
+                        return builder[i];
                 }
             }
             else
@@ -160,13 +153,12 @@ namespace System.Diagnostics
             if (isRemoteMachine)
             {
                 // remote case: we take the hit of looping through all results
-                ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName);
-                foreach (ProcessInfo processInfo in processInfos)
+                ArrayBuilder<ProcessInfo> builder = default;
+                s_getRemoteProcessInfos!(ref builder, processNameFilter: null, machineName);
+                for (int i = 0; i < builder.Count; i++)
                 {
-                    if (processInfo.ProcessId == processId)
-                    {
-                        return processInfo.ProcessName;
-                    }
+                    if (builder[i].ProcessId == processId)
+                        return builder[i].ProcessName;
                 }
             }
             else
@@ -198,10 +190,11 @@ namespace System.Diagnostics
                 return GetProcessIds();
             }
 
-            ProcessInfo[] infos = s_getRemoteProcessInfos!(machineName);
-            int[] ids = new int[infos.Length];
-            for (int i = 0; i < infos.Length; i++)
-                ids[i] = infos[i].ProcessId;
+            ArrayBuilder<ProcessInfo> builder = default;
+            s_getRemoteProcessInfos!(ref builder, processNameFilter: null, machineName);
+            int[] ids = new int[builder.Count];
+            for (int i = 0; i < ids.Length; i++)
+                ids[i] = builder[i].ProcessId;
             return ids;
         }
 
@@ -480,32 +473,32 @@ namespace System.Diagnostics
             return modules.Count == 0 ? null : modules[0];
         }
 
-        public static ProcessInfo[] GetProcessInfos(string machineName)
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter, string machineName)
         {
+            PerformanceCounterLib library;
             try
             {
                 // We don't want to call library.Close() here because that would cause us to unload all of the perflibs.
                 // On the next call to GetProcessInfos, we'd have to load them all up again, which is SLOW!
-                PerformanceCounterLib library = PerformanceCounterLib.GetPerformanceCounterLib(machineName, new CultureInfo("en"));
-                return GetProcessInfos(library);
+                library = PerformanceCounterLib.GetPerformanceCounterLib(machineName, new CultureInfo("en"));
             }
             catch (Exception e)
             {
                 throw new InvalidOperationException(SR.CouldntConnectToRemoteMachine, e);
             }
+            GetProcessInfos(library, ref builder, processNameFilter);
         }
 
-        private static ProcessInfo[] GetProcessInfos(PerformanceCounterLib library)
+        private static void GetProcessInfos(PerformanceCounterLib library, ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
         {
-            ProcessInfo[] processInfos;
-
             int retryCount = 5;
+            int totalProcessCount;
             do
             {
                 try
                 {
                     byte[]? dataPtr = library.GetPerformanceData(PerfCounterQueryString);
-                    processInfos = GetProcessInfos(library, ProcessPerfCounterId, ThreadPerfCounterId, dataPtr);
+                    totalProcessCount = GetProcessInfos(library, ProcessPerfCounterId, ThreadPerfCounterId, dataPtr, ref builder, processNameFilter);
                 }
                 catch (Exception e)
                 {
@@ -514,15 +507,13 @@ namespace System.Diagnostics
 
                 --retryCount;
             }
-            while (processInfos.Length == 0 && retryCount != 0);
+            while (totalProcessCount == 0 && retryCount != 0);
 
-            if (processInfos.Length == 0)
+            if (totalProcessCount == 0)
                 throw new InvalidOperationException(SR.ProcessDisabled);
-
-            return processInfos;
         }
 
-        private static ProcessInfo[] GetProcessInfos(PerformanceCounterLib library, int processIndex, int threadIndex, ReadOnlySpan<byte> data)
+        private static int GetProcessInfos(PerformanceCounterLib library, int processIndex, int threadIndex, ReadOnlySpan<byte> data, ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
         {
             Dictionary<int, ProcessInfo> processInfos = new Dictionary<int, ProcessInfo>();
             List<ThreadInfo> threadInfos = new List<ThreadInfo>();
@@ -643,9 +634,12 @@ namespace System.Diagnostics
                 }
             }
 
-            ProcessInfo[] temp = new ProcessInfo[processInfos.Values.Count];
-            processInfos.Values.CopyTo(temp, 0);
-            return temp;
+            foreach (KeyValuePair<int, ProcessInfo> entry in processInfos)
+            {
+                if (processNameFilter is null || string.Equals(processNameFilter, entry.Value.ProcessName, StringComparison.OrdinalIgnoreCase))
+                    builder.Add(entry.Value);
+            }
+            return processInfos.Count;
         }
 
         private static unsafe ThreadInfo GetThreadInfo(ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
