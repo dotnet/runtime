@@ -10,13 +10,6 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        /// <summary>Gets the IDs of all processes on the current machine.</summary>
-        public static int[] GetProcessIds()
-        {
-            IEnumerable<int> pids = EnumerateProcessIds();
-            return new List<int>(pids).ToArray();
-        }
-
         /// <summary>Gets process infos for each process on the local machine.</summary>
         /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
