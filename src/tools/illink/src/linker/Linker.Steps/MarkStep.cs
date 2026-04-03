@@ -1489,6 +1489,8 @@ namespace Mono.Linker.Steps
                     disableMarkingOfCopyAssembliesValue != "true")
                 {
                     MarkEntireAssembly(assembly, assemblyOrigin);
+                    // For copy/save assemblies, also mark scopes of type references, since they won't be rewritten.
+                    TypeReferenceMarker.MarkTypeReferences(assembly, MarkingHelpers);
                 }
                 return;
             }
@@ -1519,14 +1521,7 @@ namespace Mono.Linker.Steps
             foreach (TypeDefinition type in module.Types)
                 MarkEntireType(type, new DependencyInfo(DependencyKind.TypeInAssembly, assembly), origin);
 
-            // Always mark the assembly's own exported types.
             MarkExportedTypes(assembly);
-
-            // For copy/save assemblies, also mark scopes of type references, since they won't be rewritten.
-            // For link assemblies, type references are rewritten by SweepStep to point directly to the
-            // implementation assembly, so forwarder assemblies referenced only via type references are not needed.
-            if (ProcessReferencesStep.IsFullyPreservedAction(Annotations.GetAction(assembly)))
-                TypeReferenceMarker.MarkTypeReferences(assembly, MarkingHelpers);
         }
 
         void MarkExportedTypes(AssemblyDefinition assembly)
