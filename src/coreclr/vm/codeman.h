@@ -473,7 +473,17 @@ class CodeHeap
 {
     VPTR_BASE_VTABLE_CLASS(CodeHeap)
 
+    friend struct ::cdac_data<CodeHeap>;
+
 public:
+    // [cDAC] [ExecutionManager] : Contract depends on these values.
+    enum class CodeHeapType : uint8_t
+    {
+        LoaderCodeHeap  = 0,
+        HostCodeHeap    = 1,
+        UnknownCodeHeap = 0xff,
+    };
+
     CodeHeap() = default;
 
     // virtual dtor. Clean up heap
@@ -486,6 +496,9 @@ public:
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
 #endif
+
+protected:
+    CodeHeapType m_heapType = CodeHeapType::UnknownCodeHeap;
 };
 
 //-----------------------------------------------------------------------------
@@ -550,6 +563,8 @@ class LoaderCodeHeap final : public CodeHeap
 #endif
 
     VPTR_VTABLE_CLASS(LoaderCodeHeap, CodeHeap)
+
+    friend struct ::cdac_data<LoaderCodeHeap>;
 
 private:
     ExplicitControlLoaderHeap m_LoaderHeap;
@@ -2275,6 +2290,18 @@ struct cdac_data<EEJitManager>
 {
     static constexpr size_t StoreRichDebugInfo = offsetof(EEJitManager, m_storeRichDebugInfo);
     static constexpr size_t AllCodeHeaps = offsetof(EEJitManager, m_pAllCodeHeaps);
+};
+
+template<>
+struct cdac_data<CodeHeap>
+{
+    static constexpr size_t HeapType = offsetof(CodeHeap, m_heapType);
+};
+
+template<>
+struct cdac_data<LoaderCodeHeap>
+{
+    static constexpr size_t LoaderHeap = offsetof(LoaderCodeHeap, m_LoaderHeap);
 };
 
 

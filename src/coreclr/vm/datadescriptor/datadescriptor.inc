@@ -846,7 +846,24 @@ CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, StartAddress, offsetof(HeapList, 
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, EndAddress, offsetof(HeapList, endAddress))
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, MapBase, offsetof(HeapList, mapBase))
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, HeaderMap, offsetof(HeapList, pHdrMap))
+CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Heap, offsetof(HeapList, pHeap))
 CDAC_TYPE_END(CodeHeapListNode)
+
+CDAC_TYPE_BEGIN(CodeHeap)
+CDAC_TYPE_INDETERMINATE(CodeHeap)
+CDAC_TYPE_FIELD(CodeHeap, /*uint8*/, HeapType, cdac_data<CodeHeap>::HeapType)
+CDAC_TYPE_END(CodeHeap)
+
+CDAC_TYPE_BEGIN(LoaderCodeHeap)
+CDAC_TYPE_INDETERMINATE(LoaderCodeHeap)
+CDAC_TYPE_FIELD(LoaderCodeHeap, /*pointer*/, LoaderHeap, cdac_data<LoaderCodeHeap>::LoaderHeap)
+CDAC_TYPE_END(LoaderCodeHeap)
+
+CDAC_TYPE_BEGIN(HostCodeHeap)
+CDAC_TYPE_INDETERMINATE(HostCodeHeap)
+CDAC_TYPE_FIELD(HostCodeHeap, /*pointer*/, BaseAddress, cdac_data<HostCodeHeap>::BaseAddress)
+CDAC_TYPE_FIELD(HostCodeHeap, /*pointer*/, CurrentAddress, cdac_data<HostCodeHeap>::CurrentAddress)
+CDAC_TYPE_END(HostCodeHeap)
 
 #ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_BEGIN(ILCodeVersioningState)

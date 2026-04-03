@@ -2229,12 +2229,17 @@ void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
     addr = (thunkDataMaybe != NULL) ? (const BYTE*)((UMEntryThunkData*)thunkDataMaybe)->GetManagedTarget() : (const BYTE*)returnAddr;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-    // If the debugger is attached, we use this opportunity to see if
-    // we're disabling preemptive GC on the way into the runtime from
-    // unmanaged code. We end up here because
-    // Increment/DecrementTraceCallCount() will bump
-    // g_TrapReturningThreads for us.
-    g_pDebugInterface->TraceCall(addr);
+    // Some stubs don't call back into user code.
+    // In that case, we don't have an address to trace here.
+    if (addr != NULL)
+    {
+        // If the debugger is attached, we use this opportunity to see if
+        // we're disabling preemptive GC on the way into the runtime from
+        // unmanaged code. We end up here because
+        // Increment/DecrementTraceCallCount() will bump
+        // g_TrapReturningThreads for us.
+        g_pDebugInterface->TraceCall(addr);
+    }
 }
 #endif // DEBUGGING_SUPPORTED
 

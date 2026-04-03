@@ -366,6 +366,7 @@ HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
     m_pFreeList = NULL;
     m_pAllocator = NULL;
     m_pNextHeapToRelease = NULL;
+    m_heapType = CodeHeapType::HostCodeHeap;
 }
 
 HostCodeHeap::~HostCodeHeap()

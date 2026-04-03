@@ -304,7 +304,7 @@ DacDbiInterfaceInstance(
                 cdac = CDAC::Create(contractDescriptorAddr, pDac->m_pTarget, legacyImpl);
                 if (cdac.IsValid())
                 {
-                    NonVMComHolder<IUnknown> cdacInterface = nullptr;
+                    ReleaseHolder<IUnknown> cdacInterface = nullptr;
                     cdac.CreateDacDbiInterface(&cdacInterface);
                     if (cdacInterface != nullptr)
                     {
