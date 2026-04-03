@@ -185,12 +185,6 @@ ASMCONSTANTS_C_ASSERT(CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo == offsetof(CL
 #define CLRToCOMCallInfo__m_cbStackPop 0x0e
 ASMCONSTANTS_C_ASSERT(CLRToCOMCallInfo__m_cbStackPop == offsetof(CLRToCOMCallInfo, m_cbStackPop))
 
-#define COMMETHOD_PREPAD_ASM  8
-ASMCONSTANTS_C_ASSERT(COMMETHOD_PREPAD_ASM == COMMETHOD_PREPAD)
-
-#define OFFSETOF__UnmanagedToManagedFrame__m_pvDatum 8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedToManagedFrame, m_pvDatum))
-
 #endif // FEATURE_COMINTEROP
 
 #define ASM__VTABLE_SLOTS_PER_CHUNK 8

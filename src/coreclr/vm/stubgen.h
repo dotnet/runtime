@@ -943,8 +943,8 @@ public:
     void EmitLDARG      (unsigned uArgIdx);
     void EmitLDARGA     (unsigned uArgIdx);
     void EmitLDC        (DWORD_PTR uConst);
-    void EmitLDC_R4     (UINT32 uConst);
-    void EmitLDC_R8     (UINT64 uConst);
+    void EmitLDC_R4     (float fConst);
+    void EmitLDC_R8     (double dConst);
     void EmitLDELEMA    (int token);
     void EmitLDELEM_REF ();
     void EmitLDFLD      (int token);

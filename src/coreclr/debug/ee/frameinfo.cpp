@@ -801,28 +801,8 @@ void FrameInfo::InitForM2UInternalFrame(CrawlFrame * pCF)
 void FrameInfo::InitForU2MInternalFrame(CrawlFrame * pCF)
 {
     _ASSERTE(pCF != NULL);
-    MethodDesc * pMDHint = NULL;
 
-#ifdef FEATURE_COMINTEROP
-    Frame * pFrame = pCF->GetFrame();
-    _ASSERTE(pFrame != NULL);
-
-
-    // For regular U2M PInvoke cases, we don't care about MD b/c it's just going to
-    // be the next frame.
-    // If we're a COM2CLR call, perhaps we can get the MD for the interface.
-    if (pFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame)
-    {
-        ComMethodFrame* pCOMFrame = dac_cast<PTR_ComMethodFrame> (pFrame);
-        ComCallMethodDesc* pCMD = reinterpret_cast<ComCallMethodDesc *> (pCOMFrame->ComMethodFrame::GetDatum());
-        pMDHint = pCMD->GetInterfaceMethodDesc();
-
-        // Some COM-interop cases don't have an intermediate interface method desc, so
-        // pMDHint may be null.
-    }
-#endif
-
-    InitFromStubHelper(pCF, pMDHint, STUBFRAME_U2M);
+    InitFromStubHelper(pCF, NULL, STUBFRAME_U2M);
     InitForScratchFrameInfo();
 }
 

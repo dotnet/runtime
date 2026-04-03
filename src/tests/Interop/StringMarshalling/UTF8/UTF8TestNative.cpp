@@ -43,7 +43,8 @@ char* utf16_to_utf8(const wchar_t *srcstring)
 
     if (!nc)
     {
-        throw;
+        CoreClrFree(pszUTF8);
+        return nullptr;
     }
 
     pszUTF8[nc] = '\0';
@@ -81,9 +82,9 @@ wchar_t* utf8_to_utf16(const char *utf8)
 
     if (!nc)
     {
-        throw;
+        CoreClrFree(wszTextUTF16);
+        return nullptr;
     }
-    //MultiByteToWideChar do not null terminate the string when cbMultiByte is not -1
     wszTextUTF16[nc] = '\0';
     return wszTextUTF16;
 }
@@ -135,11 +136,11 @@ LPSTR build_return_string(const char* pReturn)
 }
 
 // Modify the string builder in place, managed side validates.
-extern "C" DLL_EXPORT void __cdecl StringBuilderParameterInOut(/*[In,Out] StringBuilder*/ char *s, int index)
+extern "C" DLL_EXPORT BOOL __cdecl StringBuilderParameterInOut(/*[In,Out] StringBuilder*/ char *s, int index)
 {
     // if string.empty
     if (s == 0 || *s == 0)
-        return;
+        return TRUE;
 
     char *pszTextutf8 = get_utf8_string(index);
 
@@ -150,7 +151,8 @@ extern "C" DLL_EXPORT void __cdecl StringBuilderParameterInOut(/*[In,Out] String
         if (s[i] != pszTextutf8[i])
         {
             printf("[in] managed string do not match native string\n");
-            throw;
+            free_utf8_string(pszTextutf8);
+            return FALSE;
         }
     }
 
@@ -161,6 +163,7 @@ extern "C" DLL_EXPORT void __cdecl StringBuilderParameterInOut(/*[In,Out] String
     }
     s[outLen] = '\0';
     free_utf8_string(pszTextutf8);
+    return TRUE;
 }
 
 //out string builder
@@ -209,7 +212,7 @@ typedef struct FieldWithUtf8
 }FieldWithUtf8;
 
 //utf8 struct field
-extern "C" DLL_EXPORT void __cdecl TestStructWithUtf8Field(struct FieldWithUtf8 fieldStruct)
+extern "C" DLL_EXPORT BOOL __cdecl TestStructWithUtf8Field(struct FieldWithUtf8 fieldStruct)
 {
     char *pszManagedutf8 = fieldStruct.pFirst;
     int stringIndex = fieldStruct.index;
@@ -217,7 +220,7 @@ extern "C" DLL_EXPORT void __cdecl TestStructWithUtf8Field(struct FieldWithUtf8 
     size_t outLen = 0;
 
     if (pszManagedutf8 == 0 || *pszManagedutf8 == 0)
-        return;
+        return TRUE;
 
     pszNative = get_utf8_string(stringIndex);
     outLen = strlen(pszNative);
@@ -227,10 +230,12 @@ extern "C" DLL_EXPORT void __cdecl TestStructWithUtf8Field(struct FieldWithUtf8 
         if (pszNative[i] != pszManagedutf8[i])
         {
             printf("Native and managed string do not match.\n");
-            throw;
+            free_utf8_string(pszNative);
+            return FALSE;
         }
     }
     free_utf8_string(pszNative);
+    return TRUE;
 }
 
 extern "C" DLL_EXPORT void __cdecl SetStringInStruct(FieldWithUtf8* fieldStruct, char* str)
@@ -255,7 +260,7 @@ extern "C" DLL_EXPORT void __cdecl StringParameterRefOut(/*out*/ char **s, int i
 }
 
 //c# ref
-extern "C" DLL_EXPORT void __cdecl StringParameterRef(/*ref*/ char **s, int index)
+extern "C" DLL_EXPORT BOOL __cdecl StringParameterRef(/*ref*/ char **s, int index)
 {
     char *pszTextutf8 = get_utf8_string(index);
     size_t strLength = strlen(pszTextutf8);
@@ -266,7 +271,8 @@ extern "C" DLL_EXPORT void __cdecl StringParameterRef(/*ref*/ char **s, int inde
         if ((*s)[i] != pszTextutf8[i])
         {
             printf("[in] managed string do not match native string\n");
-            throw;
+            free_utf8_string(pszTextutf8);
+            return FALSE;
         }
     }
 
@@ -279,6 +285,7 @@ extern "C" DLL_EXPORT void __cdecl StringParameterRef(/*ref*/ char **s, int inde
     memcpy(*s, pszTextutf8, strLength);
     (*s)[strLength] = '\0';
     free_utf8_string(pszTextutf8);
+    return TRUE;
 }
 
 // delegate test
