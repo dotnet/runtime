@@ -3659,13 +3659,7 @@ void PInvokeMethodDesc::EnsureStackArgumentSize()
         // Marshalling required check sets the stack size as side-effect when marshalling is not required.
         if (MarshalingRequired())
         {
-            // Generating interop stub sets the stack size as side-effect in all cases
-            PInvokeStaticSigInfo sigInfo;
-            PInvoke::InitializeSigInfoAndPopulatePInvokeMethodDesc(pNMD, &sigInfo);
-            PInvoke::CreateCLRToNativeILStub(
-                &sigInfo,
-                dwStubFlags,
-                pNMD);
+            PInvoke::CalculateStackArgumentSize(this);
         }
     }
 }

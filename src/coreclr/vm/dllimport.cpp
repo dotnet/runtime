@@ -800,12 +800,15 @@ public:
             // is the target signature. We need to swap them.
             SwapStubSignatures(pStubMD);
         }
-        else if (pStubMD->IsDynamicMethod())
+        else
         {
             // If we're not in a Reverse stub, the signatures are correct,
             // but we need to convert the signature into a module-independent form
             // if our signature is not backed by metadata.
-            ConvertMethodDescSigToModuleIndependentSig(pStubMD);
+            if (pStubMD->IsDynamicMethod())
+            {
+                ConvertMethodDescSigToModuleIndependentSig(pStubMD);
+            }
         }
 
         if (hasTryCatchExceptionHandler)
@@ -2325,7 +2328,7 @@ void PInvokeStubLinker::End(DWORD dwStubFlags)
     }
     else
     {
-        // No cleanup needed - cancel the try block started in Begin().
+        // No cleanup needed - cancel the inner try block started in Begin().
         _ASSERTE(m_buildingEHClauses.GetCount() > 0);
         m_buildingEHClauses.SetCount(m_buildingEHClauses.GetCount() - 1);
     }
@@ -4760,10 +4763,10 @@ void PInvoke::CalculateStackArgumentSize(PInvokeMethodDesc* pMD)
     CollateParamTokens(pModule->GetMDImport(), sigDesc.m_tkMethodDef, numArgs, pParamTokenArray);
 
     PInvoke_StackArgumentSize_ILStubState stubState(pModule, sigDesc.m_sig, &sigDesc.m_typeContext, dwStubFlags, sigInfo.GetCallConv(), iLCIDArg, pMD);
-    NewHolder<ILStubResolver> pResolver = new ILStubResolver();
-    pResolver->SetStubMethodDesc(pMD);
+    ILStubResolver resolver{};
+    resolver.SetStubMethodDesc(pMD);
 
-    CreatePInvokeStubWorker(&stubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), dwStubFlags, pMD, pParamTokenArray, iLCIDArg);
+    CreatePInvokeStubWorker(&stubState, &resolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), dwStubFlags, pMD, pParamTokenArray, iLCIDArg);
 }
 #endif // TARGET_X86
 
@@ -5131,7 +5134,6 @@ namespace
         MethodDesc*                      m_pTargetMD;
         PInvokeStubParameters*           m_pParams;
         NewArrayHolder<ILStubHashBlob>   m_pHashParams;
-        AllocMemTracker*                 m_pAmTracker;
         MethodDesc*                      m_pStubMD;
         AllocMemTracker                  m_amTracker;
         bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
