@@ -47,7 +47,8 @@ private:
     HRESULT BindAssemblyByNameWorker(
             BINDER_SPACE::AssemblyName *pAssemblyName,
             BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
-            bool excludeAppPaths);
+            bool excludeAppPaths,
+            BINDER_SPACE::Assembly **ppExistingAssemblyOnFailure = nullptr);
 };
 
 #endif // __DEFAULT_ASSEMBLY_BINDER_H__

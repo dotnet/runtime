@@ -4,6 +4,7 @@
 #include "common.h"
 #include "assemblybindercommon.hpp"
 #include "defaultassemblybinder.h"
+#include "assemblyhashtraits.hpp"
 
 using namespace BINDER_SPACE;
 
@@ -13,7 +14,8 @@ using namespace BINDER_SPACE;
 
 HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
                                                        BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
-                                                       bool excludeAppPaths)
+                                                       bool excludeAppPaths,
+                                                       BINDER_SPACE::Assembly **ppExistingAssemblyOnFailure)
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
     HRESULT hr = S_OK;
@@ -30,6 +32,17 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
     if (!FAILED(hr))
     {
         (*ppCoreCLRFoundAssembly)->SetBinder(this);
+    }
+    else if (ppExistingAssemblyOnFailure != nullptr)
+    {
+        // The bind failed. If there is an existing assembly with the same simple name in the
+        // execution context, return it so the caller can provide a more informative error message.
+        BINDER_SPACE::Assembly *pExistingAssembly = GetAppContext()->GetExecutionContext()->Lookup(pAssemblyName);
+        if (pExistingAssembly != nullptr)
+        {
+            pExistingAssembly->AddRef();
+            *ppExistingAssemblyOnFailure = pExistingAssembly;
+        }
     }
 
     return hr;
@@ -147,7 +160,8 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             {
                 // The simple name of the assembly being requested to be bound was found in the TPA list.
                 // Now, perform the actual bind to see if the assembly was really in the TPA assembly list or not.
-                hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, true /* excludeAppPaths */);
+                ReleaseHolder<BINDER_SPACE::Assembly> pExistingAssembly;
+                hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, true /* excludeAppPaths */, &pExistingAssembly);
                 if (SUCCEEDED(hr))
                 {
                     if (pCoreCLRFoundAssembly->GetIsInTPA())
@@ -155,6 +169,38 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                         *ppAssembly = pCoreCLRFoundAssembly.Extract();
                         goto Exit;
                     }
+                }
+                else if (pExistingAssembly != nullptr)
+                {
+                    // The by-name bind failed (e.g. due to a version mismatch) but we found an existing
+                    // assembly with the same simple name. Check MVIDs to determine if it is the same assembly.
+                    GUID incomingMVID;
+                    GUID existingMVID;
+
+                    EX_TRY
+                    {
+                        pPEImage->GetMVID(&incomingMVID);
+                        pExistingAssembly->GetPEImage()->GetMVID(&existingMVID);
+                    }
+                    EX_CATCH
+                    {
+                        hr = GET_EXCEPTION()->GetHR();
+                        goto Exit;
+                    }
+                    EX_END_CATCH
+
+                    if (incomingMVID != existingMVID)
+                    {
+                        if (ppExistingAssemblyOnMvidMismatch != nullptr)
+                        {
+                            *ppExistingAssemblyOnMvidMismatch = pExistingAssembly.Extract();
+                        }
+                        IF_FAIL_GO(COR_E_FILELOAD);
+                    }
+
+                    // MVIDs match - the same assembly is already loaded.
+                    *ppAssembly = pExistingAssembly.Extract();
+                    goto Exit;
                 }
             }
         }

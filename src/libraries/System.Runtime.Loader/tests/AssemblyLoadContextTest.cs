@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Runtime.Loader.Tests
@@ -279,27 +280,76 @@ namespace System.Runtime.Loader.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
         public static void LoadFromAssemblyPath_MvidMismatch_ErrorMessageIncludesPathAndVersion()
         {
-            string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
-            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion2");
+            Assembly referencedAssembly = typeof(ReferencedClassLib.Program).Assembly;
+            string v1Path = referencedAssembly.Location;
+            string v1DisplayName = referencedAssembly.GetName().FullName;
+            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.ReferencedClassLibVersion2");
 
             try
             {
                 var alc = new AssemblyLoadContext("MvidMismatchTest");
 
                 Assembly loaded = alc.LoadFromAssemblyPath(v1Path);
-                Assert.Equal(new Version(1, 0, 0, 0), loaded.GetName().Version);
 
                 var ex = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyPath(v2Path));
-                Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
-                Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade, Version=1.0.0.0", ex.Message);
+                Assert.Contains("'ReferencedClassLib'", ex.Message);
+                Assert.Contains($"'{v1DisplayName}'", ex.Message);
                 Assert.Contains(v1Path, ex.Message);
             }
             finally
             {
-                try { File.Delete(v1Path); } catch { }
                 try { File.Delete(v2Path); } catch { }
             }
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
+        public static void LoadFromAssemblyPath_DefaultContext_TpaAssembly_MvidMismatch_ErrorMessageIncludesPathAndVersion()
+        {
+            Assembly referencedAssembly = typeof(ReferencedClassLib.Program).Assembly;
+            string tpaPath = referencedAssembly.Location;
+            string tpaDisplayName = referencedAssembly.GetName().FullName;
+            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.ReferencedClassLibVersion2");
+
+            try
+            {
+                var ex = Assert.Throws<FileLoadException>(() => AssemblyLoadContext.Default.LoadFromAssemblyPath(v2Path));
+                Assert.Contains("'ReferencedClassLib'", ex.Message);
+                Assert.Contains($"'{tpaDisplayName}'", ex.Message);
+                Assert.Contains(tpaPath, ex.Message);
+            }
+            finally
+            {
+                try { File.Delete(v2Path); } catch { }
+            }
+        }
+
+        [ConditionalFact(typeof(AssemblyLoadContextTest), nameof(IsRemoteExecutorSupportedAndCoreCLR))]
+        public static void LoadFromAssemblyPath_DefaultContext_NonTpaAssembly_MvidMismatch_ErrorMessageIncludesPathAndVersion()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
+                string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion2");
+
+                try
+                {
+                    Assembly loaded = AssemblyLoadContext.Default.LoadFromAssemblyPath(v1Path);
+                    string v1DisplayName = loaded.GetName().FullName;
+
+                    var ex = Assert.Throws<FileLoadException>(() => AssemblyLoadContext.Default.LoadFromAssemblyPath(v2Path));
+                    Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
+                    Assert.Contains($"'{v1DisplayName}'", ex.Message);
+                    Assert.Contains(v1Path, ex.Message);
+                }
+                finally
+                {
+                    try { File.Delete(v1Path); } catch { }
+                    try { File.Delete(v2Path); } catch { }
+                }
+            }).Dispose();
+        }
+
+        private static bool IsRemoteExecutorSupportedAndCoreCLR => RemoteExecutor.IsSupported && PlatformDetection.IsCoreCLR;
 
         private static string ExtractEmbeddedAssembly(string name)
         {
