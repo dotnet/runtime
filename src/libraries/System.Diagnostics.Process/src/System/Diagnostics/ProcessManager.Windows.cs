@@ -45,8 +45,8 @@ namespace System.Diagnostics
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         internal static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
         {
-            ProcessInfo[] processInfos = NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
-            foreach (ProcessInfo pi in processInfos)
+            Dictionary<int, ProcessInfo> processInfos = NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
+            foreach (ProcessInfo pi in processInfos.Values)
                 builder.Add(pi);
         }
 
@@ -133,11 +133,9 @@ namespace System.Diagnostics
             else
             {
                 // local case: do not use performance counter and also attempt to get the matching (by pid) process only
-                ProcessInfo[] processInfos = NtProcessInfoHelper.GetProcessInfos(processId);
-                if (processInfos.Length == 1)
-                {
-                    return processInfos[0];
-                }
+                Dictionary<int, ProcessInfo> processInfos = NtProcessInfoHelper.GetProcessInfos(processId);
+                if (processInfos.TryGetValue(processId, out ProcessInfo? processInfo))
+                    return processInfo;
             }
 
             return null;
@@ -1009,7 +1007,7 @@ namespace System.Diagnostics
         /// <param name="processIdFilter">Optional filter used to filter processes down to only those with the specified id.</param>
         /// <param name="processNameFilter">Optional filter used to filter processes down to only those with the specified name.</param>
         /// <remarks>All specified non-null filters are applied.</remarks>
-        internal static unsafe ProcessInfo[] GetProcessInfos(int? processIdFilter = null, string? processNameFilter = null)
+        internal static unsafe Dictionary<int, ProcessInfo> GetProcessInfos(int? processIdFilter = null, string? processNameFilter = null)
         {
             // Start with the default buffer size.
             uint bufferSize = MostRecentSize;
@@ -1055,7 +1053,7 @@ namespace System.Diagnostics
         // kicked in since new call to NtQuerySystemInformation
         private static uint GetEstimatedBufferSize(uint actualSize) => actualSize + 1024 * 10;
 
-        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter, string? processNameFilter)
+        private static unsafe Dictionary<int, ProcessInfo> GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter, string? processNameFilter)
         {
             // Use a dictionary to avoid duplicate entries if any
             // 60 is a reasonable number for processes on a normal machine.
@@ -1079,7 +1077,7 @@ namespace System.Diagnostics
                             processId == NtProcessManager.IdleProcessID ? "Idle" :
                             processId.ToString(CultureInfo.InvariantCulture)); // use the process ID for a normal process without a name
 
-                    if (string.IsNullOrEmpty(processNameFilter) || processNameSpan.Equals(processNameFilter, StringComparison.OrdinalIgnoreCase))
+                    if (processNameFilter == null || processNameSpan.Equals(processNameFilter, StringComparison.OrdinalIgnoreCase))
                     {
                         processName ??= processNameSpan.ToString();
 
@@ -1135,9 +1133,7 @@ namespace System.Diagnostics
                 processInformationOffset += (int)pi.NextEntryOffset;
             }
 
-            ProcessInfo[] temp = new ProcessInfo[processInfos.Values.Count];
-            processInfos.Values.CopyTo(temp, 0);
-            return temp;
+            return processInfos;
         }
 
         // This function generates the short form of process name.
