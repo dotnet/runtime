@@ -20,12 +20,12 @@
   </PropertyGroup>
 
   <!--
-    The xunit.v3.core.mtp-v1 package's buildTransitive props unconditionally
-    set UseAppHost=true.  Override UseAppHost=false here (in targets, imported
-    after NuGet package props) so our value wins.  Library tests run via
-    dotnet exec or Helix.  Mobile/WASM tests use OutputType=Library.
-    NativeAOT generates native executables directly via ILC.  None of these
-    need an apphost.
+    The xunit mtp packages (mtp-v1 for non-AOT, mtp-v2 for AOT) unconditionally
+    set UseAppHost=true in their buildTransitive props.  Override UseAppHost=false
+    here (in targets, imported after NuGet package props) so our value wins.
+    Library tests run via dotnet exec or Helix.  Mobile/WASM tests use
+    OutputType=Library.  NativeAOT generates native executables directly via ILC.
+    None of these need an apphost.
 
     For non-NativeAOT SingleFile tests, tests.singlefile.targets already
     sets UseAppHost=true and SelfContained=true, which is correct.  The
@@ -59,17 +59,22 @@
     netstandard reference that xunit.v3.runner.common.dll depends on, causing
     CS0012. Since mobile/WASM tests use custom test runners and don't need the
     built-in runner reporters, disable them.
+    NativeAOT uses the mtp-v2 package which has its own DefaultRunnerReporters.cs
+    and DefaultResultWriters.cs — those must remain enabled for the AOT runner to
+    produce console output and result files.
   -->
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
     <XunitRegisterBuiltInRunnerReporters>false</XunitRegisterBuiltInRunnerReporters>
   </PropertyGroup>
 
   <!--
-    Override the xunit.v3.core.mtp-v1 validation target. The original target
-    errors when OutputType != Exe or UseAppHost != true on .NETCoreApp. In
-    dotnet/runtime, mobile and browser-wasm platforms legitimately use
-    OutputType=Library (they have custom test runners), and library tests use
-    UseAppHost=false (they are executed via dotnet exec or archived for Helix).
+    Override the xunit validation target (defined by both mtp-v1 and mtp-v2
+    packages). The original target errors when OutputType != Exe or
+    UseAppHost != true on .NETCoreApp. In dotnet/runtime, mobile and
+    browser-wasm platforms legitimately use OutputType=Library (they have
+    custom test runners), library tests use UseAppHost=false (they are
+    executed via dotnet exec or archived for Helix), and NativeAOT builds
+    use UseAppHost=false (ILC produces native executables directly).
     This target replaces the NuGet package's original.
   -->
   <Target Name="_XunitValidateBuild" BeforeTargets="BeforeBuild" Condition=" '$(TargetFramework)' != '' ">
