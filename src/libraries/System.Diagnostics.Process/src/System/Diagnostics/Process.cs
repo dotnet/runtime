@@ -1082,6 +1082,26 @@ namespace System.Diagnostics
             return processes;
         }
 
+        /// <summary>
+        /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
+        /// remote computer. These process resources share the specified process name.
+        /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static Process[] GetProcessesByName(string? processName, string machineName)
+        {
+            bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
+            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName, machineName, isRemoteMachine);
+            Process[] processes = new Process[processInfos.Length];
+            for (int i = 0; i < processInfos.Length; i++)
+            {
+                ProcessInfo processInfo = processInfos[i];
+                processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
+            }
+            return processes;
+        }
+
         /// <devdoc>
         ///    <para>
         ///       Creates a new <see cref='System.Diagnostics.Process'/>
