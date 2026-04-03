@@ -54,7 +54,7 @@ namespace System.Text.RegularExpressions.Generator
             Dictionary<string, string[]> requiredHelpers = new();
             List<RegexMethod> methods = new();
             foreach (RegexMethod regexMethod in spec.RegexMethods
-                .Select(static m => m.Value)
+                .Select(static m => m.Method)
                 .OrderBy(m => m.DeclaringType.Namespace, StringComparer.Ordinal)
                 .ThenBy(m => m.DeclaringType.FullName, StringComparer.Ordinal)
                 .ThenBy(m => m.MemberName, StringComparer.Ordinal)

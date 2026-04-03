@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions.Generator
         private static (RegexGenerationSpec? Spec, ImmutableArray<Diagnostic> Diagnostics) Parse(
             ImmutableArray<GeneratorAttributeSyntaxContext> contexts, CancellationToken cancellationToken)
         {
-            List<Equatable<RegexMethod, RegexMethodComparer>>? methods = null;
+            List<RegexMethodKey>? methods = null;
             List<Diagnostic>? diagnostics = null;
 
             foreach (GeneratorAttributeSyntaxContext context in contexts)
@@ -420,8 +420,8 @@ namespace System.Text.RegularExpressions.Generator
             public string? CultureName { get; } = cultureName;
             public RegexTree Tree { get; } = tree;
             public AnalysisResults Analysis { get; } = analysis;
-            public Equatable<RegexTree, RegexTreeComparer> EquatableTree { get; } = new(tree);
-            public Equatable<AnalysisResults, AnalysisResultsComparer> EquatableAnalysis { get; } = new(analysis);
+            public RegexTreeKey TreeKey { get; } = new(tree);
+            public AnalysisResultsKey AnalysisKey { get; } = new(analysis);
             public string? LimitedSupportReason { get; } = limitedSupportReason;
             public CompilationData CompilationData { get; } = compilationData;
             public string? GeneratedName { get; set; }
@@ -441,16 +441,19 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>
-        /// Compares <see cref="RegexMethod"/> instances by the emitted-method metadata together with
-        /// structural equality over the regular <see cref="RegexTree"/> and <see cref="AnalysisResults"/>
-        /// objects, avoiding the need for a mirrored source-generator model.
+        /// Incremental cache key for a parsed regex method.
         /// </summary>
-        private sealed class RegexMethodComparer : IEqualityComparer<RegexMethod>
+        private readonly struct RegexMethodKey(RegexMethod method) : IEquatable<RegexMethodKey>
         {
             private static readonly RegexTypeComparer s_typeComparer = new();
 
-            public bool Equals(RegexMethod? x, RegexMethod? y)
+            public RegexMethod Method { get; } = method;
+
+            public bool Equals(RegexMethodKey other)
             {
+                RegexMethod? x = Method;
+                RegexMethod? y = other.Method;
+
                 if (ReferenceEquals(x, y))
                 {
                     return true;
@@ -470,29 +473,65 @@ namespace System.Text.RegularExpressions.Generator
                     x.Options == y.Options &&
                     x.MatchTimeout == y.MatchTimeout &&
                     StringComparer.Ordinal.Equals(x.CultureName, y.CultureName) &&
-                    x.EquatableTree.Equals(y.EquatableTree) &&
-                    x.EquatableAnalysis.Equals(y.EquatableAnalysis) &&
+                    x.TreeKey.Equals(y.TreeKey) &&
+                    x.AnalysisKey.Equals(y.AnalysisKey) &&
                     StringComparer.Ordinal.Equals(x.LimitedSupportReason, y.LimitedSupportReason) &&
                     x.CompilationData.Equals(y.CompilationData);
             }
 
-            public int GetHashCode(RegexMethod obj)
+            public override bool Equals(object? obj) => obj is RegexMethodKey other && Equals(other);
+
+            public override int GetHashCode()
             {
-                int hash = s_typeComparer.GetHashCode(obj.DeclaringType);
-                hash = HashHelpers.Combine(hash, obj.IsProperty.GetHashCode());
-                hash = HashHelpers.Combine(hash, StringComparer.Ordinal.GetHashCode(obj.MemberName));
-                hash = HashHelpers.Combine(hash, StringComparer.Ordinal.GetHashCode(obj.Modifiers));
-                hash = HashHelpers.Combine(hash, obj.NullableRegex.GetHashCode());
-                hash = HashHelpers.Combine(hash, StringComparer.Ordinal.GetHashCode(obj.Pattern));
-                hash = HashHelpers.Combine(hash, obj.Options.GetHashCode());
-                hash = HashHelpers.Combine(hash, obj.MatchTimeout.GetHashCode());
-                hash = HashHelpers.Combine(hash, obj.CultureName is null ? 0 : StringComparer.Ordinal.GetHashCode(obj.CultureName));
-                hash = HashHelpers.Combine(hash, obj.EquatableTree.GetHashCode());
-                hash = HashHelpers.Combine(hash, obj.EquatableAnalysis.GetHashCode());
-                hash = HashHelpers.Combine(hash, obj.LimitedSupportReason is null ? 0 : StringComparer.Ordinal.GetHashCode(obj.LimitedSupportReason));
-                hash = HashHelpers.Combine(hash, obj.CompilationData.GetHashCode());
+                RegexMethod? method = Method;
+                if (method is null)
+                {
+                    return 0;
+                }
+
+                int hash = s_typeComparer.GetHashCode(method.DeclaringType);
+                hash = HashHelpers.Combine(hash, method.IsProperty.GetHashCode());
+                hash = HashHelpers.Combine(hash, StringComparer.Ordinal.GetHashCode(method.MemberName));
+                hash = HashHelpers.Combine(hash, StringComparer.Ordinal.GetHashCode(method.Modifiers));
+                hash = HashHelpers.Combine(hash, method.NullableRegex.GetHashCode());
+                hash = HashHelpers.Combine(hash, StringComparer.Ordinal.GetHashCode(method.Pattern));
+                hash = HashHelpers.Combine(hash, method.Options.GetHashCode());
+                hash = HashHelpers.Combine(hash, method.MatchTimeout.GetHashCode());
+                hash = HashHelpers.Combine(hash, method.CultureName is null ? 0 : StringComparer.Ordinal.GetHashCode(method.CultureName));
+                hash = HashHelpers.Combine(hash, method.TreeKey.GetHashCode());
+                hash = HashHelpers.Combine(hash, method.AnalysisKey.GetHashCode());
+                hash = HashHelpers.Combine(hash, method.LimitedSupportReason is null ? 0 : StringComparer.Ordinal.GetHashCode(method.LimitedSupportReason));
+                hash = HashHelpers.Combine(hash, method.CompilationData.GetHashCode());
                 return hash;
             }
+        }
+
+        /// <summary>Incremental cache key for a parsed <see cref="RegexTree"/>.</summary>
+        private readonly struct RegexTreeKey(RegexTree tree) : IEquatable<RegexTreeKey>
+        {
+            private static readonly RegexTreeComparer s_comparer = new();
+
+            public RegexTree Tree { get; } = tree;
+
+            public bool Equals(RegexTreeKey other) => s_comparer.Equals(Tree, other.Tree);
+
+            public override bool Equals(object? obj) => obj is RegexTreeKey other && Equals(other);
+
+            public override int GetHashCode() => Tree is null ? 0 : s_comparer.GetHashCode(Tree);
+        }
+
+        /// <summary>Incremental cache key for <see cref="AnalysisResults"/>.</summary>
+        private readonly struct AnalysisResultsKey(AnalysisResults analysis) : IEquatable<AnalysisResultsKey>
+        {
+            private static readonly AnalysisResultsComparer s_comparer = new();
+
+            public AnalysisResults Analysis { get; } = analysis;
+
+            public bool Equals(AnalysisResultsKey other) => s_comparer.Equals(Analysis, other.Analysis);
+
+            public override bool Equals(object? obj) => obj is AnalysisResultsKey other && Equals(other);
+
+            public override int GetHashCode() => Analysis is null ? 0 : s_comparer.GetHashCode(Analysis);
         }
 
         private sealed class RegexTreeComparer : IEqualityComparer<RegexTree>

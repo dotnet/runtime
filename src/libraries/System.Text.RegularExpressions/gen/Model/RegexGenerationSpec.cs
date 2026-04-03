@@ -9,13 +9,13 @@ namespace System.Text.RegularExpressions.Generator
     {
         /// <summary>
         /// Top-level incremental model. The regular <see cref="RegexMethod"/> instances are wrapped
-        /// in an equatable envelope so Roslyn can compare successive results using structural
+        /// in regex-specific cache-key types so Roslyn can compare successive results using structural
         /// equality over the parsed <see cref="RegexTree"/> and <see cref="AnalysisResults"/>
         /// objects, without us needing to maintain a mirrored immutable object graph.
         /// </summary>
         private sealed record RegexGenerationSpec
         {
-            public required ImmutableEquatableSet<Equatable<RegexMethod, RegexMethodComparer>> RegexMethods { get; init; }
+            public required ImmutableEquatableSet<RegexMethodKey> RegexMethods { get; init; }
         }
     }
 }
