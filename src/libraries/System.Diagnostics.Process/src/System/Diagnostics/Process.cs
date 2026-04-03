@@ -1381,7 +1381,7 @@ namespace System.Diagnostics
                 if (Associated && ProcessManager.IsProcessNameSupported)
                 {
                     string? processName = _processName ?? ProcessManager.GetProcessName(_processId, _machineName, ref _processInfo);
-                    if (processName is { Length: > 0 })
+                    if (!string.IsNullOrEmpty(processName))
                     {
                         result = $"{result} ({processName})";
                     }
@@ -1741,8 +1741,8 @@ namespace System.Diagnostics
             HaveId = 0x1,
             IsLocal = 0x2,
             HaveNonExitedId = HaveId | 0x4,
-            Exited = 0x10,
-            Associated = 0x20,
+            Exited = 0x8,
+            Associated = 0x10,
         }
 
         private ProcessInfo GetProcessInfo()
