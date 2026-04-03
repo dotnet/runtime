@@ -76,5 +76,23 @@ namespace System.Security.Cryptography.Tests
             parameters.Exponent = null;
             Assert.Throws<CryptographicException>(() => RSA.Create(parameters));
         }
+
+        [Fact]
+        public static void CreateWithMismatchedPQ_ThrowsCryptographicException()
+        {
+            RSAParameters parameters = TestData.RSA1032Parameters;
+
+            // Flip a bit in P so that p * q != n
+            // This is an error that is not caught in the managed layer, but will be caught in the native layer.
+            parameters.P = (byte[])parameters.P.Clone();
+            parameters.P[0] ^= 1;
+            CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
+                () => RSA.Create(parameters));
+
+            if (PlatformDetection.IsOpenSslSupported)
+            {
+                Assert.Contains("n does not equal p q", ex.Message);
+            }
+        }
     }
 }

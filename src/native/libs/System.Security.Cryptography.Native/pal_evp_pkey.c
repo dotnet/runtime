@@ -400,6 +400,11 @@ done:
 // Legacy RSA accessors: duplicate shared pointers into owned copies.
 static bool RsaLegacyGetKey(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d)
 {
+    // This function is only called when EVP_PKEY_get0_RSA is available, so RSA_get0_key
+    // should always exist. Guard defensively to avoid a NULL function pointer call.
+    if (!API_EXISTS(RSA_get0_key))
+        return false;
+
     const RSA* rsa = (const RSA*)key;
     const BIGNUM* sharedN = NULL;
     const BIGNUM* sharedE = NULL;
@@ -427,6 +432,11 @@ static bool RsaLegacyGetKey(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d)
 
 static bool RsaLegacyGetFactors(const void* key, BIGNUM** p, BIGNUM** q)
 {
+    // This function is only called when EVP_PKEY_get0_RSA is available, so RSA_get0_factors
+    // should always exist. Guard defensively to avoid a NULL function pointer call.
+    if (!API_EXISTS(RSA_get0_factors))
+        return false;
+
     const RSA* rsa = (const RSA*)key;
     const BIGNUM* sharedP = NULL;
     const BIGNUM* sharedQ = NULL;
@@ -451,6 +461,11 @@ static bool RsaLegacyGetFactors(const void* key, BIGNUM** p, BIGNUM** q)
 
 static bool RsaLegacyGetCrtParams(const void* key, BIGNUM** dp, BIGNUM** dq, BIGNUM** inverseQ)
 {
+    // This function is only called when EVP_PKEY_get0_RSA is available, so RSA_get0_crt_params
+    // should always exist. Guard defensively to avoid a NULL function pointer call.
+    if (!API_EXISTS(RSA_get0_crt_params))
+        return false;
+
     const RSA* rsa = (const RSA*)key;
     const BIGNUM* sharedDp = NULL;
     const BIGNUM* sharedDq = NULL;
@@ -479,10 +494,18 @@ static bool RsaLegacyGetCrtParams(const void* key, BIGNUM** dp, BIGNUM** dq, BIG
 static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
 {
     // We do not support validating multi-prime RSA. Multi-prime RSA is not common. For these, we fall back to the
-    // OpenSSL key check.
-    if (!isPublic && RSA_get_multi_prime_extra_count(rsa) != 0)
+    // OpenSSL key check. If the legacy API is unavailable, treat as indeterminate.
+    if (!isPublic)
     {
-        return -1;
+        if (!API_EXISTS(RSA_get_multi_prime_extra_count))
+        {
+            return -1;
+        }
+
+        if (RSA_get_multi_prime_extra_count(rsa) != 0)
+        {
+            return -1;
+        }
     }
 
     return QuickRsaCheckCore(rsa, isPublic, RsaLegacyGetKey, RsaLegacyGetFactors, RsaLegacyGetCrtParams);
