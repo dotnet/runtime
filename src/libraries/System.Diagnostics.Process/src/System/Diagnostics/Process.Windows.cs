@@ -16,8 +16,6 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        private string? _processName;
-
         private bool _haveMainWindow;
         private IntPtr _mainWindowHandle;
         private string? _mainWindowTitle;
@@ -113,7 +111,6 @@ namespace System.Diagnostics
             _haveMainWindow = false;
             _mainWindowTitle = null;
             _haveResponding = false;
-            _processName = null;
         }
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
@@ -533,39 +530,6 @@ namespace System.Diagnostics
         private static ConsoleEncoding GetStandardInputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleCP());
 
         private static ConsoleEncoding GetStandardOutputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
-
-        /// <summary>Gets the friendly name of the process.</summary>
-        public string ProcessName
-        {
-            get
-            {
-                if (_processName == null)
-                {
-                    // If we already have the name via a populated ProcessInfo
-                    // then use that one.
-                    if (_processInfo?.ProcessName != null)
-                    {
-                        _processName = _processInfo!.ProcessName;
-                    }
-                    else
-                    {
-                        // Ensure that the process is not yet exited
-                        EnsureState(State.HaveNonExitedId);
-                        _processName = ProcessManager.GetProcessName(_processId, _machineName);
-
-                        // Fallback to slower ProcessInfo implementation if optimized way did not return a
-                        // process name (e.g. in case of missing permissions for Non-Admin users)
-                        if (_processName == null)
-                        {
-                            EnsureState(State.HaveProcessInfo);
-                            _processName = _processInfo!.ProcessName;
-                        }
-                    }
-                }
-
-                return _processName;
-            }
-        }
 
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)
         {

@@ -159,7 +159,7 @@ DEFINE_METHOD(CLASS,                CTOR,                   .ctor,              
 #endif // FOR_ILLINK
 
 #ifdef FEATURE_COMINTEROP
-DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  SM_PtrClass_PtrStr_Int_PtrObj_PtrArrObj_PtrArrBool_PtrArrInt_PtrArrType_PtrType_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  NoSig)
 #endif // FEATURE_COMINTEROP
 
 BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
@@ -179,7 +179,7 @@ DEFINE_CLASS_U(System,                 __ComObject,            ComObject)
 DEFINE_FIELD_U(m_ObjectToDataMap,      ComObject,              m_ObjectToDataMap)
 DEFINE_CLASS(COM_OBJECT,            System,                 __ComObject)
 DEFINE_METHOD(COM_OBJECT,           RELEASE_ALL_DATA,       ReleaseAllData,             SM_PtrComObject_PtrException_RetVoid)
-DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER,     GetEventProvider,           SM_PtrComObject_PtrClass_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER,     GetEventProvider,           NoSig)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(COM_OBJECT,           CTOR,                   .ctor,                      IM_RetVoid)
 #endif // FOR_ILLINK
@@ -1154,6 +1154,8 @@ DEFINE_CLASS(INTERFACEMARSHALER,    StubHelpers,            InterfaceMarshaler)
 DEFINE_METHOD(INTERFACEMARSHALER,   CONVERT_TO_NATIVE,      ConvertToNative,            SM_Obj_IntPtr_IntPtr_Int_RetIntPtr)
 DEFINE_METHOD(INTERFACEMARSHALER,   CONVERT_TO_MANAGED,     ConvertToManaged,           SM_RefIntPtr_IntPtr_IntPtr_Int_RetObj)
 DEFINE_METHOD(INTERFACEMARSHALER,   CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
+DEFINE_METHOD(INTERFACEMARSHALER,   GET_OBJECT_FOR_COM_CALLABLE_WRAPPER_IUNKNOWN, GetObjectForComCallableWrapperIUnknown, SM_IntPtr_RetObj)
+DEFINE_METHOD(INTERFACEMARSHALER,   VALIDATE_COM_VISIBILITY_FOR_IUNKNOWN, ValidateComVisibilityForIUnknown, SM_IntPtr_RetVoid)
 
 
 DEFINE_CLASS(MNGD_SAFE_ARRAY_MARSHALER,  StubHelpers,                 MngdSafeArrayMarshaler)
