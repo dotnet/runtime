@@ -498,7 +498,7 @@ namespace System.Linq.Tests
             var result = outer.LeftJoin(inner, o => o.name, i => i.name, new AnagramEqualityComparer()).ToList();
 
             Assert.Equal(2, result.Count);
-            Assert.Contains(result, r => r.Outer.name == "Prakash" && r.Inner.orderID == 0);
+            Assert.Contains(result, r => r.Outer.name == "Prakash" && r.Inner.name == null);
             Assert.Contains(result, r => r.Outer.name == "Tim" && r.Inner.name == "miT");
         }
 
