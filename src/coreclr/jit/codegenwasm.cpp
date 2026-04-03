@@ -2247,9 +2247,18 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     // enregistered locals need to be handled.
     LclVarDsc* varDsc    = m_compiler->lvaGetDesc(tree);
     regNumber  targetReg = tree->GetRegNum();
+    var_types  type      = tree->TypeGet();
     assert(genIsValidReg(targetReg) && varDsc->lvIsRegCandidate());
 
-    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), WasmRegToIndex(targetReg));
+    if (
+        (varDsc->lvType == TYP_STRUCT) &&
+        (type == TYP_STRUCT)
+    )
+    {
+        type = varDsc->GetLayout()->GetRegisterType();
+    }
+
+    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg));
     genUpdateLifeStore(tree, targetReg, varDsc);
 }
 
