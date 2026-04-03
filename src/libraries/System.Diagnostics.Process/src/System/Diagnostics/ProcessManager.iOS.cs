@@ -17,8 +17,6 @@ namespace System.Diagnostics
         /// <summary>Gets process infos for each process on the local machine.</summary>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <returns>An array of process infos, one per found process.</returns>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static ProcessInfo[] GetProcessInfos(string? processNameFilter)
         {
             throw new PlatformNotSupportedException();
