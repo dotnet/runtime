@@ -242,4 +242,17 @@ const pal_char_t* pal_get_dotnet_self_registered_config_location(pal_char_t* buf
 
 #endif // !_WIN32
 
+// Duplicate a pal_char_t string. Returns NULL if s is NULL or on allocation failure.
+// Caller must free the returned pointer with free().
+static inline pal_char_t* pal_strdup(const pal_char_t* s)
+{
+    if (s == NULL)
+        return NULL;
+    size_t len = pal_strlen(s);
+    pal_char_t* dup = (pal_char_t*)malloc((len + 1) * sizeof(pal_char_t));
+    if (dup != NULL)
+        memcpy(dup, s, (len + 1) * sizeof(pal_char_t));
+    return dup;
+}
+
 #endif // PAL_C_H

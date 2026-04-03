@@ -12,16 +12,6 @@
 #include <string.h>
 #include <assert.h>
 
-// Duplicate a pal_char_t string (caller must free).
-static pal_char_t* pal_strdup(const pal_char_t* s)
-{
-    size_t len = pal_strlen(s);
-    pal_char_t* copy = (pal_char_t*)malloc((len + 1) * sizeof(pal_char_t));
-    if (copy != NULL)
-        memcpy(copy, s, (len + 1) * sizeof(pal_char_t));
-    return copy;
-}
-
 // Context for collecting directory entries
 typedef struct {
     dn_vector_t* entries; // vector of pal_char_t* (heap-allocated strings)

@@ -8,17 +8,6 @@
 #include <ctype.h>
 #include <minipal/utils.h>
 
-static pal_char_t* pal_strdup_c(const pal_char_t* s)
-{
-    if (s == NULL)
-        return NULL;
-    size_t len = pal_strlen(s);
-    pal_char_t* dup = (pal_char_t*)malloc((len + 1) * sizeof(pal_char_t));
-    if (dup != NULL)
-        memcpy(dup, s, (len + 1) * sizeof(pal_char_t));
-    return dup;
-}
-
 void c_fx_ver_init(c_fx_ver_t* ver)
 {
     ver->major = -1;
