@@ -155,13 +155,18 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
             {
                 chunk = 256;
             }
-            if (getentropy(buffer + offset, chunk) != 0)
+            if (getentropy(buffer + offset, chunk) < 0)
             {
-                return -1;
+                break; // fallback to /dev/urandom
             }
+
             offset += (int32_t)chunk;
         }
-        return 0;
+
+        if (offset == bufferLength)
+        {
+            return 0;
+        }
     }
 #endif
 
