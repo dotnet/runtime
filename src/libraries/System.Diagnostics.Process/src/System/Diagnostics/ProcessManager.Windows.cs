@@ -211,14 +211,6 @@ namespace System.Diagnostics
             return NtProcessManager.GetProcessIds();
         }
 
-        /// <summary>Gets the ID of a process from a handle to the process.</summary>
-        /// <param name="processHandle">The handle.</param>
-        /// <returns>The process ID.</returns>
-        public static int GetProcessIdFromHandle(SafeProcessHandle processHandle)
-        {
-            return NtProcessManager.GetProcessIdFromHandle(processHandle);
-        }
-
         /// <summary>Gets an array of module infos for the specified process.</summary>
         /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
         /// <returns>The array of modules.</returns>
@@ -486,11 +478,6 @@ namespace System.Diagnostics
         {
             ProcessModuleCollection modules = GetModules(processId, firstModuleOnly: true);
             return modules.Count == 0 ? null : modules[0];
-        }
-
-        public static int GetProcessIdFromHandle(SafeProcessHandle processHandle)
-        {
-            return Interop.Kernel32.GetProcessId(processHandle);
         }
 
         public static ProcessInfo[] GetProcessInfos(string machineName)

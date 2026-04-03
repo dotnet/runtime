@@ -42,14 +42,6 @@ namespace System.Diagnostics
             CreateProcessInfo(processId);
 #pragma warning restore IDE0060
 
-        /// <summary>Gets the ID of a process from a handle to the process.</summary>
-        /// <param name="processHandle">The handle.</param>
-        /// <returns>The process ID.</returns>
-        public static int GetProcessIdFromHandle(SafeProcessHandle processHandle)
-        {
-            return processHandle.ProcessId;
-        }
-
         private static bool IsRemoteMachineCore(string machineName)
         {
             return

@@ -952,7 +952,7 @@ namespace System.Diagnostics
                 {
                     if (_haveProcessHandle)
                     {
-                        SetProcessId(ProcessManager.GetProcessIdFromHandle(_processHandle!));
+                        SetProcessId(_processHandle!.ProcessId);
                     }
                     else
                     {
@@ -1097,7 +1097,7 @@ namespace System.Diagnostics
         {
             bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
             ArrayBuilder<ProcessInfo> processInfos = default;
-            ProcessManager.GetProcessInfos(ref processInfos, processName, machineName, isRemoteMachine);
+            ProcessManager.GetProcessInfos(ref processInfos, string.IsNullOrEmpty(processName) ? null : processName, machineName, isRemoteMachine);
             if (processInfos.Count == 0)
                 return [];
             Process[] processes = new Process[processInfos.Count];
