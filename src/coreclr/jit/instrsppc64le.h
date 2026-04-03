@@ -37,7 +37,10 @@ INST(lis,   	  "lis",   	  0, 	  D_FORM,   	0x3C000000)  // addis with RA=0
 INST(ori,   	  "ori",   	  0, 	  D_FORM,   	0x60000000)
 INST(oris,  	  "oris",  	  0, 	  D_FORM,   	0x64000000)
 INST(sldi,  	  "sldi",  	  0, 	  MD_FORM,  	0x78000000)  // rldicr
-INST(cmpdi,  	  "cmpdi",  	  0, 	  D_FORM,   	0x2C200000)  // cmpi with L=1
+INST(cmpw,	  "cmpw",	  0,	  X_FORM,	0x7C000000) // cmp with L=0
+INST(cmpd,        "cmpd",          0,      X_FORM,       0x7C200000) // cmp with L=1
+INST(cmpwi,	  "cmpwi",	  0,	  D_FORM,	0x2C000000) // cmpi with L=0
+INST(cmpdi,  	  "cmpdi",  	  0, 	  D_FORM,   	0x2C200000) // cmpi with L=1
 INST(lbz,	  "lbz",	  0,	  D_FORM,	0x88000000)
 INST(lhz,	  "lhz",	  0,	  D_FORM,	0xA0000000)
 INST(lha,	  "lha",	  0,	  D_FORM,	0xA8000000)

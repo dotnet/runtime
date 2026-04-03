@@ -126,6 +126,57 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 }
 
 //------------------------------------------------------------------------
+// genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT/GT_CMP node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForCompare(GenTreeOp* tree)
+{
+    regNumber targetReg = tree->GetRegNum();
+    emitter*  emit      = GetEmitter();
+
+    GenTree*  op1     = tree->gtOp1;
+    GenTree*  op2     = tree->gtOp2;
+    var_types op1Type = genActualType(op1->TypeGet());
+    var_types op2Type = genActualType(op2->TypeGet());
+    instruction ins;
+
+    assert(!op1->isUsedFromMemory());
+
+    emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
+
+    assert(genTypeSize(op1Type) == genTypeSize(op2Type));
+
+    if (varTypeIsFloating(op1Type))
+    {
+	abort();
+    }
+    else
+    {
+	assert(!varTypeIsFloating(op2Type));
+	assert(!op1->isContainedIntOrIImmed());
+	
+	if (op2->IsCnsIntOrI())
+	{
+	    GenTreeIntConCommon* intConst = op2->AsIntConCommon();
+	    ins  = (cmpSize == EA_8BYTE) ? INS_cmpdi : INS_cmpwi;
+	    emit->emitIns_R_I(ins, cmpSize, op1->GetRegNum(), intConst->IconValue());
+	}
+	else
+	{
+	    ins = (cmpSize == EA_8BYTE) ? INS_cmpd : INS_cmpw;
+	    emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->GetRegNum());
+	}
+    }
+
+    if (targetReg != REG_NA)
+    {
+	abort();
+    }
+}
+
+//------------------------------------------------------------------------
 // genCodeForTreeNode Generate code for a single node in the tree.
 //
 // Preconditions:
@@ -176,6 +227,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 	case GT_IND:
 	    genCodeForIndir(treeNode->AsIndir());
+	    break;
+
+	case GT_CMP:
+	    genConsumeOperands(treeNode->AsOp());
+	    genCodeForCompare(treeNode->AsOp());
 	    break;
 
         default:
