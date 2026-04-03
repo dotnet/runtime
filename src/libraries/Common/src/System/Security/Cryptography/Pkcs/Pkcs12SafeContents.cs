@@ -30,6 +30,12 @@ namespace System.Security.Cryptography.Pkcs
             ConfidentialityMode = Pkcs12ConfidentialityMode.None;
         }
 
+        private Pkcs12SafeContents(bool isReadOnly)
+        {
+            IsReadOnly = isReadOnly;
+            ConfidentialityMode = Pkcs12ConfidentialityMode.None;
+        }
+
         internal Pkcs12SafeContents(ReadOnlyMemory<byte> serialized)
         {
             IsReadOnly = true;
@@ -279,6 +285,34 @@ namespace System.Security.Cryptography.Pkcs
 
         private static List<Pkcs12SafeBag> ReadBags(ReadOnlyMemory<byte> serialized)
         {
+            Stack<(ReadOnlyMemory<byte> Serialized, Pkcs12SafeContents Target)> pendingContents = new();
+            List<Pkcs12SafeBag> result = ReadBagsCore(serialized, pendingContents);
+
+            while (pendingContents.Count > 0)
+            {
+                (ReadOnlyMemory<byte> nestedSerialized, Pkcs12SafeContents target) = pendingContents.Pop();
+
+                try
+                {
+                    target._bags = ReadBagsCore(nestedSerialized, pendingContents);
+                }
+                catch (AsnContentException)
+                {
+                    target._bags = new List<Pkcs12SafeBag>(0);
+                }
+                catch (CryptographicException)
+                {
+                    target._bags = new List<Pkcs12SafeBag>(0);
+                }
+            }
+
+            return result;
+        }
+
+        private static List<Pkcs12SafeBag> ReadBagsCore(
+            ReadOnlyMemory<byte> serialized,
+            Stack<(ReadOnlyMemory<byte>, Pkcs12SafeContents)> pendingSafeContents)
+        {
             List<SafeBagAsn> serializedBags = new List<SafeBagAsn>();
 
             try
@@ -330,8 +364,12 @@ namespace System.Security.Cryptography.Pkcs
                             bag = Pkcs12SecretBag.DecodeValue(bagValue);
                             break;
                         case Oids.Pkcs12SafeContentsBag:
-                            bag = Pkcs12SafeContentsBag.Decode(bagValue);
+                        {
+                            Pkcs12SafeContents deferredContents = new(isReadOnly: true);
+                            bag = Pkcs12SafeContentsBag.CreateWithDeferredContents(bagValue, deferredContents);
+                            pendingSafeContents.Push((bagValue, deferredContents));
                             break;
+                        }
                     }
                 }
                 catch (AsnContentException)
