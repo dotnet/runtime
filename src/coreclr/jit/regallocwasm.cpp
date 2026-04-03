@@ -623,6 +623,13 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 //
 void WasmRegAlloc::CollectReference(GenTree* node)
 {
+    if ((node->gtLIRFlags & LIR::Flags::VirtualRefsCollected) != LIR::Flags::None)
+    {
+        return;
+    }
+
+    node->gtLIRFlags |= LIR::Flags::VirtualRefsCollected;
+
     PerFuncletData* const data = m_perFuncletData[m_currentFunclet];
     VirtualRegReferences* refs = data->m_virtualRegRefs;
     if (refs == nullptr)
@@ -978,6 +985,10 @@ void WasmRegAlloc::ResolveReferences()
             for (size_t i = 0; i < refsCount; i++)
             {
                 GenTree* node = refs->Nodes[i];
+
+                assert((node->gtLIRFlags & LIR::Flags::VirtualRefsCollected) != LIR::Flags::None);
+                node->gtLIRFlags &= ~LIR::Flags::VirtualRefsCollected;
+
                 if (node->OperIs(GT_PHYSREG))
                 {
                     assert(node->AsPhysReg()->gtSrcReg == spVirtReg);
