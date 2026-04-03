@@ -422,7 +422,7 @@ namespace System.Diagnostics
                         case SafePipeHandle:
                             break;
                         // As of today, we don't support other handle types because they would work
-                        // only on Windows (e.g. Process/Wait/Access/Registry handles).
+                        // only on Windows (e.g. Process/Wait handles).
                         default:
                             throw new ArgumentException(SR.InheritedHandles_OnlySelectedSafeHandlesAreSupported, nameof(InheritedHandles));
                     }

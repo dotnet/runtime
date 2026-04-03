@@ -77,13 +77,9 @@ namespace Microsoft.Win32.SafeHandles
             {
                 startupInfoEx.StartupInfo.cb = hasInheritedHandles ? sizeof(Interop.Kernel32.STARTUPINFOEX) : sizeof(Interop.Kernel32.STARTUPINFO);
 
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref inheritableStdinHandle, ref stdinRefAdded);
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref inheritableStdoutHandle, ref stdoutRefAdded);
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref inheritableStderrHandle, ref stderrRefAdded);
-
-                startupInfoEx.StartupInfo.hStdInput = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
-                startupInfoEx.StartupInfo.hStdOutput = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
-                startupInfoEx.StartupInfo.hStdError = (inheritableStderrHandle ?? stderrHandle).DangerousGetHandle();
+                startupInfoEx.StartupInfo.hStdInput = ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref inheritableStdinHandle, ref stdinRefAdded);
+                startupInfoEx.StartupInfo.hStdOutput = ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref inheritableStdoutHandle, ref stdoutRefAdded);
+                startupInfoEx.StartupInfo.hStdError = ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref inheritableStderrHandle, ref stderrRefAdded);
 
                 // If STARTF_USESTDHANDLES is not set, the new process will inherit the standard handles.
                 startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;

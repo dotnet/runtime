@@ -54,18 +54,15 @@ namespace System.Diagnostics
         }
 
         /// <summary>Duplicates a handle as inheritable if it's valid and not inheritable.</summary>
-        internal static void DuplicateAsInheritableIfNeeded(SafeFileHandle sourceHandle, ref SafeFileHandle? duplicatedHandle, ref bool refAdded)
+        internal static nint DuplicateAsInheritableIfNeeded(SafeFileHandle sourceHandle, ref SafeFileHandle? duplicatedHandle, ref bool refAdded)
         {
             // The user can't specify invalid handle via ProcessStartInfo.Standard*Handle APIs.
             // However, Console.OpenStandard*Handle() can return INVALID_HANDLE_VALUE for a process
             // that was started with INVALID_HANDLE_VALUE as given standard handle.
             if (sourceHandle.IsInvalid)
             {
-                return;
+                return sourceHandle.DangerousGetHandle();
             }
-
-            // Add ref, so the raw handle won't be closed while we're working with it. The caller is responsible for releasing the ref.
-            sourceHandle.DangerousAddRef(ref refAdded);
 
             // When we know for sure that the handle is inheritable, we don't need to duplicate.
             // When GetHandleInformation fails, we still attempt to call DuplicateHandle,
@@ -73,7 +70,9 @@ namespace System.Diagnostics
             if (Interop.Kernel32.GetHandleInformation(sourceHandle, out Interop.Kernel32.HandleFlags flags)
                 && (flags & Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT) != 0)
             {
-                return;
+                // Add ref, so the raw handle won't be closed while we're working with it. The caller is responsible for releasing the ref.
+                sourceHandle.DangerousAddRef(ref refAdded);
+                return sourceHandle.DangerousGetHandle();
             }
 
             IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
@@ -87,6 +86,9 @@ namespace System.Diagnostics
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
+
+            // We control the lifetime of duplicate so we don't need to call DangerousAddRef here.
+            return duplicatedHandle.DangerousGetHandle();
         }
 
         internal static string GetEnvironmentVariablesBlock(DictionaryWrapper sd)
