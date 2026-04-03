@@ -107,8 +107,6 @@ struct DebuggerFrameData
         this->info.fIsFunclet = false;
         this->info.fIsFilter  = false;
 
-        this->info.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = false;
-
 #if defined(_DEBUG)
         this->previousFP = LEAF_MOST_FRAME;
 #endif // _DEBUG
@@ -1164,22 +1162,6 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
         }
 
         f.InitForUMChain(fpRoot, d->GetUMChainStartRD());
-
-#ifdef FEATURE_COMINTEROP
-        if ((frame != NULL) &&
-            (frame->GetFrameIdentifier() == FrameIdentifier::CLRToCOMMethodFrame))
-        {
-            // This condition is part of the fix for 650903. (See
-            // code:ControllerStackInfo::WalkStack and code:DebuggerStepper::TrapStepOut
-            // for the other parts.) Here, we know that the frame we're looking it may be
-            // a CLRToCOMMethodFrameGeneric (this info is not otherwise plubmed down into
-            // the walker; even though the walker does get to see "f.frame", that may not
-            // be "frame"). Given this, if the walker chooses to ignore these frames
-            // (while doing a Step Out during managed-only debugging), then it can ignore
-            // this frame.
-            f.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = true;
-        }
-#endif // FEATURE_COMINTEROP
 
         if (d->InvokeCallback(&f) == SWA_ABORT)
         {

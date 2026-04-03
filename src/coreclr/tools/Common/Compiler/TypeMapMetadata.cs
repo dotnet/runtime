@@ -235,14 +235,15 @@ namespace ILCompiler
             MethodDesc IProxyTypeMap.ThrowingMethodStub => _associatedTypeMapExceptionStub;
         }
 
-        public static readonly TypeMapMetadata Empty = new TypeMapMetadata(new Dictionary<TypeDesc, Map>(), "No type maps");
+        public static readonly TypeMapMetadata Empty = new TypeMapMetadata(new Dictionary<TypeDesc, Map>(), "No type maps", null);
 
         private readonly IReadOnlyDictionary<TypeDesc, Map> _states;
 
-        private TypeMapMetadata(IReadOnlyDictionary<TypeDesc, Map> states, string diagnosticName)
+        private TypeMapMetadata(IReadOnlyDictionary<TypeDesc, Map> states, string diagnosticName, ModuleDesc associatedModule)
         {
             _states = states;
             DiagnosticName = diagnosticName;
+            AssociatedModule = associatedModule;
         }
 
         public bool IsEmpty => _states.Count == 0;
@@ -250,6 +251,8 @@ namespace ILCompiler
         internal IEnumerable<KeyValuePair<TypeDesc, Map>> Maps => _states;
 
         public string DiagnosticName { get; }
+
+        public ModuleDesc AssociatedModule { get; }
 
         public static TypeMapMetadata CreateFromAssembly(EcmaAssembly assembly, ModuleDesc throwHelperEmitModule, TypeMapAssemblyTargetsMode assemblyTargetsMode)
         {
@@ -474,7 +477,7 @@ namespace ILCompiler
                 }
             }
 
-            return new TypeMapMetadata(typeMapStates, $"Type maps rooted at {assembly}");
+            return new TypeMapMetadata(typeMapStates, $"Type maps rooted at {assembly}", assembly);
         }
     }
 

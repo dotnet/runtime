@@ -16,7 +16,6 @@ internal sealed class FrameIterator
 
         /* TransitionFrame Types */
         FramedMethodFrame,
-        CLRToCOMMethodFrame,
         PInvokeCalliFrame,
         PrestubMethodFrame,
         StubDispatchFrame,
@@ -90,7 +89,6 @@ internal sealed class FrameIterator
 
             // TransitionFrame type frames
             case FrameType.FramedMethodFrame:
-            case FrameType.CLRToCOMMethodFrame:
             case FrameType.PInvokeCalliFrame:
             case FrameType.PrestubMethodFrame:
             case FrameType.StubDispatchFrame:
@@ -203,7 +201,6 @@ internal sealed class FrameIterator
             case FrameType.ExternalMethodFrame:
             case FrameType.PrestubMethodFrame:
             case FrameType.CallCountingHelperFrame:
-            case FrameType.CLRToCOMMethodFrame:
             case FrameType.InterpreterFrame:
                 Data.FramedMethodFrame framedMethodFrame = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
                 return framedMethodFrame.MethodDescPtr;

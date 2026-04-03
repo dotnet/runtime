@@ -159,7 +159,7 @@ DEFINE_METHOD(CLASS,                CTOR,                   .ctor,              
 #endif // FOR_ILLINK
 
 #ifdef FEATURE_COMINTEROP
-DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  SM_PtrClass_PtrStr_Int_PtrObj_PtrArrObj_PtrArrBool_PtrArrInt_PtrArrType_PtrType_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  NoSig)
 #endif // FEATURE_COMINTEROP
 
 BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
@@ -179,7 +179,7 @@ DEFINE_CLASS_U(System,                 __ComObject,            ComObject)
 DEFINE_FIELD_U(m_ObjectToDataMap,      ComObject,              m_ObjectToDataMap)
 DEFINE_CLASS(COM_OBJECT,            System,                 __ComObject)
 DEFINE_METHOD(COM_OBJECT,           RELEASE_ALL_DATA,       ReleaseAllData,             SM_PtrComObject_PtrException_RetVoid)
-DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER,     GetEventProvider,           SM_PtrComObject_PtrClass_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER,     GetEventProvider,           NoSig)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(COM_OBJECT,           CTOR,                   .ctor,                      IM_RetVoid)
 #endif // FOR_ILLINK

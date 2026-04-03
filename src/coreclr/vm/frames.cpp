@@ -1718,60 +1718,10 @@ PInvokeCalliFrame::PInvokeCalliFrame(TransitionBlock * pTransitionBlock, VASigCo
 }
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_COMINTEROP
-
-#ifndef DACCESS_COMPILE
-CLRToCOMMethodFrame::CLRToCOMMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
-    : FramedMethodFrame(FrameIdentifier::CLRToCOMMethodFrame, pTransitionBlock, pMD)
-{
-    LIMITED_METHOD_CONTRACT;
-}
-#endif // #ifndef DACCESS_COMPILE
-
-void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // CLRToCOMMethodFrame is only used in the event call / late bound call code path where we do not have IL stub
-    // so we need to promote the arguments and return value manually.
-
-    FramedMethodFrame::GcScanRoots_Impl(fn, sc);
-    PromoteCallerStack(fn, sc);
-
-    //
-    // Promote the returned object
-    //
-
-    MetaSig sig(GetFunction());
-
-    TypeHandle thValueType;
-    CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
-    if (CorTypeInfo::IsObjRef_NoThrow(et))
-    {
-        (*fn)(GetReturnObjectPtr(), sc, CHECK_APP_DOMAIN);
-    }
-    else if (CorTypeInfo::IsByRef_NoThrow(et))
-    {
-        PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
-    }
-    else if (et == ELEMENT_TYPE_VALUETYPE)
-    {
-        ArgIterator argit(&sig);
-        if (!argit.HasRetBuffArg())
-        {
-#ifdef TARGET_UNIX
-#error Non-Windows ABIs must be special cased
-#endif
-            ReportPointersFromValueType(fn, sc, thValueType.AsMethodTable(), GetReturnObjectPtr());
-        }
-    }
-}
-#endif // FEATURE_COMINTEROP
-
 #if defined (_DEBUG) && !defined (DACCESS_COMPILE)
 // For IsProtectedByGCFrame, we need to know whether a given object ref is protected
-// by a CLRToCOMMethodFrame. Since GCScanRoots for those frames are quite complicated,
-// we don't want to duplicate their logic so we call GCScanRoots with
+// by a TransitionFrame. Since GCScanRoots for those frames are
+// quite complicated, we don't want to duplicate their logic so we call GCScanRoots with
 // IsObjRefProtected (a fake promote function) and an extended ScanContext to do the checking.
 
 struct IsObjRefProtectedScanContext : public ScanContext

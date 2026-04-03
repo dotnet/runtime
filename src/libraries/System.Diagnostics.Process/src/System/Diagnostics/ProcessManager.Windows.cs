@@ -143,28 +143,16 @@ namespace System.Diagnostics
             return null;
         }
 
-        /// <summary>Gets the process name for the specified process ID on the specified machine.</summary>
-        /// <param name="processId">The process ID.</param>
-        /// <param name="machineName">The machine name.</param>
-        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
-        /// <returns>The process name for the process if it could be found; otherwise, null.</returns>
-        public static string? GetProcessName(int processId, string machineName, bool isRemoteMachine)
+        internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
         {
-            if (isRemoteMachine)
+            if (processInfo is not null)
             {
-                // remote case: we take the hit of looping through all results
-                ArrayBuilder<ProcessInfo> builder = default;
-                s_getRemoteProcessInfos!(ref builder, processNameFilter: null, machineName);
-                for (int i = 0; i < builder.Count; i++)
-                {
-                    if (builder[i].ProcessId == processId)
-                        return builder[i].ProcessName;
-                }
+                return processInfo.ProcessName;
             }
-            else
-            {
-                // local case: do not use performance counter and also attempt to get the matching (by pid) process only
 
+            bool isRemoteMachine = IsRemoteMachine(machineName);
+            if (!isRemoteMachine)
+            {
                 string? processName = Interop.Kernel32.GetProcessName((uint)processId);
                 if (processName is not null)
                 {
@@ -175,9 +163,9 @@ namespace System.Diagnostics
                 }
             }
 
-            return null;
+            processInfo = GetProcessInfo(processId, machineName, isRemoteMachine);
+            return processInfo?.ProcessName;
         }
-
 
         /// <summary>Gets the IDs of all processes on the specified machine.</summary>
         /// <param name="machineName">The machine to examine.</param>

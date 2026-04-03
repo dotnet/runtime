@@ -44,7 +44,6 @@ EXTERN _PreStubWorker@8:PROC
 EXTERN _TheUMEntryPrestubWorker@4:PROC
 
 ifdef FEATURE_COMINTEROP
-EXTERN _CLRToCOMWorker@8:PROC
 EXTERN _ComPreStubGetLastHResult@0:PROC
 EXTERN _ComPreStubGetLastStackBytes@0:PROC
 endif
@@ -454,28 +453,6 @@ _PInvokeImportThunk@0 proc public
         jmp     eax     ; Jump to DLL target
 _PInvokeImportThunk@0 endp
 
-; void __stdcall setFPReturn(int fpSize, INT64 retVal)
-_setFPReturn@12 proc public
-    mov     ecx, [esp+4]
-
-    ; leave the return value in eax:edx if it is not the floating point case
-    mov     eax, [esp+8]
-    mov     edx, [esp+12]
-
-    cmp     ecx, 4
-    jz      setFPReturn4
-
-    cmp     ecx, 8
-    jnz     setFPReturnNot8
-    fld     qword ptr [esp+8]
-setFPReturnNot8:
-    retn    12
-
-setFPReturn4:
-    fld     dword ptr [esp+8]
-    retn    12
-_setFPReturn@12 endp
-
 ; void __stdcall JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
 _JIT_ProfilerEnterLeaveTailcallStub@4 proc public
     ; this function must preserve all registers, including scratch
@@ -865,49 +842,6 @@ _TheUMEntryPrestub@0 proc public
 _TheUMEntryPrestub@0 endp
 
 ifdef FEATURE_COMINTEROP
-;==========================================================================
-; CLR -> COM generic or late-bound call
-_GenericCLRToCOMCallStub@0 proc public
-
-    STUB_PROLOG
-
-    ; pTransitionBlock
-    mov         esi, esp
-
-    ; return value
-    sub         esp, 8
-
-    ; save pMD
-    mov         ebx, eax
-
-    push        eax                 ; pMD
-    push        esi                 ; pTransitionBlock
-    call        _CLRToCOMWorker@8
-
-    push        eax
-    call        _setFPReturn@12     ; pop & set the return value
-
-    ; From here on, mustn't trash eax:edx
-
-    ; Get pCLRToCOMCallInfo for return thunk
-    mov         ecx, [ebx + CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo]
-    ; Get size of arguments to pop
-    movzx       ecx, word ptr [ecx + CLRToCOMCallInfo__m_cbStackPop]
-    ; Get the return address, pushed registers on stack are 24 bytes big
-    mov         ebx, [esp + 24]
-    ; Set the return address on stack at the last stack slot
-    mov         [esp + ecx + 24], ebx
-
-    STUB_EPILOG_RETURN
-
-    ; Move esp to point to the last stack slot where we put the return
-    ; address earlier
-    lea         esp, [esp + ecx]
-
-    ret
-
-_GenericCLRToCOMCallStub@0 endp
-
 _ComCallPreStub@0 proc public
 
     push    eax     ; UMEntryThunkData* ; Push the secret arg for after the worker call.
