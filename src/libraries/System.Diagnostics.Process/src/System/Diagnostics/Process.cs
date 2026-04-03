@@ -1377,8 +1377,7 @@ namespace System.Diagnostics
 
             try
             {
-                // Avoid calling GetProcessName on platforms where it throws PlatformNotSupportedException.
-                if (Associated && ProcessManager.IsProcessNameSupported)
+                if (Associated)
                 {
                     string? processName = _processName ?? ProcessManager.GetProcessName(_processId, _machineName, ref _processInfo);
                     if (!string.IsNullOrEmpty(processName))

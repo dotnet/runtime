@@ -33,8 +33,6 @@ namespace System.Diagnostics
             return new ProcessModuleCollection(0);
         }
 
-        internal static bool IsProcessNameSupported => false;
-
         internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
         {
             throw new PlatformNotSupportedException();

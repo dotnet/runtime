@@ -71,8 +71,6 @@ namespace System.Diagnostics
             return new ProcessModuleCollection(0);
         }
 
-        internal static bool IsProcessNameSupported => true;
-
         internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
         {
             ThrowIfRemoteMachine(machineName);

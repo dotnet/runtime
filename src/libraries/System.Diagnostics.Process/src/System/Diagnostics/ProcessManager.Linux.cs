@@ -38,8 +38,6 @@ namespace System.Diagnostics
             return processes.ToArray();
         }
 
-        internal static bool IsProcessNameSupported => true;
-
         internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
         {
             ThrowIfRemoteMachine(machineName);

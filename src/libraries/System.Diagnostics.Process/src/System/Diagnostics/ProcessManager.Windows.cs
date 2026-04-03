@@ -120,8 +120,6 @@ namespace System.Diagnostics
             return null;
         }
 
-        internal static bool IsProcessNameSupported => true;
-
         internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
         {
             if (processInfo is not null)

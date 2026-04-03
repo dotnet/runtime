@@ -21,8 +21,6 @@ namespace System.Diagnostics
             return Interop.libproc.proc_pidpath(processId);
         }
 
-        internal static bool IsProcessNameSupported => true;
-
         internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
         {
             ThrowIfRemoteMachine(machineName);
