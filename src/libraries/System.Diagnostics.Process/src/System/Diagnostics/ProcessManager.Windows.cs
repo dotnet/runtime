@@ -49,7 +49,9 @@ namespace System.Diagnostics
             Dictionary<int, ProcessInfo> processInfos = NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
             builder = new ArrayBuilder<ProcessInfo>(processInfos.Count);
             foreach (KeyValuePair<int, ProcessInfo> entry in processInfos)
+            {
                 builder.Add(entry.Value);
+            }
         }
 
         /// <summary>Gets whether the process with the specified ID is currently running.</summary>

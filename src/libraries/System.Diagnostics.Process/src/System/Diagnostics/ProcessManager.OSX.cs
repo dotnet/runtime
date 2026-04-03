@@ -21,9 +21,7 @@ namespace System.Diagnostics
             return Interop.libproc.proc_pidpath(processId);
         }
 
-#pragma warning disable IDE0060
-        internal static string? GetProcessName(int processId, string machineName, bool isRemoteMachine, ref ProcessInfo? processInfo)
-#pragma warning restore IDE0060
+        internal static string? GetProcessName(int processId, string _ /* machineName */, bool __ /* isRemoteMachine */, ref ProcessInfo? processInfo)
         {
             if (processInfo is not null)
             {

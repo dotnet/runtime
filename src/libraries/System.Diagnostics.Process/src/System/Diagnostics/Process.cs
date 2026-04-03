@@ -334,7 +334,6 @@ namespace System.Diagnostics
         public int NonpagedSystemMemorySize
             => unchecked((int)GetProcessInfo().PoolNonPagedBytes);
 
-
         public long PagedMemorySize64
             => GetProcessInfo().PageFileBytes;
 
@@ -342,14 +341,12 @@ namespace System.Diagnostics
         public int PagedMemorySize
             => unchecked((int)GetProcessInfo().PageFileBytes);
 
-
         public long PagedSystemMemorySize64
             => GetProcessInfo().PoolPagedBytes;
 
         [Obsolete("Process.PagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedSystemMemorySize64 instead.")]
         public int PagedSystemMemorySize
             => unchecked((int)GetProcessInfo().PoolPagedBytes);
-
 
         public long PeakPagedMemorySize64
             => GetProcessInfo().PageFileBytesPeak;
@@ -576,7 +573,6 @@ namespace System.Diagnostics
                 }
             }
         }
-
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -1633,7 +1629,6 @@ namespace System.Diagnostics
             }
             _output.BeginReadLine();
         }
-
 
         /// <devdoc>
         /// <para>
