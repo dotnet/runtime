@@ -19,7 +19,7 @@ public class NotificationsTests
     private static INotifications CreateContract()
     {
         var target = new TestPlaceholderTarget(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true }, (_, _) => -1);
-        return ((IContractFactory<INotifications>)new NotificationsFactory()).CreateContract(target, 1);
+        return new Notifications_1(target);
     }
 
     private static ReadOnlySpan<TargetPointer> MakeExInfo(params ulong[] values)

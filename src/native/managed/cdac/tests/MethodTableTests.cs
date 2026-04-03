@@ -53,7 +53,7 @@ public class MethodTableTests
             CreateContractTypes(rtsBuilder),
             CreateContractGlobals(rtsBuilder));
         target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)));
+            c => c.RuntimeTypeSystem == (IRuntimeTypeSystem)new RuntimeTypeSystem_1(target)));
         return target;
     }
 

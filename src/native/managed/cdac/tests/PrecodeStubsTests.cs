@@ -364,7 +364,6 @@ public class PrecodeStubsTests
         (string Name, ulong Value)[] globals = [(Constants.Globals.PlatformMetadata, precodeBuilder.MachineDescriptorAddress)];
         var target = new TestPlaceholderTarget(arch, reader, precodeBuilder.Types, globals);
 
-        IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
         Mock<IPlatformMetadata> platformMetadata = new();
         platformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(precodeBuilder.CodePointerFlags);
         platformMetadata.Setup(p => p.GetPrecodeMachineDescriptor()).Returns(precodeBuilder.MachineDescriptorAddress);
@@ -373,7 +372,16 @@ public class PrecodeStubsTests
         // to set it up such that it will only be created after the target's targets are set up
         Mock<ContractRegistry> reg = new();
         reg.SetupGet(c => c.PlatformMetadata).Returns(platformMetadata.Object);
-        reg.SetupGet(c => c.PrecodeStubs).Returns(() => precodeFactory.CreateContract(target, precodeBuilder.PrecodesVersion));
+        reg.SetupGet(c => c.PrecodeStubs).Returns(() =>
+        {
+            return precodeBuilder.PrecodesVersion switch
+            {
+                1 => new PrecodeStubs_1(target),
+                2 => new PrecodeStubs_2(target),
+                3 => new PrecodeStubs_3(target),
+                _ => throw new NotImplementedException(),
+            };
+        });
         target.SetContracts(reg.Object);
 
         return target;

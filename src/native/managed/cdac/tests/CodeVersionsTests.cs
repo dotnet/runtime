@@ -158,9 +158,8 @@ public class CodeVersionsTests
             builder.Builder.GetMemoryContext().ReadFromTarget,
             CreateContractTypes(builder));
 
-        IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
         ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.CodeVersions == cvfactory.CreateContract(target, 1)
+            c => c.CodeVersions == (ICodeVersions)new CodeVersions_1(target)
                 && c.RuntimeTypeSystem == mockRuntimeTypeSystem.Object
                 && c.ExecutionManager == mockExecutionManager.Object
                 && c.Loader == mockLoader.Object);

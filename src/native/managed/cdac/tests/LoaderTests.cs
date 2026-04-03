@@ -32,7 +32,7 @@ public unsafe class LoaderTests
 
         var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, CreateContractTypes(loader));
         target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+            c => c.Loader == (ILoader)new Loader_1(target)));
         return target.Contracts.Loader;
     }
 
@@ -50,9 +50,6 @@ public unsafe class LoaderTests
             moduleAddrEmptyPath = loader.AddModule().Address;
         });
 
-        {
-            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-            string actual = contract.GetPath(handle);
             Assert.Equal(expected, actual);
         }
         {
@@ -76,9 +73,6 @@ public unsafe class LoaderTests
             moduleAddrEmptyName = loader.AddModule().Address;
         });
 
-        {
-            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-            string actual = contract.GetFileName(handle);
             Assert.Equal(expected, actual);
         }
         {
@@ -102,9 +96,6 @@ public unsafe class LoaderTests
             moduleAddrEmptyName = loader.AddModule().Address;
         });
 
-        {
-            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-            bool result = contract.TryGetSimpleName(handle, out string actual);
             Assert.True(result);
             Assert.Equal(expected, actual);
         }
@@ -424,7 +415,7 @@ public unsafe class LoaderTests
 
         var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, types);
         target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+            c => c.Loader == (ILoader)new Loader_1(target)));
 
         return (target, new TargetPointer(peAssemblyFrag.Address), new TargetPointer(webcilImage.Address));
     }

@@ -62,7 +62,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
-        IEnumerable<IContractFactory<IContract>> additionalFactories,
+        Action<ContractRegistry>[] contractRegistrations,
         [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
         DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext);
@@ -71,7 +71,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             dataTargetDelegates,
             out Descriptor[] descriptors))
         {
-            target = new ContractDescriptorTarget(descriptors, dataTargetDelegates, additionalFactories);
+            target = new ContractDescriptorTarget(descriptors, dataTargetDelegates, contractRegistrations);
             return true;
         }
 
@@ -97,7 +97,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         GetTargetThreadContextDelegate getThreadContext,
         bool isLittleEndian,
         int pointerSize,
-        IEnumerable<IContractFactory<IContract>> additionalFactories)
+        Action<ContractRegistry>[]? contractRegistrations = null)
     {
         return new ContractDescriptorTarget(
             [
@@ -109,12 +109,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 }
             ],
             new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext),
-            additionalFactories);
+            contractRegistrations ?? []);
     }
 
-    private ContractDescriptorTarget(Descriptor[] descriptors, DataTargetDelegates dataTargetDelegates, IEnumerable<IContractFactory<IContract>> additionalFactories)
+    private ContractDescriptorTarget(Descriptor[] descriptors, DataTargetDelegates dataTargetDelegates, Action<ContractRegistry>[] contractRegistrations)
     {
-        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, additionalFactories);
+        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, contractRegistrations);
         ProcessedData = new DataCache(this);
         _config = descriptors[0].Config;
         _dataTargetDelegates = dataTargetDelegates;

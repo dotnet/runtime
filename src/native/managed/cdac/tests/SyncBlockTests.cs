@@ -27,7 +27,7 @@ public class SyncBlockTests
             CreateContractTypes(syncBlock),
             CreateContractGlobals(syncBlock));
         target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.SyncBlock == ((IContractFactory<ISyncBlock>)new SyncBlockFactory()).CreateContract(target, 1)));
+            c => c.SyncBlock == (ISyncBlock)new SyncBlock_1(target)));
         return target.Contracts.SyncBlock;
     }
 

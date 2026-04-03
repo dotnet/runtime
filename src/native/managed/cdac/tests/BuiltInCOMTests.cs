@@ -34,7 +34,7 @@ public class BuiltInCOMTests
             CreateContractGlobals(builtInCom));
         ISyncBlock syncBlockContract = syncBlock ?? Mock.Of<ISyncBlock>();
         target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.BuiltInCOM == ((IContractFactory<IBuiltInCOM>)new BuiltInCOMFactory()).CreateContract(target, 1)
+            c => c.BuiltInCOM == (IBuiltInCOM)new BuiltInCOM_1(target)
               && c.SyncBlock == syncBlockContract));
         return target.Contracts.BuiltInCOM;
     }
@@ -70,6 +70,7 @@ public class BuiltInCOMTests
             (Constants.Globals.TearOffAddRefSimpleInner, builtInCom.TearOffAddRefSimpleInnerGlobalAddress),
             (Constants.Globals.RCWInterfaceCacheSize, MockRCW.InterfaceEntryCacheSize),
         ];
+
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]

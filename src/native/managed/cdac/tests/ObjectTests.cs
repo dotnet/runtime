@@ -72,9 +72,9 @@ public unsafe class ObjectTests
 
     private static ContractRegistry CreateDefaultContracts(TestPlaceholderTarget target)
         => Mock.Of<ContractRegistry>(
-            c => c.Object == ((IContractFactory<IObject>)new ObjectFactory()).CreateContract(target, 1)
-                && c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)
-                && c.SyncBlock == ((IContractFactory<ISyncBlock>)new SyncBlockFactory()).CreateContract(target, 1));
+            c => c.Object == (IObject)new Object_1(target)
+                && c.RuntimeTypeSystem == (IRuntimeTypeSystem)new RuntimeTypeSystem_1(target)
+                && c.SyncBlock == (ISyncBlock)new SyncBlock_1(target));
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]

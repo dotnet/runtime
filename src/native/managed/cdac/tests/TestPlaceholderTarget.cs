@@ -469,6 +469,8 @@ internal class TestPlaceholderTarget : Target
             throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered.");
         }
 
+        public override void Register<TContract>(int version, Func<Target, TContract> creator) { }
+
         public override void Flush() { }
     }
 

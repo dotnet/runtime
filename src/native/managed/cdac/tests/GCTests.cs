@@ -142,8 +142,8 @@ internal static class GCHeapBuilderExtensions
         GCHeapBuilder config = new();
         configure(config);
         BuildWksHeap(targetBuilder, config);
-        targetBuilder.AddContract<IGC>(target =>
-            ((IContractFactory<IGC>)new GCFactory()).CreateContract(target, 1));
+        targetBuilder.AddContract<IGC>(static target =>
+            (IGC)new GC_1(target));
         return targetBuilder;
     }
 
@@ -155,8 +155,8 @@ internal static class GCHeapBuilderExtensions
         GCHeapBuilder config = new();
         configure(config);
         heapAddress = BuildSvrHeap(targetBuilder, config);
-        targetBuilder.AddContract<IGC>(target =>
-            ((IContractFactory<IGC>)new GCFactory()).CreateContract(target, 1));
+        targetBuilder.AddContract<IGC>(static target =>
+            (IGC)new GC_1(target));
         return targetBuilder;
     }
 

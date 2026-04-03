@@ -24,9 +24,8 @@ public unsafe class GetRegisterNameTests
             [],
             [(Constants.Globals.Architecture, targetArch.ToString().ToLowerInvariant())]);
 
-        IContractFactory<IRuntimeInfo> runtimeInfoFactory = new RuntimeInfoFactory();
         ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.RuntimeInfo == runtimeInfoFactory.CreateContract(target, 1));
+            c => c.RuntimeInfo == (IRuntimeInfo)new RuntimeInfo_1(target));
         target.SetContracts(reg);
 
         return new SOSDacImpl(target, legacyObj: null);

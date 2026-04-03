@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -44,7 +44,7 @@ public class DacStreamsTests
 
         var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, DacStreamsTypes, DacStreamsGlobals);
         target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.DacStreams == ((IContractFactory<IDacStreams>)new DacStreamsFactory()).CreateContract(target, 1)));
+            c => c.DacStreams == (IDacStreams)new DacStreams_1(target)));
 
         testCase(target);
     }

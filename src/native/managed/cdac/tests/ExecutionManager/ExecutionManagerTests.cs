@@ -44,9 +44,9 @@ public class ExecutionManagerTests
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
         TestPlaceholderTarget.ReadFromTargetDelegate reader = emBuilder.Builder.GetMemoryContext().ReadFromTarget;
         var target = new TestPlaceholderTarget(arch, reader, CreateContractTypes(emBuilder), emBuilder.Globals);
-        IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
+        IExecutionManager emContract = CreateExecutionManager(target, emBuilder.Version);
         ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.ExecutionManager == emfactory.CreateContract(target, emBuilder.Version)
+            c => c.ExecutionManager == emContract
                 && c.PlatformMetadata == new Mock<IPlatformMetadata>().Object);
         target.SetContracts(reg);
         return target;
@@ -78,6 +78,16 @@ public class ExecutionManagerTests
             headerMap: nibBuilder.NibbleMapFragment.Address,
             heap: heapAddress);
         emBuilder.SetAllCodeHeaps(node.Address);
+    }
+
+    private static IExecutionManager CreateExecutionManager(Target target, int version)
+    {
+        return version switch
+        {
+            1 => new ExecutionManager_1(target),
+            2 => new ExecutionManager_2(target),
+            _ => throw new NotImplementedException(),
+        };
     }
 
     [Theory]

@@ -76,8 +76,8 @@ public class MethodDescTests
 
         mockExecutionManager ??= new Mock<IExecutionManager>();
         target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)
-                && c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)
+            c => c.RuntimeTypeSystem == (IRuntimeTypeSystem)new RuntimeTypeSystem_1(target)
+                && c.Loader == (ILoader)new Loader_1(target)
                 && c.PlatformMetadata == new Mock<IPlatformMetadata>().Object
                 && c.ExecutionManager == mockExecutionManager.Object));
         return target.Contracts.RuntimeTypeSystem;
