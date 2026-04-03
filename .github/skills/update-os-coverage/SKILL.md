@@ -173,16 +173,18 @@ After editing, verify:
 
 Not all Helix queues run in the default PR pipeline (`runtime`). Some distros are only exercised by the **extra-platforms** pipeline (`runtime-extra-platforms`), which runs on a daily schedule and can be triggered on PRs with `/azp run runtime-extra-platforms`.
 
-**Distros behind the `isExtraPlatformsBuild` guard** — need `runtime-extra-platforms`:
+**Distros behind the `isExtraPlatformsBuild` guard** — generally need `runtime-extra-platforms` for coverage that is not already exercised by the default `runtime` pipeline:
 
 | Distro | Platform | File |
 |--------|----------|------|
-| Debian | linux_x64, linux_arm | `libraries/helix-queues-setup.yml` |
+| Debian* | linux_x64, linux_arm | `libraries/helix-queues-setup.yml` |
 | Fedora | linux_x64 | `libraries/helix-queues-setup.yml` |
 | openSUSE | linux_x64 | `libraries/helix-queues-setup.yml` |
 | Alpine edge | linux_musl_x64 | `libraries/helix-queues-setup.yml` |
 | Ubuntu | linux_arm64 | `libraries/helix-queues-setup.yml` |
 | Alpine (versioned) | linux_musl_arm64 | `libraries/helix-queues-setup.yml` |
+
+> **Note:** Debian `linux_x64` is also exercised in the default `runtime` pipeline for some libraries scenarios (for example, when `interpreter: true` or `isSingleFile: true`). Use `runtime-extra-platforms` when you need Debian coverage outside those default-pipeline cases; Debian `linux_arm` remains extra-platforms-only here.
 
 **Distros in the default PR pipeline** — no extra pipeline needed:
 
@@ -195,7 +197,7 @@ Not all Helix queues run in the default PR pipeline (`runtime`). Some distros ar
 
 > **Note:** Alpine versioned linux_musl_arm64 is behind `isExtraPlatformsBuild` in `libraries/helix-queues-setup.yml`, but runs unconditionally in `coreclr/templates/helix-queues-setup.yml`. It is listed here because coreclr provides default pipeline coverage.
 
-**Decision:** After creating a PR, cross-reference the distros you changed against the tables above. Only trigger `runtime-extra-platforms` if **at least one** changed distro is in the first table. If every changed distro is in the second table, the default `runtime` pipeline provides full coverage and no extra pipeline run is needed.
+**Decision:** After creating a PR, cross-reference the distro/platform combinations you changed against the tables above. Trigger `runtime-extra-platforms` when you changed coverage that is only, or primarily, exercised by the first table. If every changed distro/platform is already covered by the default `runtime` pipeline, no extra pipeline run is needed.
 
 When extra-platforms is needed, post the trigger comment on the PR:
 
