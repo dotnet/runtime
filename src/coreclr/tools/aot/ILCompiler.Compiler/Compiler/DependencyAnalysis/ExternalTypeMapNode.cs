@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
                     // If the trimming target type has a canonical form, it could be created at runtime by the type loader.
                     // If there is a type loader template for it, create the generic type instantiation eagerly.
                     TypeDesc canonTrimmingType = trimmingTargetType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                    if (canonTrimmingType != trimmingTargetType)
+                    if (canonTrimmingType != trimmingTargetType && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonTrimmingType))
                     {
                         yield return new CombinedDependencyListEntry(
                             context.NecessaryTypeSymbol(trimmingTargetType),
