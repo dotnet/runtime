@@ -16,7 +16,7 @@ namespace System.Diagnostics
         {
             // Iterate through all process IDs to load information about each process
             int[] pids = GetProcessIds();
-            if (processNameFilter is not null)
+            if (processNameFilter is null)
             {
                 builder = new ArrayBuilder<ProcessInfo>(pids.Length);
             }
