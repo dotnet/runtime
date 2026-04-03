@@ -217,7 +217,7 @@ namespace System.Text.RegularExpressions.Generator
                 try
                 {
                     culture = CultureInfo.GetCultureInfo(cultureName);
-                    effectiveCultureName = cultureName;
+                    effectiveCultureName = culture.Name;
                 }
                 catch (CultureNotFoundException)
                 {

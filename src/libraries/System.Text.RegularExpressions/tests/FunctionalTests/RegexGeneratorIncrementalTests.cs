@@ -781,6 +781,49 @@ namespace System.Text.RegularExpressions.Tests
                 "Expected source model to be modified when culture changes.");
         }
 
+        [Theory]
+        [InlineData("en-us", "en-US")]
+        [InlineData("tr-tr", "tr-TR")]
+        public static void EquivalentCultureNameChange_DoesNotRegenerate(string originalCultureName, string updatedCultureName)
+        {
+            string source1 = $$"""
+                using System.Text.RegularExpressions;
+                public partial class C
+                {
+                    [GeneratedRegex(@"INFO", RegexOptions.IgnoreCase, -1, "{{originalCultureName}}")]
+                    public static partial Regex GetRegex();
+                }
+                """;
+
+            string source2 = $$"""
+                using System.Text.RegularExpressions;
+                public partial class C
+                {
+                    [GeneratedRegex(@"INFO", RegexOptions.IgnoreCase, -1, "{{updatedCultureName}}")]
+                    public static partial Regex GetRegex();
+                }
+                """;
+
+            Compilation compilation = CreateCompilation(source1);
+            GeneratorDriver driver = CreateRegexGeneratorDriver(compilation);
+
+            driver = driver.RunGenerators(compilation);
+            string firstOutput = string.Concat(driver.GetRunResult().Results[0].GeneratedSources.Select(s => s.SyntaxTree.ToString()));
+
+            compilation = compilation.ReplaceSyntaxTree(
+                compilation.SyntaxTrees.First(),
+                CSharpSyntaxTree.ParseText(SourceText.From(source2, Encoding.UTF8),
+                    CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview)));
+
+            driver = driver.RunGenerators(compilation);
+            GeneratorRunResult secondResult = driver.GetRunResult().Results[0];
+            string secondOutput = string.Concat(secondResult.GeneratedSources.Select(s => s.SyntaxTree.ToString()));
+
+            Assert.Equal(firstOutput, secondOutput);
+            AssertSourceModelCached(secondResult,
+                "Expected source model to be cached when only equivalent culture name casing changes.");
+        }
+
         [Fact]
         public static void SamePatternDifferentCultures_NotDeduped()
         {

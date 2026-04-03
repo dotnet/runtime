@@ -140,8 +140,7 @@ namespace System.Text.RegularExpressions.Generator
                 return false;
             }
 
-            if (!RegexTreeEquals(x.RegexTree, y.RegexTree) ||
-                x.HasIgnoreCase != y.HasIgnoreCase ||
+            if (x.HasIgnoreCase != y.HasIgnoreCase ||
                 x.HasRightToLeft != y.HasRightToLeft)
             {
                 return false;
@@ -173,8 +172,7 @@ namespace System.Text.RegularExpressions.Generator
 
         private static int GetAnalysisHashCode(AnalysisResults obj)
         {
-            int hash = GetRegexTreeHashCode(obj.RegexTree);
-            hash = HashHelpers.Combine(hash, obj.HasIgnoreCase.GetHashCode());
+            int hash = obj.HasIgnoreCase.GetHashCode();
             hash = HashHelpers.Combine(hash, obj.HasRightToLeft.GetHashCode());
 
             Stack<RegexNode> pending = new();
