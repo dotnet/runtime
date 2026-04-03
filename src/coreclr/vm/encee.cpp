@@ -386,6 +386,9 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     else
     {
         // Generics are involved so we need to search for all related MethodDescs.
+        // Note: ResetCodeEntryPointForEnC() handles async variants automatically —
+        // when called on a thunk MethodDesc, it detects IsAsyncThunkMethod() and
+        // cascades the reset to the async variant (see method.cpp).
         Module* module = pMethod->GetLoaderModule();
         mdMethodDef tkMethod = pMethod->GetMemberDef();
 

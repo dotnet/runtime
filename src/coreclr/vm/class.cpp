@@ -573,10 +573,12 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     MethodReturnKind returnKind;
     {
         // ClassifyMethodReturnKind calls IsTypeDefOrRefImplementedInSystemModule which
-        // does type resolution that may trigger GC. We're in a GC_NOTRIGGER scope because
-        // the CLR is suspended for debugging, but this resolution is safe since we're only
-        // resolving well-known system types (Task/ValueTask). This mirrors the existing
-        // CONTRACT_VIOLATION(GCViolation) in ApplyEditAndContinue.
+        // does type resolution that may trigger GC. We suppress GC_NOTRIGGER here because
+        // we're only resolving well-known system types (Task/ValueTask) in practice.
+        // Note: ClassifyMethodReturnKind checks type names without verifying the assembly
+        // reference, so user-defined types matching these names (e.g. via extern alias)
+        // could theoretically induce GC-triggering paths. Accepted as Won't Fix given
+        // the extreme unlikelihood and consistency with ApplyEditAndContinue.
         CONTRACT_VIOLATION(GCViolation);
         returnKind = ClassifyMethodReturnKind(
             SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
@@ -594,7 +596,16 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     }
     else if (IsMiAsync(dwImplFlags))
     {
-        // IsMiAsync but not task-returning: infrastructure async method (e.g. Await helpers)
+        // IsMiAsync but not task-returning: infrastructure async method (e.g. Await helpers).
+        // These are only permitted on types in the system module, mirroring the validation
+        // in MethodTableBuilder during normal type loading.
+        if (!pModule->IsSystem())
+        {
+            LOG((LF_ENC, LL_INFO100,
+                "EEClass::AddMethod rejecting infrastructure async method (methodDef: 0x%08x) on non-system module\n",
+                methodDef));
+            return COR_E_BADIMAGEFORMAT;
+        }
         primaryAsyncFlags = AsyncMethodFlags::AsyncCall;
     }
 
