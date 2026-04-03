@@ -394,7 +394,7 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
         /// <summary>Data about a regex, including its parsed tree and analysis results used by the emitter.</summary>
-        private sealed class RegexMethod(
+        internal sealed class RegexMethod(
             RegexType declaringType,
             bool isProperty,
             string memberName,
@@ -427,7 +427,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>A containing type for a regex member.</summary>
-        private sealed class RegexType(string keyword, string @namespace, string name, RegexType? parent)
+        internal sealed class RegexType(string keyword, string @namespace, string name, RegexType? parent)
         {
             private string? _fullName;
 
@@ -438,7 +438,7 @@ namespace System.Text.RegularExpressions.Generator
             public string FullName => _fullName ??= Parent is null ? Name : $"{Parent.FullName}+{Name}";
         }
 
-        private sealed class RegexTreeComparer : IEqualityComparer<RegexTree>
+        internal sealed class RegexTreeComparer : IEqualityComparer<RegexTree>
         {
             private static readonly RegexNodeComparer s_nodeComparer = new();
             private static readonly RegexFindOptimizationsComparer s_findOptimizationsComparer = new();
@@ -479,7 +479,7 @@ namespace System.Text.RegularExpressions.Generator
             }
         }
 
-        private sealed class AnalysisResultsComparer : IEqualityComparer<AnalysisResults>
+        internal sealed class AnalysisResultsComparer : IEqualityComparer<AnalysisResults>
         {
             private static readonly RegexTreeComparer s_treeComparer = new();
             private static readonly RegexNodeComparer s_nodeComparer = new();
@@ -871,7 +871,7 @@ namespace System.Text.RegularExpressions.Generator
             return hash;
         }
 
-        private sealed class RegexTypeComparer : IEqualityComparer<RegexType>
+        internal sealed class RegexTypeComparer : IEqualityComparer<RegexType>
         {
             public bool Equals(RegexType? x, RegexType? y)
             {
