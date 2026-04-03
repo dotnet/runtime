@@ -1146,7 +1146,8 @@ namespace System
             /// <c>pow1E9[Indexes[i]..Indexes[i+1]]&lt;&lt;(BitsPerLimb*OmittedLength(i))</c> equals <c>1000000000^(1&lt;&lt;i)</c>.
             /// </summary>
             /// <remarks>
-            /// Satisfies the following relationship <c>Indexes[i+1] - Indexes[i] == Math.Ceiling(Math.Log2(1000000000) * (1u&lt;&lt;i) / BitsPerLimb - OmittedLength(i))</c>.
+            /// Satisfies the following relationship <c>Indexes[i+1] - Indexes[i] == Math.Ceiling(Math.Log2(1000000000) * (1u&lt;&lt;i) / BitsPerLimb - OmittedLength(i))</c>,
+            /// where <c>BitsPerLimb</c> is the number of bits in a single limb (<c>sizeof(nuint) * 8</c>, i.e. 32 on 32-bit platforms and 64 on 64-bit platforms).
             /// </remarks>
             private static ReadOnlySpan<int> Indexes => nint.Size == 8 ? Indexes64 : Indexes32;
 
