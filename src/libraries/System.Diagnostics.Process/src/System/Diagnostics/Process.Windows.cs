@@ -551,7 +551,7 @@ namespace System.Diagnostics
                     {
                         // Ensure that the process is not yet exited
                         EnsureState(State.HaveNonExitedId);
-                        _processName = ProcessManager.GetProcessName(_processId, _machineName);
+                        _processName = ProcessManager.GetProcessName(_processId, _machineName, _isRemoteMachine);
 
                         // Fallback to slower ProcessInfo implementation if optimized way did not return a
                         // process name (e.g. in case of missing permissions for Non-Admin users)

@@ -124,10 +124,11 @@ namespace System.Diagnostics
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
         /// <param name="processId">The process ID.</param>
         /// <param name="machineName">The machine name.</param>
+        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
         /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
-        public static ProcessInfo? GetProcessInfo(int processId, string machineName)
+        public static ProcessInfo? GetProcessInfo(int processId, string machineName, bool isRemoteMachine)
         {
-            if (IsRemoteMachine(machineName))
+            if (isRemoteMachine)
             {
                 // remote case: we take the hit of looping through all results
                 ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName);
@@ -155,10 +156,11 @@ namespace System.Diagnostics
         /// <summary>Gets the process name for the specified process ID on the specified machine.</summary>
         /// <param name="processId">The process ID.</param>
         /// <param name="machineName">The machine name.</param>
+        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
         /// <returns>The process name for the process if it could be found; otherwise, null.</returns>
-        public static string? GetProcessName(int processId, string machineName)
+        public static string? GetProcessName(int processId, string machineName, bool isRemoteMachine)
         {
-            if (IsRemoteMachine(machineName))
+            if (isRemoteMachine)
             {
                 // remote case: we take the hit of looping through all results
                 ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName);

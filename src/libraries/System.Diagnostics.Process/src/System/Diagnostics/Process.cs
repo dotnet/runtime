@@ -979,7 +979,7 @@ namespace System.Diagnostics
                     {
                         EnsureState(State.HaveNonExitedId);
                     }
-                    _processInfo = ProcessManager.GetProcessInfo(_processId, _machineName);
+                    _processInfo = ProcessManager.GetProcessInfo(_processId, _machineName, _isRemoteMachine);
                     if (_processInfo == null)
                     {
                         throw new InvalidOperationException(SR.NoProcessInfo);
@@ -1520,7 +1520,7 @@ namespace System.Diagnostics
             {
                 if (Associated)
                 {
-                    _processInfo ??= ProcessManager.GetProcessInfo(_processId, _machineName);
+                    _processInfo ??= ProcessManager.GetProcessInfo(_processId, _machineName, _isRemoteMachine);
                     if (_processInfo is not null)
                     {
                         string processName = _processInfo.ProcessName;

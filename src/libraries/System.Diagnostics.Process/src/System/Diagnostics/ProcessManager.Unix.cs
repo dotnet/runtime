@@ -35,9 +35,10 @@ namespace System.Diagnostics
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
         /// <param name="processId">The process ID.</param>
         /// <param name="machineName">Unused on Unix since remote machines are not supported.</param>
+        /// <param name="isRemoteMachine">Unused on Unix since remote machines are not supported.</param>
         /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
 #pragma warning disable IDE0060
-        public static ProcessInfo? GetProcessInfo(int processId, string machineName) =>
+        public static ProcessInfo? GetProcessInfo(int processId, string machineName, bool isRemoteMachine) =>
             CreateProcessInfo(processId);
 #pragma warning restore IDE0060
 
