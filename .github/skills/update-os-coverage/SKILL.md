@@ -15,9 +15,11 @@ Update OS version references in Helix queue definition files. These files contro
 
 ## When to use
 
-- On `main`, a new OS version is released (or is expected to ship within one quarter and a prereqs container image already exists) and should be added to Helix testing
 - An OS version is approaching or has reached EOL and should be replaced
-- Periodic audit to ensure Helix coverage matches the supported-os matrix (for example, [`release-notes/11.0/supported-os.json`](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.json); update the version segment to match your target)
+- A new OS version is released and should be added to Helix testing for coverage
+- We take a more proactive approach on `main`. If a distro version will be EOL before our annual November release, we should update it to a newer version. If a distro version is expected to ship within one quarter (3 months) and a `prereqs` container image already exists, we should add it to Helix testing.
+- The availablility of an image in the `prereqs` container repo is a strong signal that the OS version is approved for Helix testing, at least on `main`.
+- Helix coverage does not match the supported-os matrix (for example, [`release-notes/11.0/supported-os.json`](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.json).
 - Upgrading "oldest" or "latest" version slots for a distro
 
 For servicing / `release/*` branches, be more conservative: only update to GA and already-supported distro versions unless the user explicitly asks for a forward-looking change.
@@ -25,14 +27,12 @@ For servicing / `release/*` branches, be more conservative: only update to GA an
 ## When NOT to use
 
 - Creating new container images → file an issue or PR at [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker)
-- Updating `supported-os.json` / `supported-os.md` → use the `update-supported-os` skill in [dotnet/core](https://github.com/dotnet/core)
+- Updating `supported-os.json` / `supported-os.md` → file an issue in [dotnet/core](https://github.com/dotnet/core)
 - Adding entirely new distros or architectures to Helix (requires pipeline template changes beyond version bumps)
 - Requesting new Helix VM queues → file an issue at [dotnet/dnceng](https://github.com/dotnet/dnceng)
 - Updating Windows or macOS Helix queues — these use VM-based queues with a simpler format (e.g. `Windows.11.Amd64.Client.Open`) and version updates typically require dnceng coordination
 
 ## Key files
-
-The [OS onboarding guide](/docs/project/os-onboarding.md) is the authoritative reference for how OS versions are managed in this repo. Read it first for context on policies and processes.
 
 OS version references appear in these pipeline files:
 
@@ -44,6 +44,8 @@ OS version references appear in these pipeline files:
 | `eng/pipelines/installer/helix-queues-setup.yml` | Installer Helix queue assignments |
 | `eng/pipelines/common/templates/pipeline-with-resources.yml` | Build container definitions (not Helix queues, but OS version references for build images) |
 | `docs/workflow/using-docker.md` | Documents the official build/test Docker images — update only when build image versions change (cross-compilation images, not Helix test images) |
+
+The [OS onboarding guide](/docs/project/os-onboarding.md) is the authoritative reference for how OS versions are managed in this repo. Read it if more context is needed on our policies.
 
 ### helix-platforms.yml structure
 
@@ -75,10 +77,7 @@ The user provides one or more of:
 - **Branch** — defaults to current branch; may also need release branch updates
 - **Audit mode** — "check all OS versions against supported-os.json"
 
-If the user provides only a distro name without specifying slots, determine the correct updates based on:
-- If adding a brand-new version: it typically becomes the new `latest`, and the previous `latest` becomes `oldest`
-- If replacing an EOL version: update `oldest` to the next supported version
-- If the distro currently has `latest == oldest`: only update `latest` to the new version
+If the user provides only a distro name without specifying slots, either ask or determine with basic logic which slots to update (for example, if the current `latest` is EOL, update `latest`; if the current `oldest` is EOL, update `oldest`).
 
 ## Process
 
@@ -99,15 +98,24 @@ If the image is **not found**, stop and inform the user. The image must be creat
 gh search issues "<distro> <version>" --repo dotnet/dotnet-buildtools-prereqs-docker --state open
 ```
 
-### 2. Check EOL dates
+### 2. Check support policy first, then EOL dates if needed
 
-Look up the distro's lifecycle to confirm the version change makes sense:
+First, inspect the relevant `supported-os.json` entry in `dotnet/core` to see whether the distro/version is already supported for the target release and to find its official lifecycle link:
+
+```bash
+curl -sL https://github.com/dotnet/core/raw/refs/heads/main/release-notes/<version>/supported-os.json \
+  | jq '.families[] | select(.name == "Linux") | .distributions[] | select(.id == "<distro-id>") | {name, lifecycle, supportedVersions: ."supported-versions", unsupportedVersions: ."unsupported-versions"}'
+```
+
+If the target version is already listed in `supportedVersions`, that is the primary signal that the change is appropriate for the corresponding release line. On servicing branches, prefer versions that are already GA and present there.
+
+If you need an independent lifecycle check, or if `supported-os.json` does not yet reflect the situation clearly, use [endoflife.date](https://endoflife.date) as a fallback:
 
 ```bash
 curl -s https://endoflife.date/api/<distro-id>.json | jq '.[] | select(.cycle == "<version>") | {cycle, eol, releaseDate}'
 ```
 
-The `<distro-id>` matches [endoflife.date](https://endoflife.date) product IDs (e.g. `fedora`, `alpine`, `debian`, `opensuse`, `ubuntu`, `centos-stream`).
+The `<distro-id>` values typically match across both sources (e.g. `fedora`, `alpine`, `debian`, `opensuse`, `ubuntu`, `centos-stream`).
 
 ### 3. Scan current references
 
