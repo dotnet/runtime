@@ -2319,13 +2319,8 @@ namespace SerializationTypes
 
     public class MyPersonSurrogateProvider : ISerializationSurrogateProvider
     {
-        public bool GetSurrogateTypeWasCalled { get; private set; }
-        public bool GetObjectToSerializeWasCalled { get; private set; }
-        public bool GetDeserializedObjectWasCalled { get; private set; }
-
         public Type GetSurrogateType(Type type)
         {
-            GetSurrogateTypeWasCalled = true;
             if (type == typeof(NonSerializablePerson))
             {
                 return typeof(NonSerializablePersonSurrogate);
@@ -2342,7 +2337,6 @@ namespace SerializationTypes
 
         public object GetDeserializedObject(object obj, Type targetType)
         {
-            GetDeserializedObjectWasCalled = true;
             if (obj is NonSerializablePersonSurrogate)
             {
                 NonSerializablePersonSurrogate person = (NonSerializablePersonSurrogate)obj;
@@ -2359,7 +2353,6 @@ namespace SerializationTypes
 
         public object GetObjectToSerialize(object obj, Type targetType)
         {
-            GetObjectToSerializeWasCalled = true;
             if (obj is NonSerializablePerson)
             {
                 NonSerializablePerson nsp = (NonSerializablePerson)obj;
