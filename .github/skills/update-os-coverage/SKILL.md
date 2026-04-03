@@ -36,7 +36,7 @@ OS version references appear in these pipeline files:
 
 | File | Purpose |
 |------|---------|
-| `eng/pipelines/helix-platforms.yml` | **Primary target.** Central platform definitions — defines `latest` and `oldest` version variables for all OS/arch combinations |
+| `eng/pipelines/helix-platforms.yml` | Central platform definitions — a useful starting point for many `latest` and `oldest` OS version variables, but not the sole source of truth |
 | `eng/pipelines/libraries/helix-queues-setup.yml` | Libraries Helix queue assignments — inline OS version references per platform |
 | `eng/pipelines/coreclr/templates/helix-queues-setup.yml` | CoreCLR Helix queue assignments — inline OS version references |
 | `eng/pipelines/installer/helix-queues-setup.yml` | Installer Helix queue assignments |
@@ -45,7 +45,7 @@ OS version references appear in these pipeline files:
 
 ### helix-platforms.yml structure
 
-This file defines named variables following a consistent pattern:
+Many Linux container-backed entries in this file use a pattern like:
 
 ```yaml
 # <Distro> <arch>
@@ -55,6 +55,8 @@ This file defines named variables following a consistent pattern:
 ```
 
 Where `<QueueName>` is the Helix queue identifier (e.g. `Fedora.44.Amd64.Open`), `<HostQueue>` is the physical host queue (e.g. `AzureLinux.3.Amd64.Open`), and `<image-tag>` is the container image tag (e.g. `fedora-44-helix-amd64`).
+
+Other entries in the same file are plain queue values (for example Windows, macOS, and some Linux VM queues) rather than `(<QueueName>)<HostQueue>@<image>`. When the target entry is queue-only, preserve that format and update only the versioned queue string.
 
 Some platform variables have `_internal` counterparts (e.g. `helix_linux_x64_oldest_internal`, `helix_linux_musl_arm32_latest_internal`) that use the same queue/image but drop the `.Open` suffix. When an `_internal` counterpart exists, update both the `.Open` and `_internal` entries.
 
@@ -78,18 +80,18 @@ If the user provides only a distro name without specifying slots, determine the 
 
 ## Process
 
-Requires `curl` and `jq` for the verification and audit steps below.
+Use the repo tools that fit the environment. The shell snippets below are reference commands, not a required literal script; equivalent `gh`, `git`, or search-based workflows are fine.
 
 ### 1. Verify container image availability
 
-Before making any changes, confirm the target container image exists. Check the [image-info JSON](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json) for published images:
+Before making any changes, confirm the target container image exists. One convenient way is to check the [image-info JSON](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json) for published images:
 
 ```bash
 curl -sL https://github.com/dotnet/versions/raw/refs/heads/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json \
   | jq '[.repos[].images[].platforms[].simpleTags[]] | map(select(startswith("<distro>-<version>"))) | sort | .[]'
 ```
 
-If the image is **not found**, stop and inform the user. The image must be created first at [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). Check if an open issue or PR already exists:
+If the image is **not found**, stop and inform the user. The image must be created first at [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). Check if an open issue or PR already exists, for example:
 
 ```bash
 gh search issues "<distro> <version>" --repo dotnet/dotnet-buildtools-prereqs-docker --state open
@@ -107,7 +109,7 @@ The `<distro-id>` matches [endoflife.date](https://endoflife.date) product IDs (
 
 ### 3. Scan current references
 
-Search for all current references to the distro being updated:
+Search for all current references to the distro being updated. For example:
 
 ```bash
 grep -rn -i "<distro>" \
@@ -125,10 +127,11 @@ Note every occurrence — the same distro may appear in multiple sections (x64, 
 
 For each reference found in step 3:
 
-1. **Update `helix-platforms.yml`** — this is the primary file
+1. **Start with `helix-platforms.yml`** — it is a convenient central catalog for many Linux container-backed entries, but it is not the source of truth by itself
    - Update the version comment (e.g. `# Latest: 43` → `# Latest: 44`)
-   - Update the variable value — adjust the queue name and image tag to use the new version
+   - Update the variable value — adjust the queue name and image tag to use the new version when the entry uses the container-backed format
    - Preserve the existing host queue (e.g. `AzureLinux.3.Amd64.Open`) — this does not change with distro version updates
+   - Then continue through the other files until every matching reference is updated consistently
 
 2. **Update `helix-queues-setup.yml` files** — libraries, coreclr, and installer templates
    - Search for inline references to the old version and update them
