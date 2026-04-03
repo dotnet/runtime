@@ -20,17 +20,20 @@ WasmRegAlloc::WasmRegAlloc(Compiler* compiler)
     , m_codeGen(compiler->codeGen)
     , m_currentBlock(nullptr)
     , m_currentFunclet(ROOT_FUNC_IDX)
-    , m_virtualRegAssignments(compiler->lvaTrackedCount, REG_STK, compiler->getAllocator(CMK_LSRA))
+    , m_virtualRegAssignments(compiler->getAllocator(CMK_LSRA))
     , m_perFuncletData(compiler->compFuncCount(), nullptr, compiler->getAllocator(CMK_LSRA))
 {
-    for (unsigned i = 0; i < m_compiler->compFuncCount(); i++)
-    {
-        m_perFuncletData[i] = new (compiler->getAllocator(CMK_LSRA)) PerFuncletData(compiler);
-    }
 }
 
 PhaseStatus WasmRegAlloc::doRegisterAllocation()
 {
+    m_virtualRegAssignments.resize(m_compiler->lvaTrackedCount, REG_STK);
+
+    for (unsigned i = 0; i < m_compiler->compFuncCount(); i++)
+    {
+        m_perFuncletData[i] = new (m_compiler->getAllocator(CMK_LSRA)) PerFuncletData(m_compiler);
+    }
+
     IdentifyCandidates();
     CollectReferences();
     ResolveReferences();
