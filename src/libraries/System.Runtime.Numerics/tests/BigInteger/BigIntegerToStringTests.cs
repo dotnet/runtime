@@ -876,7 +876,7 @@ namespace System.Numerics.Tests
                     temp[i] = '0';
                     i--;
                 }
-                ;
+
                 if (i > -1)
                 {
                     temp[i]++;
@@ -1420,7 +1420,7 @@ namespace System.Numerics.Tests
                     temp[i] = '0';
                     i--;
                 }
-                ;
+
                 if (i > -1)
                 {
                     temp[i]++;
@@ -1496,7 +1496,7 @@ namespace System.Numerics.Tests
                     temp[i] = '0';
                     i--;
                 }
-                ;
+
                 if (i > -1)
                 {
                     temp[i]++;
@@ -1918,7 +1918,7 @@ namespace System.Numerics.Tests
                     temp[i] = '0';
                     i--;
                 }
-                ;
+
                 if (i > -1)
                 {
                     temp[i]++;
