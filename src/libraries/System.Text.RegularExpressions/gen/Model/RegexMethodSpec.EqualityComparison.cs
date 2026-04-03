@@ -154,8 +154,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 (RegexNode left, RegexNode right) = pending.Pop();
 
-                if (!RegexNodeEquals(left, right) ||
-                    x.IsAtomicByAncestor(left) != y.IsAtomicByAncestor(right) ||
+                if (x.IsAtomicByAncestor(left) != y.IsAtomicByAncestor(right) ||
                     x.MayContainCapture(left) != y.MayContainCapture(right) ||
                     x.MayBacktrack(left) != y.MayBacktrack(right) ||
                     x.IsInLoop(left) != y.IsInLoop(right))
