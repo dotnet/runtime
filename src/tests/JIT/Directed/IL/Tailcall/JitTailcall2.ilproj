@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="Jittailcall2.il" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

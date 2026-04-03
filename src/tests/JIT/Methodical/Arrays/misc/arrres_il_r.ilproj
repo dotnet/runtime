@@ -14,4 +14,7 @@
   <ItemGroup>
     <Compile Include="arrres.il" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

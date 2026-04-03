@@ -16,4 +16,7 @@
     <ProjectReference Include="../common/tracing_common.csproj" />
     <RuntimeHostConfigurationOption Include="RuntimeHostConfigSwitch" Value="true" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

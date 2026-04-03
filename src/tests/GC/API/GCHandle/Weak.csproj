@@ -9,4 +9,7 @@
   <ItemGroup>
     <Compile Include="Weak.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

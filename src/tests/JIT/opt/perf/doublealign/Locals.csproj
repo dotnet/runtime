@@ -10,4 +10,7 @@
   <ItemGroup>
     <Compile Include="locals.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

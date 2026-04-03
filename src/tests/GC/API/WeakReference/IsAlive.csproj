@@ -9,4 +9,7 @@
   <ItemGroup>
     <Compile Include="IsAlive.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
