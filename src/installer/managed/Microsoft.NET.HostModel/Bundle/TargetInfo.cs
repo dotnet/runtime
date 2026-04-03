@@ -134,7 +134,6 @@ namespace Microsoft.NET.HostModel.Bundle
         extension(Architecture)
         {
             public static Architecture LoongArch64 => (Architecture)6;
-            public static Architecture RiscV64 => (Architecture)9;
         }
 #endif
     }
