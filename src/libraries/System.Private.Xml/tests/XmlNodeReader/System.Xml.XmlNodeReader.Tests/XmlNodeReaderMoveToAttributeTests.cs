@@ -147,22 +147,22 @@ namespace System.Xml.XmlNodeReaderTests
         [Fact]
         public void NodeReaderMoveToNonexistentAttributeWithNamespace()
         {
-            string xml = "<root><xmlns:child xmlns:attr1='value1'><xmlns:other /></xmlns:child></root>";
+            string xml = "<root><p:child xmlns:p='urn:ns' p:attr1='value1'><p:other /></p:child></root>";
             XmlNodeReader nodeReader = NodeReaderTestHelper.CreateNodeReader(xml);
 
-            Assert.True(nodeReader.ReadToDescendant("child", "http://www.w3.org/2000/xmlns/"));
+            Assert.True(nodeReader.ReadToDescendant("child", "urn:ns"));
             Assert.Equal(XmlNodeType.Element, nodeReader.NodeType);
-            Assert.Equal("xmlns:child", nodeReader.Name);
-            Assert.True(nodeReader.MoveToAttribute("attr1", "http://www.w3.org/2000/xmlns/"));
+            Assert.Equal("p:child", nodeReader.Name);
+            Assert.True(nodeReader.MoveToAttribute("attr1", "urn:ns"));
             Assert.Equal(XmlNodeType.Attribute, nodeReader.NodeType);
-            Assert.Equal("xmlns:attr1", nodeReader.Name);
-            Assert.False(nodeReader.MoveToAttribute("attr2", "http://www.w3.org/2000/xmlns/"));
+            Assert.Equal("p:attr1", nodeReader.Name);
+            Assert.False(nodeReader.MoveToAttribute("attr2", "urn:ns"));
             Assert.Equal(XmlNodeType.Attribute, nodeReader.NodeType);
-            Assert.Equal("xmlns:attr1", nodeReader.Name);
+            Assert.Equal("p:attr1", nodeReader.Name);
 
-            nodeReader.ReadStartElement("child", "http://www.w3.org/2000/xmlns/");
+            nodeReader.ReadStartElement("child", "urn:ns");
             Assert.Equal(XmlNodeType.Element, nodeReader.NodeType);
-            Assert.Equal("xmlns:other", nodeReader.Name);
+            Assert.Equal("p:other", nodeReader.Name);
         }
     }
 }
