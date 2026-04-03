@@ -492,13 +492,13 @@ namespace System.Diagnostics
         private static void GetProcessInfos(PerformanceCounterLib library, ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
         {
             int retryCount = 5;
-            int totalProcessCount;
+            Dictionary<int, ProcessInfo> processInfos;
             do
             {
                 try
                 {
                     byte[]? dataPtr = library.GetPerformanceData(PerfCounterQueryString);
-                    totalProcessCount = GetProcessInfos(library, ProcessPerfCounterId, ThreadPerfCounterId, dataPtr, ref builder, processNameFilter);
+                    processInfos = GetProcessInfos(library, dataPtr);
                 }
                 catch (Exception e)
                 {
@@ -507,13 +507,19 @@ namespace System.Diagnostics
 
                 --retryCount;
             }
-            while (totalProcessCount == 0 && retryCount != 0);
+            while (processInfos.Count == 0 && retryCount != 0);
 
-            if (totalProcessCount == 0)
+            if (processInfos.Count == 0)
                 throw new InvalidOperationException(SR.ProcessDisabled);
+
+            foreach (KeyValuePair<int, ProcessInfo> entry in processInfos)
+            {
+                if (processNameFilter is null || string.Equals(processNameFilter, entry.Value.ProcessName, StringComparison.OrdinalIgnoreCase))
+                    builder.Add(entry.Value);
+            }
         }
 
-        private static int GetProcessInfos(PerformanceCounterLib library, int processIndex, int threadIndex, ReadOnlySpan<byte> data, ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
+        private static Dictionary<int, ProcessInfo> GetProcessInfos(PerformanceCounterLib library, ReadOnlySpan<byte> data)
         {
             Dictionary<int, ProcessInfo> processInfos = new Dictionary<int, ProcessInfo>();
             List<ThreadInfo> threadInfos = new List<ThreadInfo>();
@@ -542,9 +548,9 @@ namespace System.Diagnostics
                     string counterName = library.GetCounterName(counter.CounterNameTitleIndex);
 
                     counters[j] = counter;
-                    if (type.ObjectNameTitleIndex == processIndex)
+                    if (type.ObjectNameTitleIndex == ProcessPerfCounterId)
                         counters[j].CounterNameTitlePtr = (int)GetValueId(counterName);
-                    else if (type.ObjectNameTitleIndex == threadIndex)
+                    else if (type.ObjectNameTitleIndex == ThreadPerfCounterId)
                         counters[j].CounterNameTitlePtr = (int)GetValueId(counterName);
 
                     counterPos += counter.ByteLength;
@@ -563,7 +569,7 @@ namespace System.Diagnostics
                     {
                         // continue
                     }
-                    else if (type.ObjectNameTitleIndex == processIndex)
+                    else if (type.ObjectNameTitleIndex == ProcessPerfCounterId)
                     {
                         ProcessInfo processInfo = GetProcessInfo(data.Slice(instancePos + instance.ByteLength), counters);
                         if (processInfo.ProcessId == 0 && !instanceName.Equals("Idle", StringComparison.OrdinalIgnoreCase))
@@ -604,7 +610,7 @@ namespace System.Diagnostics
                             }
                         }
                     }
-                    else if (type.ObjectNameTitleIndex == threadIndex)
+                    else if (type.ObjectNameTitleIndex == ThreadPerfCounterId)
                     {
                         ThreadInfo threadInfo = GetThreadInfo(data.Slice(instancePos + instance.ByteLength), counters);
                         if (threadInfo._threadId != 0)
@@ -634,12 +640,7 @@ namespace System.Diagnostics
                 }
             }
 
-            foreach (KeyValuePair<int, ProcessInfo> entry in processInfos)
-            {
-                if (processNameFilter is null || string.Equals(processNameFilter, entry.Value.ProcessName, StringComparison.OrdinalIgnoreCase))
-                    builder.Add(entry.Value);
-            }
-            return processInfos.Count;
+            return processInfos;
         }
 
         private static unsafe ThreadInfo GetThreadInfo(ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
