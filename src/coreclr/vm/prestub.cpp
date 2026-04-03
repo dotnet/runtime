@@ -305,23 +305,7 @@ PCODE MethodDesc::PrepareInitialCode(CallerGCMode callerGCMode)
     return PrepareCode(&config);
 }
 
-PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
-{
-    STANDARD_VM_CONTRACT;
-
-    // If other kinds of code need multi-versioning we could add more cases here,
-    // but for now generation of all other code/stubs occurs in other code paths
-    _ASSERTE(IsIL() || IsNoMetadata() || IsPInvoke());
-    PCODE pCode = PrepareILBasedCode(pConfig);
-
-#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
-    NotifyGdb::MethodPrepared(this);
-#endif
-
-    return pCode;
-}
-
-bool MayUsePrecompiledILStub()
+static bool MayUsePrecompiledILStub()
 {
     if (g_pConfig->InteropValidatePinnedObjects())
         return false;
@@ -335,9 +319,13 @@ bool MayUsePrecompiledILStub()
     return true;
 }
 
-PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
+PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
+
+    // Only IL-backed methods should come through here.
+    // Other kinds of methods (e.g. FCalls, CLR-to-COM methods, should go down a different path)
+    _ASSERTE(IsIL() || IsNoMetadata() || IsPInvoke());
     PCODE pCode = (PCODE)NULL;
 
     bool shouldTier = false;
@@ -402,6 +390,10 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     else
     {
         DACNotifyCompilationFinished(this, pCode);
+
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
+        NotifyGdb::MethodPrepared(this);
+#endif
     }
 
     return pCode;
@@ -883,6 +875,10 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 
     // The notification will only occur if someone has registered for this method.
     DACNotifyCompilationFinished(this, pCode);
+
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
+    NotifyGdb::MethodPrepared(this);
+#endif
 
     return pCode;
 }

@@ -2213,7 +2213,6 @@ public:
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
 
 private:
-    PCODE PrepareILBasedCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);

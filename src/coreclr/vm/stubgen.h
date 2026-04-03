@@ -776,7 +776,7 @@ public:
     // Write out EH clauses. Number of items written out will be GetNumEHCLauses().
     void WriteEHClauses(COR_ILMETHOD_SECT_EH* sect);
     // Get resolved EH clause info (must be called after Link()).
-    void GetEHClause(size_t index, ILStubEHClause* pClause);
+    ILStubEHClause GetEHClause(size_t index);
 
     TokenLookupMap* GetTokenLookupMap() { LIMITED_METHOD_CONTRACT; return &m_tokenMap; }
 

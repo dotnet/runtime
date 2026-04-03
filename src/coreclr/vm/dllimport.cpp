@@ -827,8 +827,7 @@ public:
         ILStubEHClause tryCatchClause{};
         for (size_t i = 0; i < pILHeader->EHCount(); i++)
         {
-            ILStubEHClause clause{};
-            m_slIL.GetEHClause(i, &clause);
+            ILStubEHClause clause = m_slIL.GetEHClause(i);
             if (clause.kind == ILStubEHClause::kFinally)
                 cleanupTryFinally = clause;
             else if (clause.kind == ILStubEHClause::kTypedCatch)
@@ -1262,7 +1261,8 @@ private:
     }
 };
 
-// A stub state that doeson't actually generate IL but provides enough implementation
+#ifdef TARGET_X86
+// A stub state that doesn't actually generate IL but provides enough implementation
 // that we can use CreatePInvokeStubWorker to compute the argument stack size for a PInvoke call.
 class PInvoke_StackArgumentSize_ILStubState final : public ILStubState
 {
@@ -1283,22 +1283,22 @@ public:
 
     void BeginEmit(DWORD dwStubFlags)  // PInvoke with argument stack size computation IL
     {
-        STANDARD_VM_CONTRACT;
+        LIMITED_METHOD_CONTRACT;
     }
 
     void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD)
     {
-        STANDARD_VM_CONTRACT;
+        LIMITED_METHOD_CONTRACT;
     }
 
     void MarshalReturn(MarshalInfo* pInfo, int argOffset)
     {
-        STANDARD_VM_CONTRACT;
+        LIMITED_METHOD_CONTRACT;
     }
 
     void MarshalArgument(MarshalInfo* pInfo, int argOffset)
     {
-        STANDARD_VM_CONTRACT;
+        LIMITED_METHOD_CONTRACT;
     }
 
     void MarshalLCID(int argIdx)
@@ -1308,11 +1308,12 @@ public:
 
     COR_ILMETHOD_DECODER* FinishEmit(MethodDesc* pStubMD, ILStubResolver* pResolver)
     {
-        STANDARD_VM_CONTRACT;
+        LIMITED_METHOD_CONTRACT;
 
         return nullptr;
     }
 };
+#endif // TARGET_X86
 
 #ifdef FEATURE_COMINTEROP
 class CLRToCOM_ILStubState : public ILStubState

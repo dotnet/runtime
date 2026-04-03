@@ -854,7 +854,6 @@ size_t ILStubLinker::GetNumEHClauses()
 
 void ILStubLinker::WriteEHClauses(COR_ILMETHOD_SECT_EH* pSect)
 {
-    unsigned int clauseIndex = 0;
     const SArray<ILStubEHClauseBuilder>& clauses = m_finishedEHClauses;
     for (COUNT_T i = 0; i < clauses.GetCount(); i++)
     {
@@ -873,34 +872,35 @@ void ILStubLinker::WriteEHClauses(COR_ILMETHOD_SECT_EH* pSect)
         size_t handlerBegin = builder.handlerBeginLabel->GetCodeOffset();
         size_t handlerEnd = builder.handlerEndLabel->GetCodeOffset();
 
-        IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT& clause = pSect->Fat.Clauses[clauseIndex];
+        IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT& clause = pSect->Fat.Clauses[i];
         clause.Flags = flags;
         clause.TryOffset = static_cast<DWORD>(tryBegin);
         clause.TryLength = static_cast<DWORD>(tryEnd - tryBegin);
         clause.HandlerOffset = static_cast<DWORD>(handlerBegin);
         clause.HandlerLength = static_cast<DWORD>(handlerEnd - handlerBegin);
         clause.ClassToken = builder.typeToken;
-
-        clauseIndex++;
     }
 
     pSect->Fat.Kind = CorILMethod_Sect_EHTable | CorILMethod_Sect_FatFormat;
-    pSect->Fat.DataSize = COR_ILMETHOD_SECT_EH_FAT::Size(clauseIndex);
+    pSect->Fat.DataSize = COR_ILMETHOD_SECT_EH_FAT::Size(clauses.GetCount());
 }
 
-void ILStubLinker::GetEHClause(size_t index, ILStubEHClause* pClause)
+ILStubEHClause ILStubLinker::GetEHClause(size_t index)
 {
     _ASSERTE(index < m_finishedEHClauses.GetCount());
     const ILStubEHClauseBuilder& builder = m_finishedEHClauses[static_cast<COUNT_T>(index)];
 
-    pClause->kind = builder.kind;
-    pClause->dwTryBeginOffset = static_cast<DWORD>(builder.tryBeginLabel->GetCodeOffset());
+    ILStubEHClause clause{};
+    clause.kind = builder.kind;
+    clause.dwTryBeginOffset = static_cast<DWORD>(builder.tryBeginLabel->GetCodeOffset());
     DWORD tryEnd = static_cast<DWORD>(builder.tryEndLabel->GetCodeOffset());
-    pClause->cbTryLength = tryEnd - pClause->dwTryBeginOffset;
-    pClause->dwHandlerBeginOffset = static_cast<DWORD>(builder.handlerBeginLabel->GetCodeOffset());
+    clause.cbTryLength = tryEnd - clause.dwTryBeginOffset;
+    clause.dwHandlerBeginOffset = static_cast<DWORD>(builder.handlerBeginLabel->GetCodeOffset());
     DWORD handlerEnd = static_cast<DWORD>(builder.handlerEndLabel->GetCodeOffset());
-    pClause->cbHandlerLength = handlerEnd - pClause->dwHandlerBeginOffset;
-    pClause->dwTypeToken = builder.typeToken;
+    clause.cbHandlerLength = handlerEnd - clause.dwHandlerBeginOffset;
+    clause.dwTypeToken = builder.typeToken;
+
+    return clause;
 }
 
 #ifdef _DEBUG

@@ -2656,8 +2656,8 @@ BOOL MethodDesc::MayHaveNativeCode()
         break;
     case mcFCall:           // FCalls do not have real native code.
         return FALSE;
-    case mcPInvoke:         // Non vararg P/Invokes are treated as IL-backed. Vararg P/Invokes go through a stub.
-        return !IsVarArg();
+    case mcPInvoke:         // P/Invokes are generally backed by IL.
+        return TRUE;
     case mcEEImpl:          // Runtime provided implementation. No native code.
         return FALSE;
     case mcArray:           // Runtime provided implementation. No native code.
@@ -3081,10 +3081,10 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
         !IsJitOptimizationLevelRequested() &&
 
-        // Tiering the async thunk methods doesn't make sense
+        // Tiering the async thunk methods is not supported currently
         !IsAsyncThunkMethod() &&
 
-        // Tiering P/Invoke methods doesn't make sense
+        // Tiering P/Invoke methods is not supported currently
         !IsPInvoke()
         )
     {
