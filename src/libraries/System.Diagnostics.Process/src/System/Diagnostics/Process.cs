@@ -1073,11 +1073,15 @@ namespace System.Diagnostics
         {
             // Avoid calling GetProcessesByName(processName, ".") so that remote machine code is not included when only local machine support is needed.
             // Normalize empty processName to null so that GetProcessInfos treats it as "no filter".
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processNameFilter: string.IsNullOrEmpty(processName) ? null : processName);
-            Process[] processes = new Process[processInfos.Length];
-            for (int i = 0; i < processInfos.Length; i++)
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: string.IsNullOrEmpty(processName) ? null : processName);
+            if (processInfos.Count == 0)
+                return [];
+            Process[] processes = new Process[processInfos.Count];
+            for (int i = 0; i < processes.Length; i++)
             {
-                processes[i] = new Process(".", false, processInfos[i].ProcessId, processInfos[i]);
+                ProcessInfo processInfo = processInfos[i];
+                processes[i] = new Process(".", false, processInfo.ProcessId, processInfo);
             }
             return processes;
         }
@@ -1092,9 +1096,12 @@ namespace System.Diagnostics
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName, machineName, isRemoteMachine);
-            Process[] processes = new Process[processInfos.Length];
-            for (int i = 0; i < processInfos.Length; i++)
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            ProcessManager.GetProcessInfos(ref processInfos, processName, machineName, isRemoteMachine);
+            if (processInfos.Count == 0)
+                return [];
+            Process[] processes = new Process[processInfos.Count];
+            for (int i = 0; i < processes.Length; i++)
             {
                 ProcessInfo processInfo = processInfos[i];
                 processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
@@ -1114,9 +1121,12 @@ namespace System.Diagnostics
         public static Process[] GetProcesses()
         {
             // Avoid calling GetProcesses(".") so that remote machine code is not included when only local machine support is needed.
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processNameFilter: null);
-            Process[] processes = new Process[processInfos.Length];
-            for (int i = 0; i < processInfos.Length; i++)
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: null);
+            if (processInfos.Count == 0)
+                return [];
+            Process[] processes = new Process[processInfos.Count];
+            for (int i = 0; i < processes.Length; i++)
             {
                 ProcessInfo processInfo = processInfos[i];
                 processes[i] = new Process(".", false, processInfo.ProcessId, processInfo);
@@ -1137,9 +1147,12 @@ namespace System.Diagnostics
         public static Process[] GetProcesses(string machineName)
         {
             bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processNameFilter: null, machineName, isRemoteMachine);
-            Process[] processes = new Process[processInfos.Length];
-            for (int i = 0; i < processInfos.Length; i++)
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: null, machineName, isRemoteMachine);
+            if (processInfos.Count == 0)
+                return [];
+            Process[] processes = new Process[processInfos.Count];
+            for (int i = 0; i < processes.Length; i++)
             {
                 ProcessInfo processInfo = processInfos[i];
                 processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);

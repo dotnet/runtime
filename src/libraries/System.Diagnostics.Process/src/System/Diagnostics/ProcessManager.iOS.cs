@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Runtime.Versioning;
 
 namespace System.Diagnostics
@@ -15,9 +16,9 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets process infos for each process on the local machine.</summary>
+        /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter)
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
         {
             throw new PlatformNotSupportedException();
         }

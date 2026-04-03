@@ -68,13 +68,13 @@ namespace System.Diagnostics
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <remarks>On Unix, <paramref name="isRemoteMachine"/> and <paramref name="machineName"/> are unused since remote machines are not supported.</remarks>
+        /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <param name="machineName">Unused on Unix.</param>
         /// <param name="isRemoteMachine">Unused on Unix.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
 #pragma warning disable IDE0060
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName, bool isRemoteMachine) =>
-            GetProcessInfos(processNameFilter);
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter, string machineName, bool isRemoteMachine) =>
+            GetProcessInfos(ref builder, processNameFilter);
 #pragma warning restore IDE0060
 
     }

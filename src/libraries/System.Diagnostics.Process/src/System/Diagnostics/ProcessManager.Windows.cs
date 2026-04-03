@@ -40,10 +40,14 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets process infos for each process on the local machine.</summary>
+        /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        internal static ProcessInfo[] GetProcessInfos(string? processNameFilter) =>
-            NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
+        internal static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
+        {
+            ProcessInfo[] processInfos = NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
+            foreach (ProcessInfo pi in processInfos)
+                builder.Add(pi);
+        }
 
         /// <summary>Gets whether the process with the specified ID is currently running.</summary>
         /// <param name="processId">The process ID.</param>
@@ -92,33 +96,26 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <param name="machineName">The target machine.</param>
         /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName, bool isRemoteMachine)
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter, string machineName, bool isRemoteMachine)
         {
             if (!isRemoteMachine)
             {
-                return GetProcessInfos(processNameFilter);
+                GetProcessInfos(ref builder, processNameFilter);
+                return;
             }
 
             ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName);
-            if (string.IsNullOrEmpty(processNameFilter))
-            {
-                return processInfos;
-            }
-
-            ArrayBuilder<ProcessInfo> results = default;
             foreach (ProcessInfo pi in processInfos)
             {
-                if (string.Equals(processNameFilter, pi.ProcessName, StringComparison.OrdinalIgnoreCase))
+                if (string.IsNullOrEmpty(processNameFilter) || string.Equals(processNameFilter, pi.ProcessName, StringComparison.OrdinalIgnoreCase))
                 {
-                    results.Add(pi);
+                    builder.Add(pi);
                 }
             }
-
-            return results.ToArray();
         }
 
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
