@@ -1066,7 +1066,7 @@ namespace System.Diagnostics
                             processId == NtProcessManager.IdleProcessID ? "Idle" :
                             processId.ToString(CultureInfo.InvariantCulture)); // use the process ID for a normal process without a name
 
-                    if (processNameFilter == null || processNameSpan.Equals(processNameFilter, StringComparison.OrdinalIgnoreCase))
+                    if (processNameFilter is null || processNameSpan.Equals(processNameFilter, StringComparison.OrdinalIgnoreCase))
                     {
                         processName ??= processNameSpan.ToString();
 

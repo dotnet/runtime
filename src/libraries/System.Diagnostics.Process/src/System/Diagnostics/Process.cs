@@ -868,7 +868,6 @@ namespace System.Diagnostics
                 throw new NotSupportedException(SR.NotSupportedRemote);
             }
 
-
             if ((state & State.Exited) != (State)0)
             {
                 if (!HasExited)
