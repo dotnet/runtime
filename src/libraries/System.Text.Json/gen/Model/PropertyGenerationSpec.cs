@@ -161,7 +161,7 @@ namespace System.Text.Json.SourceGeneration
 
         /// <summary>
         /// The combined type parameter constraint clauses of the generic declaring type
-        /// (e.g., " where T : notnull, global::MyNamespace.MyBase where U : struct").
+        /// (e.g., "where T : notnull, global::MyNamespace.MyBase where U : struct").
         /// Null when the declaring type is not generic or has no constraints.
         /// </summary>
         public string? DeclaringTypeParameterConstraintClauses { get; init; }
