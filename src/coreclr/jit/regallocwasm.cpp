@@ -774,9 +774,11 @@ void WasmRegAlloc::ResolveReferences()
 
     // Resolve funclet by funclet, in reverse order, so that we process the main method region last.
     //
-    for (int i = static_cast<int>(m_compiler->compFuncCount()) - 1; i >= 0; i--)
+    for (FuncInfoDsc* const funcInfo : m_compiler->Funcs().Reverse())
     {
-        m_currentFunclet = static_cast<unsigned>(i);
+        // Make the funclet index available globally
+        //
+        m_currentFunclet = funcInfo->GetFuncletIdx(m_compiler);
 
         PhysicalRegBank virtToPhysRegMap[static_cast<unsigned>(WasmValueType::Count)];
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
@@ -787,13 +789,12 @@ void WasmRegAlloc::ResolveReferences()
         }
 
         unsigned              indexBase = 0;
-        const FuncInfoDsc&    funcInfo  = m_compiler->compFuncInfos[m_currentFunclet];
-        const bool            inFunclet = funcInfo.funKind != FuncKind::FUNC_ROOT;
+        const bool            inFunclet = funcInfo->funKind != FuncKind::FUNC_ROOT;
         PerFuncletData* const data      = m_perFuncletData[m_currentFunclet];
         regNumber const       spVirtReg = data->m_spReg;
         regNumber const       fpVirtReg = data->m_fpReg;
 
-        switch (funcInfo.funKind)
+        switch (funcInfo->funKind)
         {
             case FuncKind::FUNC_ROOT:
             {
@@ -841,12 +842,12 @@ void WasmRegAlloc::ResolveReferences()
                     virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
                 }
 
-                if (fpVirtReg != REG_NA && fpVirtReg != spVirtReg)
+                if ((fpVirtReg != REG_NA) && (fpVirtReg != spVirtReg))
                 {
                     virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
                 }
 
-                EHblkDsc* const ehDsc = m_compiler->ehGetDsc(funcInfo.funEHIndex);
+                EHblkDsc* const ehDsc = funcInfo->GetEHDesc(m_compiler);
                 indexBase             = ehDsc->HasCatchHandler() ? 3 : 2;
             }
 

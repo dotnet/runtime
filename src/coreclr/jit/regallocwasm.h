@@ -99,8 +99,7 @@ class WasmRegAlloc : public RegAllocInterface
         // used to access the fixed portion of the frame. For fixed-size frames (no localloc), these will be the same.
         //
         // In funclets FP will refer to the fixed portion of the parent frame. It will likely be in a different Wasm
-        // local than the FP in the main function body. EX will refer to the exception object local for filter and catch
-        // funclets.
+        // local than the FP in the main function body.
         //
         regNumber m_spReg;
         regNumber m_fpReg;

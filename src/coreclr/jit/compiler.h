@@ -1728,6 +1728,7 @@ struct FuncInfoDsc
     BasicBlock*          GetStartBlock(Compiler* comp) const;
     BasicBlock*          GetLastBlock(Compiler* comp) const;
     BasicBlockRangeList  Blocks(Compiler* comp) const;
+    unsigned             GetFuncletIdx(Compiler* comp) const;
 
 #if defined(TARGET_AMD64)
 
@@ -12934,6 +12935,14 @@ inline BasicBlock* FuncInfoDsc::GetLastBlock(Compiler* comp) const
 inline BasicBlockRangeList FuncInfoDsc::Blocks(Compiler* comp) const
 {
     return BasicBlockRangeList(GetStartBlock(comp), GetLastBlock(comp));
+}
+
+inline unsigned FuncInfoDsc::GetFuncletIdx(Compiler* comp) const
+{
+    assert((comp->compFuncInfos <= this) && (this < (comp->compFuncInfos + comp->compFuncInfoCount)));
+    unsigned funcletIdx = (unsigned)(this - comp->compFuncInfos);
+    assert(this == &comp->compFuncInfos[funcletIdx]);
+    return funcletIdx;
 }
 
 // FuncInfoRange: adapter class for forward or reverse iteration of a contiguous range of function/funclet
