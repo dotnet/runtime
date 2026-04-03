@@ -7,7 +7,6 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -207,7 +206,10 @@ namespace System.Diagnostics
         /// and the handles from this list. If the list is empty, only the standard handles are inherited.
         /// </para>
         /// <para>
-        /// Setting this property on systems that do not have native support for controlling handle inheritance can severely degrade Process.Start performance.
+        /// Only <see cref="SafeFileHandle"/> and <see cref="SafePipeHandle"/> are supported in this list.
+        /// </para>
+        /// <para>
+        /// Setting this property on Unix systems that do not have native support for controlling handle inheritance can severely degrade process start performance.
         /// </para>
         /// <para>
         /// Handles in this list should not have inheritance enabled beforehand.
@@ -418,10 +420,9 @@ namespace System.Diagnostics
                     {
                         case SafeFileHandle:
                         case SafePipeHandle:
-                        case SafeSocketHandle:
                             break;
                         // As of today, we don't support other handle types because they would work
-                        // only on Windows (Process/Wait/Access/Registry handles).
+                        // only on Windows (e.g. Process/Wait/Access/Registry handles).
                         default:
                             throw new ArgumentException(SR.InheritedHandles_OnlySelectedSafeHandlesAreSupported, nameof(InheritedHandles));
                     }

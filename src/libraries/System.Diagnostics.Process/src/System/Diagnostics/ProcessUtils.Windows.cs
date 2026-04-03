@@ -54,7 +54,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Duplicates a handle as inheritable if it's valid and not inheritable.</summary>
-        internal static void DuplicateAsInheritableIfNeeded(SafeFileHandle sourceHandle, ref SafeFileHandle? duplicatedHandle)
+        internal static void DuplicateAsInheritableIfNeeded(SafeFileHandle sourceHandle, ref SafeFileHandle? duplicatedHandle, ref bool refAdded)
         {
             // The user can't specify invalid handle via ProcessStartInfo.Standard*Handle APIs.
             // However, Console.OpenStandard*Handle() can return INVALID_HANDLE_VALUE for a process
@@ -63,6 +63,9 @@ namespace System.Diagnostics
             {
                 return;
             }
+
+            // Add ref, so the raw handle won't be closed while we're working with it. The caller is responsible for releasing the ref.
+            sourceHandle.DangerousAddRef(ref refAdded);
 
             // When we know for sure that the handle is inheritable, we don't need to duplicate.
             // When GetHandleInformation fails, we still attempt to call DuplicateHandle,

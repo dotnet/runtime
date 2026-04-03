@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
-using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -405,52 +404,6 @@ namespace System.Diagnostics.Tests
                 bool expectInherited = addHandleToList; // we created a non-inheritable pipe
                 await VerifyExpectedOutcome(fileStream.ReadAsync, expectInherited, remoteHandle);
             }
-        }
-
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true, false)]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        public async Task InheritedHandles_CanRestrictHandleInheritance_SafeSocketHandle(bool addHandleToList, bool nullList)
-        {
-            using Socket serverSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            serverSocket.Bind(new Net.IPEndPoint(Net.IPAddress.Loopback, 0));
-            serverSocket.Listen(1);
-
-            // Create a non-inheritable socket!
-            using Socket clientSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            clientSocket.Connect(serverSocket.LocalEndPoint!);
-
-            using Socket acceptedSocket = serverSocket.Accept();
-
-            RemoteInvokeOptions options = new RemoteInvokeOptions { CheckExitCode = false };
-            PrepareAllowList(options.StartInfo, clientSocket.SafeHandle, addHandleToList, nullList);
-
-            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
-                static (string handleStr) =>
-                {
-                    try
-                    {
-                        // SafeSocketHandle.CloseHandle in debug mode terminates the process if it fails to release the handle.
-                        // And when handle is not inherited (what we test), the CloseHandle crashes the test runner.
-                        // That is why we specify ownsHandle: false here.
-                        using SafeSocketHandle safeSocketHandle = new(nint.Parse(handleStr), ownsHandle: false);
-                        using Socket socket = new(safeSocketHandle);
-                        socket.Send([42]);
-                        return RemoteExecutor.SuccessExitCode;
-                    }
-                    catch
-                    {
-                        return HandleNotInheritedExitCode;
-                    }
-                },
-                clientSocket.SafeHandle.DangerousGetHandle().ToString(),
-                options);
-
-            clientSocket.Close(); // close the parent copy of child handle
-
-            bool expectInherited = addHandleToList; // sockets are not inheritable by default
-            await VerifyExpectedOutcome(acceptedSocket.ReceiveAsync, expectInherited, remoteHandle);
         }
 
         private static void PrepareAllowList(ProcessStartInfo startInfo, SafeHandle safeHandle, bool addHandleToList, bool nullList)

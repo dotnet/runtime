@@ -50,6 +50,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeFileHandle? inheritableStdoutHandle = null;
             SafeFileHandle? inheritableStderrHandle = null;
 
+            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
             bool hasInheritedHandles = inheritedHandles is not null;
 
             // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance.
@@ -76,9 +77,9 @@ namespace Microsoft.Win32.SafeHandles
             {
                 startupInfoEx.StartupInfo.cb = hasInheritedHandles ? sizeof(Interop.Kernel32.STARTUPINFOEX) : sizeof(Interop.Kernel32.STARTUPINFO);
 
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref inheritableStdinHandle);
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref inheritableStdoutHandle);
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref inheritableStderrHandle);
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref inheritableStdinHandle, ref stdinRefAdded);
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref inheritableStdoutHandle, ref stdoutRefAdded);
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref inheritableStderrHandle, ref stderrRefAdded);
 
                 startupInfoEx.StartupInfo.hStdInput = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
                 startupInfoEx.StartupInfo.hStdOutput = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
@@ -244,6 +245,13 @@ namespace Microsoft.Win32.SafeHandles
             }
             finally
             {
+                if (stdinRefAdded)
+                    stdinHandle.DangerousRelease();
+                if (stdoutRefAdded)
+                    stdoutHandle.DangerousRelease();
+                if (stderrRefAdded)
+                    stderrHandle.DangerousRelease();
+
                 // Only dispose duplicated handles, not the original handles passed by the caller.
                 // When the handle was invalid or already inheritable, no duplication was needed.
                 inheritableStdinHandle?.Dispose();
@@ -532,7 +540,7 @@ namespace Microsoft.Win32.SafeHandles
                 // Remove the inheritance flag so they are not unintentionally inherited by other processes started after this point.
                 // Since we used DangerousAddRef before, the handle cannot be closed at this point, so it's safe to call SetHandleInformation.
                 // The only scenario where it could fail is if user has created a copy of the handle and closed the original handle,
-                // in such case we still don't want to throw as the process was succesfully started.
+                // in such case we still don't want to throw as the process was successfully started.
                 Interop.Kernel32.SetHandleInformation(safeHandle, Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT, 0);
                 safeHandle.DangerousRelease();
             }
