@@ -402,14 +402,14 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, and MacCatalyst.")]
         public void ProcessStart_TryOpenFolder_UseShellExecuteIsFalse_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, and MacCatalyst.")]
         public void TestStartWithBadWorkingDirectory()
         {
             string program;
@@ -504,7 +504,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(true), InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS and MacCatalyst.")]
         [SkipOnPlatform(TestPlatforms.Android, "Android doesn't allow executing custom shell scripts")]
         public void ProcessStart_UseShellExecute_Executes(bool filenameAsUrl)
         {
@@ -577,7 +577,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore),
             nameof(PlatformDetection.IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS and MacCatalyst.")]
         [SkipOnPlatform(TestPlatforms.Android, "Android doesn't allow executing custom shell scripts")]
         public void ProcessStart_UseShellExecute_WorkingDirectory()
         {

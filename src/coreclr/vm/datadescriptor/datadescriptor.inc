@@ -362,6 +362,15 @@ CDAC_TYPE_FIELD(SystemDomain, /*GlobalLoaderAllocator*/, GlobalLoaderAllocator, 
 CDAC_TYPE_FIELD(SystemDomain, /*pointer*/, SystemAssembly, cdac_data<SystemDomain>::SystemAssembly)
 CDAC_TYPE_END(SystemDomain)
 
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+CDAC_TYPE_BEGIN(Debugger)
+CDAC_TYPE_INDETERMINATE(Debugger)
+CDAC_TYPE_FIELD(Debugger, /*int32*/, LeftSideInitialized, offsetof(Debugger, m_fLeftSideInitialized))
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, Defines, offsetof(Debugger, m_defines))
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, MDStructuresVersion, offsetof(Debugger, m_mdDataStructureVersion))
+CDAC_TYPE_END(Debugger)
+#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+
 CDAC_TYPE_BEGIN(ArrayListBase)
 CDAC_TYPE_INDETERMINATE(ArrayListBase)
 CDAC_TYPE_FIELD(ArrayListBase, /*uint32*/, Count, cdac_data<ArrayListBase>::Count)
@@ -608,6 +617,7 @@ CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
 CDAC_TYPE_FIELD(MethodDescCodeData, /*CodePointer*/, TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
 #ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(MethodDescCodeData, /*pointer*/, VersioningState, offsetof(MethodDescCodeData,VersioningState))
+CDAC_TYPE_FIELD(MethodDescCodeData, /*uint32*/, OptimizationTier, offsetof(MethodDescCodeData,OptimizationTier))
 #endif // FEATURE_CODE_VERSIONING
 CDAC_TYPE_END(MethodDescCodeData)
 
@@ -837,7 +847,24 @@ CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, StartAddress, offsetof(HeapList, 
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, EndAddress, offsetof(HeapList, endAddress))
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, MapBase, offsetof(HeapList, mapBase))
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, HeaderMap, offsetof(HeapList, pHdrMap))
+CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Heap, offsetof(HeapList, pHeap))
 CDAC_TYPE_END(CodeHeapListNode)
+
+CDAC_TYPE_BEGIN(CodeHeap)
+CDAC_TYPE_INDETERMINATE(CodeHeap)
+CDAC_TYPE_FIELD(CodeHeap, /*uint8*/, HeapType, cdac_data<CodeHeap>::HeapType)
+CDAC_TYPE_END(CodeHeap)
+
+CDAC_TYPE_BEGIN(LoaderCodeHeap)
+CDAC_TYPE_INDETERMINATE(LoaderCodeHeap)
+CDAC_TYPE_FIELD(LoaderCodeHeap, /*pointer*/, LoaderHeap, cdac_data<LoaderCodeHeap>::LoaderHeap)
+CDAC_TYPE_END(LoaderCodeHeap)
+
+CDAC_TYPE_BEGIN(HostCodeHeap)
+CDAC_TYPE_INDETERMINATE(HostCodeHeap)
+CDAC_TYPE_FIELD(HostCodeHeap, /*pointer*/, BaseAddress, cdac_data<HostCodeHeap>::BaseAddress)
+CDAC_TYPE_FIELD(HostCodeHeap, /*pointer*/, CurrentAddress, cdac_data<HostCodeHeap>::CurrentAddress)
+CDAC_TYPE_END(HostCodeHeap)
 
 #ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_BEGIN(ILCodeVersioningState)
@@ -859,6 +886,9 @@ CDAC_TYPE_FIELD(NativeCodeVersionNode, /*nuint*/, ILVersionId, cdac_data<NativeC
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, GCCoverageInfo, cdac_data<NativeCodeVersionNode>::GCCoverageInfo)
 #endif // HAVE_GCCOVER
+#ifdef FEATURE_TIERED_COMPILATION
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, OptimizationTier, cdac_data<NativeCodeVersionNode>::OptimizationTier)
+#endif // FEATURE_TIERED_COMPILATION
 CDAC_TYPE_END(NativeCodeVersionNode)
 
 CDAC_TYPE_BEGIN(ILCodeVersionNode)
@@ -1310,6 +1340,13 @@ CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomainPtr)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
+CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
+#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#ifdef FEATURE_METADATA_UPDATER
+CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
+#endif
 
 // Add FrameIdentifier for all defined Frame types. Used to differentiate Frame objects.
 #define FRAME_TYPE_NAME(frameType) \
@@ -1458,6 +1495,9 @@ CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(ConditionalWeakTable, 1)
 CDAC_GLOBAL_CONTRACT(DacStreams, 1)
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+CDAC_GLOBAL_CONTRACT(Debugger, 1)
+#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 CDAC_GLOBAL_CONTRACT(DebugInfo, 2)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
 CDAC_GLOBAL_CONTRACT(Exception, 1)

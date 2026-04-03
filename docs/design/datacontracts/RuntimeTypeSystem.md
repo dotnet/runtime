@@ -127,6 +127,19 @@ public enum ArrayFunctionType
 ```
 
 ```csharp
+public enum OptimizationTier
+{
+    OptimizationTierUnknown,
+    OptimizationTier0,
+    OptimizationTier1,
+    OptimizationTier1OSR,
+    OptimizationTierOptimized,
+    OptimizationTier0Instrumented,
+    OptimizationTier1Instrumented,
+}
+```
+
+```csharp
 partial interface IRuntimeTypeSystem : IContract
 {
     public virtual MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer);
@@ -195,6 +208,12 @@ partial interface IRuntimeTypeSystem : IContract
 
     // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
     public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
+
+    // Gets the optimization tier stored on the MethodDesc's code data
+    public virtual OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDesc);
+
+    // Returns true if the method is eligible for tiered compilation
+    public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
 
 }
 ```
@@ -423,6 +442,20 @@ The contract additionally depends on these data descriptors
 | `FnPtrTypeDesc` | `RetAndArgTypes` | Pointer to an array of TypeHandle addresses. This length of this is 1 more than `NumArgs` |
 | `GenericsDictInfo` | `NumDicts` | Number of instantiation dictionaries, including inherited ones, in this `GenericsDictInfo` |
 | `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
+
+The value of the `NativeCodeVersionNode::OptimizationTier` field is one of:
+```csharp
+private enum OptimizationTier_1 : uint
+{
+    OptimizationTier0 = 0,
+    OptimizationTier1 = 1,
+    OptimizationTier1OSR = 2,
+    OptimizationTierOptimized = 3,
+    OptimizationTier0Instrumented = 4,
+    OptimizationTier1Instrumented = 5,
+    OptimizationTierUnknown = 0xFFFFFFFF
+}
+```
 
 Contracts used:
 | Contract Name |
