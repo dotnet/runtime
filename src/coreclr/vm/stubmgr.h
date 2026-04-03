@@ -692,7 +692,6 @@ class PInvokeStubManager : public StubManager
 };
 
 // This is used to recognize
-//   GenericCLRToCOMCallStub()
 //   VarargPInvokeStub()
 //   GenericPInvokeCalliHelper()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;

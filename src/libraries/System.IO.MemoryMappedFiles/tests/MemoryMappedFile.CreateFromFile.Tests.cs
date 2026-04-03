@@ -1206,6 +1206,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(1)]
         [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks fifo")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "mkfifo is not supported on Apple mobile platforms")]
         public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
@@ -1226,6 +1227,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(1)]
         [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks fifo")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "mkfifo is not supported on Apple mobile platforms")]
         public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();

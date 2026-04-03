@@ -900,7 +900,7 @@ int32_t InterpCompiler::GetLiveEndOffset(int32_t var)
     }
 }
 
-uint32_t InterpCompiler::ConvertOffset(int32_t offset)
+static uint32_t ConvertOffset(int32_t offset)
 {
     // FIXME Once the VM moved the InterpMethod* to code header, we don't need to add a pointer size to the offset
     return offset * sizeof(int32_t) + sizeof(void*);
@@ -1430,8 +1430,8 @@ public:
         assert(slot != ((GcSlotId)-1));
         assert(pVar->liveStart);
         assert(pVar->liveEnd);
-        uint32_t startOffset = m_compiler->ConvertOffset(m_compiler->GetLiveStartOffset(varIndex)),
-            endOffset = m_compiler->ConvertOffset(m_compiler->GetLiveEndOffset(varIndex));
+        uint32_t startOffset = ConvertOffset(m_compiler->GetLiveStartOffset(varIndex)),
+            endOffset = ConvertOffset(m_compiler->GetLiveEndOffset(varIndex));
         INTERP_DUMP(
             "Slot %u (%s var #%d offset %u) live [IR_%04x - IR_%04x] [%u - %u]\n",
             slot, pVar->global ? "global" : "local",
@@ -1450,7 +1450,7 @@ public:
 
     void ReportConservativeRangesToGCEncoder()
     {
-        uint32_t maxEndOffset = m_compiler->ConvertOffset(m_compiler->m_methodCodeSize);
+        uint32_t maxEndOffset = ConvertOffset(m_compiler->m_methodCodeSize);
         for (uint32_t iSlot = 0; iSlot < m_slotTableSize; iSlot++)
         {
             ConservativeRanges* ranges = m_conservativeRanges.Get(iSlot);
@@ -1956,8 +1956,9 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
     // Construct InterpMethod in the final allocation
     InterpMethod* pMethodRW = (InterpMethod*)(rwBase + interpMethodOffset);
     InterpMethod* pMethodRX = (InterpMethod*)(rxBase + interpMethodOffset);
-    new (pMethodRW) InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, 
-                                  m_initLocals, m_unmanagedCallersOnly, m_publishSecretStubParam);
+    new (pMethodRW) InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems,
+                                  m_initLocals, m_unmanagedCallersOnly, m_publishSecretStubParam,
+                                  m_methodCodeSize);
 
     // Copy async suspend data and fix up pointers
     uint32_t currentAsyncOffset = asyncSuspendDataOffset;
@@ -4693,23 +4694,26 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         if (!m_isSynchronized && !m_isAsyncMethodWithContextSaveRestore)
             NO_WAY("INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED_OR_ASYNC used in a non-synchronized or async method");
 
-        INTERP_DUMP("INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED_OR_ASYNC with synchronized ret val var V%d\n", (int)m_synchronizedOrAsyncRetValVarIndex);
-
-        if (m_synchronizedOrAsyncRetValVarIndex != -1)
+        if (m_synchronizedOrAsyncRetValVarIndex == -1)
         {
-            // If the function returns a value, and we've processed a ret instruction, we'll have a var to load
-            EmitLoadVar(m_synchronizedOrAsyncRetValVarIndex);
-        }
-        else
-        {
+            // Code inside for-loops, for example, is not emitted in the first pass, so we can reach the async
+            // epilog with m_synchronizedOrAsyncRetValVarIndex uninitialized.
             CORINFO_SIG_INFO sig = m_methodInfo->args;
             InterpType retType = GetInterpType(sig.retType);
             if (retType != InterpTypeVoid)
             {
-                // Push... something so the codegen of the ret doesn't fail. It doesn't matter, as this code will never be reached.
-                // This should only be possible in valid IL when the method always will throw
-                PushInterpType(InterpTypeI, NULL);
+                CORINFO_CLASS_HANDLE retClsHnd = (retType == InterpTypeVT) ? sig.retTypeClass : NULL;
+                PushInterpType(retType, retClsHnd);
+                m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
+                m_pStackPointer--;
+                INTERP_DUMP("Created ret val var V%d (pre-created in epilog)\n", m_synchronizedOrAsyncRetValVarIndex);
             }
+        }
+
+        INTERP_DUMP("INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED_OR_ASYNC with ret val var V%d\n", (int)m_synchronizedOrAsyncRetValVarIndex);
+        if (m_synchronizedOrAsyncRetValVarIndex != -1)
+        {
+            EmitLoadVar(m_synchronizedOrAsyncRetValVarIndex);
         }
         m_ip += 5;
         return;
@@ -11203,21 +11207,27 @@ bool InterpreterRetryData::GetOverrideILMergePointStackType(int32_t ilOffset, ui
     }
 }
 
-void InterpCompiler::PrintClassName(CORINFO_CLASS_HANDLE cls)
+#ifdef DEBUG
+static void DumpClassName(CORINFO_CLASS_HANDLE cls, COMP_HANDLE compHnd)
 {
     char className[100];
-    m_compHnd->printClassName(cls, className, 100);
+    compHnd->printClassName(cls, className, 100);
     printf("%s", className);
 }
 
-void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
+void InterpCompiler::PrintClassName(CORINFO_CLASS_HANDLE cls)
 {
-    CORINFO_CLASS_HANDLE cls = m_compHnd->getMethodClass(method);
+    DumpClassName(cls, m_compHnd);
+}
+
+static void DumpMethodName(CORINFO_METHOD_HANDLE method, COMP_HANDLE compHnd)
+{
+    CORINFO_CLASS_HANDLE cls = compHnd->getMethodClass(method);
 
     CORINFO_SIG_INFO sig;
-    m_compHnd->getMethodSig(method, &sig, cls);
+    compHnd->getMethodSig(method, &sig, cls);
 
-    TArray<char, MallocAllocator> methodName = ::PrintMethodName(m_compHnd, cls, method, &sig,
+    TArray<char, MallocAllocator> methodName = ::PrintMethodName(compHnd, cls, method, &sig,
                             /* includeAssembly */ false,
                             /* includeClass */ true,
                             /* includeClassInstantiation */ true,
@@ -11226,8 +11236,12 @@ void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
                             /* includeReturnType */ false,
                             /* includeThis */ false);
 
-
     printf(".%s", methodName.GetUnderlyingArray());
+}
+
+void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
+{
+    DumpMethodName(method, m_compHnd);
 }
 
 void InterpCompiler::PrintCode()
@@ -11352,23 +11366,28 @@ void PrintInterpGenericLookup(InterpGenericLookup* lookup)
     }
 }
 
-#ifdef DEBUG
-void InterpCompiler::PrintNameInPointerMap(void* ptr)
+static void DumpNameInPointerMap(void* ptr, dn_simdhash_ptr_ptr_t* pPointerMap, COMP_HANDLE compHnd)
 {
     const char *name;
-    if (dn_simdhash_ptr_ptr_try_get_value(m_pointerToNameMap.GetValue(), ptr, (void**)&name))
+    if (dn_simdhash_ptr_ptr_try_get_value(pPointerMap, ptr, (void**)&name))
     {
         if (name == PointerIsMethodHandle)
         {
-            printf("(");
-            PrintMethodName((CORINFO_METHOD_HANDLE)((size_t)ptr));
-            printf(")");
+            if (compHnd)
+            {
+                printf("(");
+                DumpMethodName((CORINFO_METHOD_HANDLE)((size_t)ptr), compHnd);
+                printf(")");
+            }
         }
         else if (name == PointerIsClassHandle)
         {
-            printf("(");
-            PrintClassName((CORINFO_CLASS_HANDLE)((size_t)ptr));
-            printf(")");
+            if (compHnd)
+            {
+                printf("(");
+                DumpClassName((CORINFO_CLASS_HANDLE)((size_t)ptr), compHnd);
+                printf(")");
+            }
         }
         else if (name == PointerIsStringLiteral)
         {
@@ -11411,25 +11430,26 @@ void InterpCompiler::PrintNameInPointerMap(void* ptr)
             printf("(%s)", name);
         }
     }
-    return;
 }
-#endif
 
-void InterpCompiler::PrintPointer(void* pointer)
+static void DumpPointer(void* pointer,
+    dn_simdhash_ptr_ptr_t* pPointerMap = nullptr, COMP_HANDLE compHnd = nullptr)
 {
     printf("%p ", pointer);
-#ifdef DEBUG
-    PrintNameInPointerMap(pointer);
-#endif
+    if (pPointerMap != nullptr)
+    {
+        DumpNameInPointerMap(pointer, pPointerMap, compHnd);
+    }
 }
 
-void InterpCompiler::PrintHelperFtn(int32_t _data)
+static void DumpHelperFtn(int32_t _data, void** pDataItems,
+    dn_simdhash_ptr_ptr_t* pPointerMap = nullptr, COMP_HANDLE compHnd = nullptr)
 {
     InterpHelperData data{};
     memcpy(&data, &_data, sizeof(_data));
 
-    void *helperAddr = GetDataItemAtIndex(data.addressDataItemIndex);
-    PrintPointer(helperAddr);
+    void *helperAddr = pDataItems[data.addressDataItemIndex];
+    DumpPointer(helperAddr, pPointerMap, compHnd);
 
     switch (data.accessType) {
         case IAT_PVALUE:
@@ -11458,7 +11478,7 @@ void PrintLocalIntervals(InterpIntervalMapEntry* pIntervals)
     printf("]");
 }
 
-void InterpCompiler::PrintInterpAsyncSuspendData(InterpAsyncSuspendData* pSuspendInfo)
+static void DumpInterpAsyncSuspendData(InterpAsyncSuspendData* pSuspendInfo)
 {
     printf(" AsyncSuspendData[");
     printf("continuationTypeHnd=%p", pSuspendInfo->continuationTypeHnd);
@@ -11472,7 +11492,8 @@ void InterpCompiler::PrintInterpAsyncSuspendData(InterpAsyncSuspendData* pSuspen
     printf("]");
 }
 
-void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int32_t *pData, int32_t opcode)
+static void DumpInsData(InterpInst *ins, int32_t insOffset, const int32_t *pData, int32_t opcode, void** pDataItems,
+    dn_simdhash_ptr_ptr_t* pPointerMap = nullptr, COMP_HANDLE compHnd = nullptr)
 {
     switch (g_interpOpArgType[opcode]) {
         case InterpOpNoArgs:
@@ -11511,19 +11532,19 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
             break;
         case InterpOpLdPtr:
             {
-                PrintPointer((void*)GetDataItemAtIndex(pData[0]));
+                DumpPointer(pDataItems[pData[0]], pPointerMap, compHnd);
                 break;
             }
         case InterpOpGenericHelperFtn:
             {
-                PrintHelperFtn(pData[0]);
-                InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)GetAddrOfDataItemAtIndex(pData[1]);
+                DumpHelperFtn(pData[0], pDataItems, pPointerMap, compHnd);
+                InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)&pDataItems[pData[1]];
                 PrintInterpGenericLookup(pGenericLookup);
                 break;
             }
         case InterpOpGenericLookup:
             {
-                InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)GetAddrOfDataItemAtIndex(pData[0]);
+                InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)&pDataItems[pData[0]];
                 PrintInterpGenericLookup(pGenericLookup);
             }
             break;
@@ -11546,62 +11567,68 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
         }
         case InterpOpMethodHandle:
         {
-            CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData));
+            CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)pDataItems[*pData]);
             printf(" ");
-            PrintMethodName(mh);
+            if (compHnd)
+                DumpMethodName(mh, compHnd);
+            else
+                DumpPointer(pDataItems[*pData]);
             break;
         }
         case InterpOpClassHandle:
         {
-            CORINFO_CLASS_HANDLE ch = (CORINFO_CLASS_HANDLE)((size_t)m_dataItems.Get(*pData));
+            CORINFO_CLASS_HANDLE ch = (CORINFO_CLASS_HANDLE)((size_t)pDataItems[*pData]);
             printf(" ");
-            PrintClassName(ch);
+            if (compHnd)
+                DumpClassName(ch, compHnd);
+            else
+                DumpPointer(pDataItems[*pData]);
             break;
         }
         case InterpOpHelperFtnNoArgs:
         {
-            PrintHelperFtn(pData[0]);
+            DumpHelperFtn(pData[0], pDataItems, pPointerMap, compHnd);
             break;
         }
         case InterpOpHelperFtn:
         {
-            PrintHelperFtn(pData[0]);
+            DumpHelperFtn(pData[0], pDataItems, pPointerMap, compHnd);
             if (GetDataLen(opcode) > 1) {
                 printf(", ");
-                PrintPointer((void*)GetDataItemAtIndex(pData[1]));
+                DumpPointer(pDataItems[pData[1]], pPointerMap, compHnd);
             }
             break;
         }
         case InterpOpPointerHelperFtn:
         {
-            PrintPointer((void*)GetDataItemAtIndex(pData[0]));
+            DumpPointer(pDataItems[pData[0]], pPointerMap, compHnd);
             printf(", ");
-            PrintHelperFtn(pData[1]);
+            DumpHelperFtn(pData[1], pDataItems, pPointerMap, compHnd);
             break;
         }
         case InterpOpPointerInt:
         {
-            PrintPointer((void*)GetDataItemAtIndex(pData[0]));
+            DumpPointer(pDataItems[pData[0]], pPointerMap, compHnd);
             printf(", %d", pData[1]);
             break;
         }
         case InterpOpGenericLookupInt:
         {
-            InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)GetAddrOfDataItemAtIndex(pData[0]);
+            InterpGenericLookup *pGenericLookup = (InterpGenericLookup*)&pDataItems[pData[0]];
             PrintInterpGenericLookup(pGenericLookup);
             printf(", %d", pData[1]);
             break;
         }
         case InterpOpHandleContinuation:
         {
-            PrintInterpAsyncSuspendData((InterpAsyncSuspendData*)GetDataItemAtIndex(pData[0]));
+            DumpInterpAsyncSuspendData((InterpAsyncSuspendData*)pDataItems[pData[0]]);
             printf(", ");
-            PrintHelperFtn(pData[1]);
+            DumpHelperFtn(pData[1], pDataItems, pPointerMap, compHnd);
             break;
         }
         case InterpOpHandleContinuationPt2:
         {
-            PrintInterpAsyncSuspendData((InterpAsyncSuspendData*)GetDataItemAtIndex(pData[0]));
+            DumpInterpAsyncSuspendData((InterpAsyncSuspendData*)pDataItems[pData[0]]);
             break;
         }
         default:
@@ -11610,21 +11637,14 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
     }
 }
 
-void InterpCompiler::PrintCompiledCode()
+void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int32_t *pData, int32_t opcode)
 {
-    const int32_t *ip = m_pMethodCode;
-    const int32_t *end = m_pMethodCode + m_methodCodeSize;
-
-    while (ip < end)
-    {
-        PrintCompiledIns(ip, m_pMethodCode);
-        ip = InterpNextOp(ip);
-    }
-
-    printf("End of method: %04x: IR_%04x\n", (int32_t)ConvertOffset((int32_t)(ip - m_pMethodCode)), (int32_t)(ip - m_pMethodCode));
+    DumpInsData(ins, insOffset, pData, opcode, m_dataItems.GetUnderlyingArray(),
+                m_pointerToNameMap.GetValue(), m_compHnd);
 }
 
-void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
+static void DumpCompiledIns(const int32_t *ip, const int32_t *start, void** pDataItems,
+    dn_simdhash_ptr_ptr_t* pPointerMap = nullptr, COMP_HANDLE compHnd = nullptr)
 {
     int32_t opcode = *ip;
     int32_t insOffset = (int32_t)(ip - start);
@@ -11648,9 +11668,40 @@ void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
         printf(" nil],");
     }
 
-    PrintInsData(NULL, insOffset, ip, opcode);
+    DumpInsData(NULL, insOffset, ip, opcode, pDataItems, pPointerMap, compHnd);
     printf("\n");
 }
+
+static void DumpCompiledCode(const int32_t *code, int32_t codeSizeInSlots, void** pDataItems,
+    dn_simdhash_ptr_ptr_t* pPointerMap = nullptr, COMP_HANDLE compHnd = nullptr)
+{
+    const int32_t *ip = code;
+    const int32_t *end = code + codeSizeInSlots;
+
+    while (ip < end)
+    {
+        DumpCompiledIns(ip, code, pDataItems, pPointerMap, compHnd);
+        ip = InterpNextOp(ip);
+    }
+
+    printf("End of method: %04x: IR_%04x\n", (int32_t)ConvertOffset((int32_t)(ip - code)), (int32_t)(ip - code));
+}
+
+void InterpCompiler::PrintCompiledCode()
+{
+    DumpCompiledCode(m_pMethodCode, m_methodCodeSize, m_dataItems.GetUnderlyingArray(),
+                     m_pointerToNameMap.GetValue(), m_compHnd);
+}
+
+extern "C" void InterpDumpIR(const InterpByteCodeStart *startIp)
+{
+    InterpMethod *pMethod = startIp->Method;
+    const int32_t *code = startIp->GetByteCodes();
+
+    printf("Dumping interpreter IR at %p (method %p)\n", startIp, pMethod->methodHnd);
+    DumpCompiledCode(code, pMethod->codeSize, pMethod->pDataItems);
+}
+#endif
 
 extern "C" void assertAbort(const char* why, const char* file, unsigned line)
 {

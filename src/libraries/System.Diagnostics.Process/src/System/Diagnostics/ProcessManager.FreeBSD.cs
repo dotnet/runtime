@@ -20,6 +20,19 @@ namespace System.Diagnostics
             return Interop.Process.GetProcPath(processId);
         }
 
+        internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
+        {
+            ThrowIfRemoteMachine(machineName);
+
+            if (processInfo is not null)
+            {
+                return processInfo.ProcessName;
+            }
+
+            processInfo = CreateProcessInfo(processId);
+            return processInfo?.ProcessName;
+        }
+
         internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
         {
             // Negative PIDs aren't valid

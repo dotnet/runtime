@@ -46,11 +46,13 @@ struct InterpMethod
     bool initLocals;
     bool unmanagedCallersOnly;
     bool publishSecretStubParam;
+    int32_t codeSize; // size in int32_t slots
 
 #ifdef INTERPRETER_COMPILER_INTERNAL
     InterpMethod(
         CORINFO_METHOD_HANDLE methodHnd, int32_t argsSize, int32_t allocaSize,
-        void** pDataItems, bool initLocals, bool unmanagedCallersOnly, bool publishSecretStubParam
+        void** pDataItems, bool initLocals, bool unmanagedCallersOnly,
+        bool publishSecretStubParam, int32_t codeSize
     )
     {
 #if DEBUG
@@ -63,6 +65,7 @@ struct InterpMethod
         this->initLocals = initLocals;
         this->unmanagedCallersOnly = unmanagedCallersOnly;
         this->publishSecretStubParam = publishSecretStubParam;
+        this->codeSize = codeSize;
         pCallStub = NULL;
     }
 #endif

@@ -71,6 +71,19 @@ namespace System.Diagnostics
             return new ProcessModuleCollection(0);
         }
 
+        internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
+        {
+            ThrowIfRemoteMachine(machineName);
+
+            if (processInfo is not null)
+            {
+                return processInfo.ProcessName;
+            }
+
+            processInfo = CreateProcessInfo(processId);
+            return processInfo?.ProcessName;
+        }
+
         /// <summary>
         /// Creates a ProcessInfo from the specified process ID.
         /// </summary>
