@@ -255,7 +255,14 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         if (buildOptions.AssertAppBundle)
         {
-            _provider.AssertWasmSdkBundle(configuration, buildOptions, IsUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs, res.Output);
+            // With CopyToOutputDirectory=Never for framework assets, build output
+            // no longer contains framework files in bin/_framework/. The static web
+            // assets middleware serves them from obj/ locations during dotnet run.
+            // Only assert bundle contents for publish, where files are still copied.
+            if (buildOptions.IsPublish)
+            {
+                _provider.AssertWasmSdkBundle(configuration, buildOptions, IsUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs, res.Output);
+            }
         }
         return (_projectDir, res.Output);
     }
