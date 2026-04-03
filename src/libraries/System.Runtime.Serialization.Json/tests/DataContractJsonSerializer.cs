@@ -3125,7 +3125,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     // Test for the fix to ensure DataContractJsonSerializer passes ISerializationSurrogateProvider to internal XML serializer
-    // Same tests use for the regular DataContractSerializer to ensure the surrogate provider is working correctly
+    // Same tests used for the regular DataContractSerializer to ensure the surrogate provider is working correctly
     [Fact]
     public static void DCJS_MyPersonSurrogate()
     {
@@ -3148,6 +3148,7 @@ public static partial class DataContractJsonSerializerTests
         for (int i = 0; i < myFamily.Members.Length; ++i)
         {
             Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);
+            Assert.Equal(myFamily.Members[i].Age, newFamily.Members[i].Age);
         }
     }
 
