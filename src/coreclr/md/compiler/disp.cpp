@@ -70,7 +70,7 @@ Disp::DefineScope(
     OptionValue optionForNewScope = m_OptionValue;
 
 
-    LOG((LF_METADATA, LL_INFO10, "Disp::DefineScope(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", rclsid, dwCreateFlags, riid, ppIUnk));
+    LOG((LF_METADATA, LL_INFO10, "Disp::DefineScope(0x%08x, 0x%08x, 0x%08x, %p)\n", rclsid.Data1, dwCreateFlags, riid.Data1, ppIUnk));
 
     if (dwCreateFlags)
         IfFailGo(E_INVALIDARG);
@@ -105,7 +105,7 @@ Disp::DefineScope(
     // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
 
-    LOG((LOGMD, "{%08x} Created new emit scope\n", pMeta));
+    LOG((LOGMD, "{%p} Created new emit scope\n", (void*)pMeta));
 
 ErrExit:
     if (FAILED(hr))
@@ -240,7 +240,7 @@ HRESULT Disp::OpenScopeOnMemory(        // Return code.
     IUnknown    **ppIUnk)               // [out] Return interface on success.
 {
     HRESULT     hr;
-    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScopeOnMemory(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", pData, cbData, dwOpenFlags, riid, ppIUnk));
+    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScopeOnMemory(%p, 0x%08x, 0x%08x, 0x%08x, %p)\n", (void*)pData, cbData, dwOpenFlags, riid.Data1, (void*)ppIUnk));
 
     IMDCommon *pMDCommon = NULL;
 
@@ -283,7 +283,7 @@ HRESULT Disp::OpenRawScopeOnMemory(        // Return code.
     // Always initialize the RegMeta's stgdb.
     IfFailGo(pMeta->OpenExistingMD(0 /* szFileName */, const_cast<void*>(pData), cbData, dwOpenFlags));
 
-    LOG((LOGMD, "{%08x} Opened new scope on memory, pData: %08x    cbData: %08x\n", pMeta, pData, cbData));
+    LOG((LOGMD, "{%p} Opened new scope on memory, pData: %p    cbData: %08x\n", (void*)pMeta, (void*)pData, cbData));
 
     // Return the requested interface.
     IfFailGo( pMeta->QueryInterface(riid, (void **) ppIUnk) );
@@ -388,7 +388,7 @@ Disp::DefinePortablePdbScope(
     RegMeta* pMeta = 0;
     OptionValue optionForNewScope = m_OptionValue;
 
-    LOG((LF_METADATA, LL_INFO10, "Disp::DefinePortablePdbScope(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", rclsid, dwCreateFlags, riid, ppIUnk));
+    LOG((LF_METADATA, LL_INFO10, "Disp::DefinePortablePdbScope(0x%08x, 0x%08x, 0x%08x, %p)\n", rclsid.Data1, dwCreateFlags, riid.Data1, (void*)ppIUnk));
 
     if (dwCreateFlags)
         IfFailGo(E_INVALIDARG);
@@ -420,7 +420,7 @@ Disp::DefinePortablePdbScope(
     // Add the new RegMeta to the cache.
     IfFailGo(pMeta->AddToCache());
 
-    LOG((LOGMD, "{%08x} Created new emit scope\n", pMeta));
+    LOG((LOGMD, "{%p} Created new emit scope\n", (void*)pMeta));
 
 ErrExit:
     if (FAILED(hr))

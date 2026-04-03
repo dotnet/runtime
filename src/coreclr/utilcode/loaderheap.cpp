@@ -539,15 +539,15 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
                            "The arguments to BackoutMem() were:\n"
                            "\n"
                            "     Pointer: 0x%p\n"
-                           "     Size:    %lu (0x%lx)\n"
+                           "     Size:    %zu (0x%zx)\n"
                            "\n"
                            ,szFile
                            ,lineNum
                            ,szAllocFile
                            ,allocLineNum
                            ,pMem
-                           ,(ULONG)dwRequestedSize
-                           ,(ULONG)dwRequestedSize
+                           ,dwRequestedSize
+                           ,dwRequestedSize
                           );
 
 

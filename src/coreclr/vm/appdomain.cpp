@@ -865,11 +865,11 @@ void SystemDomain::Init()
     LOG((
         LF_EEMEM,
         LL_INFO10,
-        "sizeof(EEClass)     = %d\n"
-        "sizeof(MethodTable) = %d\n"
-        "sizeof(MethodDesc)= %d\n"
-        "sizeof(FieldDesc)   = %d\n"
-        "sizeof(Module)      = %d\n",
+        "sizeof(EEClass)     = %zu\n"
+        "sizeof(MethodTable) = %zu\n"
+        "sizeof(MethodDesc)= %zu\n"
+        "sizeof(FieldDesc)   = %zu\n"
+        "sizeof(Module)      = %zu\n",
         sizeof(EEClass),
         sizeof(MethodTable),
         sizeof(MethodDesc),
