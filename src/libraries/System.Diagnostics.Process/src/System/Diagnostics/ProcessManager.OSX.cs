@@ -81,7 +81,7 @@ namespace System.Diagnostics
             Interop.libproc.proc_taskallinfo? info;
             string processName = GetProcessName(pid, out info, getInfo: true) ?? "";
 
-            if (processNameFilter != null && !string.Equals(processName, processNameFilter, StringComparison.OrdinalIgnoreCase))
+            if (processNameFilter != null && !processNameFilter.Equals(processName, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }

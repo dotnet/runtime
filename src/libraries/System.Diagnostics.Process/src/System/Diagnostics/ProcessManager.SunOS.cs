@@ -87,8 +87,7 @@ namespace System.Diagnostics
             }
 
             string? processName = Process.GetUntruncatedProcessName(ref processInfo, ref argString);
-            if (processNameFilter != null &&
-                !string.Equals(processName, processNameFilter, StringComparison.OrdinalIgnoreCase))
+            if (processNameFilter != null && !processNameFilter.Equals(processName, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
