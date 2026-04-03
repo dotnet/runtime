@@ -36,7 +36,7 @@
 
   <!-- Generate a runtimeconfig.pack.json file that has the runtime version replaced by version of dotnet/runtime being built.
        This will be the version used by the ILLink.Tasks package. -->
-  <Target Name="GeneratePackageRuntimeConfig" AfterTargets="GenerateBuildRuntimeConfigurationFiles"
+  <Target Name="GeneratePackageRuntimeConfig" AfterTargets="CopyFilesToOutputDirectory"
           DependsOnTargets="_ComputePackRuntimeConfigFilePath"
           Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">
     <PropertyGroup>
