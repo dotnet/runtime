@@ -32,6 +32,7 @@ namespace System.Diagnostics
         /// <returns>true if the machine is remote; otherwise, false.</returns>
         internal static bool HandleRemoteMachineSupport(string machineName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(machineName);
             if (IsRemoteMachine(machineName))
             {
                 s_getRemoteProcessInfos ??= NtProcessManager.GetProcessInfos;
@@ -211,7 +212,7 @@ namespace System.Diagnostics
             return NtProcessManager.GetModules(processId);
         }
 
-        private static bool IsRemoteMachineCore(string machineName)
+        internal static bool IsRemoteMachine(string machineName)
         {
             ReadOnlySpan<char> baseName = machineName.AsSpan(machineName.StartsWith('\\') ? 2 : 0);
             return

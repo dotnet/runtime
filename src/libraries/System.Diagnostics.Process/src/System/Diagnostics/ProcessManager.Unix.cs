@@ -42,7 +42,7 @@ namespace System.Diagnostics
             CreateProcessInfo(processId);
 #pragma warning restore IDE0060
 
-        private static bool IsRemoteMachineCore(string machineName)
+        private static bool IsRemoteMachine(string machineName)
         {
             return
                 machineName != "." &&
@@ -51,6 +51,7 @@ namespace System.Diagnostics
 
         internal static bool HandleRemoteMachineSupport(string machineName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(machineName);
             if (IsRemoteMachine(machineName))
             {
                 throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
