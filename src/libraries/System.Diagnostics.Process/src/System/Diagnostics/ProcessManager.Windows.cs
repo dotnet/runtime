@@ -179,9 +179,8 @@ namespace System.Diagnostics
 
             ArrayBuilder<ProcessInfo> builder = default;
             s_getRemoteProcessInfos!(ref builder, processNameFilter: null, machineName);
+
             int[] ids = new int[builder.Count];
-            for (int i = 0; i < ids.Length; i++)
-                ids[i] = builder[i].ProcessId;
             for (int i = 0; i < ids.Length; i++)
             {
                 ids[i] = builder[i].ProcessId;
