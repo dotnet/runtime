@@ -294,7 +294,7 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains("Requested by: MissingDependency.Mid", exString);
             Assert.Contains("MissingDependency.Root", exString);
         }
-      
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
         public static void InvalidCastException_DifferentALC_ShowsAssemblyInfo()
         {

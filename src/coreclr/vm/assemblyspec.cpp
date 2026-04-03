@@ -750,8 +750,11 @@ Assembly *AssemblySpecBindingCache::LookupParentAssemblyForAssembly(Assembly *pA
         AssemblyBinding *b = (AssemblyBinding*) i.GetValue();
         if (!b->IsError() && b->GetAssembly() == pAssembly)
         {
+            // The binding cache stores raw Assembly* parent pointers that are not
+            // lifetime-managed. If a collectible ALC was unloaded, the cached parent
+            // pointer may be stale. Validate it is still a live assembly before returning.
             Assembly *pParent = b->GetParentAssembly();
-            if (pParent != NULL)
+            if (pParent != NULL && AppDomain::GetCurrentDomain()->ContainsAssembly(pParent))
                 return pParent;
         }
         ++i;
