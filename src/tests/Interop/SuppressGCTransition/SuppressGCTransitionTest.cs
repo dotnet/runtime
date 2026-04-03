@@ -295,22 +295,5 @@ public unsafe class SuppressGCTransitionTest
     public static void TestEntryPoint()
     {
         throw new Exception();
-#if 0
-        CheckGCMode.Initialize(&SuppressGCTransitionNative.SetIsInCooperativeModeFunction);
-
-        int n = 1;
-        n = Inline_NoGCTransition(n);
-        n = Inline_GCTransition(n);
-        n = NoInline_NoGCTransition(n);
-        n = NoInline_GCTransition(n);
-        n = Mixed(n);
-        n = Mixed_TightLoop(n);
-        n = Inline_NoGCTransition_FunctionPointer(n);
-        n = Inline_GCTransition_FunctionPointer(n);
-        n = NoInline_NoGCTransition_FunctionPointer(n);
-        n = NoInline_GCTransition_FunctionPointer(n);
-        n = CallAsFunctionPointer(n);
-        n = ILStubCache_NoGCTransition_GCTransition(n);
-#endif
     }
 }
