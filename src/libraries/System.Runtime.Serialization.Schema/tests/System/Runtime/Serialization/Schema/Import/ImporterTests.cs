@@ -168,6 +168,14 @@ namespace System.Runtime.Serialization.Schema.Tests
                 yield return new object[] { (XsdDataContractImporter imp) => imp.Import(schemaSet, typeName) };
             }
 
+            // Regression test: importing a dictionary with an enum key type should not throw
+            // (bug where Namespace property was stale for the ClassDataContract created for the key-value type)
+            yield return new object[] { (XsdDataContractImporter imp) => {
+                var exporter = new XsdDataContractExporter();
+                exporter.Export(typeof(Dictionary<DayOfWeek, bool>));
+                imp.Import(exporter.Schemas);
+            } };
+
             // DateTime / DateOnly / TimeOnly primitive schema import verification
             yield return new object[] { (XsdDataContractImporter imp) => {
                 // Construct a schema set with a complex type containing ms:dateOnly & ms:timeOnly plus an xsd:time element

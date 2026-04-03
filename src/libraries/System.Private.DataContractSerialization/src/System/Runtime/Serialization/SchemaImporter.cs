@@ -1107,9 +1107,9 @@ namespace System.Runtime.Serialization
                 {
                     ThrowArrayTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.InvalidKeyValueType, element.Name));
                 }
-                if (keyValueContract.Namespace != dataContract.Namespace)
+                if (keyValueContract.XmlName.Namespace != dataContract.XmlName.Namespace)
                 {
-                    ThrowArrayTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.InvalidKeyValueTypeNamespace, element.Name, keyValueContract.Namespace));
+                    ThrowArrayTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.InvalidKeyValueTypeNamespace, element.Name, keyValueContract.XmlName.Namespace));
                 }
                 keyValueContract.IsValueType = true;
                 dataContract.KeyName = key.Name;
