@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.PortableExecutable;
+using System.IO;
 using Microsoft.Diagnostics.Runtime;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -107,7 +108,7 @@ internal sealed class ClrMdDumpHost : IDisposable
     {
         foreach (ModuleInfo module in _dataTarget.DataReader.EnumerateModules())
         {
-            if (address >= module.ImageBase && address < module.ImageBase + module.FileSize)
+            if (address >= module.ImageBase && address < module.ImageBase + module.ImageSize)
                 return module;
         }
         return null;
