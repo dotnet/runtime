@@ -4727,7 +4727,7 @@ COR_ILMETHOD_DECODER* PInvoke::CreatePInvokeMethodIL(PInvokeMethodDesc* pMD, Dyn
     NewHolder<ILStubResolver> pResolver = new ILStubResolver();
     pResolver->SetStubMethodDesc(pMD);
 
-    COR_ILMETHOD_DECODER* pIL = CreatePInvokeStubWorker(&stubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), dwStubFlags, pMD, pParamTokenArray, iLCIDArg);
+    COR_ILMETHOD_DECODER* pIL = CreatePInvokeStubWorker(&stubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), stubState.GetFlags(), pMD, pParamTokenArray, iLCIDArg);
     *ppResolver = pResolver.Extract();
     return pIL;
 }
