@@ -284,7 +284,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Fused subtract-multiply by scalar: left[0..right.Length] -= right * multiplier.
+        /// Subtract the product of right and multiplier from left: left[0..right.Length] -= right * multiplier.
         /// Returns the borrow out. Unrolled by 4 on 64-bit.
         /// </summary>
         private static nuint SubtractDivisor(Span<nuint> left, ReadOnlySpan<nuint> right, nuint multiplier)
