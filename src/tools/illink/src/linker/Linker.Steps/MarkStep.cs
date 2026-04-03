@@ -1535,10 +1535,20 @@ namespace Mono.Linker.Steps
             foreach (ExportedType exportedType in module.ExportedTypes)
             {
                 MarkingHelpers.MarkExportedType(exportedType, module, new DependencyInfo(DependencyKind.ExportedType, assembly), new MessageOrigin(assembly));
-                // Mark the scope where the forwarded type is defined. Note: nested exported types have a
-                // DeclaringType scope (not AssemblyNameReference), so MarkForwardedScope will skip them.
-                MarkingHelpers.MarkForwardedScope(new TypeReference(exportedType.Namespace, exportedType.Name, module, exportedType.Scope), new MessageOrigin(assembly));
+                MarkingHelpers.MarkForwardedScope(CreateTypeReferenceForExportedTypeTarget(exportedType, module), new MessageOrigin(assembly));
             }
+        }
+
+        static TypeReference CreateTypeReferenceForExportedTypeTarget(ExportedType exportedType, ModuleDefinition module)
+        {
+            TypeReference? declaringTypeReference = null;
+            if (exportedType.DeclaringType != null)
+                declaringTypeReference = CreateTypeReferenceForExportedTypeTarget(exportedType.DeclaringType, module);
+
+            return new TypeReference(exportedType.Namespace, exportedType.Name, module, exportedType.Scope)
+            {
+                DeclaringType = declaringTypeReference
+            };
         }
 
         sealed class TypeReferenceMarker : TypeReferenceWalker
@@ -1564,8 +1574,8 @@ namespace Mono.Linker.Steps
 
             protected override void ProcessExportedType(ExportedType exportedType)
             {
-                markingHelpers.MarkExportedType(exportedType, assembly.MainModule, new DependencyInfo(DependencyKind.ExportedType, assembly), new MessageOrigin(assembly));
-                markingHelpers.MarkForwardedScope(CreateTypeReferenceForExportedTypeTarget(exportedType), new MessageOrigin(assembly));
+                // Exported types are handled separately in MarkExportedTypes, which is always called
+                // before TypeReferenceMarker. Nothing to do here.
             }
 
             protected override void ProcessExtra()
@@ -1578,20 +1588,6 @@ namespace Mono.Linker.Steps
                         continue;
                     markingHelpers.MarkForwardedScope(typeReference, new MessageOrigin(assembly));
                 }
-            }
-
-            TypeReference CreateTypeReferenceForExportedTypeTarget(ExportedType exportedType)
-            {
-                TypeReference? declaringTypeReference = null;
-                if (exportedType.DeclaringType != null)
-                {
-                    declaringTypeReference = CreateTypeReferenceForExportedTypeTarget(exportedType.DeclaringType);
-                }
-
-                return new TypeReference(exportedType.Namespace, exportedType.Name, assembly.MainModule, exportedType.Scope)
-                {
-                    DeclaringType = declaringTypeReference
-                };
             }
         }
 
