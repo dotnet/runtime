@@ -130,7 +130,7 @@ internal static partial class Interop
 
             case Error.ENOTDIR:
                 return !string.IsNullOrEmpty(path) ?
-#if NET
+#if NET11_0_OR_GREATER
                     new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, path), path) :
 #else
                     new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, path)) :

@@ -34,7 +34,7 @@ namespace System.IO
                     return new FileNotFoundException(
                         string.IsNullOrEmpty(path) ? SR.IO_FileNotFound : SR.Format(SR.IO_FileNotFound_FileName, path), path);
                 case Interop.Errors.ERROR_PATH_NOT_FOUND:
-#if NET
+#if NET11_0_OR_GREATER
                     return new DirectoryNotFoundException(
                         string.IsNullOrEmpty(path) ? SR.IO_PathNotFound_NoPathName : SR.Format(SR.IO_PathNotFound_Path, path), path);
 #else
