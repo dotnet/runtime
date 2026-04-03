@@ -174,6 +174,12 @@
   <data name="ErrorReadyToRunHeaderSymbolNameRequiresComposite" xml:space="preserve">
     <value>Error: --rtr-header-symbol-name requires --composite.</value>
   </data>
+  <data name="ErrorReadyToRunHeaderSymbolNameEmpty" xml:space="preserve">
+    <value>Error: --rtr-header-symbol-name must not be empty or whitespace.</value>
+  </data>
+  <data name="ErrorReadyToRunHeaderSymbolNameRequiresPE" xml:space="preserve">
+    <value>Error: --rtr-header-symbol-name is only supported when --obj-format is PE.</value>
+  </data>
   <data name="InputFilesToCompile" xml:space="preserve">
     <value>Input file(s) to compile</value>
   </data>

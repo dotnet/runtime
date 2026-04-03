@@ -288,7 +288,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
             {
-                string symbolName = _nodeFactory.CompositeImageSettings?.ReadyToRunHeaderSymbolName ?? "RTR_HEADER";
+                string configuredSymbolName = _nodeFactory.CompositeImageSettings?.ReadyToRunHeaderSymbolName;
+                string symbolName = string.IsNullOrWhiteSpace(configuredSymbolName) ? "RTR_HEADER" : configuredSymbolName;
                 objectWriter.AddExportedSymbol(symbolName);
             }
             return objectWriter;

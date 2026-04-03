@@ -412,15 +412,29 @@ namespace ILCompiler
                     }
 
                     string rtrHeaderSymbolName = Get(_command.ReadyToRunHeaderSymbolName);
-                    if (rtrHeaderSymbolName != null && !composite)
-                    {
-                        throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameRequiresComposite);
-                    }
 
                     ReadyToRunContainerFormat format = Get(_command.OutputFormat);
                     if (!composite && format != ReadyToRunContainerFormat.PE && format != ReadyToRunContainerFormat.Wasm)
                     {
                         throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
+                    }
+
+                    if (rtrHeaderSymbolName is not null)
+                    {
+                        if (!composite)
+                        {
+                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameRequiresComposite);
+                        }
+
+                        if (string.IsNullOrWhiteSpace(rtrHeaderSymbolName))
+                        {
+                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameEmpty);
+                        }
+
+                        if (format != ReadyToRunContainerFormat.PE)
+                        {
+                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameRequiresPE);
+                        }
                     }
 
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
