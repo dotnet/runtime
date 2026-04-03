@@ -9,6 +9,11 @@ using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
 
+using NestedSafeContentsStack = System.Collections.Generic.Stack<(
+    System.ReadOnlyMemory<byte> Serialized,
+    System.Security.Cryptography.Pkcs.Pkcs12SafeContentsBag Bag,
+    System.Collections.Generic.List<System.Security.Cryptography.Pkcs.Pkcs12SafeBag> Container)>;
+
 namespace System.Security.Cryptography.Pkcs
 {
 #if BUILDING_PKCS
@@ -285,24 +290,40 @@ namespace System.Security.Cryptography.Pkcs
 
         private static List<Pkcs12SafeBag> ReadBags(ReadOnlyMemory<byte> serialized)
         {
-            Stack<(ReadOnlyMemory<byte> Serialized, Pkcs12SafeContents Target)> pendingContents = new();
+            NestedSafeContentsStack pendingContents = new NestedSafeContentsStack();
             List<Pkcs12SafeBag> result = ReadBagsCore(serialized, pendingContents);
 
             while (pendingContents.Count > 0)
             {
-                (ReadOnlyMemory<byte> nestedSerialized, Pkcs12SafeContents target) = pendingContents.Pop();
+                (ReadOnlyMemory<byte> nestedSerialized, Pkcs12SafeContentsBag bag, List<Pkcs12SafeBag> container) = pendingContents.Pop();
+                bool replace = true;
 
                 try
                 {
+                    Pkcs12SafeContents? target = bag.SafeContents;
+                    Debug.Assert(target is not null);
                     target._bags = ReadBagsCore(nestedSerialized, pendingContents);
+                    replace = false;
                 }
                 catch (AsnContentException)
                 {
-                    target._bags = new List<Pkcs12SafeBag>(0);
                 }
                 catch (CryptographicException)
                 {
-                    target._bags = new List<Pkcs12SafeBag>(0);
+                }
+
+                if (replace)
+                {
+                    // Replace the deferred bag with an unknown bag, since the contents couldn't be parsed.
+                    Pkcs12SafeBag.UnknownBag unknownBag = new(Oids.Pkcs12SafeContentsBag, nestedSerialized)
+                    {
+                        Attributes = bag.Attributes,
+                    };
+
+                    int idx = container.IndexOf(bag);
+                    Debug.Assert(idx != -1);
+
+                    container[idx] = unknownBag;
                 }
             }
 
@@ -311,7 +332,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static List<Pkcs12SafeBag> ReadBagsCore(
             ReadOnlyMemory<byte> serialized,
-            Stack<(ReadOnlyMemory<byte>, Pkcs12SafeContents)> pendingSafeContents)
+            NestedSafeContentsStack pendingSafeContents)
         {
             List<SafeBagAsn> serializedBags = new List<SafeBagAsn>();
 
@@ -366,8 +387,10 @@ namespace System.Security.Cryptography.Pkcs
                         case Oids.Pkcs12SafeContentsBag:
                         {
                             Pkcs12SafeContents deferredContents = new(isReadOnly: true);
-                            bag = Pkcs12SafeContentsBag.CreateWithDeferredContents(bagValue, deferredContents);
-                            pendingSafeContents.Push((bagValue, deferredContents));
+                            Pkcs12SafeContentsBag nested;
+                            nested = Pkcs12SafeContentsBag.CreateWithDeferredContents(bagValue, deferredContents);
+                            bag = nested;
+                            pendingSafeContents.Push((bagValue, nested, bags));
                             break;
                         }
                     }

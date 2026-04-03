@@ -287,17 +287,22 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             }
         }
 
-        [Fact]
-        public static void DecodeDeeplyNestedPfx()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void DecodeDeeplyNestedPfx(bool withDecodeError)
         {
             const int Depth = 3333;
-            byte[] pfx = BuildPfx(Depth);
+            int errorTarget = withDecodeError ? Depth / 4 * 3 : -1;
+            byte[] pfx = BuildPfx(Depth, errorTarget);
 
             Pkcs12Info info = Pkcs12Info.Decode(pfx, out _, skipCopy: true);
             Pkcs12SafeContents contents = Assert.Single(info.AuthenticatedSafe);
             Pkcs12SafeContents deepContents = contents;
 
-            for (int i = 0; i < Depth; i++)
+            int count = withDecodeError ? errorTarget - 1: Depth;
+
+            for (int i = 0; i < count; i++)
             {
                 Pkcs12SafeBag bag = Assert.Single(contents.GetBags());
                 Pkcs12SafeContentsBag typedBag = Assert.IsType<Pkcs12SafeContentsBag>(bag);
@@ -305,16 +310,38 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             }
 
             Pkcs12SafeBag finalBag = Assert.Single(contents.GetBags());
-            Pkcs12SecretBag secretBag = Assert.IsType<Pkcs12SecretBag>(finalBag);
-            Assert.Equal("1.2.840.113549.1.9.21", secretBag.GetSecretType().Value);
-            ReadOnlySpan<byte> expectedValue = [0x04, 0x03, 0x01, 0x02, 0x03];
-            AssertExtensions.SequenceEqual(expectedValue, secretBag.SecretValue.Span);
+
+            if (withDecodeError)
+            {
+                Assert.IsNotType<Pkcs12SecretBag>(finalBag);
+                Assert.Equal("1.2.840.113549.1.12.10.1.6", finalBag.GetBagId().Value);
+
+                ValueAsnReader reader = new ValueAsnReader(finalBag.EncodedBagValue.Span, AsnEncodingRules.BER);
+                ValueAsnReader inner = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
+                reader = inner;
+
+                inner = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
+                reader = inner;
+
+                reader.ReadObjectIdentifier();
+                inner = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                AssertExtensions.TrueExpression(inner.ReadBoolean());
+            }
+            else
+            {
+                Pkcs12SecretBag secretBag = Assert.IsType<Pkcs12SecretBag>(finalBag);
+                Assert.Equal("1.2.840.113549.1.9.21", secretBag.GetSecretType().Value);
+                ReadOnlySpan<byte> expectedValue = [0x04, 0x03, 0x01, 0x02, 0x03];
+                AssertExtensions.SequenceEqual(expectedValue, secretBag.SecretValue.Span);
+            }
 
             Pkcs12SafeContents newContents = new Pkcs12SafeContents();
             // Assert.NoThrow
             newContents.AddNestedContents(deepContents);
 
-            static byte[] BuildPfx(int depth)
+            static byte[] BuildPfx(int depth, int errorDepth)
             {
                 // If depth is 0, the output is 80 bytes.
                 // Each nested bag adds a 13 byte OID, and 3 CONSTRUCTED values each with a 1-byte tag.
@@ -354,6 +381,12 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
                                         builder.PushSequence();
                                         builder.WriteObjectIdentifier(Pkcs12SafeContents);
                                         builder.PushSequence(context0);
+
+                                        if (i == errorDepth)
+                                        {
+                                            builder.WriteBoolean(true);
+                                        }
+
                                         builder.PushSequence();
                                     }
 
