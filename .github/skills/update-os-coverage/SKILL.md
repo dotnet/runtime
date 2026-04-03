@@ -18,8 +18,8 @@ Update OS version references in Helix queue definition files. These files contro
 - An OS version is approaching or has reached EOL and should be replaced
 - A new OS version is released and should be added to Helix testing for coverage
 - We take a more proactive approach on `main`. If a distro version will be EOL before our annual November release, we should update it to a newer version. If a distro version is expected to ship within one quarter (3 months) and a `prereqs` container image already exists, we should add it to Helix testing.
-- The availablility of an image in the `prereqs` container repo is a strong signal that the OS version is approved for Helix testing, at least on `main`.
-- Helix coverage does not match the supported-os matrix (for example, [`release-notes/11.0/supported-os.json`](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.json).
+- The availability of an image in the `prereqs` container repo is a strong signal that the OS version is approved for Helix testing, at least on `main`.
+- Helix coverage does not match the supported-os matrix (for example, the relevant `release-notes/<dotnet-version>/supported-os.json` file in [dotnet/core](https://github.com/dotnet/core/tree/main/release-notes)).
 - Upgrading "oldest" or "latest" version slots for a distro
 
 For servicing / `release/*` branches, be more conservative: only update to GA and already-supported distro versions unless the user explicitly asks for a forward-looking change.
@@ -53,7 +53,7 @@ Many Linux container-backed entries in this file use a pattern like:
 
 ```yaml
 # <Distro> <arch>
-# Latest: <version>
+# Latest: <distro-version>
 - name: helix_linux_x64_<distro>_latest
   value: (<QueueName>)<HostQueue>@mcr.microsoft.com/dotnet-buildtools/prereqs:<image-tag>
 ```
@@ -89,13 +89,13 @@ Before making any changes, confirm the target container image exists. One conven
 
 ```bash
 curl -sL https://github.com/dotnet/versions/raw/refs/heads/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json \
-  | jq '[.repos[].images[].platforms[].simpleTags[]] | map(select(startswith("<distro>-<version>"))) | sort | .[]'
+  | jq '[.repos[].images[].platforms[].simpleTags[]] | map(select(startswith("<distro>-<distro-version>"))) | sort | .[]'
 ```
 
 If the image is **not found**, stop and inform the user. The image must be created first at [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). Check if an open issue or PR already exists, for example:
 
 ```bash
-gh search issues "<distro> <version>" --repo dotnet/dotnet-buildtools-prereqs-docker --state open
+gh search issues "<distro> <distro-version>" --repo dotnet/dotnet-buildtools-prereqs-docker --state open
 ```
 
 ### 2. Check support policy first, then EOL dates if needed
@@ -103,16 +103,16 @@ gh search issues "<distro> <version>" --repo dotnet/dotnet-buildtools-prereqs-do
 First, inspect the relevant `supported-os.json` entry in `dotnet/core` to see whether the distro/version is already supported for the target release and to find its official lifecycle link:
 
 ```bash
-curl -sL https://github.com/dotnet/core/raw/refs/heads/main/release-notes/<version>/supported-os.json \
+curl -sL https://github.com/dotnet/core/raw/refs/heads/main/release-notes/<dotnet-version>/supported-os.json \
   | jq '.families[] | select(.name == "Linux") | .distributions[] | select(.id == "<distro-id>") | {name, lifecycle, supportedVersions: ."supported-versions", unsupportedVersions: ."unsupported-versions"}'
 ```
 
-If the target version is already listed in `supportedVersions`, that is the primary signal that the change is appropriate for the corresponding release line. On servicing branches, prefer versions that are already GA and present there.
+If the target distro version is already listed in `supportedVersions`, that is the primary signal that the change is appropriate for the corresponding release line. On servicing branches, prefer versions that are already GA and present there.
 
 If you need an independent lifecycle check, or if `supported-os.json` does not yet reflect the situation clearly, use [endoflife.date](https://endoflife.date) as a fallback:
 
 ```bash
-curl -s https://endoflife.date/api/<distro-id>.json | jq '.[] | select(.cycle == "<version>") | {cycle, eol, releaseDate}'
+curl -s https://endoflife.date/api/<distro-id>.json | jq '.[] | select(.cycle == "<distro-version>") | {cycle, eol, releaseDate}'
 ```
 
 The `<distro-id>` values typically match across both sources (e.g. `fedora`, `alpine`, `debian`, `opensuse`, `ubuntu`, `centos-stream`).
@@ -240,7 +240,7 @@ Note: Release branch updates should be done in separate PRs.
 
 ### 8. Cross-reference with supported-os
 
-Check if the relevant `supported-os.json` in dotnet/core needs corresponding updates. The file lives under the pattern `release-notes/<version>/supported-os.json` (for example, `release-notes/8.0/supported-os.json`) in the [release-notes directory](https://github.com/dotnet/core/tree/main/release-notes). If a new version is being added to Helix but isn't yet in supported-os, inform the user to run the `update-supported-os` skill in dotnet/core.
+Check if the relevant `supported-os.json` in dotnet/core needs corresponding updates. The file lives under the pattern `release-notes/<dotnet-version>/supported-os.json` (for example, `release-notes/8.0/supported-os.json`) in the [release-notes directory](https://github.com/dotnet/core/tree/main/release-notes). If a new distro version is being added to Helix but isn't yet in supported-os, inform the user to run the `update-supported-os` skill in dotnet/core.
 
 ### 9. Create PR
 
@@ -260,7 +260,7 @@ When asked to audit all OS coverage:
 
 1. Fetch the current supported-os.json for the target .NET version:
    ```bash
-   curl -sL https://github.com/dotnet/core/raw/refs/heads/main/release-notes/<version>/supported-os.json
+   curl -sL https://github.com/dotnet/core/raw/refs/heads/main/release-notes/<dotnet-version>/supported-os.json
    ```
 
 2. For each Linux distro in supported-os, check:
