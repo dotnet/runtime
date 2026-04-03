@@ -1117,5 +1117,38 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Assert.Empty(compilationErrors);
         }
+
+        [Fact]
+        public void GenericTypeWithConstrainedTypeParameters_InitOnlyProperties()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    public class MyBase
+                    {
+                        public int Id { get; set; }
+                    }
+
+                    public class ConstrainedGenericType<T> where T : notnull, MyBase
+                    {
+                        public T Response { get; init; }
+                        public string Name { get; init; }
+                    }
+
+                    public class DerivedType : MyBase
+                    {
+                        public string Extra { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(ConstrainedGenericType<DerivedType>))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
     }
 }

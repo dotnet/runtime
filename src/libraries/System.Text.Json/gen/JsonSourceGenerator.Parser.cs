@@ -1397,6 +1397,8 @@ namespace System.Text.Json.SourceGeneration
                         ? memberInfo.OriginalDefinition.GetMemberType().GetFullyQualifiedName() : null,
                     DeclaringTypeParameterNames = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType && _knownSymbols.SupportsGenericUnsafeAccessors
                         ? namedType.OriginalDefinition.TypeParameters.Select(tp => tp.Name).ToImmutableEquatableArray() : null,
+                    DeclaringTypeParameterConstraintClauses = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType2 && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? GetTypeParameterConstraintsCombined(namedType2.OriginalDefinition.TypeParameters) : null,
                     IsExtensionData = isExtensionData,
                     PropertyType = propertyTypeRef,
                     DeclaringType = declaringType,
@@ -2186,6 +2188,75 @@ namespace System.Text.Json.SourceGeneration
                         builtInSupportTypes.Add(type);
                     }
                 }
+            }
+
+            /// <summary>
+            /// Builds a <c>where T : ...</c> constraint clause string for the specified type parameter,
+            /// or returns null if the type parameter has no constraints.
+            /// </summary>
+            private static string? GetTypeParameterConstraintClause(ITypeParameterSymbol typeParameter)
+            {
+                List<string>? constraints = null;
+
+                if (typeParameter.HasUnmanagedTypeConstraint)
+                {
+                    (constraints ??= new()).Add("unmanaged");
+                }
+                else if (typeParameter.HasValueTypeConstraint)
+                {
+                    (constraints ??= new()).Add("struct");
+                }
+                else
+                {
+                    if (typeParameter.HasNotNullConstraint)
+                    {
+                        (constraints ??= new()).Add("notnull");
+                    }
+                    else if (typeParameter.HasReferenceTypeConstraint)
+                    {
+                        (constraints ??= new()).Add(
+                            typeParameter.ReferenceTypeConstraintNullableAnnotation is NullableAnnotation.Annotated
+                                ? "class?" : "class");
+                    }
+                }
+
+                foreach (ITypeSymbol constraintType in typeParameter.ConstraintTypes)
+                {
+                    (constraints ??= new()).Add(constraintType.GetFullyQualifiedName());
+                }
+
+                if (typeParameter.HasConstructorConstraint &&
+                    !typeParameter.HasValueTypeConstraint &&
+                    !typeParameter.HasUnmanagedTypeConstraint)
+                {
+                    (constraints ??= new()).Add("new()");
+                }
+
+                if (constraints is null)
+                {
+                    return null;
+                }
+
+                return $"where {typeParameter.Name} : {string.Join(", ", constraints)}";
+            }
+
+            /// <summary>
+            /// Builds the combined constraint clause string for all type parameters of a generic type,
+            /// or returns null if none of the type parameters have constraints.
+            /// </summary>
+            private static string? GetTypeParameterConstraintsCombined(ImmutableArray<ITypeParameterSymbol> typeParameters)
+            {
+                string? result = null;
+                foreach (ITypeParameterSymbol tp in typeParameters)
+                {
+                    string? clause = GetTypeParameterConstraintClause(tp);
+                    if (clause is not null)
+                    {
+                        result = result is null ? clause : $"{result} {clause}";
+                    }
+                }
+
+                return result;
             }
 
             private readonly struct TypeToGenerate
