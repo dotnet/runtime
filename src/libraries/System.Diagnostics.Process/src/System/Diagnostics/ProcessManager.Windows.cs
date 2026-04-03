@@ -182,6 +182,11 @@ namespace System.Diagnostics
             int[] ids = new int[builder.Count];
             for (int i = 0; i < ids.Length; i++)
                 ids[i] = builder[i].ProcessId;
+            for (int i = 0; i < ids.Length; i++)
+            {
+                ids[i] = builder[i].ProcessId;
+            }
+
             return ids;
         }
 
