@@ -26,7 +26,25 @@
 #if !defined(HAVE_CLOSE_RANGE)
 #include <sys/syscall.h>
 #if !defined(__NR_close_range)
-#define __NR_close_range 436
+#  if defined(__amd64__)
+#    define __NR_close_range 436
+#  elif defined(__i386__)
+#    define __NR_close_range 436
+#  elif defined(__arm__)
+#    define __NR_close_range 436
+#  elif defined(__aarch64__)
+#    define __NR_close_range 436
+#  elif defined(__s390x__)
+#    define __NR_close_range 436
+#  elif defined(__powerpc__)
+#    define __NR_close_range 436
+#  elif defined(__loongarch64)
+#    define __NR_close_range 436
+#  elif defined(__riscv)
+#    define __NR_close_range 436
+#  else
+#    error Unknown architecture
+#  endif
 #endif // !defined(__NR_close_range)
 #endif // !defined(HAVE_CLOSE_RANGE)
 #endif // defined(__linux__)
