@@ -5797,7 +5797,7 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
 {
     STANDARD_VM_CONTRACT;
 
-    CONSISTENCY_CHECK(pNMD->IsVarArgs());
+    CONSISTENCY_CHECK(pNMD->IsVarArg());
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
@@ -5913,7 +5913,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
     if (pMD->IsPInvoke())
     {
         PInvokeMethodDesc* pNMD = (PInvokeMethodDesc*)pMD;
-        CONSISTENCY_CHECK(pNMD->IsVarArgs()); // Non-varargs shouldn't be using stubs.
+        CONSISTENCY_CHECK(pNMD->IsVarArg());
         pStub = PInvoke::GetStubForILStub(pNMD, &pStubMD, dwStubFlags);
     }
 #ifdef FEATURE_COMINTEROP

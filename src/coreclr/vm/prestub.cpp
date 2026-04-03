@@ -2299,8 +2299,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     } // end else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()))
     else if (IsPInvoke())
     {
-        _ASSERTE(static_cast<PInvokeMethodDesc*>(this)->IsVarArgs());
         pCode = GetStubForInteropMethod(this);
+        _ASSERTE(static_cast<PInvokeMethodDesc*>(this)->IsVarArgs());
     }
     else if (IsFCall())
     {
