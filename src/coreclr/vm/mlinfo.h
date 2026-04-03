@@ -441,6 +441,16 @@ public:
         return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD;
     }
 
+    BOOL IsComScenario()
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_COMINTEROP
+        return m_ms == MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
+#else
+        return FALSE;
+#endif // FEATURE_COMINTEROP
+    }
+
     UINT GetErrorResourceId()
     {
         LIMITED_METHOD_CONTRACT;

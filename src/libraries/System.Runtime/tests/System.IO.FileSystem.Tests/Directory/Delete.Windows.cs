@@ -80,11 +80,7 @@ namespace System.IO.Tests
             }
             finally
             {
-                if (Directory.Exists(mountPoint))
-                {
-                    MountHelper.Unmount(mountPoint);
-                    Directory.Delete(mountPoint);
-                }
+                MountHelper.Unmount(mountPoint, deleteDirectory: true);
             }
         }
 

@@ -603,42 +603,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
                 frameData.vmCurrentAppDomainToken.SetHostPtr(pAppDomain);
 
                 MethodDesc * pMD = pFrame->GetFunction();
-    #if defined(FEATURE_COMINTEROP)
-                if (frameData.stubFrame.frameType == STUBFRAME_U2M)
-                {
-                    _ASSERTE(pMD == NULL);
-
-                    // U2M transition frame generally don't store the target MD because we know what the target
-                    // is by looking at the callee stack frame.  However, for reverse COM interop, we can try
-                    // to get the MD for the interface.
-                    //
-                    // Note that some reverse COM interop cases don't have an intermediate interface MD, so
-                    // pMD may still be NULL.
-                    //
-                    // Even if there is an MD on the ComMethodFrame, it could be in a different appdomain than
-                    // the ComMethodFrame itself.  The only known scenario is a cross-appdomain reverse COM
-                    // interop call.  We need to check for this case.  The end result is that GetFunction() and
-                    // GetFunctionToken() on ICDInternalFrame will return NULL.
-
-                    // Minidumps without full memory don't guarantee to capture the CCW since we can do without
-                    // it.  In this case, pMD will remain NULL.
-                    EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
-                    {
-                        if (pFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame)
-                        {
-                            ComMethodFrame * pCOMFrame = dac_cast<PTR_ComMethodFrame>(pFrame);
-                            PTR_VOID pUnkStackSlot     = pCOMFrame->GetPointerToArguments();
-                            PTR_IUnknown pUnk          = dac_cast<PTR_IUnknown>(*dac_cast<PTR_TADDR>(pUnkStackSlot));
-                            ComCallWrapper * pCCW      = ComCallWrapper::GetWrapperFromIP(pUnk);
-
-                            ComCallMethodDesc * pCMD = NULL;
-                            pCMD = dac_cast<PTR_ComCallMethodDesc>(pCOMFrame->ComMethodFrame::GetDatum());
-                            pMD  = pCMD->GetInterfaceMethodDesc();
-                        }
-                    }
-                    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
-                }
-    #endif // FEATURE_COMINTEROP
 
                 Module *     pModule = (pMD ? pMD->GetModule() : NULL);
                 DomainAssembly * pDomainAssembly = (pModule ? pModule->GetDomainAssembly() : NULL);
@@ -902,7 +866,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         pFrameData->v.fVarArgs = pMD->IsVarArg();
 
         // Check if this is a NoMetadata method or if the method should be hidden.
-        // These methods should not be visible in the debugger both for convenience and 
+        // These methods should not be visible in the debugger both for convenience and
         // because they don't have backing metadata. For more information see comments in
         // MethodDesc::IsNoMetadata and MethodDesc::IsDiagnosticsHidden.
         pFrameData->v.fNoMetadata = pMD->IsNoMetadata() || pMD->IsDiagnosticsHidden();
