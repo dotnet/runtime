@@ -4,6 +4,7 @@
 #pragma once
 
 #include "codeversion.h"
+#include "loaderallocator.hpp"
 
 #ifdef FEATURE_TIERED_COMPILATION
 
@@ -256,7 +257,7 @@ private:
         // LoaderHeap cannot be constructed when DACCESS_COMPILE is defined (at the time, its destructor was private). Working
         // around that by controlling creation/destruction using a pointer.
         InterleavedLoaderHeap *m_heap;
-        RangeList m_heapRangeList;
+        CodeRangeMapRangeList m_heapRangeList;
 
     public:
         CallCountingStubAllocator();
@@ -271,12 +272,6 @@ private:
     #endif // !DACCESS_COMPILE
 
     public:
-        bool IsStub(TADDR entryPoint);
-
-    #ifdef DACCESS_COMPILE
-        void EnumerateHeapRanges(CLRDataEnumMemoryFlags flags);
-    #endif
-
         DISABLE_COPY(CallCountingStubAllocator);
     };
 
@@ -371,11 +366,7 @@ private:
 #endif // !DACCESS_COMPILE
 
 public:
-    static bool IsCallCountingStub(PCODE entryPoint);
     static PCODE GetTargetForMethod(PCODE callCountingStubEntryPoint);
-#ifdef DACCESS_COMPILE
-    static void DacEnumerateCallCountingStubHeapRanges(CLRDataEnumMemoryFlags flags);
-#endif
 
     DISABLE_COPY(CallCountingManager);
 };
@@ -418,6 +409,7 @@ typedef VPTR(CallCountingStubManager) PTR_CallCountingStubManager;
 class CallCountingStubManager : public StubManager
 {
     VPTR_VTABLE_CLASS(CallCountingStubManager, StubManager);
+    friend class RangeSectionStubManager;
 
 private:
     SPTR_DECL(CallCountingStubManager, g_pManager);
