@@ -2202,6 +2202,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 genEmitCreateWhileMask(GetEmitter(), node, ins, INS_sve_whilehs, targetReg, op1Reg, op2Reg, opt);
                 break;
 
+            case NI_Sve2_CreateWhileReadAfterWriteMaskByte:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskDouble:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskInt16:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskInt32:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskInt64:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskSByte:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskSingle:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskUInt16:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskUInt32:
+            case NI_Sve2_CreateWhileReadAfterWriteMaskUInt64:
+                // WHILERW operands are always pointers (64-bit), so emitSize is always EA_8BYTE.
+                // No signed/unsigned instruction variant exists.
+                GetEmitter()->emitIns_R_R_R(ins, EA_8BYTE, targetReg, op1Reg, op2Reg, opt);
+                break;
+
             case NI_Sve_GatherPrefetch8Bit:
             case NI_Sve_GatherPrefetch16Bit:
             case NI_Sve_GatherPrefetch32Bit:

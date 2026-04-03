@@ -1772,6 +1772,69 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> CreateWhileGreaterThanOrEqualMaskUInt64(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
 
 
+        // While read-after-write ordering
+
+        /// <summary>
+        ///   <para>svbool_t svwhilerw[_u8](const uint8_t *op1, const uint8_t *op2)</para>
+        ///   <para>  WHILERW Presult.B, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<byte> CreateWhileReadAfterWriteMaskByte(byte* left, byte* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilerw[_f64](const float64_t *op1, const float64_t *op2)</para>
+        ///   <para>  WHILERW Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<double> CreateWhileReadAfterWriteMaskDouble(double* left, double* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilerw[_s16](const int16_t *op1, const int16_t *op2)</para>
+        ///   <para>  WHILERW Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<short> CreateWhileReadAfterWriteMaskInt16(short* left, short* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilerw[_s32](const int32_t *op1, const int32_t *op2)</para>
+        ///   <para>  WHILERW Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<int> CreateWhileReadAfterWriteMaskInt32(int* left, int* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilerw[_s64](const int64_t *op1, const int64_t *op2)</para>
+        ///   <para>  WHILERW Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<long> CreateWhileReadAfterWriteMaskInt64(long* left, long* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilerw[_s8](const int8_t *op1, const int8_t *op2)</para>
+        ///   <para>  WHILERW Presult.B, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateWhileReadAfterWriteMaskSByte(sbyte* left, sbyte* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilerw[_f32](const float32_t *op1, const float32_t *op2)</para>
+        ///   <para>  WHILERW Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<float> CreateWhileReadAfterWriteMaskSingle(float* left, float* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilerw[_u16](const uint16_t *op1, const uint16_t *op2)</para>
+        ///   <para>  WHILERW Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<ushort> CreateWhileReadAfterWriteMaskUInt16(ushort* left, ushort* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilerw[_u32](const uint32_t *op1, const uint32_t *op2)</para>
+        ///   <para>  WHILERW Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<uint> CreateWhileReadAfterWriteMaskUInt32(uint* left, uint* right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilerw[_u64](const uint64_t *op1, const uint64_t *op2)</para>
+        ///   <para>  WHILERW Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static unsafe Vector<ulong> CreateWhileReadAfterWriteMaskUInt64(ulong* left, ulong* right) { throw new PlatformNotSupportedException(); }
+
+
         // Complex dot product
 
         /// <summary>
