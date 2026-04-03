@@ -486,11 +486,7 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.CouldntConnectToRemoteMachine, e);
             }
-            GetProcessInfos(library, ref builder, processNameFilter);
-        }
 
-        private static void GetProcessInfos(PerformanceCounterLib library, ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
-        {
             int retryCount = 5;
             Dictionary<int, ProcessInfo> processInfos;
             do
