@@ -1776,6 +1776,8 @@ HCIMPLEND
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
+#ifdef FEATURE_PGO
+
 static unsigned HandleHistogramProfileRand()
 {
     // Generate a random number (xorshift32)
@@ -2178,6 +2180,85 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
     InterlockedAdd64(pCounter, delta);
 }
 HCIMPLEND
+
+#endif // FEATURE_PGO
+
+#ifndef FEATURE_PGO
+
+// Stub versions of profile helpers for !FEATURE_PGO builds.
+// These should not be called, but must exist as the JIT helper table is unconditional.
+
+HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile)
+{
+    FCALL_CONTRACT;
+    UNREACHABLE();
+}
+HCIMPLEND
+
+HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile)
+{
+    FCALL_CONTRACT;
+    UNREACHABLE();
+}
+HCIMPLEND
+
+HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
+{
+    FCALL_CONTRACT;
+    UNREACHABLE();
+}
+HCIMPLEND
+
+HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* classProfile)
+{
+    FCALL_CONTRACT;
+    UNREACHABLE();
+}
+HCIMPLEND
+
+HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32* methodProfile)
+{
+    FCALL_CONTRACT;
+    UNREACHABLE();
+}
+HCIMPLEND
+
+HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64* methodProfile)
+{
+    FCALL_CONTRACT;
+    UNREACHABLE();
+}
+HCIMPLEND
+
+HCIMPL3(void, JIT_VTableProfile32, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram32* methodProfile)
+{
+    FCALL_CONTRACT;
+    UNREACHABLE();
+}
+HCIMPLEND
+
+HCIMPL3(void, JIT_VTableProfile64, Object* obj, MethodDesc* pBaseMD, ICorJitInfo::HandleHistogram64* methodProfile)
+{
+    FCALL_CONTRACT;
+    UNREACHABLE();
+}
+HCIMPLEND
+
+HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
+{
+    FCALL_CONTRACT;
+    UNREACHABLE();
+}
+HCIMPLEND
+
+HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
+{
+    FCALL_CONTRACT;
+    UNREACHABLE();
+}
+HCIMPLEND
+
+#endif // !FEATURE_PGO
 
 //========================================================================
 //

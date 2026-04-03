@@ -12720,7 +12720,11 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     *pCountSchemaItems = 0;
     *pInstrumentationData = NULL;
     *pPgoSource = PgoSource::Unknown;
+#ifdef FEATURE_PGO
     *pDynamicPgo = g_pConfig->TieredPGO();
+#else
+    *pDynamicPgo = false;
+#endif
 
     JIT_TO_EE_TRANSITION();
 
