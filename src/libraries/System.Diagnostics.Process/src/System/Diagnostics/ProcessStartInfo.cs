@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -350,7 +351,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal void ThrowIfInvalid(out bool anyRedirection)
+        internal void ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles)
         {
             if (FileName.Length == 0)
             {
@@ -398,9 +399,11 @@ namespace System.Diagnostics
 
             if (InheritedHandles is not null)
             {
-                for (int i = 0; i < InheritedHandles.Count; i++)
+                IList<SafeHandle> list = InheritedHandles;
+                var snapshot = new SafeHandle[list.Count];
+                for (int i = 0; i < snapshot.Length; i++)
                 {
-                    SafeHandle? handle = InheritedHandles[i];
+                    SafeHandle? handle = list[i];
                     if (handle is null)
                     {
                         throw new ArgumentNullException("item", SR.InheritedHandlesMayNotContainNull);
@@ -410,7 +413,26 @@ namespace System.Diagnostics
                         throw new ArgumentException(SR.Arg_InvalidHandle, nameof(InheritedHandles));
                     }
                     ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
+
+                    switch (handle)
+                    {
+                        case SafeFileHandle:
+                        case SafePipeHandle:
+                        case SafeSocketHandle:
+                            break;
+                        // As of today, we don't support other handle types because they would work
+                        // only on Windows (Process/Wait/Access/Registry handles).
+                        default:
+                            throw new ArgumentException(SR.InheritedHandles_OnlySelectedSafeHandlesAreSupported, nameof(InheritedHandles));
+                    }
+
+                    snapshot[i] = handle;
                 }
+                inheritedHandles = snapshot;
+            }
+            else
+            {
+                inheritedHandles = null;
             }
 
             if (anyHandle)

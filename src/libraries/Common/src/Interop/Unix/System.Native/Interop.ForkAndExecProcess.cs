@@ -17,7 +17,7 @@ internal static partial class Interop
             string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd,
-            IList<SafeHandle>? inheritedHandles = null, bool shouldThrow = true)
+            SafeHandle[]? inheritedHandles = null, bool shouldThrow = true)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
@@ -48,22 +48,21 @@ internal static partial class Interop
 
                 // inheritedFdCount == -1 means no restriction; >= 0 means restrict to stdio + list
                 int inheritedFdCount = -1;
-                int[]? inheritedFds = null;
+                scoped Span<int> inheritedFds = default;
 
                 if (inheritedHandles is not null)
                 {
-                    inheritedFdCount = inheritedHandles.Count;
-                    inheritedFds = new int[inheritedFdCount];
+                    inheritedFdCount = inheritedHandles.Length;
+                    inheritedFds = inheritedHandles.Length <= 64
+                        ? stackalloc int[64]
+                        : new int[inheritedFdCount];
 
-                    for (int i = 0; i < inheritedFdCount; i++)
+                    bool ignore = false;
+                    for (int i = 0; i < inheritedHandles.Length; i++)
                     {
                         SafeHandle handle = inheritedHandles[i];
-                        bool added = false;
-                        handle.DangerousAddRef(ref added);
-                        if (added)
-                        {
-                            inheritedRefsAdded++;
-                        }
+                        handle.DangerousAddRef(ref ignore);
+                        inheritedRefsAdded++;
                         inheritedFds[i] = handle.DangerousGetHandle().ToInt32();
                     }
                 }

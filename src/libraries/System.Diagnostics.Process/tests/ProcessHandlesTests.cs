@@ -4,7 +4,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
@@ -15,6 +17,8 @@ namespace System.Diagnostics.Tests
     [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "sh is not available in the mobile platform sandbox")]
     public partial class ProcessHandlesTests : ProcessTestBase
     {
+        private const int HandleNotInheritedExitCode = 111;
+
         [Theory]
         [InlineData(true, false)]
         [InlineData(true, true)]
@@ -326,76 +330,151 @@ namespace System.Diagnostics.Tests
             Assert.Same(handle, startInfo.StandardErrorHandle);
         }
 
-        /// <summary>
-        /// Tests that <see cref="ProcessStartInfo.InheritedHandles"/> correctly restricts handle inheritance.
-        /// </summary>
-        /// <param name="addHandleToList">
-        ///   <see langword="true"/> to explicitly add the pipe handle to InheritedHandles (handle should be inherited);
-        ///   <see langword="false"/> to use an empty list or null, depending on <paramref name="nullList"/>.
-        /// </param>
-        /// <param name="nullList">
-        ///   When <paramref name="addHandleToList"/> is <see langword="false"/>:
-        ///   <see langword="true"/> to set InheritedHandles to <see langword="null"/> (default behavior, handle inherited);
-        ///   <see langword="false"/> to use an empty list (handle not inherited).
-        /// </param>
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true, false)]   // handle in InheritedHandles list -> inherited
-        [InlineData(false, false)]  // InheritedHandles is empty list -> not inherited
-        [InlineData(false, true)]   // InheritedHandles is null -> inherited (default behavior)
-        public async Task InheritedHandles_CanRestrictHandleInheritance(bool addHandleToList, bool nullList)
+        [InlineData(true, true, false)]
+        [InlineData(false, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(false, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(false, false, true)]
+        public async Task InheritedHandles_CanRestrictHandleInheritance_SafePipeHandle(bool inheritable, bool addHandleToList, bool nullList)
         {
-            const int HandleNotInheritedExitCode = RemoteExecutor.SuccessExitCode + 1;
-            bool expectInherited = addHandleToList || nullList;
-
-            // Create an inheritable pipe. The child process will try to open the write end
-            // using the handle string passed as an argument.
-            using AnonymousPipeServerStream pipeServer = new(PipeDirection.In, HandleInheritability.Inheritable);
-            string clientHandleStr = pipeServer.GetClientHandleAsString();
+            using AnonymousPipeServerStream pipeServer = new(PipeDirection.In, inheritable ? HandleInheritability.Inheritable : HandleInheritability.None);
 
             RemoteInvokeOptions options = new RemoteInvokeOptions { CheckExitCode = false };
-
-            if (addHandleToList)
-            {
-                // Explicitly list the pipe handle so the child can inherit it
-                options.StartInfo.InheritedHandles = [pipeServer.ClientSafePipeHandle];
-            }
-            else if (!nullList)
-            {
-                // Empty list: restrict inheritance; the pipe handle will NOT be inherited
-                options.StartInfo.InheritedHandles = [];
-            }
-            // else: null (default) - inheritable handles are inherited by default
+            PrepareAllowList(options.StartInfo, pipeServer.ClientSafePipeHandle, addHandleToList, nullList);
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
                 static (string handleStr) =>
                 {
-                    // Try to write to the pipe via the inherited handle.
-                    // If the handle was inherited, the write succeeds.
-                    // If not inherited, opening the client pipe will fail.
                     try
                     {
-                        using AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, handleStr);
+                        using AnonymousPipeClientStream client = new(PipeDirection.Out, handleStr);
                         client.WriteByte(42);
                         return RemoteExecutor.SuccessExitCode;
                     }
                     catch
                     {
-                        // Handle was not inherited - expected when InheritedHandles is an empty list
                         return HandleNotInheritedExitCode;
                     }
                 },
-                clientHandleStr,
+                pipeServer.GetClientHandleAsString(),
                 options);
 
-            pipeServer.DisposeLocalCopyOfClientHandle();
+            pipeServer.DisposeLocalCopyOfClientHandle(); // close the parent copy of child handle
 
-            // Wait for child to complete
+            bool expectInherited = addHandleToList || (nullList && inheritable);
+            await VerifyExpectedOutcome(pipeServer.ReadAsync, expectInherited, remoteHandle);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task InheritedHandles_CanRestrictHandleInheritance_SafeFileHandle(bool addHandleToList, bool nullList)
+        {
+            // Create a non-inheritable pipe! It will work only when added to allow list.
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe);
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions { CheckExitCode = false };
+            PrepareAllowList(options.StartInfo, writePipe, addHandleToList, nullList);
+
+            using (FileStream fileStream = new FileStream(readPipe, FileAccess.Read, bufferSize: 1))
+            using (writePipe)
+            {
+                using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                    static (string handleStr) =>
+                    {
+                        try
+                        {
+                            using SafeFileHandle safeFileHandle = new(nint.Parse(handleStr), ownsHandle: true);
+                            using FileStream client = new(safeFileHandle, FileAccess.Write, bufferSize: 1);
+                            client.WriteByte(42);
+                            return RemoteExecutor.SuccessExitCode;
+                        }
+                        catch
+                        {
+                            return HandleNotInheritedExitCode;
+                        }
+                    },
+                    writePipe.DangerousGetHandle().ToString(),
+                    options);
+
+                writePipe.Close(); // close the parent copy of child handle
+
+                bool expectInherited = addHandleToList; // we created a non-inheritable pipe
+                await VerifyExpectedOutcome(fileStream.ReadAsync, expectInherited, remoteHandle);
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task InheritedHandles_CanRestrictHandleInheritance_SafeSocketHandle(bool addHandleToList, bool nullList)
+        {
+            using Socket serverSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            serverSocket.Bind(new Net.IPEndPoint(Net.IPAddress.Loopback, 0));
+            serverSocket.Listen(1);
+
+            // Create a non-inheritable socket!
+            using Socket clientSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            clientSocket.Connect(serverSocket.LocalEndPoint!);
+
+            using Socket acceptedSocket = serverSocket.Accept();
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions { CheckExitCode = false };
+            PrepareAllowList(options.StartInfo, clientSocket.SafeHandle, addHandleToList, nullList);
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                static (string handleStr) =>
+                {
+                    try
+                    {
+                        // SafeSocketHandle.CloseHandle in debug mode terminates the process if it fails to release the handle.
+                        // And when handle is not inherited (what we test), the CloseHandle crashes the test runner.
+                        // That is why we specify ownsHandle: false here.
+                        using SafeSocketHandle safeSocketHandle = new(nint.Parse(handleStr), ownsHandle: false);
+                        using Socket socket = new(safeSocketHandle);
+                        socket.Send([42]);
+                        return RemoteExecutor.SuccessExitCode;
+                    }
+                    catch
+                    {
+                        return HandleNotInheritedExitCode;
+                    }
+                },
+                clientSocket.SafeHandle.DangerousGetHandle().ToString(),
+                options);
+
+            clientSocket.Close(); // close the parent copy of child handle
+
+            bool expectInherited = addHandleToList; // sockets are not inheritable by default
+            await VerifyExpectedOutcome(acceptedSocket.ReceiveAsync, expectInherited, remoteHandle);
+        }
+
+        private static void PrepareAllowList(ProcessStartInfo startInfo, SafeHandle safeHandle, bool addHandleToList, bool nullList)
+        {
+            if (addHandleToList)
+            {
+                // Explicitly list the pipe handle so the child can inherit it
+                startInfo.InheritedHandles = [safeHandle];
+            }
+            else if (!nullList)
+            {
+                // Empty list: restrict inheritance; the pipe handle will NOT be inherited
+                startInfo.InheritedHandles = [];
+            }
+            // else: null (default) - inheritable handles are inherited by default
+        }
+
+        private static async Task VerifyExpectedOutcome(Func<Memory<byte>, CancellationToken, ValueTask<int>> parentReadStream, bool expectInherited, RemoteInvokeHandle remoteHandle)
+        {
+            byte[] buffer = new byte[1];
+            int bytesRead = await parentReadStream(buffer, default);
+
             remoteHandle.Process.WaitForExit();
             int exitCode = remoteHandle.Process.ExitCode;
-
-            // Read from the pipe asynchronously
-            byte[] buffer = new byte[1];
-            int bytesRead = await pipeServer.ReadAsync(buffer);
 
             Assert.Equal(expectInherited ? 1 : 0, bytesRead);
             Assert.Equal(expectInherited ? 42 : 0, bytesRead > 0 ? buffer[0] : 0);
@@ -429,6 +508,16 @@ namespace System.Diagnostics.Tests
             writePipe.Dispose();
             ProcessStartInfo startInfo = new(exe) { InheritedHandles = [readPipe] };
             Assert.Throws<ObjectDisposedException>(() => Process.Start(startInfo));
+        }
+
+        [Fact]
+        public void InheritedHandles_ThrowsFor_UnsupportedHandle()
+        {
+            using SafeProcessHandle handle = Process.GetCurrentProcess().SafeHandle;
+            Assert.False(handle.IsInvalid);
+
+            ProcessStartInfo startInfo = new("hostname") { InheritedHandles = [handle] };
+            Assert.Throws<ArgumentException>(() => Process.Start(startInfo));
         }
     }
 }

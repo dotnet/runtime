@@ -87,7 +87,7 @@ namespace Microsoft.Win32.SafeHandles
         public static SafeProcessHandle Start(ProcessStartInfo startInfo)
         {
             ArgumentNullException.ThrowIfNull(startInfo);
-            startInfo.ThrowIfInvalid(out bool anyRedirection);
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
 
             if (anyRedirection)
             {
@@ -127,7 +127,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
+            return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
         }
 
         /// <summary>

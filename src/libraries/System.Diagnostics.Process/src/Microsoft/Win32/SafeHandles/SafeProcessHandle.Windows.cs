@@ -21,7 +21,8 @@ namespace Microsoft.Win32.SafeHandles
 
         private static Func<ProcessStartInfo, SafeProcessHandle>? s_startWithShellExecute;
 
-        internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
+            SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles = null)
         {
             if (startInfo.UseShellExecute)
             {
@@ -49,7 +50,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeFileHandle? inheritableStdoutHandle = null;
             SafeFileHandle? inheritableStderrHandle = null;
 
-            bool hasInheritedHandles = startInfo.InheritedHandles is not null;
+            bool hasInheritedHandles = inheritedHandles is not null;
 
             // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance.
             // For that, we need a reader lock (concurrent starts with different explicit lists are safe).
@@ -116,7 +117,7 @@ namespace Microsoft.Win32.SafeHandles
                 int handleCount = 0;
                 if (hasInheritedHandles)
                 {
-                    int maxHandleCount = 3 + startInfo.InheritedHandles!.Count;
+                    int maxHandleCount = 3 + inheritedHandles!.Length;
                     handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
                     Span<nint> handlesToInheritSpan = new Span<nint>(handlesToInherit, maxHandleCount);
 
@@ -125,7 +126,7 @@ namespace Microsoft.Win32.SafeHandles
                     AddHandleToInheritList(inheritableStdoutHandle ?? stdoutHandle, handlesToInheritSpan, ref handleCount);
                     AddHandleToInheritList(inheritableStderrHandle ?? stderrHandle, handlesToInheritSpan, ref handleCount);
 
-                    PrepareHandleAllowList(startInfo.InheritedHandles, handlesToInheritSpan, ref handleCount, ref handlesToRelease);
+                    PrepareHandleAllowList(inheritedHandles, handlesToInheritSpan, ref handleCount, ref handlesToRelease);
                     BuildProcThreadAttributeList(handlesToInherit, handleCount, ref attributeListBuffer);
                 }
 
@@ -456,12 +457,12 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private static void PrepareHandleAllowList(
-            IList<SafeHandle> inheritedHandles,
+            SafeHandle[] inheritedHandles,
             Span<nint> handlesToInherit,
             ref int handleCount,
             ref SafeHandle?[]? handlesToRelease)
         {
-            handlesToRelease = new SafeHandle[inheritedHandles.Count];
+            handlesToRelease = new SafeHandle[inheritedHandles.Length];
             int handleIndex = 0;
 
             foreach (SafeHandle handle in inheritedHandles)
@@ -528,22 +529,12 @@ namespace Microsoft.Win32.SafeHandles
                     break;
                 }
 
-                try
-                {
-                    // Remove the inheritance flag so they are not unintentionally inherited by
-                    // other processes started after this point.
-                    if (!Interop.Kernel32.SetHandleInformation(
-                        safeHandle,
-                        Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
-                        0))
-                    {
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
-                    }
-                }
-                finally
-                {
-                    safeHandle.DangerousRelease();
-                }
+                // Remove the inheritance flag so they are not unintentionally inherited by other processes started after this point.
+                // Since we used DangerousAddRef before, the handle cannot be closed at this point, so it's safe to call SetHandleInformation.
+                // The only scenario where it could fail is if user has created a copy of the handle and closed the original handle,
+                // in such case we still don't want to throw as the process was succesfully started.
+                Interop.Kernel32.SetHandleInformation(safeHandle, Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT, 0);
+                safeHandle.DangerousRelease();
             }
         }
 

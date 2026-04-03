@@ -354,4 +354,7 @@
   <data name="InvalidProcessHandle" xml:space="preserve">
     <value>Invalid process handle.</value>
   </data>
+  <data name="InheritedHandles_OnlySelectedSafeHandlesAreSupported" xml:space="preserve">
+    <value>InheritedHandles only supports SafeFileHandle, SafeSocketHandle and SafePipeHandle. Other handle types are not supported.</value>
+  </data>
 </root>
