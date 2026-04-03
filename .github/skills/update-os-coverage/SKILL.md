@@ -15,10 +15,12 @@ Update OS version references in Helix queue definition files. These files contro
 
 ## When to use
 
-- A new OS version is released (or expected to ship within one quarter and a prereqs container image already exists) and should be added to Helix testing
+- On `main`, a new OS version is released (or is expected to ship within one quarter and a prereqs container image already exists) and should be added to Helix testing
 - An OS version is approaching or has reached EOL and should be replaced
 - Periodic audit to ensure Helix coverage matches the supported-os matrix (for example, [`release-notes/11.0/supported-os.json`](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.json); update the version segment to match your target)
 - Upgrading "oldest" or "latest" version slots for a distro
+
+For servicing / `release/*` branches, be more conservative: only update to GA and already-supported distro versions unless the user explicitly asks for a forward-looking change.
 
 ## When NOT to use
 
@@ -221,6 +223,8 @@ done
 Release branches should be updated when:
 - The old version is EOL or approaching EOL
 - The release branch will be serviced for longer than the old version's remaining support
+
+On servicing branches, prefer GA and already-supported distro versions. Do not pre-stage not-yet-GA or merely upcoming versions there unless the user explicitly requests it.
 
 Note: Release branch updates should be done in separate PRs.
 
