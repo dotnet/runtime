@@ -199,7 +199,7 @@ namespace System.Diagnostics
                 return GetProcessIds();
             }
 
-            ProcessInfo[] infos = NtProcessManager.GetProcessInfos(machineName);
+            ProcessInfo[] infos = s_getRemoteProcessInfos!(machineName);
             int[] ids = new int[infos.Length];
             for (int i = 0; i < infos.Length; i++)
                 ids[i] = infos[i].ProcessId;
