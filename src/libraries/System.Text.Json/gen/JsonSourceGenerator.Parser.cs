@@ -1397,6 +1397,8 @@ namespace System.Text.Json.SourceGeneration
                         ? memberInfo.OriginalDefinition.GetMemberType().GetFullyQualifiedName() : null,
                     DeclaringTypeParameterNames = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType && _knownSymbols.SupportsGenericUnsafeAccessors
                         ? namedType.OriginalDefinition.TypeParameters.Select(tp => tp.Name).ToImmutableEquatableArray() : null,
+                    DeclaringTypeParameterConstraints = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType2 && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? GetTypeParameterConstraints(namedType2.OriginalDefinition.TypeParameters) : null,
                     IsExtensionData = isExtensionData,
                     PropertyType = propertyTypeRef,
                     DeclaringType = declaringType,
@@ -1849,6 +1851,52 @@ namespace System.Text.Json.SourceGeneration
                     current = current.ContainingType;
                 }
                 return count;
+            }
+
+            /// <summary>
+            /// Builds the set of "where T : ..." constraint clauses for the given type parameters.
+            /// Returns null when no type parameter has any constraint.
+            /// </summary>
+            private static ImmutableEquatableArray<string>? GetTypeParameterConstraints(
+                ImmutableArray<ITypeParameterSymbol> typeParameters)
+            {
+                List<string>? clauses = null;
+
+                foreach (ITypeParameterSymbol tp in typeParameters)
+                {
+                    List<string>? parts = null;
+
+                    if (tp.HasNotNullConstraint)
+                    {
+                        (parts ??= new()).Add("notnull");
+                    }
+                    else if (tp.HasValueTypeConstraint)
+                    {
+                        (parts ??= new()).Add(tp.HasUnmanagedTypeConstraint ? "unmanaged" : "struct");
+                    }
+                    else if (tp.HasReferenceTypeConstraint)
+                    {
+                        (parts ??= new()).Add("class");
+                    }
+
+                    foreach (ITypeSymbol constraintType in tp.ConstraintTypes)
+                    {
+                        (parts ??= new()).Add(constraintType.GetFullyQualifiedName());
+                    }
+
+                    if (tp.HasConstructorConstraint && !tp.HasValueTypeConstraint)
+                    {
+                        (parts ??= new()).Add("new()");
+                    }
+
+                    if (parts is not null)
+                    {
+                        string clause = $"where {tp.Name} : {string.Join(", ", parts)}";
+                        (clauses ??= new()).Add(clause);
+                    }
+                }
+
+                return clauses?.ToImmutableEquatableArray();
             }
 
             /// <summary>

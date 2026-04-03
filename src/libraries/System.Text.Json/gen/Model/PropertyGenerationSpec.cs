@@ -160,6 +160,13 @@ namespace System.Text.Json.SourceGeneration
         public ImmutableEquatableArray<string>? DeclaringTypeParameterNames { get; init; }
 
         /// <summary>
+        /// The constraint clauses for the generic declaring type's type parameters
+        /// (e.g., ["where T : notnull, Base"]). Null when the declaring type is not generic
+        /// or has no constraints.
+        /// </summary>
+        public ImmutableEquatableArray<string>? DeclaringTypeParameterConstraints { get; init; }
+
+        /// <summary>
         /// Whether the property has the JsonExtensionDataAttribute.
         /// </summary>
         public required bool IsExtensionData { get; init; }

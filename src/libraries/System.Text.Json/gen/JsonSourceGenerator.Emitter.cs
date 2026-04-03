@@ -1035,6 +1035,17 @@ namespace System.Text.Json.SourceGeneration
 
                         writer.WriteLine();
                         writer.WriteLine($"private static class __GenericAccessors_{typeFriendlyName}<{typeParamList}>");
+
+                        if (firstProperty.DeclaringTypeParameterConstraints is { } constraints)
+                        {
+                            writer.Indentation++;
+                            foreach (string constraint in constraints)
+                            {
+                                writer.WriteLine(constraint);
+                            }
+                            writer.Indentation--;
+                        }
+
                         writer.WriteLine('{');
                         writer.Indentation++;
 
