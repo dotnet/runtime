@@ -19,14 +19,12 @@ namespace System.Diagnostics
         /// <returns>An array of process infos, one per found process.</returns>
         public static ProcessInfo[] GetProcessInfos(string? processNameFilter)
         {
-            Debug.Assert(processNameFilter is null, "Not used on Linux");
-
             // Iterate through all process IDs to load information about each process
             IEnumerable<int> pids = EnumerateProcessIds();
             ArrayBuilder<ProcessInfo> processes = default;
             foreach (int pid in pids)
             {
-                ProcessInfo? pi = CreateProcessInfo(pid);
+                ProcessInfo? pi = CreateProcessInfo(pid, processNameFilter);
                 if (pi != null)
                 {
                     processes.Add(pi);
@@ -71,15 +69,26 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ProcessInfo from the specified process ID.
         /// </summary>
-        internal static ProcessInfo? CreateProcessInfo(int pid)
+        internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
         {
-            if (TryGetProcPid(pid, out Interop.procfs.ProcPid procPid) &&
-                Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat stat))
+            if (!TryGetProcPid(pid, out Interop.procfs.ProcPid procPid) ||
+                !Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat stat))
             {
-                Interop.procfs.TryReadStatusFile(procPid, out Interop.procfs.ParsedStatus status);
-                return CreateProcessInfo(procPid, ref stat, ref status);
+                return null;
             }
-            return null;
+
+            string? processName = null;
+            if (!string.IsNullOrEmpty(processNameFilter))
+            {
+                processName = Process.GetUntruncatedProcessName(procPid, ref stat) ?? string.Empty;
+                if (!string.Equals(processName, processNameFilter, StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+            }
+
+            Interop.procfs.TryReadStatusFile(procPid, out Interop.procfs.ParsedStatus status);
+            return CreateProcessInfo(procPid, ref stat, ref status, processName: processName);
         }
 
         /// <summary>
