@@ -13,6 +13,10 @@ description: >
 
 Update OS version references in Helix queue definition files. These files control which operating system versions are used for CI/CD testing via Helix.
 
+## Prerequisites
+
+> **Baseline build not required:** This skill is for YAML/docs-style queue and image reference updates, not product code changes. Do **not** start with the repo-wide baseline build workflow from [`copilot-instructions.md`](/.github/copilot-instructions.md) unless the task expands beyond image / queue metadata into code changes that actually need build or test validation.
+
 ## When to use
 
 - An OS version is approaching or has reached EOL and should be replaced
