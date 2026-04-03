@@ -24,13 +24,15 @@ internal sealed class ClrMdDumpHost : IDisposable
     };
 
     private readonly DataTarget _dataTarget;
+    private readonly string[] _searchPaths;
 
     public string DumpPath { get; }
 
-    private ClrMdDumpHost(string dumpPath, DataTarget dataTarget)
+    private ClrMdDumpHost(string dumpPath, DataTarget dataTarget, string[] searchPaths)
     {
         DumpPath = dumpPath;
         _dataTarget = dataTarget;
+        _searchPaths = searchPaths;
     }
 
     /// <summary>
@@ -41,16 +43,11 @@ internal sealed class ClrMdDumpHost : IDisposable
     /// Optional local directories to search for symbol files (e.g., System.Private.CoreLib,
     /// debuggee DLLs).
     /// </param>
-    public static ClrMdDumpHost Open(string dumpPath, IEnumerable<string>? additionalSymbolPaths = null)
+    public static ClrMdDumpHost Open(string dumpPath, List<string> additionalSymbolPaths)
     {
-        string symbolPaths = additionalSymbolPaths is not null
-            ? string.Join(";", additionalSymbolPaths.Where(p => !string.IsNullOrEmpty(p)))
-            : string.Empty;
-
         DataTarget dataTarget = DataTarget.LoadDump(dumpPath);
-        dataTarget.SetSymbolPath(symbolPaths);
 
-        return new ClrMdDumpHost(dumpPath, dataTarget);
+        return new ClrMdDumpHost(dumpPath, dataTarget, additionalSymbolPaths.ToArray());
     }
 
     /// <summary>
@@ -66,11 +63,17 @@ internal sealed class ClrMdDumpHost : IDisposable
         // If we couldn't read the full buffer, maybe it's in a PE image
         ModuleInfo? info = GetModuleForAddress(address);
         if (info is null || info.FileName is null)
+        {
+            Console.WriteLine($"Failed to find module for {buffer.Length} at 0x{address:x8}.");
             return -1;
+        }
 
-        string? foundFile = _dataTarget.FileLocator?.FindPEImage(info.FileName, info.IndexTimeStamp, info.IndexFileSize, checkProperties: false);
+        string? foundFile = FindFileOnDisk(info.FileName);
         if (foundFile is null)
+        {
+            Console.WriteLine($"Failed to find {info.FileName}");
             return -1;
+        }
 
         using FileStream fs = File.OpenRead(foundFile);
         using PEReader peReader = new PEReader(fs);
@@ -81,7 +84,10 @@ internal sealed class ClrMdDumpHost : IDisposable
         {
             PEMemoryBlock block = peReader.GetSectionData((int)(current - info.ImageBase));
             if (block.Length == 0)
+            {
+                Console.WriteLine($"Failed to read {foundFile} at RVA 0x{(current-info.ImageBase):x8}.");
                 return -1;
+            }
 
             int toCopy = Math.Min(block.Length, buffer.Length - filled);
             unsafe
@@ -108,7 +114,7 @@ internal sealed class ClrMdDumpHost : IDisposable
     {
         foreach (ModuleInfo module in _dataTarget.DataReader.EnumerateModules())
         {
-            if (address >= module.ImageBase && address < module.ImageBase + module.ImageSize)
+            if (address >= module.ImageBase && address < module.ImageBase + (ulong)module.ImageSize)
                 return module;
         }
         return null;
@@ -148,6 +154,21 @@ internal sealed class ClrMdDumpHost : IDisposable
         }
 
         throw new InvalidOperationException("Could not find DotNetRuntimeContractDescriptor export in any runtime module in the dump.");
+    }
+
+    private string? FindFileOnDisk(string modulePath)
+    {
+        int lastSep = Math.Max(modulePath.LastIndexOf('/'), modulePath.LastIndexOf('\\'));
+        string fileName = lastSep >= 0 ? modulePath[(lastSep + 1)..] : modulePath;
+
+        foreach (string searchPath in _searchPaths)
+        {
+            string candidate = Path.Combine(searchPath, fileName);
+            if (File.Exists(candidate))
+                return candidate;
+        }
+
+        return null;
     }
 
     private static bool IsRuntimeModule(string fileName)
