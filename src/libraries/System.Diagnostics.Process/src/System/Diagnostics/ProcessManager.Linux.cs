@@ -38,6 +38,24 @@ namespace System.Diagnostics
             return processes.ToArray();
         }
 
+        internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
+        {
+            ThrowIfRemoteMachine(machineName);
+
+            if (processInfo is not null)
+            {
+                return processInfo.ProcessName;
+            }
+
+            if (TryGetProcPid(processId, out Interop.procfs.ProcPid procPid) &&
+                Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat stat))
+            {
+                return Process.GetUntruncatedProcessName(procPid, ref stat);
+            }
+
+            return null;
+        }
+
         /// <summary>Gets an array of module infos for the specified process.</summary>
         /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
         /// <returns>The array of modules.</returns>

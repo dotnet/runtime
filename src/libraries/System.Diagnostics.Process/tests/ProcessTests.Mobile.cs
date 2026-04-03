@@ -7,12 +7,12 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public partial class ProcessTests : ProcessTestBase
+    [PlatformSpecific(TestPlatforms.Android | TestPlatforms.MacCatalyst)]
+    public class MobileProcessTests : ProcessTestBase
     {
         private const string NonExistentPath = "/nonexistent_path_for_testing_1234567890";
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Android)]
         public void Process_Start_InheritedIO_ExitsSuccessfully()
         {
             using (Process process = Process.Start("ls", Path.GetTempPath()))
@@ -25,7 +25,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Android)]
         public void Process_Start_RedirectedStandardOutput_ReadsOutput()
         {
             ProcessStartInfo psi = new("ls", Path.GetTempPath())
@@ -43,7 +42,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Android)]
         public void Process_Kill_TerminatesRunningProcess()
         {
             using (Process process = Process.Start("sleep", "600"))
@@ -58,7 +56,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Android)]
         public void Process_Start_ExitCode_ReflectsCommandFailure()
         {
             ProcessStartInfo psi = new("ls", NonExistentPath)
@@ -76,7 +73,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Android)]
         public void Process_ProcessName_IsSetForStartedProcess()
         {
             using (Process process = Process.Start("sleep", "600"))
@@ -96,7 +92,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Android)]
         public void Process_Start_WithStandardHandles_CanRedirectIO()
         {
             string errorFile = Path.GetTempFileName();
