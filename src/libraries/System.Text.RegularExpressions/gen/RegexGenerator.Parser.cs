@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions.Generator
         private static (RegexGenerationSpec? Spec, ImmutableArray<Diagnostic> Diagnostics) Parse(
             ImmutableArray<GeneratorAttributeSyntaxContext> contexts, CancellationToken cancellationToken)
         {
-            List<RegexMethodKey>? methods = null;
+            List<RegexMethodSpec>? methods = null;
             List<Diagnostic>? diagnostics = null;
 
             foreach (GeneratorAttributeSyntaxContext context in contexts)
@@ -420,8 +420,6 @@ namespace System.Text.RegularExpressions.Generator
             public string? CultureName { get; } = cultureName;
             public RegexTree Tree { get; } = tree;
             public AnalysisResults Analysis { get; } = analysis;
-            public RegexTreeKey TreeKey { get; } = new(tree);
-            public AnalysisResultsKey AnalysisKey { get; } = new(analysis);
             public string? LimitedSupportReason { get; } = limitedSupportReason;
             public CompilationData CompilationData { get; } = compilationData;
             public string? GeneratedName { get; set; }
@@ -438,100 +436,6 @@ namespace System.Text.RegularExpressions.Generator
             public string Name { get; } = name;
             public RegexType? Parent { get; } = parent;
             public string FullName => _fullName ??= Parent is null ? Name : $"{Parent.FullName}+{Name}";
-        }
-
-        /// <summary>
-        /// Incremental cache key for a parsed regex method.
-        /// </summary>
-        private readonly struct RegexMethodKey(RegexMethod method) : IEquatable<RegexMethodKey>
-        {
-            private static readonly RegexTypeComparer s_typeComparer = new();
-
-            public RegexMethod Method { get; } = method;
-
-            public bool Equals(RegexMethodKey other)
-            {
-                RegexMethod? x = Method;
-                RegexMethod? y = other.Method;
-
-                if (ReferenceEquals(x, y))
-                {
-                    return true;
-                }
-
-                if (x is null || y is null)
-                {
-                    return false;
-                }
-
-                return s_typeComparer.Equals(x.DeclaringType, y.DeclaringType) &&
-                    x.IsProperty == y.IsProperty &&
-                    StringComparer.Ordinal.Equals(x.MemberName, y.MemberName) &&
-                    StringComparer.Ordinal.Equals(x.Modifiers, y.Modifiers) &&
-                    x.NullableRegex == y.NullableRegex &&
-                    StringComparer.Ordinal.Equals(x.Pattern, y.Pattern) &&
-                    x.Options == y.Options &&
-                    x.MatchTimeout == y.MatchTimeout &&
-                    StringComparer.Ordinal.Equals(x.CultureName, y.CultureName) &&
-                    x.TreeKey.Equals(y.TreeKey) &&
-                    x.AnalysisKey.Equals(y.AnalysisKey) &&
-                    StringComparer.Ordinal.Equals(x.LimitedSupportReason, y.LimitedSupportReason) &&
-                    x.CompilationData.Equals(y.CompilationData);
-            }
-
-            public override bool Equals(object? obj) => obj is RegexMethodKey other && Equals(other);
-
-            public override int GetHashCode()
-            {
-                RegexMethod? method = Method;
-                if (method is null)
-                {
-                    return 0;
-                }
-
-                int hash = s_typeComparer.GetHashCode(method.DeclaringType);
-                hash = HashHelpers.Combine(hash, method.IsProperty.GetHashCode());
-                hash = HashHelpers.Combine(hash, StringComparer.Ordinal.GetHashCode(method.MemberName));
-                hash = HashHelpers.Combine(hash, StringComparer.Ordinal.GetHashCode(method.Modifiers));
-                hash = HashHelpers.Combine(hash, method.NullableRegex.GetHashCode());
-                hash = HashHelpers.Combine(hash, StringComparer.Ordinal.GetHashCode(method.Pattern));
-                hash = HashHelpers.Combine(hash, method.Options.GetHashCode());
-                hash = HashHelpers.Combine(hash, method.MatchTimeout.GetHashCode());
-                hash = HashHelpers.Combine(hash, method.CultureName is null ? 0 : StringComparer.Ordinal.GetHashCode(method.CultureName));
-                hash = HashHelpers.Combine(hash, method.TreeKey.GetHashCode());
-                hash = HashHelpers.Combine(hash, method.AnalysisKey.GetHashCode());
-                hash = HashHelpers.Combine(hash, method.LimitedSupportReason is null ? 0 : StringComparer.Ordinal.GetHashCode(method.LimitedSupportReason));
-                hash = HashHelpers.Combine(hash, method.CompilationData.GetHashCode());
-                return hash;
-            }
-        }
-
-        /// <summary>Incremental cache key for a parsed <see cref="RegexTree"/>.</summary>
-        private readonly struct RegexTreeKey(RegexTree tree) : IEquatable<RegexTreeKey>
-        {
-            private static readonly RegexTreeComparer s_comparer = new();
-
-            public RegexTree Tree { get; } = tree;
-
-            public bool Equals(RegexTreeKey other) => s_comparer.Equals(Tree, other.Tree);
-
-            public override bool Equals(object? obj) => obj is RegexTreeKey other && Equals(other);
-
-            public override int GetHashCode() => Tree is null ? 0 : s_comparer.GetHashCode(Tree);
-        }
-
-        /// <summary>Incremental cache key for <see cref="AnalysisResults"/>.</summary>
-        private readonly struct AnalysisResultsKey(AnalysisResults analysis) : IEquatable<AnalysisResultsKey>
-        {
-            private static readonly AnalysisResultsComparer s_comparer = new();
-
-            public AnalysisResults Analysis { get; } = analysis;
-
-            public bool Equals(AnalysisResultsKey other) => s_comparer.Equals(Analysis, other.Analysis);
-
-            public override bool Equals(object? obj) => obj is AnalysisResultsKey other && Equals(other);
-
-            public override int GetHashCode() => Analysis is null ? 0 : s_comparer.GetHashCode(Analysis);
         }
 
         private sealed class RegexTreeComparer : IEqualityComparer<RegexTree>

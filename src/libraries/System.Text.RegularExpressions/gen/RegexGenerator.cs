@@ -40,9 +40,9 @@ namespace System.Text.RegularExpressions.Generator
         {
             // Step 1: Find all members decorated with [GeneratedRegex], collect them
             // into a single batch, and run the Parser to build the source model.
-            // The output wraps each RegexMethod in a regex-specific cache-key type,
-            // enabling Roslyn to skip the emitter on cache hits without us needing
-            // to mirror the regex object graph into separate types.
+            // The output wraps each RegexMethod in a RegexMethodSpec value, enabling
+            // Roslyn to skip the emitter on cache hits without us needing to mirror
+            // the regex object graph into separate types.
             IncrementalValueProvider<(RegexGenerationSpec? Spec, ImmutableArray<Diagnostic> Diagnostics)> parsed =
                 context.SyntaxProvider
                 .ForAttributeWithMetadataName(
@@ -53,8 +53,8 @@ namespace System.Text.RegularExpressions.Generator
                 .Select(static (contexts, cancellationToken) => Parse(contexts, cancellationToken));
 
             // Step 2: Project to just the source model, discarding diagnostics.
-            // RegexGenerationSpec has value equality via those cache-key wrappers, so
-            // Roslyn skips the RegisterSourceOutput callback when the model hasn't changed.
+            // RegexGenerationSpec has value equality via RegexMethodSpec, so Roslyn skips
+            // the RegisterSourceOutput callback when the model hasn't changed.
             IncrementalValueProvider<RegexGenerationSpec?> sourceModel =
                 parsed.Select(static (t, _) => t.Spec)
                 .WithTrackingName(SourceGenerationSpecTrackingName);
