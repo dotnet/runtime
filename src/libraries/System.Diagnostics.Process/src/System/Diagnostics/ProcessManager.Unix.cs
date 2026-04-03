@@ -27,7 +27,7 @@ namespace System.Diagnostics
         {
             // kill with signal==0 means to not actually send a signal.
             // If we get back 0, the process is still alive.
-            int output = Interop.Sys.Kill(processId, Interop.Sys.Signals.None);
+            int output = Interop.Sys.Kill(processId, 0);
             // If kill set errno=EPERM, assume querying process is alive.
             return 0 == output || (-1 == output && Interop.Error.EPERM == Interop.Sys.GetLastError());
         }

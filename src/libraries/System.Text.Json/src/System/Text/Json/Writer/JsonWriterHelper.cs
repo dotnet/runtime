@@ -78,7 +78,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateDouble(double value)
         {
-            if (!JsonHelpers.IsFinite(value))
+            if (!double.IsFinite(value))
             {
                 ThrowHelper.ThrowArgumentException_ValueNotSupported();
             }
@@ -87,7 +87,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateSingle(float value)
         {
-            if (!JsonHelpers.IsFinite(value))
+            if (!float.IsFinite(value))
             {
                 ThrowHelper.ThrowArgumentException_ValueNotSupported();
             }

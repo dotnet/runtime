@@ -8,6 +8,8 @@ public interface IPlatformContext
     uint Size { get; }
     uint DefaultContextFlags { get; }
 
+    int StackPointerRegister { get; }
+
     TargetPointer StackPointer { get; set; }
     TargetPointer InstructionPointer { get; set; }
     TargetPointer FramePointer { get; set; }

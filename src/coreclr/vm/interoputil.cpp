@@ -3323,7 +3323,7 @@ void IUInvokeDispMethod(
 
                         // We managed to retrieve an IDispatchEx IP so we will use it to
                         // retrieve the DISPID.
-                        BSTRHolder bstrTmpName = SysAllocString(aNamesToConvert[0]);
+                        BSTRHolder bstrTmpName{ SysAllocString(aNamesToConvert[0]) };
                         if (!bstrTmpName)
                             COMPlusThrowOM();
 
@@ -3719,7 +3719,6 @@ void InitializeComInterop()
     }
     CONTRACTL_END;
 
-    ComCall::Init();
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG

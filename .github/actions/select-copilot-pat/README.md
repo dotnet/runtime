@@ -10,6 +10,11 @@ To use Agentic Workflows in a dotnet org repository:
 2. Copy this `select-copilot-pat` folder into the repository under `.github/actions/select-copilot-pat`, including both the `README.md` and `action.yml`.
 3. Merge those additions into the repository and then follow the instructions for the PAT Creation and Usage below.
 
+> **Optional:** If you plan to manage secrets or workflows from the command line (e.g., `gh aw secrets set`), [install the `gh aw` CLI extension][cli-setup]:
+> ```sh
+> gh extension install github/gh-aw
+> ```
+
 ## PAT Management
 Team members provide PATs into the pools for the repository by adding them as repository secrets with secret names matching the pattern of `<pool_name>_<0-9>`, such as `COPILOT_PAT_0`.
 
@@ -85,6 +90,7 @@ engine:
 
 ## References
 
+- [Agentic Workflows CLI Extension][cli-setup]
 - [Agentic Authoring][configure-repo]
 - [Authentication][authentication]
 - [Agentic Workflow Imports][imports]
@@ -96,6 +102,7 @@ engine:
 - [Case Function in Workflow Expressions][case-expression]
 - [Update agentic engine token handling to use user-provided secrets (github/gh-aw#18017)][secret-override]
 
+[cli-setup]: https://github.github.com/gh-aw/setup/cli/
 [configure-repo]: https://github.github.com/gh-aw/guides/agentic-authoring/#configuring-your-repository
 [authentication]: https://github.github.com/gh-aw/reference/auth/
 [create-pat]: https://github.com/settings/personal-access-tokens/new?name=dotnet%20org%20agentic%20workflows&description=GitHub+Agentic+Workflows+-+Copilot+engine+authentication.++Used+for+dotnet+org+workflows.+MUST+be+configured+with+only+Copilot+Requests+permissions+and+user+account+as+resource+owner.+Weekly+expiration+and+required+renewal.&user_copilot_requests=read&expires_in=8

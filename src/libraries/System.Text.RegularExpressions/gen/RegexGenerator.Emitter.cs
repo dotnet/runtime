@@ -43,7 +43,8 @@ namespace System.Text.RegularExpressions.Generator
                         case '>': sb.Append("&gt;"); break;
 
                         // Propagate all other valid XML characters as-is. Control chars are considered invalid.
-                        case (>= 0x20 and <= 0x7F) or (>= 0xA0 and <= 0xD7FF) or (>= 0xE000 and <= 0xFFFD): sb.Append(c); break;
+                        // U+2028 and U+2029 are valid XML but are C# line terminators, so they'd break /// comments.
+                        case (>= 0x20 and <= 0x7F) or (>= 0xA0 and <= 0xD7FF and not 0x2028 and not 0x2029) or (>= 0xE000 and <= 0xFFFD): sb.Append(c); break;
 
                         // Use Unicode escape sequences for everything else.
                         default: sb.Append($"\\u{(int)c:X4}"); break;
