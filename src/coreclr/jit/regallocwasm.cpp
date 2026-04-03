@@ -1103,7 +1103,7 @@ void WasmRegAlloc::PublishAllocationResults()
         }
 #endif // DEBUG
 
-        if (data->m_fpReg != REG_NA)
+        if (data->m_spReg != REG_NA)
         {
             m_codeGen->SetStackPointerReg(i, data->m_spReg);
         }
