@@ -2470,7 +2470,6 @@ void BuildAsyncVariantSignature(
              returnKind == MethodReturnKind::GenericTaskReturningMethod);
     _ASSERTE(pAsyncSigLen != nullptr);
 
-    ULONG taskTokenOffsetFromAsyncDetailsOffset;
     ULONG taskTypePrefixSize;
     ULONG taskTypePrefixReplacementSize;
 
@@ -2481,14 +2480,12 @@ void BuildAsyncVariantSignature(
     if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
     {
         // "... Task ... Method(args);" → "... void ... Method(args);"
-        taskTokenOffsetFromAsyncDetailsOffset = 1;
         taskTypePrefixSize = 1 + tokenLen;     // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
         taskTypePrefixReplacementSize = 1;     // ELEMENT_TYPE_VOID
     }
     else
     {
         // "... Task<T> ... Method(args);" → "... T ... Method(args);"
-        taskTokenOffsetFromAsyncDetailsOffset = 2;
         taskTypePrefixSize = 2 + tokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
         taskTypePrefixReplacementSize = 0;
     }
