@@ -2210,6 +2210,13 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!varDsc->lvIsRegCandidate())
     {
         var_types type = varDsc->GetRegisterType(tree);
+        // Block stores can get pruned from LIR, and when that happens a LclVar node of TYP_STRUCT can get left behind
+        //  in LIR. Its RegisterType will be TYP_UNDEF, but it will be flagged with IsUnusedValue to tell us to ignore it.
+        if (type == TYP_UNDEF)
+        {
+            assert(tree->IsUnusedValue());
+            return;
+        }
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
         WasmProduceReg(tree);
