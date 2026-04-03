@@ -24,11 +24,14 @@ namespace System.Text.Json.SourceGeneration
         {
             private const string SystemTextJsonNamespace = "System.Text.Json";
 
-            // ITypeParameterSymbol.AllowsRefLikeType was added in Roslyn 4.9 (C# 13). Access via a compiled
-            // delegate so the same source file compiles against all supported Roslyn versions.
-            private static readonly Func<ITypeParameterSymbol, bool>? s_getAllowsRefLikeType =
-                (Func<ITypeParameterSymbol, bool>?)
-                    typeof(ITypeParameterSymbol).GetProperty("AllowsRefLikeType")?.GetGetMethod()!.CreateDelegate(typeof(Func<ITypeParameterSymbol, bool>));
+            /// <summary>
+            /// A <see cref="SymbolDisplayFormat"/> that renders fully qualified type names with
+            /// generic type parameter constraint clauses appended
+            /// (e.g., "global::NS.MyType&lt;T&gt; where T : notnull, global::NS.MyBase").
+            /// </summary>
+            private static readonly SymbolDisplayFormat s_fullyQualifiedWithConstraints =
+                SymbolDisplayFormat.FullyQualifiedFormat.AddGenericsOptions(
+                    SymbolDisplayGenericsOptions.IncludeTypeConstraints);
             private const string JsonExtensionDataAttributeFullName = "System.Text.Json.Serialization.JsonExtensionDataAttribute";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
@@ -1404,7 +1407,7 @@ namespace System.Text.Json.SourceGeneration
                     DeclaringTypeParameterNames = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType && _knownSymbols.SupportsGenericUnsafeAccessors
                         ? namedType.OriginalDefinition.TypeParameters.Select(tp => tp.Name).ToImmutableEquatableArray() : null,
                     DeclaringTypeParameterConstraintClauses = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType2 && _knownSymbols.SupportsGenericUnsafeAccessors
-                        ? GetTypeParameterConstraintsCombined(namedType2.OriginalDefinition.TypeParameters) : null,
+                        ? GetTypeParameterConstraintClauses(namedType2.OriginalDefinition) : null,
                     IsExtensionData = isExtensionData,
                     PropertyType = propertyTypeRef,
                     DeclaringType = declaringType,
@@ -2197,78 +2200,26 @@ namespace System.Text.Json.SourceGeneration
             }
 
             /// <summary>
-            /// Builds a <c>where T : ...</c> constraint clause string for the specified type parameter,
-            /// or returns null if the type parameter has no constraints.
+            /// Extracts the type parameter constraint clauses from a generic type using
+            /// Roslyn's <see cref="SymbolDisplayGenericsOptions.IncludeTypeConstraints"/>.
+            /// Returns the combined <c>where</c> clauses (e.g., "where T : notnull, global::NS.MyBase"),
+            /// or null if the type has no constraints.
             /// </summary>
-            private static string? GetTypeParameterConstraintClause(ITypeParameterSymbol typeParameter)
+            private static string? GetTypeParameterConstraintClauses(INamedTypeSymbol type)
             {
-                List<string>? constraints = null;
+                Debug.Assert(type.IsGenericType);
+                string display = type.ToDisplayString(s_fullyQualifiedWithConstraints);
 
-                if (typeParameter.HasUnmanagedTypeConstraint)
-                {
-                    (constraints ??= new()).Add("unmanaged");
-                }
-                else if (typeParameter.HasValueTypeConstraint)
-                {
-                    (constraints ??= new()).Add("struct");
-                }
-                else
-                {
-                    if (typeParameter.HasNotNullConstraint)
-                    {
-                        (constraints ??= new()).Add("notnull");
-                    }
-                    else if (typeParameter.HasReferenceTypeConstraint)
-                    {
-                        (constraints ??= new()).Add(
-                            typeParameter.ReferenceTypeConstraintNullableAnnotation is NullableAnnotation.Annotated
-                                ? "class?" : "class");
-                    }
-                }
-
-                foreach (ITypeSymbol constraintType in typeParameter.ConstraintTypes)
-                {
-                    (constraints ??= new()).Add(constraintType.GetFullyQualifiedName());
-                }
-
-                if (typeParameter.HasConstructorConstraint &&
-                    !typeParameter.HasValueTypeConstraint &&
-                    !typeParameter.HasUnmanagedTypeConstraint)
-                {
-                    (constraints ??= new()).Add("new()");
-                }
-
-                // "allows ref struct" anti-constraint must appear last.
-                if (s_getAllowsRefLikeType?.Invoke(typeParameter) == true)
-                {
-                    (constraints ??= new()).Add("allows ref struct");
-                }
-
-                if (constraints is null)
+                // The display string has the form "global::NS.Type<T, U> where T : C1 where U : C2".
+                // Extract the constraint clauses after the type name by finding the first " where ".
+                const string whereMarker = " where ";
+                int whereIndex = display.IndexOf(whereMarker);
+                if (whereIndex < 0)
                 {
                     return null;
                 }
 
-                return $"where {typeParameter.Name} : {string.Join(", ", constraints)}";
-            }
-
-            /// <summary>
-            /// Builds the combined constraint clause string for all type parameters of a generic type,
-            /// or returns null if none of the type parameters have constraints.
-            /// </summary>
-            private static string? GetTypeParameterConstraintsCombined(ImmutableArray<ITypeParameterSymbol> typeParameters)
-            {
-                string? result = null;
-                foreach (ITypeParameterSymbol tp in typeParameters)
-                {
-                    string? clause = GetTypeParameterConstraintClause(tp);
-                    if (clause is not null)
-                    {
-                        result = result is null ? clause : $"{result} {clause}";
-                    }
-                }
-
-                return result;
+                return display.Substring(whereIndex + 1);
             }
 
             private readonly struct TypeToGenerate
