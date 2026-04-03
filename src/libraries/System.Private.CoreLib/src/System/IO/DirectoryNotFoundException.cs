@@ -36,12 +36,8 @@ namespace System.IO
         }
 
         public DirectoryNotFoundException(string? message, string? directoryPath)
-            : base(message ?? (directoryPath is not null
-                ? SR.Format(SR.IO_DirectoryNotFound_Path, directoryPath)
-                : SR.Arg_DirectoryNotFoundException))
+            : this(message, directoryPath, innerException: null)
         {
-            HResult = HResults.COR_E_DIRECTORYNOTFOUND;
-            DirectoryPath = directoryPath;
         }
 
         public DirectoryNotFoundException(string? message, string? directoryPath, Exception? innerException)
