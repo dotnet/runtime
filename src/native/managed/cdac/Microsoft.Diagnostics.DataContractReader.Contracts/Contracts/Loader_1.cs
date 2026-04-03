@@ -376,6 +376,12 @@ internal readonly struct Loader_1 : ILoader
         return GetFlags(module);
     }
 
+    bool ILoader.IsReadyToRun(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.ReadyToRunInfo != TargetPointer.Null;
+    }
+
     bool ILoader.TryGetSimpleName(ModuleHandle handle, out string simpleName)
     {
         simpleName = string.Empty;

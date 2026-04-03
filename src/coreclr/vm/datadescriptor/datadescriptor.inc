@@ -617,6 +617,7 @@ CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
 CDAC_TYPE_FIELD(MethodDescCodeData, /*CodePointer*/, TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
 #ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(MethodDescCodeData, /*pointer*/, VersioningState, offsetof(MethodDescCodeData,VersioningState))
+CDAC_TYPE_FIELD(MethodDescCodeData, /*uint32*/, OptimizationTier, offsetof(MethodDescCodeData,OptimizationTier))
 #endif // FEATURE_CODE_VERSIONING
 CDAC_TYPE_END(MethodDescCodeData)
 
@@ -885,6 +886,9 @@ CDAC_TYPE_FIELD(NativeCodeVersionNode, /*nuint*/, ILVersionId, cdac_data<NativeC
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, GCCoverageInfo, cdac_data<NativeCodeVersionNode>::GCCoverageInfo)
 #endif // HAVE_GCCOVER
+#ifdef FEATURE_TIERED_COMPILATION
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, OptimizationTier, cdac_data<NativeCodeVersionNode>::OptimizationTier)
+#endif // FEATURE_TIERED_COMPILATION
 CDAC_TYPE_END(NativeCodeVersionNode)
 
 CDAC_TYPE_BEGIN(ILCodeVersionNode)
