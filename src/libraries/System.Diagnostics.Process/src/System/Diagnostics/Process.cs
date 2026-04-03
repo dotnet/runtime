@@ -1072,8 +1072,8 @@ namespace System.Diagnostics
         public static Process[] GetProcessesByName(string? processName)
         {
             // Avoid calling GetProcessesByName(processName, ".") so that remote machine code is not included when only local machine support is needed.
-            // Normalize empty processName to null so that GetProcessInfos treats it as "no filter".
             ArrayBuilder<ProcessInfo> processInfos = default;
+            // Normalize empty processName to null so that GetProcessInfos treats it as "no filter".
             ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: string.IsNullOrEmpty(processName) ? null : processName);
             if (processInfos.Count == 0)
                 return [];
