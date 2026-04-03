@@ -1075,15 +1075,7 @@ namespace System.Diagnostics
             ArrayBuilder<ProcessInfo> processInfos = default;
             // Normalize empty processName to null so that GetProcessInfos treats it as "no filter".
             ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: string.IsNullOrEmpty(processName) ? null : processName);
-            if (processInfos.Count == 0)
-                return [];
-            Process[] processes = new Process[processInfos.Count];
-            for (int i = 0; i < processes.Length; i++)
-            {
-                ProcessInfo processInfo = processInfos[i];
-                processes[i] = new Process(".", false, processInfo.ProcessId, processInfo);
-            }
-            return processes;
+            return CreateProcessArray(processInfos, ".", false);
         }
 
         /// <summary>
@@ -1099,15 +1091,7 @@ namespace System.Diagnostics
             ArrayBuilder<ProcessInfo> processInfos = default;
             // Normalize empty processName to null so that GetProcessInfos treats it as "no filter".
             ProcessManager.GetProcessInfos(ref processInfos, string.IsNullOrEmpty(processName) ? null : processName, machineName, isRemoteMachine);
-            if (processInfos.Count == 0)
-                return [];
-            Process[] processes = new Process[processInfos.Count];
-            for (int i = 0; i < processes.Length; i++)
-            {
-                ProcessInfo processInfo = processInfos[i];
-                processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
-            }
-            return processes;
+            return CreateProcessArray(processInfos, machineName, isRemoteMachine);
         }
 
         /// <devdoc>
@@ -1124,15 +1108,7 @@ namespace System.Diagnostics
             // Avoid calling GetProcesses(".") so that remote machine code is not included when only local machine support is needed.
             ArrayBuilder<ProcessInfo> processInfos = default;
             ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: null);
-            if (processInfos.Count == 0)
-                return [];
-            Process[] processes = new Process[processInfos.Count];
-            for (int i = 0; i < processes.Length; i++)
-            {
-                ProcessInfo processInfo = processInfos[i];
-                processes[i] = new Process(".", false, processInfo.ProcessId, processInfo);
-            }
-            return processes;
+            return CreateProcessArray(processInfos, ".", false);
         }
 
         /// <devdoc>
@@ -1150,6 +1126,11 @@ namespace System.Diagnostics
             bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
             ArrayBuilder<ProcessInfo> processInfos = default;
             ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: null, machineName, isRemoteMachine);
+            return CreateProcessArray(processInfos, machineName, isRemoteMachine);
+        }
+
+        private static Process[] CreateProcessArray(ArrayBuilder<ProcessInfo> processInfos, string machineName, bool isRemoteMachine)
+        {
             if (processInfos.Count == 0)
                 return [];
             Process[] processes = new Process[processInfos.Count];
