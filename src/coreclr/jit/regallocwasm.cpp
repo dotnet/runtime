@@ -20,11 +20,12 @@ WasmRegAlloc::WasmRegAlloc(Compiler* compiler)
     , m_codeGen(compiler->codeGen)
     , m_currentBlock(nullptr)
     , m_currentFunclet(ROOT_FUNC_IDX)
+    , m_virtualRegAssignments(compiler->lvaTrackedCount, REG_STK, compiler->getAllocator(CMK_LSRA))
     , m_perFuncletData(compiler->compFuncCount(), nullptr, compiler->getAllocator(CMK_LSRA))
 {
     for (unsigned i = 0; i < m_compiler->compFuncCount(); i++)
     {
-        m_perFuncletData[i] = new (compiler->getAllocator(CMK_LSRA)) PerFuncletData();
+        m_perFuncletData[i] = new (compiler->getAllocator(CMK_LSRA)) PerFuncletData(compiler);
     }
 }
 
@@ -38,8 +39,47 @@ PhaseStatus WasmRegAlloc::doRegisterAllocation()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+//------------------------------------------------------------------------
+// recordVarLocationsAtStartOfBB: update enregistered local vars to
+//   reflect the current register assignment
+//
+// Arguments:
+//   bb - the basic block whose start is being processed
+//
 void WasmRegAlloc::recordVarLocationsAtStartOfBB(BasicBlock* bb)
 {
+    // Register assignments only change at funclet boundaries
+    //
+    bool const isFuncletEntry = m_compiler->bbIsFuncletBeg(bb);
+    bool const isFuncEntry    = m_compiler->fgFirstBB == bb;
+
+    if (!isFuncletEntry && !isFuncEntry)
+    {
+        return;
+    }
+
+    JITDUMP("Recording Var Locations at start of " FMT_BB "\n", bb->bbNum);
+
+    unsigned const                   funcIdx       = isFuncEntry ? ROOT_FUNC_IDX : m_compiler->funGetFuncIdx(bb);
+    PerFuncletData* const            funcData      = m_perFuncletData[funcIdx];
+    const jitstd::vector<regNumber>& assignments   = funcData->m_physicalRegAssignments;
+    bool                             hasAssignment = false;
+
+    for (unsigned varIdx = 0; varIdx < assignments.size(); varIdx++)
+    {
+        unsigned const   lclNum = m_compiler->lvaTrackedIndexToLclNum(varIdx);
+        LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+        regNumber const  reg    = assignments[varIdx];
+        varDsc->SetRegNum(reg);
+
+        if (reg != REG_STK)
+        {
+            JITDUMP("  V%02u(%s)", lclNum, getRegName(reg));
+            hasAssignment = true;
+        }
+    }
+
+    JITDUMP("%s\n", hasAssignment ? "" : "  <none>");
 }
 
 bool WasmRegAlloc::willEnregisterLocalVars() const
@@ -113,6 +153,8 @@ void WasmRegAlloc::InitializeCandidate(LclVarDsc* varDsc)
     regNumber reg = AllocateVirtualRegister(varDsc->GetRegisterType());
     varDsc->SetRegNum(reg);
     varDsc->lvLRACandidate = true;
+
+    m_virtualRegAssignments[varDsc->lvVarIndex] = reg;
 }
 
 //------------------------------------------------------------------------
@@ -168,8 +210,8 @@ void WasmRegAlloc::AllocateFramePointer()
 
     regNumber const spReg = m_perFuncletData[ROOT_FUNC_IDX]->m_spReg;
 
-    bool const      needFpReg = m_compiler->compLocallocUsed || (m_compiler->compFuncCount() > 1);
-    regNumber const fpReg     = needFpReg ? AllocateVirtualRegister(TYP_I_IMPL) : REG_NA;
+    bool const      needUniqueFpReg = m_compiler->compLocallocUsed || (m_compiler->compFuncCount() > 1);
+    regNumber const fpReg           = needUniqueFpReg ? AllocateVirtualRegister(TYP_I_IMPL) : REG_NA;
 
     // Main method can use SP for frame access, if there is no localloc.
     //
@@ -919,15 +961,7 @@ void WasmRegAlloc::ResolveReferences()
                     varDsc->SetArgInitReg(physReg);
                 }
 
-                // This is the location for this local in this funclet. Since we process the main method region
-                // last, its assignment (if any, see below) will be the one that persists after RA.
-                //
-                // Funclets may well use different local numbers. Note that any local that is live across a
-                // funclet boundary should not be a register allocation candidate, so there is no need for funclet
-                // and main method assignments to match.
-                //
-                // TODO-WASM: this will lead to incorrect debug info in funclets. We may need to track per funclet
-                // assignments somewhere.
+                // This is the location for this local in this funclet.
                 //
                 varDsc->SetRegNum(physReg);
                 varDsc->lvRegister = true;
@@ -950,17 +984,23 @@ void WasmRegAlloc::ResolveReferences()
 
         for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
         {
-            unsigned lclNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
+            unsigned   lclNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+
             if (lclNum == m_compiler->lvaWasmSpArg)
             {
-                continue; // Handled above.
+                // Allocation was handled above.
             }
-
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-            if (varDsc->lvIsRegCandidate())
+            else if (!varDsc->lvIsRegCandidate())
+            {
+                continue;
+            }
+            else
             {
                 allocPhysReg(varDsc->GetRegNum(), varDsc);
             }
+
+            data->m_physicalRegAssignments[varIndex] = varDsc->GetRegNum();
         }
 
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
@@ -1031,12 +1071,13 @@ void WasmRegAlloc::ResolveReferences()
             refsCount = ARRAY_SIZE(refs->Nodes);
         }
 
-        FuncInfoDsc* const currentFunc = m_compiler->funGetFunc(m_currentFunclet);
-        assert(currentFunc->funWasmLocalDecls == nullptr);
+        // Set up the per-funclet local info Wasm needs
+        //
+        assert(funcInfo->funWasmLocalDecls == nullptr);
 
         jitstd::vector<FuncInfoDsc::WasmLocalsDecl>* decls = new (m_compiler->getAllocator(CMK_Codegen))
             jitstd::vector<FuncInfoDsc::WasmLocalsDecl>(m_compiler->getAllocator(CMK_Codegen));
-        currentFunc->funWasmLocalDecls = decls;
+        funcInfo->funWasmLocalDecls = decls;
 
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
@@ -1047,19 +1088,12 @@ void WasmRegAlloc::ResolveReferences()
             }
         }
 
-        // If this is not the main method region, remove any local var assignments.
+        // Reset all lcl var assignments back to their virtual registers.
         //
-        if (inFunclet)
+        for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
         {
-            for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
-            {
-                unsigned const   lclNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
-                LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
-                if (varDsc->lvIsRegCandidate())
-                {
-                    varDsc->lvRegister = false;
-                }
-            }
+            LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(varIndex);
+            varDsc->SetRegNum(m_virtualRegAssignments[varIndex]);
         }
     }
 }
