@@ -17,7 +17,7 @@ internal static partial class Interop
             string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd,
-            SafeHandle[]? inheritedHandles = null, bool shouldThrow = true)
+            SafeHandle[]? inheritedHandles = null)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
@@ -53,8 +53,8 @@ internal static partial class Interop
                 if (inheritedHandles is not null)
                 {
                     inheritedFdCount = inheritedHandles.Length;
-                    inheritedFds = inheritedHandles.Length <= 64
-                        ? stackalloc int[64]
+                    inheritedFds = inheritedHandles.Length <= 4
+                        ? stackalloc int[4]
                         : new int[inheritedFdCount];
 
                     bool ignore = false;
@@ -63,7 +63,7 @@ internal static partial class Interop
                         SafeHandle handle = inheritedHandles[i];
                         handle.DangerousAddRef(ref ignore);
                         inheritedRefsAdded++;
-                        inheritedFds[i] = handle.DangerousGetHandle().ToInt32();
+                        inheritedFds[i] = (int)handle.DangerousGetHandle();
                     }
                 }
 
