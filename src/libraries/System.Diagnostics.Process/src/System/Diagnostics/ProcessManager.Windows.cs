@@ -1060,7 +1060,7 @@ namespace System.Diagnostics
 
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
                 int processId = pi.UniqueProcessId.ToInt32();
-                if (processIdFilter == null || processIdFilter.GetValueOrDefault() == processId)
+                if (processIdFilter is null || processIdFilter.GetValueOrDefault() == processId)
                 {
                     string? processName = null;
                     ReadOnlySpan<char> processNameSpan =
