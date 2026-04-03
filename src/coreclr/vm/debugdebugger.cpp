@@ -32,6 +32,8 @@
 
 #ifndef DACCESS_COMPILE
 
+extern MethodDesc* g_pEnvironmentCallEntryPointMethodDesc;
+
 //
 // Notes:
 //    If a managed debugger is attached, this should send the managed UserBreak event.
@@ -193,14 +195,9 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     //                       because we asked the stackwalker for it!
     MethodDesc* pFunc = pCf->GetFunction();
 
-    if (pFunc != nullptr && pFunc->GetModule()->IsSystem() && strcmp(pFunc->GetName(), "CallEntryPoint") == 0)
+    if (pFunc != nullptr && pFunc == g_pEnvironmentCallEntryPointMethodDesc)
     {
-        const char* typeNamespace = nullptr;
-        const char* typeName = pFunc->GetMethodTable()->GetFullyQualifiedNameInfo(&typeNamespace);
-        if (typeNamespace != nullptr && strcmp(typeNamespace, "System") == 0 && strcmp(typeName, "Environment") == 0)
-        {
-            return SWA_CONTINUE;
-        }
+        return SWA_CONTINUE;
     }
 
     DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;

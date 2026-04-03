@@ -1165,6 +1165,8 @@ struct Param
     bool captureException;
 } param;
 
+MethodDesc* g_pEnvironmentCallEntryPointMethodDesc = nullptr;
+
 #if defined(TARGET_BROWSER)
 extern "C" void SystemJS_ResolveMainPromise(int exitCode);
 #endif // TARGET_BROWSER
@@ -1187,6 +1189,11 @@ static void RunMainInternal(Param* pParam)
     {
         // Set the return value to 0 instead of returning random junk
         *pParam->piRetVal = 0;
+    }
+
+    if (g_pEnvironmentCallEntryPointMethodDesc == nullptr)
+    {
+        g_pEnvironmentCallEntryPointMethodDesc = CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
     }
 
     UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
