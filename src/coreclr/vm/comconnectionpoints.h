@@ -71,29 +71,8 @@ public:
     DWORD               m_id;
 };
 
-FORCEINLINE void ConnectionCookieRelease(ConnectionCookie* p)
-{
-    WRAPPER_NO_CONTRACT;
-
-    delete p;
-}
-
 // Connection cookie holder used to ensure the cookies are deleted when required.
-class ConnectionCookieHolder : public Wrapper<ConnectionCookie*, ConnectionCookieDoNothing, ConnectionCookieRelease, 0>
-{
-public:
-    ConnectionCookieHolder(ConnectionCookie* p = NULL)
-        : Wrapper<ConnectionCookie*, ConnectionCookieDoNothing, ConnectionCookieRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(ConnectionCookie* p)
-    {
-        WRAPPER_NO_CONTRACT;
-        Wrapper<ConnectionCookie*, ConnectionCookieDoNothing, ConnectionCookieRelease, 0>::operator=(p);
-    }
-};
+using ConnectionCookieHolder = NewHolder<ConnectionCookie>;
 
 // List of connection cookies.
 typedef SList<ConnectionCookie, true> CONNECTIONCOOKIELIST;
