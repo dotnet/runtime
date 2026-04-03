@@ -2211,7 +2211,8 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     {
         var_types type = varDsc->GetRegisterType(tree);
         // Block stores can get pruned from LIR, and when that happens a LclVar node of TYP_STRUCT can get left behind
-        //  in LIR. Its RegisterType will be TYP_UNDEF, but it will be flagged with IsUnusedValue to tell us to ignore it.
+        //  in LIR. Its RegisterType will be TYP_UNDEF, but it will be flagged with IsUnusedValue to tell us to ignore
+        //  it.
         if (type == TYP_UNDEF)
         {
             assert(tree->IsUnusedValue());
@@ -2257,10 +2258,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     var_types  type      = tree->TypeGet();
     assert(genIsValidReg(targetReg) && varDsc->lvIsRegCandidate());
 
-    if (
-        (varDsc->lvType == TYP_STRUCT) &&
-        (type == TYP_STRUCT)
-    )
+    if ((varDsc->lvType == TYP_STRUCT) && (type == TYP_STRUCT))
     {
         type = varDsc->GetLayout()->GetRegisterType();
     }
