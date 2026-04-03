@@ -1510,7 +1510,7 @@ void SystemDomain::PublishAppDomainAndInformDebugger (AppDomain *pDomain)
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO100, "SD::PADAID: Adding 0x%x\n", pDomain));
+    LOG((LF_CORDB, LL_INFO100, "SD::PADAID: Adding %p\n", (void*)pDomain));
 
     //
     // We need to synchronize this routine with the attach logic.  The "normal"
@@ -3512,7 +3512,7 @@ void AppDomain::NotifyDebuggerUnload()
     if (!IsDebuggerAttached())
         return;
 
-    LOG((LF_CORDB, LL_INFO10, "AD::NDD domain %#08x\n", this));
+    LOG((LF_CORDB, LL_INFO10, "AD::NDD domain %p\n", (void*)this));
 
     LOG((LF_CORDB, LL_INFO100, "AD::NDD: Interating domain bound assemblies\n"));
     AssemblyIterator i = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded |  kIncludeLoading  | kIncludeExecution));

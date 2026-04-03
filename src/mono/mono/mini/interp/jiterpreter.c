@@ -1379,7 +1379,7 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 #endif
 
 		if (mono_opt_jiterpreter_trace_monitoring_log > 2)
-			g_print ("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", opcode->trace_index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
+			g_print ("trace #%d @%p '%s' bailout recorded at opcode #%d, penalty=%d\n", opcode->trace_index, (void*)ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
 	}
 
 #ifdef DISABLE_THREADS
@@ -1415,13 +1415,13 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 			g_assert (mono_jiterp_patch_opcode (opcode, MINT_TIER_NOP_JITERPRETER, MINT_TIER_ENTER_JITERPRETER));
 
 			if (mono_opt_jiterpreter_trace_monitoring_log > 1)
-				g_print ("trace #%d @%d '%s' accepted; average_penalty %f <= %f\n", opcode->trace_index, ip, frame->imethod->method->name, average_penalty, threshold);
+				g_print ("trace #%d @%p '%s' accepted; average_penalty %f <= %f\n", opcode->trace_index, (void*)ip, frame->imethod->method->name, average_penalty, threshold);
 		} else {
 			// FIXME: Harmless race condition if threads are in use
 			traces_rejected++;
 			if (mono_opt_jiterpreter_trace_monitoring_log > 0) {
 				char * full_name = mono_method_get_full_name (frame->imethod->method);
-				g_print ("trace #%d @%d '%s' rejected; average_penalty %f > %f\n", opcode->trace_index, ip, full_name, average_penalty, threshold);
+				g_print ("trace #%d @%p '%s' rejected; average_penalty %f > %f\n", opcode->trace_index, (void*)ip, full_name, average_penalty, threshold);
 				g_free (full_name);
 			}
 		}

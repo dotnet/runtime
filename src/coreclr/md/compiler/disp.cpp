@@ -450,7 +450,7 @@ HRESULT Disp::OpenScopeOnCustomDataSource(  // S_OK or error
     IUnknown             **ppIUnk)       // [out] Return interface on success.
 {
     HRESULT     hr;
-    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScopeOnCustomDataSource(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", pCustomSource, dwOpenFlags, riid, ppIUnk));
+    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScopeOnCustomDataSource(%p, 0x%08x, 0x%08x, %p)\n", (void*)pCustomSource, dwOpenFlags, riid.Data1, (void*)ppIUnk));
 
     IMDCommon *pMDCommon = NULL;
 
@@ -494,7 +494,7 @@ HRESULT Disp::OpenRawScopeOnCustomDataSource(        // Return code.
     // TODO
     IfFailGo(pMeta->OpenExistingMD(pDataSource, dwOpenFlags));
 
-    LOG((LOGMD, "{%08x} Opened new scope on custom data source, pDataSource: %08x\n", pMeta, pDataSource));
+    LOG((LOGMD, "{%p} Opened new scope on custom data source, pDataSource: %p\n", (void*)pMeta, (void*)pDataSource));
 
     // Return the requested interface.
     IfFailGo(pMeta->QueryInterface(riid, (void **)ppIUnk));
@@ -597,7 +597,7 @@ Disp::SetOption(
 {
     HRESULT hr = S_OK;
 
-    LOG((LF_METADATA, LL_INFO10, "Disp::SetOption(0x%08x, 0x%08x)\n", optionid, pvalue));
+    LOG((LF_METADATA, LL_INFO10, "Disp::SetOption(0x%08x, %p)\n", optionid.Data1, (void*)pvalue));
 
     if (optionid == MetaDataCheckDuplicatesFor)
     {
@@ -766,7 +766,7 @@ HRESULT Disp::GetOption(                // Return code.
 {
     HRESULT hr = S_OK;
 
-    LOG((LF_METADATA, LL_INFO10, "Disp::GetOption(0x%08x, 0x%08x)\n", optionid, pvalue));
+    LOG((LF_METADATA, LL_INFO10, "Disp::GetOption(0x%08x, %p)\n", optionid.Data1, (void*)pvalue));
 
     _ASSERTE(pvalue);
     if (optionid == MetaDataCheckDuplicatesFor)
