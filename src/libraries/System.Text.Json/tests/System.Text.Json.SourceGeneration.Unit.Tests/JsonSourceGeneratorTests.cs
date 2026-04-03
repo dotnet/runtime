@@ -1150,5 +1150,94 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
+
+        [Theory]
+        [InlineData("notnull", "int")]
+        [InlineData("class", "string")]
+        [InlineData("class, new()", "object")]
+        [InlineData("struct", "int")]
+        [InlineData("unmanaged", "int")]
+        [InlineData("notnull, System.IDisposable", "System.IO.MemoryStream")]
+        public void GenericTypeWithConstrainedTypeParameters_VariousConstraints(string constraint, string typeArg)
+        {
+            string source = $$"""
+                using System;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    public class GenericWithConstraint<T> where T : {{constraint}}
+                    {
+                        public string Label { get; init; }
+                    }
+
+                    [JsonSerializable(typeof(GenericWithConstraint<{{typeArg}}>))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
+
+        [Fact]
+        public void GenericTypeWithConstrainedTypeParameters_MultipleTypeParameters()
+        {
+            string source = """
+                using System;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    public class MultiConstraint<TKey, TValue>
+                        where TKey : notnull
+                        where TValue : class, new()
+                    {
+                        public TKey Key { get; init; }
+                        public TValue Value { get; init; }
+                    }
+
+                    [JsonSerializable(typeof(MultiConstraint<int, object>))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
+
+        [Fact]
+        public void GenericTypeWithConstrainedTypeParameters_BaseClassAndInterface()
+        {
+            string source = """
+                using System;
+                using System.Text.Json.Serialization;
+
+                namespace TestApp
+                {
+                    public class MyBase
+                    {
+                        public int Id { get; set; }
+                    }
+
+                    public class Derived : MyBase, IDisposable
+                    {
+                        public void Dispose() { }
+                    }
+
+                    public class GenericWithMultiConstraint<T> where T : MyBase, IDisposable
+                    {
+                        public T Item { get; init; }
+                        public string Label { get; init; }
+                    }
+
+                    [JsonSerializable(typeof(GenericWithMultiConstraint<Derived>))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
     }
 }

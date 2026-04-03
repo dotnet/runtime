@@ -23,6 +23,12 @@ namespace System.Text.Json.SourceGeneration
         private sealed class Parser
         {
             private const string SystemTextJsonNamespace = "System.Text.Json";
+
+            // ITypeParameterSymbol.AllowsRefLikeType was added in Roslyn 4.9 (C# 13). Access via a compiled
+            // delegate so the same source file compiles against all supported Roslyn versions.
+            private static readonly Func<ITypeParameterSymbol, bool>? s_getAllowsRefLikeType =
+                (Func<ITypeParameterSymbol, bool>?)
+                    typeof(ITypeParameterSymbol).GetProperty("AllowsRefLikeType")?.GetGetMethod()!.CreateDelegate(typeof(Func<ITypeParameterSymbol, bool>));
             private const string JsonExtensionDataAttributeFullName = "System.Text.Json.Serialization.JsonExtensionDataAttribute";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
@@ -2230,6 +2236,12 @@ namespace System.Text.Json.SourceGeneration
                     !typeParameter.HasUnmanagedTypeConstraint)
                 {
                     (constraints ??= new()).Add("new()");
+                }
+
+                // "allows ref struct" anti-constraint must appear last.
+                if (s_getAllowsRefLikeType?.Invoke(typeParameter) == true)
+                {
+                    (constraints ??= new()).Add("allows ref struct");
                 }
 
                 if (constraints is null)
