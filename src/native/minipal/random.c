@@ -152,9 +152,13 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
             // getentropy() is limited to 256 bytes per call
             size_t chunk = (size_t)(bufferLength - offset);
             if (chunk > 256)
+            {
                 chunk = 256;
+            }
             if (getentropy(buffer + offset, chunk) != 0)
+            {
                 return -1;
+            }
             offset += (int32_t)chunk;
         }
         return 0;
