@@ -3586,7 +3586,7 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
         else
         {
             {
-                PinningHandleHolder handle = GetAppDomain()->CreatePinningHandle((OBJECTREF)Array);
+                PinningHandleHolder handle(GetAppDomain()->CreatePinningHandle((OBJECTREF)Array));
 
                 if (bArrayOfInterfaceWrappers)
                 {
@@ -3684,7 +3684,7 @@ void OleVariant::MarshalArrayRefForSafeArray(SAFEARRAY *pSafeArray,
             pSrcData = (BYTE*)pSafeArray->pvData;
         }
 
-        PinningHandleHolder handle = GetAppDomain()->CreatePinningHandle((OBJECTREF)*pArrayRef);
+        PinningHandleHolder handle(GetAppDomain()->CreatePinningHandle((OBJECTREF)*pArrayRef));
 
         marshal->OleToComArray(pSrcData, pArrayRef, pInterfaceMT);
     }

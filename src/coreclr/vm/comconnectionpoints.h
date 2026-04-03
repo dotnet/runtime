@@ -35,26 +35,23 @@ struct EventMethodInfo
 // Structure passed out as a cookie when Advise is called.
 struct ConnectionCookie
 {
-    ConnectionCookie(OBJECTHANDLE hndEventProvObj) : m_hndEventProvObj(hndEventProvObj)
+    ConnectionCookie(OBJECTHANDLEHolder hndEventProvObj) : m_hndEventProvObj(std::move(hndEventProvObj))
     {
         CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            PRECONDITION(NULL != hndEventProvObj);
+            PRECONDITION(NULL != m_hndEventProvObj);
         }
         CONTRACTL_END;
     }
 
-    ~ConnectionCookie()
-    {
-        WRAPPER_NO_CONTRACT;
-        DestroyHandle(m_hndEventProvObj);
-    }
+public:
+    ~ConnectionCookie() = default;
 
     // Currently called only from Cooperative mode.
-    static ConnectionCookie* CreateConnectionCookie(OBJECTHANDLE hndEventProvObj)
+    static ConnectionCookie* CreateConnectionCookie(OBJECTHANDLEHolder hndEventProvObj)
     {
         CONTRACT (ConnectionCookie*)
         {
@@ -66,12 +63,12 @@ struct ConnectionCookie
         }
         CONTRACT_END;
 
-        RETURN (new ConnectionCookie(hndEventProvObj));
+        RETURN (new ConnectionCookie(std::move(hndEventProvObj)));
     }
 
-    SLink           m_Link;
-    OBJECTHANDLE    m_hndEventProvObj;
-    DWORD           m_id;
+    SLink               m_Link;
+    OBJECTHANDLEHolder  m_hndEventProvObj;
+    DWORD               m_id;
 };
 
 FORCEINLINE void ConnectionCookieRelease(ConnectionCookie* p)
