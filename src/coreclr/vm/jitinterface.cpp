@@ -13169,7 +13169,7 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
         // so we have the target MethodDesc entrypoint to tell the debugger about.
         bool trackTransitions = ftn->IsILStub();
 #ifdef PROFILING_SUPPORTED
-        trackTransitions |= CORProfilerTrackTransitions();
+        trackTransitions = trackTransitions || CORProfilerTrackTransitions();
 #endif // PROFILING_SUPPORTED
         if (trackTransitions)
         {
