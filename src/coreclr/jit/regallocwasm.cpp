@@ -944,14 +944,7 @@ void WasmRegAlloc::ResolveReferences()
 
         if (fpVirtReg != REG_NA)
         {
-            if (inFunclet)
-            {
-                data->m_fpReg = MakeWasmReg(1, TypeToWasmValueType(TYP_I_IMPL));
-            }
-            else
-            {
-                data->m_fpReg = (spVirtReg == fpVirtReg) ? data->m_spReg : allocPhysReg(fpVirtReg, nullptr);
-            }
+            data->m_fpReg = (spVirtReg == fpVirtReg) ? data->m_spReg : allocPhysReg(fpVirtReg, nullptr);
         }
 
         for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
