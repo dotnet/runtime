@@ -59,6 +59,36 @@ namespace Microsoft.Win32.SafeHandles
         // On Unix, we don't use process descriptors yet, so we can't get PID.
         private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
 
+        private bool SignalCore(PosixSignal signal)
+        {
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            int signalNumber = Interop.Sys.GetPlatformSignalNumber(signal);
+            if (signalNumber == 0)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            int killResult = Interop.Sys.Kill(ProcessId, signalNumber);
+            if (killResult != 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                // Return false if the process has already exited (or never existed).
+                if (errorInfo.Error == Interop.Error.ESRCH)
+                {
+                    return false;
+                }
+
+                throw new Win32Exception(errorInfo.RawErrno); // same exception as on Windows
+            }
+
+            return true;
+        }
+
         private delegate SafeProcessHandle StartWithShellExecuteDelegate(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
         private static StartWithShellExecuteDelegate? s_startWithShellExecute;
 
@@ -76,11 +106,6 @@ namespace Microsoft.Win32.SafeHandles
         internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
         {
             waitStateHolder = null;
-
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
-            {
-                throw new PlatformNotSupportedException();
-            }
 
             ProcessUtils.EnsureInitialized();
 
@@ -104,14 +129,7 @@ namespace Microsoft.Win32.SafeHandles
                 (userId, groupId, groups) = ProcessUtils.GetUserAndGroupIds(startInfo);
             }
 
-            // .NET applications don't echo characters unless there is a Console.Read operation.
-            // Unix applications expect the terminal to be in an echoing state by default.
-            // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
-            // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
-            // Handle can be null only for UseShellExecute or platforms that don't support Console.Open* methods like Android.
-            bool usesTerminal = (stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
-                || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
-                || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle));
+            bool usesTerminal = UsesTerminal(stdinHandle, stdoutHandle, stderrHandle);
 
             filename = ProcessUtils.ResolvePath(startInfo.FileName);
             argv = ProcessUtils.ParseArgv(startInfo);
@@ -141,9 +159,7 @@ namespace Microsoft.Win32.SafeHandles
                 (userId, groupId, groups) = ProcessUtils.GetUserAndGroupIds(startInfo);
             }
 
-            bool usesTerminal = (stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
-                || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
-                || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle));
+            bool usesTerminal = UsesTerminal(stdinHandle, stdoutHandle, stderrHandle);
 
             string verb = startInfo.Verb;
             if (verb != string.Empty &&
@@ -190,6 +206,13 @@ namespace Microsoft.Win32.SafeHandles
 
             return result;
         }
+
+        // .NET applications don't echo characters unless there is a Console.Read operation.
+        // Unix applications expect the terminal to be in an echoing state by default.
+        // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
+        // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
+        private static bool UsesTerminal(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+            => ProcessUtils.IsTerminal(stdinHandle) || ProcessUtils.IsTerminal(stdoutHandle) || ProcessUtils.IsTerminal(stderrHandle);
 
         private static SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,

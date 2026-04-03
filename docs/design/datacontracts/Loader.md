@@ -69,6 +69,7 @@ IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
+bool IsReadyToRun(ModuleHandle handle);
 bool TryGetSimpleName(ModuleHandle handle, out string simpleName);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);

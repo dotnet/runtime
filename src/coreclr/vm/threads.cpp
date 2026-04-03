@@ -30,7 +30,6 @@
 #include "wrappers.h"
 
 #include "appdomain.inl"
-#include "vmholder.h"
 #include "exceptmacros.h"
 #include "minipal/time.h"
 #include "minipal/thread.h"

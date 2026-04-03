@@ -21,9 +21,6 @@ namespace System.Diagnostics
 
         internal static bool SupportsAtomicNonInheritablePipeCreation => Interop.Sys.IsAtomicNonInheritablePipeCreationSupported;
 
-        internal static bool PlatformDoesNotSupportProcessStartAndKill
-            => (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS();
-
         private static bool IsExecutable(string fullPath)
         {
             Interop.Sys.FileStatus fileinfo;
