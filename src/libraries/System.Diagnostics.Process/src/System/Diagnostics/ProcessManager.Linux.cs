@@ -93,7 +93,7 @@ namespace System.Diagnostics
             if (processNameFilter != null)
             {
                 processName = Process.GetUntruncatedProcessName(procPid, ref stat);
-                if (!string.Equals(processName, processNameFilter, StringComparison.OrdinalIgnoreCase))
+                if (!processNameFilter.Equals(processName, StringComparison.OrdinalIgnoreCase))
                 {
                     return null;
                 }
