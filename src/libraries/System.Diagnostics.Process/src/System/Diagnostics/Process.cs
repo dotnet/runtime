@@ -1097,6 +1097,7 @@ namespace System.Diagnostics
         {
             bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
             ArrayBuilder<ProcessInfo> processInfos = default;
+            // Normalize empty processName to null so that GetProcessInfos treats it as "no filter".
             ProcessManager.GetProcessInfos(ref processInfos, string.IsNullOrEmpty(processName) ? null : processName, machineName, isRemoteMachine);
             if (processInfos.Count == 0)
                 return [];
