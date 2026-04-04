@@ -353,11 +353,11 @@ namespace System.Data.ProviderBase
             return true;
         }
 
-        private void StructureToPtr(int offset, object structure)
+        private void StructureToPtr<T>(int offset, T structure)
         {
             Debug.Assert(null != structure, "null structure");
             offset += BaseOffset;
-            ValidateCheck(offset, Marshal.SizeOf(structure.GetType()));
+            ValidateCheck(offset, Marshal.SizeOf<T>());
             Debug.Assert(0 == offset % IntPtr.Size, "invalid alignment");
 
             bool mustRelease = false;
@@ -367,7 +367,7 @@ namespace System.Data.ProviderBase
                 DangerousAddRef(ref mustRelease);
 
                 IntPtr ptr = ADP.IntPtrOffset(DangerousGetHandle(), offset);
-                Marshal.StructureToPtr(structure, ptr, false/*fDeleteOld*/);
+                Marshal.StructureToPtr<T>(structure, ptr, false/*fDeleteOld*/);
             }
             finally
             {
@@ -607,7 +607,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        internal unsafe void WriteSingle(int offset, float value)
+        internal void WriteSingle(int offset, float value)
         {
             WriteInt32(offset, BitConverter.SingleToInt32Bits(value));
         }

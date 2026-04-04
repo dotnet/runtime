@@ -264,7 +264,7 @@ namespace System.Xml.XmlSchemaTests
         [InlineData("v1-1.xml", "v1.xsd", true, 0, 0, 2)]
         //[Variation(Desc = "v1.1.1- Custom XML namespace System.Xml.XmlSchemaTests in the set, particle has reference to custom attribute, allowXmlAttribute=false", Priority = 1, id = 1, Params = new object[] { "v1-1.xml", "v1.xsd", false, 0, 1, 2 })]
         [InlineData("v1-1.xml", "v1.xsd", false, 0, 1, 2)]
-        public void v1(string xmlFile, string xsdFile, bool allowXmlAttributes, int expectedWarningCount, int expectedErrorCount, int expectedSchemaSetCount)
+        public void v1(string xmlFile, string? xsdFile, bool allowXmlAttributes, int expectedWarningCount, int expectedErrorCount, int expectedSchemaSetCount)
         {
             Initialize();
             XmlSchemaSet xss = new XmlSchemaSet();

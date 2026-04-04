@@ -75,11 +75,11 @@ namespace ILCompiler.Reflection.ReadyToRun.Arm
 
         public UnwindInfo() { }
 
-        public UnwindInfo(byte[] image, int offset)
+        public UnwindInfo(NativeReader imageReader, int offset)
         {
             uint startOffset = (uint)offset;
 
-            int dw = NativeReader.ReadInt32(image, ref offset);
+            int dw = imageReader.ReadInt32(ref offset);
             CodeWords = ExtractBits(dw, 28, 4);
             EpilogCount = ExtractBits(dw, 23, 5);
             FBit = ExtractBits(dw, 22, 1);
@@ -92,7 +92,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Arm
             {
                 // We have an extension word specifying a larger number of Code Words or Epilog Counts
                 // than can be specified in the header word.
-                dw = NativeReader.ReadInt32(image, ref offset);
+                dw = imageReader.ReadInt32(ref offset);
                 ExtendedCodeWords = ExtractBits(dw, 16, 8);
                 ExtendedEpilogCount = ExtractBits(dw, 0, 16);
             }
@@ -106,7 +106,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Arm
                 {
                     for (int scope = 0; scope < EpilogCount; scope++)
                     {
-                        dw = NativeReader.ReadInt32(image, ref offset);
+                        dw = imageReader.ReadInt32(ref offset);
                         Epilogs[scope] = new Epilog(scope, dw, startOffset);
                         epilogStartAt[Epilogs[scope].EpilogStartIndex] = true; // an epilog starts at this offset in the unwind codes
                     }

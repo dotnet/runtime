@@ -97,7 +97,7 @@ namespace System.Net.Http.Headers
                     value = null;
                 }
 
-                CheckContainsNewLine(value);
+                CheckContainsNewLineOrNull(value);
 
                 SetOrRemoveParsedValue(KnownHeaders.From.Descriptor, value);
             }
@@ -167,7 +167,7 @@ namespace System.Net.Http.Headers
             get => _specialCollectionsSlots is null ? null : (string?)_specialCollectionsSlots[ProtocolSlot];
             set
             {
-                CheckContainsNewLine(value);
+                CheckContainsNewLineOrNull(value);
                 _specialCollectionsSlots ??= new object[NumCollectionsSlots];
                 _specialCollectionsSlots[ProtocolSlot] = value;
             }

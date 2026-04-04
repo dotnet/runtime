@@ -1,8 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Net.WebSockets;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -115,6 +117,70 @@ internal sealed class DevServerStartup
                     }
                 }
             });
+
+            // Add general-purpose file upload endpoint when DEVSERVER_UPLOAD_PATH is set
+            string? fileUploadPath = Environment.GetEnvironmentVariable("DEVSERVER_UPLOAD_PATH");
+            string? fileUploadPattern = Environment.GetEnvironmentVariable("DEVSERVER_UPLOAD_PATTERN");
+            if (!string.IsNullOrEmpty(fileUploadPath) && !string.IsNullOrEmpty(fileUploadPattern))
+            {
+                // Ensure the upload directory exists
+                if (!Directory.Exists(fileUploadPath))
+                {
+                    Directory.CreateDirectory(fileUploadPath!);
+                }
+                Regex fileFilter;
+                try
+                {
+                    fileFilter = new Regex(fileUploadPattern!, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"DEVSERVER_UPLOAD_PATTERN value '{fileUploadPattern}' is not a valid regular expression: {ex.Message}", ex);
+                }
+
+                // Route with filename parameter
+                endpoints.MapPost("/upload/{filename}", async context =>
+                {
+                    try
+                    {
+                        // Get the filename from the route
+                        var routeValues = context.Request.RouteValues;
+                        string? rawFileName = routeValues["filename"]?.ToString();
+
+                        // skip upload if no name provided or invalid
+                        if (string.IsNullOrEmpty(rawFileName) || !fileFilter.IsMatch(rawFileName!))
+                        {
+                            context.Response.StatusCode = 403; // Forbidden
+                            await context.Response.WriteAsync("Invalid or missing filename for upload.");
+                            return;
+                        }
+
+                        // Sanitize filename - IMPORTANT: Only use GetFileName to strip any path components
+                        // This prevents directory traversal attacks like "../../../etc/passwd"
+                        string fileName = Path.GetFileName(rawFileName);
+
+                        if (string.IsNullOrEmpty(fileName))
+                        {
+                            fileName = $"upload_{Guid.NewGuid():N}";
+                        }
+
+                        string filePath = Path.Combine(fileUploadPath!, fileName);
+
+                        using (var outputStream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await context.Request.Body.CopyToAsync(outputStream);
+                        }
+
+                        await context.Response.WriteAsync($"File saved to {filePath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        context.Response.StatusCode = 500;
+                        await context.Response.WriteAsync($"Error processing upload: {ex.Message}");
+                    }
+                });
+            }
+
         });
 
         ServerURLsProvider.ResolveServerUrlsOnApplicationStarted(app, logger, applicationLifetime, realUrlsAvailableTcs, "/_framework/debug");

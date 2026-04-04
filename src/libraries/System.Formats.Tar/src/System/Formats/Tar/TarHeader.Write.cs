@@ -7,6 +7,7 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,8 +17,8 @@ namespace System.Formats.Tar
     // Writes header attributes of a tar archive entry.
     internal sealed partial class TarHeader
     {
-        private const long Octal12ByteFieldMaxValue = (1L << (3 * 11)) - 1; // Max value of 11 octal digits.
-        private const int Octal8ByteFieldMaxValue = (1 << (3 * 7)) - 1;     // Max value of 7 octal digits.
+        internal const long Octal12ByteFieldMaxValue = (1L << (3 * 11)) - 1; // Max value of 11 octal digits.
+        internal const int Octal8ByteFieldMaxValue = (1 << (3 * 7)) - 1;     // Max value of 7 octal digits.
 
         private static ReadOnlySpan<byte> UstarMagicBytes => "ustar\0"u8;
         private static ReadOnlySpan<byte> UstarVersionBytes => "00"u8;
@@ -28,6 +29,9 @@ namespace System.Formats.Tar
         // Predefined text for the Name field of a GNU long metadata entry. Applies for both LongPath ('L') and LongLink ('K').
         private const string GnuLongMetadataName = "././@LongLink";
         private const string ArgNameEntry = "entry";
+
+        private const int RootUidGid = 0;
+        private const string RootUNameGName = "root";
 
         // Writes the entry in the order required to be able to obtain the seekable data stream size.
         private void WriteWithSeekableDataStream(TarEntryFormat format, Stream archiveStream, Span<byte> buffer)
@@ -358,9 +362,9 @@ namespace System.Formats.Tar
         // .NET strings do not include a null terminator by default, need to add it manually and also consider it for the length.
         private bool IsLinkNameTooLongForRegularField() => _linkName != null && (Encoding.UTF8.GetByteCount(_linkName) + 1) > FieldLengths.LinkName;
 
-        // Checks if the name string is too long to fit in the regular header field.
+        // Checks if the name string is too long to fit in the regular header field (excluding null char).
         // .NET strings do not include a null terminator by default, need to add it manually and also consider it for the length.
-        private bool IsNameTooLongForRegularField() => (Encoding.UTF8.GetByteCount(_name) + 1) > FieldLengths.Name;
+        private bool IsNameTooLongForRegularField() => (Encoding.UTF8.GetByteCount(_name)) > FieldLengths.Name;
 
         // Writes the current header as a Gnu entry into the archive stream.
         // Makes sure to add the preceding LongLink and/or LongPath entries if necessary, before the actual entry.
@@ -435,28 +439,26 @@ namespace System.Formats.Tar
 
         private static MemoryStream GetLongMetadataStream(string text)
         {
-            MemoryStream data = new MemoryStream();
-            data.Write(Encoding.UTF8.GetBytes(text));
-            data.WriteByte(0); // Add a null terminator at the end of the string, _size will be calculated later
-            data.Position = 0;
-            return data;
+            byte[] arr = new byte[Encoding.UTF8.GetByteCount(text) + 1]; // +1 for null terminator
+            Encoding.UTF8.GetBytes(text, arr);
+            return new MemoryStream(arr);
         }
 
         private TarHeader GetGnuLongLinkMetadataHeader()
         {
             Debug.Assert(_linkName != null);
             MemoryStream dataStream = GetLongMetadataStream(_linkName);
-            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongLink, _uid, _gid, _uName, _gName);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongLink);
         }
 
         private TarHeader GetGnuLongPathMetadataHeader()
         {
             MemoryStream dataStream = GetLongMetadataStream(_name);
-            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongPath, _uid, _gid, _uName, _gName);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongPath);
         }
 
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream (seekable).
-        private static TarHeader GetGnuLongMetadataHeader(MemoryStream dataStream, TarEntryType entryType, int mainEntryUid, int mainEntryGid, string? mainEntryUname, string? mainEntryGname)
+        private static TarHeader GetGnuLongMetadataHeader(MemoryStream dataStream, TarEntryType entryType)
         {
             Debug.Assert(entryType is TarEntryType.LongPath or TarEntryType.LongLink);
 
@@ -464,15 +466,15 @@ namespace System.Formats.Tar
             {
                 _name = GnuLongMetadataName, // Same name for both longpath or longlink
                 _mode = TarHelpers.GetDefaultMode(entryType),
-                _uid = mainEntryUid,
-                _gid = mainEntryGid,
-                _mTime = DateTimeOffset.UnixEpoch, // 0
+                _uid = RootUidGid,
+                _gid = RootUidGid,
+                _mTime = DateTimeOffset.UnixEpoch, // Stores as series of 0 characters
                 _typeFlag = entryType,
                 _dataStream = dataStream,
-                _uName = mainEntryUname,
-                _gName = mainEntryGname,
-                _aTime = DateTimeOffset.UnixEpoch, // 0
-                _cTime = DateTimeOffset.UnixEpoch, // 0
+                _uName = RootUNameGName,
+                _gName = RootUNameGName,
+                _aTime = default, // LongLink/LongPath entries store these as nulls
+                _cTime = default, // LongLink/LongPath entries store these as nulls
             };
         }
 
@@ -783,12 +785,12 @@ namespace System.Formats.Tar
         // Saves the gnu-specific fields into the specified spans.
         private int WriteGnuFields(Span<byte> buffer)
         {
-            int checksum = WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+            int checksum = 0;
 
-            if (_gnuUnusedBytes != null)
+            if (_typeFlag is not TarEntryType.LongLink and not TarEntryType.LongPath)
             {
-                checksum += WriteLeftAlignedBytesAndGetChecksum(_gnuUnusedBytes, buffer.Slice(FieldLocations.GnuUnused, FieldLengths.AllGnuUnused));
+                checksum += WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+                checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
             }
 
             return checksum;
@@ -940,75 +942,14 @@ namespace System.Formats.Tar
         // extended attributes. They get collected and saved in that dictionary, with no restrictions.
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
         {
-            ExtendedAttributes[PaxEaName] = _name;
-            ExtendedAttributes[PaxEaMTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime);
+            CollectExtendedAttributesFromStandardFieldsIfNeeded(_ea ??= new Dictionary<string, string>());
+        }
 
-            TryAddStringField(ExtendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
-            TryAddStringField(ExtendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
-
-            if (!string.IsNullOrEmpty(_linkName))
-            {
-                Debug.Assert(_typeFlag is TarEntryType.SymbolicLink or TarEntryType.HardLink);
-                ExtendedAttributes[PaxEaLinkName] = _linkName;
-            }
-
-            if (_size > Octal12ByteFieldMaxValue)
-            {
-                ExtendedAttributes[PaxEaSize] = _size.ToString();
-            }
-            else
-            {
-                ExtendedAttributes.Remove(PaxEaSize);
-            }
-
-            if (_uid > Octal8ByteFieldMaxValue)
-            {
-                ExtendedAttributes[PaxEaUid] = _uid.ToString();
-            }
-            else
-            {
-                ExtendedAttributes.Remove(PaxEaUid);
-            }
-
-            if (_gid > Octal8ByteFieldMaxValue)
-            {
-                ExtendedAttributes[PaxEaGid] = _gid.ToString();
-            }
-            else
-            {
-                ExtendedAttributes.Remove(PaxEaGid);
-            }
-
-            if (_devMajor > Octal8ByteFieldMaxValue)
-            {
-                ExtendedAttributes[PaxEaDevMajor] = _devMajor.ToString();
-            }
-            else
-            {
-                ExtendedAttributes.Remove(PaxEaDevMajor);
-            }
-
-            if (_devMinor > Octal8ByteFieldMaxValue)
-            {
-                ExtendedAttributes[PaxEaDevMinor] = _devMinor.ToString();
-            }
-            else
-            {
-                ExtendedAttributes.Remove(PaxEaDevMinor);
-            }
-
-            // Sets the specified string to the dictionary if it's longer than the specified max byte length; otherwise, remove it.
-            static void TryAddStringField(Dictionary<string, string> extendedAttributes, string key, string? value, int maxLength)
-            {
-                if (string.IsNullOrEmpty(value) || GetUtf8TextLength(value) <= maxLength)
-                {
-                    extendedAttributes.Remove(key);
-                }
-                else
-                {
-                    extendedAttributes[key] = value;
-                }
-            }
+        // At write time, we both add and remove entries to ensure the EA dictionary
+        // is fully normalized. Delegates to the shared helper with removeIfUnneeded: true.
+        private void CollectExtendedAttributesFromStandardFieldsIfNeeded(Dictionary<string, string> ea)
+        {
+            AddOrUpdateStandardFieldExtendedAttributes(ea, removeIfUnneeded: true);
         }
 
         // The checksum accumulator first adds up the byte values of eight space chars, then the final number
@@ -1031,7 +972,7 @@ namespace System.Formats.Tar
             destination[^2] = (byte)'\0';
 
             int i = destination.Length - 3;
-            int j = converted.Length - 1;
+            int j = converted.Length - 2; // Skip the null terminator in 'converted'
 
             while (i >= 0)
             {
@@ -1087,11 +1028,43 @@ namespace System.Formats.Tar
         private static int Checksum(ReadOnlySpan<byte> bytes)
         {
             int checksum = 0;
-            foreach (byte b in bytes)
+            int vectorSize = Vector<byte>.Count;
+            int i = 0;
+
+            if (Vector.IsHardwareAccelerated && bytes.Length >= vectorSize)
             {
-                checksum += b;
+                // tar header is 512 bytes, which makes the maximum checksum
+                // 512 * 255 = 130560. That does not fit into ushort, but since
+                // the vector will contain multiple ushorts and we don't ever
+                // sum over the entirety of the data, we will (just barely) not
+                // overflow ushort accumulators even on repeated 0xFF data.
+                Debug.Assert(bytes.Length <= 512);
+                Vector<ushort> accumulator = Vector<ushort>.Zero;
+
+                // Process full vectors
+                for (; i <= bytes.Length - vectorSize; i += vectorSize)
+                {
+                    Vector<byte> vector = new Vector<byte>(bytes.Slice(i, vectorSize));
+
+                    // Widen and sum to avoid overflow
+                    Vector.Widen(vector, out Vector<ushort> lower, out Vector<ushort> upper);
+                    accumulator += lower + upper;
+                }
+
+                // Horizontal sum of accumulator, this one might overflow ushort
+                // so we widen again
+                Vector.Widen(accumulator, out Vector<uint> lower32, out Vector<uint> upper32);
+                checksum = (int)Vector.Sum(lower32) + (int)Vector.Sum(upper32);
             }
+
+            // Process remaining bytes (or entire range if no vectorization)
+            for (; i < bytes.Length; i++)
+            {
+                checksum += bytes[i];
+            }
+
             return checksum;
+
         }
         private int FormatNumeric(int value, Span<byte> destination)
         {
@@ -1165,6 +1138,12 @@ namespace System.Formats.Tar
         // Writes the specified DateTimeOffset's Unix time seconds, and returns its checksum.
         private int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination)
         {
+            // For 'default' we leave the buffer zero-ed to indicate: "no timestamp".
+            if (timestamp == default)
+            {
+                return 0;
+            }
+
             long unixTimeSeconds = timestamp.ToUnixTimeSeconds();
             return FormatNumeric(unixTimeSeconds, destination);
         }

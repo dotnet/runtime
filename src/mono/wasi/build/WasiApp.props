@@ -10,4 +10,12 @@
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.props" />
+
+  <PropertyGroup>
+    <WasmNestedPublishAppDependsOn>
+      _PrepareForNestedPublish;
+      $(WasmNestedPublishAppDependsOn);
+    </WasmNestedPublishAppDependsOn>
+  </PropertyGroup>
+
 </Project>

@@ -1,0 +1,26 @@
+<Solution>
+  <Folder Name="/gen/">
+    <Project Path="../System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj" />
+  </Folder>
+  <Folder Name="/ref/">
+    <Project Path="../Microsoft.Extensions.Primitives/ref/Microsoft.Extensions.Primitives.csproj" />
+    <Project Path="ref/Microsoft.Extensions.Caching.Abstractions.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../Microsoft.Extensions.Primitives/src/Microsoft.Extensions.Primitives.csproj" />
+    <Project Path="src/Microsoft.Extensions.Caching.Abstractions.csproj" />
+  </Folder>
+  <Folder Name="/tools/" />
+  <Folder Name="/tools/gen/">
+    <Project Path="../../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj" />
+    <Project Path="../../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj" />
+  </Folder>
+  <Folder Name="/tools/ref/">
+    <Project Path="../../tools/illink/src/linker/ref/Mono.Linker.csproj" />
+  </Folder>
+  <Folder Name="/tools/src/">
+    <Project Path="../../tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj" />
+    <Project Path="../../tools/illink/src/linker/Mono.Linker.csproj" />
+  </Folder>
+</Solution>

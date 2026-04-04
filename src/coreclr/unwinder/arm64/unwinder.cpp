@@ -4,9 +4,7 @@
 //
 
 #include "stdafx.h"
-#ifndef FEATURE_CDAC_UNWINDER
 #include "utilcode.h"
-#endif // FEATURE_CDAC_UNWINDER
 #include "crosscomp.h"
 
 #include "unwinder.h"
@@ -166,25 +164,13 @@ typedef struct _ARM64_VFP_STATE
 // Macros for accessing memory. These can be overridden if other code
 // (in particular the debugger) needs to use them.
 
-#if !defined(DEBUGGER_UNWIND) && !defined(FEATURE_CDAC_UNWINDER)
+#if !defined(DEBUGGER_UNWIND)
 
 #define MEMORY_READ_BYTE(params, addr)       (*dac_cast<PTR_BYTE>(addr))
-#define MEMORY_READ_WORD(params, addr)       (*dac_cast<PTR_WORD>(addr))
+#define MEMORY_READ_WORD(params, addr)      (*dac_cast<PTR_WORD>(addr))
 #define MEMORY_READ_DWORD(params, addr)      (*dac_cast<PTR_DWORD>(addr))
 #define MEMORY_READ_QWORD(params, addr)      (*dac_cast<PTR_UINT64>(addr))
 
-#elif defined(FEATURE_CDAC_UNWINDER)
-template<typename T>
-T cdacRead(uint64_t addr)
-{
-    T t;
-    t_pCallbacks->readFromTarget(addr, &t, sizeof(t), t_pCallbacks->callbackContext);
-    return t;
-}
-#define MEMORY_READ_BYTE(params, addr)       (cdacRead<BYTE>(addr))
-#define MEMORY_READ_WORD(params, addr)       (cdacRead<WORD>(addr))
-#define MEMORY_READ_DWORD(params, addr)      (cdacRead<DWORD>(addr))
-#define MEMORY_READ_QWORD(params, addr)      (cdacRead<UINT64>(addr))
 #endif
 
 //
@@ -1702,7 +1688,7 @@ Arguments:
         returned.
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     UnwindParams - Additional parameters shared with caller.
 
@@ -2349,7 +2335,7 @@ ExecuteCodes:
         }
 
         //
-        // pac (11111100): function has pointer authentication
+        // pac (11111100): function has pointer authentication 
         //
 
         else if (CurCode == 0xfc) {
@@ -2550,7 +2536,7 @@ Arguments:
     ContextRecord - Supplies the address of a context record.
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     EstablisherFrame - Supplies a pointer to a variable that receives the
         the establisher frame pointer value.
@@ -2773,7 +2759,6 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
     return TRUE;
 }
 
-#ifdef DACCESS_COMPILE
 BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers)
 {
     OOPStackUnwinderArm64 unwinder;
@@ -2789,18 +2774,6 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 
     return res;
 }
-#elif defined(FEATURE_CDAC_UNWINDER)
-BOOL arm64Unwind(void* pContext, ReadFromTarget readFromTarget, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo, UnwinderFail unwinderFail, void* callbackContext)
-{
-    CDACCallbacks callbacks { readFromTarget, getAllocatedBuffer, getStackWalkInfo, unwinderFail, callbackContext };
-    t_pCallbacks = &callbacks;
-    OOPStackUnwinderArm64 unwinder;
-    BOOL res = unwinder.Unwind((T_CONTEXT*) pContext);
-    t_pCallbacks = nullptr;
-
-    return res;
-}
-#endif // FEATURE_CDAC_UNWINDER
 
 #if defined(HOST_UNIX)
 

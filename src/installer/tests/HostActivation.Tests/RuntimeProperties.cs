@@ -131,9 +131,9 @@ namespace HostActivation.Tests
             public SharedTestState()
             {
                 // Make a copy of the built .NET, as we will update the framework's runtime config
-                copiedDotnet = TestArtifact.CreateFromCopy("runtimeProperties", TestContext.BuiltDotNet.BinPath);
+                copiedDotnet = TestArtifact.CreateFromCopy("runtimeProperties", HostTestContext.BuiltDotNet.BinPath);
 
-                MockSDK = new DotNetBuilder(copiedDotnet.Location, TestContext.BuiltDotNet.BinPath, "mocksdk")
+                MockSDK = new DotNetBuilder(copiedDotnet.Location, HostTestContext.BuiltDotNet.BinPath, "mocksdk")
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr("9999.0.0")
                     .AddMockSDK("9999.0.0-dev", "9999.0.0")
                     .Build();

@@ -20,7 +20,7 @@ namespace System.Numerics
         /// <summary>The distance of the plane along its normal from the origin.</summary>
         public float D;
 
-        /// <summary>Creates a <see cref="Plane" /> object from the X, Y, and Z components of its normal, and its distance from the origin on that normal.</summary>
+        /// <summary>Initializes a <see cref="Plane" /> from the X, Y, and Z components of its normal, and its distance from the origin on that normal.</summary>
         /// <param name="x">The X component of the normal.</param>
         /// <param name="y">The Y component of the normal.</param>
         /// <param name="z">The Z component of the normal.</param>
@@ -31,7 +31,7 @@ namespace System.Numerics
             this = Create(x, y, z, d);
         }
 
-        /// <summary>Creates a <see cref="Plane" /> object from a specified normal and the distance along the normal from the origin.</summary>
+        /// <summary>Initializes a <see cref="Plane" /> from a specified normal and the distance along the normal from the origin.</summary>
         /// <param name="normal">The plane's normal vector.</param>
         /// <param name="d">The plane's distance from the origin along its normal vector.</param>
         [Intrinsic]
@@ -40,7 +40,7 @@ namespace System.Numerics
             this = Create(normal, d);
         }
 
-        /// <summary>Creates a <see cref="Plane" /> object from a specified four-dimensional vector.</summary>
+        /// <summary>Initializes a <see cref="Plane" /> from a specified four-dimensional vector.</summary>
         /// <param name="value">A vector whose first three elements describe the normal vector, and whose <see cref="Vector4.W" /> defines the distance along that normal from the origin.</param>
         [Intrinsic]
         public Plane(Vector4 value)
@@ -48,21 +48,27 @@ namespace System.Numerics
             this = value.AsPlane();
         }
 
-        /// <summary>Creates a <see cref="Plane" /> object from the X, Y, and Z components of its normal, and its distance from the origin on that normal.</summary>
+        /// <summary>Creates a <see cref="Plane" /> from a specified four-dimensional vector.</summary>
+        /// <param name="value">A vector whose first three elements describe the normal vector, and whose <see cref="Vector4.W" /> defines the distance along that normal from the origin.</param>
+        /// <remarks>A <see cref="Plane" /> created using <paramref name="value" />.</remarks>
+        [Intrinsic]
+        public static Plane Create(Vector4 value) => value.AsPlane();
+
+        /// <summary>Creates a <see cref="Plane" /> from a specified normal and the distance along the normal from the origin.</summary>
+        /// <param name="normal">The plane's normal vector.</param>
+        /// <param name="d">The plane's distance from the origin along its normal vector.</param>\
+        /// <returns>A <see cref="Plane" /> created from a specified normal and the distance along the normal from the origin.</returns>
+        [Intrinsic]
+        public static Plane Create(Vector3 normal, float d) => Vector4.Create(normal, d).AsPlane();
+
+        /// <summary>Creates a <see cref="Plane" /> from the X, Y, and Z components of its normal, and its distance from the origin on that normal.</summary>
         /// <param name="x">The X component of the normal.</param>
         /// <param name="y">The Y component of the normal.</param>
         /// <param name="z">The Z component of the normal.</param>
         /// <param name="d">The distance of the plane along its normal from the origin.</param>
-        /// <returns>A new <see cref="Plane" /> object from the X, Y, and Z components of its normal, and its distance from the origin on that normal.</returns>
+        /// <returns>A <see cref="Plane" /> created from the X, Y, and Z components of its normal, and its distance from the origin on that normal.</returns>
         [Intrinsic]
-        internal static Plane Create(float x, float y, float z, float d) => Vector128.Create(x, y, z, d).AsPlane();
-
-        /// <summary>Creates a <see cref="Plane" /> object from a specified normal and the distance along the normal from the origin.</summary>
-        /// <param name="normal">The plane's normal vector.</param>
-        /// <param name="d">The plane's distance from the origin along its normal vector.</param>\
-        /// <returns>A new <see cref="Plane" /> object from a specified normal and the distance along the normal from the origin.</returns>
-        [Intrinsic]
-        internal static Plane Create(Vector3 normal, float d) => Vector4.Create(normal, d).AsPlane();
+        public static Plane Create(float x, float y, float z, float d) => Vector128.Create(x, y, z, d).AsPlane();
 
         /// <summary>Creates a <see cref="Plane" /> object that contains three specified points.</summary>
         /// <param name="point1">The first point defining the plane.</param>
@@ -127,7 +133,7 @@ namespace System.Numerics
 
             return Vector128.AndNot(
                 (value.AsVector128() / Vector128.Sqrt(lengthSquared)),
-                Vector128.Equals(lengthSquared, Vector128.Create(float.PositiveInfinity))
+                Vector128.Equals(lengthSquared, Vector128<float>.PositiveInfinity)
             ).AsPlane();
         }
 
@@ -139,8 +145,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane Transform(Plane plane, Matrix4x4 matrix)
         {
-            Matrix4x4.Impl.Invert(matrix.AsImpl(), out Matrix4x4.Impl inverseMatrix);
-            return Vector4.Transform(plane.AsVector4(), Matrix4x4.Impl.Transpose(inverseMatrix)).AsPlane();
+            Matrix4x4.Invert(matrix, out Matrix4x4 inverseMatrix);
+            return Vector4.Transform(plane.AsVector4(), Matrix4x4.Transpose(inverseMatrix)).AsPlane();
         }
 
         /// <summary>Transforms a normalized plane by a Quaternion rotation.</summary>

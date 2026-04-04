@@ -119,11 +119,9 @@ void deps_json_t::reconcile_libraries_with_targets(
             continue;
         }
 
-        const pal::string_t& hash = library.value[_X("sha512")].GetString();
         bool serviceable = library.value[_X("serviceable")].GetBool();
 
         pal::string_t library_path = get_optional_path(library.value, _X("path"));
-        pal::string_t library_hash_path = get_optional_path(library.value, _X("hashPath"));
         pal::string_t runtime_store_manifest_list = get_optional_path(library.value, _X("runtimeStoreManifestName"));
         pal::string_t library_type = to_lower(library.value[_X("type")].GetString());
 
@@ -153,9 +151,7 @@ void deps_json_t::reconcile_libraries_with_targets(
                 entry.library_name = library_name;
                 entry.library_version = library_version;
                 entry.library_type = library_type;
-                entry.library_hash = hash;
                 entry.library_path = library_path;
-                entry.library_hash_path = library_hash_path;
                 entry.runtime_store_manifest_list = runtime_store_manifest_list;
                 entry.asset_type = static_cast<deps_entry_t::asset_types>(i);
                 entry.is_serviceable = serviceable;
@@ -166,12 +162,13 @@ void deps_json_t::reconcile_libraries_with_targets(
 
                 if (trace::is_enabled())
                 {
-                    trace::info(_X("    Entry %zu for asset name: %s, relpath: %s, assemblyVersion %s, fileVersion %s"),
+                    trace::info(_X("    Entry %zu for asset name: %s, relpath: %s, assemblyVersion %s, fileVersion %s, localPath %s"),
                         m_deps_entries[i].size(),
                         entry.asset.name.c_str(),
                         entry.asset.relative_path.c_str(),
                         entry.asset.assembly_version.as_str().c_str(),
-                        entry.asset.file_version.as_str().c_str());
+                        entry.asset.file_version.as_str().c_str(),
+                        entry.asset.local_path.empty() ? _X("(not set)") : entry.asset.local_path.c_str());
                 }
 
                 m_deps_entries[i].push_back(std::move(entry));
@@ -403,33 +400,37 @@ void deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, co
                     continue;
                 }
 
-                version_t assembly_version, file_version;
+                version_t assembly_version = version_t::empty();
+                version_t file_version = version_t::empty();
 
-                const pal::string_t& assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
+                pal::string_t assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
                 if (!assembly_version_str.empty())
                 {
                     version_t::parse(assembly_version_str, &assembly_version);
                 }
 
-                const pal::string_t& file_version_str = get_optional_property(file.value, _X("fileVersion"));
+                pal::string_t file_version_str = get_optional_property(file.value, _X("fileVersion"));
                 if (!file_version_str.empty())
                 {
                     version_t::parse(file_version_str, &file_version);
                 }
 
+                pal::string_t local_path = get_optional_path(file.value, _X("localPath"));
+
                 pal::string_t file_name{file.name.GetString()};
-                deps_asset_t asset(get_filename_without_ext(file_name), file_name, assembly_version, file_version);
+                deps_asset_t asset(get_filename_without_ext(file_name), file_name, assembly_version, file_version, local_path);
 
                 const auto& rid = file.value[_X("rid")].GetString();
 
                 if (trace::is_enabled())
                 {
-                    trace::info(_X("  %s asset: %s rid=%s assemblyVersion=%s fileVersion=%s"),
+                    trace::info(_X("  %s asset: %s rid=%s assemblyVersion=%s fileVersion=%s localPath=%s"),
                         deps_entry_t::s_known_asset_types[asset_type_index],
                         asset.relative_path.c_str(),
                         rid,
                         asset.assembly_version.as_str().c_str(),
-                        asset.file_version.as_str().c_str());
+                        asset.file_version.as_str().c_str(),
+                        asset.local_path.empty() ? _X("(not set)") : asset.local_path.c_str());
                 }
 
                 assets.libs[package.name.GetString()][asset_type_index].rid_assets[rid].push_back(asset);
@@ -462,29 +463,33 @@ void deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
             asset_files.reserve(files.MemberCount());
             for (const auto& file : files)
             {
-                version_t assembly_version, file_version;
+                version_t assembly_version = version_t::empty();
+                version_t file_version = version_t::empty();
 
-                const pal::string_t& assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
+                pal::string_t assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
                 if (assembly_version_str.length() > 0)
                 {
                     version_t::parse(assembly_version_str, &assembly_version);
                 }
 
-                const pal::string_t& file_version_str = get_optional_property(file.value, _X("fileVersion"));
+                pal::string_t file_version_str = get_optional_property(file.value, _X("fileVersion"));
                 if (file_version_str.length() > 0)
                 {
                     version_t::parse(file_version_str, &file_version);
                 }
 
+                pal::string_t local_path = get_optional_path(file.value, _X("localPath"));
+
                 pal::string_t file_name{file.name.GetString()};
-                deps_asset_t asset(get_filename_without_ext(file_name), file_name, assembly_version, file_version);
+                deps_asset_t asset(get_filename_without_ext(file_name), file_name, assembly_version, file_version, local_path);
 
                 if (trace::is_enabled())
                 {
-                    trace::info(_X("    %s assemblyVersion=%s fileVersion=%s"),
+                    trace::info(_X("    %s assemblyVersion=%s fileVersion=%s localPath=%s"),
                         asset.relative_path.c_str(),
                         asset.assembly_version.as_str().c_str(),
-                        asset.file_version.as_str().c_str());
+                        asset.file_version.as_str().c_str(),
+                        asset.local_path.empty() ? _X("(not set)") : asset.local_path.c_str());
                 }
 
                 asset_files.push_back(std::move(asset));
@@ -587,7 +592,10 @@ void deps_json_t::load(bool is_framework_dependent, std::function<void(const jso
 
     json_parser_t json;
     if (!json.parse_file(m_deps_file))
+    {
+        trace::error(_X("Failed to parse file [%s]. %s"), m_deps_file.c_str(), json.get_error_message().c_str());
         return;
+    }
 
     m_valid = true;
     const auto& runtime_target = json.document()[_X("runtimeTarget")];

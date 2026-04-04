@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.Versioning;
 using System.Security;
+using Microsoft.Win32;
 
 namespace System.Diagnostics
 {
@@ -46,5 +49,54 @@ namespace System.Diagnostics
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public SecureString? Password { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to start the process in a new process group.
+        /// </summary>
+        /// <value><c>true</c> if the process should be started in a new process group; otherwise, <c>false</c>. The default is <c>false</c>.</value>
+        /// <remarks>
+        /// <para>When a process is created in a new process group, it becomes the root of a new process group.</para>
+        /// <para>An implicit call to <c>SetConsoleCtrlHandler(NULL,TRUE)</c> is made on behalf of the new process, this means that the new process has CTRL+C disabled.</para>
+        /// <para>This property is useful for preventing console control events sent to the child process from affecting the parent process.</para>
+        /// </remarks>
+        [SupportedOSPlatform("windows")]
+        public bool CreateNewProcessGroup { get; set; }
+
+        public string[] Verbs
+        {
+            get
+            {
+                string extension = Path.GetExtension(FileName);
+                if (string.IsNullOrEmpty(extension))
+                    return Array.Empty<string>();
+
+                using (RegistryKey? key = Registry.ClassesRoot.OpenSubKey(extension))
+                {
+                    if (key == null)
+                        return Array.Empty<string>();
+
+                    string? value = key.GetValue(string.Empty) as string;
+                    if (string.IsNullOrEmpty(value))
+                        return Array.Empty<string>();
+
+                    using (RegistryKey? subKey = Registry.ClassesRoot.OpenSubKey(value + "\\shell"))
+                    {
+                        if (subKey == null)
+                            return Array.Empty<string>();
+
+                        string[] names = subKey.GetSubKeyNames();
+                        ArrayBuilder<string> verbs = default;
+                        foreach (string name in names)
+                        {
+                            if (!string.Equals(name, "new", StringComparison.OrdinalIgnoreCase))
+                            {
+                                verbs.Add(name);
+                            }
+                        }
+                        return verbs.ToArray();
+                    }
+                }
+            }
+        }
     }
 }

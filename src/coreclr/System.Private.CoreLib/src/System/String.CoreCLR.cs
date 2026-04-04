@@ -5,27 +5,21 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
     public partial class String
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_StrCns")]
-        private static unsafe partial string* StrCnsInternal(uint rid, IntPtr scopeHandle);
-
-        // implementation of CORINFO_HELP_STRCNS
-        [StackTraceHidden]
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        internal static unsafe string StrCns(uint rid, IntPtr scopeHandle)
-        {
-            string* ptr = StrCnsInternal(rid, scopeHandle);
-            Debug.Assert(ptr != null);
-            return *ptr;
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern string FastAllocateString(int length);
+        [RequiresUnsafe]
+        internal static extern unsafe string FastAllocateString(MethodTable *pMT, nint length);
+
+        [DebuggerHidden]
+        internal static unsafe string FastAllocateString(nint length)
+        {
+            return FastAllocateString(TypeHandle.TypeHandleOf<string>().AsMethodTable(), length);
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_Intern")]
         private static partial void Intern(StringHandleOnStack src);
@@ -34,7 +28,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(str);
             Intern(new StringHandleOnStack(ref str!));
-            return str!;
+            return str;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]
@@ -57,6 +51,7 @@ namespace System
             }
         }
 
+        [RequiresUnsafe]
         internal unsafe int GetBytesFromEncoding(byte* pbNativeBuffer, int cbNativeBuffer, Encoding encoding)
         {
             // encoding == Encoding.UTF8

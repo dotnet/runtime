@@ -12,19 +12,13 @@
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
 
-  <!-- Allow overriding the LKG ILCompiler package with a specific version. -->
-  <PropertyGroup Condition="'$(UseNativeAotForComponents)' == 'true' and '$(PublishAot)' == 'true' and '$(MicrosoftDotNetILCompilerVersion)' != ''">
-    <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
+  <!-- Use the SDK's ILCompilerTargetsPath hook to import ILC targets in the correct order,
+       matching how the shipping SDK imports them. -->
+  <PropertyGroup Condition="'$(PublishAot)' == 'true' and '$(UseBootstrapLayout)' == 'true'">
+    <_IlcReferencedAsPackage>false</_IlcReferencedAsPackage>
+    <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(UseNativeAotForComponents)' == 'true' and '$(PublishAot)' == 'true' and '$(MicrosoftDotNetILCompilerVersion)' != ''">
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
-    <PackageReference Include="runtime.$(NETCoreSdkRuntimeIdentifier).Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
-  </ItemGroup>
 
   <Target Name="LocateNativeCompiler"
           Condition="'$(UseNativeAotForComponents)' == 'true' and '$(HostOS)' != 'windows'"

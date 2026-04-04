@@ -210,7 +210,6 @@ public:
         Holder(SpinLock * s) :
           m_pSpinLock(s)
         {
-            SCAN_SCOPE_BEGIN;
             STATIC_CONTRACT_GC_NOTRIGGER;
 
             m_pSpinLock->GetLock();
@@ -218,8 +217,6 @@ public:
 
         ~Holder()
         {
-            SCAN_SCOPE_END;
-
             m_pSpinLock->FreeLock();
         }
     };

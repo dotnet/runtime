@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -11,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.NativeRebuild.Tests
 {
+    [TestCategory("native")]
     public class SimpleSourceChangeRebuildTest : NativeRebuildTestsBase
     {
         public SimpleSourceChangeRebuildTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -20,7 +22,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        public async void SimpleStringChangeInSource(Configuration config, bool aot, bool nativeRelink, bool invariant)
+        public async Task SimpleStringChangeInSource(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_simple");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, nativeRelink, invariant);

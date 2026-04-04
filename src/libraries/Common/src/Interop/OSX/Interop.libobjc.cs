@@ -46,14 +46,17 @@ internal static partial class Interop
                 }
             }
 
-            if (major == 10 && minor == 16)
+#if TARGET_OSX
+            if (major == 16)
             {
-                // We get "compat" version for 11.0 unless we build with updated SDK.
-                // Hopefully that will be before 11.x comes out
-                // For now, this maps 10.16 to 11.0.
-                major = 11;
-                minor = 0;
+                // MacOS Tahoe returns a compatibility version unless it is built with a new SDK. Map the compatibility
+                // version to the "correct" version. This assumes the minor versions will map unchanged.
+                // 16.0 => 26.0
+                // 16.1 => 26.1
+                // etc
+                major = 26;
             }
+#endif
 
             return new Version(major, minor, patch);
         }

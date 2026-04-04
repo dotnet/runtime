@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
 
             DependencyList result = Dataflow.ReflectionMethodBodyScanner.ProcessTypeGetTypeDataflow(factory, mdManager.FlowAnnotations, mdManager.Logger, _type);
 
-            MetadataType baseType = _type.MetadataBaseType;
+            MetadataType baseType = _type.BaseType;
             if (baseType != null && flowAnnotations.GetTypeAnnotation(baseType) != default)
             {
                 result.Add(factory.ObjectGetTypeFlowDependencies(baseType), "Apply annotations to bases");

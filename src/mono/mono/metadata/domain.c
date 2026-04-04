@@ -114,7 +114,7 @@ mono_init_internal (const char *root_domain_name)
 
 #if defined(HOST_WIN32) && HAVE_API_SUPPORT_WIN32_SET_ERROR_MODE
 	/* Avoid system error message boxes. */
-	SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
+	SetErrorMode (SEM_FAILCRITICALERRORS);
 #endif
 
 #ifndef HOST_WIN32
@@ -237,6 +237,9 @@ mono_init_internal (const char *root_domain_name)
 
 	/* There is only one thread class */
 	mono_defaults.internal_thread_class = mono_defaults.thread_class;
+
+	mono_defaults.gc_class = mono_class_load_from_name (
+                mono_defaults.corlib, "System", "GC");
 
 #if defined(HOST_DARWIN)
 	mono_defaults.autoreleasepool_class = mono_class_try_load_from_name (

@@ -4,11 +4,14 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+#endif
 
 namespace System.Text.Unicode
 {
@@ -17,6 +20,7 @@ namespace System.Text.Unicode
         // On method return, pInputBufferRemaining and pOutputBufferRemaining will both point to where
         // the next byte would have been consumed from / the next char would have been written to.
         // inputLength in bytes, outputCharsRemaining in chars.
+        [RequiresUnsafe]
         public static OperationStatus TranscodeToUtf16(byte* pInputBuffer, int inputLength, char* pOutputBuffer, int outputCharsRemaining, out byte* pInputBufferRemaining, out char* pOutputBufferRemaining)
         {
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");
@@ -835,6 +839,7 @@ namespace System.Text.Unicode
         // On method return, pInputBufferRemaining and pOutputBufferRemaining will both point to where
         // the next char would have been consumed from / the next byte would have been written to.
         // inputLength in chars, outputBytesRemaining in bytes.
+        [RequiresUnsafe]
         public static OperationStatus TranscodeToUtf8(char* pInputBuffer, int inputLength, byte* pOutputBuffer, int outputBytesRemaining, out char* pInputBufferRemaining, out byte* pOutputBufferRemaining)
         {
             const int CharsPerDWord = sizeof(uint) / sizeof(char);
@@ -878,12 +883,14 @@ namespace System.Text.Unicode
             // vector is only used in those code paths, we leave it uninitialized if SSE4.1
             // is not enabled.
 
+#if NET
             Vector128<short> nonAsciiUtf16DataMask;
 
             if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
                 nonAsciiUtf16DataMask = Vector128.Create(unchecked((short)0xFF80)); // mask of non-ASCII bits in a UTF-16 char
             }
+#endif
 
             // Begin the main loop.
 
@@ -938,6 +945,7 @@ namespace System.Text.Unicode
                     uint inputCharsRemaining = (uint)(pFinalPosWhereCanReadDWordFromInputBuffer - pInputBuffer) + 2;
                     uint minElementsRemaining = (uint)Math.Min(inputCharsRemaining, outputBytesRemaining);
 
+#if NET
                     if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
                     {
                         // Try reading and writing 8 elements per iteration.
@@ -1081,6 +1089,7 @@ namespace System.Text.Unicode
                         goto AfterReadDWordSkipAllCharsAsciiCheck;
                     }
                     else
+#endif
                     {
                         // Can't use SSE41 x64, so we'll only read and write 4 elements per iteration.
                         uint maxIters = minElementsRemaining / 4;

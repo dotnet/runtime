@@ -30,7 +30,7 @@ Due to these differences, the exact result of string compariso on Apple platform
 
 The number of `CompareOptions` and `NSStringCompareOptions` combinations are limited. Originally supported combinations can be found [here for CompareOptions](https://learn.microsoft.com/dotnet/api/system.globalization.compareoptions) and [here for NSStringCompareOptions](https://developer.apple.com/documentation/foundation/nsstringcompareoptions).
 
-- `IgnoreSymbols` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
+- `IgnoreSymbols` is supported by filtering ignorable symbols on the managed side before invoking the native API.
 
 - `IgnoreKanaType` is implemented using [`kCFStringTransformHiraganaKatakana`](https://developer.apple.com/documentation/corefoundation/kcfstringtransformhiraganakatakana?language=objc) then comparing strings.
 
@@ -71,10 +71,6 @@ The number of `CompareOptions` and `NSStringCompareOptions` combinations are lim
 
    `CompareOptions.IgnoreWidth` is mapped to `NSStringCompareOptions.NSWidthInsensitiveSearch | NSStringCompareOptions.NSLiteralSearch`
 
-- All combinations that contain below `CompareOptions` always throw `PlatformNotSupportedException`:
-
-   `IgnoreSymbols`
-
 ## String starts with / ends with
 
 Affected public APIs:
@@ -91,7 +87,7 @@ Apple Native API does not expose locale-sensitive endsWith/startsWith function. 
 
 - `IgnoreSymbols`
 
-   As there is no IgnoreSymbols equivalent in NSStringCompareOptions all `CompareOptions` combinations that include `IgnoreSymbols` throw `PlatformNotSupportedException`
+   Supported by filtering ignorable symbols on the managed side prior to comparison using native API.
 
 ## String indexing
 
@@ -129,7 +125,7 @@ Not covered case:
 
 - `IgnoreSymbols`
 
-   As there is no IgnoreSymbols equivalent in NSStringCompareOptions all `CompareOptions` combinations that include `IgnoreSymbols` throw `PlatformNotSupportedException`
+   Supported by filtering ignorable symbols on the managed side prior to comparison using native API.
 
 - Some letters consist of more than one grapheme.
 

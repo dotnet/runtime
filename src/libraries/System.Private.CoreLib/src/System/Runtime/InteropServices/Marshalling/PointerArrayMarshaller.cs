@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.Marshalling
@@ -58,8 +59,14 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanaged">The unmanaged allocation to get a destination for.</param>
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The <see cref="Span{TUnmanagedElement}"/> of unmanaged elements.</returns>
+        [RequiresUnsafe]
         public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
-            => new Span<TUnmanagedElement>(unmanaged, numElements);
+        {
+            if (unmanaged is null)
+                return [];
+
+            return new Span<TUnmanagedElement>(unmanaged, numElements);
+        }
 
         /// <summary>
         /// Allocates memory for the managed representation of the array.
@@ -67,6 +74,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanaged">The unmanaged array.</param>
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The managed array.</returns>
+        [RequiresUnsafe]
         public static T*[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged is null)
@@ -89,13 +97,20 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanagedValue">The unmanaged array to get a source for.</param>
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The <see cref="ReadOnlySpan{TUnmanagedElement}"/> containing the unmanaged elements to marshal.</returns>
+        [RequiresUnsafe]
         public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
-            => new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
+        {
+            if (unmanagedValue is null)
+                return [];
+
+            return new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
+        }
 
         /// <summary>
         /// Frees memory for the unmanaged array.
         /// </summary>
         /// <param name="unmanaged">The unmanaged array.</param>
+        [RequiresUnsafe]
         public static void Free(TUnmanagedElement* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
@@ -174,6 +189,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Returns the unmanaged value representing the array.
             /// </summary>
             /// <returns>A pointer to the beginning of the unmanaged value.</returns>
+            [RequiresUnsafe]
             public TUnmanagedElement* ToUnmanaged()
             {
                 // Unsafe.AsPointer is safe since buffer must be pinned

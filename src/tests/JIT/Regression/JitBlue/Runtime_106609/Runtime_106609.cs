@@ -7,9 +7,12 @@
 // Reduced from 129.5 KiB to 0.4 KiB in 00:04:55
 // Hits JIT assert in Release:
 // Assertion failed 'link' in 'Program:Main(Fuzzlyn.ExecutionServer.IRuntime)' during 'Optimize Valnum CSEs' (IL size 39; hash 0xade6b36b; FullOpts)
-// 
+//
 //     File: D:\a\_work\1\s\src\coreclr\jit\optcse.cpp Line: 5295
-// 
+//
+
+namespace Runtime_106609;
+
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -17,18 +20,15 @@ using Xunit;
 
 public class Runtime_106609
 {
-    [Fact]
+    [ConditionalFact(typeof(AdvSimd), nameof(AdvSimd.IsSupported))]
     public static void TestEntrypoint()
     {
-        if (AdvSimd.IsSupported)
+        try
         {
-            try
-            {
-                Test();
-            }
-            catch
-            {
-            }
+            Test();
+        }
+        catch
+        {
         }
     }
 

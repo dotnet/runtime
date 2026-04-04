@@ -7,6 +7,8 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Security.Tests
 {
@@ -36,17 +38,30 @@ namespace System.Net.Security.Tests
             {
                 // TLS 1.3 can generate some extra messages and we may get reset if test sends unidirectional traffic
                 // and extra packet stays in socket buffer.
-
-                // This ping-ping should flush leftovers from the handshake.
-                // We use sync method to preserve socket in default blocking state
-                // (as we don't go back once Async is used at least once)
-                ssl1.Write(new byte[1]);
-                ssl2.Write(new byte[1]);
-                Assert.Equal(1, ssl2.Read(new byte[1]));
-                Assert.Equal(1, ssl1.Read(new byte[1]));
+                await ssl1.WriteAsync(new byte[1]);
+                await ssl2.WriteAsync(new byte[1]);
+                Assert.Equal(1, await ssl2.ReadAsync(new byte[1]));
+                Assert.Equal(1, await ssl1.ReadAsync(new byte[1]));
             }
 
             return new StreamPair(ssl1, ssl2);
+        }
+
+        [ConditionalTheory]
+        [InlineData(ReadWriteMode.SyncArray)]
+        [InlineData(ReadWriteMode.SyncSpan)]
+        [InlineData(ReadWriteMode.AsyncArray)]
+        [InlineData(ReadWriteMode.AsyncMemory)]
+        [InlineData(ReadWriteMode.SyncAPM)]
+        [InlineData(ReadWriteMode.AsyncAPM)]
+        public override Task ZeroByteRead_PerformsZeroByteReadOnUnderlyingStreamWhenDataNeeded(ReadWriteMode mode)
+        {
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                throw new SkipTestException("NetworkFramework works in Async and does not issue zero-byte reads to underlying stream.");
+            }
+
+            return base.ZeroByteRead_PerformsZeroByteReadOnUnderlyingStreamWhenDataNeeded(mode);
         }
     }
 

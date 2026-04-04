@@ -452,15 +452,34 @@ namespace System.Text.RegularExpressions.Tests
                             new CaptureData("x", 3, 1),
                         }
                     };
+
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/111051
+                    yield return new object[]
+                    {
+                        engine, @"anyexpress1(?<=(.(any express|(any express)*)+?)anyexpress1)", "anystring anyexpress1", RegexOptions.None, new[]
+                        {
+                            new CaptureData("anyexpress1", 10, 11),
+                        }
+                    };
                 }
 
-                // Fails on .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
+                // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/62094
                 yield return new object[]
                 {
                     engine, @"(?:){93}", "x", RegexOptions.None, new[]
                     {
                         new CaptureData("", 0, 0),
                         new CaptureData("", 1, 0)
+                    }
+                };
+
+                // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/43314
+                yield return new object[]
+                {
+                    engine, @"(?:(?:0?)+?(?:a?)+?)?", "0a", RegexOptions.None, new[]
+                    {
+                        new CaptureData("0a", 0, 2),
+                        new CaptureData("", 2, 0),
                     }
                 };
 #endif
@@ -530,9 +549,9 @@ namespace System.Text.RegularExpressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)(-1), TimeSpan.FromSeconds(1)));
 
-            // 0x400 is new NonBacktracking mode that is now valid, 0x800 is still invalid
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x800));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x800, TimeSpan.FromSeconds(1)));
+            // 0x800 is new AnyNewLine mode that is now valid, 0x1000 is still invalid
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x1000));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.Matches("input", "pattern", (RegexOptions)0x1000, TimeSpan.FromSeconds(1)));
 
             // MatchTimeout is invalid
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => Regex.Matches("input", "pattern", RegexOptions.None, TimeSpan.Zero));

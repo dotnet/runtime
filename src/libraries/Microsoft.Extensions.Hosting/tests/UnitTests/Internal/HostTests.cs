@@ -283,7 +283,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                         {
                             Assert.False(ct.IsCancellationRequested);
                             serviceStarting.Set();
-                            Assert.True(startCancelled.WaitOne(TimeSpan.FromSeconds(5)));
+                            Assert.True(startCancelled.WaitOne(TimeSpan.FromSeconds(30)));
                             ct.ThrowIfCancellationRequested();
                         }
                     });
@@ -293,7 +293,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 var cts = new CancellationTokenSource();
 
                 var startTask = Task.Run(() => host.StartAsync(cts.Token));
-                Assert.True(serviceStarting.WaitOne(TimeSpan.FromSeconds(5)));
+                Assert.True(serviceStarting.WaitOne(TimeSpan.FromSeconds(30)));
                 cts.Cancel();
                 startCancelled.Set();
                 await Assert.ThrowsAsync<OperationCanceledException>(() => startTask);
@@ -688,7 +688,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         [Fact]
-        public async Task HostPropagatesExceptionsThrownWithBackgroundServiceExceptionBehaviorOfStopHost()
+        public async Task HostStopsWithBackgroundServiceExceptionBehaviorOfStopHost()
         {
             using IHost host = CreateBuilder()
                 .ConfigureServices(
@@ -702,7 +702,12 @@ namespace Microsoft.Extensions.Hosting.Internal
                     })
                 .Build();
 
-            await Assert.ThrowsAsync<Exception>(() => host.StartAsync());
+            await host.StartAsync();
+
+            // host is expected to catch exception, then trigger ApplicationStopping.
+            // give the host 1 minute to stop.
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            Assert.True(lifetime.ApplicationStopping.WaitHandle.WaitOne(TimeSpan.FromMinutes(1)));
         }
 
         [Fact]

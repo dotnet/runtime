@@ -15,5 +15,5 @@ public record AssertBundleOptions(
     bool ExpectSymbolsFile = true,
     bool AssertIcuAssets = true,
     bool AssertSymbolsFile = true,
-    bool? ExpectDotnetJsFingerprinting = false
+    bool? ExpectDotnetJsFingerprinting = null
 );

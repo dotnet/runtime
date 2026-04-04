@@ -32,7 +32,7 @@ internal static partial class Interop
             private  uint _isIPv6;                             // Non-zero if this is an IPv6 address; zero for IPv4.
             internal uint ScopeId;                             // Scope ID (IPv6 only)
 
-            public override unsafe int GetHashCode()
+            public override int GetHashCode()
             {
                 HashCode h = default;
                 h.AddBytes(MemoryMarshal.CreateReadOnlySpan(ref Address[0], IsIPv6 ? IPv6AddressBytes : IPv4AddressBytes));

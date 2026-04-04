@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 // Gluing macro expansions together requires nested macro invocation :/
 #ifndef DN_SIMDHASH_GLUE
 #define DN_SIMDHASH_GLUE_INNER(a, b) a ## b
@@ -48,15 +52,17 @@ DN_SIMDHASH_T_PTR
 DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator);
 #endif
 
-uint8_t
+dn_simdhash_add_result
 DN_SIMDHASH_TRY_ADD (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value);
 
-uint8_t
+dn_simdhash_add_result
 DN_SIMDHASH_TRY_ADD_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value);
 
+// result is an optional parameter that will be set to the value of the item if it was found.
 uint8_t
 DN_SIMDHASH_TRY_GET_VALUE (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T *result);
 
+// result is an optional parameter that will be set to the value of the item if it was found.
 uint8_t
 DN_SIMDHASH_TRY_GET_VALUE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T *result);
 
@@ -74,3 +80,7 @@ DN_SIMDHASH_TRY_REPLACE_VALUE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY
 
 void
 DN_SIMDHASH_FOREACH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_FOREACH_FUNC func, void *user_data);
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus

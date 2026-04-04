@@ -55,6 +55,12 @@ namespace System.Net.Security.Tests
             if (PlatformDetection.IsAndroid)
                 return false;
 
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                // Network.framework CipherSuite APIs doesn't enforce the given list.
+                return false;
+            }
+
             try
             {
                 new CipherSuitesPolicy(Array.Empty<TlsCipherSuite>());
@@ -65,14 +71,14 @@ namespace System.Net.Security.Tests
             return false;
         });
 
-        [ConditionalFact(nameof(IsKnownPlatformSupportingTls13))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(IsKnownPlatformSupportingTls13))]
         public void Tls13IsSupported_GetValue_ReturnsTrue()
         {
             // Validate that flag used in this file works correctly
             Assert.True(Tls13Supported);
         }
 
-        [ConditionalFact(nameof(Tls13Supported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(Tls13Supported))]
         public void NegotiatedCipherSuite_SslProtocolIsTls13_ShouldBeTls13()
         {
             var p = new ConnectionParams()
@@ -125,7 +131,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicySupported))]
         public void CipherSuitesPolicy_AllowSomeCipherSuitesWithNoEncryptionOption_Fails()
         {
             CheckPrereqsForNonTls13Tests(1);
@@ -142,7 +148,7 @@ namespace System.Net.Security.Tests
             ret.Failed();
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicySupported))]
         public void CipherSuitesPolicy_NothingAllowed_Fails()
         {
             CipherSuitesPolicy csp = BuildPolicy();
@@ -157,7 +163,7 @@ namespace System.Net.Security.Tests
             ret.Failed();
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicyAndTls13Supported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicyAndTls13Supported))]
         public void CipherSuitesPolicy_AllowOneOnOneSideTls13_Success()
         {
             bool hasSucceededAtLeastOnce = false;
@@ -167,7 +173,7 @@ namespace System.Net.Security.Tests
             Assert.True(hasSucceededAtLeastOnce);
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicySupported))]
         public void CipherSuitesPolicy_AllowTwoOnBothSidesWithSingleOverlapNonTls13_Success()
         {
             CheckPrereqsForNonTls13Tests(3);
@@ -193,7 +199,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicySupported))]
         public void CipherSuitesPolicy_AllowTwoOnBothSidesWithNoOverlapNonTls13_Fails()
         {
             CheckPrereqsForNonTls13Tests(4);
@@ -218,7 +224,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicySupported))]
         public void CipherSuitesPolicy_AllowSameTwoOnBothSidesLessPreferredIsTls13_Success()
         {
             CheckPrereqsForNonTls13Tests(1);
@@ -242,7 +248,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicySupported))]
         public void CipherSuitesPolicy_TwoCipherSuitesWithAllOverlapping_Success()
         {
             CheckPrereqsForNonTls13Tests(2);
@@ -270,7 +276,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicySupported))]
         public void CipherSuitesPolicy_ThreeCipherSuitesWithTwoOverlapping_Success()
         {
             CheckPrereqsForNonTls13Tests(4);
@@ -301,7 +307,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicyAndTls13Supported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicyAndTls13Supported))]
         public void CipherSuitesPolicy_OnlyTls13CipherSuiteAllowedButChosenProtocolsDoesNotAllowIt_Fails()
         {
             var a = new ConnectionParams()
@@ -321,7 +327,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicyAndTls13Supported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicyAndTls13Supported))]
         public void CipherSuitesPolicy_OnlyTls13CipherSuiteAllowedOtherSideDoesNotAllowTls13_Fails()
         {
             var a = new ConnectionParams()
@@ -343,7 +349,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicySupported))]
         public void CipherSuitesPolicy_OnlyNonTls13CipherSuitesAllowedButChosenProtocolDoesNotAllowIt_Fails()
         {
             CheckPrereqsForNonTls13Tests(1);
@@ -364,7 +370,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicySupported))]
         public void CipherSuitesPolicy_OnlyNonTls13CipherSuiteAllowedButOtherSideDoesNotAllowIt_Fails()
         {
             CheckPrereqsForNonTls13Tests(1);
@@ -393,7 +399,7 @@ namespace System.Net.Security.Tests
             Assert.Throws<ArgumentNullException>(() => new CipherSuitesPolicy(null));
         }
 
-        [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ConditionalFact(typeof(NegotiatedCipherSuiteTest), nameof(CipherSuitesPolicySupported))]
         public void CipherSuitesPolicy_AllowedCipherSuitesIncludesSubsetOfInput_Success()
         {
             TlsCipherSuite[] allCipherSuites = (TlsCipherSuite[])Enum.GetValues(typeof(TlsCipherSuite));

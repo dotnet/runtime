@@ -208,7 +208,9 @@ namespace System.Xml.XslCompiledTransformApiTests
             _xsl.Load(_xslFile, xs, new XmlUrlResolver());
 
             xs.EnableDocumentFunction = (bool)param5;
+#pragma warning disable SYSLIB0062 // XsltSettings.EnableScript is obsolete
             xs.EnableScript = (bool)param6;
+#pragma warning restore SYSLIB0062
             _xsl.Load(_xslFile, xs, new XmlUrlResolver());
 
             try

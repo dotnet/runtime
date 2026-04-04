@@ -53,5 +53,24 @@ internal static partial class Interop
             /// </summary>
             internal int cbSalt;
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct BCRYPT_PQDSA_PADDING_INFO
+        {
+            /// <summary>
+            ///     Address of the context buffer.
+            /// </summary>
+            internal IntPtr pbCtx;
+
+            /// <summary>
+            ///     The size, in bytes, of the context buffer.
+            /// </summary>
+            internal int cbCtx;
+
+            /// <summary>
+            ///     Null-terminated Unicode string that identifies the pre-hash algorithm used to create the hash.
+            /// </summary>
+            internal IntPtr pszPreHashAlgId;
+        }
     }
 }

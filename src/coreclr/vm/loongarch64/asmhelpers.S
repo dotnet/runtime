@@ -9,7 +9,7 @@ LEAF_ENTRY GetCurrentIP, _TEXT
     jirl  $r0, $ra, 0
 LEAF_END GetCurrentIP, _TEXT
 
-// LPVOID __stdcall GetCurrentSP(void)//
+// void* GetCurrentSP(void)//
 LEAF_ENTRY GetCurrentSP, _TEXT
     ori  $a0, $sp, 0
     jirl  $r0, $ra, 0
@@ -63,7 +63,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    la.local  $a2, g_sw_ww_table
+    la.local  $a2, g_write_watch_table
     ld.d  $a2, $a2, 0
 #endif
 
@@ -345,45 +345,6 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
     jirl  $r0, $ra, 0
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-
-//
-// If a preserved register were pushed onto the stack between
-// the managed caller and the H_M_F, ptrS0_S8 will point to its
-// location on the stack and it would have been updated on the
-// stack by the GC already and it will be popped back into the
-// appropriate register when the appropriate epilog is run.
-//
-// Otherwise, the register is preserved across all the code
-// in this HCALL or FCALL, so we need to update those registers
-// here because the GC will have updated our copies in the
-// frame.
-//
-// So, if ptrS0_S8 points into the MachState, we need to update
-// the register here.  That's what this macro does.
-//
-.macro RestoreRegMS regIndex, reg
-    // Incoming:
-    //
-    // $a0 = address of MachState
-    //
-    // $regIndex: Index of the register (s0-s8). For s0, index is 23.
-    //For s1, index is 24, and so on.
-    //
-    // $reg: Register name (e.g. s0, s1, etc)
-    //
-    // Get the address of the specified captured register from machine state
-    addi.d  $a2, $a0,(MachState__captureCalleeSavedRegisters + ((\regIndex-23)*8))
-
-    //// Get the content of specified preserved register pointer from machine state
-    ld.d  $a3, $a0, (MachState__ptrCalleeSavedRegisters + ((\regIndex-23)*8))
-
-    bne  $a2, $a3, LOCAL_LABEL(NoRestore_\reg)
-
-    ld.d  $\reg, $a2, 0
-LOCAL_LABEL(NoRestore_\reg):
-
-.endm
-
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -398,91 +359,28 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------
-// EXTERN_C int __fastcall HelperMethodFrameRestoreState(
-// INDEBUG_COMMA(HelperMethodFrame *pFrame)
-// MachState *pState
-// )
-LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
-#ifdef _DEBUG
-    ori  $a0, $a1, 0
-#endif
-
-    // If machine state is invalid, then simply exit
-    ld.w  $a1, $a0, MachState__isValid
-    beq  $a1, $zero, LOCAL_LABEL(Done)
-
-    RestoreRegMS  23, s0
-    RestoreRegMS  24, s1
-    RestoreRegMS  25, s2
-    RestoreRegMS  26, s3
-    RestoreRegMS  27, s4
-    RestoreRegMS  28, s5
-    RestoreRegMS  29, s6
-    RestoreRegMS  30, s7
-    RestoreRegMS  31, s8
-    RestoreRegMS  32, fp  //NOTE: here 32 is not the real fp register number.
-LOCAL_LABEL(Done):
-    // Its imperative that the return value of HelperMethodFrameRestoreState is zero
-    // as it is used in the state machine to loop until it becomes zero.
-    // Refer to HELPER_METHOD_FRAME_END macro for details.
-    ori  $a0, $zero, 0
-    jirl  $r0, $ra, 0
-LEAF_END HelperMethodFrameRestoreState, _TEXT
-
-//-----------------------------------------------------------------------------
-// This routine captures the machine state. It is used by helper method frame
-//-----------------------------------------------------------------------------
-//void LazyMachStateCaptureState(struct LazyMachState *pState)//
-LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-    // marks that this is not yet valid
-    st.w  $zero, $a0, MachState__isValid
-
-    st.d  $ra, $a0, LazyMachState_captureIp
-
-    // save $sp register.
-    st.d  $sp, $a0, LazyMachState_captureSp
-
-    // save non-volatile registers that can contain object references
-    addi.d  $a1, $a0, LazyMachState_captureCalleeSavedRegisters
-    st.d  $s0, $a1, 0
-    st.d  $s1, $a1, 8
-    st.d  $s2, $a1, 16
-    st.d  $s3, $a1, 24
-    st.d  $s4, $a1, 32
-    st.d  $s5, $a1, 40
-    st.d  $s6, $a1, 48
-    st.d  $s7, $a1, 56
-    st.d  $s8, $a1, 64
-    st.d  $fp, $a1, 72
-
-    jirl  $r0, $ra, 0
-LEAF_END LazyMachStateCaptureState, _TEXT
-
-// ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 0x20
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 0x60
 
     ori  $a0, $t2, 0
-    bl C_FUNC(NDirectImportWorker)
+    bl C_FUNC(PInvokeImportWorker)
     ori  $t4,$a0,0
 
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 0x60
     RESTORE_ARGUMENT_REGISTERS  $sp, 0x20
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG  $t4
-NESTED_END NDirectImportThunk, _TEXT
+NESTED_END PInvokeImportThunk, _TEXT
 
 #ifdef FEATURE_PREJIT
 //------------------------------------------------
@@ -506,7 +404,6 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     // Save arguments and return address
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG  gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 32
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
 
@@ -525,7 +422,6 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
     RESTORE_ARGUMENT_REGISTERS  $sp, 32
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
@@ -569,14 +465,13 @@ NESTED_END StubDispatchFixupStub, _TEXT
 #endif
 
 //
-// $t2 = UMEntryThunk*
+// $t2 = UMEntryThunkData*
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
     // Save arguments and return address
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
-    //PROLOG_SAVE_REG  gp, 16
     SAVE_ARGUMENT_REGISTERS  $sp, 32
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
 
@@ -588,7 +483,6 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
     RESTORE_ARGUMENT_REGISTERS  $sp, 32
-    //EPILOG_RESTORE_REG  gp, 16
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
@@ -636,6 +530,7 @@ NESTED_END TheUMEntryPrestub, _TEXT
 
 GenerateRedirectedStubWithFrame RedirectForThreadAbort, ThrowControlForThread
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
 //
@@ -704,39 +599,6 @@ LOCAL_LABEL(Fail):
     b       C_FUNC(ResolveWorkerAsmStub) // call the ResolveWorkerAsmStub method to transition into the VM
 NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 
-
-//NOTE:  Frame_Size = SIZEOF__ArgumentRegisters + SIZEOF__FloatArgumentRegisters + extra.
-//
-//     |gp   |
-//     |s0   |
-//     |$t2   |
-//     |t9   |
-//     |$a7   |
-//     |$a6   |
-//     |$a5   |
-//     |$a4   |
-//     |$a3   |
-//     |$a2   |
-//     |$a1   |
-//     |$a0   |
-//     |$ra   | $sp+8
-//     |fp   | $sp
-//
-//     |f19  | if needed.
-//     |f18  |
-//     |f17  |
-//     |f16  |
-//     |f15  |
-//     |f14  |
-//     |f13  |
-//     |f12  |
-//
-//#define UMThunkStub_Offset_t9    0x50
-#define UMThunkStub_Offset_Entry 0x58   // offset of saved UMEntryThunk *
-#define UMThunkStub_Offset_s0    0x60
-#define UMThunkStub_StackArgs    0x70   // Frame size.
-
-
 // ------------------------------------------------------------------
 // void ResolveWorkerAsmStub(args in regs $a0-$a7 & stack, t8:IndirectionCellAndFlags, $t2:DispatchToken)
 //
@@ -757,6 +619,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
     EPILOG_BRANCH_REG  $t4
 NESTED_END ResolveWorkerAsmStub, _TEXT
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_HIJACK
 // ------------------------------------------------------------------
@@ -776,10 +639,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // save any integral return value(s)
     st.d  $a0, $sp, 88
     st.d  $a1, $sp, 96
+    // save async continuation return value
+    st.d  $a2, $sp, 104
 
     // save any FP return value(s)
-    fst.d  $f0, $sp, 104
-    fst.d  $f1, $sp, 112
+    fst.d  $f0, $sp, 112
+    fst.d  $f1, $sp, 120
 
     ori  $a0, $sp, 0
     bl C_FUNC(OnHijackWorker)
@@ -789,10 +654,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore any integral return value(s)
     ld.d  $a0, $sp, 88
     ld.d  $a1, $sp, 96
+    // restore async continuation return value
+    ld.d  $a2, $sp, 104
 
     // restore any FP return value(s)
-    fld.d  $f0, $sp, 104
-    fld.d  $f1, $sp, 112
+    fld.d  $f0, $sp, 112
+    fld.d  $f1, $sp, 120
 
     EPILOG_RESTORE_REG_PAIR   23, 24, 16
     EPILOG_RESTORE_REG_PAIR   25, 26, 32
@@ -828,7 +695,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     //
     // $a0 = throwable
     // $a1 = PC to invoke
-    // $a2 = address of s0 register in CONTEXT record// used to restore the non-volatile registers of CrawlFrame
+    // $a2 = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
     // $a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
 
@@ -846,16 +713,16 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     // Save the SP of this function
     st.d  $sp, $a3, 0
 
-    ld.d  $fp, $a2, -8  // offset of fp in PCONTEXT relative to S0.
-    ld.d  $s0, $a2, 0
-    ld.d  $s1, $a2, 8
-    ld.d  $s2, $a2, 16
-    ld.d  $s3, $a2, 24
-    ld.d  $s4, $a2, 32
-    ld.d  $s5, $a2, 40
-    ld.d  $s6, $a2, 48
-    ld.d  $s7, $a2, 56
-    ld.d  $s8, $a2, 64
+    ld.d  $fp, $a2, OFFSETOF__CONTEXT__Fp
+    ld.d  $s0, $a2, OFFSETOF__CONTEXT__S0
+    ld.d  $s1, $a2, OFFSETOF__CONTEXT__S0+8
+    ld.d  $s2, $a2, OFFSETOF__CONTEXT__S0+16
+    ld.d  $s3, $a2, OFFSETOF__CONTEXT__S0+24
+    ld.d  $s4, $a2, OFFSETOF__CONTEXT__S0+32
+    ld.d  $s5, $a2, OFFSETOF__CONTEXT__S0+40
+    ld.d  $s6, $a2, OFFSETOF__CONTEXT__S0+48
+    ld.d  $s7, $a2, OFFSETOF__CONTEXT__S0+56
+    ld.d  $s8, $a2, OFFSETOF__CONTEXT__S0+64
 
     // Invoke the funclet
     jirl $ra, $a1, 0
@@ -894,39 +761,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 16
     EPILOG_RETURN
 NESTED_END CallEHFilterFunclet, _TEXT
-
-#ifdef FEATURE_COMINTEROP
-// Function used by COM interop to get floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-// On entry//
-//   $a0          : size of the FP result (4 or 8 bytes)
-//   $a1          : pointer to 64-bit buffer to receive result
-//
-// On exit:
-//   buffer pointed to by $a1 on entry contains the float or double argument as appropriate
-//
-LEAF_ENTRY getFPReturn, _TEXT
-    fst.d  $f0, $a1, 0
-LEAF_END getFPReturn, _TEXT
-
-// ------------------------------------------------------------------
-// Function used by COM interop to set floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-// On entry:
-//   $a0          : size of the FP result (4 or 8 bytes)
-//   $a1          : 32-bit or 64-bit FP result
-//
-// On exit:
-//   f0          : float result if x0 == 4
-//   f0          : double result if x0 == 8
-//
-LEAF_ENTRY setFPReturn, _TEXT
-    movgr2fr.d  $f0, $a1
-LEAF_END setFPReturn, _TEXT
-
-#endif // FEATURE_COMINTEROP
 
 // ------------------------------------------------------------------
 // void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
@@ -1088,6 +922,10 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG $t4
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+#endif // FEATURE_TIERED_COMPILATION
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -1098,13 +936,13 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
 NESTED_END JIT_Patchpoint, _TEXT
 
 // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
     move    $a1, $a0
     li.d    $a0, 0
     b C_FUNC(JIT_Patchpoint)
-LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_END JIT_PatchpointForced, _TEXT
 
-#endif // FEATURE_TIERED_COMPILATION
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 // ------------------------------------------------------------------
 // size_t GetThreadStaticsVariableOffset()
@@ -1149,9 +987,1822 @@ LEAF_END JIT_PollGC, _TEXT
 //a0 -This pointer
 //a1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
-    ld.w  $METHODDESC_REGISTER, $METHODDESC_REGISTER, ThisPtrRetBufPrecodeData__Target
+    ld.d  $METHODDESC_REGISTER, $METHODDESC_REGISTER, ThisPtrRetBufPrecodeData__Target
     move  $t0, $a0     // Move first arg pointer to temp register
     move  $a0, $a1     // Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
     move  $a1, $t0     // Move temp register to first arg register for static method with return buffer
     EPILOG_BRANCH_REG $METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   $a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a1
+    // $a0 already contains exception object
+    // $a1 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_Throw_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   $a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a1
+    // $a0 already contains exception object
+    // $a1 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_ThrowExact_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+    PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS $a0
+    // $a0 contains pointer to TransitionBlock
+    bl   C_FUNC(IL_Rethrow_Impl)
+    // Should never return
+    break 0
+NESTED_END IL_Rethrow, _TEXT
+
+#ifdef FEATURE_INTERPRETER
+
+// Align interpreter stack by adjusting it by 8 bytes
+LEAF_ENTRY InjectInterpStackAlign
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $r0, $t4, 0
+LEAF_END InjectInterpStackAlign
+
+// Copy arguments from the interpreter stack to the processor stack
+// The CPU stack slots are aligned to pointer size.
+LEAF_ENTRY Load_Stack
+    ld.wu $t4, $t2, 0    // SP offset
+    ld.wu $t5, $t2, 4    // number of stack slots
+    addi.d $t2, $t2, 8
+    add.d $t4, $sp, $t4
+    addi.d $t5, $t5, -8
+    blt $t5, $zero, LOCAL_LABEL(CopyBy1)
+LOCAL_LABEL(CopyLoop):
+    ld.d $t6, $t3, 0
+    st.d $t6, $t4, 0
+    addi.d $t3, $t3, 8
+    addi.d $t4, $t4, 8
+    addi.d $t5, $t5, -8
+    bge $t5, $zero, LOCAL_LABEL(CopyLoop)
+LOCAL_LABEL(CopyBy1):
+    addi.d $t5, $t5, 8
+    addi.d $t5, $t5, -1
+    blt $t5, $zero, LOCAL_LABEL(Done)
+LOCAL_LABEL(CopyLoop1):
+    ld.bu $t6, $t3, 0
+    st.b $t6, $t4, 0
+    addi.d $t3, $t3, 1
+    addi.d $t4, $t4, 1
+    addi.d $t5, $t5, -1
+    bge $t5, $zero, LOCAL_LABEL(CopyLoop1)
+LOCAL_LABEL(Done):
+    // Align $t3 to the stack slot size
+    addi.d $t3, $t3, 7
+    srli.d $t3, $t3, 3
+    slli.d $t3, $t3, 3
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $r0, $t4, 0
+LEAF_END Load_Stack
+
+// Load/Store stack reference routines (placeholders for GC tracking)
+LEAF_ENTRY Load_Stack_Ref
+    ld.wu $t4, $t2, 0   // SP offset ($zero-extend)
+    ld.wu $t5, $t2, 4   // size of the value type ($zero-extend)
+    add.d $t4, $sp, $t4
+    st.d $t3, $t4, 0
+    add.d $t3, $t3, $t5
+    // Align $t3 to the stack slot size
+    addi.d $t3, $t3, 7
+    srli.d $t3, $t3, 3
+    slli.d $t3, $t3, 3
+    ld.d $t4, $t2, 8    // Next routine pointer (aligned)
+    addi.d $t2, $t2, 16
+    jirl  $r0, $t4, 0
+LEAF_END Load_Stack_Ref
+
+LEAF_ENTRY Store_Stack_Ref
+    ld.wu $t5, $t2, 0   // SP offset ($zero-extend)
+    ld.wu $t4, $t2, 4   // size of the value type ($zero-extend)
+    add.d $t5, $sp, $t5
+    // Split large immediate into separate additions to avoid 12-bit limit
+    addi.d $t5, $t5, __PWTB_TransitionBlock
+    addi.d $t5, $t5, SIZEOF__TransitionBlock
+    ld.d $t5, $t5, 0    // $t5 = pointer to source data from native stack
+    // Copy the data from native stack to interpreter stack
+    // Copy 8 bytes at a time if possible
+    addi.d $t4, $t4, -8
+    blt $t4, $zero, LOCAL_LABEL(StoreRefCopyBy1)
+LOCAL_LABEL(StoreRefCopyLoop8):
+    ld.d $t6, $t5, 0
+    st.d $t6, $t3, 0
+    addi.d $t5, $t5, 8
+    addi.d $t3, $t3, 8
+    addi.d $t4, $t4, -8
+    bge $t4, $zero, LOCAL_LABEL(StoreRefCopyLoop8)
+LOCAL_LABEL(StoreRefCopyBy1):
+    // Copy remaining bytes (0-7)
+    addi.d $t4, $t4, 8
+    beq $t4, $zero, LOCAL_LABEL(StoreRefCopyDone)
+LOCAL_LABEL(StoreRefCopyLoop1):
+    ld.bu $t6, $t5, 0
+    st.b $t6, $t3, 0
+    addi.d $t5, $t5, 1
+    addi.d $t3, $t3, 1
+    addi.d $t4, $t4, -1
+    bne $t4, $zero, LOCAL_LABEL(StoreRefCopyLoop1)
+LOCAL_LABEL(StoreRefCopyDone):
+    // Align $t3 to the stack slot size
+    addi.d $t3, $t3, 7
+    srli.d $t3, $t3, 3
+    slli.d $t3, $t3, 3
+    ld.d $t4, $t2, 8    // Next routine pointer (aligned)
+    addi.d $t2, $t2, 16
+    jirl  $r0, $t4, 0
+LEAF_END Store_Stack_Ref
+
+// Macro for copying value types by reference
+// Arguments:
+//   argReg - source register containing pointer to value type
+//   $t4 - size of the value type (in bytes)
+//   $t3 - destination pointer (interpreter stack)
+.macro Copy_Ref argReg
+    // Copy 8 bytes at a time if possible
+    addi.d $t4, $t4, -8
+    blt $t4, $zero, LOCAL_LABEL(CopyBy1\argReg)
+LOCAL_LABEL(RefCopyLoop8\argReg):
+    ld.d $t6, \argReg, 0
+    st.d $t6, $t3, 0
+    addi.d \argReg, \argReg, 8
+    addi.d $t3, $t3, 8
+    addi.d $t4, $t4, -8
+    bge $t4, $zero, LOCAL_LABEL(RefCopyLoop8\argReg)
+LOCAL_LABEL(CopyBy1\argReg):
+    // Copy remaining bytes (0-7)
+    addi.d $t4, $t4, 8
+    beq $t4, $zero, LOCAL_LABEL(RefCopyDone\argReg)
+LOCAL_LABEL(RefCopyLoop1\argReg):
+    ld.bu $t6, \argReg, 0
+    st.b $t6, $t3, 0
+    addi.d \argReg, \argReg, 1
+    addi.d $t3, $t3, 1
+    addi.d $t4, $t4, -1
+    bne $t4, $zero, LOCAL_LABEL(RefCopyLoop1\argReg)
+LOCAL_LABEL(RefCopyDone\argReg):
+    // Align $t3 to the stack slot size
+    addi.d $t3, $t3, 7
+    srli.d $t3, $t3, 3
+    slli.d $t3, $t3, 3
+.endm
+
+// Routines for passing value type arguments by reference in general purpose registers A0..A7
+// from native code to the interpreter (Store direction)
+
+.macro Store_Ref argReg, argRegLower
+LEAF_ENTRY Store_Ref_\argReg
+    ld.d $t4, $t2, 0    // size of the value type
+    addi.d $t2, $t2, 8
+    Copy_Ref \argRegLower
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $r0, $t4, 0
+LEAF_END Store_Ref_\argReg
+.endm
+
+Store_Ref A0, $a0
+Store_Ref A1, $a1
+Store_Ref A2, $a2
+Store_Ref A3, $a3
+Store_Ref A4, $a4
+Store_Ref A5, $a5
+Store_Ref A6, $a6
+Store_Ref A7, $a7
+
+// Routines for loading value type arguments by reference from interpreter stack
+// to general purpose registers A0..A7 (Load direction - interpreter to native)
+
+.macro Load_Ref argReg, argRegLower
+LEAF_ENTRY Load_Ref_\argReg
+    ld.d $t4, $t2, 0    // size of the value type
+    addi.d $t2, $t2, 8
+    move \argRegLower, $t3  // Pass pointer to the value type in register
+    add.d $t3, $t3, $t4  // Advance interpreter stack pointer
+    // Align $t3 to the stack slot size
+    addi.d $t3, $t3, 7
+    srli.d $t3, $t3, 3
+    slli.d $t3, $t3, 3
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $r0, $t4, 0
+LEAF_END Load_Ref_\argReg
+.endm
+
+Load_Ref A0, $a0
+Load_Ref A1, $a1
+Load_Ref A2, $a2
+Load_Ref A3, $a3
+Load_Ref A4, $a4
+Load_Ref A5, $a5
+Load_Ref A6, $a6
+Load_Ref A7, $a7
+
+// Call jitted method routines
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a4, $fp, 16
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 16
+    st.d $a2, $a4, 0
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetVoid, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a4, $fp, 16
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ori $a0, $a2, 0  // buffer return pointer goes in $a0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 16
+    st.d $a2, $a4, 0
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetBuff, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    // Sign extend 8-bit to 64-bit
+    slli.d $a0, $a0, 56
+    srai.d $a0, $a0, 56
+    st.d $a0, $a2, 0
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    // Sign extend 16-bit to 64-bit
+    slli.d $a0, $a0, 48
+    srai.d $a0, $a0, 48
+    st.d $a0, $a2, 0
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI2, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    // Zero extend 8-bit to 64-bit
+    slli.d $a0, $a0, 56
+    srli.d $a0, $a0, 56
+    st.d $a0, $a2, 0
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    // Zero extend 16-bit to 64-bit
+    slli.d $a0, $a0, 48
+    srli.d $a0, $a0, 48
+    st.d $a0, $a2, 0
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU2, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    st.d $a0, $a2, 0
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI8, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    fst.d $fa0, $a2, 0
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetDouble, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    fst.s $fa0, $a2, 0
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetFloat, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    st.d $a0, $a2, 0
+    st.d $a1, $a2, 8
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet2I8, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    fst.d $fa0, $a2, 0
+    fst.d $fa1, $a2, 8
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet2Double, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    fst.s $fa0, $a2, 0
+    fst.s $fa1, $a2, 4
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet2Float, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    fst.d $fa0, $a2, 0
+    st.d $a0, $a2, 8
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetFloatInt, _TEXT
+
+// $a0 - routines array
+// $a1 - interpreter stack args location
+// $a2 - interpreter stack return value location
+// $a3 - stack arguments size (properly aligned)
+// $a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetIntFloat, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -32
+    st.d $a2, $fp, 16
+    st.d $a4, $fp, 24
+    sub.d $sp, $sp, $a3
+    ori $t2, $a0, 0
+    ori $t3, $a1, 0
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    ld.d $a4, $fp, 24
+    st.d $a2, $a4, 0
+    ld.d $a2, $fp, 16
+    st.d $a0, $a2, 0
+    fst.d $fa0, $a2, 8
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetIntFloat, _TEXT
+
+NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    // IR bytecode address
+    ori $t6, $METHODDESC_REGISTER, 0
+
+    INLINE_GETTHREAD $t5 // thrashes $a0
+    beq $t5, $zero, LOCAL_LABEL(NoManagedThreadOrCallStub)
+
+    li.d $t1, OFFSETOF__Thread__m_pInterpThreadContext
+    add.d $t1, $t5, $t1
+    ld.d $t4, $t1, 0
+    bne $t4, $zero, LOCAL_LABEL(HaveInterpThreadContext)
+
+LOCAL_LABEL(NoManagedThreadOrCallStub):
+    addi.d $a0, $sp, __PWTB_TransitionBlock
+    ori $a1, $t6, 0
+    bl C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub)
+    ori $t4, $a0, 0
+
+LOCAL_LABEL(HaveInterpThreadContext):
+
+    RESTORE_ARGUMENT_REGISTERS $sp, __PWTB_ArgumentRegisters
+    RESTORE_FLOAT_ARGUMENT_REGISTERS $sp, __PWTB_FloatArgumentRegisters
+
+    ld.d $t3, $t6, 0 // InterpMethod*
+    ld.d $t3, $t3, OFFSETOF__InterpMethod__pCallStub
+    beq $t3, $zero, LOCAL_LABEL(NoManagedThreadOrCallStub)
+    li.d $t2, OFFSETOF__CallStubHeader__Routines
+    add.d $t2, $t3, $t2
+    ld.d $t3, $t4, OFFSETOF__InterpThreadContext__pStackPointer
+    // $t6 contains IR bytecode address
+    // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    jirl  $ra, $t4, 0
+    // Fill in the ContinuationContext register
+    ld.d $a2, $sp, (__PWTB_ArgumentRegisters+16)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
+
+NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -16
+    // The +16 is for the $fp, $ra above
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $t6, 0 // the IR bytecode pointer
+    ori $a2, $zero, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetVoid, _TEXT
+
+NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -16
+    // The +16 is for the $fp, $ra above
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $t6, 0 // the IR bytecode pointer
+    ori $a2, $zero, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ld.d $a0, $a0, 0
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetI8, _TEXT
+
+NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -16
+    // The +16 is for the $fp, $ra above
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $t6, 0 // the IR bytecode pointer
+    ori $a2, $zero, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    fld.d $fa0, $a0, 0
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetDouble, _TEXT
+
+NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -16
+    // The +16 is for the $fp, $ra above
+    ori $a2, $a0, 0        // save caller's return buffer in $a2
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $t6, 0        // the IR bytecode pointer (x19)
+    bl C_FUNC(ExecuteInterpretedMethod)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1, 16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetBuff, _TEXT
+
+NESTED_ENTRY InterpreterStubRet2I8, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -16
+    // The +16 is for the $fp, $ra above
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $t6, 0 // the IR bytecode pointer
+    ori $a2, $zero, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ld.d $a1, $a0, 8
+    ld.d $a0, $a0, 0
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet2I8, _TEXT
+
+NESTED_ENTRY InterpreterStubRet2Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -16
+    // The +16 is for the $fp, $ra above
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $t6, 0 // the IR bytecode pointer
+    ori $a2, $zero, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    fld.d $fa0, $a0, 0
+    fld.d $fa1, $a0, 8
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet2Double, _TEXT
+
+NESTED_ENTRY InterpreterStubRetFloat, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -16
+    // The +16 is for the $fp, $ra above
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $t6, 0 // the IR bytecode pointer
+    ori $a2, $zero, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    fld.s $fa0, $a0, 0
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetFloat, _TEXT
+
+NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -16
+    // The +16 is for the $fp, $ra above
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $t6, 0 // the IR bytecode pointer
+    ori $a2, $zero, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    fld.s $fa0, $a0, 0
+    fld.s $fa1, $a0, 4
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet2Float, _TEXT
+
+NESTED_ENTRY InterpreterStubRetFloatInt, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -16
+    // The +16 is for the $fp, $ra above
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $t6, 0 // the IR bytecode pointer
+    ori $a2, $zero, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    fld.d $fa0, $a0, 0
+    ld.d $a0, $a0, 8
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetFloatInt, _TEXT
+
+NESTED_ENTRY InterpreterStubRetIntFloat, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, -16
+    // The +16 is for the $fp, $ra above
+    addi.d $a0, $sp, __PWTB_TransitionBlock + 16
+    ori $a1, $t6, 0 // the IR bytecode pointer
+    ori $a2, $zero, 0
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ld.d $a1, $a0, 0
+    fld.d $fa0, $a0, 8
+    ori $a0, $a1, 0
+    EPILOG_RESTORE_REG_PAIR_INDEXED   22, 1,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRetIntFloat, _TEXT
+
+// Copy arguments from the processor stack to the interpreter stack
+// The CPU stack slots are aligned to pointer size.
+
+LEAF_ENTRY Store_Stack
+    ld.wu $t4, $t2, 0 // SP offset
+    ld.wu $t5, $t2, 4 // size (multiple of stack slot size)
+    add.d $t4, $sp, $t4
+    // Split large immediate into separate additions to avoid 12-bit limit
+    addi.d $t4, $t4, __PWTB_TransitionBlock
+    addi.d $t4, $t4, SIZEOF__TransitionBlock
+LOCAL_LABEL(StoreCopyLoop):
+    ld.d $t6, $t4, 0
+    st.d $t6, $t3, 0
+    addi.d $t4, $t4, 8
+    addi.d $t3, $t3, 8
+    addi.d $t5, $t5, -8
+    bne $t5, $zero, LOCAL_LABEL(StoreCopyLoop)
+    ld.d $t4, $t2, 8
+    addi.d $t2, $t2, 16
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_Stack
+
+// Load/Store register routines
+// $t2 = routine pointer, $t3 = interpreter stack pointer
+// Pattern: Load from interpreter stack to argument registers, then jump to next routine
+
+LEAF_ENTRY Load_A0
+    ld.d $a0, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A0
+
+LEAF_ENTRY Load_A0_A1
+    ld.d $a0, $t3, 0
+    ld.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A0_A1
+
+LEAF_ENTRY Load_A0_A1_A2
+    ld.d $a0, $t3, 0
+    ld.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A2
+    ld.d $a2, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A0_A1_A2
+
+LEAF_ENTRY Load_A0_A1_A2_A3
+    ld.d $a0, $t3, 0
+    ld.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A2_A3
+    ld.d $a2, $t3, 0
+    ld.d $a3, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A0_A1_A2_A3
+
+LEAF_ENTRY Load_A0_A1_A2_A3_A4
+    ld.d $a0, $t3, 0
+    ld.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A2_A3_A4
+    ld.d $a2, $t3, 0
+    ld.d $a3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A4
+    ld.d $a4, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A0_A1_A2_A3_A4
+
+LEAF_ENTRY Load_A0_A1_A2_A3_A4_A5
+    ld.d $a0, $t3, 0
+    ld.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A2_A3_A4_A5
+    ld.d $a2, $t3, 0
+    ld.d $a3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A4_A5
+    ld.d $a4, $t3, 0
+    ld.d $a5, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A0_A1_A2_A3_A4_A5
+
+LEAF_ENTRY Load_A0_A1_A2_A3_A4_A5_A6
+    ld.d $a0, $t3, 0
+    ld.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A2_A3_A4_A5_A6
+    ld.d $a2, $t3, 0
+    ld.d $a3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A4_A5_A6
+    ld.d $a4, $t3, 0
+    ld.d $a5, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A6
+    ld.d $a6, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A0_A1_A2_A3_A4_A5_A6
+
+LEAF_ENTRY Load_A0_A1_A2_A3_A4_A5_A6_A7
+    ld.d $a0, $t3, 0
+    ld.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A2_A3_A4_A5_A6_A7
+    ld.d $a2, $t3, 0
+    ld.d $a3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A4_A5_A6_A7
+    ld.d $a4, $t3, 0
+    ld.d $a5, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A6_A7
+    ld.d $a6, $t3, 0
+    ld.d $a7, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A0_A1_A2_A3_A4_A5_A6_A7
+
+LEAF_ENTRY Load_A1
+    ld.d $a1, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A1
+
+LEAF_ENTRY Load_A1_A2
+    ld.d $a1, $t3, 0
+    ld.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A1_A2
+
+LEAF_ENTRY Load_A1_A2_A3
+    ld.d $a1, $t3, 0
+    ld.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A3
+    ld.d $a3, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A1_A2_A3
+
+LEAF_ENTRY Load_A1_A2_A3_A4
+    ld.d $a1, $t3, 0
+    ld.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A3_A4
+    ld.d $a3, $t3, 0
+    ld.d $a4, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A1_A2_A3_A4
+
+LEAF_ENTRY Load_A1_A2_A3_A4_A5
+    ld.d $a1, $t3, 0
+    ld.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A3_A4_A5
+    ld.d $a3, $t3, 0
+    ld.d $a4, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A5
+    ld.d $a5, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A1_A2_A3_A4_A5
+
+LEAF_ENTRY Load_A1_A2_A3_A4_A5_A6
+    ld.d $a1, $t3, 0
+    ld.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A3_A4_A5_A6
+    ld.d $a3, $t3, 0
+    ld.d $a4, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A5_A6
+    ld.d $a5, $t3, 0
+    ld.d $a6, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A1_A2_A3_A4_A5_A6
+
+LEAF_ENTRY Load_A1_A2_A3_A4_A5_A6_A7
+    ld.d $a1, $t3, 0
+    ld.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A3_A4_A5_A6_A7
+    ld.d $a3, $t3, 0
+    ld.d $a4, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A5_A6_A7
+    ld.d $a5, $t3, 0
+    ld.d $a6, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_A7
+    ld.d $a7, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_A1_A2_A3_A4_A5_A6_A7
+
+// Store routines: Store argument registers to interpreter stack
+
+LEAF_ENTRY Store_A0
+    st.d $a0, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A0
+
+LEAF_ENTRY Store_A0_A1
+    st.d $a0, $t3, 0
+    st.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A0_A1
+
+LEAF_ENTRY Store_A0_A1_A2
+    st.d $a0, $t3, 0
+    st.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A2
+    st.d $a2, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A0_A1_A2
+
+LEAF_ENTRY Store_A0_A1_A2_A3
+    st.d $a0, $t3, 0
+    st.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A2_A3
+    st.d $a2, $t3, 0
+    st.d $a3, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A0_A1_A2_A3
+
+LEAF_ENTRY Store_A0_A1_A2_A3_A4
+    st.d $a0, $t3, 0
+    st.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A2_A3_A4
+    st.d $a2, $t3, 0
+    st.d $a3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A4
+    st.d $a4, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A0_A1_A2_A3_A4
+
+LEAF_ENTRY Store_A0_A1_A2_A3_A4_A5
+    st.d $a0, $t3, 0
+    st.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A2_A3_A4_A5
+    st.d $a2, $t3, 0
+    st.d $a3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A4_A5
+    st.d $a4, $t3, 0
+    st.d $a5, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A0_A1_A2_A3_A4_A5
+
+LEAF_ENTRY Store_A0_A1_A2_A3_A4_A5_A6
+    st.d $a0, $t3, 0
+    st.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A2_A3_A4_A5_A6
+    st.d $a2, $t3, 0
+    st.d $a3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A4_A5_A6
+    st.d $a4, $t3, 0
+    st.d $a5, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A6
+    st.d $a6, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A0_A1_A2_A3_A4_A5_A6
+
+LEAF_ENTRY Store_A0_A1_A2_A3_A4_A5_A6_A7
+    st.d $a0, $t3, 0
+    st.d $a1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A2_A3_A4_A5_A6_A7
+    st.d $a2, $t3, 0
+    st.d $a3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A4_A5_A6_A7
+    st.d $a4, $t3, 0
+    st.d $a5, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A6_A7
+    st.d $a6, $t3, 0
+    st.d $a7, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A0_A1_A2_A3_A4_A5_A6_A7
+
+LEAF_ENTRY Store_A1
+    st.d $a1, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A1
+
+LEAF_ENTRY Store_A1_A2
+    st.d $a1, $t3, 0
+    st.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A1_A2
+
+LEAF_ENTRY Store_A1_A2_A3
+    st.d $a1, $t3, 0
+    st.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A3
+    st.d $a3, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A1_A2_A3
+
+LEAF_ENTRY Store_A1_A2_A3_A4
+    st.d $a1, $t3, 0
+    st.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A3_A4
+    st.d $a3, $t3, 0
+    st.d $a4, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A1_A2_A3_A4
+
+LEAF_ENTRY Store_A1_A2_A3_A4_A5
+    st.d $a1, $t3, 0
+    st.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A3_A4_A5
+    st.d $a3, $t3, 0
+    st.d $a4, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A5
+    st.d $a5, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A1_A2_A3_A4_A5
+
+LEAF_ENTRY Store_A1_A2_A3_A4_A5_A6
+    st.d $a1, $t3, 0
+    st.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A3_A4_A5_A6
+    st.d $a3, $t3, 0
+    st.d $a4, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A5_A6
+    st.d $a5, $t3, 0
+    st.d $a6, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A1_A2_A3_A4_A5_A6
+
+LEAF_ENTRY Store_A1_A2_A3_A4_A5_A6_A7
+    st.d $a1, $t3, 0
+    st.d $a2, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A3_A4_A5_A6_A7
+    st.d $a3, $t3, 0
+    st.d $a4, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A5_A6_A7
+    st.d $a5, $t3, 0
+    st.d $a6, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_A7
+    st.d $a7, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_A1_A2_A3_A4_A5_A6_A7
+
+// Float point load/store routines
+
+LEAF_ENTRY Load_FA0
+    fld.d $fa0, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA0
+
+LEAF_ENTRY Load_FA0_FA1
+    fld.d $fa0, $t3, 0
+    fld.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA0_FA1
+
+LEAF_ENTRY Load_FA0_FA1_FA2
+    fld.d $fa0, $t3, 0
+    fld.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA2
+    fld.d $fa2, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA0_FA1_FA2
+
+LEAF_ENTRY Load_FA0_FA1_FA2_FA3
+    fld.d $fa0, $t3, 0
+    fld.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA2_FA3
+    fld.d $fa2, $t3, 0
+    fld.d $fa3, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA0_FA1_FA2_FA3
+
+LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4
+    fld.d $fa0, $t3, 0
+    fld.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA2_FA3_FA4
+    fld.d $fa2, $t3, 0
+    fld.d $fa3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA4
+    fld.d $fa4, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA0_FA1_FA2_FA3_FA4
+
+LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4_FA5
+    fld.d $fa0, $t3, 0
+    fld.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA2_FA3_FA4_FA5
+    fld.d $fa2, $t3, 0
+    fld.d $fa3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA4_FA5
+    fld.d $fa4, $t3, 0
+    fld.d $fa5, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA0_FA1_FA2_FA3_FA4_FA5
+
+LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6
+    fld.d $fa0, $t3, 0
+    fld.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA2_FA3_FA4_FA5_FA6
+    fld.d $fa2, $t3, 0
+    fld.d $fa3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA4_FA5_FA6
+    fld.d $fa4, $t3, 0
+    fld.d $fa5, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA6
+    fld.d $fa6, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6
+
+LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+    fld.d $fa0, $t3, 0
+    fld.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA2_FA3_FA4_FA5_FA6_FA7
+    fld.d $fa2, $t3, 0
+    fld.d $fa3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA4_FA5_FA6_FA7
+    fld.d $fa4, $t3, 0
+    fld.d $fa5, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Load_FA6_FA7
+    fld.d $fa6, $t3, 0
+    fld.d $fa7, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+
+// Additional Load_FA* routines starting from FA1, FA3, FA5, FA7
+LEAF_ENTRY Load_FA1
+    fld.d $fa1, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA1
+
+LEAF_ENTRY Load_FA1_FA2
+    fld.d $fa1, $t3, 0
+    fld.d $fa2, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA1_FA2
+
+LEAF_ENTRY Load_FA1_FA2_FA3
+    fld.d $fa1, $t3, 0
+    fld.d $fa2, $t3, 8
+    fld.d $fa3, $t3, 16
+    addi.d $t3, $t3, 24
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA1_FA2_FA3
+
+LEAF_ENTRY Load_FA1_FA2_FA3_FA4
+    fld.d $fa1, $t3, 0
+    fld.d $fa2, $t3, 8
+    fld.d $fa3, $t3, 16
+    fld.d $fa4, $t3, 24
+    addi.d $t3, $t3, 32
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA1_FA2_FA3_FA4
+
+LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5
+    fld.d $fa1, $t3, 0
+    fld.d $fa2, $t3, 8
+    fld.d $fa3, $t3, 16
+    fld.d $fa4, $t3, 24
+    fld.d $fa5, $t3, 32
+    addi.d $t3, $t3, 40
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA1_FA2_FA3_FA4_FA5
+
+LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5_FA6
+    fld.d $fa1, $t3, 0
+    fld.d $fa2, $t3, 8
+    fld.d $fa3, $t3, 16
+    fld.d $fa4, $t3, 24
+    fld.d $fa5, $t3, 32
+    fld.d $fa6, $t3, 40
+    addi.d $t3, $t3, 48
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA1_FA2_FA3_FA4_FA5_FA6
+
+LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+    fld.d $fa1, $t3, 0
+    fld.d $fa2, $t3, 8
+    fld.d $fa3, $t3, 16
+    fld.d $fa4, $t3, 24
+    fld.d $fa5, $t3, 32
+    fld.d $fa6, $t3, 40
+    fld.d $fa7, $t3, 48
+    addi.d $t3, $t3, 56
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+
+LEAF_ENTRY Load_FA3
+    fld.d $fa3, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA3
+
+LEAF_ENTRY Load_FA3_FA4
+    fld.d $fa3, $t3, 0
+    fld.d $fa4, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA3_FA4
+
+LEAF_ENTRY Load_FA3_FA4_FA5
+    fld.d $fa3, $t3, 0
+    fld.d $fa4, $t3, 8
+    fld.d $fa5, $t3, 16
+    addi.d $t3, $t3, 24
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA3_FA4_FA5
+
+LEAF_ENTRY Load_FA3_FA4_FA5_FA6
+    fld.d $fa3, $t3, 0
+    fld.d $fa4, $t3, 8
+    fld.d $fa5, $t3, 16
+    fld.d $fa6, $t3, 24
+    addi.d $t3, $t3, 32
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA3_FA4_FA5_FA6
+
+LEAF_ENTRY Load_FA3_FA4_FA5_FA6_FA7
+    fld.d $fa3, $t3, 0
+    fld.d $fa4, $t3, 8
+    fld.d $fa5, $t3, 16
+    fld.d $fa6, $t3, 24
+    fld.d $fa7, $t3, 32
+    addi.d $t3, $t3, 40
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA3_FA4_FA5_FA6_FA7
+
+LEAF_ENTRY Load_FA5
+    fld.d $fa5, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA5
+
+LEAF_ENTRY Load_FA5_FA6
+    fld.d $fa5, $t3, 0
+    fld.d $fa6, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA5_FA6
+
+LEAF_ENTRY Load_FA5_FA6_FA7
+    fld.d $fa5, $t3, 0
+    fld.d $fa6, $t3, 8
+    fld.d $fa7, $t3, 16
+    addi.d $t3, $t3, 24
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA5_FA6_FA7
+
+LEAF_ENTRY Load_FA7
+    fld.d $fa7, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Load_FA7
+
+LEAF_ENTRY Store_FA0
+    fst.d $fa0, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA0
+
+LEAF_ENTRY Store_FA0_FA1
+    fst.d $fa0, $t3, 0
+    fst.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA0_FA1
+
+LEAF_ENTRY Store_FA0_FA1_FA2
+    fst.d $fa0, $t3, 0
+    fst.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA2
+    fst.d $fa2, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA0_FA1_FA2
+
+LEAF_ENTRY Store_FA0_FA1_FA2_FA3
+    fst.d $fa0, $t3, 0
+    fst.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA2_FA3
+    fst.d $fa2, $t3, 0
+    fst.d $fa3, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA0_FA1_FA2_FA3
+
+LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4
+    fst.d $fa0, $t3, 0
+    fst.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA2_FA3_FA4
+    fst.d $fa2, $t3, 0
+    fst.d $fa3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA4
+    fst.d $fa4, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA0_FA1_FA2_FA3_FA4
+
+LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4_FA5
+    fst.d $fa0, $t3, 0
+    fst.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA2_FA3_FA4_FA5
+    fst.d $fa2, $t3, 0
+    fst.d $fa3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA4_FA5
+    fst.d $fa4, $t3, 0
+    fst.d $fa5, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA0_FA1_FA2_FA3_FA4_FA5
+
+LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6
+    fst.d $fa0, $t3, 0
+    fst.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA2_FA3_FA4_FA5_FA6
+    fst.d $fa2, $t3, 0
+    fst.d $fa3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA4_FA5_FA6
+    fst.d $fa4, $t3, 0
+    fst.d $fa5, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA6
+    fst.d $fa6, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6
+
+LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+    fst.d $fa0, $t3, 0
+    fst.d $fa1, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA2_FA3_FA4_FA5_FA6_FA7
+    fst.d $fa2, $t3, 0
+    fst.d $fa3, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA4_FA5_FA6_FA7
+    fst.d $fa4, $t3, 0
+    fst.d $fa5, $t3, 8
+    addi.d $t3, $t3, 16
+ALTERNATE_ENTRY Store_FA6_FA7
+    fst.d $fa6, $t3, 0
+    fst.d $fa7, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+
+// Additional Store_FA* routines starting from FA1, FA3, FA5, FA7
+LEAF_ENTRY Store_FA1
+    fst.d $fa1, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA1
+
+LEAF_ENTRY Store_FA1_FA2
+    fst.d $fa1, $t3, 0
+    fst.d $fa2, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA1_FA2
+
+LEAF_ENTRY Store_FA1_FA2_FA3
+    fst.d $fa1, $t3, 0
+    fst.d $fa2, $t3, 8
+    fst.d $fa3, $t3, 16
+    addi.d $t3, $t3, 24
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA1_FA2_FA3
+
+LEAF_ENTRY Store_FA1_FA2_FA3_FA4
+    fst.d $fa1, $t3, 0
+    fst.d $fa2, $t3, 8
+    fst.d $fa3, $t3, 16
+    fst.d $fa4, $t3, 24
+    addi.d $t3, $t3, 32
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA1_FA2_FA3_FA4
+
+LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5
+    fst.d $fa1, $t3, 0
+    fst.d $fa2, $t3, 8
+    fst.d $fa3, $t3, 16
+    fst.d $fa4, $t3, 24
+    fst.d $fa5, $t3, 32
+    addi.d $t3, $t3, 40
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA1_FA2_FA3_FA4_FA5
+
+LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5_FA6
+    fst.d $fa1, $t3, 0
+    fst.d $fa2, $t3, 8
+    fst.d $fa3, $t3, 16
+    fst.d $fa4, $t3, 24
+    fst.d $fa5, $t3, 32
+    fst.d $fa6, $t3, 40
+    addi.d $t3, $t3, 48
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA1_FA2_FA3_FA4_FA5_FA6
+
+LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+    fst.d $fa1, $t3, 0
+    fst.d $fa2, $t3, 8
+    fst.d $fa3, $t3, 16
+    fst.d $fa4, $t3, 24
+    fst.d $fa5, $t3, 32
+    fst.d $fa6, $t3, 40
+    fst.d $fa7, $t3, 48
+    addi.d $t3, $t3, 56
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+
+LEAF_ENTRY Store_FA3
+    fst.d $fa3, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA3
+
+LEAF_ENTRY Store_FA3_FA4
+    fst.d $fa3, $t3, 0
+    fst.d $fa4, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA3_FA4
+
+LEAF_ENTRY Store_FA3_FA4_FA5
+    fst.d $fa3, $t3, 0
+    fst.d $fa4, $t3, 8
+    fst.d $fa5, $t3, 16
+    addi.d $t3, $t3, 24
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA3_FA4_FA5
+
+LEAF_ENTRY Store_FA3_FA4_FA5_FA6
+    fst.d $fa3, $t3, 0
+    fst.d $fa4, $t3, 8
+    fst.d $fa5, $t3, 16
+    fst.d $fa6, $t3, 24
+    addi.d $t3, $t3, 32
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA3_FA4_FA5_FA6
+
+LEAF_ENTRY Store_FA3_FA4_FA5_FA6_FA7
+    fst.d $fa3, $t3, 0
+    fst.d $fa4, $t3, 8
+    fst.d $fa5, $t3, 16
+    fst.d $fa6, $t3, 24
+    fst.d $fa7, $t3, 32
+    addi.d $t3, $t3, 40
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA3_FA4_FA5_FA6_FA7
+
+LEAF_ENTRY Store_FA5
+    fst.d $fa5, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA5
+
+LEAF_ENTRY Store_FA5_FA6
+    fst.d $fa5, $t3, 0
+    fst.d $fa6, $t3, 8
+    addi.d $t3, $t3, 16
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA5_FA6
+
+LEAF_ENTRY Store_FA5_FA6_FA7
+    fst.d $fa5, $t3, 0
+    fst.d $fa6, $t3, 8
+    fst.d $fa7, $t3, 16
+    addi.d $t3, $t3, 24
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA5_FA6_FA7
+
+LEAF_ENTRY Store_FA7
+    fst.d $fa7, $t3, 0
+    addi.d $t3, $t3, 8
+    ld.d $t4, $t2, 0
+    addi.d $t2, $t2, 8
+    EPILOG_BRANCH_REG $t4
+LEAF_END Store_FA7
+
+// ------------------------------------------------------------------
+// Create a real TransitionBlock and bl CallInterpreterFuncletWorker
+// to execute an interpreter funclet (catch/finally/filter handler).
+//
+// extern "C" DWORD_PTR CallInterpreterFunclet(
+//     OBJECTREF throwable,        // $a0
+//     void* pHandler,             // $a1
+//     REGDISPLAY *pRD,            // $a2
+//     ExInfo *pExInfo,            // $a3
+//     bool isFilter               // $a4
+// );
+// ------------------------------------------------------------------
+NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    // Pass TransitionBlock* as last (6th) argument
+    // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+    // Original args: $a0=throwable, $a1=pHandler, $a2=pRD, $a3=pExInfo, $a4=isFilter
+    // $a0-$a4 remain unchanged
+
+    addi.d    $a5, $sp, __PWTB_TransitionBlock     // TransitionBlock* as 6th param ($a5)
+
+    bl    C_FUNC(CallInterpreterFuncletWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END CallInterpreterFunclet, _TEXT
+
+// ------------------------------------------------------------------
+// Resume an interpreter continuation after an async await.
+// The worker function will restore callee-saved registers from the
+// TransitionBlock.
+//
+// FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage);
+//
+// ------------------------------------------------------------------
+NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    // Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
+    // $a0, $a1 remain unchanged
+
+    addi.d    $a2, $sp, __PWTB_TransitionBlock     // TransitionBlock* as 3rd param ($a2)
+
+    bl    C_FUNC(AsyncHelpers_ResumeInterpreterContinuationWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END AsyncHelpers_ResumeInterpreterContinuation, _TEXT
+
+#endif // FEATURE_INTERPRETER

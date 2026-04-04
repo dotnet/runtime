@@ -9,10 +9,10 @@ using System.Runtime.InteropServices;
 namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal partial struct RSAPublicKeyAsn
+    internal ref partial struct ValueRSAPublicKeyAsn
     {
-        internal System.Numerics.BigInteger Modulus;
-        internal System.Numerics.BigInteger PublicExponent;
+        internal ReadOnlySpan<byte> Modulus;
+        internal ReadOnlySpan<byte> PublicExponent;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -28,20 +28,19 @@ namespace System.Security.Cryptography.Asn1
             writer.PopSequence(tag);
         }
 
-        internal static RSAPublicKeyAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueRSAPublicKeyAsn decoded)
         {
-            return Decode(Asn1Tag.Sequence, encoded, ruleSet);
+            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
         }
 
-        internal static RSAPublicKeyAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueRSAPublicKeyAsn decoded)
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, expectedTag, out RSAPublicKeyAsn decoded);
+                DecodeCore(ref reader, expectedTag, out decoded);
                 reader.ThrowIfNotEmpty();
-                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -49,12 +48,12 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, out RSAPublicKeyAsn decoded)
+        internal static void Decode(scoped ref ValueAsnReader reader, out ValueRSAPublicKeyAsn decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, out RSAPublicKeyAsn decoded)
+        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueRSAPublicKeyAsn decoded)
         {
             try
             {
@@ -66,13 +65,13 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, out RSAPublicKeyAsn decoded)
+        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueRSAPublicKeyAsn decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
 
-            decoded.Modulus = sequenceReader.ReadInteger();
-            decoded.PublicExponent = sequenceReader.ReadInteger();
+            decoded.Modulus = sequenceReader.ReadIntegerBytes();
+            decoded.PublicExponent = sequenceReader.ReadIntegerBytes();
 
             sequenceReader.ThrowIfNotEmpty();
         }

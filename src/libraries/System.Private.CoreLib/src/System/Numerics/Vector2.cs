@@ -415,13 +415,13 @@ namespace System.Numerics
         /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
         /// <returns>A new <see cref="Vector2" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
-        internal static Vector2 CreateScalar(float x) => Vector128.CreateScalar(x).AsVector2();
+        public static Vector2 CreateScalar(float x) => Vector128.CreateScalar(x).AsVector2();
 
         /// <summary>Creates a vector with <see cref="X" /> initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
         /// <returns>A new <see cref="Vector2" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        internal static Vector2 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector2();
+        public static Vector2 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector2();
 
         /// <summary>
         /// Returns the z-value of the cross product of two vectors.
@@ -500,12 +500,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.EqualsAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EqualsAll(Vector2 left, Vector2 right) => Vector128.EqualsAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool EqualsAll(Vector2 left, Vector2 right) => AllWhereAllBitsSet(Equals(left, right));
 
         /// <inheritdoc cref="Vector4.EqualsAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EqualsAny(Vector2 left, Vector2 right) => Vector128.EqualsAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool EqualsAny(Vector2 left, Vector2 right) => AnyWhereAllBitsSet(Equals(left, right));
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
         [Intrinsic]
@@ -520,12 +520,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.GreaterThanAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanAll(Vector2 left, Vector2 right) => Vector128.GreaterThanAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool GreaterThanAll(Vector2 left, Vector2 right) => AllWhereAllBitsSet(GreaterThan(left, right));
 
         /// <inheritdoc cref="Vector4.GreaterThanAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanAny(Vector2 left, Vector2 right) => Vector128.GreaterThanAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool GreaterThanAny(Vector2 left, Vector2 right) => AnyWhereAllBitsSet(GreaterThan(left, right));
 
         /// <inheritdoc cref="Vector4.GreaterThanOrEqual(Vector4, Vector4)" />
         [Intrinsic]
@@ -535,12 +535,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.GreaterThanOrEqualAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanOrEqualAll(Vector2 left, Vector2 right) => Vector128.GreaterThanOrEqualAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool GreaterThanOrEqualAll(Vector2 left, Vector2 right) => AllWhereAllBitsSet(GreaterThanOrEqual(left, right));
 
         /// <inheritdoc cref="Vector4.GreaterThanOrEqualAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanOrEqualAny(Vector2 left, Vector2 right) => Vector128.GreaterThanOrEqualAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool GreaterThanOrEqualAny(Vector2 left, Vector2 right) => AnyWhereAllBitsSet(GreaterThanOrEqual(left, right));
 
         /// <inheritdoc cref="Vector4.Hypot(Vector4, Vector4)" />
         [Intrinsic]
@@ -650,12 +650,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LessThanAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanAll(Vector2 left, Vector2 right) => Vector128.LessThanAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool LessThanAll(Vector2 left, Vector2 right) => AllWhereAllBitsSet(LessThan(left, right));
 
         /// <inheritdoc cref="Vector4.LessThanAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanAny(Vector2 left, Vector2 right) => Vector128.LessThanAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool LessThanAny(Vector2 left, Vector2 right) => AnyWhereAllBitsSet(LessThan(left, right));
 
         /// <inheritdoc cref="Vector4.LessThanOrEqual(Vector4, Vector4)" />
         [Intrinsic]
@@ -665,22 +665,24 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LessThanOrEqualAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanOrEqualAll(Vector2 left, Vector2 right) => Vector128.LessThanOrEqualAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool LessThanOrEqualAll(Vector2 left, Vector2 right) => AllWhereAllBitsSet(LessThanOrEqual(left, right));
 
         /// <inheritdoc cref="Vector4.LessThanOrEqualAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanOrEqualAny(Vector2 left, Vector2 right) => Vector128.LessThanOrEqualAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool LessThanOrEqualAny(Vector2 left, Vector2 right) => AnyWhereAllBitsSet(LessThanOrEqual(left, right));
 
         /// <inheritdoc cref="Vector4.Load(float*)" />
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector2 Load(float* source) => LoadUnsafe(in *source);
 
         /// <inheritdoc cref="Vector4.LoadAligned(float*)" />
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe Vector2 LoadAligned(float* source)
         {
             if (((nuint)(source) % Alignment) != 0)
@@ -694,6 +696,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LoadAlignedNonTemporal(float*)" />
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector2 LoadAlignedNonTemporal(float* source) => LoadAligned(source);
 
         /// <inheritdoc cref="Vector128.LoadUnsafe{T}(ref readonly T)" />
@@ -715,11 +718,11 @@ namespace System.Numerics
             return Unsafe.ReadUnaligned<Vector2>(in address);
         }
 
-        /// <inheritdoc cref="Vector4.Log2(Vector4)" />
+        /// <inheritdoc cref="Vector4.Log(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Log(Vector2 vector) => Vector128.Log(Vector4.Create(vector, 1.0f, 1.0f).AsVector128()).AsVector2();
 
-        /// <inheritdoc cref="Vector4.Log(Vector4)" />
+        /// <inheritdoc cref="Vector4.Log2(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Log2(Vector2 vector) => Vector128.Log2(Vector4.Create(vector, 1.0f, 1.0f).AsVector128()).AsVector2();
 
@@ -901,10 +904,8 @@ namespace System.Numerics
         /// <param name="position">The vector to transform.</param>
         /// <param name="matrix">The transformation matrix.</param>
         /// <returns>The transformed vector.</returns>
-        public static Vector2 Transform(Vector2 position, Matrix3x2 matrix) => Transform(position, in matrix.AsImpl());
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector2 Transform(Vector2 position, in Matrix3x2.Impl matrix)
+        public static Vector2 Transform(Vector2 position, Matrix3x2 matrix)
         {
             Vector2 result = matrix.X * position.X;
             result = MultiplyAddEstimate(matrix.Y, Create(position.Y), result);
@@ -916,7 +917,7 @@ namespace System.Numerics
         /// <param name="matrix">The transformation matrix.</param>
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Transform(Vector2 position, Matrix4x4 matrix) => Vector4.Transform(position, in matrix.AsImpl()).AsVector128().AsVector2();
+        public static Vector2 Transform(Vector2 position, Matrix4x4 matrix) => Vector4.Transform(position, matrix).AsVector2();
 
         /// <summary>Transforms a vector by the specified Quaternion rotation value.</summary>
         /// <param name="value">The vector to rotate.</param>
@@ -929,10 +930,8 @@ namespace System.Numerics
         /// <param name="normal">The source vector.</param>
         /// <param name="matrix">The matrix.</param>
         /// <returns>The transformed vector.</returns>
-        public static Vector2 TransformNormal(Vector2 normal, Matrix3x2 matrix) => TransformNormal(normal, in matrix.AsImpl());
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector2 TransformNormal(Vector2 normal, in Matrix3x2.Impl matrix)
+        public static Vector2 TransformNormal(Vector2 normal, Matrix3x2 matrix)
         {
             Vector2 result = matrix.X * normal.X;
             result = MultiplyAddEstimate(matrix.Y, Create(normal.Y), result);
@@ -943,10 +942,8 @@ namespace System.Numerics
         /// <param name="normal">The source vector.</param>
         /// <param name="matrix">The matrix.</param>
         /// <returns>The transformed vector.</returns>
-        public static Vector2 TransformNormal(Vector2 normal, Matrix4x4 matrix) => TransformNormal(normal, in matrix.AsImpl());
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector2 TransformNormal(Vector2 normal, in Matrix4x4.Impl matrix)
+        public static Vector2 TransformNormal(Vector2 normal, Matrix4x4 matrix)
         {
             Vector4 result = matrix.X * normal.X;
             result = Vector4.MultiplyAddEstimate(matrix.Y, Vector4.Create(normal.Y), result);

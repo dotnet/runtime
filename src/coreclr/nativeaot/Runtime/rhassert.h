@@ -3,11 +3,7 @@
 #ifndef __RHASSERT_H__
 #define __RHASSERT_H__
 
-#ifdef _MSC_VER
-#define ASSUME(expr) __assume(expr)
-#else  // _MSC_VER
-#define ASSUME(expr) do { if (!(expr)) __builtin_unreachable(); } while (0)
-#endif // _MSC_VER
+#include <minipal/utils.h>
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 
@@ -50,18 +46,17 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 
 #define PORTABILITY_ASSERT(message) \
     ASSERT_UNCONDITIONALLY(message); \
-    ASSUME(0); \
+    UNREACHABLE(); \
 
-#define UNREACHABLE() \
-    ASSERT_UNCONDITIONALLY("UNREACHABLE"); \
-    ASSUME(0); \
+#ifdef assert
+#undef assert
+#define assert(_expr) ASSERT(_expr)
+#endif
 
-#define UNREACHABLE_MSG(message) \
-    ASSERT_UNCONDITIONALLY(message); \
-    ASSUME(0);  \
-
-#define FAIL_FAST_GENERATE_EXCEPTION_ADDRESS 0x1
-
-#define RhFailFast() RaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)
+#ifdef HOST_WINDOWS
+#define RhFailFast() ::RaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)
+#else
+void RhFailFast();
+#endif // HOST_WINDOWS
 
 #endif // __RHASSERT_H__

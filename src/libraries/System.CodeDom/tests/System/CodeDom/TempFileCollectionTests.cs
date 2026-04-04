@@ -59,7 +59,7 @@ namespace System.CodeDom.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("TempDir")]
-        public void Ctor_String(string tempDir)
+        public void Ctor_String(string? tempDir)
         {
             var collection = new TempFileCollection(tempDir);
             Assert.Equal(0, collection.Count);
@@ -71,7 +71,7 @@ namespace System.CodeDom.Tests
         [InlineData(null, false)]
         [InlineData("", true)]
         [InlineData("TempDir", false)]
-        public void Ctor_String_Bool(string tempDir, bool keepFiles)
+        public void Ctor_String_Bool(string? tempDir, bool keepFiles)
         {
             var collection = new TempFileCollection(tempDir, keepFiles);
             Assert.Equal(0, collection.Count);
@@ -116,7 +116,7 @@ namespace System.CodeDom.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void AddExtension_InvalidFileExtension_ThrowsArgumentException(string fileExtension)
+        public void AddExtension_InvalidFileExtension_ThrowsArgumentException(string? fileExtension)
         {
             using (var collection = new TempFileCollection())
             {
@@ -199,7 +199,7 @@ namespace System.CodeDom.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void AddFile_InvalidFileName_ThrowsArgumentException(string fileName)
+        public void AddFile_InvalidFileName_ThrowsArgumentException(string? fileName)
         {
             using (var collection = new TempFileCollection())
             {

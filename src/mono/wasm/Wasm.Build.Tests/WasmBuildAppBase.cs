@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -22,7 +23,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        protected async void TestMain(string projectName,
+        protected async Task TestMain(string projectName,
               string programText,
               Configuration config,
               bool aot,

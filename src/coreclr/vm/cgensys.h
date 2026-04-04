@@ -33,9 +33,6 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
 #endif // TARGET_X86
 
 #ifdef FEATURE_COMINTEROP
-extern "C" UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMethodDesc * pMD);
-extern "C" void GenericCLRToCOMCallStub(void);
-
 extern "C" void GenericComCallStub(void);
 #endif // FEATURE_COMINTEROP
 
@@ -50,7 +47,7 @@ enum class CallerGCMode
 // Non-CPU-specific helper functions called by the CPU-dependent code
 extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, MethodDesc * pMD);
 
-extern "C" void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, MethodDesc * pMD);
+extern "C" void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock, VASigCookie* pVASigCookie, MethodDesc* pMD);
 extern "C" void STDCALL VarargPInvokeStub(void);
 extern "C" void STDCALL VarargPInvokeStub_RetBuffArg(void);
 

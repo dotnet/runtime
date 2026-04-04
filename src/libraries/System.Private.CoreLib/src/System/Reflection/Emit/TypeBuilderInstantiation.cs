@@ -18,7 +18,6 @@ namespace System.Reflection.Emit
         private Type _genericType;
         private Type[] _typeArguments;
         #endregion
-        private string? _strFullQualName;
         internal Hashtable _hashtable;
 
 
@@ -104,7 +103,7 @@ namespace System.Reflection.Emit
 
         public override Assembly Assembly => _genericType.Assembly;
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
-        public override string? FullName => _strFullQualName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
+        public override string? FullName => field ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
         public override string? Namespace => _genericType.Namespace;
         public override string? AssemblyQualifiedName => TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName);
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
@@ -162,22 +161,22 @@ namespace System.Reflection.Emit
             }
         }
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) { throw new NotSupportedException(); }
+        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) { throw new NotSupportedException(SR.Format(SR.NotSupported_TypeBuilderInstantiation_ResolvingMembers, nameof(TypeBuilder.GetConstructor))); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { throw new NotSupportedException(); }
+        public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { throw new NotSupportedException(SR.Format(SR.NotSupported_TypeBuilderInstantiation_ResolvingMembers, nameof(TypeBuilder.GetConstructor))); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) { throw new NotSupportedException(); }
+        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) { throw new NotSupportedException(SR.Format(SR.NotSupported_TypeBuilderInstantiation_ResolvingMembers, nameof(TypeBuilder.GetMethod))); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public override MethodInfo[] GetMethods(BindingFlags bindingAttr) { throw new NotSupportedException(); }
+        public override MethodInfo[] GetMethods(BindingFlags bindingAttr) { throw new NotSupportedException(SR.Format(SR.NotSupported_TypeBuilderInstantiation_ResolvingMembers, nameof(TypeBuilder.GetMethod))); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo GetField(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
+        public override FieldInfo GetField(string name, BindingFlags bindingAttr) { throw new NotSupportedException(SR.Format(SR.NotSupported_TypeBuilderInstantiation_ResolvingMembers, nameof(TypeBuilder.GetField))); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo[] GetFields(BindingFlags bindingAttr) { throw new NotSupportedException(); }
+        public override FieldInfo[] GetFields(BindingFlags bindingAttr) { throw new NotSupportedException(SR.Format(SR.NotSupported_TypeBuilderInstantiation_ResolvingMembers, nameof(TypeBuilder.GetField))); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]

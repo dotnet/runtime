@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(nameof(MLKemIsNotSupported))]
+        [ConditionalTheory(typeof(MLKemCertTests), nameof(MLKemIsNotSupported))]
         [InlineData(MLKemTestData.IetfMlKem512CertificatePem)]
         [InlineData(MLKemTestData.IetfMlKem768CertificatePem)]
         [InlineData(MLKemTestData.IetfMlKem1024CertificatePem)]
@@ -126,7 +126,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        private static X509Certificate2 LoadCertificateFromPem(string pem)
+        internal static X509Certificate2 LoadCertificateFromPem(string pem)
         {
 #if NET
             return X509Certificate2.CreateFromPem(pem);

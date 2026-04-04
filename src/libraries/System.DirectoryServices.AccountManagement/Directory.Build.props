@@ -3,5 +3,6 @@
   <PropertyGroup>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
+    <IsAotCompatible>false</IsAotCompatible>
   </PropertyGroup>
 </Project>

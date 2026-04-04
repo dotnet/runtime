@@ -56,7 +56,6 @@ namespace R2RTest
                     Crossgen2Parallelism,
                     Crossgen2JitPath,
                     ReferencePath,
-                    IssuesPath,
                     CompilationTimeoutMinutes,
                     ExecutionTimeoutMinutes,
                     R2RDumpPath,
@@ -95,7 +94,6 @@ namespace R2RTest
                     Crossgen2Parallelism,
                     Crossgen2JitPath,
                     ReferencePath,
-                    IssuesPath,
                     CompilationTimeoutMinutes,
                     ExecutionTimeoutMinutes,
                     R2RDumpPath,
@@ -125,7 +123,6 @@ namespace R2RTest
                     LargeBubble,
                     Composite,
                     ReferencePath,
-                    IssuesPath,
                     CompilationTimeoutMinutes,
                     R2RDumpPath,
                     MeasurePerf,
@@ -259,9 +256,6 @@ namespace R2RTest
         public Option<FileInfo> Crossgen2JitPath { get; } =
             new("--crossgen2-jitpath") { Description = "Jit path to use for crossgen2" };
 
-        public Option<FileInfo[]> IssuesPath { get; } =
-            new("--issues-path", "-ip") { Description = "Path to issues.targets", Arity = ArgumentArity.ZeroOrMore };
-
         public Option<int> CompilationTimeoutMinutes { get; } =
             new("--compilation-timeout-minutes", "-ct") { Description = "Compilation timeout (minutes)" };
 
@@ -299,7 +293,7 @@ namespace R2RTest
             new Option<DirectoryInfo>("--asp-net-path", "-asp") { Description = "Path to SERP's ASP.NET Core folder" }.AcceptExistingOnly();
 
         private static int Main(string[] args) =>
-            new CommandLineConfiguration(new R2RTestRootCommand().UseVersion()).Invoke(args);
+            new R2RTestRootCommand().UseVersion().Parse(args).Invoke();
     }
 
     public partial class BuildOptions
@@ -337,7 +331,6 @@ namespace R2RTest
             CompilationTimeoutMinutes = res.GetValue(cmd.CompilationTimeoutMinutes);
             ExecutionTimeoutMinutes = res.GetValue(cmd.ExecutionTimeoutMinutes);
             ReferencePath = res.GetValue(cmd.ReferencePath);
-            IssuesPath = res.GetValue(cmd.IssuesPath);
             R2RDumpPath = res.GetValue(cmd.R2RDumpPath);
             AspNetPath = res.GetValue(cmd.AspNetPath);
             MeasurePerf = res.GetValue(cmd.MeasurePerf);
@@ -377,7 +370,6 @@ namespace R2RTest
         public int CompilationTimeoutMinutes { get; }
         public int ExecutionTimeoutMinutes { get; }
         public DirectoryInfo[] ReferencePath { get; }
-        public FileInfo[] IssuesPath { get; }
         public FileInfo R2RDumpPath { get; }
         public DirectoryInfo AspNetPath { get; }
         public bool MeasurePerf { get; }

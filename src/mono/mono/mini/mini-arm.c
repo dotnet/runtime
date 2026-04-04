@@ -2108,7 +2108,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		if (cfg->gsharedvt && mini_is_gsharedvt_variable_type (t))
 			continue;
 
-		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
+		/* inst->backend.is_pinvoke indicates native-sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
 		if (ins->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (t) && t->type != MONO_TYPE_TYPEDBYREF) {
 			size = mono_class_native_size (mono_class_from_mono_type_internal (t), &ualign);

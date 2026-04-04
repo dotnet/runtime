@@ -8,40 +8,84 @@ namespace System.Runtime.InteropServices
 {
     public sealed partial class PosixSignalRegistration
     {
-        private static readonly HashSet<Token> s_registrations = new();
+        private static readonly Dictionary<int, List<Token>> s_registrations = new();
+
+        /// <summary>
+        /// Serializes concurrent <see cref="Register"/> calls to make the emptiness check and
+        /// the subsequent token insertion atomic.
+        /// </summary>
+        private static readonly object s_registerLock = new();
+
+        /// <summary>
+        /// Runtime can generate multiple addresses to the same function. To ensure that registering and
+        /// unregistering always use the same instance, we capture it in this static field.
+        /// </summary>
+        private static readonly unsafe delegate* unmanaged<int, Interop.BOOL> s_handlerRoutineAddr = &HandlerRoutine;
 
         private static unsafe PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
         {
-            switch (signal)
+            int signo = signal switch
             {
-                case PosixSignal.SIGINT:
-                case PosixSignal.SIGQUIT:
-                case PosixSignal.SIGTERM:
-                case PosixSignal.SIGHUP:
-                    break;
+                PosixSignal.SIGINT => Interop.Kernel32.CTRL_C_EVENT,
+                PosixSignal.SIGQUIT => Interop.Kernel32.CTRL_BREAK_EVENT,
+                PosixSignal.SIGTERM => Interop.Kernel32.CTRL_SHUTDOWN_EVENT,
+                PosixSignal.SIGHUP => Interop.Kernel32.CTRL_CLOSE_EVENT,
+                _ => throw new PlatformNotSupportedException()
+            };
 
-                default:
-                    throw new PlatformNotSupportedException();
-            }
-
-            var token = new Token(signal, handler);
+            var token = new Token(signal, signo, handler);
             var registration = new PosixSignalRegistration(token);
 
-            lock (s_registrations)
+            lock (s_registerLock)
             {
-                if (s_registrations.Count == 0 &&
-                    !Interop.Kernel32.SetConsoleCtrlHandler(&HandlerRoutine, Add: true))
+                bool registerCtrlHandler = false;
+                lock (s_registrations)
                 {
-                    throw Win32Marshal.GetExceptionForLastWin32Error();
+                    if (s_registrations.Count == 0)
+                    {
+                        registerCtrlHandler = true;
+                    }
                 }
 
-                s_registrations.Add(token);
+                // All SetConsoleCtrlHandler calls must happen outside s_registrations locked section
+                // otherwise we risk AB/BA deadlock between it and internal critical section in OS.
+
+                if (registerCtrlHandler)
+                {
+                    // User may reset registrations externally by direct calls of Free/Attach/AllocConsole.
+                    // We do not know if it is currently registered or not. To prevent duplicate
+                    // registration, we try unregister existing one first.
+                    if (!Interop.Kernel32.SetConsoleCtrlHandler(s_handlerRoutineAddr, Add: false))
+                    {
+                        // Returns ERROR_INVALID_PARAMETER if it was not registered. Throw for everything else.
+                        int error = Marshal.GetLastPInvokeError();
+                        if (error != Interop.Errors.ERROR_INVALID_PARAMETER)
+                        {
+                            throw Win32Marshal.GetExceptionForWin32Error(error);
+                        }
+                    }
+
+                    if (!Interop.Kernel32.SetConsoleCtrlHandler(s_handlerRoutineAddr, Add: true))
+                    {
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
+                    }
+                }
+
+                lock (s_registrations)
+                {
+                    if (!s_registrations.TryGetValue(signo, out List<Token>? tokens))
+                    {
+                        s_registrations[signo] = tokens = new List<Token>();
+                    }
+
+                    tokens.Add(token);
+                }
             }
 
             return registration;
         }
 
-        private unsafe void Unregister()
+        private void Unregister()
         {
             lock (s_registrations)
             {
@@ -49,17 +93,12 @@ namespace System.Runtime.InteropServices
                 {
                     _token = null;
 
-                    s_registrations.Remove(token);
-                    if (s_registrations.Count == 0 &&
-                        !Interop.Kernel32.SetConsoleCtrlHandler(&HandlerRoutine, Add: false))
+                    if (s_registrations.TryGetValue(token.SigNo, out List<Token>? tokens))
                     {
-                        // Ignore errors due to the handler no longer being registered; this can happen, for example, with
-                        // direct use of Alloc/Attach/FreeConsole which result in the table of control handlers being reset.
-                        // Throw for everything else.
-                        int error = Marshal.GetLastPInvokeError();
-                        if (error != Interop.Errors.ERROR_INVALID_PARAMETER)
+                        tokens.Remove(token);
+                        if (tokens.Count == 0)
                         {
-                            throw Win32Marshal.GetExceptionForWin32Error(error);
+                            s_registrations.Remove(token.SigNo);
                         }
                     }
                 }
@@ -69,38 +108,14 @@ namespace System.Runtime.InteropServices
         [UnmanagedCallersOnly]
         private static Interop.BOOL HandlerRoutine(int dwCtrlType)
         {
-            PosixSignal signal;
-            switch (dwCtrlType)
-            {
-                case Interop.Kernel32.CTRL_C_EVENT:
-                    signal = PosixSignal.SIGINT;
-                    break;
+            Token[]? tokens = null;
 
-                case Interop.Kernel32.CTRL_BREAK_EVENT:
-                    signal = PosixSignal.SIGQUIT;
-                    break;
-
-                case Interop.Kernel32.CTRL_SHUTDOWN_EVENT:
-                    signal = PosixSignal.SIGTERM;
-                    break;
-
-                case Interop.Kernel32.CTRL_CLOSE_EVENT:
-                    signal = PosixSignal.SIGHUP;
-                    break;
-
-                default:
-                    return Interop.BOOL.FALSE;
-            }
-
-            List<Token>? tokens = null;
             lock (s_registrations)
             {
-                foreach (Token token in s_registrations)
+                if (s_registrations.TryGetValue(dwCtrlType, out List<Token>? registrations))
                 {
-                    if (token.Signal == signal)
-                    {
-                        (tokens ??= new List<Token>()).Add(token);
-                    }
+                    tokens = new Token[registrations.Count];
+                    registrations.CopyTo(tokens);
                 }
             }
 
@@ -109,10 +124,14 @@ namespace System.Runtime.InteropServices
                 return Interop.BOOL.FALSE;
             }
 
-            var context = new PosixSignalContext(signal);
-            foreach (Token handler in tokens)
+            var context = new PosixSignalContext(0);
+
+            // Iterate through the tokens in reverse order to match the order of registration.
+            for (int i = tokens.Length - 1; i >= 0; i--)
             {
-                handler.Handler(context);
+                Token token = tokens[i];
+                context.Signal = token.Signal;
+                token.Handler(context);
             }
 
             return context.Cancel ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;

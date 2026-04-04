@@ -417,9 +417,9 @@ inline UINT DbgStateLockData::GetCombinedLockCount()
 {
     // If this fires, the set of lock types must have changed.  You'll need to
     // fix the sum below to include all lock types
-    _ASSERTE(kDbgStateLockType_Count == 3);
+    _ASSERTE(kDbgStateLockType_Count == 2);
 
-    return m_rgcLocksTaken[0] + m_rgcLocksTaken[1] + m_rgcLocksTaken[2];
+    return m_rgcLocksTaken[0] + m_rgcLocksTaken[1];
 }
 
 inline void DbgStateLockState::SetStartingValues()
@@ -585,7 +585,7 @@ void CONTRACT_ASSERT(const char *szElaboration,
             }
             else
             {
-                strcat_s(Buf,ARRAY_SIZE(Buf), "We can't find the violated contract. Look for an old-style non-holder-based contract.\n");
+                strcat_s(Buf,ARRAY_SIZE(Buf), "Missing tracking information. Look for data structures that manipulate contract state (i.e., CrstHolder).\n");
             }
         }
 
@@ -619,15 +619,12 @@ inline UINT GetDbgStateLockCount(DbgStateLockType dbgStateLockType)
 
 #define ASSERT_NO_USER_LOCKS_HELD()   \
     _ASSERTE(GetDbgStateLockCount(kDbgStateLockType_User) == 0)
-#define ASSERT_NO_HOST_BREAKABLE_CRSTS_HELD()   \
-    _ASSERTE(GetDbgStateLockCount(kDbgStateLockType_HostBreakableCrst) == 0)
 #define ASSERT_NO_EE_LOCKS_HELD()   \
     _ASSERTE(GetDbgStateLockCount(kDbgStateLockType_EE) == 0)
 
 #else  // ENABLE_CONTRACTS_IMPL
 
 #define ASSERT_NO_USER_LOCKS_HELD()
-#define ASSERT_NO_HOST_BREAKABLE_CRSTS_HELD()
 #define ASSERT_NO_EE_LOCKS_HELD()
 
 #endif  // ENABLE_CONTRACTS_IMPL

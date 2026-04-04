@@ -15,12 +15,11 @@ namespace System.Xml
 {
     public class XmlDictionary : IXmlDictionary
     {
-        private static IXmlDictionary? s_empty;
         private readonly Dictionary<string, XmlDictionaryString> _lookup;
         private XmlDictionaryString[]? _strings;
         private int _nextId;
 
-        public static IXmlDictionary Empty => s_empty ??= new EmptyDictionary();
+        public static IXmlDictionary Empty => field ??= new EmptyDictionary();
 
         public XmlDictionary()
         {

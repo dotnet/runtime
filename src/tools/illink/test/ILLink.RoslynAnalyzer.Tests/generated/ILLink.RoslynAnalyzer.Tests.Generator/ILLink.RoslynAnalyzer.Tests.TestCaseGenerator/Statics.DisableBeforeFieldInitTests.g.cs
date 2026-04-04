@@ -4,16 +4,16 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests.Statics
 {
-	public sealed partial class DisableBeforeFieldInitTests : LinkerTestBase
-	{
+    public sealed partial class DisableBeforeFieldInitTests : LinkerTestBase
+    {
 
-		protected override string TestSuiteName => "Statics.DisableBeforeFieldInit";
+        protected override string TestSuiteName => "Statics.DisableBeforeFieldInit";
 
-		[Fact]
-		public Task UnusedStaticFieldInitializer ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task UnusedStaticFieldInitializer()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-	}
+    }
 }

@@ -73,6 +73,11 @@
 #endif
 
 #if defined(__GNUC__)
+#if defined(HOST_X86) || defined(HOST_AMD64)
+#define SFENCE_MEMORY_BARRIER() asm volatile ("sfence" : : : "memory")
+#else
+#define SFENCE_MEMORY_BARRIER()
+#endif
 #if defined(HOST_ARMV6)
 // DMB ISH not valid on ARMv6
 #define VOLATILE_MEMORY_BARRIER() asm volatile ("mcr p15, 0, r0, c7, c10, 5" : : : "memory")
@@ -97,13 +102,22 @@
 //
 #define VOLATILE_MEMORY_BARRIER() asm volatile ("" : : : "memory")
 #endif // HOST_ARM || HOST_ARM64
+
 #elif (defined(HOST_ARM) || defined(HOST_ARM64)) && _ISO_VOLATILE
 // ARM & ARM64 have a very weak memory model and very few tools to control that model. We're forced to perform a full
 // memory barrier to preserve the volatile semantics. Technically this is only necessary on MP systems but we
 // currently don't have a cheap way to determine the number of CPUs from this header file. Revisit this if it
 // turns out to be a performance issue for the uni-proc case.
+
 #define VOLATILE_MEMORY_BARRIER() MemoryBarrier()
+#define SFENCE_MEMORY_BARRIER()
 #else
+
+#if defined(HOST_X86) || defined(HOST_AMD64)
+#define SFENCE_MEMORY_BARRIER() _mm_sfence()
+#else
+#define SFENCE_MEMORY_BARRIER()
+#endif
 //
 // On VC++, reorderings at the compiler and machine level are prevented by the use of the
 // "volatile" keyword in VolatileLoad and VolatileStore.  This should work on any CPU architecture
@@ -322,12 +336,6 @@ void VolatileLoadBarrier()
 // cast the result to a float.  In general, calling Load or Store explicitly will work around
 // any problems that can't be solved by operator overloading.
 //
-// @TODO: it's not clear that we actually *want* any operator overloading here.  It's in here primarily
-// to ease the task of converting all of the old uses of the volatile keyword, but in the long
-// run it's probably better if users of this class are forced to call Load() and Store() explicitly.
-// This would make it much more clear where the memory barriers are, and which operations are actually
-// being performed, but it will have to wait for another cleanup effort.
-//
 template <typename T>
 class Volatile
 {
@@ -408,7 +416,7 @@ public:
     // accessed without using Load and Store, but it is necessary for passing Volatile<T> to APIs like
     // InterlockedIncrement.
     //
-    inline volatile T* GetPointer() { return (volatile T*)&m_val; }
+    inline constexpr volatile T* GetPointer() { return (volatile T*)&m_val; }
 
 
     //
@@ -439,46 +447,7 @@ public:
     // a pointer to a volatile T here, so we cannot accidentally pass this pointer to an API that
     // expects a normal pointer.
     //
-    inline T volatile * operator&() {return this->GetPointer();}
-    inline T volatile const * operator&() const {return this->GetPointer();}
-
-    //
-    // Comparison operators
-    //
-    template<typename TOther>
-    inline bool operator==(const TOther& other) const {return this->Load() == other;}
-
-    template<typename TOther>
-    inline bool operator!=(const TOther& other) const {return this->Load() != other;}
-
-    //
-    // Miscellaneous operators.  Add more as necessary.
-    //
-	inline Volatile<T>& operator+=(T val) {Store(this->Load() + val); return *this;}
-	inline Volatile<T>& operator-=(T val) {Store(this->Load() - val); return *this;}
-    inline Volatile<T>& operator|=(T val) {Store(this->Load() | val); return *this;}
-    inline Volatile<T>& operator&=(T val) {Store(this->Load() & val); return *this;}
-    inline bool operator!() const { STATIC_CONTRACT_SUPPORTS_DAC; return !this->Load();}
-
-    //
-    // Prefix increment
-    //
-    inline Volatile& operator++() {this->Store(this->Load()+1); return *this;}
-
-    //
-    // Postfix increment
-    //
-    inline T operator++(int) {T val = this->Load(); this->Store(val+1); return val;}
-
-    //
-    // Prefix decrement
-    //
-    inline Volatile& operator--() {this->Store(this->Load()-1); return *this;}
-
-    //
-    // Postfix decrement
-    //
-    inline T operator--(int) {T val = this->Load(); this->Store(val-1); return val;}
+    inline constexpr T volatile * operator&() {return this->GetPointer();}
 };
 
 //
@@ -516,6 +485,19 @@ public:
     {
         STATIC_CONTRACT_SUPPORTS_DAC;
     }
+
+    //
+    // Bring the base class operator= into scope.  Without this, the compiler-generated
+    // copy assignment operator hides Volatile<P>::operator= and performs a plain store,
+    // bypassing the memory barriers provided by VolatileStore.
+    //
+    using Volatile<P>::operator=;
+
+    //
+    // Copy assignment operator.  The using declaration above does not suppress the
+    // compiler-generated copy assignment, so we must define it explicitly.
+    //
+    inline VolatilePtr<T,P>& operator=(const VolatilePtr<T,P>& other) {this->Store(other.Load()); return *this;}
 
     //
     // Cast to the pointer type

@@ -20,11 +20,11 @@
 #pragma warning(disable:4663)
 
 #include "eeconfig.h"
-#include "gms.h"
 #include "utsem.h"
 #include "gccover.h"
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
+#include "cdacstress.h"
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)
 #include "gcinfodecoder.h"
@@ -407,7 +407,7 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
         switch (pPrecode->GetType())
         {
             case PRECODE_STUB:
-            case PRECODE_NDIRECT_IMPORT:
+            case PRECODE_PINVOKE_IMPORT:
             case PRECODE_THISPTR_RETBUF:
                 return dac_cast<PTR_MethodDesc>(pPrecode->AsStubPrecode()->GetMethodDesc());
             default:
@@ -438,48 +438,34 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
 
 void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
 {
-    ReturnKind returnKind = callMD->GetReturnKind(true);
+    ReturnKind returnKind = callMD->GetReturnKind();
     if (!IsValidReturnKind(returnKind))
     {
         // SKip GC coverage after the call.
         return;
     }
-    _ASSERTE(IsValidReturnKind(returnKind));
 
-    bool ispointerKind = IsPointerReturnKind(returnKind);
-    if (ispointerKind)
+    if (callMD->IsAsyncMethod())
     {
-        bool protectRegister[2] = { false, false };
-
-        bool moreRegisters = false;
-
-        ReturnKind fieldKind1 = ExtractRegReturnKind(returnKind, 0, moreRegisters);
-        if (IsPointerFieldReturnKind(fieldKind1))
+        if (IsPointerReturnKind(returnKind))
         {
-            protectRegister[0] = true;
-        }
-        if (moreRegisters)
-        {
-            ReturnKind fieldKind2 = ExtractRegReturnKind(returnKind, 1, moreRegisters);
-            if (IsPointerFieldReturnKind(fieldKind2))
-            {
-                protectRegister[1] = true;
-            }
-        }
-        _ASSERTE(!moreRegisters);
-
-        if (protectRegister[0] && !protectRegister[1])
-        {
-            *instrToReplace = INTERRUPT_INSTR_PROTECT_FIRST_RET;
+            *instrToReplace = INTERRUPT_INSTR_PROTECT_CONT_AND_RET;
         }
         else
         {
-            _ASSERTE(!"Not expected multi reg return with pointers.");
+            *instrToReplace = INTERRUPT_INSTR_PROTECT_CONT;
         }
     }
     else
     {
-        *instrToReplace = INTERRUPT_INSTR;
+        if (IsPointerReturnKind(returnKind))
+        {
+            *instrToReplace = INTERRUPT_INSTR_PROTECT_RET;
+        }
+        else
+        {
+            *instrToReplace = INTERRUPT_INSTR;
+        }
     }
 }
 
@@ -668,14 +654,22 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // `if (!IsGcCoverageInterruptInstruction(instrPtr))` after we read `*instrPtr`.
 
     bool atCall;
-    bool afterCallProtect = false;
+    bool afterCallRetProtect = false;
+    bool afterCallContProtect = false;
 
     BYTE instrVal = *instrPtr;
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
 
-    if (instrVal == INTERRUPT_INSTR_PROTECT_FIRST_RET)
+    if (instrVal == INTERRUPT_INSTR_PROTECT_RET ||
+        instrVal == INTERRUPT_INSTR_PROTECT_CONT_AND_RET)
     {
-        afterCallProtect = true;
+        afterCallRetProtect = true;
+    }
+
+    if (instrVal == INTERRUPT_INSTR_PROTECT_CONT ||
+        instrVal == INTERRUPT_INSTR_PROTECT_CONT_AND_RET)
+    {
+        afterCallContProtect = true;
     }
 
     if (!IsGcCoverageInterruptInstruction(instrPtr))
@@ -871,15 +865,20 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
     // The legacy X86 GC encoder does not encode the state of return registers at
     // call sites, so we must add an extra frame to protect returns.
-    DWORD_PTR retValReg = 0;
+    DWORD_PTR protRegs[2] = {};
 
-    if (afterCallProtect)
+    if (afterCallRetProtect)
     {
-        retValReg = regs->Eax;
+        protRegs[0] = regs->Eax;
+    }
+
+    if (afterCallContProtect)
+    {
+        protRegs[1] = regs->Ecx;
     }
 
     _ASSERTE(sizeof(OBJECTREF) == sizeof(DWORD_PTR));
-    GCFrame gcFrame(pThread, (OBJECTREF*)&retValReg, 1, TRUE);
+    GCFrame gcFrame(pThread, (OBJECTREF*)protRegs, 2, TRUE);
 
     MethodDesc *pMD = nativeCodeVersion.GetMethodDesc();
     LOG((LF_GCROOTS, LL_EVERYTHING, "GCCOVER: Doing GC at method %s::%s offset 0x%x\n",
@@ -888,6 +887,8 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     //-------------------------------------------------------------------------
     // Do the actual stress work
     //
+
+    CdacStress::MaybeVerify<cdac_on_instr>(pThread, regs);
 
     // BUG(github #10318) - when not using allocation contexts, the alloc lock
     // must be acquired here. Until fixed, this assert prevents random heap corruption.
@@ -905,9 +906,14 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
     CONSISTENCY_CHECK(!pThread->HasPendingGCStressInstructionUpdate());
 
-    if (afterCallProtect)
+    if (afterCallRetProtect)
     {
-        regs->Eax = retValReg;
+        regs->Eax = protRegs[0];
+    }
+
+    if (afterCallContProtect)
+    {
+        regs->Ecx = protRegs[1];
     }
 
     if (!Thread::UseRedirectForGcStress())
@@ -1192,7 +1198,9 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // Do the actual stress work
     //
 
-    // BUG(github #10318) - when not using allocation contexts, the alloc lock
+    CdacStress::MaybeVerify<cdac_on_instr>(pThread, regs);
+
+    // BUG(github #10318)- when not using allocation contexts, the alloc lock
     // must be acquired here. Until fixed, this assert prevents random heap corruption.
     assert(GCHeapUtilities::UseThreadAllocationContexts());
     GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
@@ -1331,7 +1339,7 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
     }
-    
+
     // The thread is in preemptive mode. Normally, it should not be able to trigger GC.
     // Besides the GC may be already happening and scanning our stack.
     if (!pThread->PreemptiveGCDisabled())

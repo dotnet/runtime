@@ -15,7 +15,6 @@ namespace System.Net.Mime
         // In MailWriter, all encoding has already been done so this will only fold lines
         // that are NOT encoded already, which means being less conservative is ok.
         private const int DefaultLineLength = 76;
-        private static readonly AsyncCallback s_onWrite = OnWrite;
 
         protected readonly BufferBuilder _bufferBuilder;
         protected readonly Stream _stream;
@@ -97,9 +96,7 @@ namespace System.Net.Mime
 
         #region Content
 
-        internal Stream GetContentStream() => GetContentStream(null);
-
-        private ClosableStream GetContentStream(MultiAsyncResult? multiResult)
+        internal Stream GetContentStream()
         {
             if (_isInContent)
             {
@@ -111,81 +108,23 @@ namespace System.Net.Mime
             CheckBoundary();
 
             _bufferBuilder.Append("\r\n"u8);
-            Flush(multiResult);
+            Flush();
 
             ClosableStream cs = new ClosableStream(new EightBitStream(_stream, _shouldEncodeLeadingDots), _onCloseHandler);
             _contentStream = cs;
             return cs;
         }
 
-        internal IAsyncResult BeginGetContentStream(AsyncCallback? callback, object? state)
-        {
-            MultiAsyncResult multiResult = new MultiAsyncResult(this, callback, state);
-
-            Stream s = GetContentStream(multiResult);
-
-            if (!(multiResult.Result is Exception))
-            {
-                multiResult.Result = s;
-            }
-
-            multiResult.CompleteSequence();
-
-            return multiResult;
-        }
-
-        internal static Stream EndGetContentStream(IAsyncResult result)
-        {
-            object o = MultiAsyncResult.End(result)!;
-            if (o is Exception e)
-            {
-                ExceptionDispatchInfo.Throw(e);
-            }
-            return (Stream)o;
-        }
-
         #endregion Content
 
         #region Cleanup
 
-        protected void Flush(MultiAsyncResult? multiResult)
+        protected void Flush()
         {
             if (_bufferBuilder.Length > 0)
             {
-                if (multiResult != null)
-                {
-                    multiResult.Enter();
-                    IAsyncResult result = _stream.BeginWrite(_bufferBuilder.GetBuffer(), 0,
-                        _bufferBuilder.Length, s_onWrite, multiResult);
-                    if (result.CompletedSynchronously)
-                    {
-                        _stream.EndWrite(result);
-                        multiResult.Leave();
-                    }
-                }
-                else
-                {
-                    _stream.Write(_bufferBuilder.GetBuffer(), 0, _bufferBuilder.Length);
-                }
+                _stream.Write(_bufferBuilder.GetBuffer(), 0, _bufferBuilder.Length);
                 _bufferBuilder.Reset();
-            }
-        }
-
-        protected static void OnWrite(IAsyncResult result)
-        {
-            if (!result.CompletedSynchronously)
-            {
-                MultiAsyncResult multiResult = (MultiAsyncResult)result.AsyncState!;
-                BaseWriter thisPtr = (BaseWriter)multiResult.Context;
-                try
-                {
-                    thisPtr._stream.EndWrite(result);
-                    multiResult.Leave();
-                }
-                catch (Exception e)
-                {
-                    multiResult.Leave(e);
-                }
             }
         }
 

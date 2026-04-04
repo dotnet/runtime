@@ -84,30 +84,14 @@ namespace System.Runtime.Serialization
         public const string ValueNameProperty = "ValueName";
         public const string ValueProperty = "Value";
 
-        private static Uri? s_dataContractXsdBaseNamespaceUri;
-        internal static Uri DataContractXsdBaseNamespaceUri => s_dataContractXsdBaseNamespaceUri ??= new Uri(DataContractXsdBaseNamespace);
-
-        private static XmlQualifiedName? s_idQualifiedName;
-        internal static XmlQualifiedName IdQualifiedName => s_idQualifiedName ??= new XmlQualifiedName(ImportGlobals.IdLocalName, ImportGlobals.SerializationNamespace);
-
-        private static XmlQualifiedName? s_refQualifiedName;
-        internal static XmlQualifiedName RefQualifiedName => s_refQualifiedName ??= new XmlQualifiedName(ImportGlobals.RefLocalName, ImportGlobals.SerializationNamespace);
-
-        private static Type? s_typeOfXmlElement;
-        internal static Type TypeOfXmlElement => s_typeOfXmlElement ??= typeof(XmlElement);
-
-        private static Type? s_typeOfXmlNodeArray;
-        internal static Type TypeOfXmlNodeArray => s_typeOfXmlNodeArray ??= typeof(XmlNode[]);
-
-        private static Type? s_typeOfXmlQualifiedName;
-        internal static Type TypeOfXmlQualifiedName => s_typeOfXmlQualifiedName ??= typeof(XmlQualifiedName);
-
-        private static Type? s_typeOfXmlSchemaProviderAttribute;
-        internal static Type TypeOfXmlSchemaProviderAttribute => s_typeOfXmlSchemaProviderAttribute ??= typeof(XmlSchemaProviderAttribute);
-
-        private static Type? s_typeOfXmlSchemaType;
-        internal static Type TypeOfXmlSchemaType => s_typeOfXmlSchemaType ??= typeof(XmlSchemaType);
-
+        internal static Uri DataContractXsdBaseNamespaceUri => field ??= new Uri(DataContractXsdBaseNamespace);
+        internal static XmlQualifiedName IdQualifiedName => field ??= new XmlQualifiedName(ImportGlobals.IdLocalName, ImportGlobals.SerializationNamespace);
+        internal static XmlQualifiedName RefQualifiedName => field ??= new XmlQualifiedName(ImportGlobals.RefLocalName, ImportGlobals.SerializationNamespace);
+        internal static Type TypeOfXmlElement => field ??= typeof(XmlElement);
+        internal static Type TypeOfXmlNodeArray => field ??= typeof(XmlNode[]);
+        internal static Type TypeOfXmlQualifiedName => field ??= typeof(XmlQualifiedName);
+        internal static Type TypeOfXmlSchemaProviderAttribute => field ??= typeof(XmlSchemaProviderAttribute);
+        internal static Type TypeOfXmlSchemaType => field ??= typeof(XmlSchemaType);
 
         public const string SerializationSchema = @"<?xml version='1.0' encoding='utf-8'?>
 <xs:schema elementFormDefault='qualified' attributeFormDefault='qualified' xmlns:tns='http://schemas.microsoft.com/2003/10/Serialization/' targetNamespace='http://schemas.microsoft.com/2003/10/Serialization/' xmlns:xs='http://www.w3.org/2001/XMLSchema'>

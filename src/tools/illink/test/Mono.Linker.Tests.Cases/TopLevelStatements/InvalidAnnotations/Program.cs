@@ -6,22 +6,24 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 [assembly: ExpectedNoWarnings]
 
-Test ();
+Test();
 
 [Kept]
-static void Test () {
-    RequireAll (GetUnsupportedType ());
+static void Test()
+{
+    RequireAll(GetUnsupportedType());
 }
 
-[ExpectedWarning ("IL2098", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101215")]
+[ExpectedWarning("IL2098", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101215")]
 [Kept]
 static void RequireAll(
-    [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-    [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] UnsupportedType f) {}
+    [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] UnsupportedType f)
+{ }
 
 [Kept]
-static UnsupportedType GetUnsupportedType () => new UnsupportedType ();
+static UnsupportedType GetUnsupportedType() => new UnsupportedType();
 
 [Kept]
-[KeptMember (".ctor()")]
-class UnsupportedType {}
+[KeptMember(".ctor()")]
+class UnsupportedType { }

@@ -6,10 +6,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Mono.Linker.Tests.Cases.Generics.Dependencies
 {
-	public class UnresolvedGenericsLibrary
-	{
-		public class GenericClass<T> { }
+    public class UnresolvedGenericsLibrary
+    {
+        public class GenericClass<T> { }
 
-		public static void GenericMethod<T> () { }
-	}
+        public static void GenericMethod<T>() { }
+    }
 }

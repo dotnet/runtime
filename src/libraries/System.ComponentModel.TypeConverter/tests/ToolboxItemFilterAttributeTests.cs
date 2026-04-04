@@ -12,7 +12,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("filterString")]
-        public void Ctor_String(string filterString)
+        public void Ctor_String(string? filterString)
         {
             var attribute = new ToolboxItemFilterAttribute(filterString);
             Assert.Equal(filterString ?? string.Empty, attribute.FilterString);
@@ -26,7 +26,7 @@ namespace System.ComponentModel.Tests
         [InlineData("filterString", ToolboxItemFilterType.Require)]
         [InlineData("filterString", ToolboxItemFilterType.Allow - 1)]
         [InlineData("filterString", ToolboxItemFilterType.Require + 1)]
-        public void Ctor_String_ToolboxItemFilterType(string filterString, ToolboxItemFilterType filterType)
+        public void Ctor_String_ToolboxItemFilterType(string? filterString, ToolboxItemFilterType filterType)
         {
             var attribute = new ToolboxItemFilterAttribute(filterString, filterType);
             Assert.Equal(filterString ?? string.Empty, attribute.FilterString);
@@ -37,7 +37,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, "System.ComponentModel.ToolboxItemFilterAttribute")]
         [InlineData("", "System.ComponentModel.ToolboxItemFilterAttribute")]
         [InlineData("filterString", "System.ComponentModel.ToolboxItemFilterAttributefilterString")]
-        public void TypeId_ValidEditorBaseTypeName_ReturnsExcepted(string filterType, object expected)
+        public void TypeId_ValidEditorBaseTypeName_ReturnsExcepted(string? filterType, object expected)
         {
             var attribute = new ToolboxItemFilterAttribute(filterType);
             Assert.Equal(expected, attribute.TypeId);
@@ -98,7 +98,7 @@ namespace System.ComponentModel.Tests
         [InlineData("filterString", ToolboxItemFilterType.Require, "filterString,Require")]
         [InlineData("filterString", ToolboxItemFilterType.Allow - 1, "filterString,")]
         [InlineData("filterString", ToolboxItemFilterType.Require + 1, "filterString,")]
-        public void ToString_Invoke_ReturnsExpected(string filterString, ToolboxItemFilterType filterType, string expected)
+        public void ToString_Invoke_ReturnsExpected(string? filterString, ToolboxItemFilterType filterType, string expected)
         {
             var attribute = new ToolboxItemFilterAttribute(filterString, filterType);
             Assert.Equal(expected, attribute.ToString());

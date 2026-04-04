@@ -98,7 +98,8 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
                                emitAttr         retSize,
-                               emitAttr         secondRetSize);
+                               emitAttr         secondRetSize,
+                               bool             hasAsyncRet);
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
@@ -106,7 +107,8 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
                                emitAttr         retSize,
-                               emitAttr         secondRetSize);
+                               emitAttr         secondRetSize,
+                               bool             hasAsyncRet);
 
 /************************************************************************/
 /*   enum to allow instruction optimisation to specify register order   */
@@ -552,6 +554,9 @@ static code_t insEncodeReg3Scale(bool isScaled);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 static code_t insEncodeSveElemsize(emitAttr size);
+
+// Returns the encoding to select the 1/2/4 byte elemsize for an Arm64 Sve narrowing vector instruction
+static code_t insEncodeNarrowingSveElemsize(emitAttr size);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
 // This specifically encodes the size at bit locations '22-21'.
@@ -1053,6 +1058,9 @@ static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
 // true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
 static bool emitIns_valid_imm_for_unscaled_ldst_offset(INT64 imm);
 
+// true if this 'imm' can be encoded as the offset in an scaled SVE ldr/str instruction
+static bool emitIns_valid_imm_for_scaled_sve_ldst_offset(INT64 imm);
+
 // true if this 'imm' can be encoded as a input operand to a ccmp instruction
 static bool emitIns_valid_imm_for_ccmp(INT64 imm);
 
@@ -1476,6 +1484,9 @@ void emitInsSve_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl
 void emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
 
+void emitInsSve_Mov(
+    instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
+
 void emitIns_R_R(instruction     ins,
                  emitAttr        attr,
                  regNumber       reg1,
@@ -1592,8 +1603,13 @@ void emitIns_R_R_R_Ext(instruction ins,
                        insOpts     opt         = INS_OPTS_NONE,
                        int         shiftAmount = -1);
 
-void emitIns_R_R_I_I(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_R_I_I(instruction ins,
+                     emitAttr    attr,
+                     regNumber   reg1,
+                     regNumber   reg2,
+                     ssize_t     imm1,
+                     ssize_t     imm2,
+                     insOpts     opt = INS_OPTS_NONE);
 
 void emitIns_R_R_R_R(instruction     ins,
                      emitAttr        attr,
@@ -1631,6 +1647,16 @@ void emitInsSve_R_R_R_R_I(instruction ins,
                           ssize_t     imm,
                           insOpts     opt = INS_OPTS_NONE);
 
+void emitInsSve_R_R_R_R_I_I(instruction ins,
+                            emitAttr    attr,
+                            regNumber   reg1,
+                            regNumber   reg2,
+                            regNumber   reg3,
+                            regNumber   reg4,
+                            ssize_t     imm1,
+                            ssize_t     imm2,
+                            insOpts     opt = INS_OPTS_NONE);
+
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 
 void emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insCond cond);
@@ -1647,6 +1673,14 @@ void emitIns_R_PATTERN(
 
 void emitIns_R_PATTERN_I(
     instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, ssize_t imm, insOpts opt = INS_OPTS_NONE);
+
+void emitIns_R_R_PATTERN_I(instruction   ins,
+                           emitAttr      attr,
+                           regNumber     reg1,
+                           regNumber     reg2,
+                           insSvePattern pattern,
+                           ssize_t       imm,
+                           insOpts       opt = INS_OPTS_NONE);
 
 void emitIns_PRFOP_R_R_R(instruction     ins,
                          emitAttr        attr,

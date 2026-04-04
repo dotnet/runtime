@@ -3,12 +3,12 @@
 
 namespace Mono.Linker
 {
-	public enum MethodAction
-	{
-		Nothing,
-		Parse,
-		ForceParse,
-		ConvertToStub,
-		ConvertToThrow,
-	}
+    public enum MethodAction
+    {
+        Nothing,
+        Parse,
+        ForceParse,
+        ConvertToStub,
+        ConvertToThrow,
+    }
 }

@@ -65,7 +65,7 @@ private:
 #ifdef TARGET_WINDOWS
     typedef _WIN32_FIND_DATAW FilterArgType;
 #else
-    typedef struct dirent FilterArgType;
+    typedef struct FindData FilterArgType;
 #endif
 
     typedef bool (*DirectoryFilterFunction_t)(FilterArgType*);

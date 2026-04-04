@@ -25,7 +25,7 @@ namespace StressLogAnalyzer
                 {"GC_HEAP RELOCATING Objects in heap within range [%p %p) by -0x%x bytes\n", WellKnownString.PLUG_MOVE },
                 {"%d gc thread waiting...", WellKnownString.THREAD_WAIT },
                 {"%d gc thread waiting... Done", WellKnownString.THREAD_WAIT_DONE },
-                {"*GC* %d(gen0:%d)(%d)(alloc: %zd)(%s)(%d)(%d)", WellKnownString.GCSTART },
+                {"*GC* %d(gen0:%d)(%d) (alloced for %.3fms, g0 %zd (b: %zd, %zd/h) (%.3fmb/ms), g3 %zd (%.3fmb/ms), g4 %zd (%.3fmb/ms))(%s)(%d)(%d)", WellKnownString.GCSTART },
                 {"*EGC* %zd(gen0:%zd)(%zd)(%d)(%s)(%s)(%s)(ml: %d->%d)\n", WellKnownString.GCEND },
                 {"---- Mark Phase on heap %d condemning %d ----", WellKnownString.MARK_START },
                 {"---- Plan Phase on heap %d ---- Condemned generation %d, promotion: %d", WellKnownString.PLAN_START },

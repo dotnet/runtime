@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
-using System;
 using Xunit;
-
 using static Microsoft.DotNet.CoreSetup.Test.Constants;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
@@ -485,14 +485,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         private CommandResult RunTest(
             Func<RuntimeConfig, RuntimeConfig> runtimeConfig,
-            Action<DotNetCliExtensions.DotNetCliCustomizer> customizeDotNet = null)
+            Action<DotNetCliExtensions.DotNetCliCustomizer> customizeDotNet = null,
+            [CallerMemberName] string caller = "")
         {
             return RunTest(
                 SharedState.DotNetWithMultipleFrameworks,
                 SharedState.FrameworkReferenceApp,
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig)
-                    .WithDotnetCustomizer(customizeDotNet));
+                    .WithDotnetCustomizer(customizeDotNet),
+                caller: caller);
         }
     }
 }

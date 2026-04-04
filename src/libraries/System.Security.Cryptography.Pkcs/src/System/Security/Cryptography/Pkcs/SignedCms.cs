@@ -210,30 +210,18 @@ namespace System.Security.Cryptography.Pkcs
 
             static byte[] CopyContent(ReadOnlySpan<byte> encodedMessage)
             {
-                unsafe
+                ValueAsnReader reader = new ValueAsnReader(encodedMessage, AsnEncodingRules.BER);
+
+                // Windows (and thus NetFx) reads the leading data and ignores extra.
+                // So use the Decode overload which doesn't throw on extra data.
+                ValueContentInfoAsn.Decode(ref reader, out ValueContentInfoAsn contentInfo);
+
+                if (contentInfo.ContentType != Oids.Pkcs7Signed)
                 {
-                    fixed (byte* pin = encodedMessage)
-                    {
-                        using (var manager = new PointerMemoryManager<byte>(pin, encodedMessage.Length))
-                        {
-                            AsnValueReader reader = new AsnValueReader(encodedMessage, AsnEncodingRules.BER);
-
-                            // Windows (and thus NetFx) reads the leading data and ignores extra.
-                            // So use the Decode overload which doesn't throw on extra data.
-                            ContentInfoAsn.Decode(
-                                ref reader,
-                                manager.Memory,
-                                out ContentInfoAsn contentInfo);
-
-                            if (contentInfo.ContentType != Oids.Pkcs7Signed)
-                            {
-                                throw new CryptographicException(SR.Cryptography_Cms_InvalidMessageType);
-                            }
-
-                            return contentInfo.Content.ToArray();
-                        }
-                    }
+                    throw new CryptographicException(SR.Cryptography_Cms_InvalidMessageType);
                 }
+
+                return contentInfo.Content.ToArray();
             }
         }
 
@@ -418,15 +406,14 @@ namespace System.Security.Cryptography.Pkcs
             RemoveSignature(idx);
         }
 
-        internal ReadOnlySpan<byte> GetHashableContentSpan()
+        internal ReadOnlyMemory<byte> GetHashableContentMemory()
         {
             Debug.Assert(_heldContent.HasValue);
             ReadOnlyMemory<byte> content = _heldContent.Value;
-            ReadOnlySpan<byte> contentSpan = content.Span;
 
             if (!_hasPkcs7Content)
             {
-                return contentSpan;
+                return content;
             }
 
             // In PKCS#7 compat, only return the contents within the outermost tag.
@@ -434,13 +421,13 @@ namespace System.Security.Cryptography.Pkcs
             try
             {
                 AsnDecoder.ReadEncodedValue(
-                    contentSpan,
+                    content.Span,
                     AsnEncodingRules.BER,
                     out int contentOffset,
                     out int contentLength,
                     out _);
 
-                return contentSpan.Slice(contentOffset, contentLength);
+                return content.Slice(contentOffset, contentLength);
             }
             catch (AsnContentException e)
             {

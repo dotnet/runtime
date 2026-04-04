@@ -48,6 +48,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private static readonly Asn1Tag s_context1 = new Asn1Tag(TagClass.ContextSpecific, 1);
         private static readonly Asn1Tag s_context2 = new Asn1Tag(TagClass.ContextSpecific, 2);
         private static readonly KeyFactory[] s_variantKeyFactories = KeyFactory.BuildVariantFactories();
+        private static readonly KeyFactory[] s_tlsVariantKeyFactories = KeyFactory.BuildTlsVariantFactories();
 
         private static readonly X500DistinguishedName s_nonParticipatingName =
             new X500DistinguishedName("CN=The Ghost in the Machine");
@@ -488,7 +489,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (CorruptRevocationSignature)
             {
-                signature[5] ^= 0xFF;
+                signature[^2] ^= 0xFF;
             }
 
             // CertificateList
@@ -643,7 +644,7 @@ SingleResponse ::= SEQUENCE {
 
                     if (CorruptRevocationSignature)
                     {
-                        signature[5] ^= 0xFF;
+                        signature[^2] ^= 0xFF;
                     }
 
                     writer.WriteBitString(signature);
@@ -804,6 +805,7 @@ SingleResponse ::= SEQUENCE {
             bool pkiOptionsInSubject = false,
             string subjectName = null,
             KeyFactory keyFactory = null,
+            bool forTls = false,
             X509ExtensionCollection extensions = null)
         {
             bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
@@ -842,9 +844,10 @@ SingleResponse ::= SEQUENCE {
                     int written = hasher.GetCurrentHash(hash);
                     Debug.Assert(written == hash.Length);
 
-                    // Using mod here will create an imbalance any time s_variantKeyFactories isn't a power of 2,
+                    // Using mod here will create an imbalance any time the key factories array isn't a power of 2,
                     // but that's OK.
-                    keyFactory = s_variantKeyFactories[hash[0] % s_variantKeyFactories.Length];
+                    KeyFactory[] keyFactories = forTls ? s_tlsVariantKeyFactories : s_variantKeyFactories;
+                    keyFactory = keyFactories[hash[0] % keyFactories.Length];
                 }
             }
 
@@ -946,6 +949,7 @@ SingleResponse ::= SEQUENCE {
             bool pkiOptionsInSubject = false,
             string subjectName = null,
             KeyFactory keyFactory = null,
+            bool forTls = false,
             X509ExtensionCollection extensions = null)
         {
             BuildPrivatePki(
@@ -960,6 +964,7 @@ SingleResponse ::= SEQUENCE {
                 pkiOptionsInSubject: pkiOptionsInSubject,
                 subjectName: subjectName,
                 keyFactory: keyFactory,
+                forTls: forTls,
                 extensions: extensions);
 
             intermediateAuthority = intermediateAuthorities.Single();
@@ -998,6 +1003,7 @@ SingleResponse ::= SEQUENCE {
                 RSA rsa => cert.CopyWithPrivateKey(rsa),
                 ECDsa ecdsa => cert.CopyWithPrivateKey(ecdsa),
                 MLDsa mldsa => cert.CopyWithPrivateKey(mldsa),
+                SlhDsa slhDsa => cert.CopyWithPrivateKey(slhDsa),
                 DSA dsa => cert.CopyWithPrivateKey(dsa),
                 _ => throw new InvalidOperationException(
                     $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
@@ -1014,6 +1020,9 @@ SingleResponse ::= SEQUENCE {
 
             internal static KeyFactory MLDsa { get; } =
                 new(() => Cryptography.MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65));
+
+            internal static KeyFactory SlhDsa { get; } =
+                new(() => Cryptography.SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f));
 
             private Func<IDisposable> _factory;
 
@@ -1034,7 +1043,42 @@ SingleResponse ::= SEQUENCE {
 
             internal static KeyFactory[] BuildVariantFactories()
             {
-                return [RSA, ECDsa];
+                List<KeyFactory> factories = [RSA, ECDsa];
+
+                if (Cryptography.MLDsa.IsSupported)
+                {
+                    factories.Add(MLDsa);
+                }
+
+                if (Cryptography.SlhDsa.IsSupported)
+                {
+                    factories.Add(SlhDsa);
+                }
+
+                return factories.ToArray();
+            }
+
+            internal static KeyFactory[] BuildTlsVariantFactories()
+            {
+                List<KeyFactory> factories = [RSASize(2048), ECDsa];
+
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    if (Cryptography.MLDsa.IsSupported)
+                    {
+                        factories.Add(MLDsa);
+                    }
+
+                    // OpenSSL default provider does not advertise SLH-DSA in TLS-SIGALG capability,
+                    // causing it to not recognize SLH-DSA certificates for use in TLS connections
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/119573")]
+                    if (!PlatformDetection.IsOpenSslSupported && Cryptography.SlhDsa.IsSupported)
+                    {
+                        factories.Add(SlhDsa);
+                    }
+                }
+
+                return factories.ToArray();
             }
         }
 
@@ -1055,6 +1099,7 @@ SingleResponse ::= SEQUENCE {
                     cert.GetRSAPrivateKey() ??
                     cert.GetECDsaPrivateKey() ??
                     cert.GetMLDsaPrivateKey() ??
+                    cert.GetSlhDsaPrivateKey() ??
                     (IDisposable)cert.GetDSAPrivateKey() ??
                     throw new NotSupportedException();
             }
@@ -1076,6 +1121,7 @@ SingleResponse ::= SEQUENCE {
                     RSA rsa => new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                     ECDsa ecdsa => new CertificateRequest(subject, ecdsa, HashAlgorithmName.SHA256),
                     MLDsa mldsa => new CertificateRequest(subject, mldsa),
+                    SlhDsa slhDsa => new CertificateRequest(subject, slhDsa),
                     _ => throw new NotSupportedException(),
                 };
             }
@@ -1087,6 +1133,7 @@ SingleResponse ::= SEQUENCE {
                     RSA rsa => X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
                     ECDsa ecdsa => X509SignatureGenerator.CreateForECDsa(ecdsa),
                     MLDsa mldsa => X509SignatureGenerator.CreateForMLDsa(mldsa),
+                    SlhDsa slhDsa => X509SignatureGenerator.CreateForSlhDsa(slhDsa),
                     _ => throw new NotSupportedException(),
                 };
             }

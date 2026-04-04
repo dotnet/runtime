@@ -20,30 +20,32 @@ import argparse
 import asyncio
 import csv
 import datetime
+import html
 import json
 import locale
 import logging
 import math
-import os
 import multiprocessing
+import os
 import platform
+import queue
+import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
-import queue
-import re
+import time
 import urllib
 import urllib.request
 import zipfile
-import time
 
 from coreclr_arguments import *
 from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_nonzero_length_file, \
     make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
     require_azure_storage_libraries, authenticate_using_azure, \
     create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name, \
-    get_deepest_existing_directory
+    get_deepest_existing_directory, run_command
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -102,6 +104,10 @@ throughput_description = """\
 Measure throughput using PIN on one or more collections.
 """
 
+metricdiff_description = """\
+Measure JIT metric differences (for all metrics in the -details CSV, such as memory allocations) on one or more collections.
+"""
+
 upload_description = """\
 Upload a collection to SuperPMI Azure storage.
 """
@@ -130,7 +136,7 @@ summarize_description = """\
 Summarize multiple .json summaries created by --summary_as_json into a single .md file.
 """
 
-summary_type_help = "Type of summaries: asmdiffs or tpdiff"
+summary_type_help = "Type of summaries: asmdiffs, tpdiff, or metricdiff"
 
 summaries_help = "List of .json files to summarize"
 
@@ -145,13 +151,13 @@ to get that version. Otherwise, use "unknown-jit-ee-version".
 
 host_os_help = "OS (windows, osx, linux). Default: current OS."
 
-arch_help = "Architecture (x64, x86, arm, arm64, loongarch64, riscv64). Default: current architecture."
+arch_help = "Architecture (x64, x86, arm, arm64, loongarch64, riscv64, wasm). Default: current architecture."
 
 target_os_help = "Target OS, for use with cross-compilation JIT (windows, osx, linux). Default: current OS."
 
-target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64, loongarch64, riscv64). Passed as asm diffs target to SuperPMI. Default: current architecture."
+target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64, loongarch64, riscv64, wasm). Passed as asm diffs target to SuperPMI. Default: current architecture."
 
-mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64, loongarch64, riscv64). Default: target architecture."
+mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64, loongarch64, riscv64, wasm). Default: target architecture."
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
 
@@ -374,6 +380,10 @@ asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a 
 # subparser for throughput
 throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help)
+
+# subparser for metricdiff
+metricdiff_parser = subparsers.add_parser("metricdiff", description=metricdiff_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
+add_core_root_arguments(metricdiff_parser, "Release", throughput_build_type_help)
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -2210,13 +2220,17 @@ class SuperPMIReplayAsmDiffs:
                 logging.info("Running asm diffs of %s", mch_file)
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
-                detailed_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+
+                if self.coreclr_args.details:
+                    details_info_file = self.coreclr_args.details
+                else:
+                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
                 flags = [
                     "-a",  # Asm diffs
                     "-v", "ewi",  # display errors, warnings, missing, jit info
                     "-f", fail_mcl_file,  # Failing mc List
-                    "-details", detailed_info_file,  # Detailed information about each context
+                    "-details", details_info_file,  # Detailed information about each context
                 ]
                 if self.coreclr_args.produce_repro:
                     flags += [
@@ -2264,7 +2278,7 @@ class SuperPMIReplayAsmDiffs:
 
                 print_superpmi_error_result(return_code, self.coreclr_args)
 
-                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(detailed_info_file)
+                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(details_info_file)
                 print_superpmi_success_result(return_code, base_metrics, diff_metrics)
 
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
@@ -2554,10 +2568,6 @@ class SuperPMIReplayAsmDiffs:
                         os.remove(fail_mcl_file)
                         fail_mcl_file = None
 
-                    if os.path.isfile(detailed_info_file):
-                        os.remove(detailed_info_file)
-                        detailed_info_file = None
-
             ################################################################################################ end of for mch_file in self.mch_files
 
         # Report the overall results summary of the asmdiffs run
@@ -2586,7 +2596,7 @@ class SuperPMIReplayAsmDiffs:
                 if os.path.isfile(overall_md_summary_file):
                     os.remove(overall_md_summary_file)
 
-                with open(overall_md_summary_file, "w") as write_fh:
+                with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
                     write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, True)
                     logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
@@ -2594,7 +2604,7 @@ class SuperPMIReplayAsmDiffs:
                 if os.path.isfile(short_md_summary_file):
                     os.remove(short_md_summary_file)
 
-                with open(short_md_summary_file, "w") as write_fh:
+                with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
                     write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, False)
                     logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
 
@@ -2937,15 +2947,15 @@ def write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options
                         for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
 
             def write_row(name, diffed_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff, total_num_contexts):
-                write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({:1.2f}%)|{:,d} ({:1.2f}%)|\n".format(
+                write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({}%)|{:,d} ({}%)|\n".format(
                     name,
                     diffed_contexts,
                     num_minopts,
                     num_fullopts,
                     num_missed_base,
-                    num_missed_base / total_num_contexts * 100,
+                    "{:1.2f}".format(num_missed_base / total_num_contexts * 100) if total_num_contexts != 0 else "N/A",
                     num_missed_diff,
-                    num_missed_diff / total_num_contexts * 100))
+                    "{:1.2f}".format(num_missed_diff / total_num_contexts * 100) if total_num_contexts != 0 else "N/A"))
 
             for t in rows:
                 write_row(*t)
@@ -2988,7 +2998,7 @@ def write_example_diffs_to_markdown_summary(write_fh, asm_diffs):
                 for (func_name, diff, diff_text) in examples_to_put_in_summary:
                     base_size = int(diff["Base ActualCodeBytes"])
                     diff_size = int(diff["Diff ActualCodeBytes"])
-                    with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), func_name)):
+                    with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), html.escape(func_name))):
                         write_fh.write(diff_text)
 
 ################################################################################
@@ -3090,7 +3100,10 @@ class SuperPMIReplayThroughputDiff:
 
                 logging.info("Running throughput diff of %s", mch_file)
 
-                detailed_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                if self.coreclr_args.details:
+                    details_info_file = self.coreclr_args.details
+                else:
+                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
                 pin_options = [
                     "-follow_execv", # attach to child processes
@@ -3099,7 +3112,7 @@ class SuperPMIReplayThroughputDiff:
                 flags = [
                     "-applyDiff",
                     "-v", "ewi",
-                    "-details", detailed_info_file,
+                    "-details", details_info_file,
                 ]
                 flags += target_flags
                 flags += base_option_flags
@@ -3135,7 +3148,7 @@ class SuperPMIReplayThroughputDiff:
 
                 print_superpmi_error_result(return_code, self.coreclr_args)
 
-                (base_metrics, diff_metrics, _) = aggregate_diff_metrics(detailed_info_file)
+                (base_metrics, diff_metrics, _) = aggregate_diff_metrics(details_info_file)
                 print_superpmi_success_result(return_code, base_metrics, diff_metrics)
 
                 if base_metrics is not None and diff_metrics is not None:
@@ -3152,11 +3165,6 @@ class SuperPMIReplayThroughputDiff:
                         logging.warning("One compilation failed to produce any results")
                 else:
                     logging.warning("No metric files present?")
-
-                if not self.coreclr_args.skip_cleanup:
-                    if os.path.isfile(detailed_info_file):
-                        os.remove(detailed_info_file)
-                        detailed_info_file = None
 
             ################################################################################################ end of for mch_file in self.mch_files
 
@@ -3186,7 +3194,7 @@ class SuperPMIReplayThroughputDiff:
                 if os.path.isfile(overall_md_summary_file):
                     os.remove(overall_md_summary_file)
 
-                with open(overall_md_summary_file, "w") as write_fh:
+                with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
                     write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, True)
                     logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
@@ -3195,7 +3203,7 @@ class SuperPMIReplayThroughputDiff:
                 if os.path.isfile(short_md_summary_file):
                     os.remove(short_md_summary_file)
 
-                with open(short_md_summary_file, "w") as write_fh:
+                with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
                     write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, False)
                     logging.info("  Short Summary Markdown file: %s", short_md_summary_file)                
 
@@ -3284,6 +3292,338 @@ def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_
                         mch_file, base_instructions, diff_instructions,
                         compute_and_format_pct(base_instructions, diff_instructions)))
                 write_fh.write("\n")
+
+################################################################################
+# SuperPMI Metric Diff
+################################################################################
+
+
+class SuperPMIReplayMetricDiff:
+    """ SuperPMI Replay metric diff class
+
+    Notes:
+        The object is responsible for replaying the mch files given to the
+        instance of the class and measuring JIT metric differences.
+    """
+
+    def __init__(self, coreclr_args, mch_files, base_jit_path, diff_jit_path):
+        """ Constructor
+
+        Args:
+            coreclr_args (CoreclrArguments) : parsed args
+            mch_files (list)                : list of MCH files to replay
+            base_jit_path (str)             : path to baseline clrjit
+            diff_jit_path (str)             : path to diff clrjit
+
+        """
+
+        self.base_jit_path = base_jit_path
+        self.diff_jit_path = diff_jit_path
+        self.mch_files = mch_files
+        self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
+
+        self.coreclr_args = coreclr_args
+        self.diff_mcl_contents = None
+
+    ############################################################################
+    # Instance Methods
+    ############################################################################
+
+    def replay_with_metric_diff(self):
+        """ Replay SuperPMI collections measuring JIT metric differences.
+
+        Returns:
+            (bool) True on success; False otherwise
+        """
+
+        target_flags = []
+        if self.coreclr_args.arch != self.coreclr_args.target_arch:
+            target_flags += [ "-target", self.coreclr_args.target_arch ]
+
+        base_option_flags = []
+        if self.coreclr_args.base_jit_option:
+            for o in self.coreclr_args.base_jit_option:
+                base_option_flags += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                base_option_flags += "-jitoption", o
+
+        diff_option_flags = []
+        if self.coreclr_args.diff_jit_option:
+            for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                diff_option_flags += "-jit2option", o
+
+        metric_diffs = []
+
+        with TempDir(None, self.coreclr_args.skip_cleanup) as temp_location:
+            logging.debug("")
+            logging.debug("Temp Location: %s", temp_location)
+            logging.debug("")
+
+            for mch_file in self.mch_files:
+
+                logging.info("Running metric diff of %s", mch_file)
+
+                if self.coreclr_args.details:
+                    details_info_file = self.coreclr_args.details
+                else:
+                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+
+                flags = [
+                    "-applyDiff",
+                    "-v", "ewi",
+                    "-details", details_info_file,
+                ]
+                flags += target_flags
+                flags += base_option_flags
+                flags += diff_option_flags
+
+                if not self.coreclr_args.sequential and not self.coreclr_args.compile:
+                    if not self.coreclr_args.parallelism:
+                        flags += [ "-p" ]
+                    else:
+                        flags += [ "-p", self.coreclr_args.parallelism ]
+
+                if self.coreclr_args.break_on_assert:
+                    flags += [ "-boa" ]
+
+                if self.coreclr_args.break_on_error:
+                    flags += [ "-boe" ]
+
+                if self.coreclr_args.compile:
+                    flags += [ "-c", self.coreclr_args.compile ]
+
+                if self.coreclr_args.spmi_log_file is not None:
+                    flags += [ "-w", self.coreclr_args.spmi_log_file ]
+
+                if self.coreclr_args.error_limit is not None:
+                    flags += ["-failureLimit", self.coreclr_args.error_limit]
+
+                with ChangeDir(self.coreclr_args.core_root):
+                    command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
+                    return_code = run_and_log(command)
+
+                print_superpmi_error_result(return_code, self.coreclr_args)
+
+                metrics_list = None
+                base_metrics = None
+                diff_metrics = None
+                try:
+                    if os.path.isfile(details_info_file):
+                        (metrics_list, base_metrics, diff_metrics) = aggregate_metric_diff_metrics(details_info_file)
+                    else:
+                        logging.warning("Details info file '%s' not found; skipping metric diff aggregation", details_info_file)
+                except Exception as ex:
+                    logging.warning("Failed to aggregate metric diff metrics from '%s': %s", details_info_file, ex)
+
+                if base_metrics is not None and diff_metrics is not None:
+                    if return_code == 0:
+                        logging.info("Clean SuperPMI diff ({} contexts processed)".format(base_metrics["Successful compiles"]))
+                    elif return_code == 3:
+                        logging.warning("SuperPMI encountered missing data for {} contexts".format(base_metrics["Missing compiles"]))
+
+                    has_any_data = any(base_metrics[m] != 0 or diff_metrics[m] != 0 for m in metrics_list)
+                    if has_any_data:
+                        for metric in metrics_list:
+                            base_val = base_metrics[metric]
+                            diff_val = diff_metrics[metric]
+                            if base_val != 0 or diff_val != 0:
+                                delta = diff_val - base_val
+                                fmt = "{:,.2f}" if isinstance(base_val, float) else "{:,d}"
+                                if base_val != 0:
+                                    logging.info("  {}: base={}, diff={}, delta={} ({:.2%})".format(
+                                        metric, fmt.format(base_val), fmt.format(diff_val), fmt.format(delta), delta / base_val))
+                                else:
+                                    logging.info("  {}: base={}, diff={}, delta={}".format(
+                                        metric, fmt.format(base_val), fmt.format(diff_val), fmt.format(delta)))
+                        metric_diffs.append((os.path.basename(mch_file), metrics_list, base_metrics, diff_metrics))
+                    else:
+                        logging.warning("One compilation failed to produce any results")
+                else:
+                    logging.warning("No metric files present?")
+
+            ################################################################################################ end of for mch_file in self.mch_files
+
+        # Report the overall results summary of the metricdiff run
+
+        logging.info("Metric diff summary:")
+
+        # Construct overall summary files.
+
+        if self.coreclr_args.summary_as_json:
+            if not os.path.isdir(self.coreclr_args.spmi_location):
+                os.makedirs(self.coreclr_args.spmi_location)
+
+            (base_jit_options, diff_jit_options) = get_base_diff_jit_options(self.coreclr_args)
+
+            overall_json_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "metricdiff_summary", "json")
+            if os.path.isfile(overall_json_summary_file):
+                os.remove(overall_json_summary_file)
+
+            with open(overall_json_summary_file, "w") as write_fh:
+                json.dump((base_jit_options, diff_jit_options, metric_diffs), write_fh)
+                logging.info("  Summary JSON file: %s", overall_json_summary_file)
+        elif len(metric_diffs) > 0:
+            if not os.path.isdir(self.coreclr_args.spmi_location):
+                os.makedirs(self.coreclr_args.spmi_location)
+
+            (base_jit_options, diff_jit_options) = get_base_diff_jit_options(self.coreclr_args)
+
+            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "metricdiff_summary", "md")
+
+            if os.path.isfile(overall_md_summary_file):
+                os.remove(overall_md_summary_file)
+
+            with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
+                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs, True)
+                logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+            short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "metricdiff_short_summary", "md")
+
+            if os.path.isfile(short_md_summary_file):
+                os.remove(short_md_summary_file)
+
+            with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
+                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs, False)
+                logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
+        return True
+        ################################################################################################ end of replay_with_metric_diff()
+
+
+def discover_metrics_from_csv(details_file):
+    """ Read the CSV header and return all metric column names (those with 'Base X' / 'Diff X' pairs). """
+    with open(details_file, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        headers = reader.fieldnames
+    metrics = []
+    for h in headers:
+        if h.startswith("Base ") and ("Diff " + h[5:]) in headers:
+            name = h[5:]
+            if name not in ("result", "instructions"):
+                metrics.append(name)
+    return metrics
+
+def aggregate_metric_diff_metrics(details_file):
+    """ Given the path to a CSV details file output by SPMI for a diff, aggregate all metrics.
+
+    Returns:
+        (metrics_list, base_metrics, diff_metrics)
+    """
+
+    metrics_list = discover_metrics_from_csv(details_file)
+    base_totals = {m: 0 for m in metrics_list}
+    diff_totals = {m: 0 for m in metrics_list}
+    base_compile_stats = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0}
+    diff_compile_stats = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0}
+
+    for row in read_csv(details_file):
+        base_result = row["Base result"]
+        diff_result = row["Diff result"]
+
+        if base_result == "Success":
+            base_compile_stats["Successful compiles"] += 1
+        elif base_result == "Miss":
+            base_compile_stats["Missing compiles"] += 1
+        else:
+            base_compile_stats["Failing compiles"] += 1
+
+        if diff_result == "Success":
+            diff_compile_stats["Successful compiles"] += 1
+        elif diff_result == "Miss":
+            diff_compile_stats["Missing compiles"] += 1
+        else:
+            diff_compile_stats["Failing compiles"] += 1
+
+        if base_result == "Success" and diff_result == "Success":
+            for metric in metrics_list:
+                base_val = row["Base " + metric]
+                diff_val = row["Diff " + metric]
+                base_totals[metric] += float(base_val) if '.' in base_val else int(base_val)
+                diff_totals[metric] += float(diff_val) if '.' in diff_val else int(diff_val)
+
+    base_totals.update(base_compile_stats)
+    diff_totals.update(diff_compile_stats)
+
+    return (metrics_list, base_totals, diff_totals)
+
+
+def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs, include_details):
+
+    def fmt_val(v):
+        return "{:,.2f}".format(v) if isinstance(v, float) else "{:,d}".format(v)
+
+    write_jit_options(base_jit_options, diff_jit_options, write_fh)
+
+    # Collect the union of all metrics across all collections (preserving first-seen order)
+    all_metrics = list(dict.fromkeys(m for (_, metrics_list, _, _) in metric_diffs for m in metrics_list))
+
+    any_significant = False
+    metrics_with_diffs = set()
+    for metric in all_metrics:
+        significant_diffs = [(mch, base, diff) for (mch, _, base, diff) in metric_diffs
+                             if metric in base and abs(compute_pct(base[metric], diff[metric])) >= 0.001]
+        if not significant_diffs:
+            continue
+
+        any_significant = True
+        metrics_with_diffs.add(metric)
+        pcts = [compute_pct(base[metric], diff[metric]) for (_, base, diff) in significant_diffs
+                if base[metric] != 0]
+        all_base_zero = all(base[metric] == 0 for (_, base, _) in significant_diffs)
+        if all_base_zero:
+            all_positive = all(diff[metric] > 0 for (_, _, diff) in significant_diffs)
+            all_negative = all(diff[metric] < 0 for (_, _, diff) in significant_diffs)
+            if all_positive:
+                header = "{} (+\u221e)".format(metric)
+            elif all_negative:
+                header = "{} (-\u221e)".format(metric)
+            else:
+                header = "{} (\u00b1\u221e)".format(metric)
+        elif pcts:
+            min_pct_str = format_pct(min(pcts))
+            max_pct_str = format_pct(max(pcts))
+            if min_pct_str == max_pct_str:
+                header = "{} ({})".format(metric, min_pct_str)
+            else:
+                header = "{} ({} to {})".format(metric, min_pct_str, max_pct_str)
+        else:
+            header = metric
+
+        with DetailsSection(write_fh, header):
+            write_fh.write("|Collection|Base|Diff|PDIFF|\n")
+            write_fh.write("|---|--:|--:|--:|\n")
+            for mch_file, base, diff in significant_diffs:
+                write_fh.write("|{}|{}|{}|{}|\n".format(
+                    mch_file, fmt_val(base[metric]), fmt_val(diff[metric]),
+                    compute_and_format_pct(base[metric], diff[metric])))
+
+    if not any_significant:
+        if include_details:
+            write_fh.write("No significant metric differences found\n")
+
+    if include_details:
+        no_diff_metrics = [m for m in all_metrics if m not in metrics_with_diffs]
+        no_diff_rows_by_metric = []
+        for metric in no_diff_metrics:
+            rows = [(mch, base.get(metric, 0), diff.get(metric, 0)) for (mch, _, base, diff) in metric_diffs
+                    if base.get(metric, 0) != 0 or diff.get(metric, 0) != 0]
+            if rows:
+                no_diff_rows_by_metric.append((metric, rows))
+
+        if no_diff_rows_by_metric:
+            write_fh.write("\n")
+            with DetailsSection(write_fh, "Metrics with no diffs"):
+                for metric, rows in no_diff_rows_by_metric:
+                    with DetailsSection(write_fh, metric):
+                        write_fh.write("|Collection|Base|Diff|PDIFF|\n")
+                        write_fh.write("|---|--:|--:|--:|\n")
+                        for mch_file, base_val, diff_val in rows:
+                            write_fh.write("|{}|{}|{}|{}|\n".format(
+                                mch_file, fmt_val(base_val), fmt_val(diff_val),
+                                compute_and_format_pct(base_val, diff_val)))
 
 ################################################################################
 # Argument handling helpers
@@ -3701,14 +4041,14 @@ def list_superpmi_collections_container_via_azure_api(path_filter=lambda unused:
     """
 
     require_azure_storage_libraries()
-    from jitutil import ContainerClient, DefaultAzureCredential
+    from jitutil import ContainerClient, AzureCliCredential
 
     superpmi_container_url = az_blob_storage_superpmi_container_uri
 
     paths = []
     ok = True
     try:
-        az_credential = DefaultAzureCredential()
+        az_credential = AzureCliCredential()
         container = ContainerClient.from_container_url(superpmi_container_url, credential=az_credential)
         blob_name_prefix = az_collections_root_folder + "/"
         blob_list = container.list_blobs(name_starts_with=blob_name_prefix, retry_total=0)
@@ -3778,9 +4118,12 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
                 if os.path.isfile(mct_file):
                     urls.append(mct_file)
             else:
-                urls += get_files_from_path(mch_file, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mct", ".zip"]))
+                urls += get_files_from_path(mch_file, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mc", ".mct", ".zip"]))
         elif item.lower().startswith("http:") or item.lower().startswith("https:"):  # probably could use urllib.parse to be more precise
             urls.append(item)
+        elif os.path.isdir(item):
+            # If it's a directory, we'll search recursively for .mch and .mc files in it
+            local_mch_files.extend(get_files_from_path(item, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mc"])))
         else:
             # Doesn't appear to be a UNC path (on Windows) or a URL, so just use it as-is.
             local_mch_files.append(item)
@@ -3808,8 +4151,8 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     if len(mct_urls) != 0:
         local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, is_azure_storage=True, display_progress=not skip_progress)
 
-    # Even though we might have downloaded MCT files, only return the set of MCH files.
-    local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch"])]
+    # Even though we might have downloaded MCT files, only return the set of MCH/MC files.
+    local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch", ".mc"])]
 
     return local_mch_files
 
@@ -3897,28 +4240,75 @@ def download_mch_from_azure(coreclr_args, target_dir):
         list containing the local path of files downloaded
     """
 
+    blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
     blob_filter_string =  "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
 
-    # Determine if a URL in Azure Storage should be allowed. The path looks like:
-    #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
-    # Filter to just the current jit-ee-guid, OS, and architecture.
-    # Include both MCH and MCT files as well as the CLR JIT dll (processed below).
-    # If there are filters, only download those matching files.
-    def filter_superpmi_collections(path):
-        path = path.lower()
-        return path.startswith(blob_filter_string) and ((coreclr_args.filter is None) or any((filter_item.lower() in path) for filter_item in coreclr_args.filter))
+    path_var = os.environ.get("PATH")
+    azcopy_exe = "azcopy.exe" if platform.system() == "Windows" else "azcopy"
+    azcopy_path = find_file(azcopy_exe, path_var.split(os.pathsep)) if path_var is not None else None
 
-    paths = list_superpmi_collections_container(filter_superpmi_collections)
-    if paths is None or len(paths) == 0:
-        print("No Azure Storage MCH files to download from {}".format(blob_filter_string))
-        return []
+    if azcopy_path is None or authenticate_using_azure:
+        # Determine if a URL in Azure Storage should be allowed. The path looks like:
+        #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
+        # Filter to just the current jit-ee-guid, OS, and architecture.
+        # Include both MCH and MCT files as well as the CLR JIT dll (processed below).
+        # If there are filters, only download those matching files.
+        def filter_superpmi_collections(path):
+            path = path.lower()
+            return path.startswith(blob_filter_string) and ((coreclr_args.filter is None) or any((filter_item.lower() in path) for filter_item in coreclr_args.filter))
 
-    blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
-    urls = [blob_url_prefix + path for path in paths]
+        paths = list_superpmi_collections_container(filter_superpmi_collections)
+        if paths is None or len(paths) == 0:
+            print("No Azure Storage MCH files to download from {}".format(blob_filter_string))
+            return []
 
-    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
-    return download_files(urls, target_dir, is_azure_storage=True, display_progress=not skip_progress)
+        urls = [blob_url_prefix + path for path in paths]
 
+        skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+        return download_files(urls, target_dir, is_azure_storage=True, display_progress=not skip_progress)
+    else:
+        logging.info("azcopy was found in PATH; will use azcopy for download")
+        local_paths = []
+        with TempDir() as temp_location:
+            source_url = "{}{}*".format(blob_url_prefix, blob_filter_string)
+            cli = [azcopy_path, "cp", source_url, temp_location]
+            if coreclr_args.filter is not None:
+                cli.append("--include-pattern")
+                cli.append(";".join("*" + filter_name + "*" for filter_name in coreclr_args.filter))
+    
+            # Log to a file to get "tee-like" behavior (streaming output in the console)
+            azcopy_log_path = os.path.join(temp_location, "azcopy.log")
+            run_command(cli, _output_file=azcopy_log_path)
+            os.remove(azcopy_log_path)
+
+            for file in os.listdir(temp_location):
+                download_path = os.path.join(temp_location, file)
+                if file.lower().endswith(".zip") or file.lower().endswith(".tar.gz"):
+                    logging.info("Uncompress %s => %s", download_path, target_dir)
+
+                    if file.lower().endswith(".zip"):
+                        with zipfile.ZipFile(download_path, "r") as zip:
+                            zip.extractall(target_dir)
+                            archive_names = zip.namelist()
+                    else:
+                        with tarfile.open(download_path, "r") as tar:
+                            tar.extractall(target_dir)
+                            archive_names = tar.getnames()
+
+                    for archive_name in archive_names:
+                        if archive_name.endswith("/"):
+                            # Directory
+                            continue
+
+                        target_path = os.path.join(target_dir, archive_name.replace("/", os.path.sep))
+                        local_paths.append(target_path)
+                else:
+                    logging.info("Copy %s => %s", download_path, target_dir)
+                    target_path = os.path.join(target_dir, file)
+                    shutil.copy2(download_path, target_path)
+                    local_paths.append(target_path)
+
+        return local_paths
 
 def upload_mch(coreclr_args):
     """ Upload a set of MCH files. Each MCH file is first ZIP compressed to save data space and upload/download time.
@@ -3928,7 +4318,7 @@ def upload_mch(coreclr_args):
     """
 
     require_azure_storage_libraries(need_azure_identity=True)
-    from jitutil import BlobServiceClient, DefaultAzureCredential
+    from jitutil import BlobServiceClient, AzureCliCredential
 
     def upload_blob(file, blob_name):
         blob_client = blob_service_client.get_blob_client(container=az_superpmi_container_name, blob=blob_name)
@@ -3964,7 +4354,7 @@ def upload_mch(coreclr_args):
     for item in files_to_upload:
         logging.info("  %s", item)
 
-    default_credential = DefaultAzureCredential()
+    default_credential = AzureCliCredential()
 
     blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=default_credential)
     blob_folder_name = "{}/{}/{}/{}".format(az_collections_root_folder, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
@@ -4194,8 +4584,21 @@ def summarize_json_summaries(coreclr_args):
     for file in coreclr_args.summaries:
         logging.info("  {}".format(file))
 
-    file_name_prefix = "diff" if coreclr_args.summary_type == "asmdiffs" else "tpdiff"
+    summary_type_to_prefix = {
+        "asmdiffs": "diff",
+        "metricdiff": "metricdiff",
+        "tpdiff": "tpdiff",
+    }
 
+    if coreclr_args.summary_type not in summary_type_to_prefix:
+        logging.error(
+            "Invalid summary_type '%s'. Valid values are: %s",
+            coreclr_args.summary_type,
+            ", ".join(sorted(summary_type_to_prefix.keys())),
+        )
+        raise ValueError(f"Invalid summary_type: {coreclr_args.summary_type}")
+
+    file_name_prefix = summary_type_to_prefix[coreclr_args.summary_type]
     if coreclr_args.output_long_summary_path:
         overall_md_summary_file = coreclr_args.output_long_summary_path
     else:
@@ -4220,12 +4623,35 @@ def summarize_json_summaries(coreclr_args):
         # Sort by collection name
         summarizable_asm_diffs.sort(key=lambda t: t[0])
 
-        with open(overall_md_summary_file, "w") as write_fh:
+        with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
             write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, True)
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-        with open(short_md_summary_file, "w") as write_fh:
+        with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
             write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, False)
+            logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
+    elif coreclr_args.summary_type == "metricdiff":
+        base_jit_options = []
+        diff_jit_options = []
+        summarizable_metric_diffs = []
+
+        for json_file in coreclr_args.summaries:
+            with open(json_file, "r") as fh:
+                data = json.load(fh)
+                if isinstance(data, str):
+                    continue
+                (base_jit_options, diff_jit_options, metric_diffs) = data
+                summarizable_metric_diffs.extend(metric_diffs)
+
+        # Sort by collection name
+        summarizable_metric_diffs.sort(key=lambda t: t[0])
+
+        with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
+            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs, True)
+            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+        with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
+            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs, False)
             logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
     else:
         base_jit_build_string_decoded = ""
@@ -4242,11 +4668,11 @@ def summarize_json_summaries(coreclr_args):
         # Sort by collection name
         summarizable_tp_diffs.sort(key=lambda t: t[0])
 
-        with open(overall_md_summary_file, "w") as write_fh:
+        with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
             write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, summarizable_tp_diffs, True)
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-        with open(short_md_summary_file, "w") as write_fh:
+        with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
             write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, summarizable_tp_diffs, False)
             logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
 
@@ -4272,7 +4698,7 @@ def get_mch_files_for_replay(local_mch_paths, filters):
         # If there are specified filters, only run those matching files.
         mch_files += get_files_from_path(item,
                                          match_func=lambda path:
-                                             any(path.endswith(extension) for extension in [".mch"])
+                                             any(path.lower().endswith(extension) for extension in [".mch", ".mc"])
                                              and ((filters is None) or any(filter_item.lower() in path for filter_item in filters)))
 
     if len(mch_files) == 0:
@@ -4629,11 +5055,17 @@ def setup_args(args):
                             lambda mch_arch: "Unknown mch_arch {}\nSupported architectures: {}".format(mch_arch, (", ".join(coreclr_args.valid_arches))),
                             modify_arg=lambda mch_arch: mch_arch if mch_arch is not None else coreclr_args.target_arch) # Default to `target_arch`
 
-        # For LoongArch64, RiscV64, assume we are doing altjit cross-compilation and set mch_arch to 'arch', and target_os to Linux.
+        # For LoongArch64, RiscV64 assume we are doing altjit cross-compilation and set mch_arch to 'arch', and target_os to Linux.
         if coreclr_args.target_arch == "loongarch64" or coreclr_args.target_arch == "riscv64":
             if coreclr_args.target_os == coreclr_args.host_os and coreclr_args.target_os != "linux":
                 logging.warning("Overriding 'target_os' to 'linux'")
                 coreclr_args.target_os = "linux"
+            if coreclr_args.mch_arch == coreclr_args.target_arch and coreclr_args.mch_arch != coreclr_args.arch:
+                logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
+                coreclr_args.mch_arch = coreclr_args.arch
+
+        # For wasm assume we are doing altjit cross-compilation and set mch_arch to 'arch'
+        if coreclr_args.target_arch == "wasm":
             if coreclr_args.mch_arch == coreclr_args.target_arch and coreclr_args.mch_arch != coreclr_args.arch:
                 logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
                 coreclr_args.mch_arch = coreclr_args.arch
@@ -4724,6 +5156,11 @@ def setup_args(args):
                             lambda item: True,
                             "Specify private_store or set environment variable SUPERPMI_PRIVATE_STORE to use a private store.",
                             modify_arg=lambda arg: os.environ["SUPERPMI_PRIVATE_STORE"].split(";") if arg is None and "SUPERPMI_PRIVATE_STORE" in os.environ else arg)
+
+        coreclr_args.verify(args,
+                            "details",
+                            lambda unused: True,
+                            "Unable to set details")
 
     def verify_base_diff_args():
 
@@ -5061,11 +5498,6 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set jitoption")
 
-        coreclr_args.verify(args,
-                            "details",
-                            lambda unused: True,
-                            "Unable to set details")
-
         jit_in_product_location = False
         if coreclr_args.product_location.lower() in coreclr_args.jit_path.lower():
             jit_in_product_location = True
@@ -5227,6 +5659,20 @@ def setup_args(args):
         process_base_jit_path_arg(coreclr_args)
         download_clrjit_pintool(coreclr_args)
 
+    elif coreclr_args.mode == "metricdiff":
+
+        verify_target_args()
+        verify_superpmi_common_args()
+        verify_replay_common_args()
+        verify_base_diff_args()
+
+        coreclr_args.verify(determine_coredis_tools(coreclr_args),
+                            "coredistools_location",
+                            os.path.isfile,
+                            "Unable to find coredistools.")
+
+        process_base_jit_path_arg(coreclr_args)
+
     elif coreclr_args.mode == "upload":
 
         verify_target_args()
@@ -5332,7 +5778,7 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set output_long_summary_path")
 
-    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "download":
+    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "metricdiff" or coreclr_args.mode == "download":
         if hasattr(coreclr_args, "private_store") and coreclr_args.private_store is not None:
             logging.info("Using private stores:")
             for path in coreclr_args.private_store:
@@ -5474,6 +5920,37 @@ def main(args):
 
         tp_diff = SuperPMIReplayThroughputDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
         success = tp_diff.replay_with_throughput_diff()
+
+        end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
+
+        logging.debug("Finish time: %s", end_time.strftime("%H:%M:%S"))
+        logging.debug("Elapsed time: %s", elapsed_time)
+
+    elif coreclr_args.mode == "metricdiff":
+        local_mch_paths = process_mch_files_arg(coreclr_args)
+        mch_files = get_mch_files_for_replay(local_mch_paths, coreclr_args.filter)
+        if mch_files is None:
+            return 1
+
+        begin_time = datetime.datetime.now()
+
+        logging.info("SuperPMI metric diff")
+        logging.debug("------------------------------------------------------------")
+        logging.debug("Start time: %s", begin_time.strftime("%H:%M:%S"))
+
+        base_jit_path = coreclr_args.base_jit_path
+        diff_jit_path = coreclr_args.diff_jit_path
+
+        logging.info("Base JIT Path: %s", base_jit_path)
+        logging.info("Diff JIT Path: %s", diff_jit_path)
+
+        logging.info("Using MCH files:")
+        for mch_file in mch_files:
+            logging.info("  %s", mch_file)
+
+        metric_diff = SuperPMIReplayMetricDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
+        success = metric_diff.replay_with_metric_diff()
 
         end_time = datetime.datetime.now()
         elapsed_time = end_time - begin_time

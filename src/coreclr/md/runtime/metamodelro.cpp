@@ -65,7 +65,7 @@ CMiniMd::InitOnMem(
 
     // Uncompress the schema from the buffer into our structures.
     IfFailGo(SchemaPopulate(pvBuf, ulBufLen, &cbData));
-    PREFAST_ASSUME(cbData <= ulBufLen);
+    _ASSERTE(cbData <= ulBufLen);
 
     // There shouldn't be any pointer tables.
     if ((m_Schema.m_cRecs[TBL_MethodPtr] != 0) || (m_Schema.m_cRecs[TBL_FieldPtr] != 0))

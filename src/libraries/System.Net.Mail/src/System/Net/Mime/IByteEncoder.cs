@@ -8,7 +8,7 @@ namespace System.Net.Mime
     internal interface IByteEncoder
     {
         // This method does not account for codepoint boundaries. If encoding a string, consider using EncodeString
-        int EncodeBytes(byte[] buffer, int offset, int count, bool dontDeferFinalBytes, bool shouldAppendSpaceToCRLF);
+        int EncodeBytes(ReadOnlySpan<byte> buffer, bool dontDeferFinalBytes, bool shouldAppendSpaceToCRLF);
         void AppendPadding();
         int EncodeString(string value, Encoding encoding);
         string GetEncodedString();

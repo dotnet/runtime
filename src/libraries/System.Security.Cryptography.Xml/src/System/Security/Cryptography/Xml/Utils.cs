@@ -760,6 +760,5 @@ namespace System.Security.Cryptography.Xml
         }
 
         internal const int MaxTransformsPerReference = 10;
-        internal const int MaxReferencesPerSignedInfo = 100;
     }
 }

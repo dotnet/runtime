@@ -3,43 +3,13 @@
 
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Numerics;
 
 namespace System.Security.Cryptography
 {
-    internal static class KeyBlobHelpers
+    internal static partial class KeyBlobHelpers
     {
-        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory, int length)
+        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlySpan<byte> span)
         {
-            if (memory.Length == length)
-            {
-                return memory.ToArray();
-            }
-
-            ReadOnlySpan<byte> span = memory.Span;
-
-            if (memory.Length == length + 1)
-            {
-                if (span[0] == 0)
-                {
-                    return span.Slice(1).ToArray();
-                }
-            }
-
-            if (span.Length > length)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
-
-            byte[] target = new byte[length];
-            span.CopyTo(target.AsSpan(length - span.Length));
-            return target;
-        }
-
-        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory)
-        {
-            ReadOnlySpan<byte> span = memory.Span;
-
             if (span.Length > 1 && span[0] == 0)
             {
                 return span.Slice(1).ToArray();
@@ -48,22 +18,42 @@ namespace System.Security.Cryptography
             return span.ToArray();
         }
 
-        internal static byte[] ExportKeyParameter(this BigInteger value, int length)
+        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory)
         {
-            byte[] target = new byte[length];
+            return ToUnsignedIntegerBytes(memory.Span);
+        }
 
-            if (value.TryWriteBytes(target, out int bytesWritten, isUnsigned: true, isBigEndian: true))
+        internal static void ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory, Span<byte> destination)
+        {
+            ToUnsignedIntegerBytes(memory.Span, destination);
+        }
+
+        internal static void ToUnsignedIntegerBytes(this ReadOnlySpan<byte> span, Span<byte> destination)
+        {
+            int length = destination.Length;
+
+            if (span.Length == length)
             {
-                if (bytesWritten < length)
-                {
-                    Buffer.BlockCopy(target, 0, target, length - bytesWritten, bytesWritten);
-                    target.AsSpan(0, length - bytesWritten).Clear();
-                }
-
-                return target;
+                span.CopyTo(destination);
+                return;
             }
 
-            throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+            if (span.Length == length + 1)
+            {
+                if (span[0] == 0)
+                {
+                    span.Slice(1).CopyTo(destination);
+                    return;
+                }
+            }
+
+            if (span.Length > length)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            destination.Slice(0, destination.Length - span.Length).Clear();
+            span.CopyTo(destination.Slice(length - span.Length));
         }
 
         internal static void WriteKeyParameterInteger(this AsnWriter writer, ReadOnlySpan<byte> integer)

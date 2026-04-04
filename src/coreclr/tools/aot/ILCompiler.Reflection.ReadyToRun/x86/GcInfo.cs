@@ -13,6 +13,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         const uint byref_OFFSET_FLAG = 0x1;
 
         public InfoHdrSmall Header { get; set; }
+        public NoGcRegionTable NoGCRegions { get; set; }
         public GcSlotTable SlotTable { get; set; }
 
         public GcInfo() { }
@@ -20,28 +21,30 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
         /// </summary>
-        public GcInfo(byte[] image, int offset)
+        public GcInfo(NativeReader imageReader, int offset)
         {
             Offset = offset;
 
-            CodeLength = (int)NativeReader.DecodeUnsignedGc(image, ref offset);
+            CodeLength = (int)imageReader.DecodeUnsignedGc(ref offset);
 
-            Header = InfoHdrDecoder.DecodeHeader(image, ref offset, CodeLength);
+            Header = InfoHdrDecoder.DecodeHeader(imageReader, ref offset, CodeLength);
 
-            SlotTable = new GcSlotTable(image, Header, ref offset);
+            NoGCRegions = new NoGcRegionTable(imageReader, Header, ref offset);
+
+            SlotTable = new GcSlotTable(imageReader, Header, ref offset);
 
             Transitions = new Dictionary<int, List<BaseGcTransition>>();
             if (Header.Interruptible)
             {
-                GetTransitionsFullyInterruptible(image, ref offset);
+                GetTransitionsFullyInterruptible(imageReader, ref offset);
             }
             else if (Header.EbpFrame)
             {
-                GetTransitionsEbpFrame(image, ref offset);
+                GetTransitionsEbpFrame(imageReader, ref offset);
             }
             else
             {
-                GetTransitionsNoEbp(image, ref offset);
+                GetTransitionsNoEbp(imageReader, ref offset);
             }
 
             Size = offset - Offset;
@@ -54,6 +57,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             sb.AppendLine($"    CodeLength: {CodeLength} bytes");
             sb.AppendLine($"    InfoHdr:");
             sb.AppendLine($"{Header}");
+            sb.AppendLine($"{NoGCRegions}");
             sb.AppendLine($"{SlotTable}");
 
             sb.AppendLine($"    Size: {Size} bytes");
@@ -75,7 +79,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             Transitions[transition.CodeOffset].Add(transition);
         }
 
-        private void ArgEncoding(byte[] image, ref uint isPop, ref uint argOffs, ref uint argCnt, ref uint curOffs, ref bool isThis, ref bool iptr)
+        private void ArgEncoding(NativeReader imageReader, ref uint isPop, ref uint argOffs, ref uint argCnt, ref uint curOffs, ref bool isThis, ref bool iptr)
         {
             if (isPop != 0)
             {
@@ -97,7 +101,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
         /// </summary>
-        private void GetTransitionsFullyInterruptible(byte[] image, ref int offset)
+        private void GetTransitionsFullyInterruptible(NativeReader imageReader, ref int offset)
         {
             uint argCnt = 0;
             bool isThis = false;
@@ -108,7 +112,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             {
                 uint isPop;
                 uint argOffs;
-                uint val = image[offset++];
+                uint val = imageReader.ReadByte(ref offset);
 
                 if ((val & 0x80) == 0)
                 {
@@ -139,7 +143,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                     curOffs += (val & 0x07);
                     isPop = (val & 0x40);
 
-                    ArgEncoding(image, ref isPop, ref argOffs, ref argCnt, ref curOffs, ref isThis, ref iptr);
+                    ArgEncoding(imageReader, ref isPop, ref argOffs, ref argCnt, ref curOffs, ref isThis, ref iptr);
 
                     continue;
                 }
@@ -173,21 +177,21 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                         iptr = true;
                         break;
                     case 0xB8:
-                        val = NativeReader.DecodeUnsignedGc(image, ref offset);
+                        val = imageReader.DecodeUnsignedGc(ref offset);
                         curOffs += val;
                         break;
                     case 0xF8:
                     case 0xFC:
                         isPop = val & 0x04;
-                        argOffs = NativeReader.DecodeUnsignedGc(image, ref offset);
-                        ArgEncoding(image, ref isPop, ref argOffs, ref argCnt, ref curOffs, ref isThis, ref iptr);
+                        argOffs = imageReader.DecodeUnsignedGc(ref offset);
+                        ArgEncoding(imageReader, ref isPop, ref argOffs, ref argCnt, ref curOffs, ref isThis, ref iptr);
                         break;
                     case 0xFD:
-                        argOffs = NativeReader.DecodeUnsignedGc(image, ref offset);
+                        argOffs = imageReader.DecodeUnsignedGc(ref offset);
                         AddNewTransition(new GcTransitionPointer((int)curOffs, argOffs, argCnt, Action.KILL, Header.EbpFrame));
                         break;
                     case 0xF9:
-                        argOffs = NativeReader.DecodeUnsignedGc(image, ref offset);
+                        argOffs = imageReader.DecodeUnsignedGc(ref offset);
                         argCnt += argOffs;
                         break;
                     default:
@@ -199,7 +203,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
         /// </summary>
-        private void GetTransitionsEbpFrame(byte[] image, ref int offset)
+        private void GetTransitionsEbpFrame(NativeReader imageReader, ref int offset)
         {
             while (true)
             {
@@ -214,7 +218,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                 uint curOffs = 0;
 
                 // Get the next byte and check for a 'special' entry
-                uint encType = image[offset++];
+                uint encType = imageReader.ReadByte(ref offset);
                 GcTransitionCall transition = null;
 
                 switch (encType)
@@ -255,50 +259,50 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                         {
                             // A small call entry
                             curOffs += (val & 0x7F);
-                            val = image[offset++];
+                            val = imageReader.ReadByte(ref offset);
                             regMask = val >> 5;
                             argMask = val & 0x1F;
                         }
                         break;
 
                     case 0xFD:  // medium encoding
-                        argMask = image[offset++];
-                        val = image[offset++];
+                        argMask = imageReader.ReadByte(ref offset);
+                        val = imageReader.ReadByte(ref offset);
                         argMask |= (val & 0xF0) << 4;
-                        nxt = image[offset++];
+                        nxt = imageReader.ReadByte(ref offset);
                         curOffs += (val & 0x0F) + ((nxt & 0x1F) << 4);
                         regMask = nxt >> 5;                   // EBX,ESI,EDI
                         break;
 
                     case 0xF9:  // medium encoding with byrefs
-                        curOffs += image[offset++];
-                        val = image[offset++];
+                        curOffs += imageReader.ReadByte(ref offset);
+                        val = imageReader.ReadByte(ref offset);
                         argMask = val & 0x1F;
                         regMask = val >> 5;
-                        val = image[offset++];
+                        val = imageReader.ReadByte(ref offset);
                         byrefArgMask = val & 0x1F;
                         byrefRegMask = val >> 5;
                         break;
                     case 0xFE:  // large encoding
                     case 0xFA:  // large encoding with byrefs
-                        val = image[offset++];
+                        val = imageReader.ReadByte(ref offset);
                         regMask = val & 0x7;
                         byrefRegMask = val >> 4;
 
-                        curOffs += NativeReader.ReadUInt32(image, ref offset);
-                        argMask = NativeReader.ReadUInt32(image, ref offset);
+                        curOffs += imageReader.ReadUInt32(ref offset);
+                        argMask = imageReader.ReadUInt32(ref offset);
                         if (encType == 0xFA) // read byrefArgMask
                         {
-                            byrefArgMask = NativeReader.ReadUInt32(image, ref offset);
+                            byrefArgMask = imageReader.ReadUInt32(ref offset);
                         }
                         break;
                     case 0xFB:  // huge encoding
-                        val = image[offset++];
+                        val = imageReader.ReadByte(ref offset);
                         regMask = val & 0x7;
                         byrefRegMask = val >> 4;
-                        curOffs = NativeReader.ReadUInt32(image, ref offset);
-                        argCnt = NativeReader.ReadUInt32(image, ref offset);
-                        argTabSize = NativeReader.ReadUInt32(image, ref offset);
+                        curOffs = imageReader.ReadUInt32(ref offset);
+                        argCnt = imageReader.ReadUInt32(ref offset);
+                        argTabSize = imageReader.ReadUInt32(ref offset);
                         argOffset = offset;
                         offset += (int)argTabSize;
                         break;
@@ -322,7 +326,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                 {
                     do
                     {
-                        val = NativeReader.DecodeUnsignedGc(image, ref argOffset);
+                        val = imageReader.DecodeUnsignedGc(ref argOffset);
 
                         uint stkOffs = val & ~byref_OFFSET_FLAG;
                         uint lowBit = val & byref_OFFSET_FLAG;
@@ -342,7 +346,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
         /// </summary>
-        private void SaveCallTransition(byte[] image, ref int offset, uint val, uint curOffs, uint callRegMask, bool callPndTab, uint callPndTabCnt, uint callPndMask, uint lastSkip, ref uint imask)
+        private void SaveCallTransition(NativeReader imageReader, ref int offset, uint val, uint curOffs, uint callRegMask, bool callPndTab, uint callPndTabCnt, uint callPndMask, uint lastSkip, ref uint imask)
         {
             uint iregMask, iargMask;
             iregMask = imask & 0xF;
@@ -355,7 +359,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             {
                 for (int i = 0; i < callPndTabCnt; i++)
                 {
-                    uint pndOffs = NativeReader.DecodeUnsignedGc(image, ref offset);
+                    uint pndOffs = imageReader.DecodeUnsignedGc(ref offset);
 
                     uint stkOffs = val & ~byref_OFFSET_FLAG;
                     uint lowBit = val & byref_OFFSET_FLAG;
@@ -373,7 +377,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
             imask = lastSkip = 0;
         }
 
-        private void GetTransitionsNoEbp(byte[] image, ref int offset)
+        private void GetTransitionsNoEbp(NativeReader imageReader, ref int offset)
         {
             uint curOffs = 0;
             uint lastSkip = 0;
@@ -381,7 +385,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
             for (; ; )
             {
-                uint val = image[offset++];
+                uint val = imageReader.ReadByte(ref offset);
 
                 if ((val & 0x80) == 0)
                 {
@@ -396,7 +400,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                         else
                         {
                             // push    00100000 [pushCount]     ESP push multiple items
-                            uint pushCount = NativeReader.DecodeUnsignedGc(image, ref offset);
+                            uint pushCount = imageReader.DecodeUnsignedGc(ref offset);
                             AddNewTransition(new GcTransitionRegister((int)curOffs, Registers.ESP, Action.PUSH, false, false, (int)pushCount));
                         }
                     }
@@ -410,7 +414,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                             //
                             // skip    01000000 [Delta]  Skip arbitrary sized delta
                             //
-                            skip = NativeReader.DecodeUnsignedGc(image, ref offset);
+                            skip = imageReader.DecodeUnsignedGc(ref offset);
                             curOffs += skip;
                             lastSkip = skip;
                         }
@@ -446,7 +450,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                             //
                             CallPattern.DecodeCallPattern((val & 0x7f), out callArgCnt, out callRegMask, out callPndMask, out lastSkip);
                             curOffs += lastSkip;
-                            SaveCallTransition(image, ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                            SaveCallTransition(imageReader, ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
                             break;
 
                         case 5:
@@ -455,12 +459,12 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                             //                        ArgMask=MMM Delta=commonDelta[DD]
                             //
                             callRegMask = val & 0xf;    // EBP,EBX,ESI,EDI
-                            val = image[offset++];
+                            val = imageReader.ReadByte(ref offset);
                             callPndMask = (val & 0x7);
                             callArgCnt = (val >> 3) & 0x7;
                             lastSkip = CallPattern.callCommonDelta[val >> 6];
                             curOffs += lastSkip;
-                            SaveCallTransition(image, ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                            SaveCallTransition(imageReader, ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
                             break;
                         case 6:
                             //
@@ -468,16 +472,16 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                             //                          Call ArgCnt,RegMask=RRR,ArgMask
                             //
                             callRegMask = val & 0xf;    // EBP,EBX,ESI,EDI
-                            callArgCnt = NativeReader.DecodeUnsignedGc(image, ref offset);
-                            callPndMask = NativeReader.DecodeUnsignedGc(image, ref offset);
-                            SaveCallTransition(image, ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                            callArgCnt = imageReader.DecodeUnsignedGc(ref offset);
+                            callPndMask = imageReader.DecodeUnsignedGc(ref offset);
+                            SaveCallTransition(imageReader, ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
                             break;
                         case 7:
                             switch (val & 0x0C)
                             {
                                 case 0x00:
                                     //  iptr 11110000 [IPtrMask] Arbitrary Interior Pointer Mask
-                                    imask = NativeReader.DecodeUnsignedGc(image, ref offset);
+                                    imask = imageReader.DecodeUnsignedGc(ref offset);
                                     AddNewTransition(new IPtrMask((int)curOffs, imask));
                                     break;
 
@@ -486,16 +490,16 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                                     break;
 
                                 case 0x08:
-                                    val = image[offset++];
+                                    val = imageReader.ReadByte(ref offset);
                                     callRegMask = val & 0xF;
                                     imask = val >> 4;
-                                    lastSkip = NativeReader.ReadUInt32(image, ref offset);
+                                    lastSkip = imageReader.ReadUInt32(ref offset);
                                     curOffs += lastSkip;
-                                    callArgCnt = NativeReader.ReadUInt32(image, ref offset);
-                                    callPndTabCnt = NativeReader.ReadUInt32(image, ref offset);
-                                    callPndTabSize = NativeReader.ReadUInt32(image, ref offset);
+                                    callArgCnt = imageReader.ReadUInt32(ref offset);
+                                    callPndTabCnt = imageReader.ReadUInt32(ref offset);
+                                    callPndTabSize = imageReader.ReadUInt32(ref offset);
                                     callPndTab = true;
-                                    SaveCallTransition(image, ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                                    SaveCallTransition(imageReader, ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
                                     break;
                                 case 0x0C:
                                     return;

@@ -14,11 +14,7 @@ set(UTILCODE_COMMON_SOURCES
   configuration.cpp
   collections.cpp
   posterror.cpp
-  fstream.cpp
   clrhelpers.cpp
-  stgpool.cpp
-  stgpooli.cpp
-  stgpoolreadonly.cpp
   utsem.cpp
   check.cpp
   log.cpp
@@ -26,11 +22,11 @@ set(UTILCODE_COMMON_SOURCES
   comex.cpp
   guidfromname.cpp
   memorypool.cpp
+  memorystreams.cpp
   loaderheap.cpp
   interleavedloaderheap.cpp
   loaderheap_shared.cpp
   explicitcontrolloaderheap.cpp
-  allocmemtracker.cpp
   rangelist.cpp
   outstring.cpp
   ilformatter.cpp
@@ -51,6 +47,7 @@ set(UTILCODE_COMMON_SOURCES
   stresslog.cpp
   debug.cpp
   pedecoder.cpp
+  webcildecoder.cpp
   winfix.cpp
   longfilepathwrappers.cpp
   yieldprocessornormalized.cpp
@@ -69,6 +66,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}
+  allocmemtracker.cpp
   executableallocator.cpp
 )
 

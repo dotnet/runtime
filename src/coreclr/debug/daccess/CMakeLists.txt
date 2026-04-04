@@ -1,6 +1,6 @@
 add_definitions(-DFEATURE_NO_HOST)
 
-add_subdirectory(${CLR_SRC_NATIVE_DIR}/managed/cdacreader/cmake ${CLR_ARTIFACTS_OBJ_DIR}/cdacreader)
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/managed/cdac/cmake ${CLR_ARTIFACTS_OBJ_DIR}/mscordaccore_universal)
 
 include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
@@ -8,6 +8,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CLR_DIR}/debug/ee)
 include_directories(${CLR_DIR}/gcdump)
 include_directories(${CLR_DIR}/interop/inc)
+include_directories(${CLR_DIR}/debug/datadescriptor-shared/inc)
 
 if(CLR_CMAKE_HOST_UNIX)
   include_directories(${GENERATED_INCLUDE_DIR})
@@ -43,7 +44,7 @@ convert_to_absolute_path(DACCESS_SOURCES ${DACCESS_SOURCES})
 add_library_clr(daccess ${DACCESS_SOURCES})
 set_target_properties(daccess PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_headers(daccess PRIVATE [["stdafx.h"]])
-target_link_libraries(daccess PRIVATE cdacreader_api)
+target_link_libraries(daccess PRIVATE cdac_api)
 
 add_dependencies(daccess eventing_headers)
 

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_105818;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
@@ -19,13 +22,10 @@ public class Runtime_105818
 {
     private static Vector64<long> s_1;
 
-    [Fact]
+    [ConditionalFact(typeof(AdvSimd), nameof(AdvSimd.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (AdvSimd.IsSupported)
-        {
-            Assert.Throws<NullReferenceException>(() => M1());
-        }
+        Assert.Throws<NullReferenceException>(() => M1());
     }
 
     private static void M1()

@@ -226,7 +226,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("NTLM")]
         [InlineData("Kerberos")]
         [InlineData("Negotiate")]
-        public async Task PreAuthenticate_NoPreviousAuthenticatedRequests_NoCredentialsSent(string credCacheScheme)
+        public async Task PreAuthenticate_NoPreviousAuthenticatedRequests_NoCredentialsSent(string? credCacheScheme)
         {
             const int NumRequests = 3;
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -268,7 +268,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(null, "WWW-Authenticate: Basic realm=\"hello\"\r\n")]
         [InlineData("Basic", "WWW-Authenticate: Basic realm=\"hello\"\r\n")]
-        public async Task PreAuthenticate_FirstRequestNoHeaderAndAuthenticates_SecondRequestPreauthenticates(string credCacheScheme, string authResponse)
+        public async Task PreAuthenticate_FirstRequestNoHeaderAndAuthenticates_SecondRequestPreauthenticates(string? credCacheScheme, string authResponse)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -553,7 +553,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [MemberData(nameof(EchoServersData))]
-        [ConditionalTheory(nameof(IsDomainJoinedServerAvailable))]
+        [ConditionalTheory(typeof(HttpClientHandler_Authentication_Test), nameof(IsDomainJoinedServerAvailable))]
         public async Task Proxy_DomainJoinedProxyServerUsesKerberos_Success(Uri server)
         {
             // We skip the test unless it is running on a Windows client machine. That is because only Windows
@@ -593,7 +593,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsDomainJoinedServerAvailable))]
+        [ConditionalFact(typeof(HttpClientHandler_Authentication_Test), nameof(IsDomainJoinedServerAvailable))]
         public async Task Credentials_DomainJoinedServerUsesKerberos_Success()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -611,7 +611,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsDomainJoinedServerAvailable))]
+        [ConditionalFact(typeof(HttpClientHandler_Authentication_Test), nameof(IsDomainJoinedServerAvailable))]
         public async Task Credentials_DomainJoinedServerUsesKerberos_UseIpAddressAndHostHeader_Success()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -637,7 +637,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsNtlmInstalled), nameof(IsWindowsServerAvailable))]
+        [ConditionalTheory(typeof(HttpClientHandler_Authentication_Test), nameof(IsNtlmInstalled), nameof(IsWindowsServerAvailable))]
         [MemberData(nameof(ServerUsesWindowsAuthentication_MemberData))]
         public async Task Credentials_ServerUsesWindowsAuthentication_Success(string server)
         {
@@ -657,7 +657,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsNtlmInstalled))]
+        [ConditionalTheory(typeof(HttpClientHandler_Authentication_Test), nameof(IsNtlmInstalled))]
         [InlineData("NTLM")]
         [InlineData("Negotiate")]
         public async Task Credentials_ServerChallengesWithWindowsAuth_ClientSendsWindowsAuthHeader(string authScheme)
@@ -691,7 +691,7 @@ namespace System.Net.Http.Functional.Tests
                });
         }
 
-        [ConditionalFact(nameof(IsNtlmInstalled))]
+        [ConditionalFact(typeof(HttpClientHandler_Authentication_Test), nameof(IsNtlmInstalled))]
         public async Task Credentials_BrokenNtlmFromServer()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

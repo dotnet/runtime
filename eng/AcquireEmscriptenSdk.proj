@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
+
+  <Target Name="Build" DependsOnTargets="AcquireEmscriptenSdkUnconditional" />
+
+</Project>

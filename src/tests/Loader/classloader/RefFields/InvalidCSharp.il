@@ -134,9 +134,7 @@
     {
         ldarg.0
         ldfld valuetype InvalidCSharp.WithRefField& InvalidCSharp.WithRefStructField::Field
-        ldind.ref
         ldarg.1
-        ldind.ref
         ceq
         ret
     }

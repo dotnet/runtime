@@ -11,7 +11,6 @@ namespace System.Xml.Schema
         private int _lineNum;
         private int _linePos;
         private string? _sourceUri;
-        private XmlSerializerNamespaces? _namespaces;
         private XmlSchemaObject? _parent;
 
         //internal
@@ -48,8 +47,8 @@ namespace System.Xml.Schema
         [XmlNamespaceDeclarations]
         public XmlSerializerNamespaces Namespaces
         {
-            get => _namespaces ??= new XmlSerializerNamespaces();
-            set => _namespaces = value;
+            get => field ??= new XmlSerializerNamespaces();
+            set => field = value;
         }
 
         internal virtual void OnAdd(XmlSchemaObjectCollection container, object? item) { }

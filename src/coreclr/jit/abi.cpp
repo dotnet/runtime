@@ -41,6 +41,7 @@ regNumber ABIPassingSegment::GetRegister() const
     return static_cast<regNumber>(m_register);
 }
 
+#if HAS_FIXED_REGISTER_SET
 //-----------------------------------------------------------------------------
 // GetRegisterMask:
 //   Get the mask of registers that this segment is passed in.
@@ -62,6 +63,7 @@ regMaskTP ABIPassingSegment::GetRegisterMask() const
 
     return mask;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 //-----------------------------------------------------------------------------
 // GetStackOffset:
@@ -140,7 +142,7 @@ var_types ABIPassingSegment::GetRegisterType() const
             case 3:
             case 4:
                 return TYP_INT;
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             case 5:
             case 6:
             case 7:
@@ -152,6 +154,33 @@ var_types ABIPassingSegment::GetRegisterType() const
                 return TYP_UNDEF;
         }
     }
+}
+
+//-----------------------------------------------------------------------------
+// GetRegisterType:
+//   Return the smallest type larger or equal to Size that most naturally
+//   represents the register this segment is passed in, taking into account the
+//   GC info of the specified layout.
+//
+// Parameters:
+//   layout - The layout of the class that this segment is part of
+//      or nullptr if there is no layout
+//
+// Return Value:
+//   A type that matches ABIPassingSegment::Size and the register.
+//
+var_types ABIPassingSegment::GetRegisterType(ClassLayout* layout) const
+{
+    if ((layout != nullptr) && (genIsValidIntReg(GetRegister())))
+    {
+        assert(Offset < layout->GetSize());
+        if (((Offset % TARGET_POINTER_SIZE) == 0) && (Size == TARGET_POINTER_SIZE))
+        {
+            return layout->GetGCPtrType(Offset / TARGET_POINTER_SIZE);
+        }
+    }
+
+    return GetRegisterType();
 }
 
 //-----------------------------------------------------------------------------

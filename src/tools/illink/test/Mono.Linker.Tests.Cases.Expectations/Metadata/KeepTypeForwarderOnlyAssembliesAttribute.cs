@@ -5,14 +5,14 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 {
-	[AttributeUsage (AttributeTargets.Class)]
-	public sealed class KeepTypeForwarderOnlyAssembliesAttribute : BaseMetadataAttribute
-	{
-		public KeepTypeForwarderOnlyAssembliesAttribute (string value)
-		{
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class KeepTypeForwarderOnlyAssembliesAttribute : BaseMetadataAttribute
+    {
+        public KeepTypeForwarderOnlyAssembliesAttribute(string value)
+        {
 #if NET // Avoid compile errors when targeting older TFMs
-			ArgumentException.ThrowIfNullOrEmpty (value);
+            ArgumentException.ThrowIfNullOrEmpty(value);
 #endif
-		}
-	}
+        }
+    }
 }

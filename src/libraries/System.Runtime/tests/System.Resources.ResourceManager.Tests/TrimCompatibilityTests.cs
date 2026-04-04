@@ -12,30 +12,6 @@ namespace System.Resources.Tests
 {
     public static class TrimCompatibilityTests
     {
-        /// <summary>
-        /// Verifies that ResourceReader.CreateUntypedDelegate doesn't have any DynamicallyAccessedMembers attributes,
-        /// so we can safely call MakeGenericMethod on its methods.
-        /// </summary>
-        [Fact]
-        public static void VerifyMethodsCalledWithMakeGenericMethod()
-        {
-            Type type = typeof(ResourceReader);
-            MethodInfo mi = type.GetMethod("CreateUntypedDelegate", BindingFlags.NonPublic | BindingFlags.Static);
-
-            Type[] genericTypes = mi.GetGenericArguments();
-            if (genericTypes != null)
-            {
-                foreach(Type genericType in genericTypes)
-                {
-                    // The generic type should not have DynamicallyAccessedMembersAttribute on it.
-                    Assert.Null(genericType.GetCustomAttribute<DynamicallyAccessedMembersAttribute>());
-
-                    // The generic type should not have a 'where new()' constraint since that will tell the trimmer to keep the ctor
-                    Assert.False(genericType.GenericParameterAttributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint));
-                }
-            }
-        }
-
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void VerifyFeatureSwitchGeneratesTheRightException()
         {

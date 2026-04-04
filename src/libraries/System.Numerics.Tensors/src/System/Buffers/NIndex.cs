@@ -14,7 +14,6 @@ namespace System.Buffers
     /// int lastElement = someArray[^1]; // lastElement = 5
     /// </code>
     /// </remarks>
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public readonly struct NIndex : IEquatable<NIndex>
     {
         private readonly nint _value;
@@ -176,7 +175,7 @@ namespace System.Buffers
         private string ToStringFromEnd()
         {
             Span<char> span = stackalloc char[21]; // 1 for ^ and 20 for longest possible nuint value
-            bool formatted = ((uint)Value).TryFormat(span.Slice(1), out int charsWritten);
+            bool formatted = ((nuint)Value).TryFormat(span.Slice(1), out int charsWritten);
             Debug.Assert(formatted);
             span[0] = '^';
             return new string(span.Slice(0, charsWritten + 1));

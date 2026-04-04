@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -248,7 +246,7 @@ namespace System.Formats.Asn1
             out int charsWritten,
             Asn1Tag? expectedTag = null)
         {
-            Text.Encoding encoding = AsnCharacterStringEncodings.GetEncoding(encodingType);
+            Encoding encoding = AsnCharacterStringEncodings.GetEncoding(encodingType);
 
             return TryReadCharacterStringCore(
                 source,
@@ -319,7 +317,7 @@ namespace System.Formats.Asn1
             out int bytesConsumed,
             Asn1Tag? expectedTag = null)
         {
-            Text.Encoding encoding = AsnCharacterStringEncodings.GetEncoding(encodingType);
+            Encoding encoding = AsnCharacterStringEncodings.GetEncoding(encodingType);
 
             return ReadCharacterStringCore(
                 source,
@@ -384,53 +382,12 @@ namespace System.Formats.Asn1
             return copied;
         }
 
-        private static unsafe bool TryReadCharacterStringCore(
-            ReadOnlySpan<byte> source,
-            Span<char> destination,
-            Text.Encoding encoding,
-            out int charsWritten)
-        {
-            try
-            {
-#if NET8_0_OR_GREATER
-                return encoding.TryGetChars(source, destination, out charsWritten);
-#else
-                if (source.Length == 0)
-                {
-                    charsWritten = 0;
-                    return true;
-                }
-
-                fixed (byte* bytePtr = &MemoryMarshal.GetReference(source))
-                fixed (char* charPtr = &MemoryMarshal.GetReference(destination))
-                {
-                    int charCount = encoding.GetCharCount(bytePtr, source.Length);
-
-                    if (charCount > destination.Length)
-                    {
-                        charsWritten = 0;
-                        return false;
-                    }
-
-                    charsWritten = encoding.GetChars(bytePtr, source.Length, charPtr, destination.Length);
-                    Debug.Assert(charCount == charsWritten);
-
-                    return true;
-                }
-#endif
-            }
-            catch (DecoderFallbackException e)
-            {
-                throw new AsnContentException(SR.ContentException_DefaultMessage, e);
-            }
-        }
-
         private static string ReadCharacterStringCore(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
             Asn1Tag expectedTag,
             UniversalTagNumber universalTagNumber,
-            Text.Encoding encoding,
+            Encoding encoding,
             out int bytesConsumed)
         {
             byte[]? rented = null;
@@ -445,27 +402,13 @@ namespace System.Formats.Asn1
                 ref rented);
 
             string str;
-
-            if (contents.Length == 0)
+            try
             {
-                str = string.Empty;
+                str = encoding.GetString(contents);
             }
-            else
+            catch (DecoderFallbackException e)
             {
-                unsafe
-                {
-                    fixed (byte* bytePtr = &MemoryMarshal.GetReference(contents))
-                    {
-                        try
-                        {
-                            str = encoding.GetString(bytePtr, contents.Length);
-                        }
-                        catch (DecoderFallbackException e)
-                        {
-                            throw new AsnContentException(SR.ContentException_DefaultMessage, e);
-                        }
-                    }
-                }
+                throw new AsnContentException(SR.ContentException_DefaultMessage, e);
             }
 
             if (rented != null)
@@ -482,7 +425,7 @@ namespace System.Formats.Asn1
             AsnEncodingRules ruleSet,
             Asn1Tag expectedTag,
             UniversalTagNumber universalTagNumber,
-            Text.Encoding encoding,
+            Encoding encoding,
             Span<char> destination,
             out int bytesConsumed,
             out int charsWritten)
@@ -498,11 +441,15 @@ namespace System.Formats.Asn1
                 out int bytesRead,
                 ref rented);
 
-            bool copied = TryReadCharacterStringCore(
-                contents,
-                destination,
-                encoding,
-                out charsWritten);
+            bool copied;
+            try
+            {
+                copied = encoding.TryGetChars(contents, destination, out charsWritten);
+            }
+            catch (DecoderFallbackException e)
+            {
+                throw new AsnContentException(SR.ContentException_DefaultMessage, e);
+            }
 
             if (rented != null)
             {
@@ -775,6 +722,240 @@ namespace System.Formats.Asn1
         {
             string ret = AsnDecoder.ReadCharacterString(
                 _data.Span,
+                RuleSet,
+                encodingType,
+                out int consumed,
+                expectedTag);
+
+            _data = _data.Slice(consumed);
+            return ret;
+        }
+    }
+
+    public ref partial struct ValueAsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as a character with a specified tag, returning the contents
+        ///   as an unprocessed <see cref="ReadOnlySpan{T}"/> over the original data.
+        /// </summary>
+        /// <param name="expectedTag">The tag to check for before reading.</param>
+        /// <param name="contents">
+        ///   On success, receives a <see cref="ReadOnlySpan{T}"/> over the original data
+        ///   corresponding to the value of the character string.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> and advances the reader if the character string value had a primitive encoding,
+        ///   <see langword="false"/> and does not advance the reader if it had a constructed encoding.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not a character
+        ///   string tag type.
+        /// </exception>
+        /// <remarks>
+        ///   This method does not determine if the string used only characters defined by the encoding.
+        /// </remarks>
+        /// <seealso cref="TryReadCharacterStringBytes"/>
+        public bool TryReadPrimitiveCharacterStringBytes(
+            Asn1Tag expectedTag,
+            out ReadOnlySpan<byte> contents)
+        {
+            bool ret = AsnDecoder.TryReadPrimitiveCharacterStringBytes(
+                _data,
+                RuleSet,
+                expectedTag,
+                out contents,
+                out int consumed);
+
+            if (ret)
+            {
+                _data = _data.Slice(consumed);
+            }
+
+            return ret;
+        }
+
+        /// <summary>
+        ///   Reads the next value as character string with the specified tag,
+        ///   copying the unprocessed bytes into a provided destination buffer.
+        /// </summary>
+        /// <param name="destination">The buffer in which to write.</param>
+        /// <param name="expectedTag">The tag to check for before reading.</param>
+        /// <param name="bytesWritten">
+        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> and advances the reader if <paramref name="destination"/> had sufficient
+        ///   length to receive the value, otherwise
+        ///   <see langword="false"/> and the reader does not advance.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not a character
+        ///   string tag type.
+        /// </exception>
+        /// <remarks>
+        ///   This method does not determine if the string used only characters defined by the encoding.
+        /// </remarks>
+        /// <seealso cref="TryReadPrimitiveCharacterStringBytes"/>
+        /// <seealso cref="ReadCharacterString"/>
+        /// <seealso cref="TryReadCharacterString"/>
+        public bool TryReadCharacterStringBytes(
+            Span<byte> destination,
+            Asn1Tag expectedTag,
+            out int bytesWritten)
+        {
+            bool ret = AsnDecoder.TryReadCharacterStringBytes(
+                _data,
+                destination,
+                RuleSet,
+                expectedTag,
+                out int consumed,
+                out bytesWritten);
+
+            if (ret)
+            {
+                _data = _data.Slice(consumed);
+            }
+
+            return ret;
+        }
+
+        /// <summary>
+        ///   Reads the next value as character string with the specified tag and
+        ///   encoding type, copying the decoded value into a provided destination buffer.
+        /// </summary>
+        /// <param name="destination">The buffer in which to write.</param>
+        /// <param name="encodingType">
+        ///   One of the enumeration values representing the value type to process.
+        /// </param>
+        /// <param name="charsWritten">
+        ///   On success, receives the number of chars written to <paramref name="destination"/>.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the universal tag that is
+        ///   appropriate to the requested encoding type.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> and advances the reader if <paramref name="destination"/> had sufficient
+        ///   length to receive the value, otherwise
+        ///   <see langword="false"/> and the reader does not advance.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="encodingType"/> is not a known character string type.
+        /// </exception>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The string did not successfully decode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not the same as
+        ///   <paramref name="encodingType"/>.
+        /// </exception>
+        /// <seealso cref="TryReadPrimitiveCharacterStringBytes"/>
+        /// <seealso cref="TryReadCharacterStringBytes"/>
+        /// <seealso cref="ReadCharacterString"/>
+        public bool TryReadCharacterString(
+            Span<char> destination,
+            UniversalTagNumber encodingType,
+            out int charsWritten,
+            Asn1Tag? expectedTag = null)
+        {
+            bool ret = AsnDecoder.TryReadCharacterString(
+                _data,
+                destination,
+                RuleSet,
+                encodingType,
+                out int consumed,
+                out charsWritten,
+                expectedTag);
+
+            _data = _data.Slice(consumed);
+            return ret;
+        }
+
+        /// <summary>
+        ///   Reads the next value as character string with the specified tag and
+        ///   encoding type, returning the decoded value as a string.
+        /// </summary>
+        /// <param name="encodingType">
+        ///   One of the enumeration values representing the value type to process.
+        /// </param>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the universal tag that is
+        ///   appropriate to the requested encoding type.
+        /// </param>
+        /// <returns>
+        ///   The decoded value.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="encodingType"/> is not a known character string type.
+        /// </exception>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The string did not successfully decode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not the same as
+        ///   <paramref name="encodingType"/>.
+        /// </exception>
+        /// <seealso cref="TryReadPrimitiveCharacterStringBytes"/>
+        /// <seealso cref="TryReadCharacterStringBytes"/>
+        /// <seealso cref="TryReadCharacterString"/>
+        public string ReadCharacterString(UniversalTagNumber encodingType, Asn1Tag? expectedTag = null)
+        {
+            string ret = AsnDecoder.ReadCharacterString(
+                _data,
                 RuleSet,
                 encodingType,
                 out int consumed,

@@ -78,6 +78,12 @@ void DECLSPEC_NORETURN implLimitation()
 }
 
 /*****************************************************************************/
+void DECLSPEC_NORETURN implReadyToRunUnsupported()
+{
+    fatal(CORJIT_R2R_UNSUPPORTED);
+}
+
+/*****************************************************************************/
 void DECLSPEC_NORETURN NOMEM()
 {
 #if MEASURE_FATAL
@@ -258,7 +264,7 @@ LogEnv::LogEnv(ICorJitInfo* aCompHnd)
 }
 
 /*****************************************************************************/
-extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned line)
+extern "C" void assertAbort(const char* why, const char* file, unsigned line)
 {
     const char* msg       = why;
     LogEnv*     env       = JitTls::GetLogEnv();

@@ -46,13 +46,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return false;
         }
 
-        public bool ExplicitCurvesSupported
-        {
-            get
-            {
-                return !PlatformDetection.IsAzureLinux;
-            }
-        }
+        public bool ExplicitCurvesSupported => PlatformDetection.IsNotSymCryptOpenSsl;
     }
 
     public partial class ECDsaFactory

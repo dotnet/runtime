@@ -988,7 +988,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "LoadIfNeeded: not needed, fake principal");
 
-                Debug.Assert(this.unpersisted == false);
+                Debug.Assert(!this.unpersisted);
             }
             else if (!this.unpersisted)
             {

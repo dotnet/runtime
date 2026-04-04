@@ -21,8 +21,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Truncate<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPoint<T> =>
+            where T : IFloatingPoint<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, TruncateOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, TruncateOperator<T>>(x, destination);
+        }
 
         private readonly struct TruncateOperator<T> : IUnaryOperator<T, T> where T : IFloatingPoint<T>
         {
@@ -32,7 +39,6 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector128.Truncate(x.AsDouble()).As<double, T>();
@@ -42,33 +48,10 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector128.Truncate(x.AsSingle()).As<float, T>();
                 }
-#else
-                if (typeof(T) == typeof(float))
-                {
-                    if (Sse41.IsSupported) return Sse41.RoundToZero(x.AsSingle()).As<float, T>();
-                    if (AdvSimd.IsSupported) return AdvSimd.RoundToZero(x.AsSingle()).As<float, T>();
-
-                    return Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(x, Vector128<T>.Zero),
-                        Vector128.Floor(x.AsSingle()).As<float, T>(),
-                        Vector128.Ceiling(x.AsSingle()).As<float, T>());
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-
-                    if (Sse41.IsSupported) return Sse41.RoundToZero(x.AsDouble()).As<double, T>();
-                    if (AdvSimd.Arm64.IsSupported) return AdvSimd.Arm64.RoundToZero(x.AsDouble()).As<double, T>();
-
-                    return Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(x, Vector128<T>.Zero),
-                        Vector128.Floor(x.AsDouble()).As<double, T>(),
-                        Vector128.Ceiling(x.AsDouble()).As<double, T>());
-                }
-#endif
             }
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector256.Truncate(x.AsDouble()).As<double, T>();
@@ -78,31 +61,10 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector256.Truncate(x.AsSingle()).As<float, T>();
                 }
-#else
-                if (typeof(T) == typeof(float))
-                {
-                    if (Avx.IsSupported) return Avx.RoundToZero(x.AsSingle()).As<float, T>();
-
-                    return Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(x, Vector256<T>.Zero),
-                        Vector256.Floor(x.AsSingle()).As<float, T>(),
-                        Vector256.Ceiling(x.AsSingle()).As<float, T>());
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-
-                    if (Avx.IsSupported) return Avx.RoundToZero(x.AsDouble()).As<double, T>();
-
-                    return Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(x, Vector256<T>.Zero),
-                        Vector256.Floor(x.AsDouble()).As<double, T>(),
-                        Vector256.Ceiling(x.AsDouble()).As<double, T>());
-                }
-#endif
             }
 
             public static Vector512<T> Invoke(Vector512<T> x)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector512.Truncate(x.AsDouble()).As<double, T>();
@@ -112,26 +74,6 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector512.Truncate(x.AsSingle()).As<float, T>();
                 }
-#else
-                if (typeof(T) == typeof(float))
-                {
-                    if (Avx512F.IsSupported) return Avx512F.RoundScale(x.AsSingle(), 0b11).As<float, T>();
-
-                    return Vector512.ConditionalSelect(Vector512.GreaterThanOrEqual(x, Vector512<T>.Zero),
-                        Vector512.Floor(x.AsSingle()).As<float, T>(),
-                        Vector512.Ceiling(x.AsSingle()).As<float, T>());
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-
-                    if (Avx512F.IsSupported) return Avx512F.RoundScale(x.AsDouble(), 0b11).As<double, T>();
-
-                    return Vector512.ConditionalSelect(Vector512.GreaterThanOrEqual(x, Vector512<T>.Zero),
-                        Vector512.Floor(x.AsDouble()).As<double, T>(),
-                        Vector512.Ceiling(x.AsDouble()).As<double, T>());
-                }
-#endif
             }
         }
     }

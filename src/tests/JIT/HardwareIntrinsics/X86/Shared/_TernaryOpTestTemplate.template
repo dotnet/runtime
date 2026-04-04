@@ -20,9 +20,9 @@ namespace JIT.HardwareIntrinsics.X86
     public static partial class Program
     {
         [Fact]
-        public static void {Method}{RetBaseType}()
+        public static void {Method}{RetBaseType}{Op1VectorType}{Op1BaseType}{Op2VectorType}{Op2BaseType}{Op3VectorType}{Op3BaseType}()
         {
-            var test = new {TemplateName}TernaryOpTest__{Method}{RetBaseType}();
+            var test = new {TemplateName}TernaryOpTest__{Method}{RetBaseType}{Op1VectorType}{Op1BaseType}{Op2VectorType}{Op2BaseType}{Op3VectorType}{Op3BaseType}();
 
             if (test.IsSupported)
             {
@@ -78,7 +78,7 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class {TemplateName}TernaryOpTest__{Method}{RetBaseType}
+    public sealed unsafe class {TemplateName}TernaryOpTest__{Method}{RetBaseType}{Op1VectorType}{Op1BaseType}{Op2VectorType}{Op2BaseType}{Op3VectorType}{Op3BaseType}
     {
         private struct TestStruct
         {
@@ -100,7 +100,7 @@ namespace JIT.HardwareIntrinsics.X86
                 return testStruct;
             }
 
-            public void RunStructFldScenario({TemplateName}TernaryOpTest__{Method}{RetBaseType} testClass)
+            public void RunStructFldScenario({TemplateName}TernaryOpTest__{Method}{RetBaseType}{Op1VectorType}{Op1BaseType}{Op2VectorType}{Op2BaseType}{Op3VectorType}{Op3BaseType} testClass)
             {
                 var result = {Isa}.{Method}(_fld1, _fld2, _fld3);
 
@@ -126,7 +126,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private SimpleTernaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}, {Op2BaseType}, {Op3BaseType}> _dataTable;
 
-        public {TemplateName}TernaryOpTest__{Method}{RetBaseType}()
+        public {TemplateName}TernaryOpTest__{Method}{RetBaseType}{Op1VectorType}{Op1BaseType}{Op2VectorType}{Op2BaseType}{Op3VectorType}{Op3BaseType}()
         {
             Succeeded = true;
 

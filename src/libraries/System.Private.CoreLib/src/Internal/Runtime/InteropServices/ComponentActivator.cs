@@ -30,9 +30,7 @@ namespace Internal.Runtime.InteropServices
         private const int HostFeatureDisabled = unchecked((int)0x800080a7);
 
         [FeatureSwitchDefinition("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting")]
-        private static bool IsSupported { get; } = InitializeIsSupported();
-
-        private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting", out bool isSupported) ? isSupported : true;
+        private static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting", out bool isSupported) ? isSupported : true;
 
         public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
 
@@ -180,6 +178,7 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         public static unsafe int LoadAssemblyBytes(byte* assembly, nint assemblyByteLength, byte* symbols, nint symbolsByteLength, IntPtr loadContext, IntPtr reserved)
         {
             if (!IsSupported)
@@ -348,7 +347,7 @@ namespace Internal.Runtime.InteropServices
             }
             else
             {
-                Delegate d = Delegate.CreateDelegate(delegateType, type, methodName)!;
+                Delegate d = Delegate.CreateDelegate(delegateType, type, methodName);
 
                 functionPtr = Marshal.GetFunctionPointerForDelegate(d);
 

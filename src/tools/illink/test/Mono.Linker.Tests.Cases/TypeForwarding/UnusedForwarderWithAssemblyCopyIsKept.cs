@@ -7,21 +7,21 @@ using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
-	[SetupLinkerDefaultAction ("link")]
-	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
+    [SetupLinkerDefaultAction("link")]
+    [SetupCompileBefore("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
 
-	[SetupCompileAfter ("Implementation.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
-	[SetupCompileAfter ("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
+    [SetupCompileAfter("Implementation.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
+    [SetupCompileAfter("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 
-	[SetupLinkerAction ("copy", "Forwarder")]
+    [SetupLinkerAction("copy", "Forwarder")]
 
-	[KeptTypeInAssembly ("Forwarder.dll", typeof (ImplementationLibrary))]
-	[RemovedAssembly ("Implementation.dll")]
+    [KeptTypeInAssembly("Forwarder.dll", typeof(ImplementationLibrary))]
+    [RemovedAssembly("Implementation.dll")]
 
-	public class UnusedForwarderWithAssemblyCopyIsKept
-	{
-		static void Main ()
-		{
-		}
-	}
+    public class UnusedForwarderWithAssemblyCopyIsKept
+    {
+        static void Main()
+        {
+        }
+    }
 }

@@ -1849,5 +1849,136 @@ namespace System.Numerics.Tests
             Assert.Equal(x, vector.X);
             Assert.Equal(y, vector.Y);
         }
+
+        [Theory]
+        [InlineData(1.0f, 2.0f)]
+        [InlineData(5.0f, 6.0f)]
+        public void AsVector3Test(float x, float y)
+        {
+            var vector = Vector2.Create(x, y).AsVector3();
+
+            Assert.Equal(x, vector.X);
+            Assert.Equal(y, vector.Y);
+            Assert.Equal(0, vector.Z);
+        }
+
+        [Theory]
+        [InlineData(1.0f, 2.0f)]
+        [InlineData(5.0f, 6.0f)]
+        public void AsVector3UnsafeTest(float x, float y)
+        {
+            var vector = Vector2.Create(x, y).AsVector3Unsafe();
+
+            Assert.Equal(x, vector.X);
+            Assert.Equal(y, vector.Y);
+        }
+
+        [Fact]
+        public void CreateScalarTest()
+        {
+            var vector = Vector2.CreateScalar(float.Pi);
+
+            Assert.Equal(float.Pi, vector.X);
+            Assert.Equal(0, vector.Y);
+
+            vector = Vector2.CreateScalar(float.E);
+
+            Assert.Equal(float.E, vector.X);
+            Assert.Equal(0, vector.Y);
+        }
+
+        [Fact]
+        public void CreateScalarUnsafeTest()
+        {
+            var vector = Vector2.CreateScalarUnsafe(float.Pi);
+            Assert.Equal(float.Pi, vector.X);
+
+            vector = Vector2.CreateScalarUnsafe(float.E);
+            Assert.Equal(float.E, vector.X);
+        }
+
+        [Fact]
+        public void EqualsAnyTest()
+        {
+            // Test case that would have failed before fix: no elements match, but 3rd/4th elements (0) would match
+            Assert.False(Vector2.EqualsAny(Vector2.Create(1, 2), Vector2.Create(3, 4)));
+
+            // Test cases where elements actually match
+            Assert.True(Vector2.EqualsAny(Vector2.Create(1, 2), Vector2.Create(1, 4))); // X matches
+            Assert.True(Vector2.EqualsAny(Vector2.Create(1, 2), Vector2.Create(3, 2))); // Y matches
+            Assert.True(Vector2.EqualsAny(Vector2.Create(1, 2), Vector2.Create(1, 2))); // All match
+        }
+
+        [Fact]
+        public void GreaterThanAllTest()
+        {
+            // Test case that would have failed before fix: all 2 elements pass, but 3rd/4th (0 > 0) fails
+            Assert.True(Vector2.GreaterThanAll(Vector2.Create(2, 3), Vector2.Create(1, 2)));
+
+            // Test cases where not all elements pass
+            Assert.False(Vector2.GreaterThanAll(Vector2.Create(1, 3), Vector2.Create(1, 2))); // X not greater
+            Assert.False(Vector2.GreaterThanAll(Vector2.Create(2, 2), Vector2.Create(1, 2))); // Y not greater
+        }
+
+        [Fact]
+        public void GreaterThanOrEqualAnyTest()
+        {
+            // Test case that would have failed before fix: no elements pass, but 3rd/4th (0 >= 0) would pass
+            Assert.False(Vector2.GreaterThanOrEqualAny(Vector2.Create(1, 2), Vector2.Create(3, 4)));
+
+            // Test cases where elements actually pass
+            Assert.True(Vector2.GreaterThanOrEqualAny(Vector2.Create(3, 2), Vector2.Create(3, 4))); // X equal
+            Assert.True(Vector2.GreaterThanOrEqualAny(Vector2.Create(1, 4), Vector2.Create(3, 4))); // Y equal
+            Assert.True(Vector2.GreaterThanOrEqualAny(Vector2.Create(4, 2), Vector2.Create(3, 4))); // X greater
+        }
+
+        [Fact]
+        public void LessThanAllTest()
+        {
+            // Test case that would have failed before fix: all 2 elements pass, but 3rd/4th (0 < 0) fails
+            Assert.True(Vector2.LessThanAll(Vector2.Create(1, 2), Vector2.Create(2, 3)));
+
+            // Test cases where not all elements pass
+            Assert.False(Vector2.LessThanAll(Vector2.Create(2, 2), Vector2.Create(2, 3))); // X not less
+            Assert.False(Vector2.LessThanAll(Vector2.Create(1, 3), Vector2.Create(2, 3))); // Y not less
+        }
+
+        [Fact]
+        public void LessThanOrEqualAnyTest()
+        {
+            // Test case that would have failed before fix: no elements pass, but 3rd/4th (0 <= 0) would pass
+            Assert.False(Vector2.LessThanOrEqualAny(Vector2.Create(3, 4), Vector2.Create(1, 2)));
+
+            // Test cases where elements actually pass
+            Assert.True(Vector2.LessThanOrEqualAny(Vector2.Create(1, 4), Vector2.Create(1, 2))); // X equal
+            Assert.True(Vector2.LessThanOrEqualAny(Vector2.Create(3, 2), Vector2.Create(1, 2))); // Y equal
+            Assert.True(Vector2.LessThanOrEqualAny(Vector2.Create(0, 4), Vector2.Create(1, 2))); // X less
+        }
+
+        [Fact]
+        public void GreaterThanOrEqualAllTest()
+        {
+            // Test case that would have failed before fix: all 2 elements pass, but 3rd/4th (0 >= 0) could give false positive
+            // with undefined upper elements from AsVector128Unsafe
+            Assert.True(Vector2.GreaterThanOrEqualAll(Vector2.Create(2, 3), Vector2.Create(1, 2)));
+            Assert.True(Vector2.GreaterThanOrEqualAll(Vector2.Create(1, 2), Vector2.Create(1, 2))); // All equal
+
+            // Test cases where not all elements pass
+            Assert.False(Vector2.GreaterThanOrEqualAll(Vector2.Create(0, 3), Vector2.Create(1, 2))); // X not greater or equal
+            Assert.False(Vector2.GreaterThanOrEqualAll(Vector2.Create(2, 1), Vector2.Create(1, 2))); // Y not greater or equal
+        }
+
+        [Fact]
+        public void LessThanOrEqualAllTest()
+        {
+            // Test case that would have failed before fix: all 2 elements pass, but 3rd/4th could give false positive
+            // with undefined upper elements from AsVector128Unsafe
+            Assert.True(Vector2.LessThanOrEqualAll(Vector2.Create(1, 2), Vector2.Create(2, 3)));
+            Assert.True(Vector2.LessThanOrEqualAll(Vector2.Create(1, 2), Vector2.Create(1, 2))); // All equal
+
+            // Test cases where not all elements pass
+            Assert.False(Vector2.LessThanOrEqualAll(Vector2.Create(3, 2), Vector2.Create(2, 3))); // X not less or equal
+            Assert.False(Vector2.LessThanOrEqualAll(Vector2.Create(1, 4), Vector2.Create(2, 3))); // Y not less or equal
+        }
     }
 }

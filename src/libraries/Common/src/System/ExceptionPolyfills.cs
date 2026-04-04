@@ -23,5 +23,36 @@ namespace System
         [DoesNotReturn]
         private static void ThrowArgumentNullException(string? paramName) =>
             throw new ArgumentNullException(paramName);
+
+        extension(ObjectDisposedException)
+        {
+            public static void ThrowIf([DoesNotReturnIf(true)] bool condition, object instance)
+            {
+                if (condition)
+                {
+                    ThrowObjectDisposedException(instance);
+                }
+            }
+
+            public static void ThrowIf([DoesNotReturnIf(true)] bool condition, Type type)
+            {
+                if (condition)
+                {
+                    ThrowObjectDisposedException(type);
+                }
+            }
+        }
+
+        [DoesNotReturn]
+        private static void ThrowObjectDisposedException(object? instance)
+        {
+            throw new ObjectDisposedException(instance?.GetType().FullName);
+        }
+
+        [DoesNotReturn]
+        private static void ThrowObjectDisposedException(Type? type)
+        {
+            throw new ObjectDisposedException(type?.FullName);
+        }
     }
 }

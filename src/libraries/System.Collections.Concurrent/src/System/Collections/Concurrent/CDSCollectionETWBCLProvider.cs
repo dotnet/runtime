@@ -6,10 +6,7 @@
 // CDSCollectionETWBCLProvider.cs
 //
 // A helper class for firing ETW events related to the Coordination Data Structure
-// collection types. This provider is used by CDS collections in both mscorlib.dll
-// and System.dll. The purpose of sharing the provider class is to be able to enable
-// ETW tracing on all CDS collection with a single ETW provider GUID, and to minimize
-// the number of providers in use.
+// collection types.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -22,15 +19,12 @@ namespace System.Collections.Concurrent
         Name = "System.Collections.Concurrent.ConcurrentCollectionsEventSource",
         Guid = "35167F8E-49B2-4b96-AB86-435B59336B5E"
         )]
-    internal sealed class CDSCollectionETWBCLProvider : EventSource
+    internal sealed partial class CDSCollectionETWBCLProvider : EventSource
     {
         /// <summary>
         /// Defines the singleton instance for the collection ETW provider.
-        /// The collection provider GUID is {35167F8E-49B2-4b96-AB86-435B59336B5E}.
         /// </summary>
         public static readonly CDSCollectionETWBCLProvider Log = new CDSCollectionETWBCLProvider();
-        /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
-        private CDSCollectionETWBCLProvider() { }
 
         /// <summary>Enabled for all keywords.</summary>
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);
@@ -42,7 +36,6 @@ namespace System.Collections.Concurrent
 
         private const int CONCURRENTSTACK_FASTPUSHFAILED_ID = 1;
         private const int CONCURRENTSTACK_FASTPOPFAILED_ID = 2;
-        private const int CONCURRENTDICTIONARY_ACQUIRINGALLLOCKS_ID = 3;
         private const int CONCURRENTBAG_TRYTAKESTEALS_ID = 4;
         private const int CONCURRENTBAG_TRYPEEKSTEALS_ID = 5;
 
@@ -66,20 +59,6 @@ namespace System.Collections.Concurrent
             if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
             {
                 WriteEvent(CONCURRENTSTACK_FASTPOPFAILED_ID, spinCount);
-            }
-        }
-
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        // ConcurrentDictionary Events
-        //
-
-        [Event(CONCURRENTDICTIONARY_ACQUIRINGALLLOCKS_ID, Level = EventLevel.Warning)]
-        public void ConcurrentDictionary_AcquiringAllLocks(int numOfBuckets)
-        {
-            if (IsEnabled(EventLevel.Warning, ALL_KEYWORDS))
-            {
-                WriteEvent(CONCURRENTDICTIONARY_ACQUIRINGALLLOCKS_ID, numOfBuckets);
             }
         }
 

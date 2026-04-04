@@ -21,7 +21,7 @@ namespace System.Net.NetworkInformation
         private const int IpV6HeaderLengthInBytes = 40;
         private static readonly ushort DontFragment = OperatingSystem.IsFreeBSD() ? (ushort)IPAddress.HostToNetworkOrder((short)0x4000) : (ushort)0x4000;
 
-        private static unsafe SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private static SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             // Use a random value as the identifier. This doesn't need to be perfectly random
             // or very unpredictable, rather just good enough to avoid unexpected conflicts.
@@ -35,7 +35,10 @@ namespace System.Net.NetworkInformation
             if (sendIpHeader)
             {
                 iph.VersionAndLength = 0x45;
-                totalLength = sizeof(IpHeader) + checked(sizeof(IcmpHeader) + buffer.Length);
+                unsafe
+                {
+                    totalLength = sizeof(IpHeader) + checked(sizeof(IcmpHeader) + buffer.Length);
+                }
                 // On OSX this strangely must be host byte order.
                 iph.TotalLength = OperatingSystem.IsFreeBSD() ? (ushort)IPAddress.HostToNetworkOrder((short)totalLength) : (ushort)totalLength;
                 iph.Protocol = 1; // ICMP
@@ -103,19 +106,16 @@ namespace System.Net.NetworkInformation
             {
                 // If it is not multicast, use Connect to scope responses only to the target address.
                 socket.Connect(socketConfig.EndPoint);
-                unsafe
+                int opt = 1;
+                if (ipv4)
                 {
-                    int opt = 1;
-                    if (ipv4)
-                    {
-                        // setsockopt(fd, IPPROTO_IP, IP_RECVERR, &value, sizeof(int))
-                        socket.SetRawSocketOption(0, 11, new ReadOnlySpan<byte>(&opt, sizeof(int)));
-                    }
-                    else
-                    {
-                        // setsockopt(fd, IPPROTO_IPV6, IPV6_RECVERR, &value, sizeof(int))
-                        socket.SetRawSocketOption(41, 25, new ReadOnlySpan<byte>(&opt, sizeof(int)));
-                    }
+                    // setsockopt(fd, IPPROTO_IP, IP_RECVERR, &value, sizeof(int))
+                    socket.SetRawSocketOption(0, 11, MemoryMarshal.AsBytes(new ReadOnlySpan<int>(in opt)));
+                }
+                else
+                {
+                    // setsockopt(fd, IPPROTO_IPV6, IPV6_RECVERR, &value, sizeof(int))
+                    socket.SetRawSocketOption(41, 25, MemoryMarshal.AsBytes(new ReadOnlySpan<int>(in opt)));
                 }
             }
 #pragma warning restore 618
@@ -247,7 +247,7 @@ namespace System.Net.NetworkInformation
             return true;
         }
 
-        private static unsafe PingReply SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private static PingReply SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
             using (Socket socket = GetRawSocket(socketConfig))

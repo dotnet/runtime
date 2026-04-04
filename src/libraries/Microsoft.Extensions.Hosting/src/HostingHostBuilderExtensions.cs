@@ -182,6 +182,7 @@ namespace Microsoft.Extensions.Hosting
         ///     * load host <see cref="IConfiguration"/> from "DOTNET_" prefixed environment variables
         ///     * load host <see cref="IConfiguration"/> from supplied command line args
         ///     * load app <see cref="IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json'
+        ///     * load app <see cref="IConfiguration"/> from '[<see cref="IHostEnvironment.ApplicationName"/>].settings.json' and '[<see cref="IHostEnvironment.ApplicationName"/>].settings.[<see cref="IHostEnvironment.EnvironmentName"/>].json' when <see cref="IHostEnvironment.ApplicationName"/> is not empty
         ///     * load app <see cref="IConfiguration"/> from User Secrets when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly
         ///     * load app <see cref="IConfiguration"/> from environment variables
         ///     * load app <see cref="IConfiguration"/> from supplied command line args
@@ -240,6 +241,14 @@ namespace Microsoft.Extensions.Hosting
 
             appConfigBuilder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
                     .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+
+            if (env.ApplicationName is { Length: > 0 })
+            {
+                string sanitizedApplicationName = env.ApplicationName.Replace(Path.DirectorySeparatorChar, '_')
+                                                                    .Replace(Path.AltDirectorySeparatorChar, '_');
+                appConfigBuilder.AddJsonFile($"{sanitizedApplicationName}.settings.json", optional: true, reloadOnChange: reloadOnChange)
+                        .AddJsonFile($"{sanitizedApplicationName}.settings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+            }
 
             if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
             {

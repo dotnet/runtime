@@ -15,7 +15,6 @@ public sealed class GeneratedTestRunner : TestRunner
     private string _assemblyName;
     private TestFilter.ISearchClause? _filter;
     private Func<TestFilter?, TestSummary> _runTestsCallback;
-    private Dictionary<string, string> _testExclusionTable;
 
     private readonly Boolean _writeBase64TestResults;
 
@@ -23,13 +22,11 @@ public sealed class GeneratedTestRunner : TestRunner
         LogWriter logger, 
         Func<TestFilter?, TestSummary> runTestsCallback, 
         string assemblyName,
-        Dictionary<string, string> testExclusionTable,
         bool writeBase64TestResults)
         : base(logger)
     {
         _assemblyName = assemblyName;
         _runTestsCallback = runTestsCallback;
-        _testExclusionTable = testExclusionTable;
         _writeBase64TestResults = writeBase64TestResults;
 
         ResultsFileName = $"{_assemblyName}.testResults.xml";
@@ -41,7 +38,7 @@ public sealed class GeneratedTestRunner : TestRunner
 
     public override Task Run(IEnumerable<TestAssemblyInfo> testAssemblies)
     {
-        LastTestRun = _runTestsCallback(new TestFilter(_filter, _testExclusionTable));
+        LastTestRun = _runTestsCallback(new TestFilter(_filter));
         PassedTests = LastTestRun.PassedTests;
         FailedTests = LastTestRun.FailedTests;
         SkippedTests = LastTestRun.SkippedTests;

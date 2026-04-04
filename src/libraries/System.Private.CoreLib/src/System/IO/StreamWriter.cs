@@ -24,7 +24,6 @@ namespace System.IO
         // which means we take advantage of adaptive buffering code.
         // The performance using UnicodeEncoding is acceptable.
         private const int DefaultBufferSize = 1024;   // char[]
-        private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
         // Bit bucket - Null has no backing store. Non closable.
@@ -156,7 +155,7 @@ namespace System.IO
         }
 
         public StreamWriter(string path, Encoding? encoding, FileStreamOptions options)
-            : this(ValidateArgsAndOpenPath(path, options), encoding, DefaultFileStreamBufferSize)
+            : this(ValidateArgsAndOpenPath(path, options), encoding, DefaultBufferSize)
         {
         }
 
@@ -166,7 +165,7 @@ namespace System.IO
             _stream = Stream.Null;
             _encoding = UTF8NoBOM;
             _encoder = null!;
-            _charBuffer = Array.Empty<char>();
+            _charBuffer = [];
         }
 
         private static FileStream ValidateArgsAndOpenPath(string path, FileStreamOptions options)
@@ -184,9 +183,13 @@ namespace System.IO
         private static FileStream ValidateArgsAndOpenPath(string path, bool append, int bufferSize)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
-            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize);
+            if (bufferSize != -1)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+            }
+
+            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, FileStream.DefaultBufferSize);
         }
 
         public override void Close()
@@ -528,8 +531,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, two, appendNewLine: false);
+                WriteFormatHelper(format, [arg0, arg1], appendNewLine: false);
             }
             else
             {
@@ -541,8 +543,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, three, appendNewLine: false);
+                WriteFormatHelper(format, [arg0, arg1, arg2], appendNewLine: false);
             }
             else
             {
@@ -599,8 +600,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, two, appendNewLine: true);
+                WriteFormatHelper(format, [arg0, arg1], appendNewLine: true);
             }
             else
             {
@@ -612,8 +612,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, three, appendNewLine: true);
+                WriteFormatHelper(format, [arg0, arg1, arg2], appendNewLine: true);
             }
             else
             {

@@ -32,14 +32,14 @@
   </Choose>
 
   <Choose>
-    <When Condition="$(OutputRID.StartsWith('win'))">
+    <When Condition="$(TargetRid.StartsWith('win'))">
       <PropertyGroup>
         <LibSuffix>.dll</LibSuffix>
         <StaticLibSuffix>.lib</StaticLibSuffix>
         <SymbolsSuffix>.pdb</SymbolsSuffix>
       </PropertyGroup>
     </When>
-    <When Condition="$(OutputRID.StartsWith('osx')) or $(OutputRID.StartsWith('maccatalyst')) or $(OutputRID.StartsWith('ios')) or $(OutputRID.StartsWith('tvos'))">
+    <When Condition="$(TargetRid.StartsWith('osx')) or $(TargetRid.StartsWith('maccatalyst')) or $(TargetRid.StartsWith('ios')) or $(TargetRid.StartsWith('tvos'))">
       <PropertyGroup>
         <LibPrefix>lib</LibPrefix>
         <LibSuffix>.dylib</LibSuffix>

@@ -39,6 +39,7 @@ namespace System.Xml.Xsl
             set { _enableDocumentFunction = value; }
         }
 
+        [Obsolete(Obsoletions.XsltSettingsEnableScriptMessage, DiagnosticId = Obsoletions.XsltSettingsEnableScriptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public bool EnableScript
         {
             get { return _enableScript; }

@@ -260,16 +260,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext context)
+        public static void PrintExtendedHelp(ParseResult parseResult)
         {
-            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
-                yield return sectionDelegate;
-
-            if (context.Command.Name == "create-mibc" || context.Command.Name == "create-jittrace")
+            if (parseResult.CommandResult.Command.Name is "create-mibc" or "create-jittrace")
             {
-                yield return _ =>
-                {
-                    Console.WriteLine(
+                Console.WriteLine(
 @"Example tracing commands used to generate the input to this tool:
 ""dotnet-trace collect -p 73060 --providers Microsoft-Windows-DotNETRuntime:0x1E000080018:4""
 - Capture events from process 73060 where we capture both JIT and R2R events using EventPipe tracing
@@ -280,8 +275,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 ""perfview collect -LogFile:logOfCollection.txt -DataFile:jittrace.etl -Zip:false -merge:false -providers:Microsoft-Windows-DotNETRuntime:0x1E000080018:4""
 - Capture Jit and R2R events via perfview of all processes running using ETW tracing
 ");
-                    return true;
-                };
             }
         }
 

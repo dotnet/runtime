@@ -25,7 +25,7 @@ namespace System.Runtime.Versioning.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("message")]
-        public void Ctor_String_Message(string message)
+        public void Ctor_String_Message(string? message)
         {
             var attribute = new RequiresPreviewFeaturesAttribute(message);
             Assert.Same(message, attribute.Message);
@@ -36,7 +36,7 @@ namespace System.Runtime.Versioning.Tests
         [InlineData(null, "")]
         [InlineData("", null)]
         [InlineData("message", "https://aka.ms/preview-features/")]
-        public void Ctor_String_Url(string message, string url)
+        public void Ctor_String_Url(string? message, string? url)
         {
             var attribute = new RequiresPreviewFeaturesAttribute(message) { Url = url };
             Assert.Same(message, attribute.Message);

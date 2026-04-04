@@ -32,10 +32,27 @@ namespace System.Xml.Serialization
             object[] attrs = provider.GetCustomAttributes(false);
             for (int i = 0; i < attrs.Length; i++)
             {
-                if (attrs[i] is SoapIgnoreAttribute || attrs[i] is ObsoleteAttribute)
+                if (attrs[i] is SoapIgnoreAttribute)
                 {
                     _soapIgnore = true;
                     break;
+                }
+                else if (attrs[i] is ObsoleteAttribute obsoleteAttr)
+                {
+                    if (!System.Xml.LocalAppContextSwitches.IgnoreObsoleteMembers)
+                    {
+                        if (obsoleteAttr.IsError)
+                        {
+                            throw new InvalidOperationException(SR.Format(SR.XmlObsoleteIsError, obsoleteAttr.Message));
+                        }
+                        // If IsError is false, continue processing normally (don't ignore)
+                    }
+                    else
+                    {
+                        // Old behavior: ignore obsolete members when switch is enabled
+                        _soapIgnore = true;
+                        break;
+                    }
                 }
                 else if (attrs[i] is SoapElementAttribute)
                 {

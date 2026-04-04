@@ -25,6 +25,9 @@ namespace System.Linq
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentNullException(string paramName) => throw new ArgumentNullException(paramName);
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException(string paramName) => throw new ArgumentOutOfRangeException(paramName);
 
         [DoesNotReturn]

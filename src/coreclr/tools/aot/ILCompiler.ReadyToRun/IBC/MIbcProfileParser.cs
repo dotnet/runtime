@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Reflection.Metadata;
+using System.Text;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -184,7 +185,7 @@ namespace ILCompiler.IBC
 
             var mibcModule = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
 
-            var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
+            EcmaMethod assemblyDictionary = mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary"u8, null);
             IEnumerable<MethodProfileData> loadedMethodProfileData = Enumerable.Empty<MethodProfileData>();
 
             EcmaMethodIL ilBody = EcmaMethodIL.Create(assemblyDictionary);
@@ -266,7 +267,7 @@ namespace ILCompiler.IBC
         public static MibcConfig ParseMibcConfig(TypeSystemContext tsc, PEReader pEReader)
         {
             EcmaModule mibcModule = EcmaModule.Create(tsc, pEReader, null);
-            EcmaMethod mibcConfigMth = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod(nameof(MibcConfig), null);
+            EcmaMethod mibcConfigMth = mibcModule.GetGlobalModuleType().GetMethod("MibcConfig"u8, null);
 
             if (mibcConfigMth == null)
                 return null;
@@ -620,6 +621,8 @@ namespace ILCompiler.IBC
         {
             private sealed class CanonModule : ModuleDesc, IAssemblyDesc
             {
+                public ReadOnlySpan<byte> Name => "System.Private.Canon"u8;
+
                 public CanonModule(TypeSystemContext wrappedContext) : base(wrappedContext, null)
                 {
                 }
@@ -634,19 +637,19 @@ namespace ILCompiler.IBC
                     throw new NotImplementedException();
                 }
 
-                public override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
+                public override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior)
                 {
                     TypeSystemContext context = Context;
 
-                    if (context.SupportsCanon && (nameSpace == context.CanonType.Namespace) && (name == context.CanonType.Name))
+                    if (context.SupportsCanon && nameSpace.SequenceEqual(context.CanonType.Namespace) && name.SequenceEqual(context.CanonType.Name))
                         return Context.CanonType;
-                    if (context.SupportsUniversalCanon && (nameSpace == context.UniversalCanonType.Namespace) && (name == context.UniversalCanonType.Name))
+                    if (context.SupportsUniversalCanon && nameSpace.SequenceEqual(context.UniversalCanonType.Namespace) && name.SequenceEqual(context.UniversalCanonType.Name))
                         return Context.UniversalCanonType;
                     else
                     {
                         if (notFoundBehavior != NotFoundBehavior.ReturnNull)
                         {
-                            var failure = ResolutionFailure.GetTypeLoadResolutionFailure(nameSpace, name, "System.Private.Canon");
+                            var failure = ResolutionFailure.GetTypeLoadResolutionFailure(Encoding.UTF8.GetString(nameSpace), Encoding.UTF8.GetString(name), "System.Private.Canon");
                             if (notFoundBehavior == NotFoundBehavior.Throw)
                                 failure.Throw();
 

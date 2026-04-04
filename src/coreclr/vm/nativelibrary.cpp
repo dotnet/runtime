@@ -123,7 +123,7 @@ namespace
             }
 #endif // TARGET_UNIX
 
-            __UNREACHABLE();
+            UNREACHABLE();
         }
 
     private:
@@ -227,7 +227,7 @@ namespace
     // If a pInvoke has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
     // Otherwise, if the containing assembly has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
     // Otherwise, get CoreCLR's default value for DllImportSearchPathFlags, and return false.
-    BOOL GetDllImportSearchPathFlags(NDirectMethodDesc * pMD, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
+    BOOL GetDllImportSearchPathFlags(PInvokeMethodDesc * pMD, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
     {
         STANDARD_VM_CONTRACT;
 
@@ -240,70 +240,6 @@ namespace
 
         return GetDllImportSearchPathFlags(pMD->GetModule(), dllImportSearchPathFlags, searchAssemblyDirectory);
     }
-}
-
-// static
-NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromPath(LPCWSTR libraryPath, BOOL throwOnError)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(libraryPath));
-    }
-    CONTRACTL_END;
-
-    LoadLibErrorTracker errorTracker;
-    const NATIVE_LIBRARY_HANDLE hmod =
-        LocalLoadLibraryHelper(libraryPath, GetLoadWithAlteredSearchPathFlag(), &errorTracker);
-
-    if (throwOnError && (hmod == nullptr))
-    {
-        SString libraryPathSString(libraryPath);
-        errorTracker.Throw(libraryPathSString);
-    }
-    return hmod;
-}
-
-// static
-void NativeLibrary::FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(handle != NULL);
-
-#ifndef TARGET_UNIX
-    BOOL retVal = FreeLibrary(handle);
-#else // !TARGET_UNIX
-    BOOL retVal = PAL_FreeLibraryDirect(handle);
-#endif // !TARGET_UNIX
-
-    if (retVal == 0)
-        COMPlusThrow(kInvalidOperationException, W("Arg_InvalidOperationException"));
-}
-
-//static
-INT_PTR NativeLibrary::GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(handle));
-        PRECONDITION(CheckPointer(symbolName));
-    }
-    CONTRACTL_END;
-
-    MAKE_UTF8PTR_FROMWIDE(lpstr, symbolName);
-
-#ifndef TARGET_UNIX
-    INT_PTR address = reinterpret_cast<INT_PTR>(GetProcAddress((HMODULE)handle, lpstr));
-    if ((address == 0) && throwOnError)
-        COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_WIN_DLL, symbolName);
-#else // !TARGET_UNIX
-    INT_PTR address = reinterpret_cast<INT_PTR>(PAL_GetProcAddressDirect(handle, lpstr));
-    if ((address == 0) && throwOnError)
-        COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_UNIX_SO, symbolName);
-#endif // !TARGET_UNIX
-
-    return address;
 }
 
 namespace
@@ -331,7 +267,6 @@ namespace
         }
 #endif // !TARGET_UNIX
 
-        NATIVE_LIBRARY_HANDLE hmod = NULL;
         PEAssembly *pManifestFile = pAssembly->GetPEAssembly();
         PTR_AssemblyBinder pBinder = pManifestFile->GetAssemblyBinder();
 
@@ -350,43 +285,29 @@ namespace
 
         GCX_COOP();
 
-        STRINGREF pUnmanagedDllName;
-        pUnmanagedDllName = StringObject::NewString(wszLibName);
-
-        GCPROTECT_BEGIN(pUnmanagedDllName);
-
         // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = pCurrentBinder->GetManagedAssemblyLoadContext();
+        INT_PTR ptrAssemblyLoadContext = pCurrentBinder->GetAssemblyLoadContext();
 
-        // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0]  = STRINGREF_TO_ARGHOLDER(pUnmanagedDllName);
-        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
-
-        // Make the call
-        CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
-
-        GCPROTECT_END();
-
-        return hmod;
+        // Invoke System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
+        UnmanagedCallersOnlyCaller resolveUnmanagedDll(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
+        return (NATIVE_LIBRARY_HANDLE)resolveUnmanagedDll.InvokeThrowing_Ret<INT_PTR>(wszLibName, ptrAssemblyLoadContext);
     }
 
     // Return the AssemblyLoadContext for an assembly
-    INT_PTR GetManagedAssemblyLoadContext(Assembly* pAssembly)
+    INT_PTR GetAssemblyLoadContext(Assembly* pAssembly)
     {
         STANDARD_VM_CONTRACT;
 
         PTR_AssemblyBinder pBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
-        return pBinder->GetManagedAssemblyLoadContext();
+        return pBinder->GetAssemblyLoadContext();
     }
 
     NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
-        INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
-        if (ptrManagedAssemblyLoadContext == 0)
+        INT_PTR ptrAssemblyLoadContext = GetAssemblyLoadContext(pAssembly);
+        if (ptrAssemblyLoadContext == 0)
         {
             return NULL;
         }
@@ -395,35 +316,25 @@ namespace
 
         GCX_COOP();
 
-        struct {
-            STRINGREF DllName;
-            OBJECTREF AssemblyRef;
-        } gc = { NULL, NULL };
+        OBJECTREF assemblyRef = NULL;
 
-        GCPROTECT_BEGIN(gc);
+        GCPROTECT_BEGIN(assemblyRef);
 
-        gc.DllName = StringObject::NewString(wszLibName);
-        gc.AssemblyRef = pAssembly->GetExposedObject();
+        assemblyRef = pAssembly->GetExposedObject();
 
-        // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDllUsingEvent method
+        // Invoke System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDllUsingEvent method
         // While ResolveUnmanagedDllUsingEvent() could compute the AssemblyLoadContext using the AssemblyRef
         // argument, it will involve another pInvoke to the runtime. So AssemblyLoadContext is passed in
         // as an additional argument.
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLLUSINGEVENT);
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.DllName);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.AssemblyRef);
-        args[ARGNUM_2] = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
-
-        // Make the call
-        CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
+        UnmanagedCallersOnlyCaller resolveUnmanagedDllUsingEvent(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLLUSINGEVENT);
+        hmod = (NATIVE_LIBRARY_HANDLE)resolveUnmanagedDllUsingEvent.InvokeThrowing_Ret<INT_PTR>(wszLibName, &assemblyRef, ptrAssemblyLoadContext);
 
         GCPROTECT_END();
 
         return hmod;
     }
 
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaDllImportResolver(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaDllImportResolver(PInvokeMethodDesc * pMD, LPCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
@@ -444,25 +355,14 @@ namespace
 
         GCX_COOP();
 
-        struct {
-            STRINGREF libNameRef;
-            OBJECTREF assemblyRef;
-        } gc = { NULL, NULL };
+        OBJECTREF assemblyRef = NULL;
 
-        GCPROTECT_BEGIN(gc);
+        GCPROTECT_BEGIN(assemblyRef);
 
-        gc.libNameRef = StringObject::NewString(wszLibName);
-        gc.assemblyRef = pAssembly->GetExposedObject();
+        assemblyRef = pAssembly->GetExposedObject();
 
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__NATIVELIBRARY__LOADLIBRARYCALLBACKSTUB);
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
-        args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.libNameRef);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.assemblyRef);
-        args[ARGNUM_2] = BOOL_TO_ARGHOLDER(hasDllImportSearchPathFlags);
-        args[ARGNUM_3] = DWORD_TO_ARGHOLDER(dllImportSearchPathFlags);
-
-         // Make the call
-        CALL_MANAGED_METHOD(handle, NATIVE_LIBRARY_HANDLE, args);
+        UnmanagedCallersOnlyCaller loadLibraryCallbackStub(METHOD__NATIVELIBRARY__LOADLIBRARYCALLBACKSTUB);
+        handle = (NATIVE_LIBRARY_HANDLE)loadLibraryCallbackStub.InvokeThrowing_Ret<INT_PTR>(wszLibName, &assemblyRef, CLR_BOOL_ARG(hasDllImportSearchPathFlags), dllImportSearchPathFlags);
         GCPROTECT_END();
 
         return handle;
@@ -472,12 +372,20 @@ namespace
     NATIVE_LIBRARY_HANDLE LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
     {
         STANDARD_VM_CONTRACT;
+        _ASSERTE(libName != NULL);
 
-        if (pAssembly->GetPEAssembly()->GetPath().IsEmpty())
+        SString path{ pAssembly->GetPEAssembly()->GetPath() };
+
+        // Bundled assembly - path will be empty, path to load should point to the single-file bundle
+        bool isBundledAssembly = pAssembly->GetPEAssembly()->HasPEImage() && pAssembly->GetPEAssembly()->GetPEImage()->IsInBundle();
+        _ASSERTE(!isBundledAssembly || Bundle::AppBundle != NULL);
+        if (isBundledAssembly)
+            path.Set(pAssembly->GetPEAssembly()->GetPEImage()->GetPathToLoad());
+
+        if (path.IsEmpty())
             return NULL;
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
-        SString path{ pAssembly->GetPEAssembly()->GetPath() };
         _ASSERTE(!Path::IsRelative(path));
 
         SString::Iterator lastPathSeparatorIter = path.End();
@@ -486,6 +394,15 @@ namespace
             lastPathSeparatorIter++;
             path.Truncate(lastPathSeparatorIter);
 
+            path.Append(libName);
+            hmod = LocalLoadLibraryHelper(path, flags, pErrorTracker);
+        }
+
+        // Bundle with additional files extracted - also treat the extraction path as the assembly directory for native library load
+        if (hmod == NULL && isBundledAssembly && Bundle::AppBundle->HasExtractedFiles())
+        {
+            path.Set(Bundle::AppBundle->ExtractionPath());
+            path.Append(DIRECTORY_SEPARATOR_CHAR_W);
             path.Append(libName);
             hmod = LocalLoadLibraryHelper(path, flags, pErrorTracker);
         }
@@ -739,7 +656,7 @@ namespace
         return hmod;
     }
 
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(NDirectMethodDesc *pMD, LoadLibErrorTracker *pErrorTracker, PCWSTR wszLibName)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(PInvokeMethodDesc *pMD, LoadLibErrorTracker *pErrorTracker, PCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
@@ -811,7 +728,7 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Asse
 
 namespace
 {
-    NATIVE_LIBRARY_HANDLE LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibrary(PInvokeMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
     {
         CONTRACTL
         {
@@ -824,7 +741,7 @@ namespace
         if ( !name || !*name )
             return NULL;
 
-        PREFIX_ASSUME( name != NULL );
+        _ASSERTE( name != NULL );
         MAKE_WIDEPTR_FROMUTF8( wszLibName, name );
 
         NativeLibraryHandleHolder hmod = LoadNativeLibraryViaDllImportResolver(pMD, wszLibName);
@@ -866,7 +783,7 @@ namespace
     }
 }
 
-NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(NDirectMethodDesc * pMD)
+NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(PInvokeMethodDesc * pMD)
 {
     CONTRACT(NATIVE_LIBRARY_HANDLE)
     {

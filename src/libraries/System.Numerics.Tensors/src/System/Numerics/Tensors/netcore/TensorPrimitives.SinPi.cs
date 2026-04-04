@@ -26,8 +26,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void SinPi<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : ITrigonometricFunctions<T> =>
+            where T : ITrigonometricFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, SinPiOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, SinPiOperator<T>>(x, destination);
+        }
 
         /// <summary>T.SinPi(x)</summary>
         private readonly struct SinPiOperator<T> : IUnaryOperator<T, T>

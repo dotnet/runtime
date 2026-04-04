@@ -18,7 +18,6 @@ namespace System.Runtime.Serialization.DataContracts
         private Dictionary<DataContract, object>? _processedContracts;
         private readonly ISerializationSurrogateProvider? _surrogateProvider;
         private readonly ISerializationSurrogateProvider2? _extendedSurrogateProvider;
-        private Hashtable? _surrogateData;
         private DataContractDictionary? _knownTypesForObject;
         private readonly List<Type>? _referencedTypes;
         private readonly List<Type>? _referencedCollectionTypes;
@@ -61,7 +60,7 @@ namespace System.Runtime.Serialization.DataContracts
         public Dictionary<DataContract, object> ProcessedContracts =>
             _processedContracts ??= new Dictionary<DataContract, object>();
 
-        public Hashtable SurrogateData => _surrogateData ??= new Hashtable();
+        public Hashtable SurrogateData => field ??= new Hashtable();
 
         public DataContractDictionary? KnownTypesForObject
         {
@@ -324,7 +323,7 @@ namespace System.Runtime.Serialization.DataContracts
                     foreach (Type type in _referencedTypes)
                     {
                         if (type == null)
-                            throw new InvalidOperationException(SR.Format(SR.ReferencedTypesCannotContainNull));
+                            throw new InvalidOperationException(SR.ReferencedTypesCannotContainNull);
 
                         AddReferencedType(_referencedTypesDictionary, type);
                     }
@@ -345,7 +344,7 @@ namespace System.Runtime.Serialization.DataContracts
                     foreach (Type type in _referencedCollectionTypes)
                     {
                         if (type == null)
-                            throw new InvalidOperationException(SR.Format(SR.ReferencedCollectionTypesCannotContainNull));
+                            throw new InvalidOperationException(SR.ReferencedCollectionTypesCannotContainNull);
                         AddReferencedType(_referencedCollectionTypesDictionary, type);
                     }
                 }

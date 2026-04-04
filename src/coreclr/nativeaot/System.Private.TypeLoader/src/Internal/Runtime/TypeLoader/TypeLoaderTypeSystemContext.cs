@@ -10,7 +10,7 @@ namespace Internal.Runtime.TypeLoader
 {
     /// <summary>
     /// TypeSystemContext that can interfact with the
-    /// Redhawk runtime type system and native metadata
+    /// NativeAOT runtime type system and native metadata
     /// </summary>
     public partial class TypeLoaderTypeSystemContext : TypeSystemContext
     {

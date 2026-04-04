@@ -114,13 +114,12 @@ namespace System
         internal const int DISP_E_BADVARTYPE = unchecked((int)0x80020008);
         internal const int DISP_E_OVERFLOW = unchecked((int)0x8002000A);
         internal const int DISP_E_DIVBYZERO = unchecked((int)0x80020012);
-        internal const int E_BOUNDS = unchecked((int)0x8000000B);
-        internal const int E_CHANGED_STATE = unchecked((int)0x8000000C);
         internal const int E_FILENOTFOUND = unchecked((int)0x80070002);
         internal const int E_FAIL = unchecked((int)0x80004005);
         internal const int E_HANDLE = unchecked((int)0x80070006);
         internal const int E_INVALIDARG = unchecked((int)0x80070057);
         internal const int E_NOTIMPL = unchecked((int)0x80004001);
+        internal const int E_OUTOFMEMORY = unchecked((int)0x8007000E);
         internal const int E_POINTER = unchecked((int)0x80004003);
         internal const int ERROR_MRM_MAP_NOT_FOUND = unchecked((int)0x80073B1F);
         internal const int ERROR_TIMEOUT = unchecked((int)0x800705B4);

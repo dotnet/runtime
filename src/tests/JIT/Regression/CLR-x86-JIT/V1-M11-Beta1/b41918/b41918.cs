@@ -3,13 +3,14 @@
 //
 
 using Xunit;
-namespace Test
+namespace b41918
 {
     using System;
 
     public class BB
     {
         public static ulong m_ulStatic1 = 237u;
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

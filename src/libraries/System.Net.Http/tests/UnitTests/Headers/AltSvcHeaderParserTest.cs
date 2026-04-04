@@ -9,14 +9,18 @@ namespace System.Net.Http.Tests
 {
     public class AltSvcHeaderParserTest
     {
-        [Fact]
-        public void TryParse_InvalidValueString_ReturnsFalse()
+        [Theory]
+        [InlineData("a=")]
+        [InlineData("%aa=\":123\"")] // Only uppercase hex is allowed
+        [InlineData("%0A=\":123\"")] // Encoded new line
+        public void TryParse_InvalidValueString_ReturnsFalse(string value)
         {
             HttpHeaderParser parser = AltSvcHeaderParser.Parser;
-            string invalidInput = "a=";
             int startIndex = 0;
 
-            Assert.False(parser.TryParseValue(invalidInput, null, ref startIndex, out var _));
+            Assert.False(parser.TryParseValue(value, null, ref startIndex, out object? parsedValue));
+            Assert.Equal(0, startIndex);
+            Assert.Null(parsedValue);
         }
 
         [Theory]
@@ -115,6 +119,15 @@ namespace System.Net.Http.Tests
                 "clear", new []
                 {
                     AltSvcHeaderValue.Clear
+                }
+            };
+
+            // Encoded protocol name
+            yield return new object[]
+            {
+                "AB%43%44%EF=\":123\"", new[]
+                {
+                    new AltSvcHeaderValue("ABCD\u00EF", host: null, 123, TimeSpan.FromTicks(AltSvcHeaderParser.DefaultMaxAgeTicks), persist: false)
                 }
             };
         }

@@ -24,7 +24,7 @@ Build the runtime with the desired configuration if you haven't already:
 ```
 
 > [!TIP]
-> The `-rc release` configuration here builds runime in `Release` and libraries in `Debug` mode.
+> The `-rc release` configuration here builds runtime in `Release` and libraries in `Debug` mode.
 > Automated fuzzing runs use a `Checked` runtime + `Debug` libraries configuration by default.
 > You can use any configuration locally, but `Checked` is recommended when testing changes in `System.Private.CoreLib`.
 
@@ -44,10 +44,10 @@ dotnet build
 ```
 
 Run `run.bat`, which will create separate directories for each fuzzing target, instrument the relevant assemblies, and generate a helper script for running them locally.
-When iterating on changes, remember to rebuild the project again: `dotnet build; .\run.bat`.
+When iterating on changes, remember to rebuild the project again.
 
 ```cmd
-run.bat
+dotnet build; .\run.bat
 ```
 
 Start fuzzing by running the `local-run.bat` script in the folder of the fuzzer you are interested in.
@@ -59,6 +59,22 @@ See the [libFuzzer options](https://llvm.org/docs/LibFuzzer.html#options) docume
 For example, here is how you can run the fuzzer against a `header-inputs` corpus directory for 10 minutes, running multiple instances in parallel:
 ```cmd
 deployment/HttpHeadersFuzzer/local-run.bat header-inputs -timeout=30 -max_total_time=600 -jobs=5
+```
+
+### Generating coverage reports
+
+After letting the fuzzer run for a while, you can use the generated inputs to test code coverage.
+
+```cmd
+mkdir header-inputs
+deployment/HttpHeadersFuzzer/local-run.bat header-inputs
+
+.\collect-coverage.ps1 HttpHeadersFuzzer header-inputs
+```
+
+The HTML report can be opened from
+```cmd
+.\coverage-report\html\index.html
 ```
 
 ## Creating a new fuzzing target
@@ -101,4 +117,4 @@ cd src/libraries/Fuzzing/DotnetFuzzing
 dotnet run HttpHeadersFuzzer inputs
 ```
 
-This can be useful when debugging a crash, or running the fuzzer over existing inputs to collect code coverage.
+This can be useful when debugging a crash.

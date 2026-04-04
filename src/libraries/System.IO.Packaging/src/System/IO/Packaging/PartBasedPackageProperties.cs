@@ -539,7 +539,7 @@ namespace System.IO.Packaging
                     PackageXmlEnum xmlStringIndex = PackageXmlStringTable.GetEnumOf(localName);
                     string? valueType = PackageXmlStringTable.GetValueType(xmlStringIndex);
 
-                    if (Array.IndexOf(s_validProperties, xmlStringIndex) == -1)  // An unexpected element is an error.
+                    if (Array.IndexOf(s_validProperties, xmlStringIndex) < 0)  // An unexpected element is an error.
                     {
                         throw new XmlException(
                             SR.Format(SR.InvalidPropertyNameInCorePropertiesPart, reader.LocalName),

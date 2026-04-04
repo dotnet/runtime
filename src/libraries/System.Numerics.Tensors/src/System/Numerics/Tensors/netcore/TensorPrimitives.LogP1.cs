@@ -28,8 +28,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void LogP1<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : ILogarithmicFunctions<T> =>
+            where T : ILogarithmicFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, LogP1Operator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, LogP1Operator<T>>(x, destination);
+        }
 
         /// <summary>T.LogP1(x)</summary>
         private readonly struct LogP1Operator<T> : IUnaryOperator<T, T>

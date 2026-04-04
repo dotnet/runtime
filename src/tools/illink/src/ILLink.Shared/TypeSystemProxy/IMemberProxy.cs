@@ -6,10 +6,10 @@
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	internal interface IMemberProxy
-	{
-		public string Name { get; }
+    internal interface IMemberProxy
+    {
+        public string Name { get; }
 
-		public string GetDisplayName ();
-	}
+        public string GetDisplayName();
+    }
 }

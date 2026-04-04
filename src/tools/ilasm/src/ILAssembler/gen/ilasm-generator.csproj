@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CS3021</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RunAnalyzers>false</RunAnalyzers>
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Antlr4BuildTasks" Version="$(Antlr4BuildTasksVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="$(Antlr4RuntimeStandardVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Antlr4 Include="CIL.g4">
+      <Listener>false</Listener>
+      <GAtn>false</GAtn>
+      <Package>ILAssembler</Package>
+      <AntOutDir>$(ProjectDir)</AntOutDir>
+      <WorkingDirectory>$(ProjectDir)</WorkingDirectory>
+    </Antlr4>
+  </ItemGroup>
+
+  <!-- Workaround for ANTLR embedding absolute grammar paths in generated files.
+       Remove once https://github.com/kaby76/Antlr4BuildTasks/pull/120 is merged and released. -->
+  <Target Name="FixAntlrGeneratedFromPaths" AfterTargets="Antlr4CompileAddFilesGenerated">
+    <ItemGroup>
+      <_AntlrGeneratedFiles Include="$(ProjectDir)CIL*.cs" />
+    </ItemGroup>
+    <WriteLinesToFile
+      File="%(_AntlrGeneratedFiles.Identity).tmp"
+      Lines="$([System.IO.File]::ReadAllText('%(_AntlrGeneratedFiles.Identity)').Replace('Generated from $(ProjectDir)CIL.g4', 'Generated from CIL.g4'))"
+      Overwrite="true" />
+    <Move SourceFiles="%(_AntlrGeneratedFiles.Identity).tmp" DestinationFiles="%(_AntlrGeneratedFiles.Identity)" />
+  </Target>
+
+</Project>

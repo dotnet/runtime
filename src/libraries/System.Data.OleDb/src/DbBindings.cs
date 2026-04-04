@@ -188,8 +188,8 @@ namespace System.Data.OleDb
                 {
                     case (NativeDBType.BSTR):  // ADP.PtrSize
                     case (NativeDBType.HCHAPTER): // ADP.PtrSize
-                    case (NativeDBType.PROPVARIANT): // sizeof(PROPVARIANT)
-                    case (NativeDBType.VARIANT): // 16 or 24 (8 + ADP.PtrSize *2)
+                    case (NativeDBType.PROPVARIANT): // sizeof(ComVariant)
+                    case (NativeDBType.VARIANT): // sizeof(ComVariant)
                     case (NativeDBType.BYREF | NativeDBType.BYTES): // ADP.PtrSize
                     case (NativeDBType.BYREF | NativeDBType.WSTR): // ADP.PtrSize
                                                                    // allocate extra space to cache original value for disposal
@@ -222,10 +222,7 @@ namespace System.Data.OleDb
 #endif
             set
             {
-                if (null != _bindInfo)
-                {
-                    _bindInfo[_index].bPrecision = value;
-                }
+                _bindInfo?[_index].bPrecision = value;
                 _dbbindings[_index].bPrecision = value;
                 _dbcolumns[_index].bPrecision = value;
             }
@@ -237,10 +234,7 @@ namespace System.Data.OleDb
 #endif
             set
             {
-                if (null != _bindInfo)
-                {
-                    _bindInfo[_index].bScale = value;
-                }
+                _bindInfo?[_index].bScale = value;
                 _dbbindings[_index].bScale = value;
                 _dbcolumns[_index].bScale = value;
             }

@@ -19,6 +19,7 @@
 #define _CLRRANDOM_H_
 
 #include <math.h>
+#include "minipal/time.h"
 
 //
 // Forbid the use of srand()/rand(), as these are globally shared facilities and our use of them would
@@ -73,10 +74,7 @@ public:
     void Init()
     {
         LIMITED_METHOD_CONTRACT;
-        LARGE_INTEGER time;
-        if (!QueryPerformanceCounter(&time))
-            time.QuadPart = GetTickCount();
-        Init((int)time.u.LowPart ^ GetCurrentThreadId() ^ GetCurrentProcessId());
+        Init((int)minipal_hires_ticks() ^ GetCurrentThreadId() ^ GetCurrentProcessId());
     }
 
     void Init(int Seed)

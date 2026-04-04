@@ -3,6 +3,8 @@
 
 using Xunit;
 
+#pragma warning disable CS0618
+
 namespace System.Diagnostics.CodeAnalysis.Tests
 {
     public class DynamicDependencyAttributeTests
@@ -11,7 +13,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData("Foo()")]
         [InlineData(null)]
         [InlineData("")]
-        public void TestConstructorSignature(string memberSignature)
+        public void TestConstructorSignature(string? memberSignature)
         {
             var dda = new DynamicDependencyAttribute(memberSignature);
 
@@ -27,7 +29,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData("Foo()", typeof(string))]
         [InlineData(null, null)]
         [InlineData("", typeof(void))]
-        public void TestConstructorSignatureType(string memberSignature, Type type)
+        public void TestConstructorSignatureType(string? memberSignature, Type? type)
         {
             var dda = new DynamicDependencyAttribute(memberSignature, type);
 
@@ -43,7 +45,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData("Foo()", "System.String", "System.Runtime")]
         [InlineData(null, null, null)]
         [InlineData("", "", "")]
-        public void TestConstructorSignatureTypeNameAssemblyName(string memberSignature, string typeName, string assemblyName)
+        public void TestConstructorSignatureTypeNameAssemblyName(string? memberSignature, string? typeName, string? assemblyName)
         {
             var dda = new DynamicDependencyAttribute(memberSignature, typeName, assemblyName);
 
@@ -59,7 +61,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(DynamicallyAccessedMemberTypes.PublicMethods, typeof(string))]
         [InlineData(DynamicallyAccessedMemberTypes.None, null)]
         [InlineData(DynamicallyAccessedMemberTypes.All, typeof(void))]
-        public void TestConstructorMemberTypes(DynamicallyAccessedMemberTypes memberTypes, Type type)
+        public void TestConstructorMemberTypes(DynamicallyAccessedMemberTypes memberTypes, Type? type)
         {
             var dda = new DynamicDependencyAttribute(memberTypes, type);
 
@@ -75,7 +77,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(DynamicallyAccessedMemberTypes.PublicMethods, "System.String", "System.Runtime")]
         [InlineData(DynamicallyAccessedMemberTypes.None, null, null)]
         [InlineData(DynamicallyAccessedMemberTypes.All, "", "")]
-        public void TestConstructorMemberTypesTypeNameAssemblyName(DynamicallyAccessedMemberTypes memberTypes, string typeName, string assemblyName)
+        public void TestConstructorMemberTypesTypeNameAssemblyName(DynamicallyAccessedMemberTypes memberTypes, string? typeName, string? assemblyName)
         {
             var dda = new DynamicDependencyAttribute(memberTypes, typeName, assemblyName);
 
@@ -101,3 +103,4 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         }
     }
 }
+#pragma warning restore CS0618

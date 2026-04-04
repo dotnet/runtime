@@ -16,11 +16,8 @@
     <type fullname="System.Globalization.GlobalizationMode/Settings">
       <method signature="System.Boolean get_Invariant()" body="stub" value="false" feature="System.Globalization.Invariant" featurevalue="false" />
     </type>
-    <type fullname="System.Resources.ResourceReader">
-      <method signature="System.Boolean InitializeBinaryFormatter()" body="stub" value="false" feature="System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization" featurevalue="false" />
-    </type>
     <type fullname="System.Threading.Tasks.Task" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
-      <field name="s_asyncDebuggingEnabled" value="false" initialize="false" />
+      <field name="s_asyncDebuggingEnabled" value="false" />
     </type>
   </assembly>
 </linker>

@@ -12,7 +12,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData(new int[0], true)]
         [InlineData(null, false)]
-        public void IsArray(object value, bool expected)
+        public void IsArray(object? value, bool expected)
         {
             Assert.Equal(expected, Information.IsArray(value));
         }
@@ -38,7 +38,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData(null, true)]
         [InlineData("abc", false)]
-        public void IsNothing(object value, bool expected)
+        public void IsNothing(object? value, bool expected)
         {
             Assert.Equal(expected, Information.IsNothing(value));
         }
@@ -55,7 +55,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(null, true)]
         [InlineData("abc", true)]
         [InlineData(1, false)]
-        public void IsReference(object value, bool expected)
+        public void IsReference(object? value, bool expected)
         {
             Assert.Equal(expected, Information.IsReference(value));
         }
@@ -137,7 +137,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(true, VariantType.Boolean)]
         [InlineData((byte)1, VariantType.Byte)]
         [InlineData('a', VariantType.Char)]
-        public void VarType(object value, VariantType expected)
+        public void VarType(object? value, VariantType expected)
         {
             Assert.Equal(expected, Information.VarType(value));
         }
@@ -151,7 +151,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData('1', true)]
         [InlineData("&O123", true)]
         [InlineData("&H123", true)]
-        public void IsNumeric(object value, bool expected)
+        public void IsNumeric(object? value, bool expected)
         {
             Assert.Equal(expected, Information.IsNumeric(value));
         }
@@ -168,7 +168,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(" OBJECT ", "System.Object")]
         [InlineData("object", "System.Object")]
         [InlineData("custom", null)]
-        public void SystemTypeName(string value, string expected)
+        public void SystemTypeName(string? value, string? expected)
         {
             Assert.Equal(expected, Information.SystemTypeName(value));
         }
@@ -212,7 +212,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("Object", "Object")]
         [InlineData(" object ", "Object")]
         [InlineData("custom", null)]
-        public void VbTypeName(string value, string expected)
+        public void VbTypeName(string? value, string? expected)
         {
             Assert.Equal(expected, Information.VbTypeName(value));
         }

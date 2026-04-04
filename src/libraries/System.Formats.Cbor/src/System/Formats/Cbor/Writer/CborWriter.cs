@@ -110,7 +110,7 @@ namespace System.Formats.Cbor
                 _offset = 0;
                 _nestedDataItems?.Clear();
                 _currentMajorType = null;
-                _definiteLength = null;
+                _definiteLength = AllowMultipleRootLevelValues ? null : (int?)1;
                 _itemsWritten = 0;
                 _frameOffset = 0;
                 _isTagContext = false;
@@ -120,6 +120,7 @@ namespace System.Formats.Cbor
                 _keysRequireSorting = false;
                 _keyValuePairEncodingRanges?.Clear();
                 _keyEncodingRanges?.Clear();
+                _currentIndefiniteLengthStringRanges?.Clear();
             }
         }
 
@@ -240,11 +241,7 @@ namespace System.Formats.Cbor
             if (currentCapacity < requiredCapacity)
             {
                 int newCapacity = currentCapacity == 0 ? 1024 : currentCapacity * 2;
-                const uint MaxArrayLength = 0x7FFFFFC7; // Array.MaxLength
-#if NET
-                Debug.Assert(MaxArrayLength == Array.MaxLength);
-#endif
-                if ((uint)newCapacity > MaxArrayLength || newCapacity < requiredCapacity)
+                if ((uint)newCapacity > (uint)Array.MaxLength || newCapacity < requiredCapacity)
                 {
                     newCapacity = requiredCapacity;
                 }

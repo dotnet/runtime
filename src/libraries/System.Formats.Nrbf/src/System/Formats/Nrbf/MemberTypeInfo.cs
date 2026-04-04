@@ -91,8 +91,10 @@ internal readonly struct MemberTypeInfo
         const AllowedRecordTypes SystemClass = Classes | AllowedRecordTypes.SystemClassWithMembersAndTypes
             // All primitive types can be stored by using one of the interfaces they implement.
             // Example: `new IEnumerable[1] { "hello" }` or `new IComparable[1] { int.MaxValue }`.
-            | AllowedRecordTypes.BinaryObjectString | AllowedRecordTypes.MemberPrimitiveTyped;
-        const AllowedRecordTypes NonSystemClass = Classes |  AllowedRecordTypes.ClassWithMembersAndTypes;
+            | AllowedRecordTypes.BinaryObjectString | AllowedRecordTypes.MemberPrimitiveTyped
+            // System.Nullable<UserStruct> is a special case of SystemClassWithMembersAndTypes
+            | AllowedRecordTypes.ClassWithMembersAndTypes;
+        const AllowedRecordTypes NonSystemClass = Classes | AllowedRecordTypes.ClassWithMembersAndTypes;
 
         return binaryType switch
         {

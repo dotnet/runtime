@@ -37,7 +37,7 @@ namespace System.Formats.Tar
             Debug.Assert(EntryType is TarEntryType.HardLink);
             Debug.Assert(!string.IsNullOrEmpty(targetFilePath));
             Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
-            Interop.CheckIo(Interop.Sys.Link(targetFilePath, hardLinkFilePath), hardLinkFilePath);
+            File.CreateHardLink(hardLinkFilePath, targetFilePath);
         }
     }
 }

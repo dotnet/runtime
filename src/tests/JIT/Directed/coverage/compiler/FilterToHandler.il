@@ -9,6 +9,8 @@
   .ver 4:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern mscorlib {}
 .assembly extern common {}
 .assembly 'FilterToHandler' {}
@@ -18,7 +20,7 @@
   .maxstack  2
 
   .try {
-try_start:  
+try_start:
       ldstr      "In try, throwing the first obj"
       call       void [System.Console]System.Console::WriteLine(string)
       newobj     instance void [mscorlib]System.ArithmeticException::.ctor()
@@ -29,10 +31,10 @@ filter_begin:
       call       void [System.Console]System.Console::WriteLine(string)
       leave.s handler_begin
       throw
-      ldc.i4.1 
+      ldc.i4.1
       endfilter
 
-handler_begin:  
+handler_begin:
       pop
       ldstr "In handler, should be unreached"
       call       void [System.Console]System.Console::WriteLine(string)
@@ -46,20 +48,28 @@ handler_end:
       leave.s done2
   }
 
-done2: 
+done2:
   ldstr      "Done"
   call       void [System.Console]System.Console::WriteLine(string)
 
-  ldc.i4 0x64  
+  ldc.i4 0x64
   ret
 }
 
 
 .class public auto ansi FilterToHandler {
 .method public static int32 Main() {
-.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-    01 00 00 00
-)
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = {}
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+    string('https://github.com/dotnet/runtime/issues/114902')
+    type([TestLibrary]TestLibrary.PlatformDetection)
+    string[1] ('IsAppleMobile')
+}
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('Needs triage')
+        int32(0x2) // Mono
+    }
+    
 .entrypoint
 .maxstack	20
   .try

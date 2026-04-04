@@ -14,6 +14,7 @@
 #ifdef JITDUMP_SUPPORTED
 
 #include <fcntl.h>
+#include <errno.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -26,6 +27,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <limits.h>
+#include "minipal/time.h"
 
 #include "../inc/llvm/ELF.h"
 
@@ -90,9 +92,7 @@ namespace
             return static_cast<uint64_t>(__rdtsc());
         }
 #endif
-        LARGE_INTEGER result;
-        QueryPerformanceCounter(&result);
-        return result.QuadPart;
+        return (uint64_t)minipal_hires_ticks();
     }
 
 
@@ -185,16 +185,13 @@ struct PerfJitDumpState
     {
         int result = 0;
 
-        // On platforms where JITDUMP is used, the PAL QueryPerformanceFrequency
-        // returns tccSecondsToNanoSeconds, meaning QueryPerformanceCounter
-        // will return a direct nanosecond value. If this isn't true,
+        // On platforms where JITDUMP is used, minipal_hires_tick_frequency()
+        // returns tccSecondsToNanoSeconds. If this isn't true,
         // then some other method will need to be used to implement GetTimeStampNS.
         // Validate this is true once in Start here.
-        LARGE_INTEGER freq;
-        QueryPerformanceFrequency(&freq);
-        if (freq.QuadPart != tccSecondsToNanoSeconds)
+        if (minipal_hires_tick_frequency() != tccSecondsToNanoSeconds)
         {
-            _ASSERTE(!"QueryPerformanceFrequency does not return tccSecondsToNanoSeconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
+            _ASSERTE(!"minipal_hires_tick_frequency() does not return tccSecondsToNanoSeconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
             FatalError();
         }
 
@@ -250,7 +247,7 @@ exit:
         return 0;
     }
 
-    int LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo)
+    int LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
     {
         int result = 0;
 
@@ -260,7 +257,9 @@ exit:
 
             JitCodeLoadRecord record;
 
-            size_t bytesRemaining = sizeof(JitCodeLoadRecord) + symbolLen + 1 + codeSize;
+            size_t reportedCodeSize = reportCodeBlock ? codeSize : 0;
+
+            size_t bytesRemaining = sizeof(JitCodeLoadRecord) + symbolLen + 1 + reportedCodeSize;
 
             record.header.timestamp = GetTimeStampNS();
             record.vma = (uint64_t) pCode;
@@ -272,14 +271,11 @@ exit:
                 // ToDo insert debugInfo and unwindInfo record items immediately before the JitCodeLoadRecord.
                 { &record, sizeof(JitCodeLoadRecord) },
                 { (void *)symbol, symbolLen + 1 },
-                { pCode, codeSize },
+                { pCode, reportedCodeSize },
             };
             size_t itemsCount = sizeof(items) / sizeof(items[0]);
 
             size_t itemsWritten = 0;
-
-            if (result != 0)
-                return FatalError();
 
             if (!enabled)
                 goto exit;
@@ -359,7 +355,7 @@ exit:
 
             result = close(fd);
 
-            if (result == -1)
+            if (result == -1 && errno != EINTR)
                 return FatalError();
 
             fd = -1;
@@ -393,9 +389,9 @@ PAL_PerfJitDump_IsStarted()
 
 int
 PALAPI
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo)
+PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
 {
-    return GetState().LogMethod(pCode, codeSize, symbol, debugInfo, unwindInfo);
+    return GetState().LogMethod(pCode, codeSize, symbol, debugInfo, unwindInfo, reportCodeBlock);
 }
 
 int
@@ -423,7 +419,7 @@ PAL_PerfJitDump_IsStarted()
 
 int
 PALAPI
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo)
+PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock)
 {
     return 0;
 }

@@ -12,7 +12,7 @@ namespace System.Tests
         [InlineData("AppContext_Case1", 123)]
         [InlineData("AppContext_Case2", "")]
         [InlineData("AppContext_Case3", null)]
-        public void AppContext_GetSetDataTest(string dataKey, object value)
+        public void AppContext_GetSetDataTest(string dataKey, object? value)
         {
             // Set data
             AppContext.SetData(dataKey, value);

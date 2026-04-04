@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -12,26 +13,12 @@ namespace System.Numerics
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Plane" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
-        public static Plane AsPlane(this Vector4 value)
-        {
-#if MONO
-            return Unsafe.As<Vector4, Plane>(ref value);
-#else
-            return Unsafe.BitCast<Vector4, Plane>(value);
-#endif
-        }
+        public static Plane AsPlane(this Vector4 value) => Unsafe.BitCast<Vector4, Plane>(value);
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Quaternion" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
-        public static Quaternion AsQuaternion(this Vector4 value)
-        {
-#if MONO
-            return Unsafe.As<Vector4, Quaternion>(ref value);
-#else
-            return Unsafe.BitCast<Vector4, Quaternion>(value);
-#endif
-        }
+        public static Quaternion AsQuaternion(this Vector4 value) => Unsafe.BitCast<Vector4, Quaternion>(value);
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Vector2" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
@@ -56,6 +43,7 @@ namespace System.Numerics
         /// <param name="source">The vector that will be stored.</param>
         /// <param name="destination">The destination at which <paramref name="source" /> will be stored.</param>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static void Store(this Vector4 source, float* destination) => source.AsVector128().Store(destination);
 
         /// <summary>Stores a vector at the given 16-byte aligned destination.</summary>
@@ -64,6 +52,7 @@ namespace System.Numerics
         /// <exception cref="AccessViolationException"><paramref name="destination" /> is not 16-byte aligned.</exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static void StoreAligned(this Vector4 source, float* destination) => source.AsVector128().StoreAligned(destination);
 
         /// <summary>Stores a vector at the given 16-byte aligned destination.</summary>
@@ -72,6 +61,7 @@ namespace System.Numerics
         /// <exception cref="AccessViolationException"><paramref name="destination" /> is not 16-byte aligned.</exception>
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static void StoreAlignedNonTemporal(this Vector4 source, float* destination) => source.AsVector128().StoreAlignedNonTemporal(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>

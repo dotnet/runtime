@@ -6,10 +6,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public class ParallelCrashTester
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/80356", typeof(Utilities), nameof(Utilities.IsMacOSX), nameof(Utilities.IsX64))]
     public static void ParallelCrashMainThread()
     {
         RunParallelCrash(1);

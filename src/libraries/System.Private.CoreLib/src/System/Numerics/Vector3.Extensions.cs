@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -9,6 +10,11 @@ namespace System.Numerics
 {
     public static unsafe partial class Vector
     {
+        /// <summary>Reinterprets a <see cref="Vector3" /> as a new <see cref="Vector2" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector2" />.</returns>
+        public static Vector2 AsVector2(this Vector3 value) => value.AsVector128().AsVector2();
+
         /// <summary>Converts a <see cref="Vector3" /> to a new <see cref="Vector4" /> with the new elements zeroed.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns><paramref name="value" /> converted to a new <see cref="Vector4" /> with the new elements zeroed.</returns>
@@ -39,6 +45,7 @@ namespace System.Numerics
         /// <param name="source">The vector that will be stored.</param>
         /// <param name="destination">The destination at which <paramref name="source" /> will be stored.</param>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static void Store(this Vector3 source, float* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given 8-byte aligned destination.</summary>
@@ -47,6 +54,7 @@ namespace System.Numerics
         /// <exception cref="AccessViolationException"><paramref name="destination" /> is not 8-byte aligned.</exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static void StoreAligned(this Vector3 source, float* destination)
         {
             if (((nuint)destination % (uint)(Vector3.Alignment)) != 0)
@@ -63,6 +71,7 @@ namespace System.Numerics
         /// <exception cref="AccessViolationException"><paramref name="destination" /> is not 8-byte aligned.</exception>
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static void StoreAlignedNonTemporal(this Vector3 source, float* destination) => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>

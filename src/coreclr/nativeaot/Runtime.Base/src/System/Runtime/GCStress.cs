@@ -8,7 +8,7 @@ namespace System.Runtime
 {
     internal class GCStress
     {
-        [UnmanagedCallersOnly(EntryPoint = "RhGcStress_Initialize", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(EntryPoint = "RhGcStress_Initialize", CallConvs = [typeof(CallConvCdecl)])]
         public static void Initialize()
         {
 #if FEATURE_GC_STRESS
@@ -32,7 +32,7 @@ namespace System.Runtime
             // drop the first element
             Head = Head.Next;
 
-            // notify redhawku.dll
+            // notify the runtime
             InternalCalls.RhpInitializeGcStress();
 #endif // FEATURE_GC_STRESS
         }

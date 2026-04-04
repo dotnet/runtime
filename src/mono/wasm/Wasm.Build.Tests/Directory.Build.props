@@ -17,7 +17,7 @@
 
   <Import Project="..\..\..\libraries\Directory.Build.props" />
   <PropertyGroup>
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <!-- TODO: this is necessary to workaround restoring Mono desktop runtime packs, check whether this project really should be self-contained -->
     <UseMonoRuntime>false</UseMonoRuntime>

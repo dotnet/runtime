@@ -854,20 +854,20 @@ namespace System.Text.Json.Serialization.Metadata
                 if (reader.TokenType == JsonTokenType.Null)
                 {
                     // A null JSON value is treated as a null object reference.
-                    dictionaryObjectValue[state.Current.JsonPropertyNameAsString!] = null;
+                    AddProperty(in state.Current, dictionaryObjectValue, null);
                 }
                 else
                 {
                     JsonConverter<object> converter = GetDictionaryValueConverter<object>();
                     object value = converter.Read(ref reader, JsonTypeInfo.ObjectType, Options)!;
-                    dictionaryObjectValue[state.Current.JsonPropertyNameAsString!] = value;
+                    AddProperty(in state.Current, dictionaryObjectValue, value);
                 }
             }
             else if (propValue is IDictionary<string, JsonElement> dictionaryElementValue)
             {
                 JsonConverter<JsonElement> converter = GetDictionaryValueConverter<JsonElement>();
                 JsonElement value = converter.Read(ref reader, typeof(JsonElement), Options);
-                dictionaryElementValue[state.Current.JsonPropertyNameAsString!] = value;
+                AddProperty(in state.Current, dictionaryElementValue, value);
             }
             else
             {
@@ -889,6 +889,30 @@ namespace System.Text.Json.Serialization.Metadata
 
                 Debug.Assert(dictionaryValueInfo is JsonTypeInfo<TValue>);
                 return ((JsonTypeInfo<TValue>)dictionaryValueInfo).EffectiveConverter;
+            }
+
+            void AddProperty<TValue>(ref readonly ReadStackFrame current, IDictionary<string, TValue> d, TValue value)
+            {
+                string property = current.JsonPropertyNameAsString!;
+                if (Options.AllowDuplicateProperties)
+                {
+                    d[property] = value;
+                }
+                else
+                {
+#if NET
+                    if (!d.TryAdd(property, value))
+#else
+                    if (d.ContainsKey(property))
+#endif
+                    {
+                        ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(current.JsonPropertyInfo!);
+                    }
+
+#if !NET
+                    d[property] = value;
+#endif
+                }
             }
         }
 
@@ -1043,28 +1067,27 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract object? DefaultValue { get; }
 
         /// <summary>
-        /// Required property index on the list of JsonTypeInfo properties.
-        /// It is used as a unique identifier for required properties.
+        /// Property index on the list of JsonTypeInfo properties.
+        /// It is used as a unique identifier for properties.
         /// It is set just before property is configured and does not change afterward.
         /// It is not equivalent to index on the properties list
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        internal int RequiredPropertyIndex
+        internal int PropertyIndex
         {
             get
             {
                 Debug.Assert(IsConfigured);
-                Debug.Assert(IsRequired);
-                return _index;
+                return _propertyIndex;
             }
             set
             {
                 Debug.Assert(!IsConfigured);
-                _index = value;
+                _propertyIndex = value;
             }
         }
 
-        private int _index;
+        private int _propertyIndex;
 
         internal bool IsOverriddenOrShadowedBy(JsonPropertyInfo other)
             => MemberName == other.MemberName && DeclaringType.IsAssignableFrom(other.DeclaringType);

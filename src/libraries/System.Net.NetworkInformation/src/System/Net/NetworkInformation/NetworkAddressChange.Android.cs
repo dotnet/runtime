@@ -20,6 +20,7 @@ namespace System.Net.NetworkInformation
 
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
         {
             add
@@ -63,6 +64,7 @@ namespace System.Net.NetworkInformation
 
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
             add
@@ -185,7 +187,7 @@ namespace System.Net.NetworkInformation
 
             for (int i = 0; i < newAddresses.Length; i++)
             {
-                if (Array.IndexOf(oldAddresses, newAddresses[i]) == -1)
+                if (Array.IndexOf(oldAddresses, newAddresses[i]) < 0)
                 {
                     return true;
                 }

@@ -4,23 +4,23 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols
 {
-	[SetupCompileBefore ("LibraryWithEmbeddedPdbSymbols.dll", new[] { "Dependencies/LibraryWithEmbeddedPdbSymbols.cs" }, additionalArguments: new[] { "/debug:embedded" }, compilerToUse: "csc")]
-	[SetupLinkerLinkSymbols ("false")]
+    [SetupCompileBefore("LibraryWithEmbeddedPdbSymbols.dll", new[] { "Dependencies/LibraryWithEmbeddedPdbSymbols.cs" }, additionalArguments: new[] { "/debug:embedded" }, compilerToUse: "csc")]
+    [SetupLinkerLinkSymbols("false")]
 
-	[RemovedAssembly ("LibraryWithEmbeddedPdbSymbols.dll")]
-	[RemovedSymbols ("LibraryWithEmbeddedPdbSymbols.dll")]
-	public class ReferenceWithEmbeddedPdbDeleteAction
-	{
-		static void Main ()
-		{
-		}
+    [RemovedAssembly("LibraryWithEmbeddedPdbSymbols.dll")]
+    [RemovedSymbols("LibraryWithEmbeddedPdbSymbols.dll")]
+    public class ReferenceWithEmbeddedPdbDeleteAction
+    {
+        static void Main()
+        {
+        }
 
-		/// <summary>
-		/// By not using this method we will cause the trimmer to delete the reference
-		/// </summary>
-		static void UnusedCodePath ()
-		{
-			LibraryWithEmbeddedPdbSymbols.SomeMethod ();
-		}
-	}
+        /// <summary>
+        /// By not using this method we will cause the trimmer to delete the reference
+        /// </summary>
+        static void UnusedCodePath()
+        {
+            LibraryWithEmbeddedPdbSymbols.SomeMethod();
+        }
+    }
 }

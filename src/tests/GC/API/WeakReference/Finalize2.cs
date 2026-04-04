@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
+using TestLibrary;
  * TEST NAME: Finalize2
  * DESCRIPTION: operates on Weakhandles whose targets are being finalized
  */
@@ -9,6 +10,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class GetTargetTest
 {
@@ -181,6 +183,8 @@ public class NullHandle
         isAliveTest = null;
     }
 
+    [ActiveIssue("Expectations about finalization order", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

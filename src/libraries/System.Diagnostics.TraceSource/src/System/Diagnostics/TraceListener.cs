@@ -21,7 +21,6 @@ namespace System.Diagnostics
         private int _indentSize = 4;
         private TraceOptions _traceOptions = TraceOptions.None;
         private bool _needIndent = true;
-        private StringDictionary? _attributes;
 
         private string? _listenerName;
         private TraceFilter? _filter;
@@ -42,7 +41,7 @@ namespace System.Diagnostics
             _listenerName = name;
         }
 
-        public StringDictionary Attributes => _attributes ??= new StringDictionary();
+        public StringDictionary Attributes => field ??= new StringDictionary();
 
         /// <devdoc>
         /// <para> Gets or sets a name for this <see cref='System.Diagnostics.TraceListener'/>.</para>

@@ -81,7 +81,7 @@ namespace System.Globalization.Tests
             Assert.Throws<CultureNotFoundException>(() => new CultureInfo(cultureName));
         }
 
-        [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
+        [ConditionalTheory(typeof(GetCultureInfoTests), nameof(PlatformSupportsFakeCulture))]
         [MemberData(nameof(GetCultureInfoTestData))]
         public void GetCultureInfo(string name, string expected = null)
         {
@@ -90,7 +90,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, CultureInfo.GetCultureInfo(name, predefinedOnly: false).Name);
         }
 
-        [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
+        [ConditionalTheory(typeof(GetCultureInfoTests), nameof(PlatformSupportsFakeCulture))]
         [InlineData("z")]
         [InlineData("en@US")]
         [InlineData("\uFFFF")]
@@ -115,7 +115,7 @@ namespace System.Globalization.Tests
             Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name, predefinedOnly: true));
         }
 
-        [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
+        [ConditionalTheory(typeof(GetCultureInfoTests), nameof(PlatformSupportsFakeCulture))]
         [InlineData("en")]
         [InlineData("en-US")]
         [InlineData("ja-JP")]
@@ -127,7 +127,7 @@ namespace System.Globalization.Tests
             Assert.Equal(name, CultureInfo.GetCultureInfo(name, predefinedOnly: true).Name);
         }
 
-        [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
+        [ConditionalTheory(typeof(GetCultureInfoTests), nameof(PlatformSupportsFakeCulture))]
         [InlineData("xx")]
         [InlineData("xx-XX")]
         [InlineData("xx-YY")]
@@ -138,7 +138,7 @@ namespace System.Globalization.Tests
             Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name, predefinedOnly: true));
         }
 
-        [ConditionalTheory(nameof(PlatformSupportsFakeCultureAndRemoteExecutor))]
+        [ConditionalTheory(typeof(GetCultureInfoTests), nameof(PlatformSupportsFakeCultureAndRemoteExecutor))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [InlineData("1", "xx-XY")]
         [InlineData("1", "zx-ZY")]
@@ -147,7 +147,7 @@ namespace System.Globalization.Tests
         public void PredefinedCulturesOnlyEnvVarTest(string predefinedCulturesOnlyEnvVar, string cultureName)
         {
             var psi = new ProcessStartInfo();
-            psi.Environment.Clear();
+            TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);
 
             psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnlyEnvVar);
 
@@ -176,7 +176,7 @@ namespace System.Globalization.Tests
         public void TestAllowInvariantCultureOnly(bool enableInvariant, bool predefinedCulturesOnly, bool declarePredefinedCulturesOnly)
         {
             var psi = new ProcessStartInfo();
-            psi.Environment.Clear();
+            TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);
 
             if (enableInvariant)
             {

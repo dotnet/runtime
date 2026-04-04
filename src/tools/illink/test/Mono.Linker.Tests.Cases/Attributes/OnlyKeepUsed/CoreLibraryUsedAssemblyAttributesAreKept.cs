@@ -6,22 +6,22 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
-	[Reference ("System.dll")]
-	[SetupLinkerTrimMode ("link")]
-	[SetupLinkerArgument ("--used-attrs-only", "true")]
-	[KeptAttributeInAssembly (PlatformAssemblies.CoreLib, typeof (AssemblyDescriptionAttribute))]
+    [Reference("System.dll")]
+    [SetupLinkerTrimMode("link")]
+    [SetupLinkerArgument("--used-attrs-only", "true")]
+    [KeptAttributeInAssembly(PlatformAssemblies.CoreLib, typeof(AssemblyDescriptionAttribute))]
 #if !NET
-	[KeptAttributeInAssembly ("System.dll", typeof (AssemblyDescriptionAttribute))]
+    [KeptAttributeInAssembly("System.dll", typeof(AssemblyDescriptionAttribute))]
 #endif
-	public class CoreLibraryUsedAssemblyAttributesAreKept
-	{
-		public static void Main ()
-		{
-			// Use something from System so that the entire reference isn't linked away
-			var system = new Timer ();
+    public class CoreLibraryUsedAssemblyAttributesAreKept
+    {
+        public static void Main()
+        {
+            // Use something from System so that the entire reference isn't linked away
+            var system = new Timer();
 
-			// use one of the attribute types so that it is marked
-			var tmp = typeof (AssemblyDescriptionAttribute).ToString ();
-		}
-	}
+            // use one of the attribute types so that it is marked
+            var tmp = typeof(AssemblyDescriptionAttribute).ToString();
+        }
+    }
 }

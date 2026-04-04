@@ -10,13 +10,20 @@
 
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
+    <IlcOrderFile>order.txt</IlcOrderFile>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
+
+    <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="BasicThreading.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="Devirtualization.cs" />
     <Compile Include="Generics.cs" />
     <Compile Include="Interfaces.cs" />
+    <Compile Include="Ordering.cs" />
     <Compile Include="Threading.cs" />
     <Compile Include="StackTraces.cs" />
     <Compile Include="Main.cs" />

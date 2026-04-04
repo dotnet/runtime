@@ -53,7 +53,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             };
 
             sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
-                .Execute(expectedToFail: true)
+                .DisableDumps() // Expected to throw an exception
+                .Execute()
                 .Should().Fail()
                 .And.InitializeContextForApp(app.AppDll)
                 .And.ExecuteApplicationWithException(sharedState.NativeHostPath, app.AppDll);
@@ -68,8 +69,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                DotNetRoot = TestContext.BuiltDotNet.BinPath;
-                HostFxrPath = TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
+                DotNetRoot = HostTestContext.BuiltDotNet.BinPath;
+                HostFxrPath = HostTestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
 
                 App = TestApp.CreateFromBuiltAssets("HelloWorld");
             }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
@@ -322,7 +323,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             string frameworkReferenceVersion,
             string rollForward,
             bool? applyPatches,
-            bool rollForwardToPreRelease = false)
+            bool rollForwardToPreRelease = false,
+            [CallerMemberName] string caller = "")
         {
             return RunTest(
                 SharedState.DotNetWithNETCoreAppReleaseAndPreRelease,
@@ -333,7 +335,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                         .WithFramework(MicrosoftNETCoreApp, frameworkReferenceVersion))
                     // Using command line, so that it's possible to mix rollForward and applyPatches
                     .With(RollForwardSetting(SettingLocation.CommandLine, rollForward))
-                    .WithEnvironment(Constants.RollForwardToPreRelease.EnvironmentVariable, rollForwardToPreRelease ? "1" : "0"));
+                    .WithEnvironment(Constants.RollForwardToPreRelease.EnvironmentVariable, rollForwardToPreRelease ? "1" : "0"),
+                caller: caller);
         }
     }
 }

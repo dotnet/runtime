@@ -31,6 +31,8 @@ The LoongArch64 ABI documentation is [here](https://github.com/loongson/LoongArc
 
 The RISC-V ABIs Specification: [latest release](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/releases/latest), [latest draft](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/releases), [document source repo](https://github.com/riscv-non-isa/riscv-elf-psabi-doc).
 
+Web Assembly Basic C ABI: [Basic C ABI](https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md)
+
 # General Unwind/Frame Layout
 
 For all non-x86 platforms, all methods must have unwind information so the garbage collector (GC) can unwind them (unlike native code in which a leaf method may be omitted).
@@ -94,6 +96,35 @@ There is no defined/enforced/declared ordering between the generic parameter and
 ### Example
 ```
 call(["this" pointer] [return buffer pointer] [generics context|varargs cookie] [userargs]*)
+```
+
+## Async
+
+Async calling convention is additive to other calling conventions when supported. The set of scenarios is constrained to regular static/virtual calls and does not, for example, support PInvokes or varargs. At the minimum ordinary static calls, calls with `this` parameter or generic hidden parameters are supported.
+
+Async calling convention adds an extra `Continuation` parameter and an extra return, which sematically takes precedence when not `null`. A non-null `Continuation` upon return signals that the computation is not complete and the formal result is not ready. A non-null argument means that the function is resuming and should extract the state from the `Continuation` and continue execution (while ignoring all other arguments).
+
+The `Continuation` is a managed object and needs to be tracked accordingly. The GC info includes the continuation result as live at Async call sites.
+
+### Returning `Continuation`
+To return `Continuation` we use a volatile/calee-trash register that cannot be used to return the actual result.
+
+| arch | `REG_ASYNC_CONTINUATION_RET` |
+| ------------- | ------------- |
+| x86  | ecx  |
+| x64  | rcx  |
+| arm | r2  |
+| arm64  | x2  |
+| risc-v  | a2  |
+| loongarch64  | a2  |
+
+### Passing `Continuation` argument
+The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present. For x86 the argument order is reversed.
+
+```
+call(["this" pointer] [return buffer pointer] [generics context] [continuation] [userargs])   // not x86
+
+call(["this" pointer] [return buffer pointer] [userargs] [continuation] [generics context])   // x86
 ```
 
 ## AMD64-only: by-value value types
@@ -190,13 +221,9 @@ This section describes the conventions the JIT needs to follow when generating c
 
 ## Funclets
 
-For all platforms except Windows/x86 on CoreCLR, all managed EH handlers (finally, fault, filter, filter-handler, and catch) are extracted into their own 'funclets'. To the OS they are treated just like first class functions (separate PDATA and XDATA (`RUNTIME_FUNCTION` entry), etc.). The CLR currently treats them just like part of the parent function in many ways. The main function and all funclets must be allocated in a single code allocation (see hot cold splitting). They 'share' GC info. Only the main function prolog can be hot patched.
+For all platforms, managed EH handlers (finally, fault, filter, filter-handler, and catch) are extracted into their own 'funclets'. To the OS they are treated just like first class functions (separate PDATA and XDATA (`RUNTIME_FUNCTION` entry), etc.). The CLR currently treats them just like part of the parent function in many ways. The main function and all funclets must be allocated in a single code allocation (see hot cold splitting). They 'share' GC info. Only the main function prolog can be hot patched.
 
 The only way to enter a handler funclet is via a call. In the case of an exception, the call is from the VM's EH subsystem as part of exception dispatch/unwind. In the non-exceptional case, this is called local unwind or a non-local exit. In C# this is accomplished by simply falling-through/out of a try body or an explicit goto. In IL this is always accomplished via a LEAVE opcode, within a try body, targeting an IL offset outside the try body. In such cases the call is from the JITed code of the parent function.
-
-For Windows/x86 on CoreCLR, all handlers are generated within the method body, typically in lexical order. A nested try/catch is generated completely within the EH region in which it is nested. These handlers are essentially "in-line funclets", but they do not look like normal functions: they do not have a normal prolog or epilog, although they do have special entry/exit and register conventions. Also, nested handlers are not un-nested as for funclets: the code for a nested handler is generated within the handler in which it is nested.
-
-For Windows/x86 on NativeAOT and Linux/x86, funclets are used just like on other platforms.
 
 ## Cloned finallys
 
@@ -206,7 +233,7 @@ RyuJIT attempts to speed the normal control flow by 'inlining' a called finally 
 
 In order to have proper forward progress and `Thread.Abort` semantics, there are restrictions on where a call-to-finally can be, and what the call site must look like. The return address can **NOT** be in the corresponding try body (otherwise the VM would think the finally protects itself). The return address **MUST** be within any outer protected region (so exceptions from the finally body are properly handled).
 
-JIT64, and RyuJIT for non-x86, creates something similar to a jump island: a block of code outside the try body that calls the finally and then branches to the final target of the leave/non-local-exit. This jump island is then marked in the EH tables as if it were a cloned finally. The cloned finally clause prevents a Thread.Abort from firing before entering the handler. By having the return address outside of the try body we satisfy the other constraint.
+RyuJIT creates something similar to a jump island: a block of code outside the try body that calls the finally and then branches to the final target of the leave/non-local-exit. This jump island is then marked in the EH tables as if it were a cloned finally. The cloned finally clause prevents a Thread.Abort from firing before entering the handler. By having the return address outside of the try body we satisfy the other constraint.
 
 ## ThreadAbortException considerations
 
@@ -348,109 +375,17 @@ When an exception occurs, the VM is invoked to do some processing. If the except
 
 The VM sets the frame register to be the same as the parent function. This allows the funclets to access local variables using frame-relative addresses.
 
-For filter funclets and on CoreCLR/AMD64 for all funclets, all other register values that existed at the exception point in the corresponding "try" region are trashed on entry to the funclet. That is, the only registers that have known values are those of the funclet parameters and the frame register.
+For filter funclets, all other register values that existed at the exception point in the corresponding "try" region are trashed on entry to the funclet. That is, the only registers that have known values are those of the funclet parameters and the frame register.
 
-For other funclets on all platforms except CoreCLR/AMD64, all non-volatile registers are restored to their values at the exception point. The JIT codegen [does not take advantage of it currently](https://github.com/dotnet/runtime/pull/114630#issuecomment-2810210759).
+For other funclets, all non-volatile registers are restored to their values at the exception point. The JIT codegen [does not take advantage of it currently](https://github.com/dotnet/runtime/pull/114630#issuecomment-2810210759).
 
 ### Registers on return from a funclet
 
 When a funclet finishes execution, and the VM returns execution to the function (or an enclosing funclet, if there is EH clause nesting), the non-volatile registers are restored to the values they held at the exception point. Note that the volatile registers have been trashed.
 
-Any register value changes made in the funclet are lost. If a funclet wants to make a variable change known to the main function (or the funclet that contains the "try" region), that variable change needs to be made to the shared main function stack frame.
+Any register value changes made in the funclet are lost. If a funclet wants to make a variable change known to the main function (or the funclet that contains the "try" region), that variable change needs to be made to the shared main function stack frame. This not a fundamental limitation. If necessary, the runtime can be updated to preserve non-volatile register changes made in funclets.
 
-## Windows/x86 EH considerations
-
-The Windows/x86 model is somewhat different than non-Windows/x86 model. Windows/X86-specific concerns are mentioned here.
-
-### catch / filter-handler regions
-
-When leaving a `catch` or `filter-handler` region, the JIT calls the helper `CORINFO_JIT_ENDCATCH` (implemented in the VM by the `JIT_EndCatch` function) before transferring control to the target location. The code to call to `CORINFO_JIT_ENDCATCH` is within the catch region itself.
-
-### finally / fault regions
-
-"finally" clauses are invoked in the non-exceptional code by the generated JIT code, and in the exceptional case by the VM. "fault" clauses are only executed in exceptional cases by the VM.
-
-On entry to the finally or fault, the top of the stack is the address that should be jumped to on exit from the finally, using a "pop eax; jmp eax" sequence. A simple 'ret' could be used, but we avoid it to avoid potentially creating an unbalanced processor call/ret buffer stack, and messing up call/ret prediction.
-
-There are no register or other stack arguments to a 'finally' or 'fault'.
-
-### ShadowSP slots
-
-X86 exception handlers (e.g., catch, finally) do not establish their own frames. They don't (really) have prologs and epilogs. However, they do use the stack, and need to restore the stack pointer of the enclosing exception handling region when the handler completes executing.
-
-To implement this requirement, for any function with EH, we create a frame-local variable to store a stack of "Shadow SP" values, or ShadowSP slots. In the JIT, the local var is called lvaShadowSPslotsVar, and in dumps it is called "EHSlots". The variable is created in lvaMarkLocalVars() and is sized as follows:
-1. 1 slot is reserved for the VM (for ICodeManager::FixContext(ppEndRegion)).
-2. 1 slot for each handler nesting level (total: ehMaxHndNestingCount).
-3. 1 slot for a filter (we do this even if there aren't any filters; size optimization opportunity to not do this if there are no filters?)
-4. 1 slot for zero termination
-
-Note that the since a slot on x86 is 4 bytes, the minimum size is 16 bytes. The idea is to have 1 slot for each handler that could be possibly be invoked at the same time. For example, for:
-
-```cs
-	try {
-		...
-	} catch {
-		try {
-			...
-		} catch {
-			...
-		}
-	}
-```
-
-When the inner 'catch' is running, the outer 'catch' is also conceptually "on the stack", or in the middle of execution. So the maximum handler nesting count would be 2.
-
-The ShadowSP slots are filled in from the highest address downwards to the lowest address. The highest slot is reserved. The first address with a zero is a zero terminator. So, we always zero terminate by setting the second-to-highest slot to zero in the function prolog (if we didn't zero initialize all locals anyway).
-
-When calling a finally, we set the appropriate level to 0xFC (aka "finally call") and zero terminate the next-lower address.
-
-Thus, calling a finally from JIT generated code looks like:
-
-```asm
-	mov      dword ptr [L_02+0x4 ebp-10H], 0 // This must happen before the 0xFC is written
-	mov      dword ptr [L_02+0x8 ebp-0CH], 252 // 0xFC
-	push     G_M52300_IG07
-	jmp      SHORT G_M52300_IG04
-```
-
-In this case, `G_M52300_IG07` is not the address after the 'jmp', so a simple 'call' wouldn't work.
-
-The code this finally returns to looks like this:
-
-```asm
-	mov      dword ptr [L_02+0x8 ebp-0CH], 0
-	jmp      SHORT G_M52300_IG05
-```
-
-In this case, it zeros out the ShadowSP slot that it previously set to 0xFC, then jumps to the address that is the actual target of the leave from the finally.
-
-The JIT does this "end finally restore" by creating a GT_END_LFIN tree node, with the appropriate EH region ID as an operand, that generates this code.
-
-In the case of an exceptional 'finally' invocation, the VM sets up the 'return address' to whatever address it wants the JIT to return to.
-
-For catch handlers, the VM is completely in control of filling and reading the ShadowSP slots; the JIT just makes sure there is enough space.
-
-### ShadowSP slots frame location
-
-The ShadowSP slots are required to live in a very particular location, reported via the GC info header. Note that the GC info header does not contain an actual pointer or offset to the ShadowSP slots variable. Instead, the VM calculates the location from other data that does exist in the GC info header, as a negative offset from the EBP frame pointer (which must be established in functions with EH) using the function `GetFirstBaseSPslotPtr()` / `GetStartShadowSPSlotsOffset()`. The VM thus assumes the following frame layout:
-
-1. callee-saved registers <= EBP points to the top of this range
-2. GS cookie
-3. 1 slot if localloc is used (Saved localloc SP?)
-4. 1 slot for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG -- assumed for any function with EH, to avoid adding a flag to the GC info about whether it exists or not.
-5. ShadowSP slots
-
-(note, these don't have to be in this order for this calculation, but they possibly do need to be in this order for other calculations.) See also `GetEndShadowSPSlotsOffset()`.
-
-The VM walks the ShadowSP slots in the function `GetHandlerFrameInfo()`, and sets it in various functions such as `EECodeManager::FixContext()`.
-
-### JIT implementation: finally
-
-An aside on the JIT implementation for x86.
-
-The JIT creates BBJ_CALLFINALLY/BBJ_ALWAYS pairs for calling the 'finally' clause. The BBJ_CALLFINALLY block will have a series of CORINFO_JIT_ENDCATCH calls appended at the end, if we need to "leave" a series of nested catches before calling the finally handler (due to a single 'leave' opcode attempting to leave multiple levels of different types of handlers). Then, a GT_END_LFIN statement with EH region ID as an argument is added to the step block where the finally returns to. This is used to generate code to zero out the appropriate level of the ShadowSP slot array after the finally has been executed and the final EH nesting depth is known. The BBJ_CALLFINALLY block itself generates the code to insert the 0xFC value into the ShadowSP slot array. If the 'finally' is invoked by the VM, in exceptional cases, then the VM itself updates the ShadowSP slot array before invoking the 'finally'.
-
-At the end of a finally or filter, a GT_RETFILT is inserted. For a finally, this is a TYP_VOID which is just a placeholder. For a filter, it takes an argument which evaluates to the return value from the filter. On legacy JIT, this tree triggers the generation of both the return value load (for filters) and the "funclet" exit sequence, which is either a "pop eax; jmp eax" for a finally, or a "ret" for a filter. When processing the BBJ_EHFINALLYRET or BBJ_EHFILTERRET block itself (at the end of code generation for the block), nothing is generated. In RyuJIT, the GT_RETFILT only loads up the return value (for filters) and does nothing for finally, and the block type processing after all the tree processing triggers the exit sequence to be generated. There is no real difference between these, except to centralize all "exit sequence" generation in the same place.
+Funclets are not required to preserve non-volatile registers.
 
 # EH Info, GC Info, and Hot & Cold Splitting
 
@@ -605,6 +540,26 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 
 EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
 
+## Async methods
+
+The JIT saves the current `ExecutionContext` and `SynchronizationContext` in runtime async methods and these must be preserved during remap. The new GC encoder includes the state in the EnC frame header size, while for JIT32 the EE expects this state to exist when `CORINFO_ASYNC_SAVE_CONTEXTS` was reported to the JIT from `getMethodInfo`.
+
+# Portable entrypoints
+
+On platforms that allow dynamic code generation, the runtime abstracts away execution strategies for dynamically loaded methods by allocating [`Precode`](method-descriptor.md#precode)s. The `Precode` is a small code fragment that is used as a temporary method entrypoint until the actual method code is acquired. `Precode`s are also used as part of the execution for methods that do not have regular JITed or AOT-compiled code, for example stubs or interpreted methods. `Precode`s allow native code to use the same native code calling convention irrespective of the execution strategy used by the target method.
+
+On platforms that do not allow dynamic code generation (Wasm), the runtime abstracts away execution strategies by allocating portable entrypoints for dynamically loaded methods. The `PortableEntryPoint` is a data structure that allows efficient transition to the desired execution strategy for the target method. When the runtime is configured to use portable entrypoints, the managed calling convention is modified as follows:
+
+- The native code to call is obtained by dereferencing the entrypoint
+
+- The entrypoint address is passed in as an extra last hidden argument. The extra hidden argument must be present in signatures of all methods. It is unused by the code of JITed or AOT-compiled methods.
+
+Pseudo code for a call with portable entrypoints:
+
+> `(*(void**)pfn)(arg0, arg1, ..., argN, pfn)`
+
+Portable entrypoints are used for Wasm with interpreter only currently. Note that portable entrypoints are unnecessary for Wasm with native AOT since native AOT does not support dynamic loading.
+
 # System V x86_64 support
 
 This section relates mostly to calling conventions on System V systems (such as Ubuntu Linux and Mac OS X).
@@ -730,3 +685,197 @@ MyStruct Test2()
 	return default;
 }
 ```
+
+# Interpreter ABI details
+
+The interpreter data stack is separately allocated from the normal "thread" stack, and it grows UP. The interpreter execution control stack is allocated on the "thread" stack, as a series of `InterpMethodContextFrame` values that are linked in a singly linked list onto an `InterpreterFrame` which is placed onto the Frame chain of the thread. `InterpMethodContextFrame` structures are always allocated in descending order so that a callee method's associated `InterpMethodContextFrame` is always located lower in memory compared to its caller or the containing `InterpreterFrame`.
+
+The base stack pointer within a method never changes, but when a function is called in the interpreter it will have a stack pointer which is associated with the set of arguments passed. In effect argument passing is done by giving a portion of the temporary args space of the caller function to the callee.
+
+All instructions and GC that address the stack pointer are relative to the current stack pointer, which does not move. This requires that implementations of the localloc instruction actually allocate the memory on the heap, and localloc'd memory is not actually tied to the data stack in any way.
+
+The stack pointer in all interpreter functions is always aligned on a `INTERP_STACK_ALIGNMENT` boundary. Currently this is a 16 byte alignment requirement.
+
+The stack elements are always aligned to at least `INTERP_STACK_SLOT_SIZE` and never more than `INTERP_STACK_ALIGNMENT` Given that today's implementation sets `INTERP_STACK_SLOT_SIZE` to 8 and `INTERP_STACK_ALIGNMENT` to 16, this implies all data on the stack is either aligned at an 8 or 16 byte alignment.
+
+Primitive types smaller than 4 bytes are always zero or sign extended to 4 bytes when on the stack.
+
+When a function is async it will have a continuation return. This return is not done using the data stack, but instead is done by setting the Continuation field in the `InterpreterFrame`. Thunks are responsible for setting/resetting this value as we enter/leave code compiled by the JIT.
+
+# Web Assembly ABI (R2R and JIT)
+
+For managed methods compiled to Web Assembly (hereafter "managed code") the CLR generally follows the [Wasm Basic C ABI](https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md).
+
+Managed code uses the same linear stack as C code. The stack grows down.
+
+## Incoming argument ABI
+
+The linear stack pointer `$sp` is the first argument to all methods. At a native->managed transition it is the value of the `$__stack_pointer` global. This global may be updated to the current `$sp` within managed code, and must be up to date with the current `$sp` at managed->native boundaries. Within the method the stack pointer always points at the bottom (lowest address) of the stack; generally this is a fixed offset from the value the stack pointer held on entry, except in methods that can do dynamic allocation.
+
+A frame pointer, if used, points at the bottom of the "fixed" portion of the stack to facilitate use of Wasm addressing modes, which only allow positive offsets.
+
+Structs are generally passed by-reference, unless they happen to exactly contain a single primitive field (or be a struct exactly containing such a struct). The linear stack provides the backing storage for the by-reference structs.
+
+Structs are generally returned via hidden buffers, whose address is supplied by the caller and passed just after the managed `this`, or after `$sp` argument when `this` is not present. In such cases the return value of the method is the address of the return value. But if the struct can be passed on the Wasm stack it is returned on the Wasm stack.
+
+(TBD: ABI for vector types)
+
+### Prolog
+
+The prolog will decrement the stack pointer by the fixed frame size, home any arguments that are stored on the linear stack, and zero initialize slots on the linear stack as appropriate. It will establish a frame pointer if one is needed.
+
+So on exit from the prolog the stack pointer (`$sp`) will point to the bottom of the fixed part of the stack frame. The frame pointer (`$fp`) if used, will also point to the bottom of fixed part of the stack frame. `$sp` and `$fp` will only differ in methods that can allocate extra storage on the stack at runtime (typically from `localloc`). The stack is kept 16 byte aligned.
+
+For methods that can be interrupted by GC or EH (generally speaking: methods with gc safe calls) the prolog also saves a frame descriptor onto the stack, for use during GC and EH. By convention this value is stored at `fp[0]`. Since only `sp` will be available for unwinding (by virtue of being saved to `$__stack_pointer`) we adopt the convention that when `$sp` moves in the middle of the method, `$sp[0]` is set to `$fp`.
+
+Thus to access information for EH/GC/unwinding, the frame descriptor `fd` can be found from the managed frame `$sp` as follows:
+* `fd = $sp[0]`
+* if `fd` is a stack address, it is the saved `$fp`. So then `fd = fd[0]`.
+
+We will save the "virtual IP" in a similar fashion (TBD: exact details on this).
+
+### Epilog
+
+Generally epilogs will be empty. There is no notion of callee-save registers in Wasm, and no other global state to update.
+
+## Outgoing call ABI
+
+For direct managed calls, Wasm uses the Portable Entry Point feature to facilitate smooth interop with interpreted code. This means all managed calls are made indirectly, and the portable entry point is also passed as the last argument.
+
+The call sequence will then be
+```
+local.get sp
+push arg 0
+...
+push arg N-1
+load PortableEntryPointPtr   ;; pushes address of portable entry point (&pe)
+dup
+load CellIndex (from &pe)
+call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) arg0... argN-1 int32 (&pe))
+```
+Initially the cell will contain code to determine if the target method has R2R code or must be interpreted. If there is R2R code for the method it is validated and fixed up as needed. Once the target is resolved the cell can be updated to just refer to the R2R code directly, if there is any, or to a thunk for invoking the interpreter.
+
+For virtual managed calls the sequence is similar, but the portable entry point is obtained by calling a resolve helper:
+```
+local.get sp
+push arg 0
+...
+push arg N-1
+... push args for resolution ...
+call resolve                     ;; pushes address of portable entry point (&pe)
+dup
+load CellIndex (from &pe)        ;; pushes Wasm function table index of the code to invoke
+
+call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) arg0... argN-1 int32 (&pe))
+```
+Because the `&pe` arg must be passed to the portable entrypoint, all method signatures must reflect the extra final argument (even though it will be unused). Thus for example a managed method like `int F(int x)` will have a Wasm signature `(func (param int32 int32 int32) (result int32))`.
+
+Alternatively we may choose to pass the `&pe` via a Wasm global.
+
+As an optimization, for vtable-based virtual managed calls, codegen may fetch the portable entry point from the appropriate vtable slot instead of calling the resolve helper.
+
+As an optimization, if it is known that the callee is also compiled R2R, the caller can invoke the callee directly. Since R2R method bodies may be invalidated at runtime, validation of that the callee's R2R must be done when validating the caller's R2R.
+
+FCalls implemented in native code will follow the same managed calling convention. FCall implementation macros (`FCIMPL`) will be modified to produce a small inline assembly wrapper that re-establishes `$__stack_pointer`.
+
+## GC References at Call Sites
+
+Wasm does not allow for outside access to the Wasm stack. So, before call sites that may trigger GC, all GC references live after the call (and all untracked GC references, which are effectively always live) must be saved to the linear stack. These GC references will be reported as pinned to the GC so that if they normally live in Wasm locals those locals do not need to be updated after the call. The live GC slots on the linear stack will be identified by the virtual IP (also stored on the linear stack) and the GC info (accessible from the frame descriptor, also on the linear stack).
+
+So for example if we have code like `x(a, y(b)); ... a; ... b;` where `a` and `b` are gc refs that initially are in Wasm locals, this fragment would compile into something like
+```
+;; sp for call to x
+local.get sp
+
+;; spill a to linear memory
+local.get sp
+local.get a
+i32.store offset=(a's offset in gc area of stack)
+
+;; arg a for call to x
+local.get a
+
+;; sp for call to y
+local.get sp
+
+;; spill b to linear memory
+local.get sp
+local.get b
+i32.store offset=(b's offset in gc area of stack)
+
+;; arg b for call to y
+local.get b
+
+;; update virtual IP for call to y with live gc refs
+local.get sp
+i32.const virtual-ip-for-call-to-y  (gc info : a and b slots live)
+i32.store offset=(virtual-ip offset)
+
+;; fetch &pe for y and cell index from &pe, call y
+load PortableEntryPointPtr for y
+dup
+load CellIndex (from &pe)
+call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) int32 int32 (&pe) : returns int32)
+
+;; update virtual IP for call to x with live gc refs [can be optimized out]
+local.get sp
+i32.const virtual-ip-for-call-to-x (gc info : a and b slots live)
+i32.store offset=(virtual-ip offset)
+
+;; fetch &pe for x and cell index from &pe, call x
+load PortableEntryPointPtr for x
+dup
+load CellIndex (from &pe)
+call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) int32 int32 (&pe) : returns int32)
+```
+Notes:
+* As an optimization, we can avoid updating the virtual IP when the GC/EH info it refers to is unchanged from the last update.
+* We may want to un-nest calls, relying on a Wasm local instead of the Wasm stack to convey nested call results to the parent call.
+* As an optimization, we will try and minimize storing gc refs to the linear stack (eg if the value already there hasn't changed from the last update).
+* As an optimization, we may try and have some gc refs primarily live on the linear stack, and not be held in Wasm locals.
+
+## Tail Calls
+
+For tail calls the only differences are the use of the `return_call_indirect` in the call, and passing the original `sp` value to the callee:
+```
+local.get sp
+i32.const <frameSize>
+i32.add
+
+push arg 0
+...
+push arg N-1
+load PortableEntryPointPtr
+dup
+load CellIndex (from &pe)
+return_call_indirect <tableIndex> <sigIndex>  (sig is: int32 (sp) arg0... argN-1 int32 (&pe))
+```
+and similarly for indirect managed calls.
+
+## PInvoke
+
+PInvoke will re-establish `$__stack_pointer` before calling the target.
+
+## Reverse PInvoke
+
+Reverse PInvoke prolog will load the global `$__stack_pointer` and use it as the managed `sp`.
+
+On return the global `$__stack_pointer` is reset to the value it had on stub entry.
+
+## Async
+
+TBD
+
+## Interpreter Stubs
+
+There will be stubs involved in both managed code->interpreter and interpreter->managed code calls. For R2R these will be per signature, generated by crossgen2.
+
+### Interpreted -> Managed
+
+The interpreter->managed stub will load the global `$__stack_pointer`, then the method arguments from the interpreter stack, and finally `int32.const 0` for the final `&pe` argument, which will be ignored by managed code (that last part can be omitted, if we pass this via a Wasm global instead), and then call the managed method.
+
+On return the global `$__stack_pointer` is reset to the value it had on stub entry.
+
+### Managed->Interpreted
+
+This stub will be passed the current managed `sp` and must store it into the global `$__stack_pointer`. The interpreter stack (see above) will be extended with a new `InterpMethodContextFrame` frame, and arguments will be moved from Wasm locals to the frame. The `&pe` argument will then be used to invoke the interpreter on the proper IL method body.

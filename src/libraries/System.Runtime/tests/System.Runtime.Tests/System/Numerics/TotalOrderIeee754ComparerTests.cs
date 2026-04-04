@@ -137,6 +137,7 @@ namespace System.Runtime.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(int.MinValue)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void TotalOrderTestInvalidSignificand(int significandByteCount)
         {
             var comparer = new TotalOrderIeee754Comparer<StubFloatingPointIeee754>();

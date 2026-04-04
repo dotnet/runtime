@@ -16,7 +16,6 @@ namespace System.Text.Json
         ///   The value of this property.
         /// </summary>
         public JsonElement Value { get; }
-        private string? _name { get; }
 
         internal JsonProperty(JsonElement value)
         {
@@ -25,8 +24,9 @@ namespace System.Text.Json
 
         /// <summary>
         ///   The name of this property.
+        ///   This allocates a new string instance for each call.
         /// </summary>
-        public string Name => _name ?? Value.GetPropertyName();
+        public string Name => Value.GetPropertyName();
 
         /// <summary>
         ///   Compares <paramref name="text" /> to the name of this property.
@@ -116,15 +116,7 @@ namespace System.Text.Json
         {
             ArgumentNullException.ThrowIfNull(writer);
 
-            if (_name is null)
-            {
-                Value.WritePropertyNameTo(writer);
-            }
-            else
-            {
-                writer.WritePropertyName(_name);
-            }
-
+            Value.WritePropertyNameTo(writer);
             Value.WriteTo(writer);
         }
 

@@ -6,9 +6,9 @@
 
 namespace ILLink.Shared.DataFlow
 {
-	// Adds ability to deep copy a value
-	public interface IDeepCopyValue<TSingleValue>
-	{
-		public TSingleValue DeepCopy ();
-	}
+    // Adds ability to deep copy a value
+    public interface IDeepCopyValue<TSingleValue>
+    {
+        public TSingleValue DeepCopy();
+    }
 }

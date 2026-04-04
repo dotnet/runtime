@@ -1521,7 +1521,7 @@ unsigned hash(
      unsigned  length,   /* the length of the key */
      unsigned  initval)  /* the previous hash, or an arbitrary value */
 {
-   register unsigned a,b,c,len;
+   unsigned a,b,c,len;
 
    /* Set up the internal state */
    len = length;

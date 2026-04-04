@@ -37,10 +37,10 @@ namespace Generic.Dictionary
             await task.WaitAsync(TimeSpan.FromSeconds(60));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(null)]
         [InlineData(typeof(CustomEqualityComparerInt32ValueType))]
-        public async Task DictionaryConcurrentAccessDetection_ValueTypeKey(Type comparerType)
+        public async Task DictionaryConcurrentAccessDetection_ValueTypeKey(Type? comparerType)
         {
             IEqualityComparer<int> customComparer = null;
 
@@ -59,10 +59,10 @@ namespace Generic.Dictionary
                 d => d.Remove(1, out int value));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(null)]
         [InlineData(typeof(CustomEqualityComparerDummyRefType))]
-        public async Task DictionaryConcurrentAccessDetection_ReferenceTypeKey(Type comparerType)
+        public async Task DictionaryConcurrentAccessDetection_ReferenceTypeKey(Type? comparerType)
         {
             IEqualityComparer<DummyRefType> customComparer = null;
 

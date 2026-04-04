@@ -271,7 +271,7 @@ namespace System.Diagnostics
             {
                 if (value != _isReadOnly)
                 {
-                    if (value == false)
+                    if (!value)
                     {
                         VerifyWriteableCounterAllowed();
                     }

@@ -29,6 +29,7 @@ namespace System.Net.Http
 
         private async ValueTask<T> WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
         {
+            // The HTTP/3 connection waiting span should include the time spent waiting for an available QUIC stream, therefore H3 telemetry is implemented elsewhere.
             Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
 
             long startingTimestamp = Stopwatch.GetTimestamp();

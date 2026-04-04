@@ -284,7 +284,7 @@ void NativeWalker::Decode()
 DWORD NativeWalker::GetRegisterValue(int registerNumber)
 {
     // If we're going to decode a register, then we'd better have a valid register set.
-    PREFIX_ASSUME(m_registers != NULL);
+    _ASSERTE(m_registers != NULL);
 
     switch (registerNumber)
     {

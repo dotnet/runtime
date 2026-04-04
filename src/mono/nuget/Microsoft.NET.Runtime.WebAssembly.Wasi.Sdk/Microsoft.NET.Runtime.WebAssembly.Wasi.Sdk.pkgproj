@@ -18,8 +18,6 @@
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.props" TargetPath="Sdk" />
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.targets" TargetPath="Sdk" />
 
-    <PackageFile Include="$(WasiProjectRoot)build\WasiSdk.Defaults.props" TargetPath="Sdk" />
-    
     <PackageFile Include="$(WasiProjectRoot)build\wasiconsole.runtimeconfig.template.json" TargetPath="Sdk" />
   </ItemGroup>
 

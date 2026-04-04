@@ -27,18 +27,10 @@
 
 #include <metamodelrw.h>
 
-#define DEFINE_CUSTOM_NODUPCHECK    1
-#define DEFINE_CUSTOM_DUPCHECK      2
-#define SET_CUSTOM                  3
-
 #if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
 
 //*****************************************************************************
 // determine if a token is valid or not
@@ -577,7 +569,7 @@ STDMETHODIMP RegMeta::FindTypeDefByName(// S_OK or error.
 
     if (wzTypeDef == NULL)
         IfFailGo(E_INVALIDARG);
-    PREFIX_ASSUME(wzTypeDef != NULL);
+    _ASSERTE(wzTypeDef != NULL);
     LPSTR       szTypeDef;
     UTF8STR(wzTypeDef, szTypeDef);
     LPCSTR      szNamespace;
@@ -937,7 +929,7 @@ STDMETHODIMP RegMeta::FindTypeRef(      // S_OK or error.
     LOCKREAD();
 
     // Convert the  name to UTF8.
-    PREFIX_ASSUME(wzTypeName != NULL); // caller might pass NULL, but they'll AV.
+    _ASSERTE(wzTypeName != NULL); // caller might pass NULL, but they'll AV.
     UTF8STR(wzTypeName, szFullName);
     ns::SplitInline(szFullName, szNamespace, szName);
 

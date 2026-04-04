@@ -64,6 +64,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Contains(FwlinkId, ce.Message);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [MemberData(nameof(GetCertsWith_IterationCountExceedingDefaultLimit_MemberData))]
         public void ImportWithPasswordOrFileName_IterationCountLimitExceeded(string name, string password, bool usesPbes2, byte[] blob, long iterationCount, bool usesRC2)

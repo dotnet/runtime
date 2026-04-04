@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-[assembly:ActiveIssue("https://github.com/dotnet/runtime/issues/54122", TestPlatforms.Browser)]
-
 namespace JIT.HardwareIntrinsics.General._Vector128_1
 {
     public static partial class Program

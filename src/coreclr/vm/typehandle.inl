@@ -13,7 +13,7 @@ inline mdTypeDef TypeHandle::GetCl() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->GetCl();
 }
 
@@ -25,6 +25,24 @@ inline PTR_MethodTable TypeHandle::GetMethodTable() const
         return(AsTypeDesc()->GetMethodTable());
     else
         return AsMethodTable();
+}
+
+// This method allows you to get the "upcasted" type handle. Currently we need this
+// because continuation types for runtime-async methods are dynamically created subtypes of a
+// parent continuation class that have no metadata of their own. This way, when we need to get
+// the TypeHandle to retrieve metadata, we are able to get a reasonable approximation.
+// If we need to handle more such types in the future we can add them here.
+inline TypeHandle TypeHandle::UpCastTypeIfNeeded() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (IsTypeDesc())
+        return *this;
+    if (AsMethodTable()->IsContinuation())
+    {
+        return TypeHandle(g_pContinuationClassIfSubTypeCreated);
+    }
+    return *this;
 }
 
 inline void TypeHandle::SetIsFullyLoaded()
@@ -83,7 +101,7 @@ inline PTR_TypeDesc TypeHandle::AsTypeDesc() const
     _ASSERTE(IsTypeDesc());
 
     PTR_TypeDesc result = PTR_TypeDesc(m_asTAddr - 2);
-    PREFIX_ASSUME(result != NULL);
+    _ASSERTE(result != NULL);
     return result;
 }
 
@@ -94,7 +112,7 @@ inline FnPtrTypeDesc* TypeHandle::AsFnPtrType() const
     _ASSERTE(IsFnPtrType());
 
     FnPtrTypeDesc* result = PTR_FnPtrTypeDesc(m_asTAddr - 2);
-    PREFIX_ASSUME(result != NULL);
+    _ASSERTE(result != NULL);
     return result;
 }
 
@@ -105,7 +123,7 @@ inline TypeVarTypeDesc* TypeHandle::AsGenericVariable() const
     _ASSERTE(IsGenericVariable());
 
     TypeVarTypeDesc* result = PTR_TypeVarTypeDesc(m_asTAddr - 2);
-    PREFIX_ASSUME(result != NULL);
+    _ASSERTE(result != NULL);
     return result;
 }
 

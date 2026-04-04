@@ -285,7 +285,7 @@ namespace System.IO.Packaging
 
             int forwardSlashPos = typeAndSubType.IndexOf('/');
             if (forwardSlashPos < 0 || // no slashes
-                typeAndSubType.Slice(forwardSlashPos + 1).IndexOf('/') >= 0) // more than one slash
+                typeAndSubType.Slice(forwardSlashPos + 1).Contains('/')) // more than one slash
             {
                 throw new ArgumentException(SR.InvalidTypeSubType);
             }
@@ -497,7 +497,7 @@ namespace System.IO.Packaging
         /// <param name="ch">input character</param>
         /// <returns></returns>
         private static bool IsLinearWhiteSpaceChar(char ch) =>
-            ch <= ' ' && Array.IndexOf(s_linearWhiteSpaceChars, ch) != -1;
+            ch <= ' ' && Array.IndexOf(s_linearWhiteSpaceChars, ch) >= 0;
 
         #endregion Private Methods
 

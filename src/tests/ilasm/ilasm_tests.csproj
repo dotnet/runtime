@@ -64,9 +64,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>TestFiles\%(FileName)%(Extension)</Link>
     </None>
-    <None Include="MethodImplOptions/MiAggressiveOptimization.il">
+    <None Include="MethodImplOptions/*.il">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <Link>MiAggressiveOptimization.il</Link>
+      <Link>%(Filename).il</Link>
     </None>
   </ItemGroup>
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

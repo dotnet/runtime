@@ -259,6 +259,197 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T AddSaturate(T left, T right)
+        {
+            // For unsigned types, addition can only overflow up
+            // so we need to check if the result is less than one
+            // of the inputs and return MaxValue if it is.
+            //
+            // For signed types, addition can overflow in either
+            // direction. However, this can only occur if the signs
+            // of the inputs are the same and the sign of the result
+            // then differs. This simplifies to, given a = b + c:
+            //    ((a ^ b) & ~(b ^ c)) < 0
+            //
+            // This simplification works because all negative values
+            // have their most significant bit set, while all positive
+            // values have it clear. Consider the below:
+            //
+            //  p = p + p:    (0 ^ 0) & ~(0 ^ 0)  ->  0 & ~0  ->  0 & 1  ->  0        can  overflow and didnt
+            //  p = p + n:    (0 ^ 0) & ~(0 ^ 1)  ->  0 & ~1  ->  0 & 0  ->  0        cant overflow
+            //  p = n + p:    (0 ^ 1) & ~(1 ^ 0)  ->  1 & ~1  ->  1 & 0  ->  0        cant overflow
+            //  p = n + n:    (0 ^ 1) & ~(1 ^ 1)  ->  1 & ~0  ->  1 & 1  ->  1        can  overflow and did
+            //  n = p + p:    (1 ^ 0) & ~(0 ^ 0)  ->  1 & ~0  ->  1 & 1  ->  1        can  overflow and did
+            //  n = p + n:    (1 ^ 0) & ~(0 ^ 1)  ->  1 & ~1  ->  1 & 0  ->  0        cant overflow
+            //  n = n + p:    (1 ^ 1) & ~(1 ^ 0)  ->  0 & ~1  ->  0 & 0  ->  0        cant overflow
+            //  n = n + n:    (1 ^ 1) & ~(1 ^ 1)  ->  0 & ~0  ->  0 & 1  ->  0        can  overflow and didnt
+            //               |_______| |________|    |_| |__|    |_| |_|    |_|
+            //                   |          \_________|____\______|___\______|_______ produces 1 if the signs are the same, meaning overflow could occur
+            //                   |                    |           |          |
+            //                   \____________________\___________\__________|_______ produces 1 if the output signs differs from the first input, meaning overflow could occur
+            //                                                               |
+            //                                                               \_______ produces 1 if the input signs are the same and the output sign differs from that, meaning overflow did occur
+            //
+            // If we did overflow then a negative result needs to
+            // become MaxValue, while a positive result needs to become
+            // MinValue.
+
+            if (typeof(T) == typeof(byte))
+            {
+                byte actualLeft = (byte)(object)left;
+                byte actualRight = (byte)(object)right;
+
+                byte result = (byte)(actualLeft + actualRight);
+
+                if (result < actualLeft)
+                {
+                    result = byte.MaxValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return (T)(object)(double)((double)(object)left + (double)(object)right);
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                short actualLeft = (short)(object)left;
+                short actualRight = (short)(object)right;
+
+                short result = (short)(actualLeft + actualRight);
+
+                if (((result ^ actualLeft) & ~(actualLeft ^ actualRight)) < 0)
+                {
+                    result = (result < 0) ? short.MaxValue : short.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                int actualLeft = (int)(object)left;
+                int actualRight = (int)(object)right;
+
+                int result = (int)(actualLeft + actualRight);
+
+                if (((result ^ actualLeft) & ~(actualLeft ^ actualRight)) < 0)
+                {
+                    result = (result < 0) ? int.MaxValue : int.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                long actualLeft = (long)(object)left;
+                long actualRight = (long)(object)right;
+
+                long result = (long)(actualLeft + actualRight);
+
+                if (((result ^ actualLeft) & ~(actualLeft ^ actualRight)) < 0)
+                {
+                    result = (result < 0) ? long.MaxValue : long.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                nint actualLeft = (nint)(object)left;
+                nint actualRight = (nint)(object)right;
+
+                nint result = (nint)(actualLeft + actualRight);
+
+                if (((result ^ actualLeft) & ~(actualLeft ^ actualRight)) < 0)
+                {
+                    result = (result < 0) ? nint.MaxValue : nint.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                nuint actualLeft = (nuint)(object)left;
+                nuint actualRight = (nuint)(object)right;
+
+                nuint result = (nuint)(actualLeft + actualRight);
+
+                if (result < actualLeft)
+                {
+                    result = nuint.MaxValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                sbyte actualLeft = (sbyte)(object)left;
+                sbyte actualRight = (sbyte)(object)right;
+
+                sbyte result = (sbyte)(actualLeft + actualRight);
+
+                if (((result ^ actualLeft) & ~(actualLeft ^ actualRight)) < 0)
+                {
+                    result = (result < 0) ? sbyte.MaxValue : sbyte.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return (T)(object)(float)((float)(object)left + (float)(object)right);
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                ushort actualLeft = (ushort)(object)left;
+                ushort actualRight = (ushort)(object)right;
+
+                ushort result = (ushort)(actualLeft + actualRight);
+
+                if (result < actualLeft)
+                {
+                    result = ushort.MaxValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                uint actualLeft = (uint)(object)left;
+                uint actualRight = (uint)(object)right;
+
+                uint result = (uint)(actualLeft + actualRight);
+
+                if (result < actualLeft)
+                {
+                    result = uint.MaxValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                ulong actualLeft = (ulong)(object)left;
+                ulong actualRight = (ulong)(object)right;
+
+                ulong result = (ulong)(actualLeft + actualRight);
+
+                if (result < actualLeft)
+                {
+                    result = ulong.MaxValue;
+                }
+
+                return (T)(object)result;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Ceiling(T value)
         {
             if (typeof(T) == typeof(double))
@@ -1571,6 +1762,196 @@ namespace System.Runtime.Intrinsics
             else if (typeof(T) == typeof(ulong))
             {
                 return (T)(object)((ulong)(object)left - (ulong)(object)right);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T SubtractSaturate(T left, T right)
+        {
+            // For unsigned types, subtraction can only overflow up
+            // so we need to check if the result is greater than the
+            // first input and return MinValue if it is.
+            //
+            // For signed types, subtraction can overflow in either
+            // direction. However, this can only occur if the signs
+            // of the inputs differ and the sign of the result
+            // then differs from the first input. This simplifies to: ((r ^ l) & (l ^ r)) < 0
+            //
+            // This simplification works because all negative values
+            // have their most significant bit set, while all positive
+            // values have it clear. Consider the below:
+            //
+            //  p = p - p:    (0 ^ 0) & (0 ^ 0)  ->  0 & 0  ->  0        cant overflow
+            //  p = p - n:    (0 ^ 0) & (0 ^ 1)  ->  0 & 1  ->  0        can  overflow and didn't
+            //  p = n - p:    (0 ^ 1) & (1 ^ 0)  ->  1 & 1  ->  1        can  overflow and did
+            //  p = n - n:    (0 ^ 1) & (1 ^ 1)  ->  1 & 0  ->  0        cant overflow
+            //  n = p - p:    (1 ^ 0) & (0 ^ 0)  ->  1 & 0  ->  0        cant overflow
+            //  n = p - n:    (1 ^ 0) & (0 ^ 1)  ->  1 & 1  ->  1        can  overflow and did
+            //  n = n - p:    (1 ^ 1) & (1 ^ 0)  ->  0 & 1  ->  0        can  overflow and didn't
+            //  n = n - n:    (1 ^ 1) & (1 ^ 1)  ->  0 & 0  ->  0        cant overflow
+            //               |_______| |_______|    |_| |_|    |_|
+            //                   |          \________|___\______|_______ produces 1 if the signs are the differ, meaning overflow could occur
+            //                   |                   |          |
+            //                   \___________________\__________|_______ produces 1 if the output signs differs from the first input, meaning overflow could occur
+            //                                                  |
+            //                                                  \_______ produces 1 if the input signs are the same and the output sign differs from that, meaning overflow did occur
+            //
+            // If we did overflow then a negative result needs to
+            // become MaxValue, while a positive result needs to become
+            // MinValue.
+
+            if (typeof(T) == typeof(byte))
+            {
+                byte actualLeft = (byte)(object)left;
+                byte actualRight = (byte)(object)right;
+
+                byte result = (byte)(actualLeft - actualRight);
+
+                if (result > actualLeft)
+                {
+                    result = byte.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return (T)(object)(double)((double)(object)left - (double)(object)right);
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                short actualLeft = (short)(object)left;
+                short actualRight = (short)(object)right;
+
+                short result = (short)(actualLeft - actualRight);
+
+                if (((result ^ actualLeft) & (actualLeft ^ actualRight)) < 0)
+                {
+                    result = (result < 0) ? short.MaxValue : short.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                int actualLeft = (int)(object)left;
+                int actualRight = (int)(object)right;
+
+                int result = (int)(actualLeft - actualRight);
+
+                if (((result ^ actualLeft) & (actualLeft ^ actualRight)) < 0)
+                {
+                    result = (result < 0) ? int.MaxValue : int.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                long actualLeft = (long)(object)left;
+                long actualRight = (long)(object)right;
+
+                long result = (long)(actualLeft - actualRight);
+
+                if (((result ^ actualLeft) & (actualLeft ^ actualRight)) < 0)
+                {
+                    result = (result < 0) ? long.MaxValue : long.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                nint actualLeft = (nint)(object)left;
+                nint actualRight = (nint)(object)right;
+
+                nint result = (nint)(actualLeft - actualRight);
+
+                if (((result ^ actualLeft) & (actualLeft ^ actualRight)) < 0)
+                {
+                    result = (result < 0) ? nint.MaxValue : nint.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                nuint actualLeft = (nuint)(object)left;
+                nuint actualRight = (nuint)(object)right;
+
+                nuint result = (nuint)(actualLeft - actualRight);
+
+                if (result > actualLeft)
+                {
+                    result = nuint.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                sbyte actualLeft = (sbyte)(object)left;
+                sbyte actualRight = (sbyte)(object)right;
+
+                sbyte result = (sbyte)(actualLeft - actualRight);
+
+                if (((result ^ actualLeft) & (actualLeft ^ actualRight)) < 0)
+                {
+                    result = (result < 0) ? sbyte.MaxValue : sbyte.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return (T)(object)(float)((float)(object)left - (float)(object)right);
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                ushort actualLeft = (ushort)(object)left;
+                ushort actualRight = (ushort)(object)right;
+
+                ushort result = (ushort)(actualLeft - actualRight);
+
+                if (result > actualLeft)
+                {
+                    result = ushort.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                uint actualLeft = (uint)(object)left;
+                uint actualRight = (uint)(object)right;
+
+                uint result = (uint)(actualLeft - actualRight);
+
+                if (result > actualLeft)
+                {
+                    result = uint.MinValue;
+                }
+
+                return (T)(object)result;
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                ulong actualLeft = (ulong)(object)left;
+                ulong actualRight = (ulong)(object)right;
+
+                ulong result = (ulong)(actualLeft - actualRight);
+
+                if (result > actualLeft)
+                {
+                    result = ulong.MinValue;
+                }
+
+                return (T)(object)result;
             }
             else
             {

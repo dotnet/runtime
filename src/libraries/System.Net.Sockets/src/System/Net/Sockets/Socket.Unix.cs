@@ -60,7 +60,7 @@ namespace System.Net.Sockets
             Debug.Assert(!_handle.LastConnectFailed);
         }
 
-        private static unsafe void LoadSocketTypeFromHandle(
+        private static void LoadSocketTypeFromHandle(
             SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening, out bool isSocket)
         {
             if (OperatingSystem.IsWasi())

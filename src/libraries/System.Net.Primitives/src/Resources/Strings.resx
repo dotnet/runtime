@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -81,9 +81,6 @@
   <data name="net_bad_ip_network" xml:space="preserve">
     <value>An invalid IP network was specified.</value>
   </data>
-  <data name="net_bad_ip_network_invalid_baseaddress" xml:space="preserve">
-    <value>The specified baseAddress has non-zero bits after the network prefix.</value>
-  </data>
   <data name="net_container_add_cookie" xml:space="preserve">
     <value>An error occurred when adding a cookie to the container.</value>
   </data>
@@ -119,5 +116,11 @@
   </data>
   <data name="PlatformNotSupported_NetPrimitives" xml:space="preserve">
     <value>System.Net.Primitives is not supported on this platform.</value>
+  </data>
+  <data name="net_SocketException_OperationNotSupported" xml:space="preserve">
+    <value>The requested property is not supported for the '{0}' AddressFamily.</value>
+  </data>
+  <data name="net_SocketException_OperationNotSupported_ReadOnlyIPAddress" xml:space="preserve">
+    <value>This operation is not supported on a read-only IPAddress instance.</value>
   </data>
 </root>

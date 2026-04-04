@@ -59,7 +59,7 @@ namespace System.Xml.Serialization
                 return null;
 
             if (!xmlMapping.GenerateSerializer)
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, "xmlMapping"));
+                throw new ArgumentException(SR.XmlInternalError);
 
             if (xmlMapping is XmlTypeMapping xmlTypeMapping)
             {
@@ -71,7 +71,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, "xmlMapping"));
+                throw new ArgumentException(SR.XmlInternalError);
             }
         }
 
@@ -879,6 +879,16 @@ namespace System.Xml.Serialization
                 {
                     Reader.Skip();
                     value = default(DateTimeOffset);
+                }
+                else if (element.Mapping.TypeDesc!.Type == typeof(DateOnly) && Reader.IsEmptyElement)
+                {
+                    Reader.Skip();
+                    value = default(DateOnly);
+                }
+                else if (element.Mapping.TypeDesc!.Type == typeof(TimeOnly) && Reader.IsEmptyElement)
+                {
+                    Reader.Skip();
+                    value = default(TimeOnly);
                 }
                 else
                 {

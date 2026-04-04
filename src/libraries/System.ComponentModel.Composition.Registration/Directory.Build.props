@@ -2,5 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
+    <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 </Project>

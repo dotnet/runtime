@@ -72,29 +72,23 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\uD800\uD800", "\uD800\uD800", CompareOptions.None, true, 2 };
 
             // Ignore symbols
-            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
-            {
-                yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
-                yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.None, false, 0 };
-            }
+            yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.IgnoreSymbols, true, 6 };
+            yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.None, false, 0 };
 
             // Platform differences
             if (PlatformDetection.IsNlsGlobalization)
             {
-                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
-                {
-                    yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, true, 7 };
-                    yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, true, 7 };
-                    yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, true, 1 };
-                }
+                yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, true, 7 };
+                yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, true, 7 };
+                yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, true, 1 };
                 yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.None, true, 1 };
                 yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uD800", CompareOptions.IgnoreCase, true, 1 };
             }
             else
             {
                 yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, false, 0 };
-                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
-                    yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, false, 0 };
+                // Bug in ICU (non-Apple) implementation, correct result should be true (https://github.com/dotnet/runtime/issues/118521)
+                yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, PlatformDetection.IsHybridGlobalizationOnApplePlatform ? true : false, 0 };
                 yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, false, 0 };
                 if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {

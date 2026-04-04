@@ -41,7 +41,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly byte _entrySize;
         private readonly string _name;
         private readonly bool _emitPrecode;
-        private readonly bool _emitGCRefMap;
 
         private bool _materializedSignature;
 
@@ -52,12 +51,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _flags = flags;
             _entrySize = entrySize;
             _emitPrecode = emitPrecode;
-            _emitGCRefMap = emitGCRefMap;
 
             _imports = new ImportTable(_name + "_ImportBegin", entrySize);
             _signatures = new ArrayOfEmbeddedPointersNode<Signature>(_name + "_SigBegin", new EmbeddedObjectNodeComparer(CompilerComparer.Instance));
             _signatureList = new List<Signature>();
-            _gcRefMap = _emitGCRefMap ? new GCRefMapNode(this) : null;
+            _gcRefMap = emitGCRefMap ? new GCRefMapNode(this) : null;
         }
 
         public void MaterializeSignature(NodeFactory r2rFactory)
@@ -89,10 +87,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _signatureList.Add(import.ImportSignature.Target);
             }
 
-            if (_emitGCRefMap)
-            {
-                _gcRefMap.AddImport(import);
-            }
+            _gcRefMap?.AddImport(import);
         }
 
         public string Name => _name;
@@ -135,8 +130,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.EmitUInt(0);
             }
 
-            if (_emitGCRefMap)
+            // If we emit an Rva for an empty gcrefmap, it will have no size header and be impossible for r2rdump to read correctly
+            if (_gcRefMap?.IsEmpty == false)
             {
+                // This indirectly generates the AuxiliaryDataRva by emitting a placeholder 0 which will be replaced later
                 dataBuilder.EmitReloc(_gcRefMap, RelocType.IMAGE_REL_BASED_ADDR32NB, 0);
             }
             else
@@ -149,7 +146,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             yield return new DependencyListEntry(_imports, "Import section fixup data");
             yield return new DependencyListEntry(_signatures, "Import section signatures");
-            if (_emitGCRefMap)
+            if (_gcRefMap != null)
             {
                 yield return new DependencyListEntry(_gcRefMap, "GC ref map");
             }

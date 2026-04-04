@@ -29,8 +29,11 @@ namespace Internal.NativeCrypto
             public const string ECDsaP256 = "ECDSA_P256";       // BCRYPT_ECDSA_P256_ALGORITHM
             public const string ECDsaP384 = "ECDSA_P384";       // BCRYPT_ECDSA_P384_ALGORITHM
             public const string ECDsaP521 = "ECDSA_P521";       // BCRYPT_ECDSA_P521_ALGORITHM
-            public const string RSA = "RSA";                    // BCRYPT_RSA_ALGORITHM
+            public const string HKDF = "HKDF";                  // BCRYPT_HKDF_ALGORITHM
             public const string MD5 = "MD5";                    // BCRYPT_MD5_ALGORITHM
+            public const string MLDsa = "ML-DSA";               // BCRYPT_MLDSA_ALGORITHM
+            public const string MLKem = "ML-KEM";               // BCRYPT_MLKEM_ALGORITHM
+            public const string RSA = "RSA";                    // BCRYPT_RSA_ALGORITHM
             public const string Sha1 = "SHA1";                  // BCRYPT_SHA1_ALGORITHM
             public const string Sha256 = "SHA256";              // BCRYPT_SHA256_ALGORITHM
             public const string Sha384 = "SHA384";              // BCRYPT_SHA384_ALGORITHM

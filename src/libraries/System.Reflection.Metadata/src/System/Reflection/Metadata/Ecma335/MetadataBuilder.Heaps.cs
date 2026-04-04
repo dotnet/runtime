@@ -249,18 +249,16 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="value">Constant value.</param>
         /// <returns>Handle to the added or existing blob.</returns>
-        public unsafe BlobHandle GetOrAddConstantBlob(object? value)
+        public BlobHandle GetOrAddConstantBlob(object? value)
         {
             if (value is string str)
             {
                 return GetOrAddBlobUTF16(str);
             }
 
-            var builder = PooledBlobBuilder.GetInstance();
-            builder.WriteConstant(value);
-            var result = GetOrAddBlob(builder);
-            builder.Free();
-            return result;
+            Span<byte> buffer = stackalloc byte[BlobWriterImpl.MaxScalarConstantSize];
+            int length = BlobWriterImpl.WriteScalarConstant(buffer, value);
+            return GetOrAddBlob(buffer.Slice(0, length));
         }
 
         /// <summary>

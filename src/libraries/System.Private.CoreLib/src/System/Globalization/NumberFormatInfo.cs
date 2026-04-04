@@ -39,7 +39,6 @@ namespace System.Globalization
     /// </remarks>
     public sealed class NumberFormatInfo : IFormatProvider, ICloneable
     {
-        private static NumberFormatInfo? s_invariantInfo;
         internal static readonly string[] s_asciiDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
         internal static readonly int[] s_intArrayWithElement3 = [3];
 
@@ -204,7 +203,7 @@ namespace System.Globalization
         /// supported and constant irrespective of the current culture.
         /// Used by FromString methods.
         /// </summary>
-        public static NumberFormatInfo InvariantInfo => s_invariantInfo ??=
+        public static NumberFormatInfo InvariantInfo => field ??=
             // Lazy create the invariant info. This cannot be done in a .cctor because exceptions can
             // be thrown out of a .cctor stack that will need this.
             CultureInfo.InvariantCulture.NumberFormat;
@@ -828,13 +827,23 @@ namespace System.Globalization
 
         internal static void ValidateParseStyleFloatingPoint(NumberStyles style)
         {
-            // Check for undefined flags or hex number
-            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0)
+            // Check for undefined flags, AllowBinarySpecifier (never valid for float), or AllowHexSpecifier with anything other than HexFloat flags.
+            // When AllowHexSpecifier is specified, AllowExponent must also be specified; this reserves
+            // AllowHexSpecifier without AllowExponent for possible future use (e.g. optional p exponent).
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowBinarySpecifier | NumberStyles.AllowHexSpecifier)) != 0 &&
+                ((style & ~NumberStyles.HexFloat) != 0 ||
+                 (style & NumberStyles.AllowHexSpecifier) != 0 && (style & NumberStyles.AllowExponent) == 0))
             {
                 ThrowInvalid(style);
 
-                static void ThrowInvalid(NumberStyles value) =>
-                    throw new ArgumentException((value & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Arg_HexBinaryStylesNotSupported, nameof(style));
+                static void ThrowInvalid(NumberStyles value)
+                {
+                    throw new ArgumentException(
+                        (value & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles :
+                        (value & NumberStyles.AllowBinarySpecifier) != 0 ? SR.Arg_BinaryStyleNotSupported :
+                        SR.Arg_InvalidHexFloatStyle,
+                        nameof(style));
+                }
             }
         }
     }

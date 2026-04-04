@@ -366,7 +366,7 @@ namespace System.Tests
             Assert.NotNull(AppDomain.CurrentDomain.Load(typeof(AppDomainTests).Assembly.FullName));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void LoadBytes()
         {
@@ -792,7 +792,7 @@ namespace System.Tests
             string rootPath;
             string assemblyResolvePath = "AssemblyResolveTestApp";
             string appOutsideTPAPath = "TestAppOutsideOfTPA";
-            
+
             if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
             {
                 rootPath = Path.GetTempPath();
@@ -839,9 +839,9 @@ namespace System.Tests
 #pragma warning restore SYSLIB0003 // Obsolete: CAS
         }
 
-        public static bool FileCreateCaseSensitiveAndAssemblyLoadingSupported => PlatformDetection.FileCreateCaseSensitive && PlatformDetection.IsAssemblyLoadingSupported;
+        public static bool FileCreateCaseSensitiveAndAssemblyLoadingSupported => PlatformDetection.FileCreateCaseSensitive && PlatformDetection.IsAssemblyLoadingSupported && PlatformDetection.HasAssemblyFiles;
 
-        [ConditionalTheory(nameof(FileCreateCaseSensitiveAndAssemblyLoadingSupported))]
+        [ConditionalTheory(typeof(AppDomainTests), nameof(FileCreateCaseSensitiveAndAssemblyLoadingSupported))]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {

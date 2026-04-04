@@ -28,8 +28,8 @@ enum
 typedef uint32_t PAL_KeyAlgorithm;
 
 /*
-For RSA and DSA this function returns the number of bytes in "the key", which corresponds to
-the length of n/Modulus for RSA and for P in DSA.
+For RSA this function returns the number of bytes in "the key", which corresponds to
+the length of n/Modulus for RSA.
 
 For ECC the value should not be used.
 

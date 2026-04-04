@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
-    internal unsafe struct BitVector256
+    internal struct BitVector256
     {
-        private fixed uint _values[8];
+        private InlineArray8<uint> _values;
 
         public readonly BitVector256 CreateInverse()
         {
@@ -28,7 +28,7 @@ namespace System.Buffers
             Debug.Assert(c < 256);
             uint offset = (uint)(c >> 5);
             uint significantBit = 1u << c;
-            _values[offset] |= significantBit;
+            _values[(int)offset] |= significantBit;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -45,33 +45,37 @@ namespace System.Buffers
             Debug.Assert(b < 256);
             uint offset = (uint)(b >> 5);
             uint significantBit = 1u << b;
-            return (_values[offset] & significantBit) != 0;
+            return (_values[(int)offset] & significantBit) != 0;
         }
 
         public readonly char[] GetCharValues()
         {
-            var chars = new List<char>();
+            Span<char> chars = stackalloc char[256];
+            int size = 0;
             for (int i = 0; i < 256; i++)
             {
                 if (ContainsUnchecked(i))
                 {
-                    chars.Add((char)i);
+                    chars[size] = (char)i;
+                    size++;
                 }
             }
-            return chars.ToArray();
+            return chars.Slice(0, size).ToArray();
         }
 
         public readonly byte[] GetByteValues()
         {
-            var bytes = new List<byte>();
+            Span<byte> bytes = stackalloc byte[256];
+            int size = 0;
             for (int i = 0; i < 256; i++)
             {
                 if (ContainsUnchecked(i))
                 {
-                    bytes.Add((byte)i);
+                    bytes[size] = (byte)i;
+                    size++;
                 }
             }
-            return bytes.ToArray();
+            return bytes.Slice(0, size).ToArray();
         }
     }
 }

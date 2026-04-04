@@ -46,7 +46,6 @@
     <Content Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.txt" />
     <Content Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.log" />
     <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithCsc.txt" />
-    <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs.txt" />
     <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -64,6 +63,12 @@
 
   <ItemGroup>
     <Compile Remove="TopLevelStatements/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)../Mono.Linker.Tests.Cases.Expectations/Support/DynamicallyAccessedMembersAttribute.cs" Link="Support\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="..\..\src\ILLink.Shared\RequiresDynamicCodeAttribute.cs" Link="Support\RequiresDynamicCodeAttribute.cs" />
+    <Compile Include="..\..\src\ILLink.Shared\RequiresUnreferencedCodeAttribute.cs" Link="Support\RequiresUnreferencedCodeAttribute.cs" />
   </ItemGroup>
 
 </Project>

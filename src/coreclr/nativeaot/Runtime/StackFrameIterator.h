@@ -6,7 +6,7 @@
 
 #include "CommonMacros.h"
 #include "ICodeManager.h"
-#include "PalRedhawk.h" // NATIVE_CONTEXT
+#include "Pal.h" // NATIVE_CONTEXT
 #include "regdisplay.h"
 
 #include "forward_declarations.h"
@@ -55,6 +55,7 @@ public:
     bool             GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocation, GCRefKind * pKind);
 #endif
     void             SetControlPC(PTR_VOID controlPC);
+    PTR_VOID         GetControlPC() { return m_ControlPC; }
 
     static bool     IsValidReturnAddress(PTR_VOID pvAddress);
 

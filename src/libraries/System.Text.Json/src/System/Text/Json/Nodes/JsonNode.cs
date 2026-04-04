@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
@@ -386,7 +388,7 @@ namespace System.Text.Json.Nodes
                 return JsonNodeConverter.Create(element, options);
             }
 
-            var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
+            var jsonTypeInfo = JsonSerializerOptions.Default.GetTypeInfo<T>();
             return JsonValue.CreateFromTypeInfo(value, jsonTypeInfo, options);
         }
     }

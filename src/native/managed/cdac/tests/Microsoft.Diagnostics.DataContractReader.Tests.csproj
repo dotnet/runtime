@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- DumpTests is a separate test project with its own csproj -->
+    <Compile Remove="DumpTests\**" />
+    <!-- StressTests contains debuggee console apps and scripts, not unit tests -->
+    <Compile Remove="StressTests\**" />
+  </ItemGroup>
+
+  <Import Project="..\..\subproject.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\mscordaccore_universal\mscordaccore_universal.csproj" AdditionalProperties="$(SplitSubprojectProps)" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+  </ItemGroup>
+
+</Project>

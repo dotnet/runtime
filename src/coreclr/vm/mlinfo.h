@@ -50,8 +50,11 @@ enum MarshalFlags
     MARSHAL_FLAG_BYREF              = 0x008,
     MARSHAL_FLAG_HRESULT_SWAP       = 0x010,
     MARSHAL_FLAG_RETVAL             = 0x020,
-    // unused                       = 0x040,
-    MARSHAL_FLAG_FIELD              = 0x080
+    MARSHAL_FLAG_FIELD              = 0x040,
+    // Disable cleanup code even when a marshaller needs cleanup.
+    // Used for struct marshalling where we generate marshal/unmarshal/cleanup stubs separately.
+    MARSHAL_FLAG_NO_CLEANUP         = 0x080,
+    MARSHAL_FLAG_CLEANUP_ONLY       = 0x100, // Used for struct marshalling cleanup code. Only generate cleanup logic.
 };
 
 #include <pshpack1.h>
@@ -112,7 +115,7 @@ struct OverrideProcArgs
     };
 };
 
-typedef MarshalerOverrideStatus (*OVERRIDEPROC)(NDirectStubLinker*    psl,
+typedef MarshalerOverrideStatus (*OVERRIDEPROC)(PInvokeStubLinker*    psl,
                                                 BOOL                  byref,
                                                 BOOL                  fin,
                                                 BOOL                  fout,
@@ -121,7 +124,7 @@ typedef MarshalerOverrideStatus (*OVERRIDEPROC)(NDirectStubLinker*    psl,
                                                 UINT*                 pResID,
                                                 UINT                  argidx);
 
-typedef MarshalerOverrideStatus (*RETURNOVERRIDEPROC)(NDirectStubLinker*  psl,
+typedef MarshalerOverrideStatus (*RETURNOVERRIDEPROC)(PInvokeStubLinker*  psl,
                                                       BOOL                fManagedToNative,
                                                       BOOL                fHresultSwap,
                                                       OverrideProcArgs*   pargs,
@@ -206,26 +209,6 @@ public:
     void *operator new(size_t size, LoaderHeap *pHeap);
     void operator delete(void *pMem);
 
-#ifndef DACCESS_COMPILE
-    MethodDesc* LookupStructILStubSpeculative(MethodTable* pMT)
-    {
-        WRAPPER_NO_CONTRACT;
-        HashDatum res = 0;
-        m_structILStubCache.GetValueSpeculative(pMT, &res);
-        return (MethodDesc*)res;
-    }
-
-    MethodDesc* LookupStructILStub(MethodTable* pMT)
-    {
-        WRAPPER_NO_CONTRACT;
-        HashDatum res = 0;
-        m_structILStubCache.GetValue(pMT, &res);
-        return (MethodDesc*)res;
-    }
-
-    void CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD);
-#endif
-
     // This method returns the custom marshaling info associated with the name cookie pair. If the
     // CM info has not been created yet for this pair then it will be created and returned.
     CustomMarshalerInfo *GetCustomMarshalerInfo(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
@@ -235,7 +218,6 @@ public:
 #endif // FEATURE_COMINTEROP
 
 private:
-    EEPtrHashTable                      m_structILStubCache;
     EECMInfoHashTable                   m_CMInfoHashTable;
     LoaderAllocator*                    m_pAllocator;
     LoaderHeap*                         m_pHeap;
@@ -301,7 +283,7 @@ public:
 
                 );
 
-    VOID EmitOrThrowInteropParamException(NDirectStubLinker* psl, BOOL fMngToNative, UINT resID, UINT paramIdx);
+    VOID EmitOrThrowInteropParamException(PInvokeStubLinker* psl, BOOL fMngToNative, UINT resID, UINT paramIdx);
 
     void ThrowTypeLoadExceptionForInvalidFieldMarshal(FieldDesc* pFieldDesc, UINT resID);
 
@@ -314,20 +296,21 @@ public:
                                 Assembly *pAssembly,
                                 BOOL isArrayClass = FALSE);
 
-    void GenerateArgumentIL(NDirectStubLinker* psl,
+    void GenerateArgumentIL(PInvokeStubLinker* psl,
                             int argOffset, // the argument's index is m_paramidx + argOffset
                             BOOL fMngToNative);
 
-    void GenerateReturnIL(NDirectStubLinker* psl,
+    void GenerateReturnIL(PInvokeStubLinker* psl,
                           int argOffset, // the argument's index is m_paramidx + argOffset
                           BOOL fMngToNative,
                           BOOL fieldGetter,
                           BOOL retval);
 
-    void GenerateFieldIL(NDirectStubLinker* psl,
+    void GenerateFieldIL(PInvokeStubLinker* psl,
                         UINT32 managedOffset, // the field's byte offset into the managed object
                         UINT32 nativeOffset, // the field's byte offset into the native object
-                        FieldDesc* pFieldDesc); // The field descriptor for reporting errors
+                        FieldDesc* pFieldDesc, // The field descriptor for reporting errors
+                        DWORD dwMarshalFlags); // Flags to specify which scenarios to generate IL for.
 
     OverrideProcArgs const* GetOverrideProcArgs()
     {
@@ -456,6 +439,16 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD;
+    }
+
+    BOOL IsComScenario()
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_COMINTEROP
+        return m_ms == MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
+#else
+        return FALSE;
+#endif // FEATURE_COMINTEROP
     }
 
     UINT GetErrorResourceId()

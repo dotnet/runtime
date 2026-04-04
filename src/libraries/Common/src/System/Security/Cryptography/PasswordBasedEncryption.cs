@@ -7,12 +7,25 @@ using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
+using System.Text;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
     internal static class PasswordBasedEncryption
     {
+        private readonly ref struct OptionalReadOnlySpan<T>
+        {
+            public OptionalReadOnlySpan(ReadOnlySpan<T> value, bool hasValue)
+            {
+                Value = value;
+                HasValue = hasValue;
+            }
+
+            public ReadOnlySpan<T> Value { get; }
+            public bool HasValue { get; }
+        }
+
         internal const int IterationLimit = 600000;
 
         private static CryptographicException AlgorithmKdfRequiresChars(string algId)
@@ -63,10 +76,25 @@ namespace System.Security.Cryptography
                 encryptionAlgorithm.ToString());
         }
 
+        internal static unsafe int Decrypt(
+            in AlgorithmIdentifierAsn algorithmIdentifier,
+            ReadOnlySpan<char> password,
+            ReadOnlySpan<byte> passwordBytes,
+            ReadOnlySpan<byte> encryptedData,
+            Span<byte> destination)
+        {
+            return Decrypt(
+                algorithmIdentifier.AsValueAlgorithmIdentifierAsn(),
+                password,
+                passwordBytes,
+                encryptedData,
+                destination);
+        }
+
         [SuppressMessage("Microsoft.Security", "CA5350", Justification = "3DES used when specified by the input data")]
         [SuppressMessage("Microsoft.Security", "CA5351", Justification = "DES used when specified by the input data")]
         internal static unsafe int Decrypt(
-            in AlgorithmIdentifierAsn algorithmIdentifier,
+            in ValueAlgorithmIdentifierAsn algorithmIdentifier,
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> passwordBytes,
             ReadOnlySpan<byte> encryptedData,
@@ -133,7 +161,7 @@ namespace System.Security.Cryptography
                     break;
                 case Oids.PasswordBasedEncryptionScheme2:
                     return Pbes2Decrypt(
-                        algorithmIdentifier.Parameters,
+                        new OptionalReadOnlySpan<byte>(algorithmIdentifier.Parameters, algorithmIdentifier.HasParameters),
                         password,
                         passwordBytes,
                         encryptedData,
@@ -206,7 +234,7 @@ namespace System.Security.Cryptography
                         try
                         {
                             return Pbes1Decrypt(
-                                algorithmIdentifier.Parameters,
+                                new OptionalReadOnlySpan<byte>(algorithmIdentifier.Parameters, algorithmIdentifier.HasParameters),
                                 effectivePasswordBytes,
                                 hasher,
                                 cipher,
@@ -447,7 +475,7 @@ namespace System.Security.Cryptography
         }
 
         private static unsafe int Pbes2Decrypt(
-            ReadOnlyMemory<byte>? algorithmParameters,
+            OptionalReadOnlySpan<byte> algorithmParameters,
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> passwordBytes,
             ReadOnlySpan<byte> encryptedData,
@@ -507,7 +535,7 @@ namespace System.Security.Cryptography
         }
 
         private static unsafe int Pbes2Decrypt(
-            ReadOnlyMemory<byte>? algorithmParameters,
+            OptionalReadOnlySpan<byte> algorithmParameters,
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> encryptedData,
             Span<byte> destination)
@@ -517,7 +545,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            PBES2Params pbes2Params = PBES2Params.Decode(algorithmParameters.Value, AsnEncodingRules.BER);
+            ValuePBES2Params.Decode(algorithmParameters.Value, AsnEncodingRules.BER, out ValuePBES2Params pbes2Params);
 
             if (pbes2Params.KeyDerivationFunc.Algorithm != Oids.Pbkdf2)
             {
@@ -528,7 +556,10 @@ namespace System.Security.Cryptography
             }
 
             Rfc2898DeriveBytes pbkdf2 =
-                OpenPbkdf2(password, pbes2Params.KeyDerivationFunc.Parameters, out int? requestedKeyLength);
+                OpenPbkdf2(
+                    password,
+                    new OptionalReadOnlySpan<byte>(pbes2Params.KeyDerivationFunc.Parameters, pbes2Params.KeyDerivationFunc.HasParameters),
+                    out int? requestedKeyLength);
 
             using (pbkdf2)
             {
@@ -562,7 +593,7 @@ namespace System.Security.Cryptography
         [SuppressMessage("Microsoft.Security", "CA5350", Justification = "3DES used when specified by the input data")]
         [SuppressMessage("Microsoft.Security", "CA5351", Justification = "DES used when specified by the input data")]
         private static SymmetricAlgorithm OpenCipher(
-            AlgorithmIdentifierAsn encryptionScheme,
+            in ValueAlgorithmIdentifierAsn encryptionScheme,
             int? requestedKeyLength,
             ref Span<byte> iv)
         {
@@ -605,7 +636,10 @@ namespace System.Security.Cryptography
                 // The parameters field ... shall have type OCTET STRING (SIZE(16))
                 // specifying the initialization vector ...
 
-                ReadIvParameter(encryptionScheme.Parameters, 16, ref iv);
+                ReadIvParameter(
+                    new OptionalReadOnlySpan<byte>(encryptionScheme.Parameters, encryptionScheme.HasParameters),
+                    16,
+                    ref iv);
 
                 Aes aes = Aes.Create();
                 aes.KeySize = correctKeySize * 8;
@@ -624,7 +658,10 @@ namespace System.Security.Cryptography
 
                 // The parameters field associated with this OID ... shall have type
                 // OCTET STRING (SIZE(8)) specifying the initialization vector ...
-                ReadIvParameter(encryptionScheme.Parameters, 8, ref iv);
+                ReadIvParameter(
+                    new OptionalReadOnlySpan<byte>(encryptionScheme.Parameters, encryptionScheme.HasParameters),
+                    8,
+                    ref iv);
                 return TripleDES.Create();
             }
 
@@ -632,7 +669,7 @@ namespace System.Security.Cryptography
             {
                 // https://tools.ietf.org/html/rfc8018#appendix-B.2.3
 
-                if (encryptionScheme.Parameters == null)
+                if (!encryptionScheme.HasParameters)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
@@ -644,9 +681,10 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                Rc2CbcParameters rc2Parameters = Rc2CbcParameters.Decode(
-                    encryptionScheme.Parameters.Value,
-                    AsnEncodingRules.BER);
+                ValueRc2CbcParameters.Decode(
+                    encryptionScheme.Parameters,
+                    AsnEncodingRules.BER,
+                    out ValueRc2CbcParameters rc2Parameters);
 
                 // iv is the eight-octet initialization vector
                 if (rc2Parameters.Iv.Length != 8)
@@ -658,7 +696,7 @@ namespace System.Security.Cryptography
                 rc2.KeySize = requestedKeyLength.Value * 8;
                 rc2.EffectiveKeySize = rc2Parameters.GetEffectiveKeyBits();
 
-                rc2Parameters.Iv.Span.CopyTo(iv);
+                rc2Parameters.Iv.CopyTo(iv);
                 iv = iv.Slice(0, rc2Parameters.Iv.Length);
                 return rc2;
             }
@@ -675,7 +713,10 @@ namespace System.Security.Cryptography
 
                 // The parameters field associated with this OID ... shall have type
                 // OCTET STRING (SIZE(8)) specifying the initialization vector ...
-                ReadIvParameter(encryptionScheme.Parameters, 8, ref iv);
+                ReadIvParameter(
+                    new OptionalReadOnlySpan<byte>(encryptionScheme.Parameters, encryptionScheme.HasParameters),
+                    8,
+                    ref iv);
                 return DES.Create();
             }
 
@@ -683,18 +724,18 @@ namespace System.Security.Cryptography
         }
 
         private static void ReadIvParameter(
-            ReadOnlyMemory<byte>? encryptionSchemeParameters,
+            OptionalReadOnlySpan<byte> encryptionSchemeParameters,
             int length,
             ref Span<byte> iv)
         {
-            if (encryptionSchemeParameters == null)
+            if (!encryptionSchemeParameters.HasValue)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
             try
             {
-                ReadOnlySpan<byte> source = encryptionSchemeParameters.Value.Span;
+                ReadOnlySpan<byte> source = encryptionSchemeParameters.Value;
 
                 bool gotIv = AsnDecoder.TryReadOctetString(
                     source,
@@ -719,7 +760,7 @@ namespace System.Security.Cryptography
         [SuppressMessage("Microsoft.Security", "CA5379", Justification = "SHA1 used if specified by argument")]
         private static unsafe Rfc2898DeriveBytes OpenPbkdf2(
             ReadOnlySpan<byte> password,
-            ReadOnlyMemory<byte>? parameters,
+            OptionalReadOnlySpan<byte> parameters,
             out int? requestedKeyLength)
         {
             if (!parameters.HasValue)
@@ -727,19 +768,19 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(parameters.Value, AsnEncodingRules.BER);
+            ValuePbkdf2Params.Decode(parameters.Value, AsnEncodingRules.BER, out ValuePbkdf2Params pbkdf2Params);
 
             // No OtherSource is defined in RFC 2898 or RFC 8018, so whatever
             // algorithm was requested isn't one we know.
-            if (pbkdf2Params.Salt.OtherSource != null)
+            if (pbkdf2Params.Salt.HasOtherSource)
             {
                 throw new CryptographicException(
                     SR.Format(
                         SR.Cryptography_UnknownAlgorithmIdentifier,
-                        pbkdf2Params.Salt.OtherSource.Value.Algorithm));
+                        pbkdf2Params.Salt.OtherSource.Algorithm));
             }
 
-            if (pbkdf2Params.Salt.Specified == null)
+            if (!pbkdf2Params.Salt.HasSpecified)
             {
                 Debug.Fail($"No Specified Salt value is present, indicating a new choice was unhandled");
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
@@ -766,16 +807,16 @@ namespace System.Security.Cryptography
             }
 
             int iterationCount = NormalizeIterationCount(pbkdf2Params.IterationCount);
-            ReadOnlyMemory<byte> saltMemory = pbkdf2Params.Salt.Specified.Value;
+            ReadOnlySpan<byte> saltSpan = pbkdf2Params.Salt.Specified;
 
             byte[] tmpPassword = new byte[password.Length];
-            byte[] tmpSalt = new byte[saltMemory.Length];
+            byte[] tmpSalt = new byte[saltSpan.Length];
 
             fixed (byte* tmpPasswordPtr = tmpPassword)
             fixed (byte* tmpSaltPtr = tmpSalt)
             {
                 password.CopyTo(tmpPassword);
-                saltMemory.CopyTo(tmpSalt);
+                saltSpan.CopyTo(tmpSalt);
 
                 try
                 {
@@ -801,7 +842,7 @@ namespace System.Security.Cryptography
         }
 
         private static int Pbes1Decrypt(
-            ReadOnlyMemory<byte>? algorithmParameters,
+            OptionalReadOnlySpan<byte> algorithmParameters,
             ReadOnlySpan<byte> password,
             IncrementalHash hasher,
             SymmetricAlgorithm cipher,
@@ -816,7 +857,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            PBEParameter pbeParameters = PBEParameter.Decode(algorithmParameters.Value, AsnEncodingRules.BER);
+            ValuePBEParameter.Decode(algorithmParameters.Value, AsnEncodingRules.BER, out ValuePBEParameter pbeParameters);
 
             if (pbeParameters.Salt.Length != 8)
             {
@@ -835,7 +876,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                Pbkdf1(hasher, password, pbeParameters.Salt.Span, iterationCount, dk);
+                Pbkdf1(hasher, password, pbeParameters.Salt, iterationCount, dk);
 
                 // 3. Separate the derived key DK into an encryption key K consisting of the
                 // first eight octets of DK and an initialization vector IV consisting of the
@@ -853,7 +894,7 @@ namespace System.Security.Cryptography
         }
 
         private static unsafe int Pkcs12PbeDecrypt(
-            AlgorithmIdentifierAsn algorithmIdentifier,
+            in ValueAlgorithmIdentifierAsn algorithmIdentifier,
             ReadOnlySpan<char> password,
             HashAlgorithmName hashAlgorithm,
             SymmetricAlgorithm cipher,
@@ -862,7 +903,7 @@ namespace System.Security.Cryptography
         {
             // https://tools.ietf.org/html/rfc7292#appendix-C
 
-            if (!algorithmIdentifier.Parameters.HasValue)
+            if (!algorithmIdentifier.HasParameters)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
@@ -877,14 +918,15 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            PBEParameter pbeParameters = PBEParameter.Decode(
-                algorithmIdentifier.Parameters.Value,
-                AsnEncodingRules.BER);
+            ValuePBEParameter.Decode(
+                algorithmIdentifier.Parameters,
+                AsnEncodingRules.BER,
+                out ValuePBEParameter pbeParameters);
 
             int iterationCount = NormalizeIterationCount(pbeParameters.IterationCount, IterationLimit);
             Span<byte> iv = stackalloc byte[cipher.BlockSize / 8];
             Span<byte> key = stackalloc byte[cipher.KeySize / 8];
-            ReadOnlySpan<byte> saltSpan = pbeParameters.Salt.Span;
+            ReadOnlySpan<byte> saltSpan = pbeParameters.Salt;
 
             try
             {

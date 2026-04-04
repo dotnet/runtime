@@ -26,6 +26,7 @@
 #include "sdk_resolver.h"
 #include "roll_fwd_on_no_candidate_fx_option.h"
 #include "bundle/info.h"
+#include "install_info.h"
 
 namespace
 {
@@ -490,7 +491,7 @@ namespace
         trace::verbose(_X("Executing as a %s app as per config file [%s]"),
             (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
 
-        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_fullpaths, &hostpolicy_dir))
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, &hostpolicy_dir))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
@@ -628,7 +629,7 @@ namespace
         trace::verbose(_X("Libhost loading occurring for a framework-dependent component per config file [%s]"), app_config.get_path().c_str());
 
         const pal::string_t deps_file;
-        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, probe_fullpaths, &hostpolicy_dir))
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, &hostpolicy_dir))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
@@ -1018,21 +1019,67 @@ int fx_muxer_t::handle_exec_host_command(
         required_buffer_size);
 }
 
+namespace
+{
+    pal::architecture get_requested_architecture(int argc, const pal::char_t* argv[])
+    {
+        // Expected format: --arch <arch>
+        // Default to current architecture if architecture is not specified in the expected format
+        if (argc < 2 || pal::strcasecmp(_X("--arch"), argv[0]) != 0)
+            return get_current_arch();
+
+        pal::string_t arch_arg = argv[1];
+        for (int i = 0; i < static_cast<int>(pal::architecture::__last); ++i)
+        {
+            pal::architecture arch = static_cast<pal::architecture>(i);
+            if (pal::strcasecmp(get_arch_name(arch), arch_arg.c_str())  == 0)
+                return arch;
+        }
+
+        trace::error(_X("Unknown architecture: %s"), arch_arg.c_str());
+        return pal::architecture::__last;
+    }
+}
+
 int fx_muxer_t::handle_cli(
     const host_startup_info_t& host_info,
     int argc,
     const pal::char_t* argv[],
     const pal::string_t& app_candidate)
 {
+    // Should have already checked for and bailed out on no args
+    assert(argc > 1);
+
     // Check for commands that don't depend on the CLI SDK to be loaded
-    if (pal::strcasecmp(_X("--list-sdks"), argv[1]) == 0)
+    bool list_sdks = pal::strcasecmp(_X("--list-sdks"), argv[1]) == 0;
+    bool list_runtimes = !list_sdks && pal::strcasecmp(_X("--list-runtimes"), argv[1]) == 0;
+
+    if (list_sdks || list_runtimes)
     {
-        sdk_info::print_all_sdks(host_info.dotnet_root, _X(""));
-        return StatusCode::Success;
-    }
-    else if (pal::strcasecmp(_X("--list-runtimes"), argv[1]) == 0)
-    {
-        framework_info::print_all_frameworks(host_info.dotnet_root, _X(""));
+        // Skip over first two args: <executable> --list-sdks|--list-runtimes
+        pal::architecture arch = get_requested_architecture(argc - 2, argv + 2);
+        if (arch == pal::architecture::__last)
+            return StatusCode::InvalidArgFailure;
+
+        pal::string_t dotnet_root = host_info.dotnet_root;
+        if (arch != get_current_arch())
+        {
+            if (!install_info::try_get_install_location(arch, dotnet_root))
+            {
+                // No install found for the specified architecture
+                return StatusCode::Success;
+            }
+        }
+
+        if (list_sdks)
+        {
+            sdk_info::print_all_sdks(dotnet_root, _X(""));
+        }
+        else if (list_runtimes)
+        {
+            framework_info::print_all_frameworks(dotnet_root, _X(""));
+        }
+
         return StatusCode::Success;
     }
 
@@ -1056,7 +1103,7 @@ int fx_muxer_t::handle_cli(
         }
         else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
         {
-            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path(), false /*skip_sdk_info_output*/);
+            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), false /*skip_sdk_info_output*/);
             return StatusCode::Success;
         }
 
@@ -1113,7 +1160,7 @@ int fx_muxer_t::handle_cli(
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
-        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path(), result == 0 /*skip_sdk_info_output*/);
+        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), result == 0 /*skip_sdk_info_output*/);
     }
 
     return result;

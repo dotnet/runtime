@@ -68,6 +68,10 @@ internal class Program
         TestVTableNegativeScenarios.Run();
         TestByRefFieldAddressEquality.Run();
         TestComInterfaceEntry.Run();
+        TestPreinitializedBclTypes.Run();
+        TestArrayLoadBounds.Run();
+        TestFloatNaNComparison.Run();
+        TestDivisionOverflow.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -88,9 +92,14 @@ class TestHardwareIntrinsics
         public static bool IsAvxVnniSupported = AvxVnni.IsSupported;
     }
 
-    class Complex
+    class Simple3
     {
         public static bool IsPopcntSupported = Popcnt.IsSupported;
+    }
+
+    class Complex
+    {
+        public static bool IsX86SerializeSupported = X86Serialize.IsSupported;
     }
 
     public static void Run()
@@ -101,11 +110,14 @@ class TestHardwareIntrinsics
         Assert.IsPreinitialized(typeof(Simple2));
         Assert.AreEqual(AvxVnni.IsSupported, Simple2.IsAvxVnniSupported);
 
+        Assert.IsPreinitialized(typeof(Simple3));
+        Assert.AreEqual(Popcnt.IsSupported, Simple3.IsPopcntSupported);
+
         if (RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64)
             Assert.IsLazyInitialized(typeof(Complex));
         else
             Assert.IsPreinitialized(typeof(Complex));
-        Assert.AreEqual(Popcnt.IsSupported, Complex.IsPopcntSupported);
+        Assert.AreEqual(X86Serialize.IsSupported, Complex.IsX86SerializeSupported);
     }
 }
 
@@ -812,6 +824,7 @@ class TestSwitch
         public static int CaseMinus1 = Switch(-1);
         public static int Case0 = Switch(0);
         public static int Case6 = Switch(6);
+        public static int Case7 = Switch(7); // Boundary: value == case count (tests fix for https://github.com/dotnet/runtime/issues/123833)
         public static int Case100 = Switch(100);
 
         private static int Switch(int x)
@@ -836,6 +849,7 @@ class TestSwitch
         Assert.AreEqual(Switcher.CaseMinus1, 100000);
         Assert.AreEqual(Switcher.Case0, 100);
         Assert.AreEqual(Switcher.Case6, 700);
+        Assert.AreEqual(Switcher.Case7, 100000);
         Assert.AreEqual(Switcher.Case100, 100000);
     }
 }
@@ -2104,6 +2118,174 @@ unsafe class TestComInterfaceEntry
         Assert.AreEqual(new Guid(0x1234, 0x4567, 0x789A, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89), VtableEntries.Entries.TinyImpl.IID);
         Assert.AreEqual(ISmallVtableImpl.VftablePtr, VtableEntries.Entries.SmallImpl.Vtable);
         Assert.AreEqual(new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98), VtableEntries.Entries.SmallImpl.IID);
+    }
+}
+
+unsafe class TestPreinitializedBclTypes
+{
+    // Verify that (given that all of the other tests have passed), that a select number of BCL types
+    // that depend on this optimization for high-performance scenarios are preinitialized.
+    public static void Run()
+    {
+        Assert.IsPreinitialized(Type.GetType("System.Runtime.InteropServices.ComWrappers+VtableImplementations, System.Private.CoreLib"));
+    }
+}
+
+class TestArrayLoadBounds
+{
+    static int GetLength() => 3;
+
+    class ArrayLoadAtLength
+    {
+        internal static int[] s_array;
+        internal static bool s_finished;
+
+        static ArrayLoadAtLength()
+        {
+            s_array = new int[GetLength()];
+
+            try
+            {
+                _ = s_array[GetLength()];
+                s_finished = true;
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsLazyInitialized(typeof(ArrayLoadAtLength));
+        Assert.AreEqual(false, ArrayLoadAtLength.s_finished);
+    }
+}
+
+class TestFloatNaNComparison
+{
+    static double GetNaN() => double.NaN;
+    static float GetFloatNaN() => float.NaN;
+
+    class NaNEquality
+    {
+        internal static bool s_nanEqualsNan;
+        internal static bool s_nanNotEqualsNan;
+        internal static bool s_floatNanEqualsNan;
+        internal static bool s_nanEqualsZero;
+
+        static NaNEquality()
+        {
+            s_nanEqualsNan = GetNaN() == GetNaN();
+            s_nanNotEqualsNan = GetNaN() != GetNaN();
+            s_floatNanEqualsNan = GetFloatNaN() == GetFloatNaN();
+            s_nanEqualsZero = GetNaN() == 0.0;
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(NaNEquality));
+        Assert.AreEqual(false, NaNEquality.s_nanEqualsNan);
+        Assert.AreEqual(true, NaNEquality.s_nanNotEqualsNan);
+        Assert.AreEqual(false, NaNEquality.s_floatNanEqualsNan);
+        Assert.AreEqual(false, NaNEquality.s_nanEqualsZero);
+    }
+}
+
+class TestDivisionOverflow
+{
+    static int GetIntMinValue() => int.MinValue;
+    static int GetMinusOne() => -1;
+    static long GetLongMinValue() => long.MinValue;
+    static long GetLongMinusOne() => -1L;
+
+    class IntDivOverflow
+    {
+        internal static bool s_caught;
+
+        static IntDivOverflow()
+        {
+            try
+            {
+                int a = GetIntMinValue();
+                int b = GetMinusOne();
+                int c = a / b;
+            }
+            catch (OverflowException)
+            {
+                s_caught = true;
+            }
+        }
+    }
+
+    class LongDivOverflow
+    {
+        internal static bool s_caught;
+
+        static LongDivOverflow()
+        {
+            try
+            {
+                long a = GetLongMinValue();
+                long b = GetLongMinusOne();
+                long c = a / b;
+            }
+            catch (OverflowException)
+            {
+                s_caught = true;
+            }
+        }
+    }
+
+    class IntRemOverflow
+    {
+        internal static bool s_caught;
+
+        static IntRemOverflow()
+        {
+            try
+            {
+                int a = GetIntMinValue();
+                int b = GetMinusOne();
+                int c = a % b;
+            }
+            catch (OverflowException)
+            {
+                s_caught = true;
+            }
+        }
+    }
+
+    class LongRemOverflow
+    {
+        internal static bool s_caught;
+
+        static LongRemOverflow()
+        {
+            try
+            {
+                long a = GetLongMinValue();
+                long b = GetLongMinusOne();
+                long c = a % b;
+            }
+            catch (OverflowException)
+            {
+                s_caught = true;
+            }
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsLazyInitialized(typeof(IntDivOverflow));
+        Assert.AreEqual(true, IntDivOverflow.s_caught);
+        Assert.IsLazyInitialized(typeof(LongDivOverflow));
+        Assert.AreEqual(true, LongDivOverflow.s_caught);
+        Assert.IsLazyInitialized(typeof(IntRemOverflow));
+        Assert.AreEqual(true, IntRemOverflow.s_caught);
+        Assert.IsLazyInitialized(typeof(LongRemOverflow));
+        Assert.AreEqual(true, LongRemOverflow.s_caught);
     }
 }
 

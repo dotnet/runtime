@@ -586,8 +586,8 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
 
     private static IEnumerable<KeyValuePair<string, JsonElement>> ParseJsonObject(string json)
     {
-        JsonDocument doc = JsonDocument.Parse(json);
-        foreach (var entry in doc.RootElement.EnumerateObject())
+        JsonElement doc = JsonElement.Parse(json);
+        foreach (var entry in doc.EnumerateObject())
         {
             yield return new KeyValuePair<string, JsonElement>(entry.Name, entry.Value);
         }

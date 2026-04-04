@@ -24,23 +24,31 @@ public class AppSettingsTests : WasmTemplateTestsBase
     public static IEnumerable<object?[]> LoadAppSettingsBasedOnApplicationEnvironmentData()
     {
         // Defaults
-        yield return new object?[] { false, null, null, "Development" };
+        if (!EnvironmentVariables.UseJavascriptBundler)
+            yield return new object?[] { false, null, null, "Development" };
+
         yield return new object?[] { true, null, null, "Production" };
 
         // Override defaults from MSBuild
-        yield return new object?[] { false, "Production", null, "Production" };
+        if (!EnvironmentVariables.UseJavascriptBundler)
+            yield return new object?[] { false, "Production", null, "Production" };
+
         yield return new object?[] { true, "Development", null, "Development" };
 
         // Override defaults from JavaScript
-        yield return new object?[] { false, null, "Production", "Production" };
+        if (!EnvironmentVariables.UseJavascriptBundler)
+            yield return new object?[] { false, null, "Production", "Production" };
+
         yield return new object?[] { true, null, "Development", "Development" };
 
         // Override MSBuild from JavaScript
-        yield return new object?[] { false, "FromMSBuild", "Production", "Production" };
+        if (!EnvironmentVariables.UseJavascriptBundler)
+            yield return new object?[] { false, "FromMSBuild", "Production", "Production" };
+
         yield return new object?[] { true, "FromMSBuild", "Development", "Development" };
     }
 
-    [Theory]
+    [Theory, TestCategory("bundler-friendly")]
     [MemberData(nameof(LoadAppSettingsBasedOnApplicationEnvironmentData))]
     public async Task LoadAppSettingsBasedOnApplicationEnvironment(bool publish, string? msBuildApplicationEnvironment, string? queryApplicationEnvironment, string expectedApplicationEnvironment)
     {
@@ -62,8 +70,9 @@ public class AppSettingsTests : WasmTemplateTestsBase
             ? await RunForPublishWithWebServer(runOptions)
             : await RunForBuildWithDotnetRun(runOptions);
 
-        Assert.Contains(result.TestOutput, m => m.Contains("'/appsettings.json' exists 'True'"));
-        Assert.Contains(result.TestOutput, m => m.Contains($"'/appsettings.Development.json' exists '{expectedApplicationEnvironment == "Development"}'"));
-        Assert.Contains(result.TestOutput, m => m.Contains($"'/appsettings.Production.json' exists '{expectedApplicationEnvironment == "Production"}'"));
+        const string browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
+        Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.json' exists 'True'"));
+        Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.Development.json' exists '{expectedApplicationEnvironment == "Development"}'"));
+        Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.Production.json' exists '{expectedApplicationEnvironment == "Production"}'"));
     }
 }

@@ -1,3 +1,23 @@
+# riscv64 and loongarch64 do not have a separate CID-only asm stub layer yet.
+# Forcing FEATURE_DYNAMIC_CODE_COMPILED on keeps the feature matrix consistent with
+# the top-level build and avoids unresolved CID/VSD stub symbols at link time.
+if (NOT DEFINED FEATURE_DYNAMIC_CODE_COMPILED)
+  if (CLR_CMAKE_TARGET_ARCH_RISCV64 OR CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+    set(FEATURE_DYNAMIC_CODE_COMPILED 1)
+  endif()
+endif()
+
+if (FEATURE_DYNAMIC_CODE_COMPILED)
+  set(FEATURE_TIERED_COMPILATION 1)
+  set(FEATURE_REJIT 1)
+endif()
+
+# On desktop, if dynamic code compiled is false, we still enable static linking so we don't have to add platform manifest entries
+# for interpreter library, which is required for the packs build
+if (CLR_CMAKE_TARGET_ARCH_WASM OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_TARGET_MACCATALYST OR NOT FEATURE_DYNAMIC_CODE_COMPILED)
+  set(FEATURE_STATICALLY_LINKED 1)
+endif()
+
 if(CLR_CMAKE_TARGET_TIZEN_LINUX)
   set(FEATURE_GDBJIT_LANGID_CS 1)
 endif()
@@ -26,13 +46,32 @@ if(NOT DEFINED FEATURE_DBGIPC)
   endif()
 endif(NOT DEFINED FEATURE_DBGIPC)
 
+# ICorProfiler is supported by default
+set(FEATURE_CORPROFILER 1)
+
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+  # FEATURE_INTERPRETER is already enabled by default
+  set(FEATURE_PORTABLE_ENTRYPOINTS 1)
+  set(FEATURE_PORTABLE_HELPERS 1)
+  set(FEATURE_CORPROFILER 0)
+endif(CLR_CMAKE_TARGET_ARCH_WASM)
+
+if(CLR_CMAKE_TARGET_BROWSER)
+  set(FEATURE_WEBCIL 1)
+endif()
+
 if(NOT DEFINED FEATURE_INTERPRETER)
-  if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
+  set(FEATURE_INTERPRETER 0)
+
+  if(NOT CLR_CMAKE_TARGET_ANDROID AND
+     (CLR_CMAKE_TARGET_ARCH_AMD64 OR
+      CLR_CMAKE_TARGET_ARCH_ARM64 OR
+      CLR_CMAKE_TARGET_ARCH_ARM OR
+      CLR_CMAKE_TARGET_ARCH_RISCV64 OR
+      CLR_CMAKE_TARGET_ARCH_LOONGARCH64))
     set(FEATURE_INTERPRETER $<IF:$<CONFIG:Debug,Checked>,1,0>)
-  else(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
-    set(FEATURE_INTERPRETER 0)
-  endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
-endif(NOT DEFINED FEATURE_INTERPRETER)
+  endif()
+endif()
 
 if(NOT DEFINED FEATURE_STANDALONE_GC)
   set(FEATURE_STANDALONE_GC 1)
@@ -46,7 +85,7 @@ if(NOT DEFINED FEATURE_SINGLE_FILE_DIAGNOSTICS)
   set(FEATURE_SINGLE_FILE_DIAGNOSTICS 1)
 endif(NOT DEFINED FEATURE_SINGLE_FILE_DIAGNOSTICS)
 
-if (CLR_CMAKE_TARGET_WIN32 OR CLR_CMAKE_TARGET_UNIX)
+if ((CLR_CMAKE_TARGET_WIN32 OR CLR_CMAKE_TARGET_UNIX) AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set(FEATURE_COMWRAPPERS 1)
 endif()
 
@@ -54,12 +93,23 @@ if (CLR_CMAKE_TARGET_APPLE)
   set(FEATURE_OBJCMARSHAL 1)
 endif()
 
+if(NOT DEFINED FEATURE_JAVAMARSHAL)
+  if(CLR_CMAKE_TARGET_ANDROID)
+    set(FEATURE_JAVAMARSHAL 1)
+  else()
+    set(FEATURE_JAVAMARSHAL $<IF:$<CONFIG:Debug,Checked>,1,0>)
+  endif()
+endif()
+
 if (CLR_CMAKE_TARGET_WIN32)
   set(FEATURE_TYPEEQUIVALENCE 1)
 endif(CLR_CMAKE_TARGET_WIN32)
 
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT FEATURE_DYNAMIC_CODE_COMPILED)
+  set(FEATURE_STUBPRECODE_DYNAMIC_HELPERS 1)
+endif()
 
-if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT FEATURE_DYNAMIC_CODE_COMPILED)
   set(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH 1)
   set(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH 0)
 else()
@@ -72,6 +122,12 @@ else()
   endif()
   set(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH 1)
 endif()
+
+# We use a flush instruction cache to protect reads from the StubPrecodeData/CallCountingStub structures in the stubs.
+# This is needed because the StubPrecodeData structure is initialized after the stub code is written, and we need to ensure that
+# the reads in the stub happen after the writes to the StubPrecodeData structure. We could do this with a barrier instruction in the stub,
+# but that would be more expensive.
+set(FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS 1)
 
 if (CLR_CMAKE_HOST_UNIX AND CLR_CMAKE_HOST_ARCH_AMD64)
   # Allow 16 byte compare-exchange (cmpxchg16b)

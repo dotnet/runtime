@@ -141,7 +141,9 @@ namespace System
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 if ((th & ComAwareBit) != 0)
                 {
-                    target = Unsafe.As<T?>(ComAwareWeakReference.GetTarget(th));
+                    ComAwareWeakReference cwr = ComAwareWeakReference.GetFromTaggedReference(th);
+
+                    target = Unsafe.As<T>(cwr.Target) ?? cwr.RehydrateTarget<T>();
 
                     // must keep the instance alive as long as we use the handle.
                     GC.KeepAlive(this);
@@ -151,7 +153,11 @@ namespace System
 #endif
 
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
-                target = Unsafe.As<T?>(GCHandle.InternalGet(th));
+#if FEATURE_JAVAMARSHAL
+                target = Unsafe.As<T>(GCHandle.InternalGetBridgeWait(th));
+#else
+                target = Unsafe.As<T>(GCHandle.InternalGet(th));
+#endif
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);

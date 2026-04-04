@@ -399,7 +399,8 @@ test_thread_session_state (void)
 			provider_config,
 			1,
 			NULL,
-			NULL);
+			NULL,
+			0);
 	EP_LOCK_EXIT (section1)
 
 	if (!session) {

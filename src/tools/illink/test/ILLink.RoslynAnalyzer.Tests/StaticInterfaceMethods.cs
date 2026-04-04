@@ -6,68 +6,68 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 {
-	public sealed partial class StaticInterfaceMethodsTests : LinkerTestBase
-	{
-		protected override string TestSuiteName => "Inheritance.Interfaces.StaticInterfaceMethods";
+    public sealed partial class StaticInterfaceMethodsTests : LinkerTestBase
+    {
+        protected override string TestSuiteName => "Inheritance.Interfaces.StaticInterfaceMethods";
 
-		[Fact]
-		public Task BaseProvidesInterfaceMethod ()
-		{
-			return RunTest (allowMissingWarnings: false);
-		}
+        [Fact]
+        public Task BaseProvidesInterfaceMethod()
+        {
+            return RunTest(allowMissingWarnings: false);
+        }
 
-		[Fact]
-		public Task RemovedInterfaceImplementationRemovedOverride()
-		{
-			return RunTest (allowMissingWarnings: false);
-		}
+        [Fact]
+        public Task RemovedInterfaceImplementationRemovedOverride()
+        {
+            return RunTest(allowMissingWarnings: false);
+        }
 
-		[Fact]
-		public Task StaticAbstractInterfaceMethods ()
-		{
-			return RunTest (allowMissingWarnings: false);
-		}
+        [Fact]
+        public Task StaticAbstractInterfaceMethods()
+        {
+            return RunTest(allowMissingWarnings: false);
+        }
 
-		[Fact]
-		public Task StaticAbstractInterfaceMethodsLibrary ()
-		{
-			return RunTest (allowMissingWarnings: false);
-		}
+        [Fact]
+        public Task StaticAbstractInterfaceMethodsLibrary()
+        {
+            return RunTest(allowMissingWarnings: false);
+        }
 
-		[Fact]
-		public Task StaticInterfaceMethodsInPreservedScope ()
-		{
-			return RunTest (allowMissingWarnings: false);
-		}
+        [Fact]
+        public Task StaticInterfaceMethodsInPreservedScope()
+        {
+            return RunTest(allowMissingWarnings: false);
+        }
 
-		[Fact]
-		public Task StaticVirtualInterfaceMethodsInPreservedScope ()
-		{
-			return RunTest (allowMissingWarnings: false);
-		}
+        [Fact]
+        public Task StaticVirtualInterfaceMethodsInPreservedScope()
+        {
+            return RunTest(allowMissingWarnings: false);
+        }
 
-		[Fact]
-		public Task StaticVirtualInterfaceMethodsInPreservedScopeLibrary ()
-		{
-			return RunTest (allowMissingWarnings: false);
-		}
+        [Fact]
+        public Task StaticVirtualInterfaceMethodsInPreservedScopeLibrary()
+        {
+            return RunTest(allowMissingWarnings: false);
+        }
 
-		[Fact]
-		public Task StaticVirtualInterfaceMethodsLibrary ()
-		{
-			return RunTest (allowMissingWarnings: false);
-		}
+        [Fact]
+        public Task StaticVirtualInterfaceMethodsLibrary()
+        {
+            return RunTest(allowMissingWarnings: false);
+        }
 
-		[Fact]
-		public Task UnusedInterfacesInPreservedScope ()
-		{
-			return RunTest (allowMissingWarnings: false);
-		}
+        [Fact]
+        public Task UnusedInterfacesInPreservedScope()
+        {
+            return RunTest(allowMissingWarnings: false);
+        }
 
-		[Fact]
-		public Task UnusedStaticInterfaceMethods ()
-		{
-			return RunTest (allowMissingWarnings: false);
-		}
-	}
+        [Fact]
+        public Task UnusedStaticInterfaceMethods()
+        {
+            return RunTest(allowMissingWarnings: false);
+        }
+    }
 }

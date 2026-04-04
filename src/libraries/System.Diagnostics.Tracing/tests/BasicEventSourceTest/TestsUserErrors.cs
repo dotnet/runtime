@@ -35,6 +35,7 @@ namespace BasicEventSourceTests
                     Debug.WriteLine("Adding delegate to onevent");
                     listener.OnEvent = delegate (Event data) { events.Add(data); };
 
+                    listener.Start();
                     listener.EventSourceCommand(source.Name, EventCommand.Enable);
 
                     listener.Dispose();
@@ -95,9 +96,13 @@ namespace BasicEventSourceTests
             var eventSourceName = typeof(BadEventSource_MismatchedIds).Name;
             Debug.WriteLine("***** Test_BadEventSource_Startup(OnStartUp: " + onStartup + " Listener: " + listener + " Settings: " + settings + ")");
 
+            listener.EventSourceCommand(eventSourceName, EventCommand.Enable);
+
             // Activate the source before the source exists (if told to).
             if (onStartup)
-                listener.EventSourceCommand(eventSourceName, EventCommand.Enable);
+            {
+                listener.Start();
+            }
 
             var events = new List<Event>();
             listener.OnEvent = delegate (Event data) { events.Add(data); };
@@ -107,7 +112,9 @@ namespace BasicEventSourceTests
                 Assert.Equal(eventSourceName, source.Name);
                 // activate the source after the source exists (if told to).
                 if (!onStartup)
-                    listener.EventSourceCommand(eventSourceName, EventCommand.Enable);
+                {
+                    listener.Start();
+                }
                 source.Event1(1);       // Try to send something.
             }
             listener.Dispose();
@@ -160,7 +167,7 @@ namespace BasicEventSourceTests
             {
                 var events = new List<Event>();
                 listener.OnEvent = delegate (Event data) { events.Add(data); };
-
+                listener.Start();
                 listener.EventSourceCommand(bes.Name, EventCommand.Enable);
 
                 bes.RelatedActivity(newGuid2, "Hello", 42, "AA", "BB");

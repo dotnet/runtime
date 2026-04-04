@@ -47,12 +47,52 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="key" /> is <see langword="null" />.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static X509SignatureGenerator CreateForMLDsa(MLDsa key)
         {
             ArgumentNullException.ThrowIfNull(key);
 
             return new MLDsaX509SignatureGenerator(key);
+        }
+
+        /// <summary>
+        ///   Creates a signature generator for SLH-DSA signatures using the specified key.
+        /// </summary>
+        /// <param name="key">
+        ///   The private key.
+        /// </param>
+        /// <returns>
+        ///   An <see cref="X509SignatureGenerator" /> object for SLH-DSA signatures.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static X509SignatureGenerator CreateForSlhDsa(SlhDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            return new SlhDsaX509SignatureGenerator(key);
+        }
+
+        /// <summary>
+        ///   Creates a signature generator for Composite ML-DSA signatures using the specified key.
+        /// </summary>
+        /// <param name="key">
+        ///   The private key.
+        /// </param>
+        /// <returns>
+        ///   An <see cref="X509SignatureGenerator" /> object for Composite ML-DSA signatures.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static X509SignatureGenerator CreateForCompositeMLDsa(CompositeMLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            throw new PlatformNotSupportedException();
         }
     }
 }

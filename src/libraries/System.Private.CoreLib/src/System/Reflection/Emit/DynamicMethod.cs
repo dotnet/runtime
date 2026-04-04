@@ -18,7 +18,7 @@ namespace System.Reflection.Emit
         // We capture the creation context so that we can do the checks against the same context,
         // irrespective of when the method gets compiled. Note that the DynamicMethod does not know when
         // it is ready for use since there is not API which indictates that IL generation has completed.
-        private static volatile Module? s_anonymouslyHostedDynamicMethodsModule;
+        private static Module? s_anonymouslyHostedDynamicMethodsModule;
         private static readonly object s_anonymouslyHostedDynamicMethodsModuleLock = new object();
 
         //
@@ -200,7 +200,7 @@ namespace System.Reflection.Emit
                     AssemblyBuilderAccess.Run, AssemblyLoadContext.Default, null);
 
                 // this always gets the internal module.
-                s_anonymouslyHostedDynamicMethodsModule = assembly.ManifestModule!;
+                s_anonymouslyHostedDynamicMethodsModule = assembly.ManifestModule;
             }
 
             return s_anonymouslyHostedDynamicMethodsModule;
@@ -242,7 +242,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                _parameterTypes = Array.Empty<RuntimeType>();
+                _parameterTypes = [];
             }
 
             // check and store the return value
@@ -269,7 +269,7 @@ namespace System.Reflection.Emit
                     if (owner?.UnderlyingSystemType is RuntimeType rtOwner)
                     {
                         if (rtOwner.HasElementType || rtOwner.ContainsGenericParameters
-                            || rtOwner.IsGenericParameter || rtOwner.IsInterface)
+                            || rtOwner.IsGenericParameter || rtOwner.IsActualInterface)
                             throw new ArgumentException(SR.Argument_InvalidTypeForDynamicMethod);
 
                         _typeOwner = rtOwner;

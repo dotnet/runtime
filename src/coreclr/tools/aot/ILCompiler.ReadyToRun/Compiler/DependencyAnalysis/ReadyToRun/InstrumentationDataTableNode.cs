@@ -285,7 +285,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 PgoInstrumentedDataWithSignatureBlobVertex pgoDataVertex = new PgoInstrumentedDataWithSignatureBlobVertex(signatureBlob, 0, instrumentationDataBlob);
                 hashtableSection.Place(pgoDataVertex);
-                vertexHashtable.Append(unchecked((uint)VersionResilientHashCode.MethodHashCode(method)), pgoDataVertex);
+                vertexHashtable.Append(unchecked((uint)method.GetHashCode()), pgoDataVertex);
             }
 
             MemoryStream hashtableContent = new MemoryStream();

@@ -70,7 +70,7 @@ namespace System.Text.Tests
         [InlineData("Hello")]
         [InlineData("")]
         [InlineData(null)]
-        public static void Ctor_String(string value)
+        public static void Ctor_String(string? value)
         {
             var builder = new StringBuilder(value);
 
@@ -83,7 +83,7 @@ namespace System.Text.Tests
         [InlineData("Hello")]
         [InlineData("")]
         [InlineData(null)]
-        public static void Ctor_String_Int(string value)
+        public static void Ctor_String_Int(string? value)
         {
             var builder = new StringBuilder(value, 42);
 
@@ -105,7 +105,7 @@ namespace System.Text.Tests
         [InlineData("Hello", 2, 3)]
         [InlineData("", 0, 0)]
         [InlineData(null, 0, 0)]
-        public static void Ctor_String_Int_Int_Int(string value, int startIndex, int length)
+        public static void Ctor_String_Int_Int_Int(string? value, int startIndex, int length)
         {
             var builder = new StringBuilder(value, startIndex, length, 42);
 
@@ -384,7 +384,7 @@ namespace System.Text.Tests
         [InlineData("", "g", "g")]
         [InlineData("Hello", "", "Hello")]
         [InlineData("Hello", null, "Hello")]
-        public static void Append_Object(string original, object value, string expected)
+        public static void Append_Object(string original, object? value, string expected)
         {
             var builder = new StringBuilder(original);
             builder.Append(value);
@@ -555,6 +555,21 @@ namespace System.Text.Tests
         }
 
         [Theory]
+        [InlineData("Hello", '\0', "Hello\0")]
+        [InlineData("Hello", 'a', "Helloa")]
+        [InlineData("", 'b', "b")]
+        [InlineData("Hello", 'c', "Helloc")]
+        [InlineData("Hello", 0x1F600, "Hello\U0001F600")]
+        public static void Append_Rune(string original, int valueAsInt, string expected)
+        {
+            var value = new Rune(valueAsInt);
+
+            var builder = new StringBuilder(original);
+            builder.Append(value);
+            Assert.Equal(expected, builder.ToString());
+        }
+
+        [Theory]
         [InlineData("Hello", new char[] { 'a', 'b', 'c' }, 1, "Helloa")]
         [InlineData("Hello", new char[] { 'a', 'b', 'c' }, 2, "Helloab")]
         [InlineData("Hello", new char[] { 'a', 'b', 'c' }, 3, "Helloabc")]
@@ -562,7 +577,7 @@ namespace System.Text.Tests
         [InlineData("", new char[] { 'a' }, 0, "")]
         [InlineData("Hello", new char[0], 0, "Hello")]
         [InlineData("Hello", null, 0, "Hello")]
-        public static unsafe void Append_CharPointer(string original, char[] charArray, int valueCount, string expected)
+        public static unsafe void Append_CharPointer(string original, char[]? charArray, int valueCount, string expected)
         {
             _ = charArray; // https://github.com/xunit/xunit/issues/1969
             fixed (char* value = charArray)
@@ -613,7 +628,7 @@ namespace System.Text.Tests
         [InlineData("Hello", "g", 0, 0, "Hello")]
         [InlineData("Hello", "", 0, 0, "Hello")]
         [InlineData("Hello", null, 0, 0, "Hello")]
-        public static void Append_String(string original, string value, int startIndex, int count, string expected)
+        public static void Append_String(string original, string? value, int startIndex, int count, string expected)
         {
             StringBuilder builder;
             if (startIndex == 0 && count == (value?.Length ?? 0))
@@ -673,7 +688,7 @@ namespace System.Text.Tests
         [InlineData("Hello", new char[] { 'e' }, 0, 0, "Hello")]
         [InlineData("Hello", new char[0], 0, 0, "Hello")]
         [InlineData("Hello", null, 0, 0, "Hello")]
-        public static void Append_CharArray(string original, char[] value, int startIndex, int charCount, string expected)
+        public static void Append_CharArray(string original, char[]? value, int startIndex, int charCount, string expected)
         {
             StringBuilder builder;
             if (startIndex == 0 && charCount == (value?.Length ?? 0))
@@ -1181,6 +1196,52 @@ namespace System.Text.Tests
         }
 
         [Theory]
+        [InlineData("a", 0, (int)'a')]
+        [InlineData("ab", 1, (int)'b')]
+        [InlineData("x\U0001F46Ey", 3, (int)'y')]
+        [InlineData("x\U0001F46Ey", 1, 0x1F46E)] // U+1F46E POLICE OFFICER
+        public static void GetRuneAt_TryGetRuneAt_Utf16_Success(string inputString, int index, int expectedScalarValue)
+        {
+            var inputStringBuilder = new StringBuilder(inputString);
+
+            // GetRuneAt
+            Assert.Equal(expectedScalarValue, inputStringBuilder.GetRuneAt(index).Value);
+
+            // TryGetRuneAt
+            Assert.True(inputStringBuilder.TryGetRuneAt(index, out Rune rune));
+            Assert.Equal(expectedScalarValue, rune.Value);
+        }
+
+        // Our unit test runner doesn't deal well with malformed literal strings, so
+        // we smuggle it as a char[] and turn it into a string within the test itself.
+        [Theory]
+        [InlineData(new char[] { 'x', '\uD83D', '\uDC6E', 'y' }, 2)] // attempt to index into the middle of a UTF-16 surrogate pair
+        [InlineData(new char[] { 'x', '\uD800', 'y' }, 1)] // high surrogate not followed by low surrogate
+        [InlineData(new char[] { 'x', '\uDFFF', '\uDFFF' }, 1)] // attempt to start at a low surrogate
+        [InlineData(new char[] { 'x', '\uD800' }, 1)] // end of string reached before could complete surrogate pair
+        public static void GetRuneAt_TryGetRuneAt_Utf16_InvalidData(char[] inputCharArray, int index)
+        {
+            var inputStringBuilder = new StringBuilder(new string(inputCharArray));
+
+            // GetRuneAt
+            Assert.Throws<ArgumentException>("index", () => inputStringBuilder.GetRuneAt(index));
+
+            // TryGetRuneAt
+            Assert.False(inputStringBuilder.TryGetRuneAt(index, out Rune rune));
+            Assert.Equal(0, rune.Value);
+        }
+
+        [Fact]
+        public static void GetRuneAt_TryGetRuneAt_Utf16_BadArgs()
+        {
+            // negative index specified
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new StringBuilder("hello").GetRuneAt(-1));
+
+            // index goes past end of string
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new StringBuilder(string.Empty).GetRuneAt(0));
+        }
+
+        [Theory]
         [InlineData("Hello", 0, (uint)0, "0Hello")]
         [InlineData("Hello", 3, (uint)123, "Hel123lo")]
         [InlineData("Hello", 5, (uint)456, "Hello456")]
@@ -1312,6 +1373,31 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, '\0')); // New length > builder.MaxCapacity
         }
 
+        [Theory]
+        [InlineData("Hello", 0, '\0', "\0Hello")]
+        [InlineData("Hello", 3, 'a', "Helalo")]
+        [InlineData("Hello", 5, 'b', "Hellob")]
+        [InlineData("hi\U0001F600hello", 7, 0x1F600, "hi\U0001F600hel\U0001F600lo")]
+        public static void Insert_Rune(string original, int index, int valueAsInt, string expected)
+        {
+            var value = new Rune(valueAsInt);
+
+            var builder = new StringBuilder(original);
+            builder.Insert(index, value);
+            Assert.Equal(expected, builder.ToString());
+        }
+
+        [Fact]
+        public static void Insert_Rune_Invalid()
+        {
+            var builder = new StringBuilder(0, 5);
+            builder.Append("Hello");
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(-1, new Rune('\0'))); // Index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(builder.Length + 1, new Rune('\0'))); // Index > builder.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, new Rune('\0'))); // New length > builder.MaxCapacity
+        }
+
         public static IEnumerable<object[]> Insert_Float_TestData()
         {
             yield return new object[] { "Hello", 0, (float)0, "0Hello" };
@@ -1355,7 +1441,7 @@ namespace System.Text.Tests
         [InlineData("Hello", 5, "def", "Hellodef")]
         [InlineData("Hello", 0, "", "Hello")]
         [InlineData("Hello", 0, null, "Hello")]
-        public static void Insert_Object(string original, int index, object value, string expected)
+        public static void Insert_Object(string original, int index, object? value, string expected)
         {
             var builder = new StringBuilder(original);
             builder.Insert(index, value);
@@ -1544,7 +1630,7 @@ namespace System.Text.Tests
         [InlineData("Hello", 0, null, 1, "Hello")]
         [InlineData("Hello", 3, "abc", 2, "Helabcabclo")]
         [InlineData("Hello", 5, "def", 2, "Hellodefdef")]
-        public static void Insert_String_Count(string original, int index, string value, int count, string expected)
+        public static void Insert_String_Count(string original, int index, string? value, int count, string expected)
         {
             StringBuilder builder;
             if (count == 1)
@@ -1590,7 +1676,7 @@ namespace System.Text.Tests
         [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 1, 1, "Helblo")]
         [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 1, 2, "Helbclo")]
         [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 0, 2, "Helablo")]
-        public static void Insert_CharArray(string original, int index, char[] value, int startIndex, int charCount, string expected)
+        public static void Insert_CharArray(string original, int index, char[]? value, int startIndex, int charCount, string expected)
         {
             StringBuilder builder;
             if (startIndex == 0 && charCount == (value?.Length ?? 0))
@@ -1728,6 +1814,55 @@ namespace System.Text.Tests
         }
 
         [Theory]
+        [InlineData("", 'a', '!', 0, 0, "")]
+        [InlineData("aaaabbbbccccdddd", 'a', '!', 0, 16, "!!!!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'a', '!', 0, 4, "!!!!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'a', '!', 2, 3, "aa!!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'a', '!', 4, 1, "aaaabbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'b', '!', 0, 0, "aaaabbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'a', '!', 16, 0, "aaaabbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", 'e', '!', 0, 16, "aaaabbbbccccdddd")]
+        [InlineData("a\U0001F600b\U0001F600c\U0001F600", 0x0001F600, '!', 0, 9, "a!b!c!")]
+        public static void Replace_Rune(string value, int oldRuneAsInt, int newRuneAsInt, int startIndex, int count, string expected)
+        {
+            var oldRune = new Rune(oldRuneAsInt);
+            var newRune = new Rune(newRuneAsInt);
+
+            StringBuilder builder;
+            if (startIndex == 0 && count == value.Length)
+            {
+                // Use Replace(Rune, Rune)
+                builder = new StringBuilder(value);
+                builder.Replace(oldRune, newRune);
+                Assert.Equal(expected, builder.ToString());
+            }
+            // Use Replace(Rune, Rune, int, int)
+            builder = new StringBuilder(value);
+            builder.Replace(oldRune, newRune, startIndex, count);
+            Assert.Equal(expected, builder.ToString());
+        }
+
+        [Fact]
+        public static void Replace_Rune_StringBuilderWithMultipleChunks()
+        {
+            StringBuilder builder = StringBuilderWithMultipleChunks();
+            builder.Replace(new Rune('a'), new Rune('b'), 0, builder.Length);
+            Assert.Equal(new string('b', builder.Length), builder.ToString());
+        }
+
+        [Fact]
+        public static void Replace_Rune_Invalid()
+        {
+            var builder = new StringBuilder("Hello");
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace(new Rune('a'), new Rune('b'), -1, 0)); // Start index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace(new Rune('a'), new Rune('b'), 0, -1)); // Count < 0
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace(new Rune('a'), new Rune('b'), 6, 0)); // Count + start index > builder.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace(new Rune('a'), new Rune('b'), 5, 1)); // Count + start index > builder.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace(new Rune('a'), new Rune('b'), 4, 2)); // Count + start index > builder.Length
+        }
+
+        [Theory]
         [InlineData("Hello", 0, 5, "Hello")]
         [InlineData("Hello", 2, 3, "llo")]
         [InlineData("Hello", 2, 2, "ll")]
@@ -1836,7 +1971,7 @@ namespace System.Text.Tests
         [InlineData("", "123")]
         [InlineData(" ", "1 2 3")]
         [InlineData(", ", "1, 2, 3")]
-        public static void AppendJoin_TestStringSeparators(string separator, string expected)
+        public static void AppendJoin_TestStringSeparators(string? separator, string expected)
         {
             var values = new object[] { 1, 2, 3 };
             var stringValues = new string[] { "1", "2", "3" };
@@ -1859,7 +1994,7 @@ namespace System.Text.Tests
         [InlineData("", new object[] { "", "" })]
         [InlineData(" ", new object[] { })]
         [InlineData(", ", new object[] { "" })]
-        public static void AppendJoin_NoValues_NoSpareCapacity_DoesNotThrow(string separator, object[] values)
+        public static void AppendJoin_NoValues_NoSpareCapacity_DoesNotThrow(string? separator, object[] values)
         {
             var stringValues = Array.ConvertAll(values, _ => _?.ToString());
             var enumerable = values.Select(_ => _);
@@ -1884,7 +2019,7 @@ namespace System.Text.Tests
         [InlineData(" ", new object[] { " " })]
         [InlineData(" ", new object[] { null, null })]
         [InlineData(" ", new object[] { "", "" })]
-        public static void AppendJoin_NoSpareCapacity_ThrowsArgumentOutOfRangeException(string separator, object[] values)
+        public static void AppendJoin_NoSpareCapacity_ThrowsArgumentOutOfRangeException(string? separator, object[] values)
         {
             var builder = new StringBuilder(0, 5);
             builder.Append("Hello");
@@ -2179,6 +2314,38 @@ namespace System.Text.Tests
         public static void Equals_String(StringBuilder sb1, string value, bool expected)
         {
             Assert.Equal(expected, sb1.Equals(value.AsSpan()));
+        }
+
+        [Theory]
+        [InlineData(new char[0], new int[0])] // empty
+        [InlineData(new char[] { 'x', 'y', 'z' }, new int[] { 'x', 'y', 'z' })]
+        [InlineData(new char[] { 'x', '\uD86D', '\uDF54', 'y' }, new int[] { 'x', 0x2B754, 'y' })] // valid surrogate pair
+        [InlineData(new char[] { 'x', '\uD86D', 'y' }, new int[] { 'x', 0xFFFD, 'y' })] // standalone high surrogate
+        [InlineData(new char[] { 'x', '\uDF54', 'y' }, new int[] { 'x', 0xFFFD, 'y' })] // standalone low surrogate
+        [InlineData(new char[] { 'x', '\uD86D' }, new int[] { 'x', 0xFFFD })] // standalone high surrogate at end of string
+        [InlineData(new char[] { 'x', '\uDF54' }, new int[] { 'x', 0xFFFD })] // standalone low surrogate at end of string
+        [InlineData(new char[] { 'x', '\uD86D', '\uD86D', 'y' }, new int[] { 'x', 0xFFFD, 0xFFFD, 'y' })] // two high surrogates should be two replacement chars
+        [InlineData(new char[] { 'x', '\uFFFD', 'y' }, new int[] { 'x', 0xFFFD, 'y' })] // literal U+FFFD
+        public static void EnumerateRunes(char[] chars, int[] expected)
+        {
+            // Test data is smuggled as char[] instead of straight-up string since the test framework
+            // doesn't like invalid UTF-16 literals.
+
+            StringBuilder asStringBuilder = new StringBuilder(new string(chars));
+
+            // First, use a straight-up foreach keyword to ensure pattern matching works as expected
+
+            List<int> enumeratedScalarValues = new List<int>();
+            foreach (Rune rune in asStringBuilder.EnumerateRunes())
+            {
+                enumeratedScalarValues.Add(rune.Value);
+            }
+            Assert.Equal(expected, enumeratedScalarValues.ToArray());
+
+            // Then use LINQ to ensure IEnumerator<...> works as expected
+
+            int[] enumeratedValues = asStringBuilder.EnumerateRunes().Select(r => r.Value).ToArray();
+            Assert.Equal(expected, enumeratedValues);
         }
 
         [Fact]

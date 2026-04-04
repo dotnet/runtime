@@ -833,7 +833,7 @@ namespace System
             => span.Slice(0, ClampEnd(span, 0));
 
         /// <summary>
-        /// Delimits all leading occurrences of whitespace charecters from the span.
+        /// Delimits all leading occurrences of whitespace characters from the span.
         /// </summary>
         /// <param name="span">The source span from which the characters are removed.</param>
         private static int ClampStart(ReadOnlySpan<char> span)
@@ -852,7 +852,7 @@ namespace System
         }
 
         /// <summary>
-        /// Delimits all trailing occurrences of whitespace charecters from the span.
+        /// Delimits all trailing occurrences of whitespace characters from the span.
         /// </summary>
         /// <param name="span">The source span from which the characters are removed.</param>
         /// <param name="start">The start index from which to being searching.</param>

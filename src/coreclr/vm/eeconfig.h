@@ -43,6 +43,15 @@ enum { OPT_BLENDED,
     OPT_RANDOM,
     OPT_DEFAULT = OPT_BLENDED };
 
+enum ClrModifiableAssemblies {
+    /* modifiable assemblies are implicitly disabled */
+    MODIFIABLE_ASSM_UNSET = 0,
+    /* modifiable assemblies are explicitly disabled */
+    MODIFIABLE_ASSM_NONE = 1,
+    /* assemblies with the Debug flag are modifiable */
+    MODIFIABLE_ASSM_DEBUG = 2,
+};
+
 enum ParseCtl {
     parseAll,               // parse entire config file
     stopAfterRuntimeSection // stop after <runtime>...</runtime> section
@@ -64,7 +73,6 @@ public:
     DWORD         SpinLimitProcFactor(void)       const {LIMITED_METHOD_CONTRACT;  return dwSpinLimitProcFactor; }
     DWORD         SpinLimitConstant(void)         const {LIMITED_METHOD_CONTRACT;  return dwSpinLimitConstant; }
     DWORD         SpinRetryCount(void)            const {LIMITED_METHOD_CONTRACT;  return dwSpinRetryCount; }
-    DWORD         MonitorSpinCount(void)          const {LIMITED_METHOD_CONTRACT;  return dwMonitorSpinCount; }
 
     // Jit-config
 
@@ -87,7 +95,12 @@ public:
     DWORD         TieredCompilation_CallCountingDelayMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountingDelayMs; }
     bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
-#endif
+#endif // FEATURE_TIERED_COMPILATION
+    DWORD TieredCompilation_DefaultTier() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return tieredCompilation_DefaultTier;
+    }
 
 #if defined(FEATURE_PGO)
     bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
@@ -270,9 +283,7 @@ public:
 
     bool IsJitVerificationDisabled(void)    const {LIMITED_METHOD_CONTRACT;  return fJitVerificationDisable; }
 
-#ifdef FEATURE_EH_FUNCLETS
     bool SuppressLockViolationsOnReentryFromOS() const {LIMITED_METHOD_CONTRACT;  return fSuppressLockViolationsOnReentryFromOS; }
-#endif
 
 #endif // _DEBUG
 
@@ -298,14 +309,6 @@ public:
 #ifdef _DEBUG
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
 #endif //_DEBUG
-
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    // Because the large object heap is 8 byte aligned, we want to put
-    // arrays of doubles there more agressively than normal objects.
-    // This is the threshold for this.  It is the number of doubles,
-    // not the number of bytes in the array.
-    unsigned int  GetDoubleArrayToLargeObjectHeapThreshold() const { LIMITED_METHOD_CONTRACT; return DoubleArrayToLargeObjectHeapThreshold; }
-#endif
 
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
@@ -367,6 +370,10 @@ public:
         GCSTRESS_INSTR_JIT          = 4,    // GC on every allowable JITed instr
         GCSTRESS_INSTR_NGEN         = 8,    // GC on every allowable NGEN instr
         GCSTRESS_UNIQUE             = 16,   // GC only on a unique stack trace
+        GCSTRESS_CDAC               = 32,   // Verify cDAC GC references at stress points
+
+        // Excludes cDAC stress as it is fundamentally different from the other stress modes
+        GCSTRESS_ALLSTRESS          = GCSTRESS_ALLOC | GCSTRESS_TRANSITION | GCSTRESS_INSTR_JIT | GCSTRESS_INSTR_NGEN,
     };
 
     GCStressFlags GetGCStressLevel()        const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GCStressFlags(iGCStress); }
@@ -389,6 +396,12 @@ public:
                                                                                     && pSkipGCCoverageList->IsInList(assemblyName));}
 #endif
 
+    bool IsWriteBarrierCopyEnabled() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return fIsWriteBarrierCopyEnabled;
+    }
+
 #ifdef _DEBUG
     inline DWORD FastGCStressLevel() const
     {LIMITED_METHOD_CONTRACT;  return iFastGCStress;}
@@ -409,9 +422,8 @@ public:
     // Loader
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
 
-    bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
-    bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
-    bool    DebugAssembliesModifiable()     const { LIMITED_METHOD_CONTRACT; return fDebugAssembliesModifiable; }
+    bool    StressLog()                            const { LIMITED_METHOD_CONTRACT; return fStressLog; }
+    ClrModifiableAssemblies ModifiableAssemblies() const { LIMITED_METHOD_CONTRACT; return modifiableAssemblies; }
 
     // Optimizations to improve working set
 
@@ -441,6 +453,11 @@ public:
 
 #endif
 
+#ifdef FEATURE_INTERPRETER
+    bool    EnableInterpreter()            const { LIMITED_METHOD_CONTRACT; return enableInterpreter; }
+#endif
+    bool    EnableHWIntrinsic()            const { LIMITED_METHOD_CONTRACT; return enableHWIntrinsic; }
+
 private: //----------------------------------------------------------------
 
     bool fInited;                   // have we synced to the registry at least once?
@@ -453,6 +470,7 @@ private: //----------------------------------------------------------------
     bool fJitMinOpts;                  // Enable MinOpts for all jitted methods
     bool fJitEnableOptionalRelocs;     // Allow optional relocs
     bool fDisableOptimizedThreadStaticAccess; // Disable OptimizedThreadStatic access
+    bool fIsWriteBarrierCopyEnabled; // Is the GC write barrier copy enabled?
 
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
 
@@ -510,18 +528,12 @@ private: //----------------------------------------------------------------
     bool m_fBuiltInCOMInteropSupported;   // COM built-in support
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    unsigned int DoubleArrayToLargeObjectHeapThreshold;  // double arrays of more than this number of elems go in large object heap
-#endif
-
 #ifdef _DEBUG
     bool fExpandAllOnLoad;              // True if we want to load all types/jit all methods in an assembly
                                         // at load time.
     bool fJitVerificationDisable;       // Turn off jit verification (for testing purposes only)
 
-#ifdef FEATURE_EH_FUNCLETS
     bool fSuppressLockViolationsOnReentryFromOS;
-#endif
 
 #endif // _DEBUG
 #ifdef ENABLE_STARTUP_DELAY
@@ -535,7 +547,6 @@ private: //----------------------------------------------------------------
     DWORD dwSpinLimitProcFactor;
     DWORD dwSpinLimitConstant;
     DWORD dwSpinRetryCount;
-    DWORD dwMonitorSpinCount;
 
 #ifdef VERIFY_HEAP
     int  iGCHeapVerify;
@@ -572,8 +583,7 @@ private: //----------------------------------------------------------------
     AssemblyNamesList * pReadyToRunExcludeList;
 
     bool fStressLog;
-    bool fForceEnc;
-    bool fDebugAssembliesModifiable;
+    ClrModifiableAssemblies modifiableAssemblies;
 
 #ifdef _DEBUG
     // interop logging
@@ -604,6 +614,7 @@ private: //----------------------------------------------------------------
     DWORD tieredCompilation_CallCountingDelayMs;
     DWORD tieredCompilation_DeleteCallCountingStubsAfter;
 #endif
+    DWORD tieredCompilation_DefaultTier;
 
 #if defined(FEATURE_PGO)
     bool fTieredPGO;
@@ -613,6 +624,12 @@ private: //----------------------------------------------------------------
 
 #if defined(FEATURE_READYTORUN)
     bool fReadyToRun;
+#endif
+
+    bool enableHWIntrinsic;
+
+#ifdef FEATURE_INTERPRETER
+    bool enableInterpreter;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)

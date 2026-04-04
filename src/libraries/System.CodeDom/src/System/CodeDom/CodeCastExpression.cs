@@ -5,8 +5,6 @@ namespace System.CodeDom
 {
     public class CodeCastExpression : CodeExpression
     {
-        private CodeTypeReference _targetType;
-
         public CodeCastExpression() { }
 
         public CodeCastExpression(CodeTypeReference targetType, CodeExpression expression)
@@ -29,8 +27,8 @@ namespace System.CodeDom
 
         public CodeTypeReference TargetType
         {
-            get => _targetType ??= new CodeTypeReference("");
-            set => _targetType = value;
+            get => field ??= new CodeTypeReference("");
+            set => field = value;
         }
 
         public CodeExpression Expression { get; set; }

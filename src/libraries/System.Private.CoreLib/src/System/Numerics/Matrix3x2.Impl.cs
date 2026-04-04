@@ -15,9 +15,6 @@ namespace System.Numerics
         // syntax. We do this because it saves roughly 8-bytes of IL per method which
         // in turn helps improve inlining chances.
 
-        internal const uint RowCount = 3;
-        internal const uint ColumnCount = 2;
-
         [UnscopedRef]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref Impl AsImpl() => ref Unsafe.As<Matrix3x2, Impl>(ref this);
@@ -37,80 +34,6 @@ namespace System.Numerics
             public Vector2 X;
             public Vector2 Y;
             public Vector2 Z;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Init(float m11, float m12,
-                             float m21, float m22,
-                             float m31, float m32)
-            {
-                X = Vector2.Create(m11, m12);
-                Y = Vector2.Create(m21, m22);
-                Z = Vector2.Create(m31, m32);
-            }
-
-            public static Impl Identity
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    Impl result;
-
-                    result.X = Vector2.UnitX;
-                    result.Y = Vector2.UnitY;
-                    result.Z = Vector2.Zero;
-
-                    return result;
-                }
-            }
-
-            public float this[int row, int column]
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                readonly get
-                {
-                    if ((uint)row >= RowCount)
-                    {
-                        ThrowHelper.ThrowArgumentOutOfRangeException();
-                    }
-                    return Unsafe.Add(ref Unsafe.AsRef(in X), row)[column];
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set
-                {
-                    if ((uint)row >= RowCount)
-                    {
-                        ThrowHelper.ThrowArgumentOutOfRangeException();
-                    }
-                    Unsafe.Add(ref X, row)[column] = value;
-                }
-            }
-
-            public readonly bool IsIdentity
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    return (X == Vector2.UnitX)
-                        && (Y == Vector2.UnitY)
-                        && (Z == Vector2.Zero);
-                }
-            }
-
-            public Vector2 Translation
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                readonly get
-                {
-                    return Z;
-                }
-
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                set
-                {
-                    Z = value;
-                }
-            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl operator +(in Impl left, in Impl right)
@@ -434,7 +357,7 @@ namespace System.Numerics
 
                 if (float.Abs(det) < float.Epsilon)
                 {
-                    Vector2 vNaN = Vector2.Create(float.NaN);
+                    Vector2 vNaN = Vector2.NaN;
 
                     result.X = vNaN;
                     result.Y = vNaN;

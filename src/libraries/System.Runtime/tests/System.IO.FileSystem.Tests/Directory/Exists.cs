@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -159,7 +160,7 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
+        [Theory,
             MemberData(nameof(ValidPathComponentNames))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path exists
         public void ValidExtendedPathExists_ReturnsTrue(string component)
@@ -169,7 +170,7 @@ namespace System.IO.Tests
             Assert.True(Exists(path));
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as directory
         public void ExtendedPathAlreadyExistsAsDirectory()
         {
@@ -181,7 +182,7 @@ namespace System.IO.Tests
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long directory path doesn't throw on Exists
         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
         {
@@ -219,7 +220,7 @@ namespace System.IO.Tests
             Assert.False(Exists(testDir.FullName.ToLowerInvariant()));
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
+        [Theory,
             MemberData(nameof(SimpleWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed appropriately
         public void TrailingWhitespaceExistence_SimpleWhiteSpace(string component)
@@ -266,7 +267,7 @@ namespace System.IO.Tests
 
         }
 
-        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device names
+        [ConditionalTheory(typeof(Directory_Exists), nameof(ReservedDeviceNamesAreBlocked))] // device names
         [MemberData(nameof(PathsWithReservedDeviceNames))]
         [OuterLoop]
         public void PathWithReservedDeviceNameAsPath_ReturnsFalse(string component)
@@ -301,16 +302,14 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void NotReadyDriveAsPath_ReturnsFalse()
         {
             var drive = IOServices.GetNotReadyDrive();
-            if (drive == null)
+            if (drive is null)
             {
-                Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
-                return;
+                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
             }
 
             bool result = Exists(drive);
@@ -318,16 +317,14 @@ namespace System.IO.Tests
             Assert.False(result);
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void SubdirectoryOnNotReadyDriveAsPath_ReturnsFalse()
         {
             var drive = IOServices.GetNotReadyDrive();
-            if (drive == null)
+            if (drive is null)
             {
-                Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
-                return;
+                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
             }
 
             bool result = Exists(Path.Combine(drive, "Subdirectory"));
@@ -347,7 +344,7 @@ namespace System.IO.Tests
             Assert.Contains(IOServices.GetReadyDrives(), drive => Exists(drive));
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void ExtendedDriveAsPath()
         {
@@ -380,7 +377,7 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as file
         public void ExtendedPathAlreadyExistsAsFile()
         {

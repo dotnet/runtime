@@ -790,6 +790,8 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     EC_GROUP* group = NULL;
     size_t generatorBufferSize = 0;
     unsigned char* generatorBuffer = NULL;
+    int curveTypeNID;
+    int fieldTypeNID;
 
     // Exit if CryptoNative_EvpPKeyGetEcKeyParameters failed
     if (rc != 1)
@@ -798,7 +800,6 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     if (!xBn || !yBn)
         goto error;
 
-    int curveTypeNID;
     if (!CryptoNative_EvpPKeyGetEcGroupNid(pkey, &curveTypeNID) || !curveTypeNID)
         goto error;
 
@@ -819,7 +820,7 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     // and some providers seem to be ignoring OSSL_PKEY_PARAM_EC_FIELD_TYPE.
     // This is specifically true for tpm2 provider.
     // We can reliably get the field type from the EC_GROUP.
-    int fieldTypeNID = EC_GROUP_get_field_type(group);
+    fieldTypeNID = EC_GROUP_get_field_type(group);
 
     *curveType = NIDToCurveType(fieldTypeNID);
     if (*curveType == Unspecified)

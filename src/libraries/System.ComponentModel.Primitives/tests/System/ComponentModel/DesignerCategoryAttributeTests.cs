@@ -21,7 +21,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, false, "System.ComponentModel.DesignerCategoryAttribute")]
         [InlineData("", true, "System.ComponentModel.DesignerCategoryAttribute")]
         [InlineData("category", false, "System.ComponentModel.DesignerCategoryAttributecategory")]
-        public void Ctor_String(string category, bool expectedIsDefaultAttribute, string expectedTypeId)
+        public void Ctor_String(string? category, bool expectedIsDefaultAttribute, string expectedTypeId)
         {
             var attribute = new DesignerCategoryAttribute(category);
             Assert.Equal(category, attribute.Category);

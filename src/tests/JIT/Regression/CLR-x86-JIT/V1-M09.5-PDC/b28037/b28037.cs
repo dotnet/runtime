@@ -7,7 +7,7 @@ using Xunit;
 COMPILE THIS WITH OPTIMIZATION TURNED OFF:
 coolc /o- bug.cs
 */
-namespace Test
+namespace b28037
 {
     using System;
 

@@ -650,10 +650,10 @@ namespace System.IO
 
         private static string CombineInternal(string first, string second)
         {
-            if (string.IsNullOrEmpty(first))
+            if (first.Length == 0)
                 return second;
 
-            if (string.IsNullOrEmpty(second))
+            if (second.Length == 0)
                 return first;
 
             if (IsPathRooted(second.AsSpan()))
@@ -664,11 +664,11 @@ namespace System.IO
 
         private static string CombineInternal(string first, string second, string third)
         {
-            if (string.IsNullOrEmpty(first))
+            if (first.Length == 0)
                 return CombineInternal(second, third);
-            if (string.IsNullOrEmpty(second))
+            if (second.Length == 0)
                 return CombineInternal(first, third);
-            if (string.IsNullOrEmpty(third))
+            if (third.Length == 0)
                 return CombineInternal(first, second);
 
             if (IsPathRooted(third.AsSpan()))
@@ -681,13 +681,13 @@ namespace System.IO
 
         private static string CombineInternal(string first, string second, string third, string fourth)
         {
-            if (string.IsNullOrEmpty(first))
+            if (first.Length == 0)
                 return CombineInternal(second, third, fourth);
-            if (string.IsNullOrEmpty(second))
+            if (second.Length == 0)
                 return CombineInternal(first, third, fourth);
-            if (string.IsNullOrEmpty(third))
+            if (third.Length == 0)
                 return CombineInternal(first, second, fourth);
-            if (string.IsNullOrEmpty(fourth))
+            if (fourth.Length == 0)
                 return CombineInternal(first, second, third);
 
             if (IsPathRooted(fourth.AsSpan()))
@@ -791,6 +791,7 @@ namespace System.IO
 
         private static ReadOnlySpan<byte> Base32Char => "abcdefghijklmnopqrstuvwxyz012345"u8;
 
+        [RequiresUnsafe]
         internal static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, Span<char> chars)
         {
             // This method requires bytes of length 8 and chars of length 12.

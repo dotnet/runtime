@@ -37,16 +37,12 @@
   <!-- The analyzer tests require the reference assemblies that are compiled against.
        Copy them to the output/publish directory so that tests still work on a different
        machine (i.e. when testing with Helix). -->
-  <Target Name="CopyReferenceAssembliesToOutputDir"
-          DependsOnTargets="FindReferenceAssembliesForReferences"
-          BeforeTargets="AssignTargetPaths;GetCopyToPublishDirectoryItems">
-    <ItemGroup>
-      <None Include="@(ReferencePathWithRefAssemblies->WithMetadataValue('FrameworkReferenceName', 'Microsoft.NETCore.App'))"
-            CopyToOutputDirectory="PreserveNewest"
-            CopyToPublishDirectory="PreserveNewest"
-            Link="live-ref-pack\%(RecursiveDir)%(Filename)%(Extension)"
-            Visible="false" />
-    </ItemGroup>
-  </Target>
+  <ItemGroup>
+    <None Include="$(MicrosoftNetCoreAppRefPackRefDir)**/*.dll"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest"
+          LinkBase="live-ref-pack/"
+          Visible="false" />
+  </ItemGroup>
 
 </Project>

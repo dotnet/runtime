@@ -696,7 +696,7 @@ namespace System.Security.Cryptography.Tests
     {
         public static bool RuntimeSaysIsNotSupported => !AesCcm.IsSupported;
 
-        [ConditionalFact(nameof(RuntimeSaysIsNotSupported))]
+        [ConditionalFact(typeof(AesCcmIsSupportedTests), nameof(RuntimeSaysIsNotSupported))]
         public static void CtorThrowsPNSEIfNotSupported()
         {
             byte[] key = RandomNumberGenerator.GetBytes(256 / 8);
@@ -708,17 +708,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void CheckIsSupported()
         {
-            bool expectedIsSupported = !PlatformDetection.IsBrowser;
-
-            if (PlatformDetection.IsOSX)
-            {
-                expectedIsSupported = PlatformDetection.OpenSslPresentOnSystem;
-            }
-            else if (PlatformDetection.UsesMobileAppleCrypto)
-            {
-                expectedIsSupported = false;
-            }
-
+            bool expectedIsSupported = !PlatformDetection.IsBrowser && !PlatformDetection.IsApplePlatform;
             Assert.Equal(expectedIsSupported, AesCcm.IsSupported);
         }
     }

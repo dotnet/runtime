@@ -476,7 +476,6 @@ namespace System.Xml.Serialization
         private bool _isSequence;
         private NameTable? _elements;
         private NameTable? _attributes;
-        private CodeIdentifiers? _scope;
 
         [DisallowNull]
         internal StructMapping? BaseMapping
@@ -577,8 +576,8 @@ namespace System.Xml.Serialization
 
         internal CodeIdentifiers Scope
         {
-            get => _scope ??= new CodeIdentifiers();
-            set => _scope = value;
+            get => field ??= new CodeIdentifiers();
+            set => field = value;
         }
 
         internal MemberMapping? FindDeclaringMapping(MemberMapping member, out StructMapping? declaringMapping, string? parent)

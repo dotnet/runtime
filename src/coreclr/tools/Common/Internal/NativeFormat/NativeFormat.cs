@@ -98,9 +98,9 @@ namespace Internal.NativeFormat
         // unused                   = 0x17,
         // unused                   = 0x18,
         // unused                   = 0x19,
-        // unused                   = 0x20,
+        NonGenericInstanceConstrainedMethod = 0x20,
         NonGenericStaticConstrainedMethod = 0x21,
-        GenericStaticConstrainedMethod = 0x22,
+        GenericConstrainedMethod = 0x22,
 
         NotYetSupported             = 0xee,
     }
@@ -178,6 +178,7 @@ namespace Internal.NativeFormat
         HasInstantiation            = 0x1,
         IsUnboxingStub              = 0x2,
         HasFunctionPointer          = 0x4,
+        IsAsyncVariant              = 0x8,
     };
 
     [Flags]

@@ -24,7 +24,7 @@ namespace Internal.Runtime.TypeLoader
         public override bool TryGetOwningTypeForMethodDictionary(IntPtr dictionary, out RuntimeTypeHandle owningType)
         {
             // PERF: computing NameAndSignature and the instantiation (that we discard) was useless
-            return TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(dictionary, out owningType, out _, out _);
+            return TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(dictionary, out owningType, out _, out _, out _);
         }
 
         public override TypeManagerHandle GetModuleForMetadataReader(MetadataReader reader)
@@ -50,7 +50,7 @@ namespace Internal.Runtime.TypeLoader
 
         public override RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, MethodHandle handle, RuntimeTypeHandle[] genericMethodArgs)
         {
-            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeHandle, handle, genericMethodArgs);
+            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeHandle, handle, genericMethodArgs, isAsyncVariant: false);
         }
 
         public override IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle)
@@ -380,7 +380,7 @@ namespace Internal.Runtime.TypeLoader
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
             DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, declaringType, nameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles));
+            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, asyncVariant: false, declaringType, nameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles));
 
             if (TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(methodBeingLoaded), out methodDictionary))
             {

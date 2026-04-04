@@ -6,11 +6,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 {
-	public class RequiresOnAttributeCtorAttribute : Attribute
-	{
-		[RequiresUnreferencedCode ("Message from attribute's ctor.")]
-		public RequiresOnAttributeCtorAttribute ()
-		{
-		}
-	}
+    public class RequiresOnAttributeCtorAttribute : Attribute
+    {
+        [RequiresUnreferencedCode("Message from attribute's ctor.")]
+        public RequiresOnAttributeCtorAttribute()
+        {
+        }
+    }
 }

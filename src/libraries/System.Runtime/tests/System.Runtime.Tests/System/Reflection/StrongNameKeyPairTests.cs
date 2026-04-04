@@ -45,7 +45,7 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("keyPairContainer")]
-        public void Ctor_String_ThrowsPlatformNotSupportedException(string keyPairContainer)
+        public void Ctor_String_ThrowsPlatformNotSupportedException(string? keyPairContainer)
         {
             Assert.Throws<PlatformNotSupportedException>(() => new StrongNameKeyPair(keyPairContainer));
         }

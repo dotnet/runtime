@@ -78,11 +78,11 @@ namespace System.Net.NetworkInformation.Tests
                 : Array.Empty<byte>();
 
         public static bool DoesNotUsePingUtility => OperatingSystem.IsWindows() ||
-                                OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsWatchOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ||
+                                OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ||
                                 Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily);
         public static bool UsesPingUtility => !DoesNotUsePingUtility;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendPingAsync_InvalidArgs()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -153,7 +153,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         public async Task SendPingAsyncWithIPAddress(AddressFamily addressFamily)
@@ -193,7 +193,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendPingAsyncWithIPAddress_AddressAsString()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -219,7 +219,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendPingAsyncWithIPAddressAndTimeout()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -247,7 +247,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -281,7 +281,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
@@ -323,7 +323,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions_Unix(AddressFamily addressFamily)
@@ -359,7 +359,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendPingAsyncWithHost()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -385,7 +385,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeout()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -413,7 +413,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -443,7 +443,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -459,7 +459,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalFact(nameof(DoesNotUsePingUtility))]
+        [ConditionalFact(typeof(PingTest), nameof(DoesNotUsePingUtility))]
         public async Task SendPingWithIPAddressAndBigSize()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
@@ -482,7 +482,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendPings_ReuseInstance_Hostname()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -497,7 +497,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Sends_ReuseInstance_Hostname()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -512,7 +512,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task SendAsyncs_ReuseInstance_Hostname()
         {
             IPAddress[] localIpAddresses = await TestSettings.GetLocalIPAddressesAsync();
@@ -570,7 +570,7 @@ namespace System.Net.NetworkInformation.Tests
             p.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static async Task PingAsync_DisposeAfterSend_Success()
         {
             Ping p = new Ping();
@@ -644,7 +644,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.True(FinalizingPing.WasFinalized);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SendPingAsyncWithHostAndTtlAndFragmentPingOptions(bool fragment)
@@ -664,7 +664,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SendPingAsyncWithAlreadyCanceledToken(bool useIPAddress)
@@ -686,25 +686,16 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(IPStatus.Success, reply.Status);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        [OuterLoop] // Depends on external host and assumption that successful ping takes long enough for cancellation to go through first
-        public async Task CancelSendPingAsync(bool useIPAddress, bool useCancellationToken)
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop("Depends on external host.")]
+        public async Task CancelSendPingAsync_HostName(bool useCancellationToken)
         {
-            if (PlatformDetection.IsOSX && useIPAddress && !useCancellationToken)
-            {
-                throw new SkipTestException("[ActiveIssue(https://github.com/dotnet/runtime/issues/114782)]");
-            }
-
             using CancellationTokenSource source = new();
 
             using Ping ping = new();
-            Task pingTask = useIPAddress
-                ? ping.SendPingAsync((await Dns.GetHostAddressesAsync(Test.Common.Configuration.Ping.PingHost))[0], TimeSpan.FromSeconds(5), cancellationToken: source.Token)
-                : ping.SendPingAsync(Test.Common.Configuration.Ping.PingHost, TimeSpan.FromSeconds(5), cancellationToken: source.Token);
+            Task pingTask = ping.SendPingAsync(Test.Common.Configuration.Ping.PingHost, TimeSpan.FromSeconds(5), cancellationToken: source.Token);
             if (useCancellationToken)
             {
                 source.Cancel();
@@ -717,7 +708,53 @@ namespace System.Net.NetworkInformation.Tests
             Assert.True(pingTask.IsCanceled);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop("Depends on external host and runs long on Windows.")]
+        public async Task CancelSendPingAsync_IPAddress(bool useCancellationToken)
+        {
+            if (await TestCore(TestSettings.UnreachableAddress)) return;
+            if (await TestCore(TestSettings.UnreachableAddress2)) return;
+            if (await TestCore(TestSettings.UnreachableAddress3)) return;
+
+            Assert.Fail("No OperationCanceledException has been thrown after attempting cancellation with various unreachable hosts.");
+
+            async Task<bool> TestCore(string unreachableIPString)
+            {
+                IPAddress address = IPAddress.Parse(unreachableIPString);
+                using CancellationTokenSource source = new();
+
+                using Ping ping = new();
+                Task<PingReply> pingTask = ping.SendPingAsync(address, TimeSpan.FromSeconds(5), cancellationToken: source.Token);
+                if (useCancellationToken)
+                {
+                    source.Cancel();
+                }
+                else
+                {
+                    ping.SendAsyncCancel();
+                }
+
+                try
+                {
+                    PingReply reply = await pingTask;
+                    if (reply.Status == IPStatus.DestinationNetworkUnreachable)
+                    {
+                        _output.WriteLine($"We got a DestinationNetworkUnreachable reply before cancellation for {address}. Retry on a different address.");
+                        return false;
+                    }
+
+                    Assert.Fail("No OperationCanceledException has been thrown.");
+                }
+                catch (OperationCanceledException) { }
+
+                Assert.True(pingTask.IsCanceled);
+                return true;
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop] // Depends on external host and assumption that network respects and does not change TTL
         public async Task SendPingToExternalHostWithLowTtlTest()
         {
@@ -750,58 +787,133 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotEqual(IPAddress.Any, pingReply.Address);
         }
 
-        [Fact]
-        [OuterLoop]
-        public void Ping_TimedOut_Sync_Success()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [OuterLoop] // Depends on external host
+        public async Task SendPingWithLowTtl_RoundtripTimeIsNonZero()
         {
-            var sender = new Ping();
-            PingReply reply = sender.Send(TestSettings.UnreachableAddress);
-            Assert.Equal(IPStatus.TimedOut, reply.Status);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public async Task Ping_TimedOut_EAP_Success()
-        {
-            var sender = new Ping();
-            sender.PingCompleted += (s, e) =>
+            // Regression test: non-Success replies (e.g. TtlExpired) should preserve the
+            // round-trip time from the ICMP reply, not hardcode it to 0.
+            if (UsesPingUtility)
             {
-                var tcs = (TaskCompletionSource<PingReply>)e.UserState;
+                throw new SkipTestException("Test is only applicable to the IcmpSendEcho code path.");
+            }
 
-                if (e.Cancelled)
-                {
-                    tcs.TrySetCanceled();
-                }
-                else if (e.Error != null)
-                {
-                    tcs.TrySetException(e.Error);
-                }
-                else
-                {
-                    tcs.TrySetResult(e.Reply);
-                }
-            };
+            string host = System.Net.Test.Common.Configuration.Ping.PingHost;
+            PingOptions options = new PingOptions();
+            byte[] payload = TestSettings.PayloadAsBytesShort;
 
-            var tcs = new TaskCompletionSource<PingReply>();
-            sender.SendAsync(TestSettings.UnreachableAddress, tcs);
+            using Ping ping = new Ping();
 
-            PingReply reply = await tcs.Task;
-            Assert.Equal(IPStatus.TimedOut, reply.Status);
+            // Verify host is reachable first.
+            bool reachable = false;
+            for (int i = 0; i < s_pingcount; i++)
+            {
+                PingReply checkReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload);
+                if (checkReply.Status == IPStatus.Success)
+                {
+                    reachable = true;
+                    break;
+                }
+            }
+            if (!reachable)
+            {
+                throw new SkipTestException($"Host {host} is not reachable. Skipping test.");
+            }
+
+            // RTT can legitimately be 0ms on very fast networks, so retry a few times
+            // and assert that at least one reply reports a non-zero RTT.
+            // Use TTL=5 instead of 1 to increase the chance of a measurable (>0ms) round-trip
+            // time. On macOS, the raw socket implementation truncates sub-millisecond RTT to 0,
+            // and the first-hop router often responds in <1ms.
+            options.Ttl = 5;
+            bool gotNonZeroRtt = false;
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                PingReply pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload, options);
+
+                Assert.True(
+                    pingReply.Status == IPStatus.TimeExceeded || pingReply.Status == IPStatus.TtlExpired,
+                    $"pingReply.Status was {pingReply.Status} instead of TimeExceeded or TtlExpired");
+
+                if (pingReply.RoundtripTime > 0)
+                {
+                    gotNonZeroRtt = true;
+                    break;
+                }
+            }
+
+            Assert.True(gotNonZeroRtt,
+                "Expected at least one TtlExpired reply with non-zero RoundtripTime across 3 attempts");
         }
 
-        [Fact]
-        [OuterLoop]
-        public async Task Ping_TimedOut_TAP_Success()
+        private async Task Ping_TimedOut_Core(Func<Ping, string, Task<PingReply>> sendPing)
         {
-            var sender = new Ping();
-            PingReply reply = await sender.SendPingAsync(TestSettings.UnreachableAddress);
+            Ping sender = new Ping();
+            PingReply reply = await sendPing(sender, TestSettings.UnreachableAddress);
+            if (reply.Status == IPStatus.DestinationNetworkUnreachable)
+            {
+                // A network middleware has dropped the packed and replied with DestinationNetworkUnreachable. Repeat the PING attempt on another address.
+                reply = await sendPing(sender, TestSettings.UnreachableAddress2);
+            }
+
+            if (reply.Status == IPStatus.DestinationNetworkUnreachable)
+            {
+                // Do yet another attempt.
+                reply = await sendPing(sender, TestSettings.UnreachableAddress3);
+            }
+
+            if (reply.Status == IPStatus.DestinationNetworkUnreachable)
+            {
+                throw new SkipTestException("Unable to verify timeouts. Skipping test.");
+            }
+
             Assert.Equal(IPStatus.TimedOut, reply.Status);
         }
+
+        [ConditionalFact]
+        [OuterLoop]
+        public Task Ping_TimedOut_Sync_Success()
+            => Ping_TimedOut_Core((sender, address) => Task.Run(() => sender.Send(address)));
+
+        [ConditionalFact]
+        [OuterLoop]
+        public Task Ping_TimedOut_EAP_Success()
+            => Ping_TimedOut_Core(async (sender, address) =>
+            {
+                static void PingCompleted(object sender, PingCompletedEventArgs e)
+                {
+                    var tcs = (TaskCompletionSource<PingReply>)e.UserState;
+
+                    if (e.Cancelled)
+                    {
+                        tcs.TrySetCanceled();
+                    }
+                    else if (e.Error != null)
+                    {
+                        tcs.TrySetException(e.Error);
+                    }
+                    else
+                    {
+                        tcs.TrySetResult(e.Reply);
+                    }
+                }
+                sender.PingCompleted += PingCompleted;
+                var tcs = new TaskCompletionSource<PingReply>();
+                sender.SendAsync(address, tcs);
+                PingReply reply = await tcs.Task;
+                sender.PingCompleted -= PingCompleted;
+                return reply;
+            });
+
+        [ConditionalFact]
+        [OuterLoop]
+        public Task Ping_TimedOut_TAP_Success()
+            => Ping_TimedOut_Core((sender, address) => sender.SendPingAsync(address));
 
         private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(PingTest), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         [OuterLoop("Requires sudo access")]
@@ -837,7 +949,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
-        public async Task SendPing_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        public async Task SendPing_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string? envVar_LC_MESSAGES, string? envVar_LC_ALL)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
             if (localIpAddress == null)
@@ -871,7 +983,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
-        public async Task SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        public async Task SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string? envVar_LC_MESSAGES, string? envVar_LC_ALL)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
 
@@ -896,7 +1008,7 @@ namespace System.Net.NetworkInformation.Tests
             }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(UsesPingUtility))]
+        [ConditionalFact(typeof(PingTest), nameof(UsesPingUtility))]
         public void SendPing_CustomPayload_InsufficientPrivileges_Throws()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -906,7 +1018,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Throws<PlatformNotSupportedException>(() => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer));
         }
 
-        [ConditionalFact(nameof(UsesPingUtility))]
+        [ConditionalFact(typeof(PingTest), nameof(UsesPingUtility))]
         public async Task SendPingAsync_CustomPayload_InsufficientPrivileges_Throws()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();

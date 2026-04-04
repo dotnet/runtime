@@ -8,7 +8,6 @@
 
 #include "baseunwinder.h"
 
-#ifdef FEATURE_EH_FUNCLETS
 //---------------------------------------------------------------------------------------
 //
 // See the comment for the base class code:OOPStackUnwinder.
@@ -29,6 +28,5 @@ public:
         __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
         _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine);
 };
-#endif // FEATURE_EH_FUNCLETS
 
 #endif // __unwinder_i386_h__

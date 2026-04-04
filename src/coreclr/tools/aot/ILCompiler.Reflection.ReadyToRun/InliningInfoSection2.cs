@@ -23,8 +23,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             StringBuilder sb = new StringBuilder();
 
-            NativeParser parser = new NativeParser(_r2r.Image, (uint)_startOffset);
-            NativeHashtable hashtable = new NativeHashtable(_r2r.Image, parser, (uint)_endOffset);
+            NativeParser parser = new NativeParser(_r2r.ImageReader, (uint)_startOffset);
+            NativeHashtable hashtable = new NativeHashtable(_r2r.ImageReader, parser, (uint)_endOffset);
 
             var enumerator = hashtable.EnumerateAllEntries();
 

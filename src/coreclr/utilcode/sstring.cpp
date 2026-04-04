@@ -23,10 +23,6 @@
 // Have one internal, well-known, literal for the empty string.
 const BYTE SString::s_EmptyBuffer[2] = { 0 };
 
-// @todo: these need to be initialized by calling GetACP()
-
-UINT SString::s_ACP = 0;
-
 #ifndef DACCESS_COMPILE
 static BYTE s_EmptySpace[sizeof(SString)] = { 0 };
 #endif // DACCESS_COMPILE
@@ -38,18 +34,14 @@ void SString::Startup()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    if (s_ACP == 0)
-    {
-        UINT ACP = GetACP();
-
 #ifndef DACCESS_COMPILE
-        s_Empty = PTR_SString(new (s_EmptySpace) SString());
-        s_Empty->SetNormalized();
-#endif // DACCESS_COMPILE
-
-        MemoryBarrier();
-        s_ACP = ACP;
+    if (s_Empty == NULL)
+    {
+        SString* emptyString = new (s_EmptySpace) SString();
+        emptyString->SetNormalized();
+        s_Empty = PTR_SString(emptyString);
     }
+#endif // DACCESS_COMPILE
 }
 
 CHECK SString::CheckStartup()
@@ -690,7 +682,7 @@ void SString::ConvertToUnicode() const
         {
             StackSString s;
             ConvertToUnicode(s);
-            PREFIX_ASSUME(!s.IsImmutable());
+            _ASSERTE(!s.IsImmutable());
             (const_cast<SString*>(this))->Set(s);
         }
     }
@@ -772,7 +764,7 @@ void SString::ConvertToUTF8() const
         {
             StackSString s;
             ConvertToUTF8(s);
-            PREFIX_ASSUME(!s.IsImmutable());
+            _ASSERTE(!s.IsImmutable());
             (const_cast<SString*>(this))->Set(s);
         }
     }
@@ -1864,7 +1856,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
     }
 
     // We don't have enough space in our buffer, do dynamic allocation.
-    LocalAllocHolder<WCHAR> string;
+    LocalAllocHolder<LPWSTR> string;
 
     DWORD result = ::FormatMessage(dwFlags | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                                       lpSource, dwMessageId, dwLanguageId,
@@ -1872,14 +1864,14 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
 
     if (result == 0)
         RETURN FALSE;
-    else
-    {
-        if (string[result-1] == W(' '))
-            string[result-1] = W('\0');
 
-        Set(string);
-        RETURN TRUE;
-    }
+    LPWSTR stringRaw = string;
+    _ASSERTE(stringRaw != NULL);
+    if (stringRaw[result-1] == W(' '))
+        stringRaw[result-1] = W('\0');
+
+    Set(stringRaw);
+    RETURN TRUE;
 }
 
 #if 1

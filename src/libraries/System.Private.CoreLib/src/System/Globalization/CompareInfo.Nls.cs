@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Globalization
@@ -108,19 +109,6 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-#if TARGET_WINDOWS
-            if (!Environment.IsWindows8OrAbove)
-            {
-                // On Windows 7 / Server 2008, LCMapStringEx exhibits strange behaviors if the destination
-                // buffer is both non-null and too small for the required output. To prevent this from
-                // causing issues for us, we need to make an immutable copy of the input buffer so that
-                // its contents can't change between when we calculate the required sort key length and
-                // when we populate the sort key buffer.
-
-                source = source.ToString();
-            }
-#endif
 
             // LCMapStringEx doesn't support passing cchSrc = 0, so if given a null or empty input
             // we'll normalize it to an empty null-terminated string and pass -1 to indicate that
@@ -255,6 +243,7 @@ namespace System.Globalization
             }
         }
 
+        [RequiresUnsafe]
         private unsafe int FindString(
                     uint dwFindNLSStringFlags,
                     ReadOnlySpan<char> lpStringSource,
@@ -306,6 +295,7 @@ namespace System.Globalization
             }
         }
 
+        [RequiresUnsafe]
         private unsafe int NlsIndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -317,6 +307,7 @@ namespace System.Globalization
             return FindString(positionFlag | (uint)GetNativeCompareFlags(options), source, target, matchLengthPtr);
         }
 
+        [RequiresUnsafe]
         private unsafe bool NlsStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -338,6 +329,7 @@ namespace System.Globalization
             return false;
         }
 
+        [RequiresUnsafe]
         private unsafe bool NlsEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -433,19 +425,6 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-#if TARGET_WINDOWS
-            if (!Environment.IsWindows8OrAbove)
-            {
-                // On Windows 7 / Server 2008, LCMapStringEx exhibits strange behaviors if the destination
-                // buffer is both non-null and too small for the required output. To prevent this from
-                // causing issues for us, we need to make an immutable copy of the input buffer so that
-                // its contents can't change between when we calculate the required sort key length and
-                // when we populate the sort key buffer.
-
-                source = source.ToString();
-            }
-#endif
-
             uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
 
             // LCMapStringEx doesn't support passing cchSrc = 0, so if given an empty span
@@ -466,30 +445,6 @@ namespace System.Globalization
             {
                 Debug.Assert(pSource != null);
                 Debug.Assert(pSortKey != null);
-
-#if TARGET_WINDOWS
-                if (!Environment.IsWindows8OrAbove)
-                {
-                    // Manually check that the destination buffer is large enough to hold the full output.
-                    // See earlier comment for reasoning.
-
-                    int requiredSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
-                                                                               flags,
-                                                                               pSource, sourceLength,
-                                                                               null, 0,
-                                                                               null, null, _sortHandle);
-
-                    if (requiredSortKeyLength > destination.Length)
-                    {
-                        ThrowHelper.ThrowArgumentException_DestinationTooShort();
-                    }
-
-                    if (requiredSortKeyLength <= 0)
-                    {
-                        throw new ArgumentException(SR.Arg_ExternalException);
-                    }
-                }
-#endif
 
                 actualSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                                      flags,

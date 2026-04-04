@@ -24,6 +24,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="PlatformNotSupportedException"><paramref name="signal"/> is not supported by the platform.</exception>
         /// <exception cref="IOException">An error occurred while setting up the signal handling or while installing the handler for the specified signal.</exception>
         /// <remarks>
+        /// The handlers are executed in reverse order of their registration.
         /// Raw values can be provided for <paramref name="signal"/> on Unix by casting them to <see cref="PosixSignal"/>.
         /// Default handling of the signal can be canceled through <see cref="PosixSignalContext.Cancel"/>.
         /// <see cref="PosixSignal.SIGINT"/> and <see cref="PosixSignal.SIGQUIT"/> can be canceled on both

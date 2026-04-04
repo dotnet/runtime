@@ -81,7 +81,7 @@ namespace System.Reflection
                 return true;
             }
 
-            return (left is null) ? false : left.Equals(right);
+            return left is not null && left.Equals(right);
         }
 
         public static bool operator !=(MethodBase? left, MethodBase? right) => !(left == right);
@@ -128,7 +128,7 @@ namespace System.Reflection
             ReadOnlySpan<ParameterInfo> paramInfo = GetParametersAsSpan();
             if (paramInfo.Length == 0)
             {
-                return Type.EmptyTypes;
+                return [];
             }
 
             Type[] parameterTypes = new Type[paramInfo.Length];

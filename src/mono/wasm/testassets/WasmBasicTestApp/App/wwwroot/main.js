@@ -21,10 +21,7 @@ function countChars(str) {
 }
 
 // Prepare base runtime parameters
-dotnet
-    .withElementOnExit()
-    .withExitCodeLogging()
-    .withExitOnUnhandledError();
+dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
 const logLevel = params.get("MONO_LOG_LEVEL");
 const logMask = params.get("MONO_LOG_MASK");
@@ -95,6 +92,12 @@ switch (testCase) {
             }
         });
         break;
+    case "AssetIntegrity":
+        dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            testOutput(`Asset '${name}' has integrity '${integrity}'`);
+            return defaultUri;
+        });
+        break;
     case "OutErrOverrideWorks":
         dotnet.withModuleConfig({
             out: (message) => {
@@ -109,7 +112,7 @@ switch (testCase) {
         break;
     case "InterpPgoTest":
         dotnet
-            .withConsoleForwarding()
+            .withConfig({ forwardConsole: true })
             .withRuntimeOptions(['--interp-pgo-logging'])
             .withInterpreterPgo(true);
         break;
@@ -123,7 +126,7 @@ switch (testCase) {
         testOutput("download finished");
         break;
     case "MaxParallelDownloads":
-        const maxParallelDownloads = params.get("maxParallelDownloads");
+        const maxParallelDownloads = parseInt(params.get("maxParallelDownloads"), 10) || 16;
         let activeFetchCount = 0;
         const originalFetch2 = globalThis.fetch;
         globalThis.fetch = async (...args) => {
@@ -166,10 +169,11 @@ switch (testCase) {
     case "EnvVariablesTest":
         dotnet.withEnvironmentVariable("foo", "bar");
         break;
-    case "BrowserProfilerTest":
+    case "HttpNoStreamingTest":
         break;
-    case "OverrideBootConfigName":
-        dotnet.withConfigSrc("boot.json");
+    case "DevServer_UploadPattern":
+        break;
+    case "BrowserProfilerTest":
         break;
     case "MainWithArgs":
         dotnet.withApplicationArgumentsFromQuery();
@@ -207,24 +211,40 @@ try {
                 }
 
                 await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                exports.LazyLoadingTest.Run();
+                await INTERNAL.loadLazyAssembly(`LazyLibrary${lazyAssemblyExtension}`);
+                const { LazyLibrary } = await getAssemblyExports("LazyLibrary");
+                const resLazy = LazyLibrary.Foo.Bar();
+                exit(resLazy == 42 ? 0 : 1);
             }
-            exports.LazyLoadingTest.Run();
-            exit(0);
+            else {
+                exports.LazyLoadingTest.Run();
+                exit(0);
+            }
             break;
         case "LibraryInitializerTest":
+            exit(0);
+            break;
+        case "ZipArchiveInteropTest":
+            exports.ZipArchiveInteropTest.Run();
             exit(0);
             break;
         case "AppSettingsTest":
             exports.AppSettingsTest.Run();
             exit(0);
             break;
+        case "FilesToIncludeInFileSystemTest":
+            exports.FilesToIncludeInFileSystemTest.Run();
+            exit(0);
+            break;
         case "DownloadResourceProgressTest":
+        case "AssetIntegrity":
             exit(0);
             break;
         case "OutErrOverrideWorks":
         case "DotnetRun":
         case "MainWithArgs":
-            dotnet.run();
+            await dotnet.runMainAndExit();
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
@@ -255,6 +275,38 @@ try {
             });
             exports.MemoryTest.Run();
             exit(0);
+            break;
+        case "DevServer_UploadPattern":
+            console.log("not ready yet");
+            const dsExportsHttp = await getAssemblyExports(config.mainAssemblyName);
+            console.log("ready");
+            await dsExportsHttp.HttpTest.GoodUpload();
+            await dsExportsHttp.HttpTest.BadUpload();
+            console.log("done");
+            exit(0);
+            break;
+        case "HttpNoStreamingTest":
+            console.log("not ready yet")
+            const myExportsHttp = await getAssemblyExports(config.mainAssemblyName);
+            const httpNoStreamingTest = myExportsHttp.HttpTest.HttpNoStreamingTest;
+            console.log("ready");
+            if (config.runtimeConfig.runtimeOptions.configProperties) {
+                const configProperties = config.runtimeConfig.runtimeOptions.configProperties;
+                console.log("configProperties: " + Object.keys(configProperties).length);
+                const wasmEnableStreamingResponse = configProperties["System.Net.Http.WasmEnableStreamingResponse"];
+                if (wasmEnableStreamingResponse === undefined) {
+                    exit(2);
+                }
+                if (wasmEnableStreamingResponse === true) {
+                    exit(3);
+                }
+            }
+
+            const retHttp = await httpNoStreamingTest();
+            document.getElementById("out").innerHTML = retHttp;
+            console.debug(`ret: ${retHttp}`);
+
+            exit(retHttp == 42 ? 0 : 1);
             break;
         case "EnvVariablesTest":
             console.log("not ready yet")
@@ -287,10 +339,12 @@ try {
             break;
         case "BrowserProfilerTest":
             console.log("not ready yet")
-            const origMeasure = globalThis.performance.measure
+            let foundB = false;
             globalThis.performance.measure = (method, options) => {
                 console.log(`performance.measure: ${method}`);
-                origMeasure(method, options);
+                if (method === "TestMeaning") {
+                    foundB = true;
+                }
             };
             const myExportsB = await getAssemblyExports(config.mainAssemblyName);
             const testMeaningB = myExportsB.BrowserProfilerTest.TestMeaning;
@@ -300,13 +354,8 @@ try {
             document.getElementById("out").innerHTML = retB;
             console.debug(`ret: ${retB}`);
 
-            exit(retB == 42 ? 0 : 1);
+            exit(foundB && retB == 42 ? 0 : 1);
 
-            break;
-        case "OverrideBootConfigName":
-            testOutput("ConfigSrc: " + Module.configSrc);
-            exports.OverrideBootConfigNameTest.Run();
-            exit(0);
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);
@@ -314,5 +363,7 @@ try {
             break;
     }
 } catch (e) {
-    exit(1, e);
+    if (e.name != "ExitStatus") {
+        exit(1, e);
+    }
 }

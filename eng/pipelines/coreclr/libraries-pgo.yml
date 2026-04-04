@@ -10,6 +10,7 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -71,3 +72,4 @@ extends:
                     - syntheticpgo
                     - syntheticpgo_blend
                     - jitrlcse
+                    - instrument_if_optimizing

@@ -309,6 +309,22 @@ namespace System.IO.Hashing.Tests
             }
         }
 
+        [Fact]
+        public void AppendingEmptyHasNoEffect()
+        {
+            NonCryptographicHashAlgorithm reference = CreateInstance();
+            reference.Append(new byte[] { 1, 2, 3 });
+            byte[] expected = reference.GetCurrentHash();
+
+            NonCryptographicHashAlgorithm hash = CreateInstance();
+            hash.Append(ReadOnlySpan<byte>.Empty);
+            hash.Append(new byte[] { 1, 2, 3 });
+            hash.Append(ReadOnlySpan<byte>.Empty);
+            byte[] actual = hash.GetCurrentHash();
+
+            Assert.Equal(expected, actual);
+        }
+
         private void VerifyEmptyResult(ReadOnlySpan<byte> result)
         {
             if (!result.SequenceEqual(_emptyHash))

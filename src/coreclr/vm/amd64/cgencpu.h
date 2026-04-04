@@ -31,11 +31,6 @@ class Module;
 struct VASigCookie;
 class ComCallMethodDesc;
 
-
-#define COMMETHOD_PREPAD                        16   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-#define COMMETHOD_CALL_PRESTUB_SIZE             6    // 32-bit indirect relative call
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   -10  // the offset of the call target address inside the prestub
-
 #define STACK_ALIGN_SIZE                        16
 
 #define JUMP_ALLOCATE_SIZE                      12   // # bytes to allocate for a 64-bit jump instruction
@@ -43,7 +38,7 @@ class ComCallMethodDesc;
 #define SIZEOF_LOAD_AND_JUMP_THUNK              22   // # bytes to mov r10, X; jmp Z
 #define SIZEOF_LOAD2_AND_JUMP_THUNK             32   // # bytes to mov r10, X; mov r11, Y; jmp Z
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 #define HAS_FIXUP_PRECODE                       1
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
@@ -64,7 +59,6 @@ class ComCallMethodDesc;
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8    // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          8    // bytes
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         8    // bytes
-#define COM_STUBS_SEPARATE_FP_LOCATIONS
 #define CALLDESCR_REGTYPEMAP                    1
 #endif
 
@@ -450,7 +444,47 @@ inline TADDR GetFP(const CONTEXT * context)
     return (TADDR)(context->Rbp);
 }
 
-extern "C" TADDR GetCurrentSP();
+inline void SetFirstArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    context->Rdi = (DWORD64)value;
+#else
+    context->Rcx = (DWORD64)value;
+#endif
+}
+
+inline TADDR GetFirstArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    return (TADDR)(context->Rdi);
+#else
+    return (TADDR)(context->Rcx);
+#endif
+}
+
+inline void SetSecondArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    context->Rsi = (DWORD64)value;
+#else
+    context->Rdx = (DWORD64)value;
+#endif
+}
+
+inline TADDR GetSecondArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    return (TADDR)(context->Rsi);
+#else
+    return (TADDR)(context->Rdx);
+#endif
+}
+
+extern "C" void* GetCurrentSP();
 
 // Emits:
 //  mov r10, pv1
@@ -466,54 +500,14 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
 // Get Rel32 destination, emit jumpStub if necessary into a preallocated location
 INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr, PCODE jumpStubAddrRW, bool emitJump);
 
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
+void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
-void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
-
-BOOL isJumpRel32(PCODE pCode);
-PCODE decodeJump32(PCODE pCode);
-
-BOOL isJumpRel64(PCODE pCode);
-PCODE decodeJump64(PCODE pCode);
-
-//
-// On IA64 back to back jumps should be separated by a nop bundle to get
-// the best performance from the hardware's branch prediction logic.
-// For all other platforms back to back jumps don't require anything special
-// That is why we have these two wrapper functions that call emitJump and decodeJump
-//
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-inline PCODE decodeBackToBackJump(PCODE pCode)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    if (isJumpRel32(pCode))
-        return decodeJump32(pCode);
-    else
-    if (isJumpRel64(pCode))
-        return decodeJump64(pCode);
-    else
-        return (PCODE)0;
-}
-
-extern "C" void setFPReturn(int fpSize, INT64 retVal);
-extern "C" void getFPReturn(int fpSize, INT64 *retval);
+bool isBackToBackJump(PCODE pCode);
+PCODE decodeBackToBackJump(PCODE pCode);
 
 struct HijackArgs
 {
-#ifndef FEATURE_MULTIREG_RETURN
-    union
-    {
-        ULONG64 Rax;
-        ULONG64 ReturnValue[1];
-    };
-#else // !FEATURE_MULTIREG_RETURN
+#ifdef UNIX_AMD64_ABI
     union
     {
         struct
@@ -523,7 +517,18 @@ struct HijackArgs
         };
         ULONG64 ReturnValue[2];
     };
-#endif // !FEATURE_MULTIREG_RETURN
+#else // UNIX_AMD64_ABI
+    union
+    {
+        ULONG64 Rax;
+        ULONG64 ReturnValue[1];
+    };
+#endif // UNIX_AMD64_ABI
+    union
+    {
+        ULONG64 Rcx;
+        ULONG64 AsyncRet;
+    };
     CalleeSavedRegisters Regs;
 #ifdef TARGET_WINDOWS
     ULONG64 Rsp;

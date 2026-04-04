@@ -11,8 +11,10 @@
 
 using System.IO;
 using System.Reflection;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Xunit;
 
 namespace System.Net.Mail.Tests
@@ -259,13 +261,13 @@ blah blah
                                 culture: null,
                                 activationAttributes: null);
 
+            var syncSendAdapterType = Type.GetType("System.Net.SyncReadWriteAdapter, System.Net.Mail");
+
             // Send the message.
-            typeof(MailMessage).InvokeMember(
-                                name: "Send",
-                                invokeAttr: BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.InvokeMethod,
-                                binder: null,
-                                target: mail,
-                                args: new object[] { mailWriter, true, true });
+            typeof(MailMessage)
+                .GetMethod("SendAsync", BindingFlags.Instance | BindingFlags.NonPublic)
+                .MakeGenericMethod(syncSendAdapterType)
+                .Invoke(mail, new object[] { mailWriter, true, true, CancellationToken.None });
 
             // Decode contents.
             string result = Encoding.UTF8.GetString(stream.ToArray());

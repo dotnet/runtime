@@ -4,6 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <!-- Filter ProjectReferences to build the best matching target framework only. -->
     <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
+    <NoDefaultSlnGenSolutionFolder>true</NoDefaultSlnGenSolutionFolder>
   </PropertyGroup>
 
   <!-- Reference all NetCoreAppCurrent shared framework generator projects. -->

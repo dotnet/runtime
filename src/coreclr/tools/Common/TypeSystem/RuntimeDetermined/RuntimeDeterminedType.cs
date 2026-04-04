@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
@@ -89,7 +90,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -97,11 +98,12 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override string Namespace
+        public override ReadOnlySpan<byte> Namespace
         {
             get
             {
-                return string.Concat(_runtimeDeterminedDetailsType.Name, "_", _rawCanonType.Namespace);
+                return System.Text.Encoding.UTF8.GetBytes(_runtimeDeterminedDetailsType.Name)
+                    .Append("_"u8, _rawCanonType.Namespace);
             }
         }
 
@@ -121,7 +123,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethod(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc method = _rawCanonType.GetMethod(name, signature, substitution);
             if (method == null)
@@ -129,7 +131,7 @@ namespace Internal.TypeSystem
             return Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), this);
         }
 
-        public override MethodDesc GetMethodWithEquivalentSignature(string name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethodWithEquivalentSignature(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc method = _rawCanonType.GetMethodWithEquivalentSignature(name, signature, substitution);
             if (method == null)

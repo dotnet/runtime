@@ -8,12 +8,12 @@ public sealed class CollectTest {
     private LargeObject lo;
     private int numTests = 0;
     public uint size = 0;
-    
+
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public void CreateLargeObject() {
         lo = new LargeObject(size, true);
     }
-    
+
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public void DestroyLargeObject() {
         lo = null;
@@ -31,7 +31,7 @@ public sealed class CollectTest {
             Console.WriteLine(e);
             return false;
         }
-        
+
         DestroyLargeObject();
         GC.Collect(gen);
         GC.WaitForPendingFinalizers();
@@ -66,6 +66,12 @@ public sealed class CollectTest {
     }
 
     public static int Main(string[] args) {
+        if (!TestLibrary.PlatformDetection.IsMonoRuntime)
+        {
+            // https://github.com/dotnet/runtime/issues/5933
+            return 100;
+        }
+
         CollectTest test = new CollectTest();
         test.size = MemCheck.ParseSizeMBAndLimitByAvailableMem(args);
 

@@ -15,6 +15,7 @@ terminology.
 | BBT | Microsoft internal early version of C/C++ PGO. See https://www.microsoft.com/windows/cse/bit_projects.mspx. |
 | BOTR | Book Of The Runtime. |
 | BCL | Base Class Library. A set of `System.*` (and to a limited extent `Microsoft.*`) libraries that make up the lower layer of the .NET library stack. See CoreFX. |
+| CDAC | Codename for [Data Contracts](https://github.com/dotnet/runtime/blob/main/docs/design/datacontracts/datacontracts_design.md) |
 | CIL | Common Intermediate Language. Equivalent to IL, also equivalent to [MSIL](https://learn.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil). |
 | CLI | Command Line Interface, or Common Language Infastructure. |
 | CLR | [Common Language Runtime](https://learn.microsoft.com/dotnet/standard/clr). |

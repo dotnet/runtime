@@ -83,9 +83,8 @@ namespace System.Xml.Xsl.XsltOld
         private readonly Hashtable _attributeSetTable = new Hashtable();
         private readonly Hashtable _decimalFormatTable = new Hashtable();
         private List<Key>? _keyList;
-        private XsltOutput? _output;
 
-        internal XsltOutput Output => _output ??= new XsltOutput();
+        internal XsltOutput Output => field ??= new XsltOutput();
 
         /*
          * Compile

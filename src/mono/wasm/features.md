@@ -1,5 +1,7 @@
 # Configuring and hosting .NET WebAssembly applications
 
+For WebAssembly documentation including building, testing, and debugging, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
+
 ## Table of contents
 - [Configuring browser features](#Configuring-browser-features)
 - [Project folder structure](#Project-folder-structure)
@@ -137,11 +139,13 @@ When you want to call JavaScript functions from C# or managed code from JavaScri
 * or [the documentation](https://learn.microsoft.com/aspnet/core/client-side/dotnet-interop).
 
 ### Embedding dotnet in existing JavaScript applications
-To embed the .NET runtime inside of a JavaScript application, you will need to use both the MSBuild toolchain (to build and publish your managed code) and your existing web build toolchain.
+The default build output relies on exact file names produced during .NET build. In our testing the dynamic loading of assets provides faster startup and shorter download times.
 
-The output of the MSBuild toolchain - located in the [AppBundle](#Project-folder-structure) folder - must be fed in to your web build toolchain in order to ensure that the runtime and managed binaries are deployed with the rest of your application assets.
-
-For a sample of using the .NET runtime in a React component, [see here](https://github.com/maraf/dotnet-wasm-react).
+JavaScript tools like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) can be used for further file modifications.
+An msbuild property `<WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>` can be used to generate different JavaScript files that are not runnable
+in the browsers, but they can be consumed by these JavaScript tools. Some examples:
+  - Merge all JavaScript files, resolve wasm & other files as files, copying them to the output directory, optionally fingerprinting them, etc.
+  - Embed all JavaScripts files and wasm & other files as base64 encoded blobs directly into a single file.
 
 ## Project folder structure
 
@@ -177,7 +181,7 @@ Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../
 - `dotnet.boot.js` - contains list of all other assets and their integrity hash and also various configuration flags.
 - `dotnet.native.wasm` - is the compiled binary of the dotnet (Mono) runtime.
 - `System.Private.CoreLib.*` - is NET assembly with the core implementation of dotnet runtime and class library
-- `*.wasm` - are .NET assemblies stored in `WebCIL` format (for better compatibility with firewalls and virus scanners).
+- `*.wasm` - are .NET assemblies stored in `Webcil` format (for better compatibility with firewalls and virus scanners).
 - `*.dll` - are .NET assemblies stored in Portable Executable format (only used when you use `<WasmEnableWebcil>false</WasmEnableWebcil>`).
 - `dotnet.js.map` - is a source map file, for easier debugging of the runtime code. It's not included in the published applications.
 - `dotnet.native.js.symbols` - are debug symbols which help to put `C` runtime method names back to the `.wasm` stack traces. To enable generating it, use `<WasmEmitSymbolMap>true</WasmEmitSymbolMap>`.
@@ -274,11 +278,6 @@ Browsers do not offer a way to access the contents of their time zone database, 
 
 This requires that you have the [wasm-tools workload](#wasm-tools-workload) installed.
 
-### Bundling JavaScript and other assets
-Many web developers use tools like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) to bundle many files into one large .js file. When deploying a .NET application to the web, you can safely bundle the `dotnet.js` ES6 module with the rest of your JavaScript application, but the other assets and modules in the `_framework` folder may not be bundled as they are loaded dynamically.
-
-In our testing the dynamic loading of assets provides faster startup and shorter download times. We would like to [hear from the community](https://github.com/dotnet/runtime/issues/86162) if there are scenarios where you need the ability to bundle the rest of an application.
-
 ## Resources consumed on the target device
 When you deploy a .NET application to the browser, many necessary components and databases are included:
 - The .NET runtime, including a garbage collector, interpreter, and JIT compiler
@@ -359,7 +358,7 @@ You can add following elements in your .csproj
 See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
 For more details see also [debugger.md](../browser/debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
 
-### Runtime logging and tracing
+### Mono runtime logging and tracing
 
 You can enable detailed runtime logging.
 
@@ -376,20 +375,31 @@ await dotnet
 
 See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045e7741fffa17710dc48e9032e519258/src/mono/mono/utils/mono-logger.c#L273-L308)
 
+### CoreCLR runtime logging and tracing
+
+```xml
+<ItemGroup>
+  <WasmEnvironmentVariable Include="COMPlus_LogEnable" Value="1" />
+  <WasmEnvironmentVariable Include="COMPlus_LogToConsole" Value="1" />
+  <WasmEnvironmentVariable Include="COMPlus_LogLevel" Value="10" />
+  <WasmEnvironmentVariable Include="COMPlus_LogFacility" Value="410" />
+</ItemGroup>
+```
+
 ### Diagnostics tools
 
 ```xml
 <PropertyGroup>
   <!-- enables diagnostic server -->
-  <WasmPerfTracing>true</WasmPerfTracing>
+  <EnableDiagnostics>true</EnableDiagnostics>
 
   <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
-  Only when WasmPerfInstrumentation is true
+  Only when WasmPerformanceInstrumentation is not empty or none.
   See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
   -->
-  <WasmPerfInstrumentation>N:Sample</WasmPerfInstrumentation>
+  <WasmPerformanceInstrumentation>N:Sample</WasmPerformanceInstrumentation>
   <!-- alternatively all methods -->
-  <WasmPerfInstrumentation>all</WasmPerfInstrumentation>
+  <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
 
   <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
   <!-- this is existing switch also on other targets -->
@@ -411,7 +421,7 @@ globalThis.getDotnetRuntime(0).collectGcDump()
 
 The .nettrace file could be converted for VS via `dotnet-gcdump convert` or opened in `PerfView.exe` as is.
 ```js
-globalThis.getDotnetRuntime(0).collectPerfCounters({durationSeconds: 60})
+globalThis.getDotnetRuntime(0).collectMetrics({durationSeconds: 60})
 ```
 
 The counters could be opened in VS, `PerfView.exe` tools or via `dotnet-trace report xxx.nettrace topN -n 10`

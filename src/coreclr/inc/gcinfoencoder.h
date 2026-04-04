@@ -289,19 +289,7 @@ private:
         *m_pCurrentSlot |= data;
     }
 
-    inline void AllocMemoryBlock()
-    {
-        _ASSERTE( IS_ALIGNED( m_MemoryBlockSize, sizeof( size_t ) ) );
-        MemoryBlock* pMemBlock = m_MemoryBlocks.AppendNew(m_pAllocator, m_MemoryBlockSize);
-
-        m_pCurrentSlot = pMemBlock->Contents;
-        m_OutOfBlockSlot = m_pCurrentSlot + m_MemoryBlockSize / sizeof( size_t );
-
-#ifdef _DEBUG
-           m_MemoryBlocksCount++;
-#endif
-
-    }
+    inline void AllocMemoryBlock();
 
     inline void InitCurrentSlot()
     {
@@ -430,10 +418,7 @@ public:
     void SetHasTailCalls();
 #endif // TARGET_AMD64
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     void SetSizeOfStackOutgoingAndScratchArea( UINT32 size );
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
-
 
     //------------------------------------------------------------------------
     // Encoding
@@ -501,9 +486,18 @@ private:
     INT32  m_ReversePInvokeFrameSlot;
     InterruptibleRange* m_pLastInterruptibleRange;
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    UINT32 m_SizeOfStackOutgoingAndScratchArea;
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    template <bool isConst, typename T>
+    struct TypeMaybeConst
+    {
+        typedef T type;
+    };
+    template <typename T> 
+    struct TypeMaybeConst<true, T>
+    {
+        typedef const T type;
+    };
+
+    typename TypeMaybeConst<!GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA, UINT32>::type m_SizeOfStackOutgoingAndScratchArea = -1;
 
     void * eeAllocGCInfo (size_t        blockSize);
 
@@ -557,5 +551,9 @@ private:
 };
 
 typedef TGcInfoEncoder<TargetGcInfoEncoding> GcInfoEncoder;
+
+#ifdef FEATURE_INTERPRETER
+typedef TGcInfoEncoder<InterpreterGcInfoEncoding> InterpreterGcInfoEncoder;
+#endif // FEATURE_INTERPRETER
 
 #endif // !__GCINFOENCODER_H__

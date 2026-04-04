@@ -11,7 +11,7 @@
 #define __ILSTUBRESOLVER_H__
 
 #include "stubgen.h"
-class ILStubResolver : DynamicResolver
+class ILStubResolver : public DynamicResolver
 {
     friend class ILStubCache;
     friend class ILStubLinker;
@@ -32,7 +32,7 @@ public:
     BYTE* GetCodeInfo(unsigned* pCodeSize, unsigned* pStackSize, CorInfoOptions* pOptions, unsigned* pEHSize);
     SigPointer GetLocalSig();
 
-    OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
+    STRINGREF* ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
     STRINGREF GetStringLiteral(mdToken metaTok);
     void ResolveToken(mdToken token, ResolvedToken* resolvedToken);
@@ -47,28 +47,27 @@ public:
     // -----------------------------------
     // ILStubResolver-specific methods
     // -----------------------------------
-    MethodDesc* GetStubMethodDesc();
-    MethodDesc* GetStubTargetMethodDesc();
-    void SetStubTargetMethodDesc(MethodDesc* pStubTargetMD);
-    void SetStubTargetMethodSig(PCCOR_SIGNATURE pStubTargetMethodSig, DWORD cbStubTargetSigLength);
-    void SetStubMethodDesc(MethodDesc* pStubMD);
-
-    COR_ILMETHOD_DECODER * AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
-    COR_ILMETHOD_DECODER * GetILHeader();
-    COR_ILMETHOD_SECT_EH* AllocEHSect(size_t nClauses);
+    ILStubResolver();
 
     bool IsCompiled();
     bool IsILGenerated();
 
-    ILStubResolver();
+    MethodDesc* GetStubMethodDesc();
+    MethodDesc* GetStubTargetMethodDesc();
+    COR_ILMETHOD_DECODER* GetILHeader();
 
+#ifndef DACCESS_COMPILE
     void SetTokenLookupMap(TokenLookupMap* pMap);
-
     void SetJitFlags(CORJIT_FLAGS jitFlags);
+    void SetStubMethodDesc(MethodDesc* pStubMD);
+    void SetStubTargetMethodDesc(MethodDesc* pStubTargetMD);
+    void SetStubTargetMethodSig(PCCOR_SIGNATURE pStubTargetMethodSig, DWORD cbStubTargetSigLength);
 
-    // This is only set for StructMarshal interop stubs.
-    // See callsites for more details.
-    void SetLoaderHeap(PTR_LoaderHeap pLoaderHeap);
+    COR_ILMETHOD_DECODER* AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
+    COR_ILMETHOD_SECT_EH* AllocEHSect(size_t nClauses);
+
+    COR_ILMETHOD_DECODER* FinalizeILStub(ILStubLinker* sl);
+#endif // !DACCESS_COMPILE
 
     static void StubGenFailed(ILStubResolver* pResolver);
 
@@ -81,7 +80,6 @@ protected:
     };
 
     void ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState);
-    bool UseLoaderHeap();
 
     //
     // This stuff is only needed during JIT
@@ -103,10 +101,8 @@ protected:
     PTR_MethodDesc          m_pStubMD;
     PTR_MethodDesc          m_pStubTargetMD;
     CORJIT_FLAGS            m_jitFlags;
-    PTR_LoaderHeap          m_loaderHeap;
 };
 
 typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
-
 
 #endif // __ILSTUBRESOLVER_H__

@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal override Task<byte[]> SignDetachedAsync(Stream detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
             => CoseMultiSignMessage.SignDetachedAsync(detachedContent, signer, protectedHeaders, unprotectedHeaders, associatedData);
 
-        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        internal override bool Verify(CoseMessage msg, IDisposable key, byte[] content, byte[]? associatedData = null)
         {
             Assert.True(!OnlySupportsDetachedContent || msg.Content == null);
             CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
@@ -43,7 +43,19 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Equal(1, signatures.Count);
 
             using Stream stream = GetTestStream(content);
-            return signatures[0].VerifyDetachedAsync(key, stream, associatedData).GetAwaiter().GetResult();
+
+            CoseAlgorithm algorithm = GetCoseAlgorithmFromCoseMessage(msg);
+            CoseKey coseKey = CoseKeyFromAlgorithmAndKey(algorithm, key);
+
+            bool result = signatures[0].VerifyDetachedAsync(coseKey, stream, associatedData).GetAwaiter().GetResult();
+
+            if (key is AsymmetricAlgorithm keyAsymmetricAlgorithm)
+            {
+                stream.Position = 0;
+                Assert.Equal(result, signatures[0].VerifyDetachedAsync(keyAsymmetricAlgorithm, stream, associatedData).GetAwaiter().GetResult());
+            }
+
+            return result;
         }
     }
 
@@ -72,7 +84,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal override byte[] SignDetached(Stream detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
             => CoseMultiSignMessage.SignDetached(detachedContent, signer, protectedHeaders, unprotectedHeaders, associatedData);
 
-        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        internal override bool Verify(CoseMessage msg, IDisposable key, byte[] content, byte[]? associatedData = null)
         {
             Assert.True(!OnlySupportsDetachedContent || msg.Content == null);
             CoseMultiSignMessage multiSignMsg = Assert.IsType<CoseMultiSignMessage>(msg);
@@ -81,7 +93,19 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Equal(1, signatures.Count);
 
             using Stream stream = GetTestStream(content);
-            return signatures[0].VerifyDetached(key, stream, associatedData);
+
+            CoseAlgorithm algorithm = GetCoseAlgorithmFromCoseMessage(msg);
+            CoseKey coseKey = CoseKeyFromAlgorithmAndKey(algorithm, key);
+
+            bool result = signatures[0].VerifyDetached(coseKey, stream, associatedData);
+
+            if (key is AsymmetricAlgorithm keyAsymmetricAlgorithm)
+            {
+                stream.Position = 0;
+                Assert.Equal(result, signatures[0].VerifyDetached(keyAsymmetricAlgorithm, stream, associatedData));
+            }
+
+            return result;
         }
     }
 }

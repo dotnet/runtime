@@ -112,25 +112,62 @@ ILStubResolver::GetLocalSig()
         m_pCompileTimeState->m_ILHeader.cbLocalVarSig);
 }
 
-OBJECTHANDLE ILStubResolver::ConstructStringLiteral(mdToken token)
+STRINGREF* ILStubResolver::ConstructStringLiteral(mdToken token)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(FALSE);
-    return (OBJECTHANDLE)NULL;
+#ifdef DACCESS_COMPILE
+    DacNotImpl();
+    return NULL;
+#else // DACCESS_COMPILE
+    GCX_COOP();
+
+    STRINGREF* string = NULL;
+    STRINGREF strRef = GetStringLiteral(token);
+
+    GCPROTECT_BEGIN(strRef);
+
+    if (strRef != NULL)
+    {
+        string = GetDynamicMethod()->GetLoaderAllocator()->GetOrInternString(&strRef);
+    }
+
+    GCPROTECT_END();
+
+    return string;
+#endif // DACCESS_COMPILE
 }
 
 BOOL ILStubResolver::IsValidStringRef(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(FALSE);
-    return FALSE;
+
+    if (TypeFromToken(metaTok) != mdtString)
+        return FALSE;
+
+    if (RidFromToken(metaTok) == 0)
+        return FALSE;
+
+    mdToken maxUserStringToken = m_pCompileTimeState->m_tokenLookupMap.GetMaxUserStringToken();
+
+    return metaTok >= TokenFromRid(1, mdtString) && metaTok <= maxUserStringToken;
 }
 
 STRINGREF ILStubResolver::GetStringLiteral(mdToken metaTok)
 {
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(FALSE);
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_COOPERATIVE;
+        PRECONDITION(IsValidStringRef(metaTok));
+    }
+    CONTRACTL_END;
+#ifndef DACCESS_COMPILE
+    return StringObject::NewString(m_pCompileTimeState->m_tokenLookupMap.LookupUserString(metaTok));
+#else
+    DacNotImpl();
     return NULL;
+#endif
 }
 
 void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
@@ -213,6 +250,18 @@ void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
             resolvedToken->TypeHandle = TypeHandle(pMT);
         }
         break;
+
+    case mdtTypeSpec:
+        {
+            TokenLookupMap::TypeSpecEntry entry = m_pCompileTimeState->m_tokenLookupMap.LookupTypeSpec(token);
+            _ASSERTE(entry.ClassSignatureToken != mdTokenNil);
+            _ASSERTE(!entry.Type.IsNull());
+            resolvedToken->TypeSignature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
+
+            SigTypeContext typeContext{ m_pStubMD->GetClassInstantiation(), m_pStubMD->GetMethodInstantiation() };
+            resolvedToken->TypeHandle = resolvedToken->TypeSignature.GetTypeHandleThrowing(m_pStubMD->GetModule(), &typeContext);
+        }
+        break;
 #endif // !defined(DACCESS_COMPILE)
 
     default:
@@ -270,6 +319,64 @@ void ILStubResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
     clause->FilterOffset = ehInfo->GetFilterOffset();
 }
 
+//---------------------------------------------------------------------------------------
+//
+ILStubResolver::ILStubResolver() :
+    m_pCompileTimeState(dac_cast<PTR_CompileTimeState>(ILNotYetGenerated)),
+    m_pStubMD(dac_cast<PTR_MethodDesc>(nullptr)),
+    m_pStubTargetMD(dac_cast<PTR_MethodDesc>(nullptr)),
+    m_jitFlags()
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+bool ILStubResolver::IsCompiled()
+{
+    LIMITED_METHOD_CONTRACT;
+    return (dac_cast<TADDR>(m_pCompileTimeState) == ILGeneratedAndFreed);
+}
+
+bool ILStubResolver::IsILGenerated()
+{
+    LIMITED_METHOD_CONTRACT;
+    return (dac_cast<TADDR>(m_pCompileTimeState) != ILNotYetGenerated);
+}
+
+MethodDesc* ILStubResolver::GetStubMethodDesc()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_pStubMD;
+}
+
+MethodDesc* ILStubResolver::GetStubTargetMethodDesc()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_pStubTargetMD;
+}
+
+COR_ILMETHOD_DECODER* ILStubResolver::GetILHeader()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(m_pCompileTimeState != NULL);
+    return &m_pCompileTimeState->m_ILHeader;
+}
+
+#ifndef DACCESS_COMPILE
+void ILStubResolver::SetTokenLookupMap(TokenLookupMap* pMap)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(m_pCompileTimeState != NULL);
+
+    // run copy ctor
+    new (&m_pCompileTimeState->m_tokenLookupMap) TokenLookupMap(pMap);
+}
+
+void ILStubResolver::SetJitFlags(CORJIT_FLAGS jitFlags)
+{
+    LIMITED_METHOD_CONTRACT;
+    m_jitFlags = jitFlags;
+}
+
 void ILStubResolver::SetStubMethodDesc(MethodDesc* pStubMD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -282,20 +389,12 @@ void ILStubResolver::SetStubTargetMethodDesc(MethodDesc* pStubTargetMD)
     m_pStubTargetMD = PTR_MethodDesc(pStubTargetMD);
 }
 
-
-//---------------------------------------------------------------------------------------
-//
-void
-ILStubResolver::SetStubTargetMethodSig(
+void ILStubResolver::SetStubTargetMethodSig(
     PCCOR_SIGNATURE pStubTargetMethodSig,
     DWORD           cbStubTargetSigLength)
 {
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(m_pCompileTimeState));
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(m_pCompileTimeState != NULL);
 
     NewArrayHolder<BYTE> pNewSig = new BYTE[cbStubTargetSigLength];
 
@@ -305,39 +404,9 @@ ILStubResolver::SetStubTargetMethodSig(
     pNewSig.SuppressRelease();
 }
 
-//---------------------------------------------------------------------------------------
-//
-MethodDesc *
-ILStubResolver::GetStubTargetMethodDesc()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_pStubTargetMD;
-}
-
-MethodDesc* ILStubResolver::GetStubMethodDesc()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_pStubMD;
-}
-
-ILStubResolver::ILStubResolver() :
-    m_pCompileTimeState(dac_cast<PTR_CompileTimeState>(ILNotYetGenerated)),
-    m_pStubMD(dac_cast<PTR_MethodDesc>(nullptr)),
-    m_pStubTargetMD(dac_cast<PTR_MethodDesc>(nullptr)),
-    m_jitFlags(),
-    m_loaderHeap(dac_cast<PTR_LoaderHeap>(nullptr))
-{
-    LIMITED_METHOD_CONTRACT;
-
-}
-
-void ILStubResolver::SetLoaderHeap(PTR_LoaderHeap pLoaderHeap)
-{
-    m_loaderHeap = pLoaderHeap;
-}
-
 static COR_ILMETHOD_DECODER CreateILHeader(size_t cbCode, UINT maxStack, BYTE* pNewILCodeBuffer, BYTE* pNewLocalSig, DWORD cbLocalSig)
 {
+    LIMITED_METHOD_CONTRACT;
     COR_ILMETHOD_DECODER ilHeader{};
     ilHeader.CodeSize = (DWORD)cbCode;
     ilHeader.MaxStack = maxStack;
@@ -347,37 +416,22 @@ static COR_ILMETHOD_DECODER CreateILHeader(size_t cbCode, UINT maxStack, BYTE* p
     return ilHeader;
 }
 
-//---------------------------------------------------------------------------------------
-//
-COR_ILMETHOD_DECODER *
-ILStubResolver::AllocGeneratedIL(
+COR_ILMETHOD_DECODER* ILStubResolver::AllocGeneratedIL(
     size_t cbCode,
     DWORD  cbLocalSig,
     UINT   maxStack)
 {
     STANDARD_VM_CONTRACT;
 
-#if !defined(DACCESS_COMPILE)
     _ASSERTE(0 != cbCode);
 
     // Perform a single allocation for all needed memory
-    AllocMemHolder<BYTE> allocMemory;
-    NewArrayHolder<BYTE> newMemory;
-    BYTE* memory;
+    NewArrayHolder<BYTE> memory;
 
     S_SIZE_T toAlloc = (S_SIZE_T(sizeof(CompileTimeState)) + S_SIZE_T(cbCode) + S_SIZE_T(cbLocalSig));
     _ASSERTE(!toAlloc.IsOverflow());
 
-    if (UseLoaderHeap())
-    {
-        allocMemory = m_loaderHeap->AllocMem(toAlloc);
-        memory = allocMemory;
-    }
-    else
-    {
-        newMemory = new BYTE[toAlloc.Value()];
-        memory = newMemory;
-    }
+    memory = new BYTE[toAlloc.Value()];
 
     // Using placement new
     CompileTimeState* pNewCompileTimeState = new (memory) CompileTimeState{};
@@ -394,31 +448,40 @@ ILStubResolver::AllocGeneratedIL(
     CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
     (void*)pPrevCompileTimeState;
 
-    allocMemory.SuppressRelease();
-    newMemory.SuppressRelease();
+    memory.SuppressRelease();
     return pILHeader;
 
-#else  // DACCESS_COMPILE
-    DacNotImpl();
-    return NULL;
-
-#endif // DACCESS_COMPILE
 } // ILStubResolver::AllocGeneratedIL
 
-//---------------------------------------------------------------------------------------
-//
-COR_ILMETHOD_DECODER* ILStubResolver::GetILHeader()
+COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl)
 {
-    CONTRACTL
-    {
-        MODE_ANY;
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(m_pCompileTimeState));
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(!IsILGenerated());
+    _ASSERTE(sl != NULL);
 
-    return &m_pCompileTimeState->m_ILHeader;
+    UINT maxStack;
+    size_t cbCode = sl->Link(&maxStack);
+    DWORD cbSig = sl->GetLocalSigSize();
+
+    COR_ILMETHOD_DECODER* pILHeader = AllocGeneratedIL(cbCode, cbSig, maxStack);
+    BYTE* pbBuffer = (BYTE*)pILHeader->Code;
+    BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
+    _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
+
+    size_t numEH = sl->GetNumEHClauses();
+    if (numEH > 0)
+    {
+        sl->WriteEHClauses(AllocEHSect(numEH));
+    }
+
+    sl->GenerateCode(pbBuffer, cbCode);
+    sl->GetLocalSig(pbLocalSig, cbSig);
+
+    // Store the token lookup map
+    SetTokenLookupMap(sl->GetTokenLookupMap());
+    SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
+
+    return pILHeader;
 }
 
 COR_ILMETHOD_SECT_EH* ILStubResolver::AllocEHSect(size_t nClauses)
@@ -436,11 +499,7 @@ COR_ILMETHOD_SECT_EH* ILStubResolver::AllocEHSect(size_t nClauses)
     m_pCompileTimeState->m_ILHeader.EH = m_pCompileTimeState->m_pEHSect;
     return m_pCompileTimeState->m_pEHSect;
 }
-
-bool ILStubResolver::UseLoaderHeap()
-{
-    return m_loaderHeap != dac_cast<PTR_LoaderHeap>(nullptr);
-}
+#endif // !DACCESS_COMPILE
 
 void ILStubResolver::FreeCompileTimeState()
 {
@@ -458,10 +517,7 @@ void ILStubResolver::FreeCompileTimeState()
         return;
     }
 
-    if (!UseLoaderHeap())
-    {
-        ClearCompileTimeState(ILGeneratedAndFreed);
-    }
+    ClearCompileTimeState(ILGeneratedAndFreed);
 
 }
 
@@ -475,7 +531,6 @@ ILStubResolver::ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(!UseLoaderHeap());
     }
     CONTRACTL_END;
 
@@ -493,40 +548,6 @@ ILStubResolver::ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState)
 
     InterlockedExchangeT(&m_pCompileTimeState, dac_cast<PTR_CompileTimeState>((TADDR)newState));
 } // ILStubResolver::ClearCompileTimeState
-
-//---------------------------------------------------------------------------------------
-//
-void
-ILStubResolver::SetTokenLookupMap(
-    TokenLookupMap * pMap)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(m_pCompileTimeState));
-    }
-    CONTRACTL_END;
-
-    // run copy ctor
-    new (&m_pCompileTimeState->m_tokenLookupMap) TokenLookupMap(pMap);
-}
-
-bool ILStubResolver::IsCompiled()
-{
-    LIMITED_METHOD_CONTRACT;
-    return (dac_cast<TADDR>(m_pCompileTimeState) == ILGeneratedAndFreed);
-}
-
-bool ILStubResolver::IsILGenerated()
-{
-    return (dac_cast<TADDR>(m_pCompileTimeState) != ILNotYetGenerated);
-}
-
-void ILStubResolver::SetJitFlags(CORJIT_FLAGS jitFlags)
-{
-    LIMITED_METHOD_CONTRACT;
-    m_jitFlags = jitFlags;
-}
 
 // static
 void ILStubResolver::StubGenFailed(ILStubResolver* pResolver)

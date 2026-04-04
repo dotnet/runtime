@@ -1,31 +1,41 @@
 parameters:
   configForBuild: 'Release'
+  artifactName: 'BrowserWasm'
+  runtimeFlavor: 'mono'
+  sdkDirName: 'dotnet-latest'
+  includeRefPack: true
 
 steps:
   - script: >-
       ./dotnet.sh build -p:TargetOS=browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
       /p:Configuration=${{ parameters.configForBuild }}
       /p:ContinuousIntegrationBuild=true
+      /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
       /t:InstallWorkloadUsingArtifacts
       /bl:$(Build.SourcesDirectory)/artifacts/log/${{ parameters.configForBuild }}/InstallWorkloadUsingArtifacts.binlog
       $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
     displayName: "Install workload using artifacts"
 
+  # Stage artifacts: create staging/, copy SDK, runtime pack, and nugets
   - script: >-
       mkdir -p $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
-      cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-latest $(Build.SourcesDirectory)/artifacts/staging &&
+      cp -r $(Build.SourcesDirectory)/artifacts/bin/${{ parameters.sdkDirName }} $(Build.SourcesDirectory)/artifacts/staging &&
       cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
-      cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging &&
       cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
       cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
     displayName: "Prepare artifacts staging directory"
+
+  # Mono also needs the ref pack directory (CoreCLR gets it from nugets)
+  - ${{ if eq(parameters.includeRefPack, true) }}:
+    - script: cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging
+      displayName: "Stage ref pack directory"
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
       rootFolder: '$(Build.SourcesDirectory)/artifacts/staging'
       includeRootFolder: true
       displayName: Browser Wasm Artifacts
-      artifactName: BrowserWasm
+      artifactName: ${{ parameters.artifactName }}
       archiveType: tar
       tarCompression: gz
       archiveExtension: '.tar.gz'

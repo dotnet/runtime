@@ -50,7 +50,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("name")]
-        public void CreateSite_NullOwnerSite_Success(string name)
+        public void CreateSite_NullOwnerSite_Success(string? name)
         {
             var component = new Component();
 
@@ -68,7 +68,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("name")]
-        public void Add_NonNullOwnerSite_Success(string name)
+        public void Add_NonNullOwnerSite_Success(string? name)
         {
             var component = new Component();
 
@@ -89,7 +89,7 @@ namespace System.ComponentModel.Tests
         [InlineData("")]
         [InlineData("name")]
         [InlineData("newName")]
-        public void CreateSite_SetSiteName_Success(string value)
+        public void CreateSite_SetSiteName_Success(string? value)
         {
             var component = new Component();
 

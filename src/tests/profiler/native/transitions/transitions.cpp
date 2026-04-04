@@ -60,7 +60,7 @@ HRESULT Transitions::Shutdown()
         printf("Test failed _failures=%d _pinvoke=%s _reversePinvoke=%s\n",
                 _failures.load(), boolFmt(successPinvoke), boolFmt(successReversePinvoke));
     }
-
+    fflush(stdout);
     return S_OK;
 }
 

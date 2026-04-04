@@ -36,7 +36,7 @@ MethodDesc * DispatchSlot::GetMethodDesc()
     if (IsNull())
         return NULL;
     else
-        return MethodTable::GetMethodDescForSlotAddress(GetTarget());
+        return NonVirtualEntry2MethodDesc(GetTarget());
 }
 
 //------------------------------------------------------------------------

@@ -144,7 +144,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, nint cb)
         {
             if (pv == IntPtr.Zero)
             {

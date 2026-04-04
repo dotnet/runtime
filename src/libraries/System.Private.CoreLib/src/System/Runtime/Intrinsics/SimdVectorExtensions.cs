@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+
 namespace System.Runtime.Intrinsics
 {
     internal static unsafe class SimdVectorExtensions
@@ -70,6 +73,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="source">The vector that will be stored.</param>
         /// <param name="destination">The destination at which <paramref name="source" /> will be stored.</param>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
+        [RequiresUnsafe]
         public static void Store<TVector, T>(this TVector source, T* destination)
             where TVector : ISimdVector<TVector, T>
         {
@@ -82,6 +86,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="source">The vector that will be stored.</param>
         /// <param name="destination">The aligned destination at which <paramref name="source" /> will be stored.</param>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
+        [RequiresUnsafe]
         public static void StoreAligned<TVector, T>(this TVector source, T* destination)
             where TVector : ISimdVector<TVector, T>
         {
@@ -95,6 +100,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="destination">The aligned destination at which <paramref name="source" /> will be stored.</param>
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
+        [RequiresUnsafe]
         public static void StoreAlignedNonTemporal<TVector, T>(this TVector source, T* destination)
             where TVector : ISimdVector<TVector, T>
         {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -79,6 +80,15 @@ internal static partial class Interop
         }
 
         /// <summary>
+        ///     Peel off the next "count" bytes in blob and copy them into the destination.
+        /// </summary>
+        internal static void Consume(ReadOnlySpan<byte> blob, ref int offset, int count, Span<byte> destination)
+        {
+            blob.Slice(offset, count).CopyTo(destination);
+            offset += count;
+        }
+
+        /// <summary>
         ///     Magic numbers identifying blob types
         /// </summary>
         internal enum KeyBlobMagicNumber : int
@@ -105,6 +115,14 @@ internal static partial class Interop
             BCRYPT_ECDSA_PRIVATE_P521_MAGIC = 0x36534345,
             BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC = 0x50444345,
             BCRYPT_ECDSA_PRIVATE_GENERIC_MAGIC = 0x56444345,
+
+            BCRYPT_MLDSA_PUBLIC_MAGIC = 0x4B505344,
+            BCRYPT_MLDSA_PRIVATE_MAGIC = 0x4B535344,
+            BCRYPT_MLDSA_PRIVATE_SEED_MAGIC = 0x53535344,
+
+            BCRYPT_MLKEM_PUBLIC_MAGIC = 0x504B4C4D, // MLKP
+            BCRYPT_MLKEM_PRIVATE_MAGIC = 0x524B4C4D, // MLKR
+            BCRYPT_MLKEM_PRIVATE_SEED_MAGIC = 0x534B4C4D, // MLKS
 
             BCRYPT_RSAPUBLIC_MAGIC = 0x31415352,
             BCRYPT_RSAPRIVATE_MAGIC = 0x32415352,
@@ -133,6 +151,14 @@ internal static partial class Interop
             internal const string BCRYPT_ECCPRIVATE_BLOB = "ECCPRIVATEBLOB";
             internal const string BCRYPT_ECCFULLPUBLIC_BLOB = "ECCFULLPUBLICBLOB";
             internal const string BCRYPT_ECCFULLPRIVATE_BLOB = "ECCFULLPRIVATEBLOB";
+
+            internal const string BCRYPT_PQDSA_PUBLIC_BLOB = "PQDSAPUBLICBLOB";
+            internal const string BCRYPT_PQDSA_PRIVATE_BLOB = "PQDSAPRIVATEBLOB";
+            internal const string BCRYPT_PQDSA_PRIVATE_SEED_BLOB = "PQDSAPRIVATESEEDBLOB";
+
+            internal const string BCRYPT_MLKEM_PRIVATE_SEED_BLOB = "MLKEMPRIVATESEEDBLOB";
+            internal const string BCRYPT_MLKEM_PRIVATE_BLOB = "MLKEMPRIVATEBLOB";
+            internal const string BCRYPT_MLKEM_PUBLIC_BLOB = "MLKEMPUBLICBLOB";
         }
 
         /// <summary>
@@ -153,20 +179,32 @@ internal static partial class Interop
         ///     The BCRYPT_DSA_KEY_BLOB structure is used as a v1 header for a DSA public key or private key BLOB in memory.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct BCRYPT_DSA_KEY_BLOB
+        internal struct BCRYPT_DSA_KEY_BLOB
         {
             internal KeyBlobMagicNumber Magic;
             internal int cbKey;
-            internal fixed byte Count[4];
-            internal fixed byte Seed[20];
-            internal fixed byte q[20];
+#if NET
+            internal InlineArray4<byte> Count;
+            internal KeyParamBuffer Seed;
+            internal KeyParamBuffer q;
+
+            [InlineArray(20)]
+            internal struct KeyParamBuffer
+            {
+                private byte _element0;
+            }
+#else
+            internal unsafe fixed byte Count[4];
+            internal unsafe fixed byte Seed[20];
+            internal unsafe fixed byte q[20];
+#endif
         }
 
         /// <summary>
         ///     The BCRYPT_DSA_KEY_BLOB structure is used as a v2 header for a DSA public key or private key BLOB in memory.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct BCRYPT_DSA_KEY_BLOB_V2
+        internal struct BCRYPT_DSA_KEY_BLOB_V2
         {
             internal KeyBlobMagicNumber Magic;
             internal int cbKey;
@@ -174,7 +212,11 @@ internal static partial class Interop
             internal DSAFIPSVERSION_ENUM standardVersion;
             internal int cbSeedLength;
             internal int cbGroupSize;
-            internal fixed byte Count[4];
+#if NET
+            internal InlineArray4<byte> Count;
+#else
+            internal unsafe fixed byte Count[4];
+#endif
         }
 
         public enum HASHALGORITHM_ENUM
@@ -236,6 +278,26 @@ internal static partial class Interop
         }
 
         /// <summary>
+        ///     Used as a header to PQC parameters including the parameters set and key/seed.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct BCRYPT_PQDSA_KEY_BLOB
+        {
+            internal KeyBlobMagicNumber Magic;
+            internal int cbParameterSet;        // Byte size of parameterSet[]
+            internal int cbKey;                 // Byte size of key[]
+            // The rest of the buffer contains the data
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct BCRYPT_MLKEM_KEY_BLOB
+        {
+            internal KeyBlobMagicNumber dwMagic;
+            internal uint cbParameterSet;
+            internal uint cbKey;
+        }
+
+        /// <summary>
         ///     NCrypt or BCrypt buffer descriptors
         /// </summary>
         internal enum CngBufferDescriptors : int
@@ -257,6 +319,7 @@ internal static partial class Interop
             KDF_CONTEXT = 14,
             KDF_SALT = 15,
             KDF_ITERATION_COUNT = 16,
+            KDF_HKDF_INFO = 20,
             NCRYPTBUFFER_ECC_CURVE_NAME = 60,
         }
 

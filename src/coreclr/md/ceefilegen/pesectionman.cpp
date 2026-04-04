@@ -282,7 +282,7 @@ HRESULT PESection::applyRelocs(CeeGenTokenMapper *pTokenMapper)
             unsigned * pos = (unsigned*)
                 m_blobFetcher.ComputePointer(pCurReloc->offset);
             mdToken newToken;
-            PREFIX_ASSUME(pos != NULL);
+            _ASSERTE(pos != NULL);
             if (pTokenMapper->HasTokenMoved(*pos, newToken)) {
                 // we have a mapped token
                 *pos = newToken;

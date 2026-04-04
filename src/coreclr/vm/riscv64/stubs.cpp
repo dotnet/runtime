@@ -180,296 +180,6 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
     pRD->volatileCurrContextPointers.T6 = NULL;
 }
 
-void LazyMachState::unwindLazyState(LazyMachState* baseState,
-                                    MachState* unwoundstate,
-                                    DWORD threadId,
-                                    int funCallDepth)
-{
-    T_CONTEXT context;
-    T_KNONVOLATILE_CONTEXT_POINTERS nonVolContextPtrs;
-
-    context.ContextFlags = 0; // Read by PAL_VirtualUnwind.
-
-    context.Fp = unwoundstate->captureCalleeSavedRegisters[0] = baseState->captureCalleeSavedRegisters[0];
-    context.S1 = unwoundstate->captureCalleeSavedRegisters[1] = baseState->captureCalleeSavedRegisters[1];
-    context.S2 = unwoundstate->captureCalleeSavedRegisters[2] = baseState->captureCalleeSavedRegisters[2];
-    context.S3 = unwoundstate->captureCalleeSavedRegisters[3] = baseState->captureCalleeSavedRegisters[3];
-    context.S4 = unwoundstate->captureCalleeSavedRegisters[4] = baseState->captureCalleeSavedRegisters[4];
-    context.S5 = unwoundstate->captureCalleeSavedRegisters[5] = baseState->captureCalleeSavedRegisters[5];
-    context.S6 = unwoundstate->captureCalleeSavedRegisters[6] = baseState->captureCalleeSavedRegisters[6];
-    context.S7 = unwoundstate->captureCalleeSavedRegisters[7] = baseState->captureCalleeSavedRegisters[7];
-    context.S8 = unwoundstate->captureCalleeSavedRegisters[8] = baseState->captureCalleeSavedRegisters[8];
-    context.S9 = unwoundstate->captureCalleeSavedRegisters[9] = baseState->captureCalleeSavedRegisters[9];
-    context.S10 = unwoundstate->captureCalleeSavedRegisters[10] = baseState->captureCalleeSavedRegisters[10];
-    context.S11 = unwoundstate->captureCalleeSavedRegisters[11] = baseState->captureCalleeSavedRegisters[11];
-    context.Gp = unwoundstate->captureCalleeSavedRegisters[12] = baseState->captureCalleeSavedRegisters[12];
-    context.Tp = unwoundstate->captureCalleeSavedRegisters[13] = baseState->captureCalleeSavedRegisters[13];
-    context.Ra = 0; // Filled by the unwinder
-
-    context.Sp = baseState->captureSp;
-    context.Pc = baseState->captureIp;
-
-#if !defined(DACCESS_COMPILE)
-    // For DAC, if we get here, it means that the LazyMachState is uninitialized and we have to unwind it.
-    // The API we use to unwind in DAC is StackWalk64(), which does not support the context pointers.
-    //
-    // Restore the integer registers to KNONVOLATILE_CONTEXT_POINTERS to be used for unwinding.
-    nonVolContextPtrs.Fp = &unwoundstate->captureCalleeSavedRegisters[0];
-    nonVolContextPtrs.S1 = &unwoundstate->captureCalleeSavedRegisters[1];
-    nonVolContextPtrs.S2 = &unwoundstate->captureCalleeSavedRegisters[2];
-    nonVolContextPtrs.S3 = &unwoundstate->captureCalleeSavedRegisters[3];
-    nonVolContextPtrs.S4 = &unwoundstate->captureCalleeSavedRegisters[4];
-    nonVolContextPtrs.S5 = &unwoundstate->captureCalleeSavedRegisters[5];
-    nonVolContextPtrs.S6 = &unwoundstate->captureCalleeSavedRegisters[6];
-    nonVolContextPtrs.S7 = &unwoundstate->captureCalleeSavedRegisters[7];
-    nonVolContextPtrs.S8 = &unwoundstate->captureCalleeSavedRegisters[8];
-    nonVolContextPtrs.S9 = &unwoundstate->captureCalleeSavedRegisters[9];
-    nonVolContextPtrs.S10 = &unwoundstate->captureCalleeSavedRegisters[10];
-    nonVolContextPtrs.S11 = &unwoundstate->captureCalleeSavedRegisters[11];
-    nonVolContextPtrs.Gp = &unwoundstate->captureCalleeSavedRegisters[12];
-    nonVolContextPtrs.Tp = &unwoundstate->captureCalleeSavedRegisters[13];
-    nonVolContextPtrs.Ra = 0; // Filled by the unwinder
-
-#endif // DACCESS_COMPILE
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    LazyMachState::unwindLazyState(ip:%p,sp:%p)\n", baseState->captureIp, baseState->captureSp));
-
-    PCODE pvControlPc;
-
-    do {
-
-#ifndef TARGET_UNIX
-        pvControlPc = Thread::VirtualUnwindCallFrame(&context, &nonVolContextPtrs);
-#else // !TARGET_UNIX
-#ifdef DACCESS_COMPILE
-        HRESULT hr = DacVirtualUnwind(threadId, &context, &nonVolContextPtrs);
-        if (FAILED(hr))
-        {
-            DacError(hr);
-        }
-#else // DACCESS_COMPILE
-        BOOL success = PAL_VirtualUnwind(&context, &nonVolContextPtrs);
-        if (!success)
-        {
-            _ASSERTE(!"unwindLazyState: Unwinding failed");
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
-#endif // DACCESS_COMPILE
-        pvControlPc = GetIP(&context);
-#endif // !TARGET_UNIX
-
-        if (funCallDepth > 0)
-        {
-            funCallDepth--;
-            if (funCallDepth == 0)
-                break;
-        }
-        else
-        {
-            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
-            // Use it now to see if we've unwound to managed code yet.
-            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc);
-
-            if (fIsManagedCode)
-                break;
-
-        }
-    } while (true);
-
-#ifdef TARGET_UNIX
-    unwoundstate->captureCalleeSavedRegisters[0] = context.Fp;
-    unwoundstate->captureCalleeSavedRegisters[1] = context.S1;
-    unwoundstate->captureCalleeSavedRegisters[2] = context.S2;
-    unwoundstate->captureCalleeSavedRegisters[3] = context.S3;
-    unwoundstate->captureCalleeSavedRegisters[4] = context.S4;
-    unwoundstate->captureCalleeSavedRegisters[5] = context.S5;
-    unwoundstate->captureCalleeSavedRegisters[6] = context.S6;
-    unwoundstate->captureCalleeSavedRegisters[7] = context.S7;
-    unwoundstate->captureCalleeSavedRegisters[8] = context.S8;
-    unwoundstate->captureCalleeSavedRegisters[9] = context.S9;
-    unwoundstate->captureCalleeSavedRegisters[10] = context.S10;
-    unwoundstate->captureCalleeSavedRegisters[11] = context.S11;
-    unwoundstate->captureCalleeSavedRegisters[12] = context.Gp;
-    unwoundstate->captureCalleeSavedRegisters[13] = context.Tp;
-#endif
-
-#ifdef DACCESS_COMPILE
-    // For DAC builds, we update the registers directly since we dont have context pointers
-    unwoundstate->captureCalleeSavedRegisters[0] = context.Fp;
-    unwoundstate->captureCalleeSavedRegisters[1] = context.S1;
-    unwoundstate->captureCalleeSavedRegisters[2] = context.S2;
-    unwoundstate->captureCalleeSavedRegisters[3] = context.S3;
-    unwoundstate->captureCalleeSavedRegisters[4] = context.S4;
-    unwoundstate->captureCalleeSavedRegisters[5] = context.S5;
-    unwoundstate->captureCalleeSavedRegisters[6] = context.S6;
-    unwoundstate->captureCalleeSavedRegisters[7] = context.S7;
-    unwoundstate->captureCalleeSavedRegisters[8] = context.S8;
-    unwoundstate->captureCalleeSavedRegisters[9] = context.S9;
-    unwoundstate->captureCalleeSavedRegisters[10] = context.S10;
-    unwoundstate->captureCalleeSavedRegisters[11] = context.S11;
-    unwoundstate->captureCalleeSavedRegisters[12] = context.Gp;
-    unwoundstate->captureCalleeSavedRegisters[13] = context.Tp;
-#else // !DACCESS_COMPILE
-    // For non-DAC builds, update the register state from context pointers
-    unwoundstate->ptrCalleeSavedRegisters[0] = nonVolContextPtrs.Fp;
-    unwoundstate->ptrCalleeSavedRegisters[1] = nonVolContextPtrs.S1;
-    unwoundstate->ptrCalleeSavedRegisters[2] = nonVolContextPtrs.S2;
-    unwoundstate->ptrCalleeSavedRegisters[3] = nonVolContextPtrs.S3;
-    unwoundstate->ptrCalleeSavedRegisters[4] = nonVolContextPtrs.S4;
-    unwoundstate->ptrCalleeSavedRegisters[5] = nonVolContextPtrs.S5;
-    unwoundstate->ptrCalleeSavedRegisters[6] = nonVolContextPtrs.S6;
-    unwoundstate->ptrCalleeSavedRegisters[7] = nonVolContextPtrs.S7;
-    unwoundstate->ptrCalleeSavedRegisters[8] = nonVolContextPtrs.S8;
-    unwoundstate->ptrCalleeSavedRegisters[9] = nonVolContextPtrs.S9;
-    unwoundstate->ptrCalleeSavedRegisters[10] = nonVolContextPtrs.S10;
-    unwoundstate->ptrCalleeSavedRegisters[11] = nonVolContextPtrs.S11;
-    unwoundstate->ptrCalleeSavedRegisters[12] = nonVolContextPtrs.Gp;
-    unwoundstate->ptrCalleeSavedRegisters[13] = nonVolContextPtrs.Tp;
-#endif // DACCESS_COMPILE
-
-    unwoundstate->_pc = context.Pc;
-    unwoundstate->_sp = context.Sp;
-
-    unwoundstate->_isValid = TRUE;
-}
-
-void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-    if (updateFloats)
-    {
-        UpdateFloatingPointRegisters(pRD);
-        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
-    }
-#endif // DACCESS_COMPILE
-
-    pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-
-    //
-    // Copy the saved state from the frame to the current context.
-    //
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState._pc, m_MachState._sp));
-
- #if defined(DACCESS_COMPILE)
-    // For DAC, we may get here when the HMF is still uninitialized.
-    // So we may need to unwind here.
-    if (!m_MachState.isValid())
-    {
-        // This allocation throws on OOM.
-        MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
-
-        EnsureInit(pUnwoundState);
-
-        pRD->pCurrentContext->Pc = pRD->ControlPC = pUnwoundState->_pc;
-        pRD->pCurrentContext->Sp = pRD->SP        = pUnwoundState->_sp;
-        pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[0]);
-        pRD->pCurrentContext->S1 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[1]);
-        pRD->pCurrentContext->S2 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[2]);
-        pRD->pCurrentContext->S3 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[3]);
-        pRD->pCurrentContext->S4 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[4]);
-        pRD->pCurrentContext->S5 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[5]);
-        pRD->pCurrentContext->S6 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[6]);
-        pRD->pCurrentContext->S7 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[7]);
-        pRD->pCurrentContext->S8 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[8]);
-        pRD->pCurrentContext->S9 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[9]);
-        pRD->pCurrentContext->S10 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[10]);
-        pRD->pCurrentContext->S11 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[11]);
-        pRD->pCurrentContext->Gp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[12]);
-        pRD->pCurrentContext->Tp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[13]);
-        pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
-
-        pRD->pCurrentContextPointers->Fp = pUnwoundState->ptrCalleeSavedRegisters[0];
-        pRD->pCurrentContextPointers->S1 = pUnwoundState->ptrCalleeSavedRegisters[1];
-        pRD->pCurrentContextPointers->S2 = pUnwoundState->ptrCalleeSavedRegisters[2];
-        pRD->pCurrentContextPointers->S3 = pUnwoundState->ptrCalleeSavedRegisters[3];
-        pRD->pCurrentContextPointers->S4 = pUnwoundState->ptrCalleeSavedRegisters[4];
-        pRD->pCurrentContextPointers->S5 = pUnwoundState->ptrCalleeSavedRegisters[5];
-        pRD->pCurrentContextPointers->S6 = pUnwoundState->ptrCalleeSavedRegisters[6];
-        pRD->pCurrentContextPointers->S7 = pUnwoundState->ptrCalleeSavedRegisters[7];
-        pRD->pCurrentContextPointers->S8 = pUnwoundState->ptrCalleeSavedRegisters[8];
-        pRD->pCurrentContextPointers->S9 = pUnwoundState->ptrCalleeSavedRegisters[9];
-        pRD->pCurrentContextPointers->S10 = pUnwoundState->ptrCalleeSavedRegisters[10];
-        pRD->pCurrentContextPointers->S11 = pUnwoundState->ptrCalleeSavedRegisters[11];
-        pRD->pCurrentContextPointers->Gp = pUnwoundState->ptrCalleeSavedRegisters[12];
-        pRD->pCurrentContextPointers->Tp = pUnwoundState->ptrCalleeSavedRegisters[13];
-        pRD->pCurrentContextPointers->Ra = NULL;
-        return;
-    }
-#endif // DACCESS_COMPILE
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-    pRD->ControlPC = GetReturnAddress(); // m_MachState._pc;
-    pRD->SP = (DWORD64)(size_t)m_MachState._sp;
-
-    pRD->pCurrentContext->Pc = pRD->ControlPC;
-    pRD->pCurrentContext->Sp = pRD->SP;
-
-#ifdef TARGET_UNIX
-    pRD->pCurrentContext->Fp = m_MachState.ptrCalleeSavedRegisters[0] ? *m_MachState.ptrCalleeSavedRegisters[0] : m_MachState.captureCalleeSavedRegisters[0];
-    pRD->pCurrentContext->S1 = m_MachState.ptrCalleeSavedRegisters[1] ? *m_MachState.ptrCalleeSavedRegisters[1] : m_MachState.captureCalleeSavedRegisters[1];
-    pRD->pCurrentContext->S2 = m_MachState.ptrCalleeSavedRegisters[2] ? *m_MachState.ptrCalleeSavedRegisters[2] : m_MachState.captureCalleeSavedRegisters[2];
-    pRD->pCurrentContext->S3 = m_MachState.ptrCalleeSavedRegisters[3] ? *m_MachState.ptrCalleeSavedRegisters[3] : m_MachState.captureCalleeSavedRegisters[3];
-    pRD->pCurrentContext->S4 = m_MachState.ptrCalleeSavedRegisters[4] ? *m_MachState.ptrCalleeSavedRegisters[4] : m_MachState.captureCalleeSavedRegisters[4];
-    pRD->pCurrentContext->S5 = m_MachState.ptrCalleeSavedRegisters[5] ? *m_MachState.ptrCalleeSavedRegisters[5] : m_MachState.captureCalleeSavedRegisters[5];
-    pRD->pCurrentContext->S6 = m_MachState.ptrCalleeSavedRegisters[6] ? *m_MachState.ptrCalleeSavedRegisters[6] : m_MachState.captureCalleeSavedRegisters[6];
-    pRD->pCurrentContext->S7 = m_MachState.ptrCalleeSavedRegisters[7] ? *m_MachState.ptrCalleeSavedRegisters[7] : m_MachState.captureCalleeSavedRegisters[7];
-    pRD->pCurrentContext->S8 = m_MachState.ptrCalleeSavedRegisters[8] ? *m_MachState.ptrCalleeSavedRegisters[8] : m_MachState.captureCalleeSavedRegisters[8];
-    pRD->pCurrentContext->S9 = m_MachState.ptrCalleeSavedRegisters[9] ? *m_MachState.ptrCalleeSavedRegisters[9] : m_MachState.captureCalleeSavedRegisters[9];
-    pRD->pCurrentContext->S10 = m_MachState.ptrCalleeSavedRegisters[10] ? *m_MachState.ptrCalleeSavedRegisters[10] : m_MachState.captureCalleeSavedRegisters[10];
-    pRD->pCurrentContext->S11 = m_MachState.ptrCalleeSavedRegisters[11] ? *m_MachState.ptrCalleeSavedRegisters[11] : m_MachState.captureCalleeSavedRegisters[11];
-    pRD->pCurrentContext->Gp = m_MachState.ptrCalleeSavedRegisters[12] ? *m_MachState.ptrCalleeSavedRegisters[12] : m_MachState.captureCalleeSavedRegisters[12];
-    pRD->pCurrentContext->Tp = m_MachState.ptrCalleeSavedRegisters[13] ? *m_MachState.ptrCalleeSavedRegisters[13] : m_MachState.captureCalleeSavedRegisters[13];
-    pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
-#else // TARGET_UNIX
-    pRD->pCurrentContext->Fp = *m_MachState.ptrCalleeSavedRegisters[0];
-    pRD->pCurrentContext->S1 = *m_MachState.ptrCalleeSavedRegisters[1];
-    pRD->pCurrentContext->S2 = *m_MachState.ptrCalleeSavedRegisters[2];
-    pRD->pCurrentContext->S3 = *m_MachState.ptrCalleeSavedRegisters[3];
-    pRD->pCurrentContext->S4 = *m_MachState.ptrCalleeSavedRegisters[4];
-    pRD->pCurrentContext->S5 = *m_MachState.ptrCalleeSavedRegisters[5];
-    pRD->pCurrentContext->S6 = *m_MachState.ptrCalleeSavedRegisters[6];
-    pRD->pCurrentContext->S7 = *m_MachState.ptrCalleeSavedRegisters[7];
-    pRD->pCurrentContext->S8 = *m_MachState.ptrCalleeSavedRegisters[8];
-    pRD->pCurrentContext->S9 = *m_MachState.ptrCalleeSavedRegisters[9];
-    pRD->pCurrentContext->S10 = *m_MachState.ptrCalleeSavedRegisters[10];
-    pRD->pCurrentContext->S11 = *m_MachState.ptrCalleeSavedRegisters[11];
-    pRD->pCurrentContext->Gp = *m_MachState.ptrCalleeSavedRegisters[12];
-    pRD->pCurrentContext->Tp = *m_MachState.ptrCalleeSavedRegisters[13];
-    pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
-#endif
-
-#if !defined(DACCESS_COMPILE)
-    pRD->pCurrentContextPointers->Fp = m_MachState.ptrCalleeSavedRegisters[0];
-    pRD->pCurrentContextPointers->S1 = m_MachState.ptrCalleeSavedRegisters[1];
-    pRD->pCurrentContextPointers->S2 = m_MachState.ptrCalleeSavedRegisters[2];
-    pRD->pCurrentContextPointers->S3 = m_MachState.ptrCalleeSavedRegisters[3];
-    pRD->pCurrentContextPointers->S4 = m_MachState.ptrCalleeSavedRegisters[4];
-    pRD->pCurrentContextPointers->S5 = m_MachState.ptrCalleeSavedRegisters[5];
-    pRD->pCurrentContextPointers->S6 = m_MachState.ptrCalleeSavedRegisters[6];
-    pRD->pCurrentContextPointers->S7 = m_MachState.ptrCalleeSavedRegisters[7];
-    pRD->pCurrentContextPointers->S8 = m_MachState.ptrCalleeSavedRegisters[8];
-    pRD->pCurrentContextPointers->S9 = m_MachState.ptrCalleeSavedRegisters[9];
-    pRD->pCurrentContextPointers->S10 = m_MachState.ptrCalleeSavedRegisters[10];
-    pRD->pCurrentContextPointers->S11 = m_MachState.ptrCalleeSavedRegisters[11];
-    pRD->pCurrentContextPointers->Gp = m_MachState.ptrCalleeSavedRegisters[12];
-    pRD->pCurrentContextPointers->Tp = m_MachState.ptrCalleeSavedRegisters[13];
-    pRD->pCurrentContextPointers->Ra = NULL; // Unwind again to get Caller's PC
-#endif
-    ClearRegDisplayArgumentAndScratchRegisters(pRD);
-}
-
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pCalleeSaved)
 {
     LIMITED_METHOD_CONTRACT;
@@ -512,8 +222,7 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
-        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
+        UpdateFloatingPointRegisters(pRD, GetSP());
     }
 #endif // DACCESS_COMPILE
 
@@ -538,6 +247,36 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
+#ifdef FEATURE_INTERPRETER
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // The interpreter frame saves the floating point callee-saved registers (fs0-fs11) in the TransitionBlock,
+    // so we need to update them in the REGDISPLAY when we update the REGDISPLAY for an interpreter frame.
+    //
+    // Stack layout when pushCalleeSavedFloatRegs is used:
+    //   [fs0-fs11 (96 bytes)] [fa0-fa7 (64 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 160 (96 + 64)
+    //
+    // RISC-V FP callee-saved: fs0=f8, fs1=f9, fs2-fs11=f18-f27
+    TADDR pTransitionBlock = GetTransitionBlock();
+    UINT64 *pCalleeSavedFloats = (UINT64*)((BYTE*)pTransitionBlock - 160);
+
+    // fs0 = f8, fs1 = f9
+    pRD->pCurrentContext->F[8] = pCalleeSavedFloats[0];
+    pRD->pCurrentContext->F[9] = pCalleeSavedFloats[1];
+
+    // fs2-fs11 = f18-f27
+    for (int i = 0; i < 10; i++)
+    {
+        pRD->pCurrentContext->F[18 + i] = pCalleeSavedFloats[2 + i];
+    }
+}
+#endif // DACCESS_COMPILE
+#endif // FEATURE_INTERPRETER
+
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -550,21 +289,30 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     // Update the integer registers in KNONVOLATILE_CONTEXT_POINTERS from
     // the exception context we have.
-    pRD->pCurrentContextPointers->S1 = (PDWORD64)&m_ctx.S1;
-    pRD->pCurrentContextPointers->S2 = (PDWORD64)&m_ctx.S2;
-    pRD->pCurrentContextPointers->S3 = (PDWORD64)&m_ctx.S3;
-    pRD->pCurrentContextPointers->S4 = (PDWORD64)&m_ctx.S4;
-    pRD->pCurrentContextPointers->S5 = (PDWORD64)&m_ctx.S5;
-    pRD->pCurrentContextPointers->S6 = (PDWORD64)&m_ctx.S6;
-    pRD->pCurrentContextPointers->S7 = (PDWORD64)&m_ctx.S7;
-    pRD->pCurrentContextPointers->S8 = (PDWORD64)&m_ctx.S8;
-    pRD->pCurrentContextPointers->S9 = (PDWORD64)&m_ctx.S9;
-    pRD->pCurrentContextPointers->S10 = (PDWORD64)&m_ctx.S10;
-    pRD->pCurrentContextPointers->S11 = (PDWORD64)&m_ctx.S11;
-    pRD->pCurrentContextPointers->Fp = (PDWORD64)&m_ctx.Fp;
-    pRD->pCurrentContextPointers->Gp = (PDWORD64)&m_ctx.Gp;
-    pRD->pCurrentContextPointers->Tp = (PDWORD64)&m_ctx.Tp;
-    pRD->pCurrentContextPointers->Ra = (PDWORD64)&m_ctx.Ra;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    T_CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    T_CONTEXT *pContext = &m_ctx;
+#endif
+
+    pRD->pCurrentContextPointers->S1 = (PDWORD64)&pContext->S1;
+    pRD->pCurrentContextPointers->S2 = (PDWORD64)&pContext->S2;
+    pRD->pCurrentContextPointers->S3 = (PDWORD64)&pContext->S3;
+    pRD->pCurrentContextPointers->S4 = (PDWORD64)&pContext->S4;
+    pRD->pCurrentContextPointers->S5 = (PDWORD64)&pContext->S5;
+    pRD->pCurrentContextPointers->S6 = (PDWORD64)&pContext->S6;
+    pRD->pCurrentContextPointers->S7 = (PDWORD64)&pContext->S7;
+    pRD->pCurrentContextPointers->S8 = (PDWORD64)&pContext->S8;
+    pRD->pCurrentContextPointers->S9 = (PDWORD64)&pContext->S9;
+    pRD->pCurrentContextPointers->S10 = (PDWORD64)&pContext->S10;
+    pRD->pCurrentContextPointers->S11 = (PDWORD64)&pContext->S11;
+    pRD->pCurrentContextPointers->Fp = (PDWORD64)&pContext->Fp;
+    pRD->pCurrentContextPointers->Gp = (PDWORD64)&pContext->Gp;
+    pRD->pCurrentContextPointers->Tp = (PDWORD64)&pContext->Tp;
+    pRD->pCurrentContextPointers->Ra = (PDWORD64)&pContext->Ra;
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
@@ -597,7 +345,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
+        UpdateFloatingPointRegisters(pRD, dac_cast<TADDR>(GetCallSiteSP()));
     }
 #endif // DACCESS_COMPILE
 
@@ -719,9 +467,11 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
     pRD->pCurrentContext->A0 = m_Args->A0;
     pRD->pCurrentContext->A1 = m_Args->A1;
+    pRD->pCurrentContext->A2 = m_Args->A2;
 
     pRD->volatileCurrContextPointers.A0 = &m_Args->A0;
     pRD->volatileCurrContextPointers.A1 = &m_Args->A1;
+    pRD->volatileCurrContextPointers.A2 = &m_Args->A2;
 
 
     pRD->pCurrentContext->S1 = m_Args->S1;
@@ -761,14 +511,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 }
 #endif // FEATURE_HIJACK
 
-#ifdef FEATURE_COMINTEROP
-
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-}
-#endif // FEATURE_COMINTEROP
-
 #if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
 
@@ -777,42 +519,23 @@ extern "C" void STDCALL JIT_PatchedCodeLast();
 
 static void UpdateWriteBarrierState(bool skipEphemeralCheck)
 {
-    BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
-    BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
-    ExecutableWriterHolderNoLog<BYTE> writeBarrierWriterHolder;
     if (IsWriteBarrierCopyEnabled())
     {
-        writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
-        writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
+        BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
+        BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
+        ExecutableWriterHolderNoLog<BYTE> writeBarrierWriterHolder;
+        if (IsWriteBarrierCopyEnabled())
+        {
+            writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
+            writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
+        }
+        JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
     }
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
 }
 
-void InitJITHelpers1()
+void InitJITWriteBarrierHelpers()
 {
     STANDARD_VM_CONTRACT;
-
-    _ASSERTE(g_SystemInfo.dwNumberOfProcessors != 0);
-
-    // Allocation helpers, faster but non-logging
-    if (!((TrackAllocationsEnabled()) ||
-        (LoggingOn(LF_GCALLOC, LL_INFO10))
-#ifdef _DEBUG
-        || (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP) != 0)
-#endif // _DEBUG
-        ))
-    {
-        if (GCHeapUtilities::UseThreadAllocationContexts())
-        {
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
-
-            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
-        }
-    }
 
     UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
@@ -850,26 +573,44 @@ AdjustContextForVirtualStub(
 
     PCODE f_IP = GetIP(pContext);
 
-    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
+    bool isVirtualStubNullCheck = false;
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
+    {
+        isVirtualStubNullCheck = true;
+    }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    if (!isVirtualStubNullCheck)
+    {
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
-    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
-    {
-        if (*PTR_DWORD(f_IP - 4) != DISPATCH_STUB_FIRST_DWORD)
+        if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
         {
-            _ASSERTE(!"AV in DispatchStub at unknown instruction");
-            return FALSE;
+            if (*PTR_DWORD(f_IP - 4) != DISPATCH_STUB_FIRST_DWORD)
+            {
+                _ASSERTE(!"AV in DispatchStub at unknown instruction");
+            }
+            else
+            {
+                isVirtualStubNullCheck = true;
+            }
+        }
+        else if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
+        {
+            if (*PTR_DWORD(f_IP) != RESOLVE_STUB_FIRST_DWORD)
+            {
+                _ASSERTE(!"AV in ResolveStub at unknown instruction");
+            }
+            else
+            {
+                isVirtualStubNullCheck = true;
+            }
         }
     }
-    else
-    if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
-    {
-        if (*PTR_DWORD(f_IP) != RESOLVE_STUB_FIRST_DWORD)
-        {
-            _ASSERTE(!"AV in ResolveStub at unknown instruction");
-            return FALSE;
-        }
-    }
-    else
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+
+    if (!isVirtualStubNullCheck)
     {
         return FALSE;
     }
@@ -930,14 +671,6 @@ int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
     return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-#ifdef DACCESS_COMPILE
-BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
-{
-    _ASSERTE(!"RISCV64:NYI");
-    return FALSE;
-}
-#endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 // ----------------------------------------------------------------
@@ -1286,6 +1019,8 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 //
 // Allocation of dynamic helpers
 //
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
 #define BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
@@ -1773,6 +1508,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         END_DYNAMIC_HELPER_EMIT();
     }
 }
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif // FEATURE_READYTORUN
 
 

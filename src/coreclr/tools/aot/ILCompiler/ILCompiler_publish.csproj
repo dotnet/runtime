@@ -2,17 +2,17 @@
   <!-- This project is publishes a self-contained copy of ILCompiler. -->
   <PropertyGroup>
     <_IsPublishing>true</_IsPublishing>
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
-    <!--
-      If the output RID isn't the current SDK RID and we have a "base" RID, then the output RID isn't known to the SDK.
-      In that case, we need to set the RuntimeIdentifier to the base RID so the SDK can find a runtime pack for publishing.
-    -->
-    <RuntimeIdentifier Condition="'$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)' and '$(BaseOS)' != '' ">$(BaseOS)</RuntimeIdentifier>
+    <!-- Use portable/base RIDs to ensure restore works for AOT tools, avoiding opaque distro-specific TargetRid in source-build scenarios -->
+    <RuntimeIdentifier>$(PortableOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <AotOrSingleFile>true</AotOrSingleFile>
+    <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
+    <!-- Workaround for dsymutil module cache errors on Apple platforms until https://github.com/dotnet/runtime/pull/123386 -->
+    <!-- See https://github.com/dotnet/runtime/issues/123687 -->
+    <StripSymbols Condition="'$(PortableOS)' == 'osx' or '$(PortableOS)' == 'ios' or '$(PortableOS)' == 'tvos' or '$(PortableOS)' == 'maccatalyst'">false</StripSymbols>
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />

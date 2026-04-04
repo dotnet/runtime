@@ -22,7 +22,7 @@ namespace System.Threading.Tasks.Tests
     public sealed class TaskAPMTests : IDisposable
     {
         /// <summary>
-        /// Used to indicate whether to test TPL's Task or Future functionality for the APM pattern
+        /// Used to indicate whether to test TPL's Task or Task<TResult> functionality for the APM pattern
         /// </summary>
         private bool _hasReturnType;
 
@@ -42,7 +42,7 @@ namespace System.Threading.Tasks.Tests
         /// </summary>
         private const int LongTaskMilliseconds = 100;
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         [InlineData(true)]
         [InlineData(false)]
@@ -118,7 +118,7 @@ namespace System.Threading.Tasks.Tests
             tcs.SetResult();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         [InlineData(true)]
         [InlineData(false)]
@@ -234,7 +234,7 @@ namespace System.Threading.Tasks.Tests
     }
 
     /// <summary>
-    /// A dummy class that simulates a long running Future that implements IAsyncResult methods
+    /// A dummy class that simulates a long running Task<TResult> that implements IAsyncResult methods
     /// </summary>
     public sealed class LongTask<T> : LongTask
     {

@@ -12,7 +12,8 @@ private:
     bool m_isInitialized;
 
 #define RELEASE_CONFIG_STRING(name, key)    const char* m_##name;
-
+#define RELEASE_CONFIG_INTEGER(name, key, defaultValue) int m_##name;
+#define RELEASE_CONFIG_METHODSET(name, key) MethodSet m_##name;
 #include "interpconfigvalues.h"
 
 public:
@@ -21,6 +22,18 @@ public:
     inline const char* name() const         \
     {                                       \
         return m_##name;                    \
+    }
+
+#define RELEASE_CONFIG_INTEGER(name, key, defaultValue)  \
+    inline int name() const                              \
+    {                                                    \
+        return m_##name;                                 \
+    }
+
+#define RELEASE_CONFIG_METHODSET(name, key)  \
+    inline const MethodSet& name() const     \
+    {                                        \
+        return m_##name;                     \
     }
 
 #include "interpconfigvalues.h"

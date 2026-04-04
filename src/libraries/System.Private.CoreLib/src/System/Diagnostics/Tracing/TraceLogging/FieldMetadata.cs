@@ -173,19 +173,13 @@ namespace System.Diagnostics.Tracing
             pos += this.nameSize;
 
             // Write 1 byte for inType
-            if (metadata != null)
-            {
-                metadata[pos] = this.inType;
-            }
+            metadata?[pos] = this.inType;
             pos++;
 
             // If InTypeChainFlag set, then write out the outType
             if (0 != (this.inType & Statics.InTypeChainFlag))
             {
-                if (metadata != null)
-                {
-                    metadata[pos] = this.outType;
-                }
+                metadata?[pos] = this.outType;
                 pos++;
 
                 // If OutTypeChainFlag set, then write out tags
@@ -212,6 +206,7 @@ namespace System.Diagnostics.Tracing
                     if (metadata != null)
                     {
                         Debug.Assert(custom != null);
+                        Debug.Assert(pos >= 0 && this.fixedCount >= 0 && pos <= metadata.Length - this.fixedCount);
                         Buffer.BlockCopy(custom, 0, metadata, pos, this.fixedCount);
                     }
                     pos += this.fixedCount;

@@ -75,10 +75,19 @@ namespace System.IO
         /// Initializes a new instance of the <see cref="FileStream" /> class with the specified creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size, additional file options and the allocation size.
         /// </summary>
         /// <remarks><see cref="FileStream(string,FileStreamOptions)"/> for information about exceptions.</remarks>
-        public FileStream Open(FileStreamOptions options) => File.Open(NormalizedPath, options);
+        public FileStream Open(FileStreamOptions options)
+        {
+            FileStream fileStream = File.Open(NormalizedPath, options);
+            Invalidate();
+            return fileStream;
+        }
 
         public StreamReader OpenText()
-            => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        {
+            StreamReader reader = new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            Invalidate();
+            return reader;
+        }
 
         public StreamWriter CreateText()
             => CreateStreamWriter(append: false);
@@ -132,13 +141,25 @@ namespace System.IO
             => Open(mode, access, FileShare.None);
 
         public FileStream Open(FileMode mode, FileAccess access, FileShare share)
-            => new FileStream(NormalizedPath, mode, access, share);
+        {
+            FileStream fileStream = new FileStream(NormalizedPath, mode, access, share);
+            Invalidate();
+            return fileStream;
+        }
 
         public FileStream OpenRead()
-            => new FileStream(NormalizedPath, FileMode.Open, FileAccess.Read, FileShare.Read, File.DefaultBufferSize, false);
+        {
+            FileStream fileStream = new FileStream(NormalizedPath, FileMode.Open, FileAccess.Read, FileShare.Read, File.DefaultBufferSize, false);
+            Invalidate();
+            return fileStream;
+        }
 
         public FileStream OpenWrite()
-            => new FileStream(NormalizedPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+        {
+            FileStream fileStream = new FileStream(NormalizedPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+            Invalidate();
+            return fileStream;
+        }
 
         // Moves a given file to a new location and potentially a new file name.
         // This method does work across volumes.
@@ -160,7 +181,7 @@ namespace System.IO
             // as it does on Windows.These checks can be removed if a solution to
             // https://github.com/dotnet/runtime/issues/14885 is found that doesn't require
             // validity checks before making an API call.
-            if (!new DirectoryInfo(Path.GetDirectoryName(FullName)!).Exists)
+            if (!System.IO.Directory.Exists(Path.GetDirectoryName(FullName)))
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullName));
 
             if (!Exists)
@@ -189,20 +210,48 @@ namespace System.IO
                 destinationBackupFileName != null ? Path.GetFullPath(destinationBackupFileName) : null,
                 ignoreMetadataErrors);
 
+            Invalidate();
             return new FileInfo(destinationFileName);
         }
 
         [SupportedOSPlatform("windows")]
-        public void Decrypt() => File.Decrypt(FullPath);
+        public void Decrypt()
+        {
+            File.Decrypt(FullPath);
+            Invalidate();
+        }
 
         [SupportedOSPlatform("windows")]
-        public void Encrypt() => File.Encrypt(FullPath);
+        public void Encrypt()
+        {
+            File.Encrypt(FullPath);
+            Invalidate();
+        }
 
         private StreamWriter CreateStreamWriter(bool append)
         {
             StreamWriter streamWriter = new StreamWriter(NormalizedPath, append);
             Invalidate();
             return streamWriter;
+        }
+
+        /// <summary>
+        /// Creates a hard link located in <see cref="Name"/> that refers to the same file content as <paramref name="pathToTarget"/>.
+        /// </summary>
+        /// <param name="pathToTarget">The path of the hard link target.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="pathToTarget"/> is empty.
+        /// -or-
+        /// <paramref name="pathToTarget"/> contains invalid path characters.</exception>
+        /// <exception cref="FileNotFoundException">The file specified by <paramref name="pathToTarget"/> does not exist.</exception>
+        /// <exception cref="IOException">A file or directory already exists in the location of <see cref="Name"/>.
+        /// -or-
+        /// An I/O error occurred.</exception>
+        public void CreateAsHardLink(string pathToTarget)
+        {
+            FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
+            FileSystem.CreateHardLink(OriginalPath, pathToTarget);
+            Invalidate();
         }
     }
 }

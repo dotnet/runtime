@@ -7,35 +7,35 @@ using Mono.Linker.Steps;
 
 namespace CustomStep
 {
-	public class CustomStep : IStep
-	{
-		public void Process (LinkContext context)
-		{
-			var warningMessage = MessageContainer.CreateCustomWarningMessage (
-				context: context,
-				text: "Warning",
-				code: 6001,
-				origin: new MessageOrigin (fileName: "CustomStep.cs"),
-				version: WarnVersion.Latest);
+    public class CustomStep : IStep
+    {
+        public void Process(LinkContext context)
+        {
+            var warningMessage = MessageContainer.CreateCustomWarningMessage(
+                context: context,
+                text: "Warning",
+                code: 6001,
+                origin: new MessageOrigin(fileName: "CustomStep.cs"),
+                version: WarnVersion.Latest);
 
-			context.LogMessage (warningMessage);
-		}
-	}
+            context.LogMessage(warningMessage);
+        }
+    }
 
-	public class CustomStepWithInvalidWarningCode : IStep
-	{
-		public void Process (LinkContext context)
-		{
-			// All codes in the range [1000-6000] are reserved for trimming, single-file and nativeAOT
-			// errors and warnings and should not be used by external parties.
-			var invalidWarningMessage = MessageContainer.CreateCustomWarningMessage (
-				context: context,
-				text: "Warning",
-				code: 2500,
-				origin: new MessageOrigin (fileName: "CustomStep.cs"),
-				version: WarnVersion.Latest);
+    public class CustomStepWithInvalidWarningCode : IStep
+    {
+        public void Process(LinkContext context)
+        {
+            // All codes in the range [1000-6000] are reserved for trimming, single-file and nativeAOT
+            // errors and warnings and should not be used by external parties.
+            var invalidWarningMessage = MessageContainer.CreateCustomWarningMessage(
+                context: context,
+                text: "Warning",
+                code: 2500,
+                origin: new MessageOrigin(fileName: "CustomStep.cs"),
+                version: WarnVersion.Latest);
 
-			context.LogMessage (invalidWarningMessage);
-		}
-	}
+            context.LogMessage(invalidWarningMessage);
+        }
+    }
 }

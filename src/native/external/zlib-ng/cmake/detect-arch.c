@@ -32,7 +32,7 @@
     #endif
 
 // PowerPC
-#elif defined(__powerpc__) || defined(_ppc__) || defined(__PPC__)
+#elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
     #if defined(__64BIT__) || defined(__powerpc64__) || defined(__ppc64__)
         #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
             #error archfound powerpc64le

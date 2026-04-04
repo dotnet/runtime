@@ -193,7 +193,7 @@ namespace System
                 return d1 is null;
             }
 
-            return ReferenceEquals(d2, d1) ? true : d2.Equals((object?)d1);
+            return ReferenceEquals(d2, d1) || d2.Equals(d1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -206,7 +206,7 @@ namespace System
                 return d1 is not null;
             }
 
-            return ReferenceEquals(d2, d1) ? false : !d2.Equals(d1);
+            return !ReferenceEquals(d2, d1) && !d2.Equals(d1);
         }
     }
 }

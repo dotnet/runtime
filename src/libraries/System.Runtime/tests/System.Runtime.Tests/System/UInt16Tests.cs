@@ -43,7 +43,7 @@ namespace System.Tests
         [InlineData((ushort)234, (ushort)456, -1)]
         [InlineData((ushort)234, ushort.MaxValue, -1)]
         [InlineData((ushort)234, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(ushort i, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(ushort i, object? value, int expected)
         {
             if (value is ushort ushortValue)
             {
@@ -68,7 +68,7 @@ namespace System.Tests
         [InlineData((ushort)789, null, false)]
         [InlineData((ushort)789, "789", false)]
         [InlineData((ushort)789, 789, false)]
-        public static void EqualsTest(ushort i1, object obj, bool expected)
+        public static void EqualsTest(ushort i1, object? obj, bool expected)
         {
             if (obj is ushort)
             {

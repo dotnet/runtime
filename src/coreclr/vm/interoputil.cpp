@@ -139,7 +139,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
                 {
                     hr = GET_EXCEPTION()->GetHR();
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
             }
         }
         EX_CATCH
@@ -147,7 +147,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
             if (SUCCEEDED(hr))
                 hr = E_FAIL;
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
     GCPROTECT_END();
     return hr;
@@ -259,6 +259,8 @@ ErrExit:
     return iLCIDParam;
 }
 
+#ifdef FEATURE_COMINTEROP
+
 //---------------------------------------------------------------------------
 // Transforms an LCID into a CultureInfo.
 void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
@@ -273,26 +275,50 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
     }
     CONTRACTL_END;
 
-    OBJECTREF CultureObj = NULL;
-    GCPROTECT_BEGIN(CultureObj)
-    {
-        // Allocate a CultureInfo with the specified LCID.
-        CultureObj = AllocateObject(CoreLibBinder::GetClass(CLASS__CULTURE_INFO));
-
-        MethodDescCallSite cultureInfoCtor(METHOD__CULTURE_INFO__INT_CTOR, &CultureObj);
-
-        // Call the CultureInfo(int culture) constructor.
-        ARG_SLOT pNewArgs[] = {
-            ObjToArgSlot(CultureObj),
-            (ARG_SLOT)lcid
-        };
-        cultureInfoCtor.Call(pNewArgs);
-
-        // Set the returned culture object.
-        *pCultureObj = CultureObj;
-    }
-    GCPROTECT_END();
+    UnmanagedCallersOnlyCaller cultureInfoCtor(METHOD__CULTUREINFOMARSHALER__CREATE_CULTURE_INFO);
+    cultureInfoCtor.InvokeThrowing((int)lcid, pCultureObj);
 }
+
+//---------------------------------------------------------------------------
+// Gets the current culture or UI culture for the current thread.
+OBJECTREF GetCurrentCulture(BOOL bUICulture)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    OBJECTREF pCurrentCulture = NULL;
+    GCPROTECT_BEGIN(pCurrentCulture);
+
+    UnmanagedCallersOnlyCaller propGet(METHOD__CULTUREINFOMARSHALER__GET_CURRENT_CULTURE);
+    propGet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), &pCurrentCulture);
+
+    GCPROTECT_END();
+
+    return pCurrentCulture;
+}
+
+//---------------------------------------------------------------------------
+// Sets the current culture or UI culture for the current thread.
+void SetCurrentCulture(OBJECTREF* CultureObj, BOOL bUICulture)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    UnmanagedCallersOnlyCaller propSet(METHOD__CULTUREINFOMARSHALER__SET_CURRENT_CULTURE);
+    propSet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), CultureObj);
+}
+
+#endif // FEATURE_COMINTEROP
 
 
 //---------------------------------------------------------------------------
@@ -521,10 +547,10 @@ SIZE_T GetStringizedItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef)
     CONTRACTL_END;
 
     MethodTable* pIntfMT = InterfaceType.GetMethodTable();
-    PREFIX_ASSUME(pIntfMT != NULL);
+    _ASSERTE(pIntfMT != NULL);
 
     IMDInternalImport* pMDImport = pIntfMT->GetMDImport();
-    PREFIX_ASSUME(pMDImport != NULL);
+    _ASSERTE(pMDImport != NULL);
 
     LPCWSTR             szName;
     ULONG               cchName;
@@ -607,9 +633,9 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     }
     EX_CATCH
     {
-        IfFailGo(COR_E_BADIMAGEFORMAT);
+        return COR_E_BADIMAGEFORMAT;
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
 
 #ifdef FEATURE_COMINTEROP
@@ -1056,7 +1082,7 @@ HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
     {
         hr = E_OUTOFMEMORY;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
@@ -1174,7 +1200,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
 }
 #include <optdefault.h>
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
 
 //--------------------------------------------------------------------------------
 // Cleanup helpers
@@ -1186,7 +1212,7 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION( GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() ) );
+        PRECONDITION(GCHeapUtilities::IsGCInProgress());
     }
     CONTRACTL_END;
 
@@ -1197,12 +1223,6 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     if (pRCW)
         pRCW->MinorCleanup();
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMWRAPPERS
-    void* eoc;
-    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
-        ComWrappersNative::MarkExternalComObjectContextCollected(eoc);
-#endif // FEATURE_COMWRAPPERS
 }
 
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
@@ -1214,9 +1234,6 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    if ((g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() )
-        MinorCleanupSyncBlockComData(pInteropInfo);
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     ComClassFactory* pComClassFactory = pInteropInfo->GetComClassFactory();
@@ -1245,20 +1262,9 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         pCCW->Cleanup();
     }
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMWRAPPERS
-    pInteropInfo->ClearManagedObjectComWrappers(&ComWrappersNative::DestroyManagedObjectComWrapper);
-
-    void* eoc;
-    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
-    {
-        (void)pInteropInfo->TrySetExternalComObjectContext(NULL, eoc);
-        ComWrappersNative::DestroyExternalComObjectContext(eoc);
-    }
-#endif // FEATURE_COMWRAPPERS
 }
 
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP
 
@@ -1314,7 +1320,7 @@ void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 //--------------------------------------------------------------------------------
@@ -1387,19 +1393,18 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
     {
         hr = GET_EXCEPTION()->GetHR();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
 
-VOID EnsureComStarted(BOOL fCoInitCurrentThread)
+VOID EnsureComStarted()
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(GetThreadNULLOk() || !fCoInitCurrentThread);
         PRECONDITION(g_fEEStarted);
     }
     CONTRACTL_END;
@@ -1408,7 +1413,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
     _ASSERTE(g_fComStarted);
 }
 
-HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
+HRESULT EnsureComStartedNoThrow()
 {
     CONTRACTL
     {
@@ -1416,7 +1421,6 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(g_fEEStarted);
-        PRECONDITION(GetThreadNULLOk() != NULL);      // Should always be inside BEGIN_EXTERNAL_ENTRYPOINT
     }
     CONTRACTL_END;
 
@@ -1573,7 +1577,7 @@ HRESULT SafeVariantChangeType(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
         {
             hr = GET_EXCEPTION()->GetHR();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     return hr;
@@ -1767,7 +1771,7 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
     CorClassIfaceAttr   ClassItfType;
     BOOL                bComVisible;
 
-    PREFIX_ASSUME(pClassMT != NULL);
+    _ASSERTE(pClassMT != NULL);
 
     if (pClassMT->IsComImport())
     {
@@ -1964,7 +1968,7 @@ HRESULT TryGetDefaultInterfaceForClass(TypeHandle hndClass, TypeHandle *pHndDefC
         {
             pThrowable = GET_THROWABLE();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         if (pThrowable != NULL)
             hr = SetupErrorInfo(pThrowable);
@@ -2168,14 +2172,8 @@ void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, OBJECTREF *pDestSysColo
     }
     CONTRACTL_END;
 
-    MethodDescCallSite oleColorToSystemColor(METHOD__COLORMARSHALER__CONVERT_TO_MANAGED);
-
-    ARG_SLOT Args[] =
-    {
-        PtrToArgSlot(&SrcOleColor)
-    };
-
-    *pDestSysColor = oleColorToSystemColor.Call_RetOBJECTREF(Args);
+    UnmanagedCallersOnlyCaller oleColorToSystemColor(METHOD__COLORMARSHALER__CONVERT_TO_MANAGED_UCO);
+    oleColorToSystemColor.InvokeThrowing((int)SrcOleColor, pDestSysColor);
 }
 
 //--------------------------------------------------------------------------------
@@ -2191,22 +2189,10 @@ OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj)
     CONTRACTL_END;
 
     OLE_COLOR result;
-    OBJECTREF sysColor = NULL;
 
-    GCPROTECT_BEGIN(sysColor);
+    UnmanagedCallersOnlyCaller sysColorToOleColor(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE_UCO);
+    sysColorToOleColor.InvokeThrowing(pSrcObj, &result);
 
-    sysColor = *pSrcObj;
-
-    MethodDescCallSite sysColorToOleColor(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE);
-
-    ARG_SLOT Args[] =
-    {
-        ObjToArgSlot(sysColor)
-    };
-
-    result = (OLE_COLOR)sysColorToOleColor.Call_RetI4(Args);
-
-    GCPROTECT_END();
     return result;
 }
 
@@ -2228,7 +2214,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
     LPCWSTR             szName;
     ULONG               cchName;
     MethodTable*        pIntfMT = InterfaceType.GetMethodTable();
-    PREFIX_ASSUME(pIntfMT != NULL);
+    _ASSERTE(pIntfMT != NULL);
 
     MethodTable*        pDeclaringMT = NULL;
     DWORD               nSlots;                 // Slots on the pseudo interface.
@@ -2280,6 +2266,10 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
                 {
                     pDeclaringMT = pProps->pMeth->GetMethodTable();
                     tkMb = pProps->pMeth->GetMemberDef();
+
+                    // ComMTMemberInfoMap should not contain any async methods.
+                    _ASSERTE(!pProps->pMeth->IsAsyncMethod());
+
                     cbCur = GetStringizedMethodDef(pDeclaringMT, tkMb, rDef, cbCur);
                 }
                 else
@@ -2367,7 +2357,7 @@ HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
         {
             pThrowable = GET_THROWABLE();
         }
-        EX_END_CATCH (SwallowAllExceptions);
+        EX_END_CATCH
 
         if (pThrowable != NULL)
             hr = SetupErrorInfo(pThrowable);
@@ -2490,6 +2480,10 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD)
     mdProperty  pd;
     LPCUTF8     pPropName;
     ULONG       uSemantic;
+    // Async methods are not visible from COM.
+    if (pMD->IsAsyncMethod())
+        return false;
+
     mdMethodDef md = pMD->GetMemberDef();
 
     // See if there is property information for this member.
@@ -2646,7 +2640,7 @@ BOOL IsComTargetValidForType(REFLECTCLASSBASEREF* pRefClassObj, OBJECTREF* pTarg
 
     MethodTable* pTargetMT = (*pTarget)->GetMethodTable();
     _ASSERTE(pTargetMT);
-    PREFIX_ASSUME(pInvokedMT != NULL);
+    _ASSERTE(pInvokedMT != NULL);
 
     // If the target class and the invoke class are identical then the invoke is valid.
     if (pTargetMT == pInvokedMT)
@@ -2699,6 +2693,30 @@ DISPID ExtractStandardDispId(_In_z_ LPWSTR strStdDispIdMemberName)
 
     // Extract the number from the standard DISPID member name.
     return _wtoi(strDispId);
+}
+
+// Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
+// in the native code.
+struct CallOutFilterParam { BOOL OneShot; };
+LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
+{
+    CallOutFilterParam *pParam = static_cast<CallOutFilterParam *>(pv);
+
+    _ASSERTE(pParam && (pParam->OneShot == TRUE || pParam->OneShot == FALSE));
+
+    if (pParam->OneShot == TRUE)
+    {
+        pParam->OneShot = FALSE;
+
+        // Replace whatever SEH exception is in flight, with an SEHException derived from
+        // CLRException.  But if the exception already looks like one of ours, let it
+        // go past since LastThrownObject should already represent it.
+        if ((!IsComPlusException(pExceptionInfo->ExceptionRecord)) &&
+            (pExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_MSVC))
+            PAL_CPP_THROW(SEHException *, new SEHException(pExceptionInfo->ExceptionRecord,
+                                                           pExceptionInfo->ContextRecord));
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
 }
 
 static HRESULT InvokeExHelper(
@@ -2927,8 +2945,9 @@ static void DoIUInvokeDispMethod(IDispatchEx* pDispEx, IDispatch* pDisp, DISPID 
             // If we get here we need to throw an TargetInvocationException
             pThrowable = GET_THROWABLE();
             _ASSERTE(pThrowable != NULL);
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
 
         if (pThrowable != NULL)
         {
@@ -2989,12 +3008,11 @@ static OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT* pNativeEnum)
     }
     CONTRACTL_END;
 
-    OBJECTREF retObjRef;
-
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENUMERATORTOENUMVARIANTMARSHALER__INTERNALMARSHALNATIVETOMANAGED);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0]  = PTR_TO_ARGHOLDER(pNativeEnum);
-    CALL_MANAGED_METHOD_RETREF(retObjRef, OBJECTREF, args);
+    OBJECTREF retObjRef = NULL;
+    GCPROTECT_BEGIN(retObjRef);
+    UnmanagedCallersOnlyCaller internalMarshalNativeToManaged(METHOD__ENUMERATORTOENUMVARIANTMARSHALER__INTERNALMARSHALNATIVETOMANAGED);
+    internalMarshalNativeToManaged.InvokeThrowing((INT_PTR)pNativeEnum, &retObjRef);
+    GCPROTECT_END();
 
     return retObjRef;
 }
@@ -3058,7 +3076,7 @@ void IUInvokeDispMethod(
     PTRARRAYREF* pArrByrefModifiers = (PTRARRAYREF*) pByrefModifiers;
     PTRARRAYREF* pArrNamedArgs = (PTRARRAYREF*) pNamedArgs;
     MethodTable* pInvokedMT = (*pRefClassObj)->GetType().GetMethodTable();
-    PREFIX_ASSUME(pInvokedMT != NULL);
+    _ASSERTE(pInvokedMT != NULL);
 
     // Retrieve the total count of arguments.
     if (*pArrArgs != NULL)
@@ -3103,19 +3121,49 @@ void IUInvokeDispMethod(
         }
     }
 
-
     //
     // Retrieve the IDispatch interface that will be invoked on.
     //
 
     if (pInvokedMT->IsInterface())
     {
-        // The invoked type is a dispatch or dual interface so we will make the
-        // invocation on it.
-        pUnk = ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
-        hr = SafeQueryInterface(pUnk, IID_IDispatch, (IUnknown**)&pDisp);
+        // COMPAT: We must invoke any methods on this specific IDispatch implementation,
+        // as the canonical implementation (returned by QueryInterface) may not
+        // expose all members.
+        // This can occur when pTarget is a CCW for a .NET object and that object's class
+        // has a custom default interface (specified by the System.Runtime.InteropServices.ComDefaultInterfaceAttribute attribute).
+        // In that case, the default IDispatch pointer will only resolve members defined on that interface,
+        // not all members defined on the class.
+        //
+        // We will still do the QI here because we want to protect the user from the following scenario:
+        // - The user has a COM object that implements one IUnknown interface, which we'll call ICallback.
+        // - The user defines a managed interface (represented by pInvokedMT)to represent ICallback
+        //   - The user incorrectly marks ICallback as "implements IDispatch and not dual".
+        // - The user tries to call a method on ICallback.
+        //
+        // In this case, pInvokedMT will represent the managed ICallback definition.
+        // The underlying COM object will not implement IDispatch.
+        //
+        // We cannot verify that the vtable of the COM object returned by pInvokedMT will have the IDispatch methods,
+        // but we must use that IDispatch implementation (see above).
+        // To catch the simple case above (where there is no IDispatch implementation at all),
+        // we do a QI for IDispatch and throw away the result just to make sure we don't try to invoke on an object that doesn't implement IDispatch.
+        //
+        // If the underlying COM object implements IDispatch but the COM interface represented by pInvokedMT is not dispatch or dual,
+        // we will not correctly detect that the user did something wrong and will crash.
+        // This is a known issue with no solution.
+        // Our check here is best effort to catch the simple case where a user may make a mistake.
+        SafeComHolder<IUnknown> pInvokedMTUnknown = ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+
+        // QI for IDispatch to catch the simple error case (COM object has no IDispatch but pInvokedMT is specified as a dispatch or dual interface)
+        SafeComHolder<IUnknown> pCanonicalDisp;
+        hr = SafeQueryInterface(pInvokedMTUnknown, IID_IDispatch, &pCanonicalDisp);
         if (FAILED(hr))
             COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
+
+        _ASSERTE(IsDispatchBasedItf(pInvokedMT->GetComInterfaceType()));
+        // Extract the IDispatch pointer that is associated with pInvokedMT specifically.
+        pDisp = (IDispatch*)pInvokedMTUnknown.Extract();
     }
     else
     {
@@ -3275,7 +3323,7 @@ void IUInvokeDispMethod(
 
                         // We managed to retrieve an IDispatchEx IP so we will use it to
                         // retrieve the DISPID.
-                        BSTRHolder bstrTmpName = SysAllocString(aNamesToConvert[0]);
+                        BSTRHolder bstrTmpName{ SysAllocString(aNamesToConvert[0]) };
                         if (!bstrTmpName)
                             COMPlusThrowOM();
 
@@ -3671,11 +3719,6 @@ void InitializeComInterop()
     }
     CONTRACTL_END;
 
-    InitializeSListHead(&RCW::s_RCWStandbyList);
-    ComCall::Init();
-#ifdef TARGET_X86
-    CLRToCOMCall::Init();
-#endif
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG

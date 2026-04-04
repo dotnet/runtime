@@ -5,11 +5,11 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
-	[AttributeUsage (AttributeTargets.All, AllowMultiple = true)]
-	public class KeptOverrideOnMethodInAssemblyAttribute : BaseInAssemblyAttribute
-	{
-		public KeptOverrideOnMethodInAssemblyAttribute (string assemblyName, string typeName, string methodName, string overriddenMethodName)
-		{
-		}
-	}
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
+    public class KeptOverrideOnMethodInAssemblyAttribute : BaseInAssemblyAttribute
+    {
+        public KeptOverrideOnMethodInAssemblyAttribute(string assemblyName, string typeName, string methodName, string overriddenMethodName)
+        {
+        }
+    }
 }

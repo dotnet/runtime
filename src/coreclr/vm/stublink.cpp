@@ -819,7 +819,7 @@ void StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
 // is defined - it is not included in all places where stublink.h
 // is consumed.
 class Stub;
-static_assert_no_msg((sizeof(Stub) % CODE_SIZE_ALIGN) == 0);
+static_assert((sizeof(Stub) % CODE_SIZE_ALIGN) == 0);
 
 //-------------------------------------------------------------------
 // Inc the refcount.

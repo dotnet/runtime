@@ -2,8 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+#if NETFRAMEWORK
+using Microsoft.IO;
+#else
 using System.IO;
+#endif
 using System.Runtime.InteropServices;
+
 
 namespace Microsoft.NET.HostModel
 {
@@ -31,6 +36,12 @@ namespace Microsoft.NET.HostModel
                 p.WaitForExit();
                 return (p.ExitCode, p.StandardError.ReadToEnd());
             }
+        }
+
+        public static long GetFileLength(string path)
+        {
+            var info = new FileInfo(path);
+            return ((FileInfo)info.ResolveLinkTarget(true) ?? info).Length;
         }
     }
 }

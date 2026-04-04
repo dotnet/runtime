@@ -38,6 +38,33 @@ inline static int ComputeNameHashCode(LPCUTF8 src)
     return hash1 ^ hash2;
 }
 
+inline static int ComputeNameHashCode(LPCUTF8 src, COUNT_T length)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (src == NULL || length == 0)
+        return 0;
+
+    int hash1 = 0x6DA3B944;
+    int hash2 = 0;
+
+    // DIFFERENT FROM NATIVEAOT: We hash UTF-8 bytes here, while NativeAOT hashes UTF-16 characters.
+
+    for (COUNT_T i = 0; i < length; i += 2)
+    {
+        hash1 = (hash1 + _rotl(hash1, 5)) ^ src[i];
+        if (i + 1 < length)
+            hash2 = (hash2 + _rotl(hash2, 5)) ^ src[i + 1];
+        else
+            break;
+    }
+
+    hash1 += _rotl(hash1, 8);
+    hash2 += _rotl(hash2, 8);
+
+    return hash1 ^ hash2;
+}
+
 inline static int ComputeNameHashCode(LPCUTF8 pszNamespace, LPCUTF8 pszName)
 {
     LIMITED_METHOD_CONTRACT;
@@ -259,6 +286,15 @@ class xxHash
     uint32_t _length = 0;
 
 public:
+    void AddPointer(void* ptr)
+    {
+#ifdef HOST_64BIT
+        Add((uint32_t)(UINT_PTR)ptr);
+        Add((uint32_t)(((UINT64)ptr) >> 32));
+#else
+        Add((uint32_t)(UINT_PTR)ptr);
+#endif
+    }
     void Add(uint32_t val)
     {
         // The original xxHash works as follows:

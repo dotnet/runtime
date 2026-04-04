@@ -22,15 +22,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
     [EventSource(
         Name = "System.Threading.Tasks.Dataflow.DataflowEventSource",
         Guid = "16F53577-E41D-43D4-B47E-C17025BF4025")]
-    internal sealed class DataflowEtwProvider : EventSource
+    internal sealed partial class DataflowEtwProvider : EventSource
     {
         /// <summary>
         /// Defines the singleton instance for the dataflow ETW provider.
-        /// The dataflow provider GUID is {16F53577-E41D-43D4-B47E-C17025BF4025}.
         /// </summary>
         internal static readonly DataflowEtwProvider Log = new DataflowEtwProvider();
-        /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
-        private DataflowEtwProvider() { }
 
         /// <summary>Enabled for all keywords.</summary>
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);
@@ -102,7 +99,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         [Event(TASKLAUNCHED_EVENTID, Level = EventLevel.Informational)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
@@ -161,7 +158,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         [Event(BLOCKCOMPLETED_EVENTID, Level = EventLevel.Informational)]
-#if !NET8_0_OR_GREATER
+#if !NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif

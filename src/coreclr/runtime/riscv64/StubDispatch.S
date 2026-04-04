@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <unixasmmacros.inc>
-#include "AsmOffsets.inc"
+#include "AsmMacros_Shared.h"
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
     .extern RhpCidResolve
-    .extern RhpUniversalTransition_DebugStepTailCall
+    .extern RhpUniversalTransitionTailCall
 
     // Macro that generates code to check a single cache entry.
     .macro CHECK_CACHE_ENTRY entry
@@ -92,7 +91,7 @@
         //  t1: parameter of the thunk's target
         PREPARE_EXTERNAL_VAR RhpCidResolve, t0
         mv t1, t5
-        tail       C_FUNC(RhpUniversalTransition_DebugStepTailCall)
+        tail       C_FUNC(RhpUniversalTransitionTailCall)
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

@@ -6,6 +6,7 @@ using Xunit;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 
 internal class MyCriticalHandle : CriticalHandle
 {
@@ -358,6 +359,8 @@ public class NoDefaultCtorCriticalHandleTest
 
 public class Test
 {
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/173", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

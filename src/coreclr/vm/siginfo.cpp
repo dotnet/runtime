@@ -23,6 +23,8 @@
 #include <corhlprpriv.h>
 #include "argdestination.h"
 #include "multicorejit.h"
+#include "callconvbuilder.hpp"
+#include "dynamicmethod.h"
 
 /*******************************************************************/
 const CorTypeInfo::CorTypeInfoEntry CorTypeInfo::info[ELEMENT_TYPE_MAX] =
@@ -137,7 +139,7 @@ unsigned GetSizeForCorElementType(CorElementType etyp)
 
 #ifndef DACCESS_COMPILE
 
-void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
 {
     CONTRACTL
     {
@@ -185,7 +187,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
     {
         mdToken tk;
         IfFailThrowBF(GetToken(&tk), BFA_BAD_COMPLUS_SIG, pSigModule);
-        TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pSigModule, tk);
+        TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pSigModule, tk, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef);
         pSigBuilder->AppendElementType(ELEMENT_TYPE_CMOD_INTERNAL);
         pSigBuilder->AppendByte(typ == ELEMENT_TYPE_CMOD_REQD); // "is required" byte
         pSigBuilder->AppendPointer(th.AsPtr());
@@ -345,7 +347,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
     }
 }
 
-void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalSignature(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
 {
     CONTRACTL
     {
@@ -387,6 +389,50 @@ void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *
     }
 }
 
+void SigPointer::CopyModOptsReqs(Module* pSigModule, SigBuilder* pSigBuilder)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END
+
+    CorElementType typ;
+    IfFailThrowBF(PeekElemType(&typ), BFA_BAD_COMPLUS_SIG, pSigModule);
+    while (typ == ELEMENT_TYPE_CMOD_REQD || typ == ELEMENT_TYPE_CMOD_OPT)
+    {
+        // Skip the custom modifier
+        IfFailThrowBF(GetByte(NULL), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+        // Get the encoded token.
+        uint32_t token;
+        IfFailThrowBF(GetToken(&token), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+        // Append the custom modifier and encoded token to the signature.
+        pSigBuilder->AppendElementType(typ);
+        pSigBuilder->AppendToken(token);
+
+        typ = ELEMENT_TYPE_END;
+        IfFailThrowBF(PeekElemType(&typ), BFA_BAD_COMPLUS_SIG, pSigModule);
+    }
+}
+
+void SigPointer::CopyExactlyOne(Module* pSigModule, SigBuilder* pSigBuilder)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END
+
+    intptr_t beginExactlyOne = (intptr_t)m_ptr;
+    IfFailThrowBF(SkipExactlyOne(), BFA_BAD_COMPLUS_SIG, pSigModule);
+    intptr_t endExactlyOne = (intptr_t)m_ptr;
+    pSigBuilder->AppendBlob((const PVOID)beginExactlyOne, endExactlyOne - beginExactlyOne);
+}
+
 void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE additionalCallConv)
 {
     CONTRACTL
@@ -396,10 +442,10 @@ void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE
     }
     CONTRACTL_END
 
-    SigPointer spEnd(*this);
-    IfFailThrowBF(spEnd.SkipSignature(), BFA_BAD_COMPLUS_SIG, pSigModule);
-    pSigBuilder->AppendByte(*m_ptr | additionalCallConv);
-    pSigBuilder->AppendBlob((const PVOID)(m_ptr + 1), spEnd.m_ptr - (m_ptr + 1));
+    PCCOR_SIGNATURE beginSignature = m_ptr;
+    IfFailThrowBF(SkipSignature(), BFA_BAD_COMPLUS_SIG, pSigModule);
+    pSigBuilder->AppendByte(*beginSignature | additionalCallConv);
+    pSigBuilder->AppendBlob((const PVOID)(beginSignature + 1), m_ptr - (beginSignature + 1));
 }
 #endif // DACCESS_COMPILE
 
@@ -699,6 +745,8 @@ MetaSig::MetaSig(MethodDesc *pMD, Instantiation classInst, Instantiation methodI
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
+    if (pMD->IsAsyncMethod())
+        SetIsAsyncCall();
 }
 
 MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
@@ -720,6 +768,8 @@ MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
+    if (pMD->IsAsyncMethod())
+        SetIsAsyncCall();
 }
 
 #ifdef _DEBUG
@@ -1012,7 +1062,7 @@ TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return(th);
 }
 
@@ -1043,11 +1093,6 @@ static uint32_t NormalizeFnPtrCallingConvention(uint32_t callConv)
     return callConv;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
-
 // Method: TypeHandle SigPointer::GetTypeHandleThrowing()
 // pZapSigContext is only set when decoding zapsigs
 //
@@ -1060,7 +1105,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                  const Substitution *        pSubst/*=NULL*/,
                  // ZapSigContext is only set when decoding zapsigs
                  const ZapSig::Context *     pZapSigContext,
-                 MethodTable *               pMTInterfaceMapOwner,
+                 MethodTable*                 pMTInterfaceMapOwner,
                  HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling) const
 {
     CONTRACT(TypeHandle)
@@ -1573,9 +1618,17 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                 Instantiation genericLoadInst(thisinst, ntypars);
 
-                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner))
+                if (ClassLoader::EligibleForSpecialMarkerTypeUsage(genericLoadInst, pMTInterfaceMapOwner))
                 {
                     thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
+                    if (thRet.AsMethodTable()->GetInstantiation()[0] == pMTInterfaceMapOwner->GetSpecialInstantiationType())
+                    {
+                        // We loaded the special marker type, but it is ALSO the exact expected type which isn't a valid combination
+                        // In this case return something else (object) to indicate that
+                        // we found an invalid situation and this function should be retried without the special marker type logic enabled.
+                        thRet = TypeHandle(g_pObjectClass);
+                        break;
+                    }
                 }
                 else
                 {
@@ -1594,7 +1647,16 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                                         &instContext,
                                                                         pZapSigContext && pZapSigContext->externalTokens == ZapSig::NormalTokens));
 
-                    if (!handlingRecursiveGenericFieldScenario)
+                    if (!thFound.IsNull() && pMTInterfaceMapOwner != NULL && !thFound.IsTypeDesc() && thFound.AsMethodTable()->IsSpecialMarkerTypeForGenericCasting())
+                    {
+                        // We are trying to load an interface instantiation, and we have a concept of the special marker type enabled, but
+                        // the loaded type is not the expected type we should be looking for to return a special marker type, but the normal load has
+                        // found a type which claims to be a special marker type. In this case return something else (object) to indicate that
+                        // we found an invalid situation and this function should be retried without the special marker type logic enabled.
+                        thRet = TypeHandle(g_pObjectClass);
+                        break;
+                    }
+                    else if (!handlingRecursiveGenericFieldScenario)
                     {
                         thRet = thFound;
                         break;
@@ -1897,9 +1959,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
     RETURN thRet;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 TypeHandle SigPointer::GetGenericInstType(ModuleBase *        pModule,
                                     ClassLoader::LoadTypesFlag  fLoadTypes/*=LoadTypes*/,
@@ -3715,11 +3774,6 @@ void MetaSig::ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEnd
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
-
 //---------------------------------------------------------------------------------------
 //
 // Compare the next elements in two sigs.
@@ -3876,7 +3930,6 @@ MetaSig::CompareElementType(
                 pOtherModule = pModule1;
             }
 
-            // Internal types can only correspond to types or value types.
             switch (eOtherType)
             {
                 case ELEMENT_TYPE_OBJECT:
@@ -3904,7 +3957,7 @@ MetaSig::CompareElementType(
                         pOtherModule,
                         tkOther,
                         ClassLoader::ReturnNullIfNotFound,
-                        ClassLoader::FailIfUninstDefOrRef);
+                        ClassLoader::PermitUninstDefOrRef);
 
                     return (hInternal == hOtherType);
                 }
@@ -4333,10 +4386,6 @@ MetaSig::CompareElementType(
     // Unreachable
     UNREACHABLE();
 } // MetaSig::CompareElementType
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -5289,6 +5338,13 @@ void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_Metho
     ReportPointersFromValueType(fn, sc, pMT, pSrc->GetDestinationAddress());
 }
 
+BOOL MetaSig::HasAsyncContinuation()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return IsAsyncCall();
+}
+
 //------------------------------------------------------------------
 // Perform type-specific GC promotion on the value (based upon the
 // last type retrieved by NextArg()).
@@ -5404,92 +5460,6 @@ VOID MetaSig::GcScanRoots(ArgDestination *pValue,
             _ASSERTE(0); // can't get here.
     }
 }
-
-
-#ifndef DACCESS_COMPILE
-
-void MetaSig::EnsureSigValueTypesLoaded(MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    SigTypeContext typeContext(pMD);
-
-    Module * pModule = pMD->GetModule();
-
-    // The signature format is approximately:
-    // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
-    // There is also a blob length at pSig-1.
-    SigPointer ptr = pMD->GetSigPointer();
-
-    // Skip over calling convention.
-    IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);
-
-    uint32_t numArgs = 0;
-    IfFailThrowBF(ptr.GetData(&numArgs), BFA_BAD_SIGNATURE, pModule);
-
-    // Force a load of value type arguments.
-    for(ULONG i=0; i <= numArgs; i++)
-    {
-        ptr.PeekElemTypeNormalized(pModule,&typeContext);
-        // Move to next argument token.
-        IfFailThrowBF(ptr.SkipExactlyOne(), BFA_BAD_SIGNATURE, pModule);
-    }
-}
-
-// this walks the sig and checks to see if all  types in the sig can be loaded
-
-// This is used by ComCallableWrapper to give good error reporting
-/*static*/
-void MetaSig::CheckSigTypesCanBeLoaded(MethodDesc * pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    SigTypeContext typeContext(pMD);
-
-    Module * pModule = pMD->GetModule();
-
-    // The signature format is approximately:
-    // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
-    // There is also a blob length at pSig-1.
-    SigPointer ptr = pMD->GetSigPointer();
-
-    // Skip over calling convention.
-    IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);
-
-    uint32_t numArgs = 0;
-    IfFailThrowBF(ptr.GetData(&numArgs), BFA_BAD_SIGNATURE, pModule);
-
-    // must do a skip so we skip any class tokens associated with the return type
-    IfFailThrowBF(ptr.SkipExactlyOne(), BFA_BAD_SIGNATURE, pModule);
-
-    // Force a load of value type arguments.
-    for(uint32_t i=0; i < numArgs; i++)
-    {
-        unsigned type = ptr.PeekElemTypeNormalized(pModule,&typeContext);
-        if (type == ELEMENT_TYPE_VALUETYPE || type == ELEMENT_TYPE_CLASS)
-        {
-            ptr.GetTypeHandleThrowing(pModule, &typeContext);
-        }
-        // Move to next argument token.
-        IfFailThrowBF(ptr.SkipExactlyOne(), BFA_BAD_SIGNATURE, pModule);
-    }
-}
-
-#endif // #ifndef DACCESS_COMPILE
 
 CorElementType MetaSig::GetReturnTypeNormalized(TypeHandle * pthValueType) const
 {
@@ -5697,6 +5667,12 @@ TokenPairList TokenPairList::AdjustForTypeSpec(TokenPairList *pTemplate, ModuleB
             result.m_bInTypeEquivalenceForbiddenScope = !IsTdInterface(dwAttrType);
         }
     }
+    else if (elemType == ELEMENT_TYPE_INTERNAL)
+    {
+        TypeHandle typeHandle;
+        IfFailThrow(sig.GetPointer((void**)&typeHandle));
+        result.m_bInTypeEquivalenceForbiddenScope = !typeHandle.IsInterface();
+    }
     else
     {
         _ASSERTE(elemType == ELEMENT_TYPE_VALUETYPE);
@@ -5851,3 +5827,26 @@ BOOL CompareTypeLayout(mdToken tk1, mdToken tk2, Module *pModule1, Module *pModu
 
     return TRUE;
 }
+
+#ifndef DACCESS_COMPILE
+CorInfoCallConvExtension GetUnmanagedCallConvExtension(MetaSig* pSig)
+{
+    STANDARD_VM_CONTRACT;
+    CallConvBuilder builder;
+    UINT errorResID;
+
+    HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOptSigStartingAtRetType(GetScopeHandle(pSig->GetModule()), pSig->GetReturnProps(), &builder, &errorResID);
+
+    if (FAILED(hr))
+        COMPlusThrowHR(hr, errorResID);
+
+    CorInfoCallConvExtension callConvLocal = builder.GetCurrentCallConv();
+
+    if (callConvLocal == CallConvBuilder::UnsetValue)
+    {
+        callConvLocal = CallConv::GetDefaultUnmanagedCallingConvention();
+    }
+
+    return callConvLocal;
+}
+#endif // DACCESS_COMPILE

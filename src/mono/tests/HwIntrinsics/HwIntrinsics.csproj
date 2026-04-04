@@ -4,7 +4,7 @@
     <Optimize>True</Optimize>
     <DebugType>Full</DebugType>
     <OutputPath>bin</OutputPath>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RunAnalyzers>false</RunAnalyzers>

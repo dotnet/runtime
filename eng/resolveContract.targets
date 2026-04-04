@@ -119,6 +119,7 @@
   <PropertyGroup>
     <!-- Let GenFacades use roslyn from the toolset package as it loads sources which might require newer language features. -->
     <GenFacadesUseRoslynToolsetPackagePath>true</GenFacadesUseRoslynToolsetPackagePath>
+    <GenFacadesReferencePathItemName>ReferencePathWithRefAssemblies</GenFacadesReferencePathItemName>
   </PropertyGroup>
 
   <!-- ##### GenAPI settings ##### -->
@@ -126,7 +127,7 @@
   <PropertyGroup>
     <GenAPIExcludeAttributesList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</GenAPIExcludeAttributesList>
     <GenAPIHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GenAPIHeaderFile>
-    <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
+    <GenAPITargetPath Condition="'$(GenAPITargetPath)' == ''">$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
     <GenAPILangVersion Condition="'$(LangVersion)' != ''">$(LangVersion)</GenAPILangVersion>
     <ProjectForGenAPIDocIdGeneration Condition="'$(ProjectForGenAPIDocIdGeneration)' == ''">$(CoreLibProject)</ProjectForGenAPIDocIdGeneration>
   </PropertyGroup>

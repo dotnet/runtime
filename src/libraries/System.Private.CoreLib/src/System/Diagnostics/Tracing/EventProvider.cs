@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -129,7 +131,7 @@ namespace System.Diagnostics.Tracing
         {
             //
             // explicit cleanup is done by calling Dispose with true from
-            // Dispose() or Close(). The disposing arguement is ignored because there
+            // Dispose() or Close(). The disposing argument is ignored because there
             // are no unmanaged resources.
             // The finalizer calls Dispose with false.
             //
@@ -235,6 +237,7 @@ namespace System.Diagnostics.Tracing
             s_returnCode = error;
         }
 
+        [RequiresUnsafe]
         private static unsafe object? EncodeObject(ref object? data, ref EventData* dataDescriptor, ref byte* dataBuffer, ref uint totalEventSize)
         /*++
 
@@ -460,6 +463,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventPayload">
         /// Payload for the ETW event.
         /// </param>
+        [RequiresUnsafe]
         internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, object?[] eventPayload)
         {
             WriteEventErrorCode status = WriteEventErrorCode.NoError;
@@ -478,8 +482,8 @@ namespace System.Diagnostics.Tracing
                 int index;
                 int refObjIndex = 0;
 
-                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(EightObjects)}");
-                EightObjects eightObjectStack = default;
+                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(InlineArray8<>)}");
+                InlineArray8<object?> eightObjectStack = default;
                 Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
                 Span<object?> dataRefObj = eightObjectStack;
 
@@ -670,6 +674,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="data">
         /// pointer  do the event data
         /// </param>
+        [RequiresUnsafe]
         protected internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
         {
             if (childActivityID != null)
@@ -691,6 +696,7 @@ namespace System.Diagnostics.Tracing
             return true;
         }
 
+        [RequiresUnsafe]
         internal unsafe bool WriteEventRaw(
             ref EventDescriptor eventDescriptor,
             IntPtr eventHandle,
@@ -763,6 +769,7 @@ namespace System.Diagnostics.Tracing
             _liveSessions = null;
         }
 
+        [RequiresUnsafe]
         protected override unsafe void HandleEnableNotification(
                                     EventProvider target,
                                     byte *additionalData,
@@ -863,6 +870,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Write an event.
+        [RequiresUnsafe]
         internal override unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
@@ -896,6 +904,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
+        [RequiresUnsafe]
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
@@ -903,32 +912,16 @@ namespace System.Diagnostics.Tracing
         }
 
 
-        private static bool s_setInformationMissing;
-
         internal unsafe int SetInformation(
             Interop.Advapi32.EVENT_INFO_CLASS eventInfoClass,
             void* data,
             uint dataSize)
         {
-            int status = Interop.Errors.ERROR_NOT_SUPPORTED;
-
-            if (!s_setInformationMissing)
-            {
-                try
-                {
-                    status = Interop.Advapi32.EventSetInformation(
-                        _registrationHandle,
-                        eventInfoClass,
-                        data,
-                        dataSize);
-                }
-                catch (TypeLoadException)
-                {
-                    s_setInformationMissing = true;
-                }
-            }
-
-            return status;
+            return Interop.Advapi32.EventSetInformation(
+                _registrationHandle,
+                eventInfoClass,
+                data,
+                dataSize);
         }
 
         /// <summary>
@@ -1160,6 +1153,7 @@ namespace System.Diagnostics.Tracing
             set => _allKeywordMask = unchecked((long)value);
         }
 
+        [RequiresUnsafe]
         protected virtual unsafe void HandleEnableNotification(
                                     EventProvider target,
                                     byte *additionalData,
@@ -1240,6 +1234,7 @@ namespace System.Diagnostics.Tracing
         {
         }
 
+        [RequiresUnsafe]
         internal virtual unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
@@ -1257,12 +1252,14 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
+        [RequiresUnsafe]
         internal virtual unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
             return IntPtr.Zero;
         }
 
+        [RequiresUnsafe]
         protected unsafe void ProviderCallback(
                         EventProvider target,
                         byte *additionalData,
@@ -1344,6 +1341,7 @@ namespace System.Diagnostics.Tracing
             return args;
         }
 
+        [RequiresUnsafe]
         protected unsafe bool MarshalFilterData(Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data)
         {
             Debug.Assert(filterData != null);

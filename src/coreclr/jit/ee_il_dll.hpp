@@ -176,6 +176,17 @@ inline CORINFO_EE_INFO* Compiler::eeGetEEInfo()
     return &eeInfo;
 }
 
+inline CORINFO_ASYNC_INFO* Compiler::eeGetAsyncInfo()
+{
+    if (!asyncInfoInitialized)
+    {
+        info.compCompHnd->getAsyncInfo(&asyncInfo);
+        asyncInfoInitialized = true;
+    }
+
+    return &asyncInfo;
+}
+
 /*****************************************************************************
  *
  *  Convert the type returned from the VM to a var_type.
@@ -328,7 +339,12 @@ inline var_types Compiler::TypeHandleToVarType(CorInfoType jitType, CORINFO_CLAS
     return type;
 }
 
-inline CORINFO_CALLINFO_FLAGS combine(CORINFO_CALLINFO_FLAGS flag1, CORINFO_CALLINFO_FLAGS flag2)
+constexpr CORINFO_CALLINFO_FLAGS operator|(CORINFO_CALLINFO_FLAGS a, CORINFO_CALLINFO_FLAGS b)
 {
-    return (CORINFO_CALLINFO_FLAGS)(flag1 | flag2);
+    return (CORINFO_CALLINFO_FLAGS)((uint32_t)a | (uint32_t)b);
+}
+
+inline CORINFO_CALLINFO_FLAGS& operator|=(CORINFO_CALLINFO_FLAGS& a, CORINFO_CALLINFO_FLAGS b)
+{
+    return a = (CORINFO_CALLINFO_FLAGS)((uint32_t)a | (uint32_t)b);
 }

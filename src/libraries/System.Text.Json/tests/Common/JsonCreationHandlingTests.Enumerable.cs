@@ -11,6 +11,8 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests;
 
+#pragma warning disable xUnit2027 // Comparison of sets to linear containers have undefined results
+
 public abstract partial class JsonCreationHandlingTests : SerializerTests
 {
     [Fact]
@@ -587,8 +589,8 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
 
     private static IEnumerable<JsonElement> ParseJsonArray(string json)
     {
-        JsonDocument doc = JsonDocument.Parse(json);
-        foreach (JsonElement element in doc.RootElement.EnumerateArray())
+        JsonElement doc = JsonElement.Parse(json);
+        foreach (JsonElement element in doc.EnumerateArray())
         {
             yield return element;
         }

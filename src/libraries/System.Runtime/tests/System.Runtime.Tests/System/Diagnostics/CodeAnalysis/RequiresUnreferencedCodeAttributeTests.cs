@@ -20,7 +20,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData("https://dot.net")]
         [InlineData("")]
         [InlineData(null)]
-        public void TestSetUrl(string url)
+        public void TestSetUrl(string? url)
         {
             var attr = new RequiresUnreferencedCodeAttribute("User Message")
             {

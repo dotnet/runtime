@@ -19,7 +19,10 @@ arg1==arg4, arg2==arg5, arg3==arg6.
 */
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly 'arglist_Target_64BIT_unaligned_1'{ //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
                         }
@@ -90,9 +93,10 @@ REALLYDONE:
 //-------------------------
 .class public auto ansi arglist64 {
 .method public static int32 main() {
-.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-    01 00 00 00
-)
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+    type([TestLibrary]TestLibrary.PlatformDetection)
+    string[2] ('IsVarArgSupported' 'Is64BitProcess')
+}
 .entrypoint
 .locals	()
 .maxstack	10

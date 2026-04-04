@@ -306,9 +306,9 @@ namespace Internal.Runtime.TypeLoader
 
         // Sentinel static to allow us to initialize _instanceLayout to something
         // and then detect that InstanceGCLayout should return null
-        private static LowLevelList<bool> s_emptyLayout = new LowLevelList<bool>();
+        private static readonly bool[] s_emptyLayout = [];
 
-        private LowLevelList<bool> _instanceGCLayout;
+        private bool[] _instanceGCLayout;
 
         /// <summary>
         /// The instance gc layout of a dynamically laid out type.
@@ -324,14 +324,12 @@ namespace Internal.Runtime.TypeLoader
         /// If the type is a valuetype array, this is the layout of the valuetype held in the array if the type has GC reference fields
         /// Otherwise, it is the layout of the fields in the type.
         /// </summary>
-        public LowLevelList<bool> InstanceGCLayout
+        public bool[] InstanceGCLayout
         {
             get
             {
                 if (_instanceGCLayout == null)
                 {
-                    LowLevelList<bool> instanceGCLayout;
-
                     if (TypeBeingBuilt is ArrayType)
                     {
                         if (!IsArrayOfReferenceTypes)
@@ -340,9 +338,7 @@ namespace Internal.Runtime.TypeLoader
                             TypeBuilder.GCLayout elementGcLayout = GetFieldGCLayout(arrayType.ElementType);
                             if (!elementGcLayout.IsNone)
                             {
-                                instanceGCLayout = new LowLevelList<bool>();
-                                elementGcLayout.WriteToBitfield(instanceGCLayout, 0);
-                                _instanceGCLayout = instanceGCLayout;
+                                _instanceGCLayout = elementGcLayout.AsBitfield();
                             }
                         }
                         else

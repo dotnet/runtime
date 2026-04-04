@@ -42,6 +42,7 @@ namespace Microsoft.Extensions.Hosting
         ///     <item><description>load host <see cref="IConfiguration"/> from "DOTNET_" prefixed environment variables</description></item>
         ///     <item><description>load host <see cref="IConfiguration"/> from supplied command line args</description></item>
         ///     <item><description>load app <see cref="IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json'</description></item>
+        ///     <item><description>load app <see cref="IConfiguration"/> from '[<see cref="IHostEnvironment.ApplicationName"/>].settings.json' and '[<see cref="IHostEnvironment.ApplicationName"/>].settings.[<see cref="IHostEnvironment.EnvironmentName"/>].json' when <see cref="IHostEnvironment.ApplicationName"/> is not empty</description></item>
         ///     <item><description>load app <see cref="IConfiguration"/> from User Secrets when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</description></item>
         ///     <item><description>load app <see cref="IConfiguration"/> from environment variables</description></item>
         ///     <item><description>load app <see cref="IConfiguration"/> from supplied command line args</description></item>
@@ -64,6 +65,7 @@ namespace Microsoft.Extensions.Hosting
         ///     <item><description>load host <see cref="IConfiguration"/> from "DOTNET_" prefixed environment variables</description></item>
         ///     <item><description>load host <see cref="IConfiguration"/> from supplied command line args</description></item>
         ///     <item><description>load app <see cref="IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json'</description></item>
+        ///     <item><description>load app <see cref="IConfiguration"/> from '[<see cref="IHostEnvironment.ApplicationName"/>].settings.json' and '[<see cref="IHostEnvironment.ApplicationName"/>].settings.[<see cref="IHostEnvironment.EnvironmentName"/>].json' when <see cref="IHostEnvironment.ApplicationName"/> is not empty</description></item>
         ///     <item><description>load app <see cref="IConfiguration"/> from User Secrets when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</description></item>
         ///     <item><description>load app <see cref="IConfiguration"/> from environment variables</description></item>
         ///     <item><description>load app <see cref="IConfiguration"/> from supplied command line args</description></item>

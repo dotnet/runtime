@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             MLDsa,
             RsaPkcs1,
             RsaPss,
+            SlhDsa,
         }
 
         public static IEnumerable<object[]> SupportedCertKinds()
@@ -35,6 +36,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             yield return new object[] { CertKind.RsaPkcs1 };
             yield return new object[] { CertKind.RsaPss };
+
+            if (SlhDsa.IsSupported)
+            {
+                yield return new object[] { CertKind.SlhDsa };
+            }
         }
 
         public static IEnumerable<object[]> NoHashAlgorithmCertKinds()
@@ -42,6 +48,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             if (MLDsa.IsSupported)
             {
                 yield return new object[] { CertKind.MLDsa };
+            }
+
+            if (SlhDsa.IsSupported)
+            {
+                yield return new object[] { CertKind.SlhDsa };
             }
         }
 
@@ -286,6 +297,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         [Theory]
         [MemberData(nameof(NoHashAlgorithmCertKinds))]
+        [SkipOnPlatform(TestPlatforms.Android, "No algorithms are supported")]
         public static void BuildPqcWithHashAlgorithm(CertKind certKind)
         {
             BuildCertificateAndRun(
@@ -765,8 +777,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 () => builder.AddEntry(serial, reason: X509RevocationReason.RemoveFromCrl));
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/119023", TestPlatforms.Android)]
         public static void DsaNotDirectlySupported()
         {
             CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
@@ -1371,6 +1383,25 @@ AQAB
         }
 
         [Fact]
+        public static void LoadPem_TrailingData()
+        {
+            const string PemWithTrailingData =
+                """
+                -----BEGIN X509 CRL-----
+                MIHuMIGUAgEBMAoGCCqGSM49BAMCMBExDzANBgNVBAMTBnBvdGF0bxcNMjYwMTAy
+                MTgxMzU1WhcNMjYwMTA5MTgxMzU1WjAWMBQCAwECAxcNMjYwMTAyMTgxMzU1WqA6
+                MDgwKgYDVR0jBCMwIaEVpBMwETEPMA0GA1UEAxMGcG90YXRvggh+lrHO9ZeCDTAK
+                BgNVHRQEAwIBKjAKBggqhkjOPQQDAgNJADBGAiEAzBoKpxI66VhR+03ghssYjR76
+                Ojzcy+n5ypehHJrDYo0CIQCLsqqF1RmlZjQcfhAC820H4I4yNnwYyqfoBDp2hHYm
+                hnRyYWlsaW5nIGRhdGEgaGVyZQ==
+                -----END X509 CRL-----
+                """;
+
+            Assert.Throws<CryptographicException>(() => CertificateRevocationListBuilder.LoadPem(PemWithTrailingData, out _));
+            Assert.Throws<CryptographicException>(() => CertificateRevocationListBuilder.LoadPem(PemWithTrailingData.AsSpan(), out _));
+        }
+
+        [Fact]
         public static void LoadAndResignPublicCrl()
         {
             const string ExistingCrl = @"
@@ -1532,6 +1563,12 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
                     MLDsa mldsa = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44);
                     key = mldsa;
                     req = new CertificateRequest(subjectName, mldsa);
+                }
+                else if (certKind == CertKind.SlhDsa)
+                {
+                    SlhDsa slhDsa = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f);
+                    key = slhDsa;
+                    req = new CertificateRequest(subjectName, slhDsa);
                 }
                 else
                 {
@@ -1697,6 +1734,12 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
                 key = mldsa;
                 return X509SignatureGenerator.CreateForMLDsa(mldsa);
             }
+            else if (certKind == CertKind.SlhDsa)
+            {
+                SlhDsa slhDsa = cert.GetSlhDsaPrivateKey();
+                key = slhDsa;
+                return X509SignatureGenerator.CreateForSlhDsa(slhDsa);
+            }
             else
             {
                 throw new NotSupportedException($"Unsupported CertKind: {certKind}");
@@ -1727,6 +1770,11 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
                 using MLDsa mldsa = cert.GetMLDsaPublicKey();
                 signatureValid = mldsa.VerifyData(data, signature);
             }
+            else if (certKind == CertKind.SlhDsa)
+            {
+                using SlhDsa slhDsa = cert.GetSlhDsaPublicKey();
+                signatureValid = slhDsa.VerifyData(data, signature);
+            }
             else
             {
                 throw new NotSupportedException($"Unsupported CertKind: {certKind}");
@@ -1743,7 +1791,7 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             return certKind switch
             {
                 CertKind.ECDsa or CertKind.RsaPkcs1 or CertKind.RsaPss => true,
-                CertKind.MLDsa => false,
+                CertKind.MLDsa or CertKind.SlhDsa => false,
                 _ => throw new NotSupportedException(certKind.ToString())
             };
         }

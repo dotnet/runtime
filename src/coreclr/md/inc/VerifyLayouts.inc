@@ -113,11 +113,11 @@
 //
 //    HOW DO I DEBUG THIS STUFF WHEN THE BUILD DOESN'T WORK?
 //
-//    One way that has been effective for me is to write a few static_assert_no_msg entries manually in VerifyLayouts.h
+//    One way that has been effective for me is to write a few static_assert entries manually in VerifyLayouts.h
 //    You can use those to verify your assumptions such as:
-//    static_assert_no_msg(sizeof(Foo) == 24)
-//    static_assert_no_msg(offset(Foo, m_lastField) == 20)
-//    static_assert_no_msg(offset_of_field_affter_Foo_m_lastField == 24)
+//    static_assert(sizeof(Foo) == 24)
+//    static_assert(offset(Foo, m_lastField) == 20)
+//    static_assert(offset_of_field_affter_Foo_m_lastField == 24)
 //    Then rebuild and find out where the compiler disagress with you.
 //
 //    Another option is to run the source through the preprocessor
@@ -153,8 +153,6 @@ FIELD(CLiteWeightStgdbRW, m_pStreamList, sizeof(void*))
 FIELD(CLiteWeightStgdbRW, m_pNextStgdb, sizeof(void*))
 FIELD(CLiteWeightStgdbRW, m_eFileType, 4)
 FIELD(CLiteWeightStgdbRW, m_wszFileName, sizeof(void*))
-FIELD(CLiteWeightStgdbRW, m_dwDatabaseLFT, 4)
-FIELD(CLiteWeightStgdbRW, m_dwDatabaseLFS, 4)
 FIELD(CLiteWeightStgdbRW, m_pStgIO, sizeof(void*))
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 FIELD(CLiteWeightStgdbRW, m_pPdbHeap, sizeof(void*))

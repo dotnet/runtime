@@ -140,13 +140,15 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now disable regions for standalone GC and macOS builds
+// For now disable regions for standalone GC builds
 // For SunOS or illumos this is temporary, until we can add MAP_PRIVATE
 // to the mmap() calls in unix/gcenv.unix.cpp  More details here:
 //    https://github.com/dotnet/runtime/issues/104211
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(__sun)
+// Apple non-macOS platforms (such as iOS, tvOS, and Mac Catalyst) disallow
+// the large virtual address space reservations that GC regions require.
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__sun) && (!defined(HOST_APPLE) || defined(HOST_OSX))
 #define USE_REGIONS
-#endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
+#endif //HOST_64BIT && !BUILD_AS_STANDALONE && !__sun && (!HOST_APPLE || HOST_OSX)
 
 //#define SPINLOCK_HISTORY
 //#define RECORD_LOH_STATE
@@ -560,6 +562,15 @@ enum allocation_state
     a_state_check_retry_seg,
     a_state_max
 };
+
+#ifdef BACKGROUND_GC
+enum uoh_allocation_action
+{
+    uoh_alloc_normal,
+    uoh_alloc_yield,
+    uoh_alloc_wait
+};
+#endif //BACKGROUND_GC
 
 enum enter_msl_status
 {
@@ -1538,6 +1549,8 @@ class gc_heap
 
     friend class mark_queue_t;
 
+    friend struct ::cdac_data<gc_heap>;
+
 #ifdef MULTIPLE_HEAPS
     typedef void (gc_heap::* card_fn) (uint8_t**, int);
 #define call_fn(this_arg,fn) (this_arg->*fn)
@@ -1577,6 +1590,8 @@ public:
     };
 
 private:
+
+    PER_HEAP_ISOLATED_METHOD const char* get_str_gc_type();
 
 #ifdef TRACE_GC
     PER_HEAP_METHOD void print_free_list (int gen, heap_segment* seg);
@@ -2306,18 +2321,16 @@ private:
                             int lock_index,
                             BOOL check_used_p,
                             heap_segment* seg);
-#endif //BACKGROUND_GC
 
-#ifdef BACKGROUND_GC
     PER_HEAP_METHOD void bgc_track_uoh_alloc();
 
     PER_HEAP_METHOD void bgc_untrack_uoh_alloc();
 
-    PER_HEAP_METHOD BOOL bgc_loh_allocate_spin();
-
-    PER_HEAP_METHOD BOOL bgc_poh_allocate_spin();
+    PER_HEAP_METHOD uoh_allocation_action get_bgc_allocate_action (int gen_number);
 
     PER_HEAP_METHOD void bgc_record_uoh_allocation(int gen_number, size_t size);
+
+    PER_HEAP_METHOD void bgc_record_uoh_end_seg_allocation (int gen_number, size_t size);
 #endif //BACKGROUND_GC
 
     PER_HEAP_METHOD void add_saved_spinlock_info (
@@ -3465,6 +3478,8 @@ private:
 
     PER_HEAP_ISOLATED_METHOD BOOL dt_high_memory_load_p();
 
+    PER_HEAP_ISOLATED_METHOD bool compute_hard_limit_from_heap_limits();
+
     PER_HEAP_ISOLATED_METHOD bool compute_hard_limit();
 
     PER_HEAP_ISOLATED_METHOD bool compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config,
@@ -3549,11 +3564,6 @@ private:
 #ifdef BACKGROUND_GC
     PER_HEAP_FIELD_SINGLE_GC VOLATILE(bgc_state) current_bgc_state;
 
-    PER_HEAP_FIELD_SINGLE_GC size_t     bgc_begin_loh_size;
-    PER_HEAP_FIELD_SINGLE_GC size_t     bgc_begin_poh_size;
-    PER_HEAP_FIELD_SINGLE_GC size_t     end_loh_size;
-    PER_HEAP_FIELD_SINGLE_GC size_t     end_poh_size;
-
     // We can't process the ephemeral range concurrently so we
     // wait till final mark to process it.
     PER_HEAP_FIELD_SINGLE_GC BOOL      processed_eph_overflow_p;
@@ -3564,6 +3574,9 @@ private:
 
     PER_HEAP_FIELD_SINGLE_GC uint8_t* next_sweep_obj;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* current_sweep_pos;
+
+    PER_HEAP_FIELD_SINGLE_GC size_t bgc_begin_uoh_size[uoh_generation_count];
+    PER_HEAP_FIELD_SINGLE_GC size_t end_uoh_size[uoh_generation_count];
 
     PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_no_bgc[uoh_generation_count];
     PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_bgc_marking[uoh_generation_count];
@@ -3741,6 +3754,11 @@ private:
     PER_HEAP_FIELD_SINGLE_GC BOOL loh_compacted_p;
 #endif //FEATURE_LOH_COMPACTION
 
+#ifdef FEATURE_JAVAMARSHAL
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint8_t** global_bridge_list;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC size_t num_global_bridge_objs;
+#endif //FEATURE_JAVAMARSHAL
+
     /*****************************************/
     // PER_HEAP_FIELD_SINGLE_GC_ALLOC fields //
     /*****************************************/
@@ -3763,6 +3781,8 @@ private:
     PER_HEAP_FIELD_SINGLE_GC_ALLOC BOOL last_gc_before_oom;
 
 #ifdef MULTIPLE_HEAPS
+    // approximate alloc_context_count. This is updated by multiple threads without locking; the
+    // increments/decrements are non-interlocked so the value is only approximate.
     PER_HEAP_FIELD_SINGLE_GC_ALLOC VOLATILE(int) alloc_context_count;
 
     // Init-ed during a GC and updated by allocator after that GC
@@ -3770,14 +3790,10 @@ private:
 #endif //MULTIPLE_HEAPS
 
 #ifdef BACKGROUND_GC
-    // This includes what we allocate at the end of segment - allocating
-    // in free list doesn't increase the heap size.
-    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     bgc_loh_size_increased;
-    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     bgc_poh_size_increased;
-
     // Updated by the allocator and reinit-ed in each BGC
-    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     background_soh_alloc_count;
-    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     background_uoh_alloc_count;
+    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t bgc_uoh_current_size[uoh_generation_count];
+
+    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t background_soh_alloc_count;
 
     PER_HEAP_FIELD_SINGLE_GC_ALLOC VOLATILE(int32_t) uoh_alloc_thread_count;
 #endif //BACKGROUND_GC
@@ -4379,6 +4395,18 @@ private:
     {
         float target_tcp = 2.0;
         float target_gen2_tcp = 10.0;
+
+        // The following 3 constants are used in the computation for the total gen0 budget relative to the stable soh size.
+        // 
+        // By default DATAS computes a multiplier (gen0_growth_soh_ratio) that scales the size. This multiplier follows
+        // a power decay curve where the multiplier decreases rapidly as the size increases. We cap it at 10x at the low
+        // end and 10% at the high end.
+        //
+        // You can choose to modify these by specifying gen0_growth_factor_percent to reduce or increase this multiplier
+        // and the min/max multipliers.
+        float gen0_growth_soh_ratio_percent = 1.0;
+        float gen0_growth_soh_ratio_min = 0.1f;
+        float gen0_growth_soh_ratio_max = 10.0;
 
         static const int recorded_adjustment_size = 4;
         static const int sample_size = 3;
@@ -5061,23 +5089,23 @@ private:
         // time in msl).
         //
 
-        size_t          max_gen0_new_allocation;
-        size_t          min_gen0_new_allocation;
+        size_t max_gen0_new_allocation = 64 * 1024 * 1024;
+        size_t min_gen0_new_allocation = 0;
 
         size_t compute_total_gen0_budget (size_t total_soh_stable_size)
         {
             assert (total_soh_stable_size > 0);
 
-            float factor = (float)(20 - conserve_mem_setting);
-            double old_gen_growth_factor = factor / sqrt ((double)total_soh_stable_size / 1000.0 / 1000.0);
-            double saved_old_gen_growth_factor = old_gen_growth_factor;
-            old_gen_growth_factor = min (10.0, old_gen_growth_factor);
-            old_gen_growth_factor = max (0.1, old_gen_growth_factor);
+            float factor = (float)(20 - conserve_mem_setting) * gen0_growth_soh_ratio_percent;
+            double gen0_growth_soh_ratio = factor / sqrt ((double)total_soh_stable_size / 1000.0 / 1000.0);
+            double saved_gen0_growth_soh_ratio = gen0_growth_soh_ratio;
+            gen0_growth_soh_ratio = min ((double)gen0_growth_soh_ratio_max, gen0_growth_soh_ratio);
+            gen0_growth_soh_ratio = max ((double)gen0_growth_soh_ratio_min, gen0_growth_soh_ratio);
 
-            size_t total_new_allocation_old_gen = (size_t)(old_gen_growth_factor * (double)total_soh_stable_size);
+            size_t total_new_allocation_old_gen = (size_t)(gen0_growth_soh_ratio * (double)total_soh_stable_size);
             dprintf (6666, ("stable soh %Id (%.3fmb), factor %.3f=>%.3f -> total gen0 new_alloc %Id (%.3fmb)",
                 total_soh_stable_size, ((double)total_soh_stable_size / 1000.0 / 1000.0),
-                saved_old_gen_growth_factor, old_gen_growth_factor, total_new_allocation_old_gen,
+                saved_gen0_growth_soh_ratio, gen0_growth_soh_ratio, total_new_allocation_old_gen,
                 ((double)total_new_allocation_old_gen  / 1000.0 / 1000.0)));
             return total_new_allocation_old_gen;
         }
@@ -5359,11 +5387,6 @@ private:
 
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool gc_can_use_concurrent;
-
-#ifdef BGC_SERVO_TUNING
-    // This tells us why we chose to do a bgc in tuning.
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY int saved_bgc_tuning_reason;
-#endif //BGC_SERVO_TUNING
 #endif //BACKGROUND_GC
 
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY uint8_t* bookkeeping_start;
@@ -5476,6 +5499,11 @@ private:
     // This can only go from false to true concurrently so if it is true,
     // it means the bgc info is ready.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY VOLATILE(bool) is_last_recorded_bgc;
+
+#ifdef BGC_SERVO_TUNING
+    // This tells us why we chose to do a bgc in tuning.
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY int saved_bgc_tuning_reason;
+#endif //BGC_SERVO_TUNING
 #endif //BACKGROUND_GC
 
 #ifdef DYNAMIC_HEAP_COUNT
@@ -5658,6 +5686,7 @@ class CFinalize
 {
 
     friend class CFinalizeStaticAsserts;
+    friend struct ::cdac_data<CFinalize>;
 
 private:
 
@@ -6226,10 +6255,13 @@ public:
     int             plan_gen_num;
     int             old_card_survived;
     int             pinned_survived;
-    // at the end of each GC, we increase each region in the region free list
-    // by 1. So we can observe if a region stays in the free list over many
-    // GCs. We stop at 99. It's initialized to 0 when a region is added to
-    // the region's free list.
+    // at the end of each GC, we increase the age of each region in the relevant region
+    // free list(s) by 1. So we can observe if a region stays in the free list over many
+    // GCs. We stop at 99. It's initialized to 0 when a region is added to the region's free list.
+    // 
+    // "Relevant" means we only age basic regions during ephemeral GCs and age all regions
+    // during gen2 GCs. The only exception is we do age all regions during an ephemeral GC
+    // done at the beginning of a BGC. 
     #define MAX_AGE_IN_FREE 99
     #define AGE_IN_FREE_TO_DECOMMIT_BASIC 20
     #define AGE_IN_FREE_TO_DECOMMIT_LARGE 5

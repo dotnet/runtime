@@ -24,7 +24,7 @@ namespace Test.Cryptography
 
         internal static byte[] HexToByteArray(this string hexString)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Convert.FromHexString(hexString);
 #else
             byte[] bytes = new byte[hexString.Length / 2];
@@ -56,7 +56,7 @@ namespace Test.Cryptography
 
         internal static string ByteArrayToHex(this ReadOnlySpan<byte> bytes)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return Convert.ToHexString(bytes);
 #else
             StringBuilder builder = new StringBuilder(bytes.Length * 2);
@@ -89,7 +89,7 @@ namespace Test.Cryptography
 
         internal static bool ContainsAnyExcept(this ReadOnlySpan<byte> bytes, byte value)
         {
-#if NET9_0_OR_GREATER
+#if NET
             return bytes.ContainsAnyExcept(value);
 #else
             foreach (byte b in bytes)
@@ -109,8 +109,26 @@ namespace Test.Cryptography
 #if NET
             return PemEncoding.WriteString(label, data);
 #else
-            return
-                $"-----BEGIN {label}-----\n{Convert.ToBase64String(data, Base64FormattingOptions.InsertLineBreaks)}\n-----END {label}-----";
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append("-----BEGIN ");
+            sb.Append(label);
+            sb.Append("-----\n");
+
+            string base64 = Convert.ToBase64String(data);
+
+            for (int i = 0; i < base64.Length; i += 64)
+            {
+                int len = Math.Min(64, base64.Length - i);
+                sb.Append(base64, i, len);
+                sb.Append('\n');
+            }
+
+            sb.Append("-----END ");
+            sb.Append(label);
+            sb.Append("-----");
+
+            return sb.ToString();
 #endif
         }
     }

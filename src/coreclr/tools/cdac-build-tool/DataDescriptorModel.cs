@@ -14,23 +14,25 @@ namespace Microsoft.DotNet.Diagnostics.DataContract.BuildTool;
 
 public class DataDescriptorModel
 {
-    public int Version => 0;
+    public int Version => 1;
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string Baseline { get; }
     public IReadOnlyDictionary<string, TypeModel> Types { get; }
     public IReadOnlyDictionary<string, GlobalModel> Globals { get; }
+    public IReadOnlyDictionary<string, GlobalModel> SubDescriptors { get; }
     public IReadOnlyDictionary<string, int> Contracts { get; }
     [JsonIgnore]
     public uint PlatformFlags { get; }
     // The number of indirect globals plus 1 for the placeholder at index 0
     [JsonIgnore]
-    public int PointerDataCount => 1 + Globals.Values.Count(g => g.Value.Kind == GlobalValue.KindEnum.Indirect);
+    public int PointerDataCount => 1 + Globals.Values.Count(g => g.Value.Kind == GlobalValue.KindEnum.Indirect) + SubDescriptors.Values.Count(s => s.Value.Kind == GlobalValue.KindEnum.Indirect);
 
-    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, int> contracts, uint platformFlags)
+    private DataDescriptorModel(string baseline, IReadOnlyDictionary<string, TypeModel> types, IReadOnlyDictionary<string, GlobalModel> globals, IReadOnlyDictionary<string, GlobalModel> subDescriptors, IReadOnlyDictionary<string, int> contracts, uint platformFlags)
     {
         Baseline = baseline;
         Types = types;
         Globals = globals;
+        SubDescriptors = subDescriptors;
         Contracts = contracts;
         PlatformFlags = platformFlags;
     }
@@ -63,6 +65,12 @@ public class DataDescriptorModel
             Console.WriteLine($"  Type: {global.Type}");
             Console.WriteLine($"  Value: {global.Value}");
         }
+        foreach (var (subDescriptorName, subDescriptor) in SubDescriptors)
+        {
+            Console.WriteLine($"Sub-Descriptor: {subDescriptorName}");
+            Console.WriteLine($"  Type: {subDescriptor.Type}");
+            Console.WriteLine($"  Value: {subDescriptor.Value}");
+        }
         foreach (var (contractName, contract) in Contracts)
         {
             Console.WriteLine($"Contract: {contractName}");
@@ -89,6 +97,7 @@ public class DataDescriptorModel
         private bool _baselineParsed;
         private readonly Dictionary<string, TypeModelBuilder> _types = new();
         private readonly Dictionary<string, GlobalBuilder> _globals = new();
+        private readonly Dictionary<string, GlobalBuilder> _subDescriptors = new();
         private readonly Dictionary<string, ContractBuilder> _contracts = new();
         public Builder(string baselinesDir)
         {
@@ -130,6 +139,22 @@ public class DataDescriptorModel
             return global;
         }
 
+        public GlobalBuilder AddOrUpdateSubDescriptor(string name, string type, GlobalValue? value)
+        {
+            if (!_baselineParsed)
+            {
+                throw new InvalidOperationException("Baseline must be set before adding globals");
+            }
+            if (!_subDescriptors.TryGetValue(name, out var subDescriptor))
+            {
+                subDescriptor = new GlobalBuilder();
+                _subDescriptors[name] = subDescriptor;
+            }
+            subDescriptor.Type = type;
+            subDescriptor.Value = value;
+            return subDescriptor;
+        }
+
         public void AddOrUpdateContract(string name, int version)
         {
             if (!_contracts.TryGetValue(name, out var contract))
@@ -138,14 +163,6 @@ public class DataDescriptorModel
                 _contracts[name] = contract;
             }
             contract.Version = version;
-        }
-
-        public void AddOrupdateContracts(IEnumerable<KeyValuePair<string, int>> contracts)
-        {
-            foreach (var (name, version) in contracts)
-            {
-                AddOrUpdateContract(name, version);
-            }
         }
 
         public void SetBaseline(string baseline)
@@ -196,12 +213,22 @@ public class DataDescriptorModel
                 }
                 globals[globalName] = new GlobalModel { Type = globalBuilder.Type, Value = v.Value };
             }
+            var subDescriptors = new Dictionary<string, GlobalModel>();
+            foreach (var (subDescriptorName, subDescriptorBuilder) in _subDescriptors)
+            {
+                GlobalValue? v = subDescriptorBuilder.Value;
+                if (v == null)
+                {
+                    throw new InvalidOperationException($"Value must be set for sub-descriptor {subDescriptorName}");
+                }
+                subDescriptors[subDescriptorName] = new GlobalModel { Type = subDescriptorBuilder.Type, Value = v.Value };
+            }
             var contracts = new Dictionary<string, int>();
             foreach (var (contractName, contractBuilder) in _contracts)
             {
                 contracts[contractName] = contractBuilder.Build();
             }
-            return new DataDescriptorModel(_baseline, types, globals, contracts, PlatformFlags);
+            return new DataDescriptorModel(_baseline, types, globals, subDescriptors, contracts, PlatformFlags);
         }
     }
 

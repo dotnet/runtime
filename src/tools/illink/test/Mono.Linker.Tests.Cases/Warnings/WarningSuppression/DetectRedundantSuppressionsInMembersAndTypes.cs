@@ -8,323 +8,337 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-	[ExpectedNoWarnings]
-	[SkipKeptItemsValidation]
-	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
-	public class DetectRedundantSuppressionsInMembersAndTypes
-	{
-		public static void Main ()
-		{
-			RedundantSuppressionOnType.Test ();
-			RedundantSuppressionOnMethod.Test ();
-			RedundantSuppressionOnNestedType.Test ();
+    [ExpectedNoWarnings]
+    [SkipKeptItemsValidation]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
+    public class DetectRedundantSuppressionsInMembersAndTypes
+    {
+        public static void Main()
+        {
+            RedundantSuppressionOnType.Test();
+            RedundantSuppressionOnMethod.Test();
+            RedundantSuppressionOnNestedType.Test();
 
-			RedundantSuppressionOnPropertyGet.Test ();
-			RedundantSuppressionOnProperty.Test ();
-			RedundantSuppressionOnPropertyWithOnlyGet.Test ();
-			RedundantSuppressionOnPropertyWithOnlySet.Test ();
-			RedundantSuppressionOnPropertyAccessedByReflection.Test ();
+            RedundantSuppressionOnPropertyGet.Test();
+            RedundantSuppressionOnProperty.Test();
+            RedundantSuppressionOnPropertyWithOnlyGet.Test();
+            RedundantSuppressionOnPropertyWithOnlySet.Test();
+            RedundantSuppressionOnPropertyAccessedByReflection.Test();
 
-			RedundantSuppressionOnEventAdd.Test ();
-			RedundantSuppressionOnEvent.Test ();
-			RedundantSuppressionOnEventAccessedByReflection.Test ();
+            RedundantSuppressionOnEventAdd.Test();
+            RedundantSuppressionOnEvent.Test();
+            RedundantSuppressionOnEventAccessedByReflection.Test();
 
-			MultipleRedundantSuppressions.Test ();
-			RedundantAndUsedSuppressions.Test ();
+            MultipleRedundantSuppressions.Test();
+            RedundantAndUsedSuppressions.Test();
 
-			DoNotReportNonLinkerSuppressions.Test ();
-			DoNotReportSuppressionsOnMethodsConvertedToThrow.Test ();
+            DoNotReportNonLinkerSuppressions.Test();
+            DoNotReportSuppressionsOnMethodsConvertedToThrow.Test();
 
-			SuppressRedundantSuppressionWarning.Test ();
-			DoNotReportUnnecessaryRedundantWarningSuppressions.Test ();
+            SuppressRedundantSuppressionWarning.Test();
+            DoNotReportUnnecessaryRedundantWarningSuppressions.Test();
 
-			RedundantSuppressionWithRUC.Test ();
-		}
+            RedundantSuppressionWithRUC.Test();
+        }
 
-		public static Type TriggerUnrecognizedPattern ()
-		{
-			return typeof (DetectRedundantSuppressionsInMembersAndTypes);
-		}
+        public static Type TriggerUnrecognizedPattern()
+        {
+            return typeof(DetectRedundantSuppressionsInMembersAndTypes);
+        }
 
-		public static string TrimmerCompatibleMethod ()
-		{
-			return "test";
-		}
+        public static string TrimmerCompatibleMethod()
+        {
+            return "test";
+        }
 
-		[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-		[UnconditionalSuppressMessage ("Test", "IL2071")]
-		public class RedundantSuppressionOnType
-		{
-			public static void Test ()
-			{
-				TrimmerCompatibleMethod ();
-			}
-		}
+        [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+        [UnconditionalSuppressMessage("Test", "IL2071")]
+        public class RedundantSuppressionOnType
+        {
+            public static void Test()
+            {
+                TrimmerCompatibleMethod();
+            }
+        }
 
-		public class RedundantSuppressionOnMethod
-		{
-			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2071")]
-			public static void Test ()
-			{
-				TrimmerCompatibleMethod ();
-			}
-		}
+        public class RedundantSuppressionOnMethod
+        {
+            [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2071")]
+            public static void Test()
+            {
+                TrimmerCompatibleMethod();
+            }
+        }
 
-		public class RedundantSuppressionOnNestedType
-		{
-			public static void Test ()
-			{
-				NestedType.TrimmerCompatibleMethod ();
-			}
+        public class RedundantSuppressionOnNestedType
+        {
+            public static void Test()
+            {
+                NestedType.TrimmerCompatibleMethod();
+            }
 
-			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2071")]
-			public class NestedType
-			{
-				public static void TrimmerCompatibleMethod ()
-				{
-					DetectRedundantSuppressionsInMembersAndTypes.TrimmerCompatibleMethod ();
-				}
-			}
-		}
+            [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2071")]
+            public class NestedType
+            {
+                public static void TrimmerCompatibleMethod()
+                {
+                    DetectRedundantSuppressionsInMembersAndTypes.TrimmerCompatibleMethod();
+                }
+            }
+        }
 
-		public class RedundantSuppressionOnPropertyGet
-		{
-			public static void Test ()
-			{
-				var property = TrimmerCompatibleProperty;
-			}
+        public class RedundantSuppressionOnPropertyGet
+        {
+            public static void Test()
+            {
+                var property = TrimmerCompatibleProperty;
+            }
 
-			public static string TrimmerCompatibleProperty {
-				[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-				[UnconditionalSuppressMessage ("Test", "IL2071")]
-				get {
-					return TrimmerCompatibleMethod ();
-				}
-			}
-		}
+            public static string TrimmerCompatibleProperty
+            {
+                [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+                [UnconditionalSuppressMessage("Test", "IL2071")]
+                get
+                {
+                    return TrimmerCompatibleMethod();
+                }
+            }
+        }
 
-		public class RedundantSuppressionOnProperty
-		{
-			public static void Test ()
-			{
-				var property = TrimmerCompatibleProperty;
-				TrimmerCompatibleProperty = "test";
-			}
+        public class RedundantSuppressionOnProperty
+        {
+            public static void Test()
+            {
+                var property = TrimmerCompatibleProperty;
+                TrimmerCompatibleProperty = "test";
+            }
 
-			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2071")]
-			public static string TrimmerCompatibleProperty {
-				get {
-					return TrimmerCompatibleMethod ();
-				}
-				set {
-					value = TrimmerCompatibleMethod ();
-				}
-			}
-		}
+            [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2071")]
+            public static string TrimmerCompatibleProperty
+            {
+                get
+                {
+                    return TrimmerCompatibleMethod();
+                }
+                set
+                {
+                    value = TrimmerCompatibleMethod();
+                }
+            }
+        }
 
-		public class RedundantSuppressionOnPropertyWithOnlyGet
-		{
-			public static void Test ()
-			{
-				var property = TrimmerCompatibleProperty;
-			}
+        public class RedundantSuppressionOnPropertyWithOnlyGet
+        {
+            public static void Test()
+            {
+                var property = TrimmerCompatibleProperty;
+            }
 
-			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2071")]
-			public static string TrimmerCompatibleProperty {
-				get {
-					return TrimmerCompatibleMethod ();
-				}
-			}
-		}
+            [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2071")]
+            public static string TrimmerCompatibleProperty
+            {
+                get
+                {
+                    return TrimmerCompatibleMethod();
+                }
+            }
+        }
 
-		public class RedundantSuppressionOnPropertyWithOnlySet
-		{
-			public static void Test ()
-			{
-				TrimmerCompatibleProperty = "test";
-			}
+        public class RedundantSuppressionOnPropertyWithOnlySet
+        {
+            public static void Test()
+            {
+                TrimmerCompatibleProperty = "test";
+            }
 
-			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2071")]
-			public static string TrimmerCompatibleProperty {
-				set {
-					value = TrimmerCompatibleMethod ();
-				}
-			}
-		}
+            [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2071")]
+            public static string TrimmerCompatibleProperty
+            {
+                set
+                {
+                    value = TrimmerCompatibleMethod();
+                }
+            }
+        }
 
-		public class RedundantSuppressionOnPropertyAccessedByReflection
-		{
-			public static void Test ()
-			{
-				typeof (RedundantSuppressionOnPropertyAccessedByReflection).GetProperty ("TrimmerCompatibleProperty");
-			}
+        public class RedundantSuppressionOnPropertyAccessedByReflection
+        {
+            public static void Test()
+            {
+                typeof(RedundantSuppressionOnPropertyAccessedByReflection).GetProperty("TrimmerCompatibleProperty");
+            }
 
-			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2071")]
-			public static string TrimmerCompatibleProperty {
-				get {
-					return TrimmerCompatibleMethod ();
-				}
-			}
-		}
+            [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2071")]
+            public static string TrimmerCompatibleProperty
+            {
+                get
+                {
+                    return TrimmerCompatibleMethod();
+                }
+            }
+        }
 
-		public class RedundantSuppressionOnEventAdd
-		{
-			public static void Test ()
-			{
-				TrimmerCompatibleEvent += EventSubscriber;
-			}
+        public class RedundantSuppressionOnEventAdd
+        {
+            public static void Test()
+            {
+                TrimmerCompatibleEvent += EventSubscriber;
+            }
 
-			static void EventSubscriber (object sender, EventArgs e)
-			{
+            static void EventSubscriber(object sender, EventArgs e)
+            {
 
-			}
+            }
 
-			public static event EventHandler<EventArgs> TrimmerCompatibleEvent {
-				[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
-				[UnconditionalSuppressMessage ("Test", "IL2072")]
-				add { TrimmerCompatibleMethod (); }
-				remove { }
-			}
-		}
+            public static event EventHandler<EventArgs> TrimmerCompatibleEvent
+            {
+                [ExpectedWarning("IL2121", "IL2072", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+                [UnconditionalSuppressMessage("Test", "IL2072")]
+                add { TrimmerCompatibleMethod(); }
+                remove { }
+            }
+        }
 
-		public class RedundantSuppressionOnEvent
-		{
-			public static void Test ()
-			{
-				TrimmerCompatibleEvent += EventSubscriber;
-			}
+        public class RedundantSuppressionOnEvent
+        {
+            public static void Test()
+            {
+                TrimmerCompatibleEvent += EventSubscriber;
+            }
 
-			static void EventSubscriber (object sender, EventArgs e)
-			{
+            static void EventSubscriber(object sender, EventArgs e)
+            {
 
-			}
+            }
 
-			[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2072")]
-			public static event EventHandler<EventArgs> TrimmerCompatibleEvent {
-				add { TrimmerCompatibleMethod (); }
-				remove { }
-			}
-		}
+            [ExpectedWarning("IL2121", "IL2072", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2072")]
+            public static event EventHandler<EventArgs> TrimmerCompatibleEvent
+            {
+                add { TrimmerCompatibleMethod(); }
+                remove { }
+            }
+        }
 
-		public class RedundantSuppressionOnEventAccessedByReflection
-		{
-			public static void Test ()
-			{
-				typeof (RedundantSuppressionOnEventAccessedByReflection).GetEvent ("TrimmerCompatibleEvent");
-			}
+        public class RedundantSuppressionOnEventAccessedByReflection
+        {
+            public static void Test()
+            {
+                typeof(RedundantSuppressionOnEventAccessedByReflection).GetEvent("TrimmerCompatibleEvent");
+            }
 
-			[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2072")]
-			public static event EventHandler<EventArgs> TrimmerCompatibleEvent {
-				add { TrimmerCompatibleMethod (); }
-				remove { }
-			}
-		}
+            [ExpectedWarning("IL2121", "IL2072", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2072")]
+            public static event EventHandler<EventArgs> TrimmerCompatibleEvent
+            {
+                add { TrimmerCompatibleMethod(); }
+                remove { }
+            }
+        }
 
-		[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
-		[UnconditionalSuppressMessage ("Test", "IL2072")]
-		[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-		[UnconditionalSuppressMessage ("Test", "IL2071")]
-		public class MultipleRedundantSuppressions
-		{
-			[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2072")]
-			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2071")]
-			public static void Test ()
-			{
-				TrimmerCompatibleMethod ();
-			}
-		}
+        [ExpectedWarning("IL2121", "IL2072", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+        [UnconditionalSuppressMessage("Test", "IL2072")]
+        [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+        [UnconditionalSuppressMessage("Test", "IL2071")]
+        public class MultipleRedundantSuppressions
+        {
+            [ExpectedWarning("IL2121", "IL2072", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2072")]
+            [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2071")]
+            public static void Test()
+            {
+                TrimmerCompatibleMethod();
+            }
+        }
 
-		public class RedundantAndUsedSuppressions
-		{
-			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2071")]
-			[UnconditionalSuppressMessage ("Test", "IL2072")]
-			public static void Test ()
-			{
-				Expression.Call (TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
-			}
-		}
+        public class RedundantAndUsedSuppressions
+        {
+            [ExpectedWarning("IL2121", "IL2071", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2071")]
+            [UnconditionalSuppressMessage("Test", "IL2072")]
+            public static void Test()
+            {
+                Expression.Call(TriggerUnrecognizedPattern(), "", Type.EmptyTypes);
+            }
+        }
 
-		public class DoNotReportNonLinkerSuppressions
-		{
-			[UnconditionalSuppressMessage ("Test", "IL3052")]
-			public static void Test ()
-			{
-				TrimmerCompatibleMethod ();
-			}
-		}
+        public class DoNotReportNonLinkerSuppressions
+        {
+            [UnconditionalSuppressMessage("Test", "IL3052")]
+            public static void Test()
+            {
+                TrimmerCompatibleMethod();
+            }
+        }
 
-		public class DoNotReportSuppressionsOnMethodsConvertedToThrow
-		{
-			// The tool is unable to determine whether a suppression is redundant when it is placed on a method with unreachable body.
-			// Currently suppressions on methods with unreachable bodies should never be reported as redundant.
-			// https://github.com/dotnet/linker/issues/2920
-			public static void Test ()
-			{
-				UsedToMarkMethod (null);
-			}
+        public class DoNotReportSuppressionsOnMethodsConvertedToThrow
+        {
+            // The tool is unable to determine whether a suppression is redundant when it is placed on a method with unreachable body.
+            // Currently suppressions on methods with unreachable bodies should never be reported as redundant.
+            // https://github.com/dotnet/linker/issues/2920
+            public static void Test()
+            {
+                UsedToMarkMethod(null);
+            }
 
-			static void UsedToMarkMethod (TypeWithMethodConvertedToThrow t)
-			{
-				t.MethodConvertedToThrow ();
-			}
+            static void UsedToMarkMethod(TypeWithMethodConvertedToThrow t)
+            {
+                t.MethodConvertedToThrow();
+            }
 
-			class TypeWithMethodConvertedToThrow
-			{
-				// The suppression is redundant, but it should not be reported.
-				[UnconditionalSuppressMessage ("Test", "IL2072")]
-				public void MethodConvertedToThrow ()
-				{
-					TrimmerCompatibleMethod ();
-				}
-			}
-		}
+            class TypeWithMethodConvertedToThrow
+            {
+                // The suppression is redundant, but it should not be reported.
+                [UnconditionalSuppressMessage("Test", "IL2072")]
+                public void MethodConvertedToThrow()
+                {
+                    TrimmerCompatibleMethod();
+                }
+            }
+        }
 
-		public class SuppressRedundantSuppressionWarning
-		{
-			[UnconditionalSuppressMessage ("Test", "IL2121")]
-			[UnconditionalSuppressMessage ("Test", "IL2072")]
-			public static void Test ()
-			{
-				TrimmerCompatibleMethod ();
-			}
-		}
+        public class SuppressRedundantSuppressionWarning
+        {
+            [UnconditionalSuppressMessage("Test", "IL2121")]
+            [UnconditionalSuppressMessage("Test", "IL2072")]
+            public static void Test()
+            {
+                TrimmerCompatibleMethod();
+            }
+        }
 
-		public class DoNotReportUnnecessaryRedundantWarningSuppressions
-		{
-			[UnconditionalSuppressMessage ("Test", "IL2121")]
-			[UnconditionalSuppressMessage ("Test", "IL2072")]
-			public static void Test ()
-			{
-				Expression.Call (TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
-			}
-		}
+        public class DoNotReportUnnecessaryRedundantWarningSuppressions
+        {
+            [UnconditionalSuppressMessage("Test", "IL2121")]
+            [UnconditionalSuppressMessage("Test", "IL2072")]
+            public static void Test()
+            {
+                Expression.Call(TriggerUnrecognizedPattern(), "", Type.EmptyTypes);
+            }
+        }
 
-		public class RedundantSuppressionWithRUC
-		{
-			[ExpectedWarning ("IL2026")]
-			public static void Test ()
-			{
-				MethodMarkedRUC ();
-			}
+        public class RedundantSuppressionWithRUC
+        {
+            [ExpectedWarning("IL2026")]
+            public static void Test()
+            {
+                MethodMarkedRUC();
+            }
 
-			[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
-			[UnconditionalSuppressMessage ("Test", "IL2072")]
-			[RequiresUnreferencedCode ("Test")]
-			public static void MethodMarkedRUC ()
-			{
-				Expression.Call (TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
-			}
-		}
-	}
+            [ExpectedWarning("IL2121", "IL2072", Tool.Trimmer, "https://github.com/dotnet/linker/issues/1971")]
+            [UnconditionalSuppressMessage("Test", "IL2072")]
+            [RequiresUnreferencedCode("Test")]
+            public static void MethodMarkedRUC()
+            {
+                Expression.Call(TriggerUnrecognizedPattern(), "", Type.EmptyTypes);
+            }
+        }
+    }
 }

@@ -64,10 +64,11 @@ namespace System.Text.Json.Serialization.Metadata
             CancellationToken cancellationToken,
             object? rootValueBoxed = null)
         {
+            PooledByteBufferWriter writer = new PooledByteBufferWriter(Options.DefaultBufferSize, utf8Json);
             // Value chosen as 90% of the default buffer used in PooledByteBufferWriter.
             // This is a tradeoff between likelihood of needing to grow the array vs. utilizing most of the buffer
-            int flushThreshold = (int)(Options.DefaultBufferSize * JsonSerializer.FlushThreshold);
-            return SerializeAsync(new PooledByteBufferWriter(Options.DefaultBufferSize, utf8Json), rootValue, flushThreshold, cancellationToken, rootValueBoxed);
+            int flushThreshold = (int)(writer.Capacity * JsonSerializer.FlushThreshold);
+            return SerializeAsync(writer, rootValue, flushThreshold, cancellationToken, rootValueBoxed);
         }
 
         internal Task SerializeAsync(PipeWriter utf8Json,
@@ -199,7 +200,7 @@ namespace System.Text.Json.Serialization.Metadata
                             if (state.PendingTask is not null)
                             {
                                 // Exceptions should only be propagated by the resuming converter
-#if NET8_0_OR_GREATER
+#if NET
                                 await state.PendingTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 #else
                                 try

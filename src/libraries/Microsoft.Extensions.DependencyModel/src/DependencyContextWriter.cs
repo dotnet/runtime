@@ -222,6 +222,11 @@ namespace Microsoft.Extensions.DependencyModel
                 ResourceAssembly resourceAssembly = resourceAssemblies[i];
                 jsonWriter.WriteStartObject(NormalizePath(resourceAssembly.Path));
                 jsonWriter.WriteString(DependencyContextStrings.LocalePropertyName, resourceAssembly.Locale);
+                if (resourceAssembly.LocalPath != null)
+                {
+                    jsonWriter.WriteString(DependencyContextStrings.LocalPathPropertyName, NormalizePath(resourceAssembly.LocalPath));
+                }
+
                 jsonWriter.WriteEndObject();
             }
             jsonWriter.WriteEndObject();
@@ -363,6 +368,11 @@ namespace Microsoft.Extensions.DependencyModel
                     jsonWriter.WriteString(DependencyContextStrings.FileVersionPropertyName, asset.FileVersion);
                 }
 
+                if (asset.LocalPath != null)
+                {
+                    jsonWriter.WriteString(DependencyContextStrings.LocalPathPropertyName, NormalizePath(asset.LocalPath));
+                }
+
                 jsonWriter.WriteEndObject();
             }
         }
@@ -394,6 +404,11 @@ namespace Microsoft.Extensions.DependencyModel
                 if (runtimeFile.FileVersion != null)
                 {
                     jsonWriter.WriteString(DependencyContextStrings.FileVersionPropertyName, runtimeFile.FileVersion);
+                }
+
+                if (runtimeFile.LocalPath != null)
+                {
+                    jsonWriter.WriteString(DependencyContextStrings.LocalPathPropertyName, NormalizePath(runtimeFile.LocalPath));
                 }
 
                 jsonWriter.WriteEndObject();

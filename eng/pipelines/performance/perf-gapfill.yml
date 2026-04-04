@@ -1,0 +1,156 @@
+# perf-gapfill.yml — Triggered programmatically by the GapFiller tool to fill commit gaps in perf data.
+# No CI/PR triggers. Supports per-job-group toggles for selective execution.
+
+trigger: none
+pr: none
+
+parameters:
+  - name: run_wasm
+    type: boolean
+    default: true
+
+  - name: run_viper_micro
+    type: boolean
+    default: true
+
+  - name: viper_micro_platforms
+    type: object
+    default:
+      - linux_x64
+      - windows_x64
+      - windows_x86
+
+  - name: run_viper_micro_nor2r
+    type: boolean
+    default: true
+
+  - name: viper_micro_nor2r_platforms
+    type: object
+    default:
+      - linux_x64
+      - windows_x64
+
+  - name: run_mono_micro
+    type: boolean
+    default: true
+
+  - name: run_mono_interpreter
+    type: boolean
+    default: true
+
+  - name: run_mono_aot
+    type: boolean
+    default: true
+
+  - name: run_android_mono_jit
+    type: boolean
+    default: true
+
+  - name: run_android_mono_aot
+    type: boolean
+    default: true
+
+  - name: run_android_coreclr_jit
+    type: boolean
+    default: true
+
+  - name: run_android_coreclr_r2r
+    type: boolean
+    default: true
+
+  # If non-zero, use a cached build from BCS instead of building from source.
+  - name: downloadSpecificBuildId
+    type: number
+    default: 0
+
+  - name: onlySanityCheck
+    type: boolean
+    default: false
+
+resources:
+  repositories:
+    - repository: performance
+      type: git
+      name: internal/dotnet-performance
+
+variables:
+- template: /eng/pipelines/common/variables.yml
+
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+
+      # WASM perf jobs — only included when run_wasm is true
+      - ${{ if eq(parameters.run_wasm, true) }}:
+        - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
+          parameters:
+            ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+              runProfile: 'v8'
+            runtimeRepoAlias: self
+            performanceRepoAlias: performance
+            ${{ if ne(parameters.downloadSpecificBuildId, 0) }}:
+              downloadSpecificBuild:
+                buildId: ${{ parameters.downloadSpecificBuildId }}
+            jobParameters:
+              ${{ if parameters.onlySanityCheck }}:
+                onlySanityCheck: true
+
+      # Runtime perf jobs (non-WASM) — included when any non-WASM group is enabled.
+      # Per-job-group toggles are forwarded to runtime-perf-jobs.yml as parameter overrides.
+      - ${{ if or(eq(parameters.run_viper_micro, true), eq(parameters.run_viper_micro_nor2r, true), eq(parameters.run_mono_micro, true), eq(parameters.run_mono_interpreter, true), eq(parameters.run_mono_aot, true), eq(parameters.run_android_mono_jit, true), eq(parameters.run_android_mono_aot, true), eq(parameters.run_android_coreclr_jit, true), eq(parameters.run_android_coreclr_r2r, true)) }}:
+        - template: /eng/pipelines/runtime-perf-jobs.yml@performance
+          parameters:
+            runtimeRepoAlias: self
+            performanceRepoAlias: performance
+            ${{ if ne(parameters.downloadSpecificBuildId, 0) }}:
+              downloadSpecificBuild:
+                buildId: ${{ parameters.downloadSpecificBuildId }}
+            # Viper toggles — forward platform configs when enabled, disable when not
+            ${{ if eq(parameters.run_viper_micro, true) }}:
+              viperMicro:
+                enabled: true
+                configs: ${{ parameters.viper_micro_platforms }}
+            ${{ if eq(parameters.run_viper_micro, false) }}:
+              viperMicro:
+                enabled: false
+                configs: []
+            ${{ if eq(parameters.run_viper_micro_nor2r, true) }}:
+              viperMicroNoR2R:
+                enabled: true
+                configs: ${{ parameters.viper_micro_nor2r_platforms }}
+            ${{ if eq(parameters.run_viper_micro_nor2r, false) }}:
+              viperMicroNoR2R:
+                enabled: false
+                configs: []
+            # Mono toggles
+            ${{ if eq(parameters.run_mono_micro, false) }}:
+              monoMicro:
+                enabled: false
+                configs: []
+            ${{ if eq(parameters.run_mono_interpreter, false) }}:
+              monoInterpreter:
+                enabled: false
+                configs: []
+            ${{ if eq(parameters.run_mono_aot, false) }}:
+              monoAot:
+                enabled: false
+                configs: []
+            # Android toggles
+            ${{ if eq(parameters.run_android_mono_jit, false) }}:
+              androidMonoJit:
+                enabled: false
+            ${{ if eq(parameters.run_android_mono_aot, false) }}:
+              androidMonoAot:
+                enabled: false
+            ${{ if eq(parameters.run_android_coreclr_jit, false) }}:
+              androidCoreclrJit:
+                enabled: false
+            ${{ if eq(parameters.run_android_coreclr_r2r, false) }}:
+              androidCoreclrR2r:
+                enabled: false
+            jobParameters:
+              ${{ if parameters.onlySanityCheck }}:
+                onlySanityCheck: true

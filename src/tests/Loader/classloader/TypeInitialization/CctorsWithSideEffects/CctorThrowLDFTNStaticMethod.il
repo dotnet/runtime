@@ -3,7 +3,8 @@
 
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
-// A .cctor has only one chance to run in any appdomain. 
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+// A .cctor has only one chance to run in any appdomain.
 // If it fails, the 2nd time we try to access a static field we check if .cctor has been run. 
 // And it has, but failed so we fail again.
 
@@ -108,6 +109,7 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {string('needs triage') int32(2)}
     .entrypoint
     // Code size       279 (0x117)
     .maxstack  2

@@ -5,4 +5,8 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="..\CoreDump.cs" />
+  </ItemGroup>
+
 </Project>

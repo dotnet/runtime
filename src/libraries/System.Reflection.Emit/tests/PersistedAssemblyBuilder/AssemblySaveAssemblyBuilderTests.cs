@@ -14,7 +14,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveAssemblyBuilderTests
     {
         private readonly AssemblyName _assemblyName = new AssemblyName("MyAssembly");
@@ -45,6 +45,11 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentNullException>("assemblyFileName", () => ab.Save(assemblyFileName: null));
             Assert.Throws<ArgumentNullException>("stream", () => ab.Save(stream: null));
             Assert.Throws<InvalidOperationException>(() => ab.Save(assemblyFileName: "File")); // no module defined
+
+            PersistedAssemblyBuilder afterGenerateMetadata = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder generatedTypeBuilder);
+            generatedTypeBuilder.CreateType();
+            afterGenerateMetadata.GenerateMetadata(out BlobBuilder _, out BlobBuilder _);
+            Assert.Throws<InvalidOperationException>(() => afterGenerateMetadata.Save(new MemoryStream()));
         }
 
         [Fact]
@@ -58,6 +63,45 @@ namespace System.Reflection.Emit.Tests
             Assert.NotNull(ilStream);
             Assert.NotNull(mappedFieldData);
             Assert.Throws<InvalidOperationException>(() => ab.GenerateMetadata(out var _, out var _)); // cannot re-generate metadata
+
+            PersistedAssemblyBuilder afterSave = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+            typeBuilder.CreateType();
+            afterSave.Save(new MemoryStream());
+            Assert.Throws<InvalidOperationException>(() => afterSave.GenerateMetadata(out BlobBuilder _, out BlobBuilder _));
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_AssemblyIdentityRoundTrip()
+        {
+            AssemblyName assemblyName = new AssemblyName("MyIdentityAssembly")
+            {
+                Flags = AssemblyNameFlags.PublicKey | AssemblyNameFlags.Retargetable,
+                Version = new Version(9, 8, 7, 6),
+                CultureInfo = new CultureInfo("tr-TR")
+            };
+
+            byte[] expectedPublicKey = typeof(string).Assembly.GetName().GetPublicKey();
+            Assert.NotEmpty(expectedPublicKey);
+            assemblyName.SetPublicKey(expectedPublicKey);
+
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(assemblyName);
+            TypeBuilder typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+            typeBuilder.CreateType();
+            using MemoryStream stream = new MemoryStream();
+            ab.Save(stream);
+
+            stream.Position = 0;
+            using PEReader peReader = new PEReader(stream);
+            MetadataReader metadataReader = peReader.GetMetadataReader();
+            AssemblyDefinition assemblyDefinition = metadataReader.GetAssemblyDefinition();
+            AssemblyName loadedAssemblyName = assemblyDefinition.GetAssemblyNameInfo().ToAssemblyName();
+
+            Assert.Equal(assemblyName.Name, loadedAssemblyName.Name);
+            Assert.Equal(assemblyName.Version, loadedAssemblyName.Version);
+            Assert.Equal(assemblyName.CultureName, loadedAssemblyName.CultureName);
+            Assert.Equal(assemblyName.ContentType, loadedAssemblyName.ContentType);
+            Assert.Equal(assemblyName.Flags, loadedAssemblyName.Flags);
+            Assert.Equal(expectedPublicKey, loadedAssemblyName.GetPublicKey());
         }
 
         [Fact]
@@ -305,7 +349,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/113789", TestRuntimes.Mono)]
-        [InlineData(true)] 
+        [InlineData(true)]
         [InlineData(false)]
         public unsafe void AssemblyWithInstanceBasedFunctionPointer(bool useExplicitThis)
         {
@@ -350,7 +394,7 @@ namespace System.Reflection.Emit.Tests
 
                     // In this test, we use typeof(object) for the "this" pointer to ensure the IL could be re-used for other
                     // reference types, but normally this would be the appropriate type such as typeof(MyClassWithGuidProperty).
-                    parameterTypes: [typeof(object), typeof(IntPtr)]); 
+                    parameterTypes: [typeof(object), typeof(IntPtr)]);
 
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_0); // this
@@ -489,7 +533,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(42, field.GetRawConstantValue());
             field = type4.GetField("FieldOffset");
             Assert.NotNull(field);
-            
+
             field = type4.GetField("FieldModopt");
             var cmods = field.GetRequiredCustomModifiers();
             Assert.Equal(1, cmods.Length);

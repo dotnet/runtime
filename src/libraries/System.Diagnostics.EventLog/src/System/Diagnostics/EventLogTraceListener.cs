@@ -39,7 +39,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_nameSet == false && EventLog != null)
+                if (!_nameSet && EventLog != null)
                 {
                     _nameSet = true;
                     base.Name = EventLog.Source;

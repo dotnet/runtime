@@ -69,18 +69,29 @@
     </HelixCorrelationPayload>
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition=" '$(ToolName)' == 'Antigen' ">
     <Run_Partition Include="Partition0" Index="0" />
     <Run_Partition Include="Partition1" Index="1" />
     <Run_Partition Include="Partition2" Index="2" />
     <Run_Partition Include="Partition3" Index="3" />
   </ItemGroup>
 
+  <ItemGroup Condition=" '$(ToolName)' == 'Fuzzlyn' ">
+    <Run_Partition Include="Partition0" Index="0" />
+    <Run_Partition Include="Partition1" Index="1" />
+    <Run_Partition Include="Partition2" Index="2" />
+    <Run_Partition Include="Partition3" Index="3" />
+    <Run_Partition Include="Partition4" Index="4" ExtraCommand="-runtime_async" />
+    <Run_Partition Include="Partition5" Index="5" ExtraCommand="-runtime_async" />
+    <Run_Partition Include="Partition6" Index="6" ExtraCommand="-runtime_async" />
+    <Run_Partition Include="Partition7" Index="7" ExtraCommand="-runtime_async" />
+  </ItemGroup>
+
   <ItemGroup>
     <HelixWorkItem Include="@(Run_Partition)">
       <PartitionName>Partition%(HelixWorkItem.Index)</PartitionName>
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -partition %(PartitionName)</Command>
+      <Command>$(WorkItemCommand) -partition %(PartitionName) %(HelixWorkItem.ExtraCommand)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>AllIssues-$(RunConfiguration)-%(PartitionName).zip;issues-summary-$(RunConfiguration)-%(PartitionName).txt;$(ToolName)-$(RunConfiguration)-%(PartitionName).log</DownloadFilesFromResults>
     </HelixWorkItem>

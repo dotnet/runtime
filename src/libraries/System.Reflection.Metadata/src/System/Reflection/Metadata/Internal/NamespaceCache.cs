@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata.Ecma335
     {
         private readonly MetadataReader _metadataReader;
         private readonly object _namespaceTableAndListLock = new object();
-        private volatile Dictionary<NamespaceDefinitionHandle, NamespaceData>? _namespaceTable;
+        private Dictionary<NamespaceDefinitionHandle, NamespaceData>? _namespaceTable;
         private NamespaceData? _rootNamespace;
         private uint _virtualNamespaceCounter;
 
@@ -207,7 +207,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(realChild.HasFullName);
 
-#if NET8_0_OR_GREATER
+#if NET
             int numberOfSegments = fullName.AsSpan().Count('.');
 #else
             int numberOfSegments = 0;

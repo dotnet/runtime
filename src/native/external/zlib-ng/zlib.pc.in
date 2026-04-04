@@ -1,6 +1,7 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 symbol_prefix=@symbol_prefix@
+bindir=@bindir@
 libdir=@libdir@
 sharedlibdir=@sharedlibdir@
 includedir=@includedir@

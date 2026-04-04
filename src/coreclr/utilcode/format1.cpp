@@ -61,15 +61,13 @@ COR_ILMETHOD_DECODER::COR_ILMETHOD_DECODER(
         fErrorInInit = true;
         Code = 0;
         SetLocalVarSigTok(0);
-        if (wbStatus != NULL)
-        {
-            *wbStatus = FORMAT_ERROR;
-        }
     }
     PAL_ENDTRY
 
     if (fErrorInInit)
     {
+        if (wbStatus != NULL)
+            *wbStatus = FORMAT_ERROR;
         return;
     }
 

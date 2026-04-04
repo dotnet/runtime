@@ -100,26 +100,23 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsGenericType => IsConstructedGenericType || IsGenericTypeDefinition;
 
         //  Don't seal since we may need to convert any modified types to unmodified.
-        public override Type[] GetGenericArguments() => GetGenericArgumentsNoCopy().CloneArray();
+        public override Type[] GetGenericArguments() => GetGenericArgumentsNoCopy().CloneArray<Type>();
 
         protected internal abstract RoType[] GetGenericArgumentsNoCopy();
 
         // Naming
-        public sealed override string Name => _lazyName ??= ComputeName();
+        public sealed override string Name => field ??= ComputeName();
         protected abstract string ComputeName();
         internal string Call_ComputeName() => ComputeName();
-        private volatile string? _lazyName;
 
-        public sealed override string? Namespace => _lazyNamespace ??= ComputeNamespace();
+        public sealed override string? Namespace => field ??= ComputeNamespace();
         protected abstract string? ComputeNamespace();
         internal string? Call_ComputeNamespace() => ComputeNamespace();
-        private volatile string? _lazyNamespace;
 
-        public sealed override string? FullName => _lazyFullName ??= ComputeFullName();
+        public sealed override string? FullName => field ??= ComputeFullName();
         protected abstract string? ComputeFullName();
         internal string? Call_ComputeFullName() => ComputeFullName();
-        private volatile string? _lazyFullName;
-        public override string? AssemblyQualifiedName => _lazyAssemblyQualifiedFullName ??= ComputeAssemblyQualifiedName();
+        public override string? AssemblyQualifiedName => field ??= ComputeAssemblyQualifiedName();
         private string? ComputeAssemblyQualifiedName()
         {
             string? fullName = FullName;
@@ -128,7 +125,6 @@ namespace System.Reflection.TypeLoading
             string? assemblyName = Assembly.FullName;
             return fullName + ", " + assemblyName;
         }
-        private volatile string? _lazyAssemblyQualifiedFullName;
 
         // Assembly and module
         public sealed override Assembly Assembly => Module.Assembly;
@@ -140,7 +136,7 @@ namespace System.Reflection.TypeLoading
         protected abstract RoType? ComputeDeclaringType();
         internal RoType? GetRoDeclaringType() => _lazyDeclaringType ??= ComputeDeclaringType();
         internal RoType? Call_ComputeDeclaringType() => ComputeDeclaringType();
-        private volatile RoType? _lazyDeclaringType;
+        private RoType? _lazyDeclaringType;
 
         public abstract override MethodBase? DeclaringMethod { get; }
         // .NET Framework compat: For types, ReflectedType == DeclaringType. Nested types are always looked up as if BindingFlags.DeclaredOnly was passed.
@@ -171,7 +167,7 @@ namespace System.Reflection.TypeLoading
             }
             return baseType;
         }
-        private volatile RoType? _lazyBaseType = Sentinels.RoType;
+        private RoType? _lazyBaseType = Sentinels.RoType;
 
         //
         // This internal method implements BaseType without the following .NET Framework quirk:
@@ -243,7 +239,7 @@ namespace System.Reflection.TypeLoading
             return arr;
         }
 
-        private volatile RoType[]? _lazyInterfaces;
+        private RoType[]? _lazyInterfaces;
 
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_InterfaceMapping);
 
@@ -328,7 +324,7 @@ namespace System.Reflection.TypeLoading
         // Enum methods
         public sealed override Type GetEnumUnderlyingType() => _lazyUnderlyingEnumType ??= ComputeEnumUnderlyingType();
         protected internal abstract RoType ComputeEnumUnderlyingType();
-        private volatile RoType? _lazyUnderlyingEnumType;
+        private RoType? _lazyUnderlyingEnumType;
         public sealed override Array GetEnumValues() => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
 #if NET

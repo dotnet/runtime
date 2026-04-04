@@ -78,6 +78,7 @@ internal static partial class Interop
             IntPtr managedContextHandle,
             delegate* unmanaged<IntPtr, byte*, int*, PAL_SSLStreamStatus> streamRead,
             delegate* unmanaged<IntPtr, byte*, int, void> streamWrite,
+            delegate* unmanaged<IntPtr, void> managedContextCleanup,
             int appBufferSize,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? peerHost);
         internal static unsafe void SSLStreamInitialize(
@@ -86,10 +87,11 @@ internal static partial class Interop
             IntPtr managedContextHandle,
             delegate* unmanaged<IntPtr, byte*, int*, PAL_SSLStreamStatus> streamRead,
             delegate* unmanaged<IntPtr, byte*, int, void> streamWrite,
+            delegate* unmanaged<IntPtr, void> managedContextCleanup,
             int appBufferSize,
             string? peerHost)
         {
-            int ret = SSLStreamInitializeImpl(sslHandle, isServer, managedContextHandle, streamRead, streamWrite, appBufferSize, peerHost);
+            int ret = SSLStreamInitializeImpl(sslHandle, isServer, managedContextHandle, streamRead, streamWrite, managedContextCleanup, appBufferSize, peerHost);
             if (ret != SUCCESS)
                 throw new SslException();
         }

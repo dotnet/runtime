@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -40,7 +41,7 @@ namespace System.Runtime.CompilerServices
 
                 if (length == 0)
                 {
-                    return Array.Empty<T>();
+                    return [];
                 }
 
                 dest = new T[length];
@@ -151,7 +152,15 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method is intended for compiler use rather than use directly in code. T must be one of byte, sbyte, bool, char, short, ushort, int, uint, long, ulong, float, or double.</remarks>
         [Intrinsic]
         public static ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
+#if NATIVEAOT
+            // We only support this intrinsic when it occurs within a well-defined IL sequence.
+            // If a call to this method occurs within the recognized sequence, codegen must expand the IL sequence completely.
+            // For any other purpose, the API is currently unsupported.
+            // We shortcut this here instead of in `GetSpanDataFrom` to avoid `typeof(T)` below marking T target of reflection.
+            => throw new PlatformNotSupportedException();
+#else
             => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
+#endif
 
 
         // The following intrinsics return true if input is a compile-time constant
@@ -173,5 +182,12 @@ namespace System.Runtime.CompilerServices
         /// <returns>true if the given type is a reference type or a value type that contains references or by-refs; otherwise, false.</returns>
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct => IsReferenceOrContainsReferences<T>();
+
+        [Intrinsic]
+        [RequiresUnsafe]
+        internal static unsafe void SetNextCallGenericContext(void* value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
+        [Intrinsic]
+        internal static void SetNextCallAsyncContinuation(object value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
     }
 }

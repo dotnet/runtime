@@ -11,11 +11,11 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 4
+#define GC_INTERFACE_MINOR_VERSION 8
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 3
+#define EE_INTERFACE_MAJOR_VERSION 4
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -142,6 +142,40 @@ struct EtwGCSettingsInfo
     bool hard_limit_config_p;
     bool no_affinitize_p;
 };
+
+// These definitions are also in managed code.
+struct StronglyConnectedComponent
+{
+    size_t Count;
+    uintptr_t* Contexts;
+};
+
+struct ComponentCrossReference
+{
+    size_t SourceGroupIndex;
+    size_t DestinationGroupIndex;
+};
+
+struct MarkCrossReferencesArgs
+{
+    size_t ComponentCount;
+    StronglyConnectedComponent* Components;
+    size_t CrossReferenceCount;
+    ComponentCrossReference* CrossReferences;
+
+    MarkCrossReferencesArgs(
+        size_t componentCount,
+        StronglyConnectedComponent* components,
+        size_t crossReferenceCount,
+        ComponentCrossReference* crossReferences)
+        : ComponentCount { componentCount }
+        , Components { components }
+        , CrossReferenceCount { crossReferenceCount }
+        , CrossReferences { crossReferences }
+    {
+    }
+};
+
 
 // Opaque type for tracking object pointers
 #ifndef DACCESS_COMPILE
@@ -377,6 +411,7 @@ typedef enum
      * severed, even if the object will be visible from a pending finalization
      * graph.  This further implies that short weak handles do not track
      * across object resurrections.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_WEAK_SHORT   = 0,
@@ -388,6 +423,7 @@ typedef enum
      * object is actually reclaimed.  Unlike short weak handles, long weak handles
      * continue to track their referents through finalization and across any
      * resurrections that may occur.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_WEAK_LONG    = 1,
@@ -399,6 +435,7 @@ typedef enum
      * Strong handles are handles which function like a normal object reference.
      * The existence of a strong handle for an object will cause the object to
      * be promoted (remain alive) through a garbage collection cycle.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_STRONG       = 2,
@@ -411,6 +448,7 @@ typedef enum
      * prevent an object from moving during a garbage collection cycle.  This is
      * useful when passing a pointer to object innards out of the runtime while GC
      * may be enabled.
+     * [cDAC] [GC]: Contract depends on this value
      *
      * NOTE:  PINNING AN OBJECT IS EXPENSIVE AS IT PREVENTS THE GC FROM ACHIEVING
      *        OPTIMAL PACKING OF OBJECTS DURING EPHEMERAL COLLECTIONS.  THIS TYPE
@@ -435,6 +473,7 @@ typedef enum
      *
      * Refcounted handles are handles that behave as strong handles while the
      * refcount on them is greater than 0 and behave as weak handles otherwise.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_REFCOUNTED   = 5,
@@ -451,7 +490,7 @@ typedef enum
      *
      * They are also used to implement the managed ConditionalWeakTable class. If you want to use
      * these from managed code, they are exposed to BCL through the managed DependentHandle class.
-     *
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_DEPENDENT    = 6,
@@ -504,9 +543,18 @@ typedef enum
      * Interior pointer handles allow the vm to request that the GC keep an interior pointer to
      * a given object updated to keep pointing at the same location within an object. These handles
      * have an extra pointer which points at an interior pointer into the first object.
-     *
+     * [cDAC] [GC]: Contract depends on this value
+     * 
      */
-    HNDTYPE_WEAK_INTERIOR_POINTER = 10
+    HNDTYPE_WEAK_INTERIOR_POINTER = 10,
+
+    /*
+     * CROSSREFERENCE HANDLES
+     *
+     * Crossreference handles are used to track the lifetime of an object in another VM heap.
+     * [cDAC] [GC]: Contract depends on this value
+     */
+    HNDTYPE_CROSSREFERENCE = 11
 } HandleType;
 
 typedef enum
@@ -600,9 +648,12 @@ enum class GCConfigurationType
     Boolean
 };
 
-using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
+using ConfigurationValueFunc = void (*)(void* context, const char* name, const char* publicKey, GCConfigurationType type, int64_t data);
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
+// NOTE!
+// Only add methods to the end.
+// Do not add overloaded methods. Always use a different name.
 class IGCHeap {
 public:
     /*
@@ -1022,6 +1073,8 @@ public:
 
     // Walk the heap object by object outside of a GC.
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
+
+    virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
 };
 
 #ifdef WRITE_BARRIER_CHECK

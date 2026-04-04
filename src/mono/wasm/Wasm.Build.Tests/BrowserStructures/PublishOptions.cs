@@ -26,12 +26,11 @@ public record PublishOptions : MSBuildOptions
         bool WarnAsError                                            = true,
         RuntimeVariant RuntimeType                                  = RuntimeVariant.SingleThreaded,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
-        string? BootConfigFileName                                  = null,
         string NonDefaultFrameworkDir                               = "",
         string ExtraMSBuildArgs                                     = "",
         bool BuildOnlyAfterPublish                                  = true,
         bool ExpectRelinkDirWhenPublishing                          = false,
-        bool WasmPerfTracing                                     = false
+        bool EnableDiagnostics                                      = false
     ) : base(
         IsPublish,
         TargetFramework ?? BuildTestBase.DefaultTargetFramework,
@@ -46,10 +45,9 @@ public record PublishOptions : MSBuildOptions
         WarnAsError,
         RuntimeType,
         ExtraBuildEnvironmentVariables,
-        BootConfigFileName,
         NonDefaultFrameworkDir,
         ExtraMSBuildArgs,
-        WasmPerfTracing
+        EnableDiagnostics
     )
     {
         this.IsPublish = IsPublish;

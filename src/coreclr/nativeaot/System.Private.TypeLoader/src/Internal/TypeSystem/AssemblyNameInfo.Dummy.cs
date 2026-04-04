@@ -6,6 +6,6 @@ namespace Internal.TypeSystem
     // Dummy implementation of AssemlyNameInfo for runtime type system
     public abstract class AssemblyNameInfo
     {
-        public abstract string FullName { get; }
+        public abstract string Name { get; }
     }
 }

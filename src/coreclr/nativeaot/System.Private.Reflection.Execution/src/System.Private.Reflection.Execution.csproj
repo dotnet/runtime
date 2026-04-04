@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
@@ -56,9 +56,6 @@
       <Link>System\NotImplemented.cs</Link>
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\SR.cs" />
-    <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
-      <Link>System\Collections\Generic\LowLevelList.cs</Link>
-    </Compile>
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
@@ -73,9 +70,6 @@
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Collections\HashHelpers.cs">
       <Link>System\Collections\HashHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(AotCommonPath)\System\Collections\Generic\Empty.cs">
-      <Link>System\Collections\Generic\Empty.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>
