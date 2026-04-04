@@ -1742,7 +1742,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 #ifdef DEBUG
     // Under STRESS_EMITTER, put every instruction in its own instruction group.
     if (m_compiler->compStressCompile(Compiler::STRESS_EMITTER, 1) && emitCurIGinsCnt && !emitIGisInProlog(emitCurIG) &&
-        !emitCurIG->endsWithAlignInstr())
+        !emitIGisInFuncletProlog(emitCurIG) && !emitCurIG->endsWithAlignInstr())
     {
         emitNxtIG(true);
     }
