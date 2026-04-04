@@ -163,36 +163,14 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                         goto Exit;
                     }
                 }
-                else if (pExistingAssembly != nullptr)
+                else if (hr == FUSION_E_REF_DEF_MISMATCH && pExistingAssembly != nullptr)
                 {
-                    // The by-name bind failed (e.g. due to a version mismatch) but we found an existing
-                    // assembly with the same simple name. Check MVIDs to determine if it is the same assembly.
-                    GUID incomingMVID;
-                    GUID existingMVID;
-
-                    EX_TRY
+                    // The assembly was found but the version is incompatible.
+                    // Return the existing assembly so the caller can provide an informative error message.
+                    if (ppExistingAssemblyOnMvidMismatch != nullptr)
                     {
-                        pPEImage->GetMVID(&incomingMVID);
-                        pExistingAssembly->GetPEImage()->GetMVID(&existingMVID);
+                        *ppExistingAssemblyOnMvidMismatch = pExistingAssembly.Extract();
                     }
-                    EX_CATCH
-                    {
-                        hr = GET_EXCEPTION()->GetHR();
-                        goto Exit;
-                    }
-                    EX_END_CATCH
-
-                    if (incomingMVID != existingMVID)
-                    {
-                        if (ppExistingAssemblyOnMvidMismatch != nullptr)
-                        {
-                            *ppExistingAssemblyOnMvidMismatch = pExistingAssembly.Extract();
-                        }
-                        IF_FAIL_GO(COR_E_FILELOAD);
-                    }
-
-                    // MVIDs match - the same assembly is already loaded.
-                    *ppAssembly = pExistingAssembly.Extract();
                     goto Exit;
                 }
             }
