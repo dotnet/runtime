@@ -18,7 +18,7 @@ namespace System.Linq
         /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
         /// <param name="comparer">An <see cref="IEqualityComparer{T}"/> to hash and compare keys, or <see langword="null" /> to use <see cref="EqualityComparer{T}.Default" />.</param>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> that contains elements of type <see cref="IGrouping{TKey, TElement}"/>
+        /// An <see cref="IEnumerable{T}"/> that contains elements of type <see cref="IGrouping{TOuter, TInner}"/>
         /// where each grouping contains the outer element as the key and the matching inner elements.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="outer" /> is <see langword="null" />.</exception>
