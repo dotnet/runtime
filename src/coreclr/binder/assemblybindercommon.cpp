@@ -494,10 +494,6 @@ namespace BINDER_SPACE
                 hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
                 pBindResult->SetAttemptResult(hr, pAssembly, /*isInContext*/ true);
 
-                // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
-                if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
-                    hr = FUSION_E_REF_DEF_MISMATCH;
-
                 if (FAILED(hr) && ppExistingAssemblyOnFailure != nullptr)
                 {
                     pAssembly->AddRef();
@@ -526,10 +522,6 @@ namespace BINDER_SPACE
                 bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName());
                 hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
                 pBindResult->SetAttemptResult(hr, pBindResult->GetAssembly());
-
-                // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
-                if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
-                    hr = FUSION_E_REF_DEF_MISMATCH;
 
                 if (FAILED(hr) && ppExistingAssemblyOnFailure != nullptr)
                 {

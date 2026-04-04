@@ -33,6 +33,11 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
     {
         (*ppCoreCLRFoundAssembly)->SetBinder(this);
     }
+    else if (hr == FUSION_E_APP_DOMAIN_LOCKED)
+    {
+        // The default binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
+        hr = FUSION_E_REF_DEF_MISMATCH;
+    }
 
     return hr;
 }
