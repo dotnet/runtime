@@ -1,4 +1,9 @@
 <Project>
+  <!-- Redirect illink tool outputs to artifacts\toolset\ so they are treated
+       like packages: built once by pre.cmd and readable by the precompute sandbox. -->
+  <PropertyGroup>
+    <ArtifactsDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', 'artifacts', 'toolset'))</ArtifactsDir>
+  </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
 

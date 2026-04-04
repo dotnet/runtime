@@ -34,13 +34,17 @@
   <Target Name="CalculateIncludeDllSafeSearchPathAttribute"
           DependsOnTargets="ResolveReferences"
           BeforeTargets="GetAssemblyAttributes"
-          Condition="'$(IsSourceProject)' == 'true'">
+          Condition="'$(IsSourceProject)' == 'true'"
+          PrecomputeMerge="ResolveReferences"
+          Deferred="Item:ReferencePath:r">
     <!-- We want to apply the IncludeDllSafeSearchPathAttribute on all source assemblies that may contain DllImport -->
-    <PropertyGroup Condition="'$(IncludeDllSafeSearchPathAttribute)' == '' and '@(ReferencePath)' != ''">
-      <IncludeDllSafeSearchPathAttribute Condition="@(ReferencePath->AnyHaveMetadataValue('Filename', 'System.Runtime.InteropServices'))">true</IncludeDllSafeSearchPathAttribute>
-      <IncludeDllSafeSearchPathAttribute Condition="@(ReferencePath->AnyHaveMetadataValue('Filename', 'System.Private.CoreLib'))">true</IncludeDllSafeSearchPathAttribute>
-      <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'netstandard'))">true</IncludeDllSafeSearchPathAttribute>
-      <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'mscorlib'))">true</IncludeDllSafeSearchPathAttribute>
+    <!-- Precompute: Use DeferredCondition on individual properties since @(ReferencePath) is deferred from RAR.
+         DeferredCondition is valid on items/properties but not on PropertyGroup elements. -->
+    <PropertyGroup Condition="'$(IncludeDllSafeSearchPathAttribute)' == ''">
+      <IncludeDllSafeSearchPathAttribute DeferredCondition="@(ReferencePath->AnyHaveMetadataValue('Filename', 'System.Runtime.InteropServices'))">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute DeferredCondition="@(ReferencePath->AnyHaveMetadataValue('Filename', 'System.Private.CoreLib'))">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute DeferredCondition="'$(TargetFrameworkIdentifier)' == '.NETStandard' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'netstandard'))">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute DeferredCondition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'mscorlib'))">true</IncludeDllSafeSearchPathAttribute>
     </PropertyGroup>
 
     <PropertyGroup>

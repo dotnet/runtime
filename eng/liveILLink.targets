@@ -27,7 +27,7 @@
     <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsILLinkDir)netframework\ILLink.Tasks.dll</ILLinkTasksAssembly>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
+  <ItemGroup Condition="'$(_RequiresLiveILLink)' == 'true' and '$(IsPrecomputePhase)' != 'true'">
     <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
                       ReferenceOutputAssembly="false"
