@@ -2682,7 +2682,7 @@ extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG     ControlPc
     if (codeInfo.IsValid())
         prf = codeInfo.GetFunctionEntry();
 
-    LOG((LF_EH, LL_INFO1000000, "GetRuntimeFunctionCallback(%p) returned %p\n", ControlPc, prf));
+    LOG((LF_EH, LL_INFO1000000, "GetRuntimeFunctionCallback(%p) returned %p\n", (void*)(size_t)ControlPc, (void*)(size_t)prf));
 
     return  prf;
 }

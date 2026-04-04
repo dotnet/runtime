@@ -948,11 +948,11 @@ void Compiler::optDumpAssertionIndices(const char* header, ASSERT_TP assertions,
     Compiler* compiler = JitTls::GetCompiler();
     if (compiler->verbose)
     {
-        printf(header);
+        printf("%s", header);
         compiler->optPrintAssertionIndices(assertions);
         if (footer != nullptr)
         {
-            printf(footer);
+            printf("%s", footer);
         }
     }
 #endif // DEBUG

@@ -12705,7 +12705,7 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
  */
 void emitter::emitDispElementIndex(const ssize_t imm, const bool addComma)
 {
-    printf("[%zd]", (size_t)imm);
+    printf("[%zd]", (ssize_t)imm);
 
     if (addComma)
     {
@@ -13592,7 +13592,7 @@ void emitter::emitDispInsHelp(
                     printf("@RWD%02u", doffs);
 
                 if (imm != 0)
-                    printf("%+zd", (size_t)imm);
+                    printf("%+zd", (ssize_t)imm);
             }
             else
             {

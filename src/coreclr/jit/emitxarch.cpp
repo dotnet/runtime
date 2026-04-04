@@ -12018,7 +12018,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
 
         if (offs)
         {
-            printf("%+zd", (size_t)offs);
+            printf("%+zd", (ssize_t)offs);
         }
     }
     else
@@ -12027,7 +12027,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
 
         if (offs)
         {
-            printf("%+zd", (size_t)offs);
+            printf("%+zd", (ssize_t)offs);
         }
     }
 

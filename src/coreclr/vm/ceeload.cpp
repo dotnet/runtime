@@ -670,7 +670,7 @@ void Module::Destruct()
     }
     CONTRACTL_END;
 
-    LOG((LF_EEMEM, INFO3, "Deleting module %x\n", this));
+    LOG((LF_EEMEM, INFO3, "Deleting module %p\n", (void*)this));
 #ifdef PROFILING_SUPPORTED
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());

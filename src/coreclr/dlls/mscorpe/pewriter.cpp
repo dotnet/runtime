@@ -296,6 +296,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
 #ifdef LOGGING
         LOG((LF_ZAP, LL_INFO1000000,
              "   Reloc %s%s at %-7s+%04x (RVA=%08x) at" FMT_ADDR,
+         RelocName[curType],
              &RelocSpaces[strlen(RelocName[curType])],
              m_name, curOffset, curRVA, DBG_ADDR(pos)));
 
