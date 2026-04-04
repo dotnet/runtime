@@ -843,7 +843,7 @@ namespace System.Runtime
                 throw elementType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
 
-            RuntimeHelpers.WriteBarrier(ref element, obj);
+            RuntimeHelpers.WriteBarrier(ref element, castedObj);
         }
 
         private static unsafe object IsInstanceOfArray(MethodTable* pTargetType, object obj)
