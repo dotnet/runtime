@@ -11,11 +11,6 @@
 #include "hostfxr_resolver.h"
 #include <cinttypes>
 
-#if !defined(FEATURE_LIBHOST)
-#define CURHOST_TYPE    _X("dotnet")
-#define CURHOST_EXE
-#endif
-
 void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::string_t& host_path)
 {
     trace::error(
@@ -28,8 +23,6 @@ void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::str
         get_download_url().c_str(),
         _STRINGIFY(HOST_VERSION));
 }
-
-#if defined(CURHOST_EXE)
 
 int exe_start(const int argc, const pal::char_t* argv[])
 {
@@ -46,13 +39,13 @@ int exe_start(const int argc, const pal::char_t* argv[])
     pal::string_t app_root;
     pal::string_t own_name = strip_executable_ext(get_filename(host_path));
 
-    if (pal::strcasecmp(own_name.c_str(), CURHOST_TYPE) != 0)
+    if (pal::strcasecmp(own_name.c_str(), _X("dotnet")) != 0)
     {
         // The reason for this check is security.
         // dotnet.exe is signed by Microsoft. It is technically possible to rename the file MyApp.exe and include it in the application.
         // Then one can create a shortcut for "MyApp.exe MyApp.dll" which works. The end result is that MyApp looks like it's signed by Microsoft.
         // To prevent this dotnet.exe must not be renamed, otherwise it won't run.
-        trace::error(_X("Error: cannot execute %s when renamed to %s."), CURHOST_TYPE, own_name.c_str());
+        trace::error(_X("Error: cannot execute %s when renamed to %s."), _X("dotnet"), own_name.c_str());
         return StatusCode::CoreHostEntryPointFailure;
     }
 
@@ -144,7 +137,7 @@ int main(const int argc, const pal::char_t* argv[])
 
     if (trace::is_enabled())
     {
-        trace::info(_X("--- Invoked %s [version: %s] main = {"), CURHOST_TYPE, get_host_version_description().c_str());
+        trace::info(_X("--- Invoked %s [version: %s] main = {"), _X("dotnet"), get_host_version_description().c_str());
         for (int i = 0; i < argc; ++i)
         {
             trace::info(_X("%s"), argv[i]);
@@ -159,5 +152,3 @@ int main(const int argc, const pal::char_t* argv[])
 
     return exit_code;
 }
-
-#endif

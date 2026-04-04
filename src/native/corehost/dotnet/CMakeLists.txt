@@ -9,7 +9,7 @@ endif()
 
 list(APPEND SOURCES
     ../apphost/standalone/hostfxr_resolver.cpp
-    ../corehost.cpp
+    dotnet.cpp
 )
 
 add_executable(dotnet ${SOURCES})
