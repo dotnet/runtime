@@ -5,7 +5,7 @@
 #include "pal_c.h"
 #include "trace_c.h"
 #include "utils_c.h"
-#include "fx_ver_c.h"
+#include "fx_ver.h"
 
 #include <dn-vector.h>
 

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef FX_VER_C_H
-#define FX_VER_C_H
+#ifndef FX_VER_H
+#define FX_VER_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -92,4 +92,4 @@ private:
 };
 #endif // __cplusplus
 
-#endif // FX_VER_C_H
+#endif // FX_VER_H

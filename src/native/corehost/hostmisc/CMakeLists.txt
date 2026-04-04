@@ -19,7 +19,7 @@ set(HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/utils.h
     ${CMAKE_CURRENT_LIST_DIR}/pal.h
     ${CMAKE_CURRENT_LIST_DIR}/../error_codes.h
-    ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.h
+    ${CMAKE_CURRENT_LIST_DIR}/fx_ver.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)

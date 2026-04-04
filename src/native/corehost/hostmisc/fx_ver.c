@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "fx_ver_c.h"
+#include "fx_ver.h"
 
 #include <stdlib.h>
 #include <assert.h>
