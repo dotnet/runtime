@@ -122,15 +122,12 @@ namespace Microsoft.NET.HostModel.Bundle
 
     file static class PlatformExtensions
     {
+#if NETFRAMEWORK
         extension(OSPlatform)
         {
-#if NETFRAMEWORK
             public static OSPlatform FreeBSD => OSPlatform.Create("FREEBSD");
-#endif
-            public static OSPlatform Illumos => OSPlatform.Create("ILLUMOS");
         }
 
-#if NETFRAMEWORK
         extension(Architecture)
         {
             public static Architecture LoongArch64 => (Architecture)6;
