@@ -13367,193 +13367,195 @@ void emitter::emitDispIns(
             emitAttr tgtAttr = attr;
             emitAttr srcAttr = attr;
 
-            switch (ins)
+            insTupleType tt = insTupleTypeInfo(ins);
+
+            if (tt == INS_TT_NONE)
             {
-                case INS_pmovmskb:
+                switch (ins)
                 {
-                    assert(!id->idIsEvexAaaContextSet());
-                    tgtAttr = EA_4BYTE;
-                    break;
-                }
-
-                case INS_cvtsi2ss32:
-                case INS_cvtsi2sd32:
-                case INS_cvtsi2ss64:
-                case INS_cvtsi2sd64:
-                {
-                    assert(!id->idIsEvexAaaContextSet());
-                    tgtAttr = EA_16BYTE;
-                    break;
-                }
-
-                case INS_cvttsd2si32:
-                case INS_cvttsd2si64:
-                case INS_cvtsd2si32:
-                case INS_cvtsd2si64:
-                case INS_cvtss2si32:
-                case INS_cvtss2si64:
-                case INS_cvttss2si32:
-                case INS_cvttss2si64:
-                case INS_vcvtsd2usi32:
-                case INS_vcvtsd2usi64:
-                case INS_vcvtss2usi32:
-                case INS_vcvtss2usi64:
-                case INS_vcvttsd2usi32:
-                case INS_vcvttsd2usi64:
-                case INS_vcvttss2usi32:
-                case INS_vcvttss2usi64:
-                case INS_vcvttsd2sis32:
-                case INS_vcvttsd2sis64:
-                case INS_vcvttss2sis32:
-                case INS_vcvttss2sis64:
-                case INS_vcvttsd2usis32:
-                case INS_vcvttsd2usis64:
-                case INS_vcvttss2usis32:
-                case INS_vcvttss2usis64:
-                {
-                    assert(!id->idIsEvexAaaContextSet());
-                    srcAttr = EA_16BYTE;
-                    break;
-                }
+                    case INS_pmovmskb:
+                    {
+                        assert(!id->idIsEvexAaaContextSet());
+                        tgtAttr = EA_4BYTE;
+                        break;
+                    }
 
 #ifdef TARGET_AMD64
-                case INS_movsxd:
-                {
-                    tgtAttr = EA_8BYTE;
-                    srcAttr = EA_4BYTE;
-                    break;
-                }
+                    case INS_movsxd:
+                    {
+                        tgtAttr = EA_8BYTE;
+                        srcAttr = EA_4BYTE;
+                        break;
+                    }
 #endif // TARGET_AMD64
 
-                case INS_movsx:
-                case INS_movzx:
-                {
-                    tgtAttr = EA_PTRSIZE;
-                    break;
+                    case INS_movsx:
+                    case INS_movzx:
+                    {
+                        tgtAttr = EA_PTRSIZE;
+                        break;
+                    }
+
+                    case INS_crc32:
+                    {
+                        tgtAttr = std::max(EA_4BYTE, EA_SIZE(attr));
+                        break;
+                    }
+
+                    default:
+                        break;
                 }
 
-                case INS_crc32:
+                printf("%s", emitRegName(id->idReg1(), tgtAttr));
+                printf(", %s", emitRegName(id->idReg2(), srcAttr));
+                break;
+            }
+
+            unsigned inputSize  = static_cast<unsigned>(GetInputSizeInBytes(id));
+
+            switch (tt)
+            {
+                case INS_TT_HALF:
+                case INS_TT_HALF_MEM:
                 {
-                    if (attr != EA_8BYTE)
+                    unsigned maskElemSize = XMM_REGSIZE_BYTES / CodeGenInterface::instKMaskBaseSize(ins);
+                    emitAttr halfSize     = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 2));
+
+                    if (inputSize < maskElemSize)
                     {
-                        // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
-                        // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
-                        tgtAttr = EA_4BYTE;
+                        assert(inputSize == (maskElemSize / 2));
+                        srcAttr = halfSize;
+                    }
+                    else
+                    {
+                        tgtAttr = halfSize;
                     }
                     break;
                 }
 
-                case INS_vpbroadcastb_gpr:
-                case INS_vpbroadcastd_gpr:
-                case INS_vpbroadcastw_gpr:
+                case INS_TT_QUARTER_MEM:
                 {
-                    srcAttr = EA_4BYTE;
+                    unsigned maskElemSize = XMM_REGSIZE_BYTES / CodeGenInterface::instKMaskBaseSize(ins);
+                    emitAttr quarterSize  = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 4));
+
+                    if (inputSize < maskElemSize)
+                    {
+                        assert(inputSize == (maskElemSize / 4));
+                        srcAttr = quarterSize;
+                    }
+                    else
+                    {
+                        tgtAttr = quarterSize;
+                    }
                     break;
                 }
 
-                case INS_vpbroadcastq_gpr:
+                case INS_TT_EIGHTH_MEM:
                 {
-                    srcAttr = EA_8BYTE;
-                    break;
-                }
+                    unsigned maskElemSize = XMM_REGSIZE_BYTES / CodeGenInterface::instKMaskBaseSize(ins);
+                    emitAttr eighthSize   = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 8));
 
-                case INS_cvtdq2pd:
-                case INS_cvtps2pd:
-                case INS_pmovsxbw:
-                case INS_pmovsxdq:
-                case INS_pmovsxwd:
-                case INS_pmovzxbw:
-                case INS_pmovzxdq:
-                case INS_pmovzxwd:
-                case INS_vcvtph2dq:
-                case INS_vcvtph2ps:
-                case INS_vcvtph2psx:
-                case INS_vcvtph2udq:
-                case INS_vcvtps2qq:
-                case INS_vcvtps2uqq:
-                case INS_vcvttph2dq:
-                case INS_vcvttph2udq:
-                case INS_vcvttps2qq:
-                case INS_vcvttps2qqs:
-                case INS_vcvttps2uqq:
-                case INS_vcvttps2uqqs:
-                case INS_vcvtudq2pd:
-                {
-                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 2U));
-                    break;
-                }
-
-                case INS_pmovsxbd:
-                case INS_pmovsxwq:
-                case INS_pmovzxbd:
-                case INS_pmovzxwq:
-                case INS_vcvtph2pd:
-                case INS_vcvtph2qq:
-                case INS_vcvtph2uqq:
-                case INS_vcvttph2qq:
-                case INS_vcvttph2uqq:
-                {
-                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 4U));
-                    break;
-                }
-
-                case INS_pmovsxbq:
-                case INS_pmovzxbq:
-                {
-                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 8U));
-                    break;
-                }
-
-                case INS_cvtpd2dq:
-                case INS_cvtpd2ps:
-                case INS_cvttpd2dq:
-                case INS_vpmovdw:
-                case INS_vpmovqd:
-                case INS_vpmovsdw:
-                case INS_vpmovsqd:
-                case INS_vpmovswb:
-                case INS_vpmovusdw:
-                case INS_vpmovusqd:
-                case INS_vpmovuswb:
-                case INS_vpmovwb:
-                case INS_vcvtdq2ph:
-                case INS_vcvtpd2udq:
-                case INS_vcvtps2phx:
-                case INS_vcvtqq2ps:
-                case INS_vcvtudq2ph:
-                case INS_vcvtuqq2ps:
-                case INS_vcvttpd2dqs:
-                case INS_vcvttpd2udq:
-                case INS_vcvttpd2udqs:
-                {
-                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 2U));
-                    break;
-                }
-
-                case INS_vcvtpd2ph:
-                case INS_vcvtqq2ph:
-                case INS_vcvtuqq2ph:
-                case INS_vpmovdb:
-                case INS_vpmovqw:
-                case INS_vpmovsdb:
-                case INS_vpmovsqw:
-                case INS_vpmovusdb:
-                case INS_vpmovusqw:
-                {
-                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 4U));
-                    break;
-                }
-
-                case INS_vpmovqb:
-                case INS_vpmovsqb:
-                case INS_vpmovusqb:
-                {
-                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 8U));
+                    if (inputSize < maskElemSize)
+                    {
+                        assert(inputSize == (maskElemSize / 8));
+                        srcAttr = eighthSize;
+                    }
+                    else
+                    {
+                        tgtAttr = eighthSize;
+                    }
                     break;
                 }
 
                 default:
+                {
+                    switch (ins)
+                    {
+                        case INS_cvtsi2ss32:
+                        case INS_cvtsi2sd32:
+                        case INS_cvtsi2ss64:
+                        case INS_cvtsi2sd64:
+                        {
+                            assert(!id->idIsEvexAaaContextSet());
+                            tgtAttr = EA_16BYTE;
+                            break;
+                        }
+
+                        case INS_cvttsd2si32:
+                        case INS_cvttsd2si64:
+                        case INS_cvtsd2si32:
+                        case INS_cvtsd2si64:
+                        case INS_cvtss2si32:
+                        case INS_cvtss2si64:
+                        case INS_cvttss2si32:
+                        case INS_cvttss2si64:
+                        case INS_vcvtsd2usi32:
+                        case INS_vcvtsd2usi64:
+                        case INS_vcvtss2usi32:
+                        case INS_vcvtss2usi64:
+                        case INS_vcvttsd2usi32:
+                        case INS_vcvttsd2usi64:
+                        case INS_vcvttss2usi32:
+                        case INS_vcvttss2usi64:
+                        case INS_vcvttsd2sis32:
+                        case INS_vcvttsd2sis64:
+                        case INS_vcvttss2sis32:
+                        case INS_vcvttss2sis64:
+                        case INS_vcvttsd2usis32:
+                        case INS_vcvttsd2usis64:
+                        case INS_vcvttss2usis32:
+                        case INS_vcvttss2usis64:
+                        {
+                            assert(!id->idIsEvexAaaContextSet());
+                            srcAttr = EA_16BYTE;
+                            break;
+                        }
+
+                        case INS_vpbroadcastb_gpr:
+                        case INS_vpbroadcastd_gpr:
+                        case INS_vpbroadcastw_gpr:
+                        {
+                            srcAttr = EA_4BYTE;
+                            break;
+                        }
+
+                        case INS_vpbroadcastq_gpr:
+                        {
+                            srcAttr = EA_8BYTE;
+                            break;
+                        }
+
+                        case INS_cvtpd2dq:
+                        case INS_cvtpd2ps:
+                        case INS_cvttpd2dq:
+                        case INS_vcvtdq2ph:
+                        case INS_vcvtneps2bf16:
+                        case INS_vcvtpd2udq:
+                        case INS_vcvtps2phx:
+                        case INS_vcvtqq2ps:
+                        case INS_vcvttpd2dqs:
+                        case INS_vcvttpd2udq:
+                        case INS_vcvttpd2udqs:
+                        case INS_vcvtudq2ph:
+                        case INS_vcvtuqq2ps:
+                        {
+                            tgtAttr = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 2));
+                            break;
+                        }
+
+                        case INS_vcvtpd2ph:
+                        case INS_vcvtqq2ph:
+                        case INS_vcvtuqq2ph:
+                        {
+                            tgtAttr = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 4));
+                            break;
+                        }
+
+                        default:
+                            break;
+                    }
                     break;
+                }
             }
 
             printf("%s", emitRegName(id->idReg1(), tgtAttr));
@@ -13732,7 +13734,7 @@ void emitter::emitDispIns(
 
                 case INS_vcvtps2ph:
                 {
-                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 2U));
+                    tgtAttr = static_cast<emitAttr>(std::max(16U, EA_SIZE_IN_BYTES(attr) / 2U));
                     break;
                 }
 
