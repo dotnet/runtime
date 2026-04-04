@@ -85,24 +85,26 @@ namespace System.Linq.Tests
             foreach (IAsyncEnumerable<int> outerSource in CreateSources(outer))
             foreach (IAsyncEnumerable<int> innerSource in CreateSources(inner))
             {
-                var expected = outer.GroupJoin(inner, o => o, i => i, (o, g) => (Key: o, Group: g.ToList())).ToList();
+#if NET
+                var expected = outer.GroupJoin(inner, o => o, i => i);
                 var result = await outerSource.GroupJoin(innerSource, o => o, i => i).ToListAsync();
 
-                Assert.Equal(expected.Count, result.Count);
-                for (int idx = 0; idx < expected.Count; idx++)
+                Assert.Equal(expected.Count(), result.Count);
+                foreach (var (exp, act) in expected.Zip(result))
                 {
-                    Assert.Equal(expected[idx].Key, result[idx].Key);
-                    Assert.Equal(expected[idx].Group, result[idx].ToList());
+                    Assert.Equal(exp.Key, act.Key);
+                    Assert.Equal(exp.ToList(), act.ToList());
                 }
 
                 var resultAsync = await outerSource.GroupJoin(innerSource, async (o, ct) => o, async (i, ct) => i).ToListAsync();
 
-                Assert.Equal(expected.Count, resultAsync.Count);
-                for (int idx = 0; idx < expected.Count; idx++)
+                Assert.Equal(expected.Count(), resultAsync.Count);
+                foreach (var (exp, act) in expected.Zip(resultAsync))
                 {
-                    Assert.Equal(expected[idx].Key, resultAsync[idx].Key);
-                    Assert.Equal(expected[idx].Group, resultAsync[idx].ToList());
+                    Assert.Equal(exp.Key, act.Key);
+                    Assert.Equal(exp.ToList(), act.ToList());
                 }
+#endif
             }
         }
 
