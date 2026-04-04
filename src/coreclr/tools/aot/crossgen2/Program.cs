@@ -430,11 +430,6 @@ namespace ILCompiler
                         {
                             throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameEmpty);
                         }
-
-                        if (format != ReadyToRunContainerFormat.PE)
-                        {
-                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameRequiresPE);
-                        }
                     }
 
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);

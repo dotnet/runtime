@@ -26,7 +26,7 @@ Mach‑O support will only be supported for composite ReadyToRun when the target
 
 ### Customizing the RTR_HEADER symbol name
 
-The `crossgen2` `--rtr-header-symbol-name <name>` option (requires `--composite`, PE output only) overrides the exported symbol name for the `READYTORUN_HEADER`. This is intended for custom hosts that directly link against multiple R2R images — rather than loading them dynamically via `dlopen` or equivalent — where each image needs a distinct export symbol name to avoid collisions. The runtime or host must then use the matching custom name when locating the header.
+The `crossgen2` `--rtr-header-symbol-name <name>` option overrides the exported symbol name for the `READYTORUN_HEADER`. This is intended for custom hosts that directly link against multiple R2R images — rather than loading them dynamically via `dlopen` or equivalent — where each image needs a distinct export symbol name to avoid collisions. The runtime or host must then use the matching custom name when locating the header.
 
 ### Mach-O Emitter Decisions
 
