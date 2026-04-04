@@ -358,6 +358,10 @@ struct MethodTableAuxiliaryData
     // Unloadable context: slot index in LoaderAllocator's pinned table
     RUNTIMETYPEHANDLE m_hExposedClassObject;
 
+    // Lazily initialized cache for the version-resilient hash code of this MethodTable.
+    // A stored value of 0 indicates the field hasn't been set yet.
+    int m_cachedVersionResilientHashCode;
+
 #ifdef _DEBUG
     enum
     {

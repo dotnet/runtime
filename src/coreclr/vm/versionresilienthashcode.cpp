@@ -122,6 +122,12 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
         _ASSERTE(!pMT->IsArray());
         _ASSERTE(!IsNilToken(pMT->GetCl()));
 
+        int cachedHashCode = VolatileLoadWithoutBarrier(&pMT->GetAuxiliaryData()->m_cachedVersionResilientHashCode);
+        if (cachedHashCode != 0)
+        {
+            return cachedHashCode;
+        }
+
         LPCUTF8 szNamespace;
         LPCUTF8 szName;
         IfFailThrow(pMT->GetMDImport()->GetNameOfTypeDef(pMT->GetCl(), &szName, &szNamespace));
@@ -135,13 +141,16 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
 
         if (!pMT->IsGenericTypeDefinition() && pMT->HasInstantiation())
         {
-            return ComputeGenericInstanceHashCode(hashcode,
+            hashcode = ComputeGenericInstanceHashCode(hashcode,
                 pMT->GetInstantiation().GetNumArgs(), pMT->GetInstantiation(), GetVersionResilientTypeHashCode);
         }
-        else
+
+        if (hashcode != 0)
         {
-            return hashcode;
+            VolatileStore(&pMT->GetAuxiliaryDataForWrite()->m_cachedVersionResilientHashCode, hashcode);
         }
+
+        return hashcode;
     }
     else
     if (type.IsPointer())
