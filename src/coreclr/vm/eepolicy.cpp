@@ -23,6 +23,8 @@
 #include "eventtrace.h"
 #undef ExitProcess
 
+extern MethodDesc* g_pEnvironmentCallEntryPointMethodDesc;
+
 void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
 {
     STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d sca = %d\n", exitCode, sca);
@@ -180,7 +182,7 @@ class CallStackLogger
 
         // Skip Environment.CallEntryPoint so it doesn't appear in vanilla
         // unhandled exception experiences.
-        if (pMD != nullptr && pMD->GetModule()->IsSystem() && strcmp(pMD->GetName(), "CallEntryPoint") == 0)
+        if (pMD != nullptr && pMD == g_pEnvironmentCallEntryPointMethodDesc)
         {
             return SWA_CONTINUE;
         }

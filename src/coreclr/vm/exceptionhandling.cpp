@@ -18,6 +18,8 @@
 #include "exinfo.h"
 #include "configuration.h"
 
+extern MethodDesc* g_pEnvironmentCallEntryPointMethodDesc;
+
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
 #endif // TARGET_X86
@@ -3599,11 +3601,6 @@ static bool IsTopmostDebuggerU2MCatchHandlerFrame(Frame *pFrame)
     return (pFrame->GetFrameIdentifier() == FrameIdentifier::DebuggerU2MCatchHandlerFrame) && (pFrame->PtrNextFrame() == FRAME_TOP);
 }
 
-static bool IsRuntimeEntryPointMethod(MethodDesc* pMethodDesc)
-{
-    return pMethodDesc == CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
-}
-
 static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
 {
     if (pExInfo->m_passNumber == 1)
@@ -3978,7 +3975,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
 
 #ifdef HOST_WINDOWS
                 MethodDesc* pMethodDesc = codeInfo.GetMethodDesc();
-                if ((pMethodDesc != NULL) && IsRuntimeEntryPointMethod(pMethodDesc))
+                if ((pMethodDesc != NULL) && pMethodDesc == g_pEnvironmentCallEntryPointMethodDesc)
                 {
                     // Runtime-invoked UCO entrypoint calls should behave like the
                     // internal call path and not as external-native propagation.
