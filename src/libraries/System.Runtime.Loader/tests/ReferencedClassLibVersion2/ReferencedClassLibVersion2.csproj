@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <AssemblyVersion>65534.0.0.0</AssemblyVersion>
-    <FileVersion>65534.0.0.0</FileVersion>
-    <Version>65534.0.0</Version>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <AssemblyName>ReferencedClassLib</AssemblyName>
   </PropertyGroup>
   <ItemGroup>

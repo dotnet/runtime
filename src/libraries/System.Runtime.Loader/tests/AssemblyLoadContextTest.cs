@@ -278,32 +278,32 @@ namespace System.Runtime.Loader.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
-        public static void LoadFromAssemblyPath_MvidMismatch_ErrorMessageIncludesPathAndVersion()
+        public static void LoadFromAssemblyPath_CustomAlc_MvidMismatch()
         {
-            Assembly referencedAssembly = typeof(ReferencedClassLib.Program).Assembly;
-            string v1Path = referencedAssembly.Location;
-            string v1DisplayName = referencedAssembly.GetName().FullName;
-            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.ReferencedClassLibVersion2");
+            string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
+            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion2");
 
             try
             {
                 var alc = new AssemblyLoadContext("MvidMismatchTest");
 
                 Assembly loaded = alc.LoadFromAssemblyPath(v1Path);
+                string v1DisplayName = loaded.GetName().FullName;
 
                 var ex = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyPath(v2Path));
-                Assert.Contains("'ReferencedClassLib'", ex.Message);
+                Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
                 Assert.Contains($"'{v1DisplayName}'", ex.Message);
                 Assert.Contains(v1Path, ex.Message);
             }
             finally
             {
+                try { File.Delete(v1Path); } catch { }
                 try { File.Delete(v2Path); } catch { }
             }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
-        public static void LoadFromAssemblyPath_DefaultContext_TpaAssembly_MvidMismatch_ErrorMessageIncludesPathAndVersion()
+        public static void LoadFromAssemblyPath_DefaultAlc_Tpa_MvidMismatch()
         {
             Assembly referencedAssembly = typeof(ReferencedClassLib.Program).Assembly;
             string tpaPath = referencedAssembly.Location;
@@ -324,7 +324,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [ConditionalFact(typeof(AssemblyLoadContextTest), nameof(IsRemoteExecutorSupportedAndCoreCLR))]
-        public static void LoadFromAssemblyPath_DefaultContext_NonTpaAssembly_MvidMismatch_ErrorMessageIncludesPathAndVersion()
+        public static void LoadFromAssemblyPath_DefaultAlc_NonTpaAssembly_MvidMismatch()
         {
             RemoteExecutor.Invoke(static () =>
             {
@@ -349,7 +349,7 @@ namespace System.Runtime.Loader.Tests
             }).Dispose();
         }
 
-        private static bool IsRemoteExecutorSupportedAndCoreCLR => RemoteExecutor.IsSupported && PlatformDetection.IsCoreCLR;
+        private static bool IsRemoteExecutorSupportedAndCoreCLR => RemoteExecutor.IsSupported && PlatformDetection.IsAssemblyLoadingSupported && PlatformDetection.IsCoreCLR;
 
         private static string ExtractEmbeddedAssembly(string name)
         {
