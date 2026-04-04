@@ -95,6 +95,46 @@ public class AsyncMutex
     }
 }
 
+// Uncontended synchronous Wait + Release. Verifies no regression from CAS loop inside the lock.
+[MemoryDiagnoser]
+public class UncontendedSync
+{
+    private SemaphoreSlim _sem = null!;
+
+    [GlobalSetup]
+    public void Setup() => _sem = new SemaphoreSlim(1, 1);
+
+    [Benchmark]
+    public void Wait_Release()
+    {
+        _sem.Wait();
+        _sem.Release();
+    }
+}
+
+// Mixed sync Wait + async WaitAsync on the same semaphore.
+[MemoryDiagnoser]
+public class MixedSyncAsync
+{
+    private const int Iterations = 1_000;
+    private SemaphoreSlim _sem = null!;
+
+    [GlobalSetup]
+    public void Setup() => _sem = new SemaphoreSlim(1, 1);
+
+    [Benchmark]
+    public async Task SyncAndAsyncInterleaved()
+    {
+        for (int i = 0; i < Iterations; i++)
+        {
+            _sem.Wait();
+            _sem.Release();
+            await _sem.WaitAsync();
+            _sem.Release();
+        }
+    }
+}
+
 public class Program
 {
     public static void Main(string[] args) =>
@@ -103,5 +143,7 @@ public class Program
             typeof(UncontendedHighCount),
             typeof(Contended),
             typeof(AsyncMutex),
+            typeof(UncontendedSync),
+            typeof(MixedSyncAsync),
         }).Run(args);
 }

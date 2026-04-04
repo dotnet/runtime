@@ -664,7 +664,8 @@ namespace System.Threading.Tests
                 }
             })));
 
-            Assert.InRange(sem.CurrentCount, 0, 1);
+            // Every successful WaitAsync(0) is paired with a Release; final count must be exactly 1.
+            Assert.Equal(1, sem.CurrentCount);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
@@ -700,6 +701,43 @@ namespace System.Threading.Tests
             }
 
             await Task.WhenAll(tasks);
+            Assert.Equal(1, sem.CurrentCount);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static async Task Release_BulkRelease_ConcurrentWithFastPath_CountStaysCorrect()
+        {
+            const int Permits = 4, Workers = 8, Iterations = 500;
+            var sem = new SemaphoreSlim(Permits, Permits);
+
+            await Task.WhenAll(Enumerable.Range(0, Workers).Select(_ => Task.Run(async () =>
+            {
+                for (int i = 0; i < Iterations; i++)
+                {
+                    await sem.WaitAsync();
+                    await sem.WaitAsync();
+                    sem.Release(2);
+                }
+            })));
+
+            Assert.Equal(Permits, sem.CurrentCount);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static async Task WaitAsync_CancellationDuringFastPath_NoCountCorruption()
+        {
+            const int Iterations = 10_000;
+            var sem = new SemaphoreSlim(1, 1);
+
+            for (int i = 0; i < Iterations; i++)
+            {
+                using var cts = new CancellationTokenSource();
+                Task<bool> t = sem.WaitAsync(cts.Token);
+                cts.Cancel();
+                try { await t; sem.Release(); }
+                catch (OperationCanceledException) { }
+            }
+
             Assert.Equal(1, sem.CurrentCount);
         }
 
