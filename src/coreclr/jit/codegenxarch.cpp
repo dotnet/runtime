@@ -1685,7 +1685,7 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJ
 #endif
 #endif // !FEATURE_FIXED_OUT_ARGS
 
-    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock, 0, isRemovableJmpCandidate);
+    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock, /* keepShort*/ false, isRemovableJmpCandidate);
 }
 
 //------------------------------------------------------------------------
@@ -11301,7 +11301,10 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
             // Set loop counter
             emit->emitIns_R_I(INS_mov, EA_PTRSIZE, initReg, -(ssize_t)blkSize);
+
             // Loop start
+            BasicBlock* loopHead = genCreateTempLabel();
+            genDefineInlineTempLabel(loopHead);
             emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1, alignedLclHi);
             emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
                                 alignedLclHi + XMM_REGSIZE_BYTES);
@@ -11310,7 +11313,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
             emit->emitIns_R_I(INS_add, EA_PTRSIZE, initReg, XMM_REGSIZE_BYTES * 3);
             // Loop until counter is 0
-            emit->emitIns_J(INS_jne, nullptr, -5);
+            emit->emitIns_ShortJ(INS_jne, loopHead);
 
             // initReg will be zero at end of the loop
             *pInitRegZeroed = true;

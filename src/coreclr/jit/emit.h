@@ -1058,8 +1058,9 @@ protected:
             int  iiaGetJitDataOffset() const;
 
             // iiaEncodedInstrCount and its accessor functions are used to specify an instruction
-            // count for jumps, instead of using a label and multiple blocks. This is used in the
-            // prolog as well as for IF_LARGEJMP pseudo-branch instructions.
+            // count for jumps, instead of using a label and multiple blocks. This is only used
+            // for IF_LARGEJMP pseudo-branch instructions printing.
+            // TODO-Cleanup: remove this.
             int iiaEncodedInstrCount;
 
             bool iiaHasInstrCount() const
@@ -2833,6 +2834,7 @@ private:
     insFormat emitMapFmtAtoM(insFormat fmt);
     void      emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt, instruction ins);
     void      spillIntArgRegsToShadowSlots();
+    void      emitIns_ShortJ(instruction ins, BasicBlock* dst);
 
 #ifdef TARGET_XARCH
     bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
@@ -2857,17 +2859,7 @@ private:
     // can hold at least one of the largest instruction descriptor forms), since we can always overflow
     // to subsequent instruction groups.
     //
-    // The only place where this fixed instruction group size is a problem is in the main function prolog,
-    // where we only support a single instruction group, and no extension groups. We should really fix that.
-    // Thus, the buffer size needs to be large enough to hold the maximum number of instructions that
-    // can possibly be generated into the prolog instruction group. That is difficult to statically determine.
-    //
-    // If we do generate an overflow prolog group, we will hit a NOWAY assert and fall back to MinOpts.
-    // This should reduce the number of instructions generated into the prolog.
-    //
-    // Note that OSR prologs require additional code not seen in normal prologs.
-    //
-    // Also, note that DEBUG and non-DEBUG builds have different instrDesc sizes, and there are multiple
+    // Note that DEBUG and non-DEBUG builds have different instrDesc sizes, and there are multiple
     // sizes of instruction descriptors, so the number of instructions that will fit in the largest
     // instruction group depends on the instruction mix as well as DEBUG/non-DEBUG build type. See the
     // EMITTER_STATS output for various statistics related to this.
@@ -2899,9 +2891,11 @@ private:
     insGroup* emitIGlist; // first  instruction group
     insGroup* emitIGlast; // last   instruction group
 
-    instrDescJmp* emitJumpList;       // list of local jumps in method
-    instrDescJmp* emitJumpLast;       // last of local jumps in method
-    void          emitJumpDistBind(); // Bind all the local jumps in method
+    instrDescJmp* emitJumpList;          // list of local jumps in method
+    instrDescJmp* emitJumpLast;          // last of local jumps in method
+    instrDescJmp* emitFixedSizeJumpList; // list of local jumps not eligible for shortening
+    void          emitJumpDistBind();    // Bind all the local jumps in method
+    insGroup*     emitBindJump(instrDescJmp* jmp);
     bool          emitContainsRemovableJmpCandidates;
     void          emitRemoveJumpToNextInst(); // try to remove unconditional jumps to the next instruction
 

@@ -1238,16 +1238,14 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
             assert(last == nullptr || last->idjOffs > nj->idjOffs);
 
-            if (ig->igFlags & IGF_FUNCLET_PROLOG)
+            if ((ig->igFlags & IGF_OUT_OF_ORDER_MASK) != 0)
             {
-                // Our funclet prologs have short jumps, if the prolog would ever have
-                // long jumps, then we'd have to insert the list in sorted order than
-                // just append to the emitJumpList.
-                noway_assert(nj->idjShort);
-                if (nj->idjShort)
-                {
-                    continue;
-                }
+                // Our out of order groups have short jumps. If we ever need the shortening capability
+                // for these jumps, we'll need to insert them at the appropriate place in emitJumpList.
+                nj->idjNext           = emitFixedSizeJumpList;
+                emitFixedSizeJumpList = nj;
+                assert(nj->idjShort);
+                continue;
             }
 
             // Append the new jump to the list
@@ -1264,8 +1262,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         if (last != nullptr)
         {
             // Append the jump(s) from this IG to the global list
-            bool prologJump = emitIGisInProlog(ig);
-            if ((emitJumpList == nullptr) || prologJump)
+            if (emitJumpList == nullptr)
             {
                 last->idjNext = emitJumpList;
                 emitJumpList  = list;
@@ -1276,10 +1273,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
                 emitJumpLast->idjNext = list;
             }
 
-            if (!prologJump || (emitJumpLast == nullptr))
-            {
-                emitJumpLast = last;
-            }
+            emitJumpLast = last;
         }
     }
 
@@ -1372,6 +1366,7 @@ void emitter::emitBegFN(bool hasFramePtr
     /* We don't have any jumps */
 
     emitJumpList = emitJumpLast = nullptr;
+    emitFixedSizeJumpList       = nullptr;
     emitCurIGjmpList            = nullptr;
 
     emitFwdJumps                       = false;
@@ -2416,14 +2411,15 @@ void emitter::emitBegPrologEpilog(insGroup* igPh)
     emitThisGCrefRegs = emitInitGCrefRegs = igPh->igPhData->igPhInitGCrefRegs;
     emitThisByrefRegs = emitInitByrefRegs = igPh->igPhData->igPhInitByrefRegs;
 
+    // Set the current BB for label creation.
+    m_compiler->compCurBB = igPh->igPhData->igPhBB;
+
     igPh->igPhData = nullptr;
 
     /* Create a non-placeholder group pointer that we'll now use */
-
     insGroup* ig = igPh;
 
     /* Set the current function using the function index we stored */
-
     m_compiler->funSetCurrentFunc(ig->igFuncIdx);
 
     /* Set the new IG as the place to generate code */
@@ -3602,6 +3598,26 @@ void emitter::emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSiz
 #endif // MULTIREG_HAS_SECOND_GC_RET
 
 #ifndef TARGET_WASM
+//------------------------------------------------------------------------
+// emitIns_ShortJ: Emit a 'forced' short jump.
+//
+// Jumps in prologs are hardcoded to be short since we don't shorten
+// them in binding.
+//
+// Arguments:
+//    ins - The jump instruction
+//    dst - The destination label (must already be bound to an IG)
+//
+void emitter::emitIns_ShortJ(instruction ins, BasicBlock* dst)
+{
+    assert((emitCurIG->igFlags & IGF_OUT_OF_ORDER_MASK) != 0);
+
+    // We currently have a limitation where all jumps in the prolog must be short.
+    // This is mostly because we the prolog can't change size in emission, as we
+    // currently hardcode offsets from it into the unwind info during IG building.
+    // We also don't insert the jumps into the jump list in layout order.
+    emitIns_J(ins, dst, /* keepShort */ true);
+}
 
 /*****************************************************************************
  *
@@ -4903,6 +4919,15 @@ void emitter::emitJumpDistBind()
     }
 #endif
 
+    // For the fixed-size jumps, we only need to bind them.
+    for (instrDescJmp* jmp = emitFixedSizeJumpList; jmp != nullptr; jmp = jmp->idjNext)
+    {
+        if (!jmp->idIsBound())
+        {
+            emitBindJump(jmp);
+        }
+    }
+
     instrDescJmp* jmp;
 
     UNATIVE_OFFSET minShortExtra; // The smallest offset greater than that required for a jump to be converted
@@ -5220,40 +5245,7 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-
-#ifdef DEBUG
-            if (EMITVERBOSE)
-            {
-                printf("Binding: ");
-                emitDispIns(jmp, false, false, false);
-                printf("Binding L_M%03u_" FMT_BB, m_compiler->compMethodID, jmp->idAddr()->iiaBBlabel->bbNum);
-            }
-#endif // DEBUG
-
-            tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
-
-#ifdef DEBUG
-            if (EMITVERBOSE)
-            {
-                if (tgtIG)
-                {
-                    printf(" to %s\n", emitLabelString(tgtIG));
-                }
-                else
-                {
-                    printf("-- ERROR, no emitter cookie for " FMT_BB "; it is probably missing BBF_HAS_LABEL.\n",
-                           jmp->idAddr()->iiaBBlabel->bbNum);
-                }
-            }
-#endif // DEBUG
-
-            assert(jmp->idAddr()->iiaBBlabel->HasFlag(BBF_HAS_LABEL));
-            assert(tgtIG);
-
-            /* Record the bound target */
-
-            jmp->idAddr()->iiaIGlabel = tgtIG;
-            jmp->idSetIsBound();
+            tgtIG = emitBindJump(jmp);
         }
 
         // We should not be jumping/branching across funclets/functions
@@ -5673,6 +5665,54 @@ AGAIN:
 
     emitCheckIGList();
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// emitBindJump: 'Bind' a jump by assigning its target label field.
+//
+// Arguments:
+//    jmp - The jump instruction
+//
+// Return Value:
+//    The target IG "jmp" was bound to.
+//
+insGroup* emitter::emitBindJump(instrDescJmp* jmp)
+{
+    assert(!jmp->idIsBound());
+
+#ifdef DEBUG
+    if (EMITVERBOSE)
+    {
+        printf("Binding: ");
+        emitDispIns(jmp, false, false, false);
+        printf("Binding L_M%03u_" FMT_BB, m_compiler->compMethodID, jmp->idAddr()->iiaBBlabel->bbNum);
+    }
+#endif // DEBUG
+
+    insGroup* tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
+
+#ifdef DEBUG
+    if (EMITVERBOSE)
+    {
+        if (tgtIG)
+        {
+            printf(" to %s\n", emitLabelString(tgtIG));
+        }
+        else
+        {
+            printf("-- ERROR, no emitter cookie for " FMT_BB "; it is probably missing BBF_HAS_LABEL.\n",
+                   jmp->idAddr()->iiaBBlabel->bbNum);
+        }
+    }
+#endif // DEBUG
+
+    assert(jmp->idAddr()->iiaBBlabel->HasFlag(BBF_HAS_LABEL));
+    assert(tgtIG != nullptr);
+
+    /* Record the bound target */
+    jmp->idAddr()->iiaIGlabel = tgtIG;
+    jmp->idSetIsBound();
+    return tgtIG;
 }
 #endif
 
@@ -6603,13 +6643,6 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
         return;
     }
 #endif
-
-    if (jmp->idAddr()->iiaHasInstrCount())
-    {
-        // Too hard to figure out funclets from just an instruction count
-        // You're on your own!
-        return;
-    }
 
 #ifdef TARGET_ARM64
     // No interest if it's not jmp.
@@ -7634,7 +7667,6 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                     // Presumably we could also just call "emitOutputLJ(NULL, adr, jmp)", like for long jumps?
                     *(short int*)(adr + writeableOffset) -= (short)adj;
 #elif defined(TARGET_ARM64)
-                    assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
@@ -7651,7 +7683,6 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 #if defined(TARGET_XARCH)
                     *(int*)(adr + writeableOffset) -= adj;
 #elif defined(TARGET_ARMARCH)
-                    assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.

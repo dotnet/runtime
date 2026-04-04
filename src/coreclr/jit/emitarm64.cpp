@@ -9297,21 +9297,12 @@ void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, reg
     appendToCurIG(id);
 }
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst, bool keepShort)
 {
-    insFormat fmt = IF_NONE;
-
-    if (dst != nullptr)
-    {
-        assert(dst->HasFlag(BBF_HAS_LABEL));
-    }
-    else
-    {
-        assert(instrCount != 0);
-    }
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     /* Figure out the encoding format of the instruction */
-
+    insFormat fmt = IF_NONE;
     switch (ins)
     {
         case INS_bl_local:
@@ -9348,7 +9339,24 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
     id->idIns(ins);
     id->idInsFmt(fmt);
-    id->idjShort = false;
+
+    id->idAddr()->iiaBBlabel = dst;
+    if (keepShort)
+    {
+        id->idjKeepLong = false;
+        emitSetShortJump(id);
+    }
+    else
+    {
+        id->idjShort    = false;
+        id->idjKeepLong = (ins == INS_bl) || m_compiler->fgInDifferentRegions(m_compiler->compCurBB, dst);
+#ifdef DEBUG
+        if (m_compiler->opts.compLongAddress) // Force long branches
+        {
+            id->idjKeepLong = 1;
+        }
+#endif // DEBUG
+    }
 
 #ifdef DEBUG
     // Mark the finally call
@@ -9357,30 +9365,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
         id->idDebugOnlyInfo()->idFinallyCall = true;
     }
 #endif // DEBUG
-
-    if (dst != nullptr)
-    {
-        id->idAddr()->iiaBBlabel = dst;
-
-        // Skip unconditional jump that has a single form.
-        // The target needs to be relocated.
-        id->idjKeepLong = m_compiler->fgInDifferentRegions(m_compiler->compCurBB, dst);
-
-#ifdef DEBUG
-        if (m_compiler->opts.compLongAddress) // Force long branches
-        {
-            id->idjKeepLong = true;
-        }
-#endif // DEBUG
-    }
-    else
-    {
-        id->idAddr()->iiaSetInstrCount(instrCount);
-        id->idjKeepLong = false;
-        /* This jump must be short */
-        emitSetShortJump(id);
-        id->idSetIsBound();
-    }
 
     /* Record the jump's IG and offset within it */
 
@@ -10726,26 +10710,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
     assert(loadLabel || isJump);
 
-    if (id->idAddr()->iiaHasInstrCount())
-    {
-        assert(ig != NULL);
-        int      instrCount = id->idAddr()->iiaGetInstrCount();
-        unsigned insNum     = emitFindInsNum(ig, id);
-        if (instrCount < 0)
-        {
-            // Backward branches using instruction count must be within the same instruction group.
-            assert(insNum + 1 >= (unsigned)(-instrCount));
-        }
-
-        dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
-        dstAddr = emitOffsetToPtr(dstOffs);
-    }
-    else
-    {
-        dstOffs = id->idAddr()->iiaIGlabel->igOffs;
-        dstAddr = emitOffsetToPtr(dstOffs);
-    }
-
+    dstOffs = id->idAddr()->iiaIGlabel->igOffs;
+    dstAddr = emitOffsetToPtr(dstOffs);
     distVal = (ssize_t)(dstAddr - srcAddr);
 
     if (dstOffs <= srcOffs)
