@@ -16,6 +16,8 @@ public sealed class GCInfoFactory : IContractFactory<IGCInfo>
             (1, RuntimeInfoArchitecture.X64) => new GCInfo_1<AMD64GCInfoTraits>(target),
             (1, RuntimeInfoArchitecture.Arm64) => new GCInfo_1<ARM64GCInfoTraits>(target),
             (1, RuntimeInfoArchitecture.Arm) => new GCInfo_1<ARMGCInfoTraits>(target),
+            (1, RuntimeInfoArchitecture.LoongArch64) => new GCInfo_1<LoongArch64GCInfoTraits>(target),
+            (1, RuntimeInfoArchitecture.RiscV64) => new GCInfo_1<RISCV64GCInfoTraits>(target),
             _ => default(GCInfo),
         };
     }

@@ -19,6 +19,7 @@ public:
 void emitIns(instruction ins);
 void emitIns_BlockTy(instruction ins, WasmValueType valType = WasmValueType::Invalid);
 void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm);
+void emitIns_Ty_I(instruction ins, WasmValueType ty, unsigned int imm);
 void emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs);
 void emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* tgtBlock);
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
@@ -30,14 +31,20 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
+void emitAddressConstant(void* address);
+
 static unsigned SizeOfULEB128(uint64_t value);
 static unsigned SizeOfSLEB128(int64_t value);
-
+static uint8_t  GetWasmValueTypeCode(WasmValueType type);
 static unsigned emitGetAlignHintLog2(const instrDesc* id);
 
 instrDesc*           emitNewInstrLclVarDecl(emitAttr attr, unsigned int localCount, WasmValueType type, int lclOffset);
 static WasmValueType emitGetLclVarDeclType(const instrDesc* id);
 static unsigned int  emitGetLclVarDeclCount(const instrDesc* id);
+
+instrDesc*           emitNewInstrValTypeImm(emitAttr attr, WasmValueType type, unsigned int localCount);
+static WasmValueType emitGetValTypeImmType(const instrDesc* id);
+static unsigned int  emitGetValTypeImmImm(const instrDesc* id);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */

@@ -631,55 +631,65 @@ namespace
         return thunk;
     }
 
-    ULONG CreateFallbackKey(MethodDesc* pMD)
+    ULONG GetHashCode(MethodDesc* pMD, SString &strSource)
     {
         _ASSERTE(pMD != nullptr);
 
-        // the fallback key is in the form $"{MethodName}#{Method.GetParameters().Length}:{AssemblyName}:{Namespace}:{TypeName}";
-        LPCUTF8 pszNamespace = nullptr;
-        LPCUTF8 pszName = pMD->GetMethodTable()->GetFullyQualifiedNameInfo(&pszNamespace);
+        // the key is in the form $"{MethodName}#{Method.GetParameters().Length}:{AssemblyName}:{Namespace}:{TypeName}";
+        const char* pszNamespace = nullptr;
+        const char* pszName = pMD->GetMethodTable()->GetFullyQualifiedNameInfo(&pszNamespace);
         MetaSig sig(pMD);
-        SString strFullName;
-        strFullName.Printf("%s#%d:%s:%s:%s",
+        strSource.Printf("%s#%d:%s:%s:%s",
             pMD->GetName(),
             sig.NumFixedArgs(),
             pMD->GetAssembly()->GetSimpleName(),
             pszNamespace != nullptr ? pszNamespace : "",
             pszName);
 
-        return strFullName.Hash();
+        return strSource.Hash();
     }
 
-    ULONG CreateKey(MethodDesc* pMD)
+    struct ReverseThunkMapKey
     {
-        _ASSERTE(pMD != nullptr);
+        ULONG HashCode;
+        const char* Source;
+    };
 
-        // Get the fully qualified name hash of the method as the key.
-        // Example: 'MyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-        SString strAssemblyName;
-        pMD->GetAssembly()->GetDisplayName(strAssemblyName);
-
-        // Get the member def token for the method.
-        mdMethodDef token = pMD->GetMemberDef();
-
-        // Combine the two to create a reasonably unique key.
-        return strAssemblyName.Hash() ^ token;
-    }
-
-    typedef MapSHash<ULONG, const ReverseThunkMapValue*> HashToReverseThunkHash;
-    HashToReverseThunkHash* reverseThunkCache = nullptr;
-    HashToReverseThunkHash* reverseThunkFallbackCache = nullptr;
-
-    HashToReverseThunkHash* CreateReverseThunkHashTable(bool fallback)
+    class ReverseThunkHashTraits : public NoRemoveSHashTraits<DefaultSHashTraits<const ReverseThunkMapEntry*>>
     {
-        HashToReverseThunkHash* newTable = new HashToReverseThunkHash();
-        newTable->Reallocate(g_ReverseThunksCount * HashToReverseThunkHash::s_density_factor_denominator / HashToReverseThunkHash::s_density_factor_numerator + 1);
+    public:
+        typedef ReverseThunkMapKey key_t;
+
+        static key_t GetKey(element_t e)
+        {
+            LIMITED_METHOD_CONTRACT;
+            return { e->hashCode, e->Source };
+        }
+        static BOOL Equals(key_t k1, key_t k2)
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (k1.HashCode == k2.HashCode) && strcmp(k1.Source, k2.Source) == 0;
+        }
+        static count_t Hash(key_t k)
+        {
+            LIMITED_METHOD_CONTRACT;
+            return k.HashCode;
+        }
+    };
+
+    typedef SHash<ReverseThunkHashTraits> ReverseThunkHash;
+    ReverseThunkHash* reverseThunkCache = nullptr;
+
+    ReverseThunkHash* CreateReverseThunkHashTable()
+    {
+        ReverseThunkHash* newTable = new ReverseThunkHash();
+        newTable->Reallocate(g_ReverseThunksCount * ReverseThunkHash::s_density_factor_denominator / ReverseThunkHash::s_density_factor_numerator + 1);
         for (size_t i = 0; i < g_ReverseThunksCount; i++)
         {
-            newTable->Add(fallback ? g_ReverseThunks[i].fallbackKey : g_ReverseThunks[i].key, &g_ReverseThunks[i].value);
+            newTable->Add(&g_ReverseThunks[i]);
         }
 
-        HashToReverseThunkHash **ppCache = fallback ? &reverseThunkFallbackCache : &reverseThunkCache;
+        ReverseThunkHash **ppCache = &reverseThunkCache;
         if (InterlockedCompareExchangeT(ppCache, newTable, nullptr) != nullptr)
         {
             // Another thread won the race, discard ours
@@ -690,39 +700,34 @@ namespace
 
     const ReverseThunkMapValue* LookupThunk(MethodDesc* pMD)
     {
-        // WASM-TODO: fix primary lookup
-        // HashToReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
-        // if (table == nullptr)
-        // {
-        //     table = CreateReverseThunkHashTable(false /* fallback */);
-        // }
+#ifdef LOGGING
+        {
+            const char* pszLookupNamespace = nullptr;
+            const char* pszLookupName = pMD->GetMethodTable()->GetFullyQualifiedNameInfo(&pszLookupNamespace);
+            LOG((LF_STUBS, LL_INFO100000, "WASM lookupThunk pMD: %s.%s::%s\n", pszLookupNamespace ? pszLookupNamespace : "", pszLookupName, pMD->GetName()));
+        }
+#endif // LOGGING
 
-        // ULONG key = CreateKey(pMD);
+        ReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
 
-        // // Try primary key, it is based on Assembly fully qualified name and method token
-        // const ReverseThunkMapValue* thunk;
-        // if (table->Lookup(key, &thunk))
-        // {
-        //     return thunk;
-        // }
-
-        // Try fallback key, that is based on method properties and assembly name
-        // The fallback is used when the assembly is trimmed and the token and assembly fully qualified name
-        // may change.
-        HashToReverseThunkHash* table = VolatileLoad(&reverseThunkFallbackCache);
         if (table == nullptr)
         {
-            table = CreateReverseThunkHashTable(true /* fallback */);
+            LOG((LF_STUBS, LL_INFO100000, "WASM creating reverse thunk hash table for the first time\n"));
+            table = CreateReverseThunkHashTable();
         }
 
-        ULONG key = CreateFallbackKey(pMD);
-        const ReverseThunkMapValue* thunk;
-        bool success = table->Lookup(key, &thunk);
-        return success ? thunk : nullptr;
+        SString source;
+        ULONG hashCode = GetHashCode(pMD, source);
+        ReverseThunkMapKey key = { hashCode, source.GetUTF8() };
+        const ReverseThunkMapEntry* entry = table->Lookup(key);
+        const ReverseThunkMapValue* thunk = entry != nullptr ? &entry->value : nullptr;
+        LOG((LF_STUBS, LL_INFO100000, "WASM reverse thunk %s for key: %u source: %s\n", thunk != nullptr ? "found" : "missing", hashCode, source.GetUTF8()));
+
+        return thunk;
     }
 }
 
-void* GetCookieForCalliSig(MetaSig metaSig)
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -761,7 +766,7 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
 void InvokeManagedMethod(ManagedMethodParam *pParam)
 {
     MetaSig sig(pParam->pMD);
-    void* cookie = GetCookieForCalliSig(sig);
+    void* cookie = GetCookieForCalliSig(sig, pParam->pMD);
 
     _ASSERTE(cookie != NULL);
 

@@ -38,6 +38,8 @@ internal struct RISCV64Context : IPlatformContext
 
     public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
+    public readonly int StackPointerRegister => 2;
+
     public TargetPointer StackPointer
     {
         readonly get => new(Sp);
@@ -58,6 +60,165 @@ internal struct RISCV64Context : IPlatformContext
     {
         RISCV64Unwinder unwinder = new(target);
         unwinder.Unwind(ref this);
+    }
+
+    public bool TrySetRegister(string name, TargetNUInt value)
+    {
+        if (name.Equals("zero", StringComparison.OrdinalIgnoreCase)) { return false; }
+        if (name.Equals("ra", StringComparison.OrdinalIgnoreCase)) { Ra = value.Value; return true; }
+        if (name.Equals("sp", StringComparison.OrdinalIgnoreCase)) { Sp = value.Value; return true; }
+        if (name.Equals("gp", StringComparison.OrdinalIgnoreCase)) { Gp = value.Value; return true; }
+        if (name.Equals("tp", StringComparison.OrdinalIgnoreCase)) { Tp = value.Value; return true; }
+        if (name.Equals("t0", StringComparison.OrdinalIgnoreCase)) { T0 = value.Value; return true; }
+        if (name.Equals("t1", StringComparison.OrdinalIgnoreCase)) { T1 = value.Value; return true; }
+        if (name.Equals("t2", StringComparison.OrdinalIgnoreCase)) { T2 = value.Value; return true; }
+        if (name.Equals("fp", StringComparison.OrdinalIgnoreCase)) { Fp = value.Value; return true; }
+        if (name.Equals("s1", StringComparison.OrdinalIgnoreCase)) { S1 = value.Value; return true; }
+        if (name.Equals("a0", StringComparison.OrdinalIgnoreCase)) { A0 = value.Value; return true; }
+        if (name.Equals("a1", StringComparison.OrdinalIgnoreCase)) { A1 = value.Value; return true; }
+        if (name.Equals("a2", StringComparison.OrdinalIgnoreCase)) { A2 = value.Value; return true; }
+        if (name.Equals("a3", StringComparison.OrdinalIgnoreCase)) { A3 = value.Value; return true; }
+        if (name.Equals("a4", StringComparison.OrdinalIgnoreCase)) { A4 = value.Value; return true; }
+        if (name.Equals("a5", StringComparison.OrdinalIgnoreCase)) { A5 = value.Value; return true; }
+        if (name.Equals("a6", StringComparison.OrdinalIgnoreCase)) { A6 = value.Value; return true; }
+        if (name.Equals("a7", StringComparison.OrdinalIgnoreCase)) { A7 = value.Value; return true; }
+        if (name.Equals("s2", StringComparison.OrdinalIgnoreCase)) { S2 = value.Value; return true; }
+        if (name.Equals("s3", StringComparison.OrdinalIgnoreCase)) { S3 = value.Value; return true; }
+        if (name.Equals("s4", StringComparison.OrdinalIgnoreCase)) { S4 = value.Value; return true; }
+        if (name.Equals("s5", StringComparison.OrdinalIgnoreCase)) { S5 = value.Value; return true; }
+        if (name.Equals("s6", StringComparison.OrdinalIgnoreCase)) { S6 = value.Value; return true; }
+        if (name.Equals("s7", StringComparison.OrdinalIgnoreCase)) { S7 = value.Value; return true; }
+        if (name.Equals("s8", StringComparison.OrdinalIgnoreCase)) { S8 = value.Value; return true; }
+        if (name.Equals("s9", StringComparison.OrdinalIgnoreCase)) { S9 = value.Value; return true; }
+        if (name.Equals("s10", StringComparison.OrdinalIgnoreCase)) { S10 = value.Value; return true; }
+        if (name.Equals("s11", StringComparison.OrdinalIgnoreCase)) { S11 = value.Value; return true; }
+        if (name.Equals("t3", StringComparison.OrdinalIgnoreCase)) { T3 = value.Value; return true; }
+        if (name.Equals("t4", StringComparison.OrdinalIgnoreCase)) { T4 = value.Value; return true; }
+        if (name.Equals("t5", StringComparison.OrdinalIgnoreCase)) { T5 = value.Value; return true; }
+        if (name.Equals("t6", StringComparison.OrdinalIgnoreCase)) { T6 = value.Value; return true; }
+        if (name.Equals("pc", StringComparison.OrdinalIgnoreCase)) { Pc = value.Value; return true; }
+        if (name.Equals("fcsr", StringComparison.OrdinalIgnoreCase)) { Fcsr = (uint)value.Value; return true; }
+        return false;
+    }
+
+    public bool TryReadRegister(string name, out TargetNUInt value)
+    {
+        value = default;
+        if (name.Equals("zero", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(0); return true; }
+        if (name.Equals("ra", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Ra); return true; }
+        if (name.Equals("sp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Sp); return true; }
+        if (name.Equals("gp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Gp); return true; }
+        if (name.Equals("tp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Tp); return true; }
+        if (name.Equals("t0", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(T0); return true; }
+        if (name.Equals("t1", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(T1); return true; }
+        if (name.Equals("t2", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(T2); return true; }
+        if (name.Equals("fp", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Fp); return true; }
+        if (name.Equals("s1", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(S1); return true; }
+        if (name.Equals("a0", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(A0); return true; }
+        if (name.Equals("a1", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(A1); return true; }
+        if (name.Equals("a2", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(A2); return true; }
+        if (name.Equals("a3", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(A3); return true; }
+        if (name.Equals("a4", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(A4); return true; }
+        if (name.Equals("a5", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(A5); return true; }
+        if (name.Equals("a6", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(A6); return true; }
+        if (name.Equals("a7", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(A7); return true; }
+        if (name.Equals("s2", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(S2); return true; }
+        if (name.Equals("s3", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(S3); return true; }
+        if (name.Equals("s4", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(S4); return true; }
+        if (name.Equals("s5", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(S5); return true; }
+        if (name.Equals("s6", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(S6); return true; }
+        if (name.Equals("s7", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(S7); return true; }
+        if (name.Equals("s8", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(S8); return true; }
+        if (name.Equals("s9", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(S9); return true; }
+        if (name.Equals("s10", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(S10); return true; }
+        if (name.Equals("s11", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(S11); return true; }
+        if (name.Equals("t3", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(T3); return true; }
+        if (name.Equals("t4", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(T4); return true; }
+        if (name.Equals("t5", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(T5); return true; }
+        if (name.Equals("t6", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(T6); return true; }
+        if (name.Equals("pc", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Pc); return true; }
+        if (name.Equals("fcsr", StringComparison.OrdinalIgnoreCase)) { value = new TargetNUInt(Fcsr); return true; }
+        return false;
+    }
+
+    public bool TrySetRegister(int number, TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: return false; // zero register is hardwired to 0
+            case 1: Ra = value.Value; return true;
+            case 2: Sp = value.Value; return true;
+            case 3: Gp = value.Value; return true;
+            case 4: Tp = value.Value; return true;
+            case 5: T0 = value.Value; return true;
+            case 6: T1 = value.Value; return true;
+            case 7: T2 = value.Value; return true;
+            case 8: Fp = value.Value; return true;
+            case 9: S1 = value.Value; return true;
+            case 10: A0 = value.Value; return true;
+            case 11: A1 = value.Value; return true;
+            case 12: A2 = value.Value; return true;
+            case 13: A3 = value.Value; return true;
+            case 14: A4 = value.Value; return true;
+            case 15: A5 = value.Value; return true;
+            case 16: A6 = value.Value; return true;
+            case 17: A7 = value.Value; return true;
+            case 18: S2 = value.Value; return true;
+            case 19: S3 = value.Value; return true;
+            case 20: S4 = value.Value; return true;
+            case 21: S5 = value.Value; return true;
+            case 22: S6 = value.Value; return true;
+            case 23: S7 = value.Value; return true;
+            case 24: S8 = value.Value; return true;
+            case 25: S9 = value.Value; return true;
+            case 26: S10 = value.Value; return true;
+            case 27: S11 = value.Value; return true;
+            case 28: T3 = value.Value; return true;
+            case 29: T4 = value.Value; return true;
+            case 30: T5 = value.Value; return true;
+            case 31: T6 = value.Value; return true;
+            default: return false;
+        }
+    }
+
+    public bool TryReadRegister(int number, out TargetNUInt value)
+    {
+        switch (number)
+        {
+            case 0: value = new TargetNUInt(0); return true; // zero register always reads 0
+            case 1: value = new TargetNUInt(Ra); return true;
+            case 2: value = new TargetNUInt(Sp); return true;
+            case 3: value = new TargetNUInt(Gp); return true;
+            case 4: value = new TargetNUInt(Tp); return true;
+            case 5: value = new TargetNUInt(T0); return true;
+            case 6: value = new TargetNUInt(T1); return true;
+            case 7: value = new TargetNUInt(T2); return true;
+            case 8: value = new TargetNUInt(Fp); return true;
+            case 9: value = new TargetNUInt(S1); return true;
+            case 10: value = new TargetNUInt(A0); return true;
+            case 11: value = new TargetNUInt(A1); return true;
+            case 12: value = new TargetNUInt(A2); return true;
+            case 13: value = new TargetNUInt(A3); return true;
+            case 14: value = new TargetNUInt(A4); return true;
+            case 15: value = new TargetNUInt(A5); return true;
+            case 16: value = new TargetNUInt(A6); return true;
+            case 17: value = new TargetNUInt(A7); return true;
+            case 18: value = new TargetNUInt(S2); return true;
+            case 19: value = new TargetNUInt(S3); return true;
+            case 20: value = new TargetNUInt(S4); return true;
+            case 21: value = new TargetNUInt(S5); return true;
+            case 22: value = new TargetNUInt(S6); return true;
+            case 23: value = new TargetNUInt(S7); return true;
+            case 24: value = new TargetNUInt(S8); return true;
+            case 25: value = new TargetNUInt(S9); return true;
+            case 26: value = new TargetNUInt(S10); return true;
+            case 27: value = new TargetNUInt(S11); return true;
+            case 28: value = new TargetNUInt(T3); return true;
+            case 29: value = new TargetNUInt(T4); return true;
+            case 30: value = new TargetNUInt(T5); return true;
+            case 31: value = new TargetNUInt(T6); return true;
+            default: value = default; return false;
+        }
     }
 
     // Control flags

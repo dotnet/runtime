@@ -15,7 +15,7 @@ using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.Depend
 namespace ILCompiler.DependencyAnalysis
 {
     [DebuggerTypeProxy(typeof(MethodCodeNodeDebugView))]
-    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, ISymbolDefinitionNode, ISpecialUnboxThunkNode
+    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, ISpecialUnboxThunkNode, IMethodCodeNodeWithTypeSignature
     {
         private MethodDesc _method;
         private ObjectData _methodCode;

@@ -15,14 +15,14 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public partial class X509Certificate : IDisposable, IDeserializationCallback, ISerializable
     {
-        private volatile byte[]? _lazyCertHash;
-        private volatile string? _lazyIssuer;
-        private volatile string? _lazySubject;
-        private volatile byte[]? _lazySerialNumber;
-        private volatile string? _lazyKeyAlgorithm;
-        private volatile byte[]? _lazyKeyAlgorithmParameters;
-        private volatile byte[]? _lazyPublicKey;
-        private volatile byte[]? _lazyRawData;
+        private byte[]? _lazyCertHash;
+        private string? _lazyIssuer;
+        private string? _lazySubject;
+        private byte[]? _lazySerialNumber;
+        private string? _lazyKeyAlgorithm;
+        private byte[]? _lazyKeyAlgorithmParameters;
+        private byte[]? _lazyPublicKey;
+        private byte[]? _lazyRawData;
         private volatile bool _lazyKeyAlgorithmParametersCreated;
         private DateTime _lazyNotBefore = DateTime.MinValue;
         private DateTime _lazyNotAfter = DateTime.MinValue;

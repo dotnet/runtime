@@ -1366,6 +1366,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                     });
                     break;
 
+                case ReadyToRunFixupKind.ResumptionStubEntryPoint:
+                    uint stubRVA = BitConverter.ToUInt32(_image, Offset);
+                    SkipBytes(4);
+                    builder.Append($" (RESUMPTION_STUB RVA[0x{stubRVA:X}])");
+                    break;
+
                 case ReadyToRunFixupKind.Check_VirtualFunctionOverride:
                 case ReadyToRunFixupKind.Verify_VirtualFunctionOverride:
                     ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)ReadUInt();
@@ -1682,6 +1688,22 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.ThrowDivZero:
                     builder.Append("THROW_DIV_ZERO");
+                    break;
+
+                case ReadyToRunHelper.ThrowArgument:
+                    builder.Append("THROW_ARGUMENT");
+                    break;
+
+                case ReadyToRunHelper.ThrowArgumentOutOfRange:
+                    builder.Append("THROW_ARGUMENT_OUT_OF_RANGE");
+                    break;
+
+                case ReadyToRunHelper.ThrowPlatformNotSupported:
+                    builder.Append("THROW_PLATFORM_NOT_SUPPORTED");
+                    break;
+
+                case ReadyToRunHelper.ThrowNotImplemented:
+                    builder.Append("THROW_NOT_IMPLEMENTED");
                     break;
 
                 // Write barriers
@@ -2045,7 +2067,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 default:
-                    throw new BadImageFormatException();
+                    throw new BadImageFormatException(helperType.ToString());
             }
         }
 

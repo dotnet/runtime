@@ -37,8 +37,8 @@ namespace System.Security.Cryptography
 
         private const string ECDsaIdentifier = "ECDsa";
 
-        private static volatile Dictionary<string, string>? s_defaultOidHT;
-        private static volatile Dictionary<string, object>? s_defaultNameHT;
+        private static Dictionary<string, string>? s_defaultOidHT;
+        private static Dictionary<string, object>? s_defaultNameHT;
         private static readonly ConcurrentDictionary<string, Type> appNameHT = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, string> appOidHT = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 

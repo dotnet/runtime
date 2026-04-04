@@ -353,7 +353,10 @@ namespace System.IO
 
             if (_useFastUtf8)
             {
-                if (value.Length <= 127 / 3)
+                // If this is a non-derived BinaryWriter, then we can bypass the Write7BitEncodedInt call.
+                // But when this is a derived instance, call must not bypass it for compatibility reasons
+                // as it calls the virtual Write(byte) overload.
+                if (GetType() == typeof(BinaryWriter) && value.Length <= 127 / 3)
                 {
                     // Max expansion: each char -> 3 bytes, so 127 bytes max of data, +1 for length prefix
                     Span<byte> buffer = stackalloc byte[128];
