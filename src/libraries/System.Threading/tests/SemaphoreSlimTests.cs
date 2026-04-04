@@ -618,6 +618,34 @@ namespace System.Threading.Tests
             Task.WaitAll(tasks);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static async Task WaitAsync_AvailableWaitHandle_ConcurrentInit_StaysConsistent()
+        {
+            // Stress test for the race where AvailableWaitHandle is lazily initialized concurrently
+            // with the lock-free WaitAsync fast path consuming the last permit (count 1→0).
+            // Invariant: the wait handle must be non-signaled whenever CurrentCount == 0.
+            const int Iterations = 10_000;
+            var sem = new SemaphoreSlim(1, 1);
+
+            using var cts = new CancellationTokenSource();
+            Task accessor = Task.Run(() =>
+            {
+                while (!cts.IsCancellationRequested)
+                    _ = sem.AvailableWaitHandle;
+            });
+
+            for (int i = 0; i < Iterations; i++)
+            {
+                await sem.WaitAsync();
+                // Count is 0; the handle must not be signaled.
+                Assert.False(sem.AvailableWaitHandle.WaitOne(0));
+                sem.Release();
+            }
+
+            cts.Cancel();
+            await accessor;
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void WaitAsync_Timeout_NoUnhandledException()
         {
