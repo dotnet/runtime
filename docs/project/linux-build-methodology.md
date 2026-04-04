@@ -144,7 +144,7 @@ deps & builder --> base
 
 ## Evolution of libc targeting
 
-In .NET 7 when this project started, we learned that Amazon Linux 2 had an older glibc than we initially targed in our arm64 builds. We had been targeting glibc 2.27 from Ubuntu 18.04. We [enabled](https://github.com/dotnet/runtime/pull/80866) compatibility with Amazon Linux 2 by moving the arm64 builds to target Ubuntu 16.04 with glibc 2.23. At that time we still used an Ubuntu host image to build the arm64 product, but now we were targeting a different version than the host, which was an Ubuntu 18.04 image.
+In .NET 7 when this project started, we learned that Amazon Linux 2 had an older glibc than we initially targeted in our arm64 builds. We had been targeting glibc 2.27 from Ubuntu 18.04. We [enabled](https://github.com/dotnet/runtime/pull/80866) compatibility with Amazon Linux 2 by moving the arm64 builds to target Ubuntu 16.04 with glibc 2.23. At that time we still used an Ubuntu host image to build the arm64 product, but now we were targeting a different version than the host, which was an Ubuntu 18.04 image.
 
 .NET 8 was the first release that [unified](https://github.com/dotnet/runtime/issues/83428) all of our Linux builds to use cross-compilation, and to build on a Microsoft-supported Linux distribution in the Azure Linux family. Before this our x64 glibc and musl builds were not using a sysroot. With this setup we unified all of the Linux builds to target a common version of glibc (2.23 from Ubuntu 16.04) or musl libc (1.2.2 from Alpine 3.13).
 
