@@ -452,10 +452,14 @@ namespace System.Linq.Tests
 
             var result = outer.RightJoin(inner, o => o, i => i).ToList();
 
-            Assert.Equal(3, result.Count);
-            Assert.Contains(result, r => r.Outer == "prakash" && r.Inner == "prakash");
-            Assert.Contains(result, r => r.Outer == null && r.Inner == "robert");
-            Assert.Contains(result, r => r.Outer == null && r.Inner == "unknown");
+            (string? Outer, string Inner)[] expected =
+            [
+                ("prakash", "prakash"),
+                (null, "robert"),
+                (null, "unknown")
+            ];
+
+            Assert.Equal(expected, result);
         }
 
         [Fact]

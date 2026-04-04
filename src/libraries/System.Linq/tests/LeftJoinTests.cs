@@ -455,10 +455,13 @@ namespace System.Linq.Tests
 
             var result = outer.LeftJoin(inner, o => o.ToLowerInvariant(), i => i.ToLowerInvariant()).ToList();
 
-            Assert.Equal(3, result.Count);
-            Assert.Contains(result, r => r.Outer == "Prakash" && r.Inner == "prakash");
-            Assert.Contains(result, r => r.Outer == "Tim" && r.Inner == null);
-            Assert.Contains(result, r => r.Outer == "Robert" && r.Inner == "robert");
+            var expected = outer.LeftJoin(
+                inner,
+                o => o.ToLowerInvariant(),
+                i => i.ToLowerInvariant(),
+                (o, i) => (Outer: o, Inner: i)).ToList();
+
+            Assert.Equal(expected, result);
         }
 
         [Fact]

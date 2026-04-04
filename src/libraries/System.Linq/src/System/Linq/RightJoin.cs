@@ -272,13 +272,13 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Correlates the elements of two sequences based on matching keys. A specified <see cref="IEqualityComparer{T}" /> is used to compare keys.
+        /// Correlates the elements of two sequences based on matching keys. If <paramref name="comparer" /> is <see langword="null" /> or omitted, the default equality comparer is used to compare keys.
         /// </summary>
         /// <param name="outer">The first sequence to join.</param>
         /// <param name="inner">The sequence to join to the first sequence.</param>
         /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
         /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
-        /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to hash and compare keys.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to hash and compare keys, or <see langword="null" /> to use <see cref="EqualityComparer{T}.Default" />.</param>
         /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
         /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
         /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>

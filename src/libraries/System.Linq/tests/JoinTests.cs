@@ -436,9 +436,9 @@ namespace System.Linq.Tests
 
             var result = outer.Join(inner, o => o.custID, i => i.custID);
 
-            Assert.Equal(2, result.Count());
-            Assert.Contains(result, r => r.Outer.name == "Prakash" && r.Inner.orderID == 95421);
-            Assert.Contains(result, r => r.Outer.name == "Robert" && r.Inner.orderID == 45321);
+            var expected = outer.Join(inner, o => o.custID, i => i.custID, (o, i) => (Outer: o, Inner: i));
+
+            Assert.Equal(expected, result);
         }
 
         [Fact]
