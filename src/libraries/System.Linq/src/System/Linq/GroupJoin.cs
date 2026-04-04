@@ -8,10 +8,24 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static IEnumerable<IGrouping<TOuter, TInner>> GroupJoin<TOuter, TInner, TKey>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector) =>
-            GroupJoin(outer, inner, outerKeySelector, innerKeySelector, comparer: null);
-
-        public static IEnumerable<IGrouping<TOuter, TInner>> GroupJoin<TOuter, TInner, TKey>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, IEqualityComparer<TKey>? comparer)
+        /// <summary>Correlates the elements of two sequences based on key equality and groups the results. If <paramref name="comparer" /> is <see langword="null" /> or omitted, the default equality comparer is used to compare keys.</summary>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{T}"/> to hash and compare keys, or <see langword="null" /> to use <see cref="EqualityComparer{T}.Default" />.</param>
+        /// <returns>
+        /// An <see cref="IEnumerable{T}"/> that contains elements of type <see cref="IGrouping{TKey, TElement}"/>
+        /// where each grouping contains the outer element as the key and the matching inner elements.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="inner" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="outerKeySelector" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
+        public static IEnumerable<IGrouping<TOuter, TInner>> GroupJoin<TOuter, TInner, TKey>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, IEqualityComparer<TKey>? comparer = null)
         {
             if (outer is null)
             {
