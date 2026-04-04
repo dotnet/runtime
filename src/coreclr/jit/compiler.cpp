@@ -9925,10 +9925,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                         }
                     }
 
-                    if (call->gtCallMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH)
-                    {
-                        chars += printf("[CALL_M_FRAME_VAR_DEATH]");
-                    }
                     if (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER)
                     {
                         chars += printf("[CALL_M_TAILCALL_VIA_JIT_HELPER]");

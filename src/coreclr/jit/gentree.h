@@ -4356,7 +4356,6 @@ enum GenTreeCallFlags : unsigned int
                                                      // in special cases. Used to optimize fast way out in morphing
     GTF_CALL_M_VIRTSTUB_REL_INDIRECT   = 0x00000020, // the virtstub is indirected through a relative address (only for GTF_CALL_VIRT_STUB)
     GTF_CALL_M_NONVIRT_SAME_THIS       = 0x00000020, // callee "this" pointer is equal to caller this pointer (only for GTF_CALL_NONVIRT)
-    GTF_CALL_M_FRAME_VAR_DEATH         = 0x00000040, // the compLvFrameListRoot variable dies here (last use)
 
     GTF_CALL_M_TAILCALL                = 0x00000080, // the call is a tailcall
     GTF_CALL_M_EXPLICIT_TAILCALL       = 0x00000100, // the call is "tail" prefixed and importer has performed tail call checks
