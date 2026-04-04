@@ -628,8 +628,12 @@ namespace System.Threading.Tests
             using var cts = new CancellationTokenSource();
             Task accessor = Task.Run(() =>
             {
+                SpinWait spinner = default;
                 while (!cts.IsCancellationRequested)
+                {
                     _ = sem.AvailableWaitHandle;
+                    spinner.SpinOnce();
+                }
             });
 
             try
