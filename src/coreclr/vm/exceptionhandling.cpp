@@ -3636,6 +3636,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
             }
             else
             {
+#ifdef PROFILING_SUPPORTED
                 BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
                 _ASSERTE(pExInfo->m_pMDToReportFunctionLeave != NULL);
                 EEToProfilerExceptionInterfaceWrapper::ExceptionSearchCatcherFound(pMD);
@@ -3645,6 +3646,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
                     pExInfo->m_pMDToReportFunctionLeave = NULL;
                 }
                 END_PROFILER_CALLBACK();
+#endif // PROFILING_SUPPORTED
 
                 // We don't need to do anything special for continuable exceptions after calling
                 // this callback.  We are going to start unwinding anyway.
@@ -3714,10 +3716,12 @@ NOINLINE static void NotifyFunctionEnterHelper(StackFrameIterator *pThis, Thread
 
 static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
 {
+#ifdef PROFILING_SUPPORTED
     BEGIN_PROFILER_CALLBACK(CORProfilerTrackExceptions());
     // We don't need to do any notifications for the profiler if we are not tracking exceptions.
     NotifyFunctionEnterHelper(pThis, pThread, pExInfo);
     END_PROFILER_CALLBACK();
+#endif // PROFILING_SUPPORTED
 }
 
 CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)

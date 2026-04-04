@@ -258,7 +258,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveNonExitedId);
-                string? processName = _processName ??= ProcessManager.GetProcessName(_processId, _machineName, ref _processInfo);
+                string? processName = _processName ??= ProcessManager.GetProcessName(_processId, _machineName, _isRemoteMachine, ref _processInfo);
                 if (processName is null)
                 {
                     ThrowNoProcessInfo();
@@ -335,7 +335,6 @@ namespace System.Diagnostics
         public int NonpagedSystemMemorySize
             => unchecked((int)GetProcessInfo().PoolNonPagedBytes);
 
-
         public long PagedMemorySize64
             => GetProcessInfo().PageFileBytes;
 
@@ -343,14 +342,12 @@ namespace System.Diagnostics
         public int PagedMemorySize
             => unchecked((int)GetProcessInfo().PageFileBytes);
 
-
         public long PagedSystemMemorySize64
             => GetProcessInfo().PoolPagedBytes;
 
         [Obsolete("Process.PagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedSystemMemorySize64 instead.")]
         public int PagedSystemMemorySize
             => unchecked((int)GetProcessInfo().PoolPagedBytes);
-
 
         public long PeakPagedMemorySize64
             => GetProcessInfo().PageFileBytesPeak;
@@ -577,7 +574,6 @@ namespace System.Diagnostics
                 }
             }
         }
-
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -850,7 +846,7 @@ namespace System.Diagnostics
                 {
                     if (_haveProcessHandle)
                     {
-                        SetProcessId(ProcessManager.GetProcessIdFromHandle(_processHandle!));
+                        SetProcessId(_processHandle!.ProcessId);
                     }
                     else
                     {
@@ -914,12 +910,13 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process GetProcessById(int processId, string machineName)
         {
-            if (!ProcessManager.IsProcessRunning(processId, machineName))
+            bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
+            if (!ProcessManager.IsProcessRunning(processId, machineName, isRemoteMachine))
             {
                 throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
             }
 
-            return new Process(machineName, ProcessManager.IsRemoteMachine(machineName), processId, null);
+            return new Process(machineName, isRemoteMachine, processId, null);
         }
 
         /// <devdoc>
@@ -930,7 +927,13 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process GetProcessById(int processId)
         {
-            return GetProcessById(processId, ".");
+            // Avoid calling GetProcessById(processId, ".") so that remote machine code is not included when only local machine support is needed.
+            if (!ProcessManager.IsProcessRunning(processId))
+            {
+                throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
+            }
+
+            return new Process(".", false, processId, null);
         }
 
         /// <devdoc>
@@ -946,7 +949,27 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName)
         {
-            return GetProcessesByName(processName, ".");
+            // Avoid calling GetProcessesByName(processName, ".") so that remote machine code is not included when only local machine support is needed.
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            // Normalize empty processName to null so that GetProcessInfos treats it as "no filter".
+            ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: string.IsNullOrEmpty(processName) ? null : processName);
+            return CreateProcessArray(processInfos, ".", false);
+        }
+
+        /// <summary>
+        /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
+        /// remote computer. These process resources share the specified process name.
+        /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static Process[] GetProcessesByName(string? processName, string machineName)
+        {
+            bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            // Normalize empty processName to null so that GetProcessInfos treats it as "no filter".
+            ProcessManager.GetProcessInfos(ref processInfos, string.IsNullOrEmpty(processName) ? null : processName, machineName, isRemoteMachine);
+            return CreateProcessArray(processInfos, machineName, isRemoteMachine);
         }
 
         /// <devdoc>
@@ -960,7 +983,10 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses()
         {
-            return GetProcesses(".");
+            // Avoid calling GetProcesses(".") so that remote machine code is not included when only local machine support is needed.
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: null);
+            return CreateProcessArray(processInfos, ".", false);
         }
 
         /// <devdoc>
@@ -975,10 +1001,18 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses(string machineName)
         {
-            bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processNameFilter: null, machineName);
-            Process[] processes = new Process[processInfos.Length];
-            for (int i = 0; i < processInfos.Length; i++)
+            bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: null, machineName, isRemoteMachine);
+            return CreateProcessArray(processInfos, machineName, isRemoteMachine);
+        }
+
+        private static Process[] CreateProcessArray(ArrayBuilder<ProcessInfo> processInfos, string machineName, bool isRemoteMachine)
+        {
+            if (processInfos.Count == 0)
+                return [];
+            Process[] processes = new Process[processInfos.Count];
+            for (int i = 0; i < processes.Length; i++)
             {
                 ProcessInfo processInfo = processInfos[i];
                 processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
@@ -1380,7 +1414,7 @@ namespace System.Diagnostics
             {
                 if (Associated)
                 {
-                    string? processName = _processName ??= ProcessManager.GetProcessName(_processId, _machineName, ref _processInfo);
+                    string? processName = _processName ??= ProcessManager.GetProcessName(_processId, _machineName, _isRemoteMachine, ref _processInfo);
                     if (!string.IsNullOrEmpty(processName))
                     {
                         result = $"{result} ({processName})";
@@ -1597,7 +1631,6 @@ namespace System.Diagnostics
             _output.BeginReadLine();
         }
 
-
         /// <devdoc>
         /// <para>
         /// Instructs the <see cref='System.Diagnostics.Process'/> component to start
@@ -1751,7 +1784,7 @@ namespace System.Diagnostics
             if (processInfo == null)
             {
                 EnsureState(State.HaveNonExitedId);
-                _processInfo = processInfo = ProcessManager.GetProcessInfo(_processId, _machineName);
+                _processInfo = processInfo = ProcessManager.GetProcessInfo(_processId, _machineName, _isRemoteMachine);
                 if (processInfo == null)
                 {
                     ThrowNoProcessInfo();

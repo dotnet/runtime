@@ -25,29 +25,6 @@ namespace System.Diagnostics
 
         private bool _signaled;
 
-        /// <summary>
-        /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
-        /// remote computer. These process resources share the specified process name.
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public static Process[] GetProcessesByName(string? processName, string machineName)
-        {
-            bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
-
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName, machineName);
-            Process[] processes = new Process[processInfos.Length];
-
-            for (int i = 0; i < processInfos.Length; i++)
-            {
-                ProcessInfo processInfo = processInfos[i];
-                processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
-            }
-
-            return processes;
-        }
-
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public static Process? Start(string fileName, string userName, SecureString password, string domain)
