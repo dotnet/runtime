@@ -13411,7 +13411,7 @@ void emitter::emitDispIns(
                 break;
             }
 
-            unsigned inputSize  = static_cast<unsigned>(GetInputSizeInBytes(id));
+            unsigned inputSize = static_cast<unsigned>(GetInputSizeInBytes(id));
 
             switch (tt)
             {
@@ -13734,7 +13734,7 @@ void emitter::emitDispIns(
 
                 case INS_vcvtps2ph:
                 {
-                    tgtAttr = static_cast<emitAttr>(std::max(16U, EA_SIZE_IN_BYTES(attr) / 2U));
+                    tgtAttr = std::max(EA_16BYTE, EA_ATTR(EA_SIZE_IN_BYTES(attr) / 2));
                     break;
                 }
 
