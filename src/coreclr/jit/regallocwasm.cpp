@@ -81,11 +81,11 @@ void WasmRegAlloc::recordVarLocationsAtStartOfBB(BasicBlock* bb)
                     bb->bbNum);
         }
 
-        for (unsigned varIdx = 0; varIdx < assignments.size(); varIdx++)
+        for (unsigned varIndex = 0; varIndex < assignments.size(); varIndex++)
         {
-            unsigned const   lclNum = m_compiler->lvaTrackedIndexToLclNum(varIdx);
+            unsigned const   lclNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
             LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
-            regNumber const  reg    = assignments[varIdx];
+            regNumber const  reg    = assignments[varIndex];
 
             if (verify)
             {
@@ -94,6 +94,10 @@ void WasmRegAlloc::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             else
             {
                 varDsc->SetRegNum(reg);
+
+                // Unlike LSRA, we do not change assignments within a funclet.
+                // And no locals are live across a funclet boundary. So there
+                // is no need for any debug liveness update here.
             }
 
             if (reg != REG_STK)
