@@ -706,15 +706,17 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 //
 void WasmRegAlloc::CollectReference(GenTree* node)
 {
-    if ((node->gtLIRFlags & LIR::Flags::VirtualRefsCollected) != LIR::Flags::None)
+    PerFuncletData* const data = m_perFuncletData[m_currentFunclet];
+
+    // We may make multiple consecutive collection calls for the same node, but we only need to record it once.
+    //
+    if (node == data->m_lastCollectedNode)
     {
         return;
     }
 
-    node->gtLIRFlags |= LIR::Flags::VirtualRefsCollected;
-
-    PerFuncletData* const data = m_perFuncletData[m_currentFunclet];
     VirtualRegReferences* refs = data->m_virtualRegRefs;
+
     if (refs == nullptr)
     {
         refs                   = new (m_compiler->getAllocator(CMK_LSRA_RefPosition)) VirtualRegReferences();
@@ -730,6 +732,7 @@ void WasmRegAlloc::CollectReference(GenTree* node)
 
     assert(data->m_lastVirtualRegRefsCount < ARRAY_SIZE(refs->Nodes));
     refs->Nodes[data->m_lastVirtualRegRefsCount++] = node;
+    data->m_lastCollectedNode                      = node;
 }
 
 //------------------------------------------------------------------------
@@ -1056,10 +1059,7 @@ void WasmRegAlloc::ResolveReferences()
         {
             for (size_t i = 0; i < refsCount; i++)
             {
-                GenTree* node = refs->Nodes[i];
-
-                assert((node->gtLIRFlags & LIR::Flags::VirtualRefsCollected) != LIR::Flags::None);
-                node->gtLIRFlags &= ~LIR::Flags::VirtualRefsCollected;
+                GenTree* const node = refs->Nodes[i];
 
                 if (node->OperIs(GT_PHYSREG))
                 {

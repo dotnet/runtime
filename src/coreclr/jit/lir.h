@@ -42,10 +42,9 @@ public:
                                 // require a register (i.e. it can be used from memory).
 
 #ifdef TARGET_WASM
-            MultiplyUsed = 0x08,         // Set by lowering on nodes that the RA should allocate into
-                                         // a dedicated register (WASM local), for multiple uses.
-            VirtualRefsCollected = 0x10, // Set on nodes that have had their virtual register references collected.
-#endif                                   // TARGET_WASM
+            MultiplyUsed = 0x08, // Set by lowering on nodes that the RA should allocate into
+                                 // a dedicated register (WASM local), for multiple uses.
+#endif                           // TARGET_WASM
         };
     };
 
