@@ -145,6 +145,9 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
                 pMT->GetInstantiation().GetNumArgs(), pMT->GetInstantiation(), GetVersionResilientTypeHashCode);
         }
 
+        // 0 is used as the sentinel "not yet cached" value, so only cache if non-zero.
+        // Types with a hash code of exactly 0 are extremely rare in practice; they will simply
+        // have their hash code recomputed on every call, which is still correct behavior.
         if (hashcode != 0)
         {
             VolatileStore(&pMT->GetAuxiliaryDataForWrite()->m_cachedVersionResilientHashCode, hashcode);
