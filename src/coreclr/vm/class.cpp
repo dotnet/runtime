@@ -575,10 +575,11 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
         // ClassifyMethodReturnKind calls IsTypeDefOrRefImplementedInSystemModule which
         // does type resolution that may trigger GC. We suppress GC_NOTRIGGER here because
         // we're only resolving well-known system types (Task/ValueTask) in practice.
-        // Note: ClassifyMethodReturnKind checks type names without verifying the assembly
-        // reference, so user-defined types matching these names (e.g. via extern alias)
-        // could theoretically induce GC-triggering paths. Accepted as Won't Fix given
-        // the extreme unlikelihood and consistency with ApplyEditAndContinue.
+        // Note: ClassifyMethodReturnKind matches by type name without verifying the assembly
+        // reference, so a user-defined type named "Task" or "ValueTask" (e.g. via extern
+        // alias) could be misidentified and induce GC-triggering resolution paths. Accepted
+        // as Won't Fix given this requires an extremely unlikely combination of naming
+        // collision, extern alias usage, and hot reload of such a method while debugging.
         CONTRACT_VIOLATION(GCViolation);
         returnKind = ClassifyMethodReturnKind(
             SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
@@ -597,16 +598,12 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     else if (IsMiAsync(dwImplFlags))
     {
         // IsMiAsync but not task-returning: infrastructure async method (e.g. Await helpers).
-        // These are only permitted on types in the system module, mirroring the validation
-        // in MethodTableBuilder during normal type loading.
-        if (!pModule->IsSystem())
-        {
-            LOG((LF_ENC, LL_INFO100,
-                "EEClass::AddMethod rejecting infrastructure async method (methodDef: 0x%08x) on non-system module\n",
-                methodDef));
-            return COR_E_BADIMAGEFORMAT;
-        }
-        primaryAsyncFlags = AsyncMethodFlags::AsyncCall;
+        // There is no known scenario that benefits from adding these via EnC, so reject
+        // unconditionally rather than allowing them even on the system module.
+        LOG((LF_ENC, LL_INFO100,
+            "EEClass::AddMethod rejecting infrastructure async method (methodDef: 0x%08x)\n",
+            methodDef));
+        return COR_E_BADIMAGEFORMAT;
     }
 
     MethodDesc* pNewMD;
