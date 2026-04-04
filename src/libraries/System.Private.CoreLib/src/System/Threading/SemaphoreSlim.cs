@@ -399,12 +399,7 @@ namespace System.Threading
                     // defer to synchronous waiters in priority, which means that if it's possible an asynchronous
                     // waiter didn't get released because a synchronous waiter was present, we need to ensure
                     // that synchronous waiter succeeds so that they have a chance to release.
-                    // Use CAS rather than a plain decrement: the lock-free fast path in WaitAsync
-                    // can decrement m_currentCount concurrently (it holds no lock).
-                    int currentCount = m_currentCount;
-                    while (currentCount > 0 && Interlocked.CompareExchange(ref m_currentCount, currentCount - 1, currentCount) != currentCount)
-                        currentCount = m_currentCount;
-                    if (currentCount > 0)
+                    if (TryDecrementCount() > 0)
                     {
                         waitSuccessful = true;
                     }
@@ -708,12 +703,7 @@ namespace System.Threading
             lock (m_lockObjAndDisposed)
             {
                 // If there are counts available, allow this waiter to succeed.
-                // Use CAS rather than a plain decrement: the lock-free fast path in WaitAsync
-                // can decrement m_currentCount concurrently (it holds no lock).
-                int current = m_currentCount;
-                while (current > 0 && Interlocked.CompareExchange(ref m_currentCount, current - 1, current) != current)
-                    current = m_currentCount;
-                if (current > 0)
+                if (TryDecrementCount() > 0)
                 {
                     if (m_waitHandle is not null && m_currentCount == 0) m_waitHandle.Reset();
                     return Task.FromResult(true);
@@ -788,6 +778,21 @@ namespace System.Threading
 
             // Return whether the task was in the list
             return wasInList;
+        }
+
+        /// <summary>
+        /// Atomically decrements <see cref="m_currentCount"/> if it is positive, using a CAS loop
+        /// rather than a plain decrement because the lock-free fast path in <see cref="WaitAsyncCore"/>
+        /// can decrement <see cref="m_currentCount"/> concurrently without holding the lock.
+        /// </summary>
+        /// <returns>The pre-decrement value. A return value of 0 means no count was available.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int TryDecrementCount()
+        {
+            int count = m_currentCount;
+            while (count > 0 && Interlocked.CompareExchange(ref m_currentCount, count - 1, count) != count)
+                count = m_currentCount;
+            return count;
         }
 
         /// <summary>Performs the asynchronous wait.</summary>
@@ -927,11 +932,11 @@ namespace System.Threading
                         waiterTask.TrySetResult(result: true);
                     }
                 }
-                // Use Interlocked.Add (relative delta) rather than an absolute write so that
-                // the lock-free CAS fast path in WaitAsync cannot be overwritten.
+                // Relative delta via Interlocked.Add: a lock-free WaitAsync CAS may already be
+                // in flight from a thread that read m_waitHandle as null before it was initialized.
                 Interlocked.Add(ref m_currentCount, netCount - snapshot);
 
-                if (m_waitHandle is not null && snapshot == 0 && netCount > 0)
+                if (m_waitHandle is not null && snapshot == 0 && m_currentCount > 0)
                 {
                     m_waitHandle.Set();
                 }
