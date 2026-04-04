@@ -515,6 +515,9 @@ DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
 DEFINE_CLASS(METHODBASEINVOKER,     Reflection,             MethodBaseInvoker)
 
+DEFINE_CLASS(CUSTOMATTRIBUTE,       Reflection,             CustomAttribute)
+DEFINE_METHOD(CUSTOMATTRIBUTE,      INVOKE_CUSTOM_ATTRIBUTE_CTOR, InvokeCustomAttributeCtor, NoSig)
+
 DEFINE_CLASS(INSTANCE_CALLI_HELPER, Reflection,             InstanceCalliHelper)
 
 DEFINE_CLASS_U(Reflection,          RuntimeMethodInfo,      NoClass)

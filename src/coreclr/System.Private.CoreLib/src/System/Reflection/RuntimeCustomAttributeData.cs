@@ -302,16 +302,16 @@ namespace System.Reflection
         #region Pseudo Custom Attribute Constructor
         internal RuntimeCustomAttributeData(Attribute attribute)
         {
-           if (attribute is DllImportAttribute dllImportAttribute)
-               Init(dllImportAttribute);
-           else if (attribute is FieldOffsetAttribute fieldOffsetAttribute)
-               Init(fieldOffsetAttribute);
-           else if (attribute is MarshalAsAttribute marshalAsAttribute)
-               Init(marshalAsAttribute);
-           else if (attribute is TypeForwardedToAttribute typeForwardedToAttribute)
-               Init(typeForwardedToAttribute);
-           else
-               Init(attribute);
+            if (attribute is DllImportAttribute dllImportAttribute)
+                Init(dllImportAttribute);
+            else if (attribute is FieldOffsetAttribute fieldOffsetAttribute)
+                Init(fieldOffsetAttribute);
+            else if (attribute is MarshalAsAttribute marshalAsAttribute)
+                Init(marshalAsAttribute);
+            else if (attribute is TypeForwardedToAttribute typeForwardedToAttribute)
+                Init(typeForwardedToAttribute);
+            else
+                Init(attribute);
         }
         private void Init(DllImportAttribute dllImport)
         {
@@ -849,24 +849,24 @@ namespace System.Reflection
                     arg.StringValue = parser.GetString();
                     break;
                 case CustomAttributeEncoding.Array:
-                {
-                    arg.ArrayValue = null;
-                    int len = parser.GetI4();
-                    if (len != -1) // indicates array is null - ECMA-335 II.23.3.
                     {
-                        attributeType = new CustomAttributeType(
-                            attributeType.EncodedArrayType,
-                            CustomAttributeEncoding.Undefined, // Array type
-                            attributeType.EncodedEnumType,
-                            attributeType.EnumType);
-                        arg.ArrayValue = new CustomAttributeEncodedArgument[len];
-                        for (int i = 0; i < len; ++i)
+                        arg.ArrayValue = null;
+                        int len = parser.GetI4();
+                        if (len != -1) // indicates array is null - ECMA-335 II.23.3.
                         {
-                            arg.ArrayValue[i] = ParseCustomAttributeValue(ref parser, attributeType, module);
+                            attributeType = new CustomAttributeType(
+                                attributeType.EncodedArrayType,
+                                CustomAttributeEncoding.Undefined, // Array type
+                                attributeType.EncodedEnumType,
+                                attributeType.EnumType);
+                            arg.ArrayValue = new CustomAttributeEncodedArgument[len];
+                            for (int i = 0; i < len; ++i)
+                            {
+                                arg.ArrayValue[i] = ParseCustomAttributeValue(ref parser, attributeType, module);
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
                 default:
                     throw new BadImageFormatException();
             }
@@ -1857,6 +1857,182 @@ namespace System.Reflection
             allowMultiple = allowMultipleLocal != 0;
             inherited = inheritedLocal != 0;
             return result != 0;
+        }
+
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void InvokeCustomAttributeCtor(NativeCtorInvokeContract* pContract, object* pResult, Exception* pException)
+        {
+            try
+            {
+                object?[]? parameters = *pContract->CtorArgs;
+                byte[]? argIsValueType = *pContract->ArgIsValueType;
+                object? target = *pContract->CtorTarget;
+
+                int argCount = pContract->ArgCount;
+                if (argCount < 0 || parameters is null || argIsValueType is null || parameters.Length != argCount || argIsValueType.Length != argCount)
+                {
+                    throw new TargetParameterCountException(SR.Arg_ParmCnt);
+                }
+
+                if (target is null)
+                {
+                    throw new InvalidOperationException("Invalid constructor target.");
+                }
+
+                object ctorTarget = target;
+                object?[] ctorArgs = parameters;
+                byte[] argIsValueTypeFlags = argIsValueType;
+
+                if (pContract->CtorEntryPoint == IntPtr.Zero)
+                {
+                    throw new InvalidOperationException("Invalid constructor entry point.");
+                }
+
+                if (argCount == 0)
+                {
+                    ((delegate*<object, void>)pContract->CtorEntryPoint)(ctorTarget);
+                    *pResult = ctorTarget;
+                    return;
+                }
+
+                if (argCount == 1)
+                {
+                    object? arg0 = ctorArgs[0];
+                    if (argIsValueTypeFlags[0] == 0)
+                    {
+                        InstanceCalliHelper.Call((delegate*<object, object?, void>)pContract->CtorEntryPoint, ctorTarget, arg0);
+                    }
+                    else
+                    {
+                        if (arg0 is null)
+                        {
+                            throw new InvalidOperationException("Value-type custom attribute ctor argument cannot be null.");
+                        }
+
+                        Type argType = arg0.GetType();
+                        if (argType.IsEnum)
+                        {
+                            argType = Enum.GetUnderlyingType(argType);
+                        }
+
+                        switch (Type.GetTypeCode(argType))
+                        {
+                            case TypeCode.Boolean:
+                                InstanceCalliHelper.Call((delegate*<object, bool, void>)pContract->CtorEntryPoint, ctorTarget, (bool)arg0);
+                                break;
+                            case TypeCode.Char:
+                                InstanceCalliHelper.Call((delegate*<object, char, void>)pContract->CtorEntryPoint, ctorTarget, (char)arg0);
+                                break;
+                            case TypeCode.SByte:
+                                InstanceCalliHelper.Call((delegate*<object, sbyte, void>)pContract->CtorEntryPoint, ctorTarget, (sbyte)arg0);
+                                break;
+                            case TypeCode.Byte:
+                                InstanceCalliHelper.Call((delegate*<object, byte, void>)pContract->CtorEntryPoint, ctorTarget, (byte)arg0);
+                                break;
+                            case TypeCode.Int16:
+                                InstanceCalliHelper.Call((delegate*<object, short, void>)pContract->CtorEntryPoint, ctorTarget, (short)arg0);
+                                break;
+                            case TypeCode.UInt16:
+                                InstanceCalliHelper.Call((delegate*<object, ushort, void>)pContract->CtorEntryPoint, ctorTarget, (ushort)arg0);
+                                break;
+                            case TypeCode.Int32:
+                                InstanceCalliHelper.Call((delegate*<object, int, void>)pContract->CtorEntryPoint, ctorTarget, (int)arg0);
+                                break;
+                            case TypeCode.UInt32:
+                                InstanceCalliHelper.Call((delegate*<object, uint, void>)pContract->CtorEntryPoint, ctorTarget, (uint)arg0);
+                                break;
+                            case TypeCode.Int64:
+                                InstanceCalliHelper.Call((delegate*<object, long, void>)pContract->CtorEntryPoint, ctorTarget, (long)arg0);
+                                break;
+                            case TypeCode.UInt64:
+                                InstanceCalliHelper.Call((delegate*<object, ulong, void>)pContract->CtorEntryPoint, ctorTarget, (ulong)arg0);
+                                break;
+                            case TypeCode.Single:
+                                InstanceCalliHelper.Call((delegate*<object, float, void>)pContract->CtorEntryPoint, ctorTarget, (float)arg0);
+                                break;
+                            case TypeCode.Double:
+                                InstanceCalliHelper.Call((delegate*<object, double, void>)pContract->CtorEntryPoint, ctorTarget, (double)arg0);
+                                break;
+                            default:
+                                throw new InvalidOperationException("Unsupported value-type custom attribute ctor argument.");
+                        }
+                    }
+
+                    *pResult = ctorTarget;
+                    return;
+                }
+
+                if (argCount <= 6)
+                {
+                    bool hasValueTypeArg = false;
+                    for (int i = 0; i < argCount; i++)
+                    {
+                        if (argIsValueTypeFlags[i] != 0)
+                        {
+                            hasValueTypeArg = true;
+                        }
+                    }
+
+                    if (hasValueTypeArg)
+                    {
+                        if (pContract->CtorInvokeStubEntryPoint == IntPtr.Zero)
+                        {
+                            throw new InvalidOperationException("Invalid constructor invoke stub entry point.");
+                        }
+
+                        ((delegate*<object, object?[], IntPtr, void>)pContract->CtorInvokeStubEntryPoint)(ctorTarget, ctorArgs, pContract->CtorEntryPoint);
+                        *pResult = ctorTarget;
+                        return;
+                    }
+
+                    switch (argCount)
+                    {
+                        case 2:
+                            InstanceCalliHelper.Call((delegate*<object, object?, object?, void>)pContract->CtorEntryPoint, ctorTarget, ctorArgs[0], ctorArgs[1]);
+                            break;
+                        case 3:
+                            InstanceCalliHelper.Call((delegate*<object, object?, object?, object?, void>)pContract->CtorEntryPoint, ctorTarget, ctorArgs[0], ctorArgs[1], ctorArgs[2]);
+                            break;
+                        case 4:
+                            InstanceCalliHelper.Call((delegate*<object, object?, object?, object?, object?, void>)pContract->CtorEntryPoint, ctorTarget, ctorArgs[0], ctorArgs[1], ctorArgs[2], ctorArgs[3]);
+                            break;
+                        case 5:
+                            InstanceCalliHelper.Call((delegate*<object, object?, object?, object?, object?, object?, void>)pContract->CtorEntryPoint, ctorTarget, ctorArgs[0], ctorArgs[1], ctorArgs[2], ctorArgs[3], ctorArgs[4]);
+                            break;
+                        case 6:
+                            InstanceCalliHelper.Call((delegate*<object, object?, object?, object?, object?, object?, object?, void>)pContract->CtorEntryPoint, ctorTarget, ctorArgs[0], ctorArgs[1], ctorArgs[2], ctorArgs[3], ctorArgs[4], ctorArgs[5]);
+                            break;
+                    }
+
+                    *pResult = ctorTarget;
+                    return;
+                }
+
+                if (pContract->CtorInvokeStubEntryPoint == IntPtr.Zero)
+                {
+                    throw new InvalidOperationException("Invalid constructor invoke stub entry point.");
+                }
+
+                ((delegate*<object, object?[], IntPtr, void>)pContract->CtorInvokeStubEntryPoint)(ctorTarget, ctorArgs, pContract->CtorEntryPoint);
+                *pResult = ctorTarget;
+                return;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private unsafe struct NativeCtorInvokeContract
+        {
+            public object[]* CtorArgs;
+            public byte[]* ArgIsValueType;
+            public int ArgCount;
+            public object* CtorTarget;
+            public IntPtr CtorEntryPoint;
+            public IntPtr CtorInvokeStubEntryPoint;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]
