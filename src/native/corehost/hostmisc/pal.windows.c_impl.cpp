@@ -7,16 +7,12 @@
 
 #include "pal.h"
 #include "trace.h"
+#include "pal_c.h"
 
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
-
-extern "C"
-{
-#include "pal_c.h"
-}
 
 extern "C" bool pal_get_own_executable_path(pal_char_t* recv, size_t recv_len)
 {

@@ -8,12 +8,8 @@
 // initialize_static_createdump and the statically-linked hostfxr functions.
 
 #include "pal_c.h"
-
-extern "C"
-{
 #include "apphost_hostfxr_resolver.h"
 #include "trace_c.h"
-}
 
 #include <assert.h>
 #include <cstdlib>

@@ -8,7 +8,6 @@
 #include <minipal/utils.h>
 #include "pal.h"
 #include "fx_ver.h"
-#include "fx_ver_c.h"
 
 fx_ver_t::fx_ver_t(int major, int minor, int patch, const pal::string_t& pre, const pal::string_t& build)
     : m_major(major)
