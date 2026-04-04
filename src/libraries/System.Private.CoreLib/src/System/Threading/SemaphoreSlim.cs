@@ -873,8 +873,8 @@ namespace System.Threading
 
             lock (m_lockObjAndDisposed)
             {
-                // Volatile.Read: the lock-free WaitAsync fast path can decrement m_currentCount without holding this lock.
-                int snapshot = Volatile.Read(ref m_currentCount);
+                // m_currentCount is declared volatile; this read sees any decrement by the lock-free WaitAsync fast path.
+                int snapshot = m_currentCount;
                 returnCount = snapshot;
 
                 if (m_maxCount - snapshot < releaseCount)
