@@ -399,8 +399,6 @@ namespace System.Threading
                     // defer to synchronous waiters in priority, which means that if it's possible an asynchronous
                     // waiter didn't get released because a synchronous waiter was present, we need to ensure
                     // that synchronous waiter succeeds so that they have a chance to release.
-                    Debug.Assert(!waitSuccessful || m_currentCount > 0,
-                        "If the wait was successful, there should be count available.");
                     // Use CAS rather than a plain decrement: the lock-free fast path in WaitAsync
                     // can decrement m_currentCount concurrently (it holds no lock).
                     int currentCount = m_currentCount;
