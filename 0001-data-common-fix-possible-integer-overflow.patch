@@ -1,0 +1,40 @@
+From 4ca55182036718746d790d3d52d977d9817a0aad Mon Sep 17 00:00:00 2001
+From: e.korneev <E.kornev@rtkitplus.ru>
+Date: Mon, 2 Mar 2026 19:11:33 +0000
+Subject: [PATCH] data: common: fix possible integer overflow
+
+---
+ .../src/System/Data/Common/DataRecordInternal.cs       | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/src/libraries/System.Data.Common/src/System/Data/Common/DataRecordInternal.cs b/src/libraries/System.Data.Common/src/System/Data/Common/DataRecordInternal.cs
+index d74645280fc..8f4fbb6cd31 100644
+--- a/src/libraries/System.Data.Common/src/System/Data/Common/DataRecordInternal.cs
++++ b/src/libraries/System.Data.Common/src/System/Data/Common/DataRecordInternal.cs
+@@ -119,6 +119,10 @@ public override long GetBytes(int i, long dataIndex, byte[]? buffer, int bufferI
+                 throw ADP.InvalidSourceBufferIndex(cbytes, dataIndex, nameof(dataIndex));
+             }
+ 
++            if (dataIndex < 0 || dataIndex > int.MaxValue)
++            {
++                throw new ArgumentOutOfRangeException(nameof(dataIndex));
++            }
+             ndataIndex = (int)dataIndex;
+ 
+             // if no buffer is passed in, return the number of characters we have
+@@ -189,7 +193,11 @@ public override long GetChars(int i, long dataIndex, char[]? buffer, int bufferI
+                 throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, nameof(dataIndex));
+             }
+ 
+-            int ndataIndex = (int)dataIndex;
++            if (dataIndex < 0)
++	     {
++                throw new ArgumentOutOfRangeException(nameof(dataIndex), dataIndex, SR.Format(SR.Argument_MustBeGEZeroString));
++            }
++            int ndataIndex = (int)dataIndex;
+ 
+ 
+             // if no buffer is passed in, return the number of characters we have
+-- 
+2.43.0
+
