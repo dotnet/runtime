@@ -873,24 +873,22 @@ namespace System.Threading
 
             lock (m_lockObjAndDisposed)
             {
-                // Read the m_currentCount into a local variable to avoid unnecessary volatile accesses inside the lock.
-                int currentCount = m_currentCount;
-                returnCount = currentCount;
+                // Volatile.Read: the lock-free WaitAsync fast path can decrement m_currentCount without holding this lock.
+                int snapshot = Volatile.Read(ref m_currentCount);
+                returnCount = snapshot;
 
-                // If the release count would result exceeding the maximum count, throw SemaphoreFullException.
-                if (m_maxCount - currentCount < releaseCount)
+                if (m_maxCount - snapshot < releaseCount)
                 {
                     throw new SemaphoreFullException();
                 }
 
-                // Increment the count by the actual release count
-                currentCount += releaseCount;
+                // netCount is decremented for each async waiter directly satisfied; delta applied below.
+                int netCount = snapshot + releaseCount;
 
-                // Signal to any synchronous waiters, taking into account how many waiters have previously been pulsed to wake
-                // but have not yet woken
+                // Signal synchronous waiters, accounting for those already pulsed but not yet woken.
                 int waitCount = m_waitCount;
                 Debug.Assert(m_countOfWaitersPulsedToWake <= waitCount);
-                int waitersToNotify = Math.Min(currentCount, waitCount) - m_countOfWaitersPulsedToWake;
+                int waitersToNotify = Math.Min(netCount, waitCount) - m_countOfWaitersPulsedToWake;
                 if (waitersToNotify > 0)
                 {
                     // Ideally, limiting to a maximum of releaseCount would not be necessary and could be an assert instead, but
@@ -918,13 +916,12 @@ namespace System.Threading
                 if (m_asyncHead is not null)
                 {
                     Debug.Assert(m_asyncTail is not null, "tail should not be null if head isn't null");
-                    int maxAsyncToRelease = currentCount - waitCount;
+                    int maxAsyncToRelease = netCount - waitCount;
                     while (maxAsyncToRelease > 0 && m_asyncHead is not null)
                     {
-                        --currentCount;
+                        --netCount;
                         --maxAsyncToRelease;
 
-                        // Get the next async waiter to release and queue it to be completed
                         TaskNode waiterTask = m_asyncHead;
                         RemoveAsyncWaiter(waiterTask); // ensures waiterTask.Next/Prev are null
                         waiterTask.TrySetResult(result: true);
@@ -932,16 +929,14 @@ namespace System.Threading
                 }
                 // Use Interlocked.Add (relative delta) rather than an absolute write so that
                 // the lock-free CAS fast path in WaitAsync cannot be overwritten.
-                Interlocked.Add(ref m_currentCount, currentCount - returnCount);
+                Interlocked.Add(ref m_currentCount, netCount - snapshot);
 
-                // Exposing wait handle if it is not null
-                if (m_waitHandle is not null && returnCount == 0 && currentCount > 0)
+                if (m_waitHandle is not null && snapshot == 0 && netCount > 0)
                 {
                     m_waitHandle.Set();
                 }
             }
 
-            // And return the count
             return returnCount;
         }
 
