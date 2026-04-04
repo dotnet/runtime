@@ -112,25 +112,62 @@ ILStubResolver::GetLocalSig()
         m_pCompileTimeState->m_ILHeader.cbLocalVarSig);
 }
 
-OBJECTHANDLE ILStubResolver::ConstructStringLiteral(mdToken token)
+STRINGREF* ILStubResolver::ConstructStringLiteral(mdToken token)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(FALSE);
-    return (OBJECTHANDLE)NULL;
+#ifdef DACCESS_COMPILE
+    DacNotImpl();
+    return NULL;
+#else // DACCESS_COMPILE
+    GCX_COOP();
+
+    STRINGREF* string = NULL;
+    STRINGREF strRef = GetStringLiteral(token);
+
+    GCPROTECT_BEGIN(strRef);
+
+    if (strRef != NULL)
+    {
+        string = GetDynamicMethod()->GetLoaderAllocator()->GetOrInternString(&strRef);
+    }
+
+    GCPROTECT_END();
+
+    return string;
+#endif // DACCESS_COMPILE
 }
 
 BOOL ILStubResolver::IsValidStringRef(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(FALSE);
-    return FALSE;
+
+    if (TypeFromToken(metaTok) != mdtString)
+        return FALSE;
+
+    if (RidFromToken(metaTok) == 0)
+        return FALSE;
+
+    mdToken maxUserStringToken = m_pCompileTimeState->m_tokenLookupMap.GetMaxUserStringToken();
+
+    return metaTok >= TokenFromRid(1, mdtString) && metaTok <= maxUserStringToken;
 }
 
 STRINGREF ILStubResolver::GetStringLiteral(mdToken metaTok)
 {
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(FALSE);
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_COOPERATIVE;
+        PRECONDITION(IsValidStringRef(metaTok));
+    }
+    CONTRACTL_END;
+#ifndef DACCESS_COMPILE
+    return StringObject::NewString(m_pCompileTimeState->m_tokenLookupMap.LookupUserString(metaTok));
+#else
+    DacNotImpl();
     return NULL;
+#endif
 }
 
 void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)

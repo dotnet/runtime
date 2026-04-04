@@ -638,6 +638,19 @@ namespace System.StubHelpers
                 Marshal.Release(pUnk);
             }
         }
+
+        internal static object GetObjectForComCallableWrapperIUnknown(IntPtr unk)
+        {
+            object? retObject = null;
+            GetObjectForComCallableWrapperIUnknown(unk, ObjectHandleOnStack.Create(ref retObject));
+            return retObject!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown")]
+        private static partial void GetObjectForComCallableWrapperIUnknown(IntPtr unk, ObjectHandleOnStack retObject);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ValidateComVisibilityForIUnknown")]
+        internal static partial void ValidateComVisibilityForIUnknown(IntPtr unk);
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP
 

@@ -1912,16 +1912,9 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
     m_compiler->funSetCurrentFunc(m_compiler->funGetFuncIdx(block));
 
     // Check the current funclet index for correctness
-    if (m_compiler->funCurrentFunc()->funKind == FUNC_FILTER)
-    {
-        assert(m_compiler->ehGetDsc(m_compiler->funCurrentFunc()->funEHIndex)->ebdFilter == block);
-    }
-    else
-    {
-        // We shouldn't see FUNC_ROOT
-        assert(m_compiler->funCurrentFunc()->funKind == FUNC_HANDLER);
-        assert(m_compiler->ehGetDsc(m_compiler->funCurrentFunc()->funEHIndex)->ebdHndBeg == block);
-    }
+    FuncInfoDsc* const currentFunc = m_compiler->funCurrentFunc();
+    assert(currentFunc->funKind != FUNC_ROOT);
+    assert(currentFunc->GetStartBlock(m_compiler) == block);
 }
 
 //----------------------------------------------------------------------

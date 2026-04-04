@@ -6179,7 +6179,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread,
 
                 // Going through thread Frames and looking for first (deepest one) one that
                 // that has context available for stackwalking (SP and PC)
-                // For example: RedirectedThreadFrame, InlinedCallFrame, DynamicHelperFrame, CLRToCOMMethodFrame
+                // For example: RedirectedThreadFrame, InlinedCallFrame, DynamicHelperFrame
                 Frame *frame = pThread->GetFrame();
 
                 while (frame != NULL && frame != FRAME_TOP)

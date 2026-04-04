@@ -520,6 +520,8 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler_ConvertToNative)
     DllImportEntry(InterfaceMarshaler_ConvertToManaged)
+    DllImportEntry(InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown)
+    DllImportEntry(InterfaceMarshaler_ValidateComVisibilityForIUnknown)
 #endif
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(ComWeakRefToObject)

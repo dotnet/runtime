@@ -32,7 +32,7 @@ public:
     BYTE* GetCodeInfo(unsigned* pCodeSize, unsigned* pStackSize, CorInfoOptions* pOptions, unsigned* pEHSize);
     SigPointer GetLocalSig();
 
-    OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
+    STRINGREF* ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
     STRINGREF GetStringLiteral(mdToken metaTok);
     void ResolveToken(mdToken token, ResolvedToken* resolvedToken);
