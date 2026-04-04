@@ -882,8 +882,12 @@ namespace System.Text.Json.Tests
         public static void WriteStringValueSegment_Flush()
         {
             var noEscape = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
-            TestFlushImpl(['\uD800'], ['\uDC00'], new(), @"""\uD800\uDC00""", StringValueEncodingType.Utf16);
-            TestFlushImpl<byte>([0b110_11111], [0b10_111111], new(), @"""\u07FF""", StringValueEncodingType.Utf8);
+            TestFlushImpl(['\uD800'], ['\uDC00'], new(), """
+                "\uD800\uDC00"
+                """, StringValueEncodingType.Utf16);
+            TestFlushImpl<byte>([0b110_11111], [0b10_111111], new(), """
+                "\u07FF"
+                """, StringValueEncodingType.Utf8);
             TestFlushImpl<byte>([0b110_11111], [0b10_111111], new() { Encoder = noEscape }, "\"\u07FF\"", StringValueEncodingType.Utf8);
             TestFlushImpl<byte>([], [0, 0, 0], new(), "\"AAAA\"", StringValueEncodingType.Base64);
             TestFlushImpl<byte>([0], [0, 0], new(), "\"AAAA\"", StringValueEncodingType.Base64);
@@ -941,7 +945,9 @@ namespace System.Text.Json.Tests
 
             jsonUtf8.WriteStringValueSegment("\uDC00".AsSpan(), true);
 
-            string expected = @"""\uFFFD""";
+            string expected = """
+                "\uFFFD"
+                """;
             Assert.Equal(expected.Length, jsonUtf8.BytesPending);
             Assert.Equal(0, jsonUtf8.BytesCommitted);
 
@@ -971,7 +977,9 @@ namespace System.Text.Json.Tests
 
             jsonUtf8.WriteStringValueSegment([0b10_111111], true);
 
-            string expected = @"""\uFFFD""";
+            string expected = """
+                "\uFFFD"
+                """;
             Assert.Equal(expected.Length, jsonUtf8.BytesPending);
             Assert.Equal(0, jsonUtf8.BytesCommitted);
 
@@ -1001,7 +1009,9 @@ namespace System.Text.Json.Tests
 
             jsonUtf8.WriteBase64StringSegment([0, 0, 0], true);
 
-            string expected = @"""AAAA""";
+            string expected = """
+                "AAAA"
+                """;
             Assert.Equal(expected.Length, jsonUtf8.BytesPending);
             Assert.Equal(0, jsonUtf8.BytesCommitted);
 

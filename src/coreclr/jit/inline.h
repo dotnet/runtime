@@ -636,7 +636,7 @@ struct LateDevirtualizationInfo
 {
     CORINFO_METHOD_HANDLE  methodHnd;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
-    InlineContext*         inlinersContext;
+    ILLocation             ilLocation;
 };
 
 // InlArgInfo describes inline candidate argument properties.
@@ -955,7 +955,7 @@ public:
     // Compiler associated with this strategy
     Compiler* GetCompiler() const
     {
-        return m_Compiler;
+        return m_compiler;
     }
 
     // Root context
@@ -1122,7 +1122,7 @@ private:
     static CritSecObject s_XmlWriterLock;
 #endif // defined(DEBUG)
 
-    Compiler*         m_Compiler;
+    Compiler*         m_compiler;
     InlineContext*    m_RootContext;
     InlinePolicy*     m_LastSuccessfulPolicy;
     InlineContext*    m_LastContext;

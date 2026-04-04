@@ -91,7 +91,7 @@ class UnwindBase
 {
 protected:
     UnwindBase(Compiler* comp)
-        : uwiComp(comp)
+        : m_compiler(comp)
     {
     }
 
@@ -102,7 +102,7 @@ protected:
     {
     }
 
-    Compiler* uwiComp;
+    Compiler* m_compiler;
 };
 
 // UnwindCodesBase: A base class shared by the classes used to represent the prolog

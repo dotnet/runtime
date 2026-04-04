@@ -31,7 +31,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 LinkSymbols = GetOptionAttributeValue(nameof(SetupLinkerLinkSymbolsAttribute), string.Empty),
                 TrimMode = GetOptionAttributeValue<string>(nameof(SetupLinkerTrimModeAttribute), null),
                 DefaultAssembliesAction = GetOptionAttributeValue<string>(nameof(SetupLinkerDefaultActionAttribute), null),
-                SkipUnresolved = GetOptionAttributeValue(nameof(SkipUnresolvedAttribute), false),
+                SkipUnresolved = GetOptionAttributeValue(nameof(SkipUnresolvedAttribute), true),
                 StripDescriptors = GetOptionAttributeValue(nameof(StripDescriptorsAttribute), true),
                 StripSubstitutions = GetOptionAttributeValue(nameof(StripSubstitutionsAttribute), true),
                 StripLinkAttributes = GetOptionAttributeValue(nameof(StripLinkAttributesAttribute), true),
@@ -82,7 +82,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 values[0] = string.Concat(values[0].AsSpan(0, pos + 1), Path.Combine(inputPath, custom_assembly_path));
                         }
                         break;
-                    case "-a":
+                    case "-reference":
                         if (!Path.IsPathRooted(values[0]))
                             values[0] = Path.Combine(inputPath, values[0]);
 

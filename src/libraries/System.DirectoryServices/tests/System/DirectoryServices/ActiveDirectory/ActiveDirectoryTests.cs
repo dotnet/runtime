@@ -13,7 +13,7 @@ namespace System.DirectoryServices.Tests
 {
     public partial class DirectoryServicesTests
     {
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestSchema()
         {
             using (ActiveDirectorySchema schema = ActiveDirectorySchema.GetSchema(ActiveDirectoryContext))
@@ -34,7 +34,7 @@ namespace System.DirectoryServices.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestSchemaClass()
         {
             using (ActiveDirectorySchemaClass orgClass = ActiveDirectorySchemaClass.FindByName(ActiveDirectoryContext, "organization"))
@@ -67,7 +67,7 @@ namespace System.DirectoryServices.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestSchemaProperty()
         {
             using (ActiveDirectorySchemaProperty adsp = ActiveDirectorySchemaProperty.FindByName(ActiveDirectoryContext, "objectClass"))
@@ -92,7 +92,7 @@ namespace System.DirectoryServices.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestSchemaFilter()
         {
             // using (ActiveDirectorySchemaClass schema = ActiveDirectorySchemaClass.FindByName(ActiveDirectoryContext, "user"))
@@ -148,7 +148,7 @@ namespace System.DirectoryServices.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestForestRootDomain()
         {
             using (Forest forest = Forest.GetForest(ActiveDirectoryContext))
@@ -176,7 +176,7 @@ namespace System.DirectoryServices.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestForestSites()
         {
             using (Forest forest = Forest.GetForest(ActiveDirectoryContext))
@@ -190,7 +190,7 @@ namespace System.DirectoryServices.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestForestRoleOwnersAndModes()
         {
             using (Forest forest = Forest.GetForest(ActiveDirectoryContext))
@@ -213,7 +213,7 @@ namespace System.DirectoryServices.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestForestSchema()
         {
             using (Forest forest = Forest.GetForest(ActiveDirectoryContext))
@@ -226,7 +226,7 @@ namespace System.DirectoryServices.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestForestGlobalCatalog()
         {
             using (Forest forest = Forest.GetForest(ActiveDirectoryContext))
@@ -265,7 +265,7 @@ namespace System.DirectoryServices.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestDomain()
         {
             using (Domain domain = Domain.GetDomain(ActiveDirectoryContext))
@@ -301,7 +301,7 @@ namespace System.DirectoryServices.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestDomainController()
         {
             using (Domain domain = Domain.GetDomain(ActiveDirectoryContext))
@@ -353,7 +353,7 @@ namespace System.DirectoryServices.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        [ConditionalFact(typeof(DirectoryServicesTests), nameof(IsActiveDirectoryServer))]
         public void TestSites()
         {
             using (Forest forest = Forest.GetForest(ActiveDirectoryContext))

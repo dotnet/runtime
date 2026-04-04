@@ -261,8 +261,7 @@ blah blah
                                 culture: null,
                                 activationAttributes: null);
 
-            var syncSendAdapterType = typeof(MailMessage).Assembly.GetTypes()
-                .FirstOrDefault(t => t.Name == "SyncReadWriteAdapter");
+            var syncSendAdapterType = Type.GetType("System.Net.SyncReadWriteAdapter, System.Net.Mail");
 
             // Send the message.
             typeof(MailMessage)

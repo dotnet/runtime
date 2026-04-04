@@ -434,19 +434,18 @@ CorUnix::InternalCreateThread(
     HANDLE *phThread
     )
 {
+#ifndef FEATURE_MULTITHREADING
+    ERROR("Threads are not supported in single-threaded mode.\n");
+    return ERROR_NOT_SUPPORTED;
+#else // !FEATURE_MULTITHREADING
     PAL_ERROR palError;
     CPalThread *pNewThread = NULL;
     CObjectAttributes oa;
     bool fAttributesInitialized = FALSE;
-    bool fThreadDataAddedToProcessList = FALSE;
     HANDLE hNewThread = NULL;
 
     pthread_t pthread;
     pthread_attr_t pthreadAttr;
-#if PTHREAD_CREATE_MODIFIES_ERRNO
-    int storedErrno;
-#endif  // PTHREAD_CREATE_MODIFIES_ERRNO
-    BOOL fHoldingProcessLock = FALSE;
     int iError = 0;
     size_t alignedStackSize;
 
@@ -587,36 +586,10 @@ CorUnix::InternalCreateThread(
     //
 
     //
-    // We use the process lock to ensure that we're not interrupted
-    // during the creation process. After adding the CPalThread reference
-    // to the process list, we want to make sure the actual thread has been
-    // started. Otherwise, there's a window where the thread can be found
-    // in the process list but doesn't yet exist in the system.
-    //
-
-    PROCProcessLock();
-    fHoldingProcessLock = TRUE;
-
-    PROCAddThread(pThread, pNewThread);
-    fThreadDataAddedToProcessList = TRUE;
-
-    //
     // Spawn the new pthread
     //
 
-#if PTHREAD_CREATE_MODIFIES_ERRNO
-    storedErrno = errno;
-#endif  // PTHREAD_CREATE_MODIFIES_ERRNO
-
     iError = pthread_create(&pthread, &pthreadAttr, CPalThread::ThreadEntry, pNewThread);
-
-#if PTHREAD_CREATE_MODIFIES_ERRNO
-    if (iError == 0)
-    {
-        // Restore errno if pthread_create succeeded.
-        errno = storedErrno;
-    }
-#endif  // PTHREAD_CREATE_MODIFIES_ERRNO
 
     if (0 != iError)
     {
@@ -649,14 +622,6 @@ CorUnix::InternalCreateThread(
         goto EXIT;
     }
 
-    //
-    // If we're here, then we've locked the process list and both pthread_create
-    // and WaitForStartStatus succeeded. Thus, we can now unlock the process list.
-    // Since palError == NO_ERROR, we won't call this again in the exit block.
-    //
-    PROCProcessUnlock();
-    fHoldingProcessLock = FALSE;
-
 EXIT:
 
     if (fAttributesInitialized)
@@ -667,32 +632,8 @@ EXIT:
         }
     }
 
-    if (NO_ERROR != palError)
-    {
-        //
-        // We either were not able to create the new thread, or a failure
-        // occurred in the new thread's entry routine. Free up the associated
-        // resources here
-        //
-
-        if (fThreadDataAddedToProcessList)
-        {
-            PROCRemoveThread(pThread, pNewThread);
-        }
-        //
-        // Once we remove the thread from the process list, we can call
-        // PROCProcessUnlock.
-        //
-        if (fHoldingProcessLock)
-        {
-            PROCProcessUnlock();
-        }
-        fHoldingProcessLock = FALSE;
-    }
-
-    _ASSERT_MSG(!fHoldingProcessLock, "Exiting InternalCreateThread while still holding the process critical section.\n");
-
     return palError;
+#endif // !FEATURE_MULTITHREADING
 }
 
 
@@ -788,12 +729,6 @@ CorUnix::InternalEndCurrentThread(
     //
 
     pThread->GetThreadObject()->ReleaseReference(pThread);
-
-    /* Remove thread for the thread list of the process
-        (don't do if this is the last thread -> gets handled by
-        TerminateProcess->PROCCleanupProcess->PROCTerminateOtherThreads) */
-
-    PROCRemoveThread(pThread, pThread);
 
     // Ensure that EH is disabled on the current thread
     SEHDisable(pThread);
@@ -1422,6 +1357,7 @@ SetThreadDescription(
     return HRESULT_FROM_WIN32(palError);
 }
 
+#ifdef FEATURE_MULTITHREADING
 void *
 CPalThread::ThreadEntry(
     void *pvParam
@@ -1474,10 +1410,21 @@ CPalThread::ThreadEntry(
     st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
     if (st != 0)
     {
-        ASSERT("sched_setaffinity failed!\n");
-        // The sched_setaffinity should never fail when passed the mask extracted using sched_getaffinity
-        palError = ERROR_INTERNAL_ERROR;
-        goto fail;
+        if (errno == EPERM || errno == EACCES)
+        {
+            // Some sandboxed or restricted environments (snap strict confinement,
+            // vendor-modified Android kernels with strict SELinux policy) block
+            // sched_setaffinity even when passed a mask extracted via sched_getaffinity.
+            // Treat this as non-fatal — the thread will continue running on any
+            // available CPU rather than the originally affinitized one. 
+            WARN("sched_setaffinity failed with EPERM/EACCES, ignoring\n");
+        }
+        else
+        {
+            ASSERT("sched_setaffinity failed!\n");
+            palError = ERROR_INTERNAL_ERROR;
+            goto fail;
+        }
     }
 #endif // HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
 
@@ -1567,6 +1514,7 @@ fail:
        above should release all resources */
     return NULL;
 }
+#endif // FEATURE_MULTITHREADING
 
 /*++
 Function:

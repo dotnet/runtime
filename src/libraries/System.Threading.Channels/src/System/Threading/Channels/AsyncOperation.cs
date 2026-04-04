@@ -203,7 +203,11 @@ namespace System.Threading.Channels
             // be a nop, as its TrySetCanceled will return false and the callback will exit without doing further work.
             Unregister(_cancellationRegistration);
 
-            if (_continuation is not null || Interlocked.CompareExchange(ref _continuation, s_completedSentinel, null) is not null)
+            // NB: Assigning _continuation happens after assigning continuation dependencies (_capturedContext, _continuationState)
+            //     and effectively "commits" the entire continuation state as ready for invocation.
+            //     We must read _continuation before accessing its dependencies.
+            if (Volatile.Read(ref _continuation) is not null ||
+                Interlocked.CompareExchange(ref _continuation, s_completedSentinel, null) is not null)
             {
                 Debug.Assert(_continuation != s_completedSentinel, $"The continuation was the completion sentinel.");
                 Debug.Assert(_continuation != s_availableSentinel, $"The continuation was the available sentinel.");
@@ -260,17 +264,22 @@ namespace System.Threading.Channels
 
         private void SetCompletionAndInvokeContinuation()
         {
+            Debug.Assert(_continuation is not null);
+
             object? ctx = _capturedContext;
             ExecutionContext? ec =
                 ctx is null ? null :
                 ctx as ExecutionContext ??
                 (ctx as CapturedSchedulerAndExecutionContext)?._executionContext;
 
+            _capturedContext = null;
             if (ec is null)
             {
                 Action<object?> c = _continuation!;
                 _continuation = s_completedSentinel;
-                c(_continuationState);
+                object? state = _continuationState;
+                _continuationState = null;
+                c(state);
             }
             else
             {
@@ -279,7 +288,9 @@ namespace System.Threading.Channels
                     var thisRef = (AsyncOperation)s!;
                     Action<object?> c = thisRef._continuation!;
                     thisRef._continuation = s_completedSentinel;
-                    c(thisRef._continuationState);
+                    object? state = thisRef._continuationState;
+                    thisRef._continuationState = null;
+                    c(state);
                 }, this);
             }
         }

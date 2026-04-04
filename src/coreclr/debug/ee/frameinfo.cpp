@@ -107,8 +107,6 @@ struct DebuggerFrameData
         this->info.fIsFunclet = false;
         this->info.fIsFilter  = false;
 
-        this->info.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = false;
-
 #if defined(_DEBUG)
         this->previousFP = LEAF_MOST_FRAME;
 #endif // _DEBUG
@@ -801,28 +799,8 @@ void FrameInfo::InitForM2UInternalFrame(CrawlFrame * pCF)
 void FrameInfo::InitForU2MInternalFrame(CrawlFrame * pCF)
 {
     _ASSERTE(pCF != NULL);
-    MethodDesc * pMDHint = NULL;
 
-#ifdef FEATURE_COMINTEROP
-    Frame * pFrame = pCF->GetFrame();
-    _ASSERTE(pFrame != NULL);
-
-
-    // For regular U2M PInvoke cases, we don't care about MD b/c it's just going to
-    // be the next frame.
-    // If we're a COM2CLR call, perhaps we can get the MD for the interface.
-    if (pFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame)
-    {
-        ComMethodFrame* pCOMFrame = dac_cast<PTR_ComMethodFrame> (pFrame);
-        ComCallMethodDesc* pCMD = reinterpret_cast<ComCallMethodDesc *> (pCOMFrame->ComMethodFrame::GetDatum());
-        pMDHint = pCMD->GetInterfaceMethodDesc();
-
-        // Some COM-interop cases don't have an intermediate interface method desc, so
-        // pMDHint may be null.
-    }
-#endif
-
-    InitFromStubHelper(pCF, pMDHint, STUBFRAME_U2M);
+    InitFromStubHelper(pCF, NULL, STUBFRAME_U2M);
     InitForScratchFrameInfo();
 }
 
@@ -1185,22 +1163,6 @@ StackWalkAction TrackUMChain(CrawlFrame *pCF, DebuggerFrameData *d)
 
         f.InitForUMChain(fpRoot, d->GetUMChainStartRD());
 
-#ifdef FEATURE_COMINTEROP
-        if ((frame != NULL) &&
-            (frame->GetFrameIdentifier() == FrameIdentifier::CLRToCOMMethodFrame))
-        {
-            // This condition is part of the fix for 650903. (See
-            // code:ControllerStackInfo::WalkStack and code:DebuggerStepper::TrapStepOut
-            // for the other parts.) Here, we know that the frame we're looking it may be
-            // a CLRToCOMMethodFrameGeneric (this info is not otherwise plubmed down into
-            // the walker; even though the walker does get to see "f.frame", that may not
-            // be "frame"). Given this, if the walker chooses to ignore these frames
-            // (while doing a Step Out during managed-only debugging), then it can ignore
-            // this frame.
-            f.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = true;
-        }
-#endif // FEATURE_COMINTEROP
-
         if (d->InvokeCallback(&f) == SWA_ABORT)
         {
             // don't need to cancel if they abort.
@@ -1558,6 +1520,13 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         {
             LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip frameless IL stub.\n"));
         }
+    }
+    else
+    // We ignore PInvoke methods with inlined stubs in our stackwalking.
+    // These are similar to IL stubs but use PInvokeMethodDesc instead of DynamicMethodDesc.
+    if ((md != NULL) && md->IsPInvoke() && pCF->IsFrameless())
+    {
+        LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip frameless PInvoke stub.\n"));
     }
     else
     // For frames w/o method data, send them as an internal stub frame.

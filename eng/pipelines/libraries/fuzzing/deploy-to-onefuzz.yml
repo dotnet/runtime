@@ -22,10 +22,10 @@ extends:
       jobs:
       - job: windows
         displayName: Build & Deploy to OneFuzz
-        timeoutInMinutes: 240
+        timeoutInMinutes: 600
         pool:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals windows.vs2026preview.scout.amd64
+          demands: ImageOverride -equals windows.vs2026.amd64
 
         steps:
         - checkout: self
@@ -156,6 +156,14 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/SslStreamClientHelloFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send SslStreamClientHelloFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/TextEncodingFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send TextEncodingFuzzer to OneFuzz
@@ -175,6 +183,14 @@ extends:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/UTF8Fuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send UTF8Fuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/Utf8JsonReaderFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send Utf8JsonReaderFuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:

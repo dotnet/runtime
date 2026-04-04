@@ -23,19 +23,19 @@
 #if 0
 #define EMITVERBOSE 1
 #else
-#define EMITVERBOSE (emitComp->verbose)
+#define EMITVERBOSE (m_compiler->verbose)
 #endif
 
 #if 0
 #define EMIT_GC_VERBOSE 0
 #else
-#define EMIT_GC_VERBOSE (emitComp->verbose)
+#define EMIT_GC_VERBOSE (m_compiler->verbose)
 #endif
 
 #if 1
 #define EMIT_INSTLIST_VERBOSE 0
 #else
-#define EMIT_INSTLIST_VERBOSE (emitComp->verbose)
+#define EMIT_INSTLIST_VERBOSE (m_compiler->verbose)
 #endif
 
 #ifdef TARGET_XARCH
@@ -484,6 +484,9 @@ struct EmitCallParams
     ssize_t   disp        = 0;
     bool      isJump      = false;
     bool      noSafePoint = false;
+#ifdef TARGET_WASM
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
+#endif
 };
 
 class emitter
@@ -524,7 +527,7 @@ protected:
     /*                        Miscellaneous stuff                           */
     /************************************************************************/
 
-    Compiler* emitComp;
+    Compiler* m_compiler;
     GCInfo*   gcInfo;
     CodeGen*  codeGen;
 
@@ -628,18 +631,21 @@ protected:
 
     struct instrDescDebugInfo
     {
-        unsigned          idNum;
-        size_t            idSize;        // size of the instruction descriptor
-        unsigned          idVarRefOffs;  // IL offset for LclVar reference
-        unsigned          idVarRefOffs2; // IL offset for 2nd LclVar reference (in case this is a pair)
-        size_t            idMemCookie;   // compile time handle (check idFlags)
-        GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
-        bool              idFinallyCall; // Branch instruction is a call to finally
-        bool              idCatchRet;    // Instruction is for a catch 'return'
-        CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
-        BasicBlock*       idTargetBlock; // Target block for branches
+        unsigned          idNum         = 0;
+        size_t            idSize        = 0;         // size of the instruction descriptor
+        unsigned          idVarRefOffs  = 0;         // IL offset for LclVar reference
+        unsigned          idVarRefOffs2 = 0;         // IL offset for 2nd LclVar reference (in case this is a pair)
+        size_t            idMemCookie   = 0;         // compile time handle (check idFlags)
+        GenTreeFlags      idFlags       = GTF_EMPTY; // for determining type of handle in idMemCookie
+        bool              idFinallyCall = false;     // Branch instruction is a call to finally
+        bool              idCatchRet    = false;     // Instruction is for a catch 'return'
+        CORINFO_SIG_INFO* idCallSig     = nullptr;   // Used to report native call site signatures to the EE
+        BasicBlock*       idTargetBlock = nullptr;   // Target block for branches
+
 #ifdef TARGET_WASM
-        int lclOffset; // Base index of the WASM locals being declared
+        int      lclBaseIndex = 0;           // Base index of the WASM locals being declared
+        unsigned idLclNum     = BAD_VAR_NUM; // LclVar number for this instruction
+        unsigned idLclOffset  = 0;           // LclVar field offset for this instruction
 #endif
     };
 
@@ -1303,6 +1309,11 @@ protected:
         bool idIsLclVarDecl() const
         {
             return _idInsFmt == IF_LOCAL_DECL;
+        }
+
+        bool idIsValTypeImm() const
+        {
+            return _idInsFmt == IF_TRY_TABLE;
         }
 #endif
 
@@ -2362,6 +2373,24 @@ protected:
             lclCnt = cnt;
         }
     };
+
+    struct instrDescValTypeImm : instrDesc
+    {
+        instrDescValTypeImm() = delete;
+
+        unsigned int  imm;
+        WasmValueType valType;
+
+        void idValType(WasmValueType type)
+        {
+            valType = type;
+        }
+
+        void idImm(unsigned int i)
+        {
+            imm = i;
+        }
+    };
 #endif // TARGET_WASM
 
 #ifdef TARGET_RISCV64
@@ -2709,10 +2738,6 @@ public:
 
     bool emitHasFramePtr;
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    bool emitInInstrumentation;
-#endif // PSEUDORANDOM_NOP_INSERTION
-
 #ifdef DEBUG
     bool emitChkAlign; // perform some alignment checks
 #endif
@@ -2972,23 +2997,6 @@ private:
 
     unsigned emitNxtIGnum;
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-
-    // random nop insertion to break up nop sleds
-    unsigned emitNextNop;
-    bool     emitRandomNops;
-
-    void emitEnableRandomNops()
-    {
-        emitRandomNops = true;
-    }
-    void emitDisableRandomNops()
-    {
-        emitRandomNops = false;
-    }
-
-#endif // PSEUDORANDOM_NOP_INSERTION
-
     insGroup* emitAllocAndLinkIG();
     insGroup* emitAllocIG();
     void      emitInitIG(insGroup* ig);
@@ -3180,8 +3188,6 @@ private:
 #if defined(FEATURE_SIMD)
     void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider);
 #endif // FEATURE_SIMD
-
-    int emitNextRandomNop();
 
     //
     // Functions for allocating instrDescs.
@@ -3554,10 +3560,32 @@ public:
         sectionType    dsType;
         var_types      dsDataType;
 
-        // variable-sized array used to store the constant data, BasicBlock*
-        // array in the block cases, or emitLocation for the asyncResumeInfo
-        // case.
-        BYTE dsCont[0];
+    private:
+        union
+        {
+            BYTE*         dsData;      // for data blobs
+            BasicBlock**  dsBlocks;    // for block-based sections
+            emitLocation* dsLocations; // for async resume info
+        };
+
+    public:
+        BYTE*& Data()
+        {
+            assert(dsType == sectionType::data);
+            return dsData;
+        }
+
+        BasicBlock**& Blocks()
+        {
+            assert((dsType == sectionType::blockAbsoluteAddr) || (dsType == sectionType::blockRelative32));
+            return dsBlocks;
+        }
+
+        emitLocation*& Locations()
+        {
+            assert(dsType == sectionType::asyncResumeInfo);
+            return dsLocations;
+        }
     };
 
     /* These describe the entire initialized/uninitialized data sections */
@@ -3784,12 +3812,12 @@ public:
     // infrastructure of the entire JIT...
     void Init()
     {
-        VarSetOps::AssignNoCopy(emitComp, emitPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, emitInitGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, emitThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        VarSetOps::AssignNoCopy(m_compiler, emitPrevGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, emitInitGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, emitThisGCrefVars, VarSetOps::MakeEmpty(m_compiler));
 #if defined(DEBUG)
-        VarSetOps::AssignNoCopy(emitComp, debugPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, debugThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        VarSetOps::AssignNoCopy(m_compiler, debugPrevGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, debugThisGCrefVars, VarSetOps::MakeEmpty(m_compiler));
         debugPrevRegPtrDsc = nullptr;
         debugPrevGCrefRegs = RBM_NONE;
         debugPrevByrefRegs = RBM_NONE;

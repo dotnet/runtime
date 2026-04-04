@@ -83,6 +83,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IGC GC => GetContract<IGC>();
     /// <summary>
+    /// Gets an instance of the GCInfo contract for the target.
+    /// </summary>
+    public virtual IGCInfo GCInfo => GetContract<IGCInfo>();
+    /// <summary>
     /// Gets an instance of the Notifications contract for the target.
     /// </summary>
     public virtual INotifications Notifications => GetContract<INotifications>();
@@ -90,6 +94,32 @@ public abstract class ContractRegistry
     /// Gets an instance of the SignatureDecoder contract for the target.
     /// </summary>
     public virtual ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
+    /// <summary>
+    /// Gets an instance of the SyncBlock contract for the target.
+    /// </summary>
+    public virtual ISyncBlock SyncBlock => GetContract<ISyncBlock>();
+    /// <summary>
+    /// Gets an instance of the BuiltInCOM contract for the target.
+    /// </summary>
+    public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();
+    /// <summary>
+    /// Gets an instance of the ConditionalWeakTable contract for the target.
+    /// </summary>
+    public virtual IConditionalWeakTable ConditionalWeakTable => GetContract<IConditionalWeakTable>();
+    /// <summary>
+    /// Gets an instance of the AuxiliarySymbols contract for the target.
+    /// </summary>
+    public virtual IAuxiliarySymbols AuxiliarySymbols => GetContract<IAuxiliarySymbols>();
+    /// <summary>
+    /// Gets an instance of the Debugger contract for the target.
+    /// </summary>
+    public virtual IDebugger Debugger => GetContract<IDebugger>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
+
+    /// <summary>
+    /// Flush all cached data held by contracts in this registry.
+    /// Called when the target process state may have changed (e.g. on resume).
+    /// </summary>
+    public abstract void Flush();
 }

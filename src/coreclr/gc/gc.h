@@ -161,6 +161,8 @@ extern "C" uint32_t g_num_processors;
 
 extern VOLATILE(int32_t) g_fSuspensionPending;
 
+extern uint32_t g_totalCpuCount;
+
 ::IGCHandleManager*  CreateGCHandleManager();
 
 namespace WKS {

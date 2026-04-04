@@ -120,7 +120,7 @@ namespace System.Text.Json.Serialization.Tests
             StringIImmutableListWrapper input2 = new StringIImmutableListWrapper(new List<string> { "1", "2" });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[""1"",""2""]", json);
+            Assert.Equal("""["1","2"]""", json);
         }
 
         [Fact]
@@ -170,7 +170,7 @@ namespace System.Text.Json.Serialization.Tests
             StringIImmutableStackWrapper input2 = new StringIImmutableStackWrapper(new List<string> { "1", "2" });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[""2"",""1""]", json);
+            Assert.Equal("""["2","1"]""", json);
         }
 
         [Fact]
@@ -220,7 +220,7 @@ namespace System.Text.Json.Serialization.Tests
             StringIImmutableQueueWrapper input2 = new StringIImmutableQueueWrapper(new List<string> { "1", "2" });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[""1"",""2""]", json);
+            Assert.Equal("""["1","2"]""", json);
         }
 
         [Fact]
@@ -272,7 +272,7 @@ namespace System.Text.Json.Serialization.Tests
             StringIImmutableSetWrapper input2 = new StringIImmutableSetWrapper(new List<string> { "1", "2" });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.True(json == @"[""1"",""2""]" || json == @"[""2"",""1""]");
+            Assert.True(json == """["1","2"]""" || json == """["2","1"]""");
         }
 
         [Fact]

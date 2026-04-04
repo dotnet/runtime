@@ -185,7 +185,7 @@ function performDeferredSymbolMapParsing () {
 
     //# chrome
     //# at http://127.0.0.1:63817/dotnet.wasm:wasm-function[8963]:0x1e23f4
-    regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)/);
+    regexes.push(/(?<replaceSection>[a-z]+:\/\/[a-zA-Z0-9.:/_]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)/);
 
     //# <?>.wasm-function[8962]
     regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);

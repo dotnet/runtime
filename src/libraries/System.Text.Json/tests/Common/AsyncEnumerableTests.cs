@@ -199,7 +199,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task DeserializeAsyncEnumerable_TopLevelValues_TrailingData_ThrowsJsonException()
         {
             JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
-            using var stream = new Utf8MemoryStream("""[] [1] [1,2,3] <NotJson/>""");
+            using var stream = new Utf8MemoryStream("[] [1] [1,2,3] <NotJson/>");
 
             IAsyncEnumerable<List<int>> asyncEnumerable = Serializer.DeserializeAsyncEnumerable<List<int>>(stream, topLevelValues:true, options);
             await using var asyncEnumerator = asyncEnumerable.GetAsyncEnumerator();

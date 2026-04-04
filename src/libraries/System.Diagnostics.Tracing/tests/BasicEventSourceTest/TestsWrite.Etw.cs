@@ -18,7 +18,7 @@ namespace BasicEventSourceTests
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).
         /// Tests the ETW code path
         /// </summary>
-        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
+        [ConditionalFact(typeof(TestsWrite), nameof(IsProcessElevatedAndNotWindowsNanoServer))]
         public void Test_Write_T_ETW()
         {
             using (var listener = new EtwListener())

@@ -11,6 +11,8 @@
 #include "failures.h"
 #include "simdhash.h"
 #include "intrinsics.h"
+#include "interpalloc.h"
+#include "interpmethoddata.h"
 
 struct InterpException
 {
@@ -25,15 +27,6 @@ struct InterpException
 
 class InterpreterStackMap;
 class InterpCompiler;
-
-class MemPoolAllocator
-{
-    InterpCompiler* const m_compiler;
-    public:
-    MemPoolAllocator(InterpCompiler* compiler) : m_compiler(compiler) {}
-    void* Alloc(size_t sz) const;
-    void Free(void* ptr) const;
-};
 
 class InterpDataItemIndexMap
 {
@@ -103,6 +96,13 @@ public:
     {
         _compiler = compiler;
         _dataItems = dataItems;
+    }
+
+    // Allocates a slot in the data items that is not shared with other opcodes
+    // Typically used for caching data at runtime.
+    int32_t GetNewDataItemIndex(void* data)
+    {
+        return _dataItems->Add(data);
     }
 
     int32_t GetDataItemIndex(const InterpGenericLookup& lookup)
@@ -211,6 +211,12 @@ class InterpDumpScope
 #define INTERP_DUMP(...)
 #endif // DEBUG
 
+#ifdef DEBUG
+static const char* const PointerIsClassHandle = (const char*)0x1;
+static const char* const PointerIsMethodHandle = (const char*)0x2;
+static const char* const PointerIsStringLiteral = (const char*)0x3;
+#endif // DEBUG
+
 struct InterpInst;
 struct InterpBasicBlock;
 
@@ -219,11 +225,11 @@ struct InterpCallInfo
     // For call instructions, this represents an array of all call arg vars
     // in the order they are pushed to the stack. This makes it easy to find
     // all source vars for these types of opcodes. This is terminated with -1.
-    int32_t *pCallArgs;
-    int32_t callOffset;
+    int32_t *pCallArgs = nullptr;
+    int32_t callOffset = 0;
     union {
         // Array of call dependencies that need to be resolved before
-        TSList<InterpInst*> *callDeps;
+        TSList<InterpInst*> *callDeps = nullptr;
         // Stack end offset of call arguments
         int32_t callEndOffset;
     };
@@ -233,7 +239,9 @@ enum InterpInstFlags
 {
     INTERP_INST_FLAG_CALL               = 0x01,
     // Flag used internally by the var offset allocator
-    INTERP_INST_FLAG_ACTIVE_CALL        = 0x02
+    INTERP_INST_FLAG_ACTIVE_CALL        = 0x02,
+    // The IL stack is empty at this instruction
+    INTERP_INST_FLAG_EMPTY_IL_STACK    = 0x04
 };
 
 struct InterpInst
@@ -380,18 +388,18 @@ struct InterpBasicBlock
 
 struct InterpVar
 {
-    CORINFO_CLASS_HANDLE clsHnd;
-    InterpType interpType;
-    int offset;
-    int size;
+    CORINFO_CLASS_HANDLE clsHnd = nullptr;
+    InterpType interpType = (InterpType)0;
+    int offset = 0;
+    int size = 0;
     // live_start and live_end are used by the offset allocator
-    InterpInst* liveStart;
-    InterpInst* liveEnd;
+    InterpInst* liveStart = nullptr;
+    InterpInst* liveEnd = nullptr;
     // index of first basic block where this var is used
-    int bbIndex;
+    int bbIndex = -1;
     // If var is callArgs, this is the call instruction using it.
     // Only used by the var offset allocator
-    InterpInst *call;
+    InterpInst *call = nullptr;
 
     unsigned int callArgs : 1; // Var used as argument to a call
     unsigned int noCallArgs : 1; // Var can't be used as argument to a call, needs to be copied to temp
@@ -421,10 +429,13 @@ struct InterpVar
 struct StackInfo
 {
 private:
-    StackType type;
+    StackType type = (StackType)0;
 public:
+    // The var associated with the value of this stack entry. Every time we push on
+    // the stack a new var is created.
+    int32_t var = 0;
 
-    CORINFO_CLASS_HANDLE clsHnd;
+    CORINFO_CLASS_HANDLE clsHnd = nullptr;
 
     StackType GetStackType()
     {
@@ -469,9 +480,7 @@ public:
         }
     }
 
-    // The var associated with the value of this stack entry. Every time we push on
-    // the stack a new var is created.
-    int var;
+    StackInfo() = default;
 
     StackInfo(StackType type, CORINFO_CLASS_HANDLE clsHnd, int var)
     {
@@ -547,17 +556,22 @@ class InterpreterRetryData
     bool m_needsRetry = false;
     int32_t m_tryCount = 0;
     const char *m_reasonString = "";
+    InterpArenaAllocator *m_arenaAllocator;
 
     dn_simdhash_u32_ptr_holder m_ilMergePointStackTypes;
 
-    static void FreeStackInfo(uint32_t key, void *value, void *userdata)
+    // Returns an allocator for the specified memory kind. Use this for categorized
+    // allocations to enable memory profiling when MEASURE_MEM_ALLOC is defined.
+    InterpAllocator getAllocator(InterpMemKind imk)
     {
-        free(value);
+        return InterpAllocator(m_arenaAllocator, imk);
     }
+
 public:
 
-    InterpreterRetryData()
-        : m_ilMergePointStackTypes(FreeStackInfo)
+    InterpreterRetryData(InterpArenaAllocator* arenaAllocator)
+        : m_arenaAllocator(arenaAllocator),
+          m_ilMergePointStackTypes(getAllocator(IMK_RetryData))
     {
 
     }
@@ -601,6 +615,13 @@ class InterpCompiler
     friend class InterpAsyncCallPeeps;
 
 private:
+    // Arena allocator for compilation-phase memory.
+    // All memory allocated via AllocMemPool is freed when the compiler is destroyed.
+    InterpArenaAllocator *m_arenaAllocator;
+
+    // Builder for the unified method data allocation
+    InterpMethodDataBuilder m_methodDataBuilder;
+
     CORINFO_METHOD_HANDLE m_methodHnd;
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
@@ -657,6 +678,9 @@ private:
     int32_t m_currentILOffset;
     InterpInst* m_pInitLocalsIns;
 
+    // Indicates that we are going to generate the first interpreter byte code instruction for an IL opcode with an empty stack.
+    bool        m_isFirstInstForEmptyILStack = true;
+
     // If the method has a hidden argument, GenerateCode allocates a var to store it and
     //  populates the var at method entry
     int32_t m_hiddenArgumentVar;
@@ -665,6 +689,11 @@ private:
     // then these contain the value that should be passed as those arguments.
     int32_t m_nextCallGenericContextVar;
     int32_t m_nextCallAsyncContinuationVar;
+
+    // If true, the next await should be done as a tail await that just
+    // directly returns the continuation of the call instead of creating a new
+    // suspension point.
+    bool m_nextAwaitIsTail = false;
 
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
@@ -678,6 +707,20 @@ private:
 
     TArray<InterpAsyncSuspendData*, MemPoolAllocator> m_asyncSuspendDataItems;
 
+    // Tracks which data items contain pointers to async suspend data
+    // First = data item index, Second = index into m_asyncSuspendDataItems
+    struct DataItemAsyncSuspendRef
+    {
+        int32_t dataItemIndex;
+        int32_t asyncSuspendDataIndex;
+    };
+    TArray<DataItemAsyncSuspendRef, MemPoolAllocator> m_dataItemAsyncSuspendRefs;
+
+    // Prepared InterpMethod data (stored temporarily until finalization)
+    bool m_initLocals;
+    bool m_unmanagedCallersOnly;
+    bool m_publishSecretStubParam;
+
     InterpDataItemIndexMap m_genericLookupToDataItemIndex;
     int32_t GetDataItemIndex(void* data)
     {
@@ -686,6 +729,10 @@ private:
     int32_t GetDataItemIndex(const InterpGenericLookup& data)
     {
         return m_genericLookupToDataItemIndex.GetDataItemIndex(data);
+    }
+    int32_t GetNewDataItemIndex(void* data)
+    {
+        return m_genericLookupToDataItemIndex.GetNewDataItemIndex(data);
     }
 
     void* GetDataItemAtIndex(int32_t index);
@@ -701,7 +748,7 @@ private:
     CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
     CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
     CORINFO_CLASS_HANDLE    getClassFromContext(CORINFO_CONTEXT_HANDLE context);
-    int                     getParamArgIndex(); // Get the index into the m_pVars array of the Parameter argument. This is either the this pointer, a methoddesc or a class handle
+    int32_t                 getParamArgIndex(); // Get the index into the m_pVars array of the Parameter argument. This is either the this pointer, a methoddesc or a class handle
 
     struct InterpEmbedGenericResult
     {
@@ -751,7 +798,7 @@ private:
     InterpEmbedGenericResult EmitGenericHandle(CORINFO_RESOLVED_TOKEN* resolvedToken, GenericHandleEmbedOptions options);
 
     // Do a generic handle lookup and acquire the result as either a var or a data item.
-    int EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo);
+    int32_t EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo);
 
     // Emit a generic dictionary lookup and push the result onto the interpreter stack
     void CopyToInterpGenericLookup(InterpGenericLookup* dst, const CORINFO_RUNTIME_LOOKUP *src);
@@ -765,21 +812,25 @@ private:
 
     void* AllocMethodData(size_t numBytes);
 public:
-    // FIXME MemPool allocation currently leaks. We need to add an allocator and then
-    // free all memory when method is finished compilling.
-    void* AllocMemPool(size_t numBytes);
-    void* AllocMemPool0(size_t numBytes);
-    MemPoolAllocator GetMemPoolAllocator() { return MemPoolAllocator(this); }
+    // Returns an allocator for the specified memory kind. Use this for categorized
+    // allocations to enable memory profiling when MEASURE_MEM_ALLOC is defined.
+    InterpAllocator getAllocator(InterpMemKind imk)
+    {
+        return InterpAllocator(m_arenaAllocator, imk);
+    }
+
+    // Convenience methods for common allocation kinds
+    InterpAllocator getAllocatorGC() { return getAllocator(IMK_GC); }
+    InterpAllocator getAllocatorBasicBlock() { return getAllocator(IMK_BasicBlock); }
+    InterpAllocator getAllocatorInstruction() { return getAllocator(IMK_Instruction); }
+
+    // Legacy allocation methods - use getAllocator() for new code
+    MemPoolAllocator GetMemPoolAllocator(InterpMemKind imk) { return MemPoolAllocator(getAllocator(imk)); }
 
 private:
-    void* AllocTemporary(size_t numBytes);
-    void* AllocTemporary0(size_t numBytes);
-    void* ReallocTemporary(void* ptr, size_t numBytes);
-    void  FreeTemporary(void* ptr);
-
     // Instructions
     InterpBasicBlock *m_pCBB, *m_pEntryBB;
-    InterpInst* m_pLastNewIns;
+    InterpInst* m_pLastNewIns = nullptr;
 
     int32_t     GetInsLength(InterpInst *pIns);
     bool        InsIsNop(InterpInst *pIns);
@@ -793,8 +844,8 @@ private:
     InterpInst* PrevRealIns(InterpInst *pIns);
     void        ClearIns(InterpInst *pIns);
 
-    void        ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int*, void*));
-    void        ForEachInsVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int*, void*));
+    void        ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int32_t*, void*));
+    void        ForEachInsVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int32_t*, void*));
 
     // Basic blocks
     int m_BBCount = 0;
@@ -856,10 +907,10 @@ private:
     int32_t m_paramAreaOffset = 0;
     int32_t m_ILLocalsOffset;
     int32_t m_ILLocalsSize;
-    void    AllocVarOffsetCB(int *pVar, void *pData);
-    int32_t AllocVarOffset(int var, int32_t *pPos);
-    int32_t GetLiveStartOffset(int var);
-    int32_t GetLiveEndOffset(int var);
+    void    AllocVarOffsetCB(int32_t *pVar, void *pData);
+    int32_t AllocVarOffset(int32_t var, int32_t *pPos);
+    int32_t GetLiveStartOffset(int32_t var);
+    int32_t GetLiveEndOffset(int32_t var);
 
     int32_t GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign);
     void    CreateILVars();
@@ -916,6 +967,7 @@ private:
     bool    IsLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
     int     ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
+    bool ResolveAsyncCallToken(const uint8_t* ip);
     enum class ContinuationContextHandling : uint8_t
     {
         ContinueOnCapturedContext,
@@ -988,15 +1040,16 @@ private:
     // Passes
     int32_t* m_pMethodCode;
     int32_t m_methodCodeSize; // code size measured in int32_t slots, instead of bytes
+    int32_t* m_pDebugMethodEnterSeqPointSlot = nullptr; // fixup slot for first seq point offset in INTOP_DEBUG_METHOD_ENTER
 
     void AllocOffsets();
     int32_t ComputeCodeSize();
-    uint32_t ConvertOffset(int32_t offset);
     void EmitCode();
     int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*, MemPoolAllocator> *relocs);
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*, MemPoolAllocator> *relocs);
     void PatchRelocations(TArray<Reloc*, MemPoolAllocator> *relocs);
-    InterpMethod* CreateInterpMethod();
+    void PrepareInterpMethod();
+
     void CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
     void InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
     void CreateLeaveChainIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB);
@@ -1006,25 +1059,16 @@ private:
     uint8_t* getILCode(CORINFO_METHOD_INFO* methodInfo);
     unsigned int getILCodeSize(CORINFO_METHOD_INFO* methodInfo);
 
-    // Debug
+#ifdef DEBUG
     void PrintClassName(CORINFO_CLASS_HANDLE cls);
     void PrintMethodName(CORINFO_METHOD_HANDLE method);
     void PrintCode();
     void PrintBBCode(InterpBasicBlock *pBB);
     void PrintIns(InterpInst *ins);
-    void PrintPointer(void* pointer);
-    void PrintHelperFtn(int32_t _data);
     void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
     void PrintCompiledCode();
-    void PrintCompiledIns(const int32_t *ip, const int32_t *start);
-    void PrintInterpAsyncSuspendData(InterpAsyncSuspendData* pSuspendInfo);
-#ifdef DEBUG
     InterpDumpScope m_dumpScope;
     TArray<char, MallocAllocator> m_methodName;
-
-    const char* PointerIsClassHandle = (const char*)0x1;
-    const char* PointerIsMethodHandle = (const char*)0x2;
-    const char* PointerIsStringLiteral = (const char*)0x3;
 
     dn_simdhash_ptr_ptr_holder m_pointerToNameMap;
     bool PointerInNameMap(void* ptr)
@@ -1035,45 +1079,53 @@ private:
     {
         checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
     }
-    void PrintNameInPointerMap(void* ptr);
 #endif // DEBUG
 public:
 
-    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData *pretryData);
+    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData *pretryData, InterpArenaAllocator *arenaAllocator);
+    ~InterpCompiler();
 
-    InterpMethod* CompileMethod();
+    // Compile the method. Returns true on success, false if retry is needed.
+    bool CompileMethod();
+
+    // Get the total size needed for the unified method data allocation.
+    // Must be called after CompileMethod() succeeds.
+    uint32_t GetTotalAllocationSize();
+
+    // Finalize the method data into the provided allocation.
+    // baseAddressRW is the writable address, baseAddressRX is the executable address.
+    // Returns the InterpMethod pointer within the allocation.
+    InterpMethod* FinalizeMethodData(void* baseAddressRW, void* baseAddressRX);
+
     void BuildGCInfo(InterpMethod *pInterpMethod);
     void BuildEHInfo();
-    void UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *pByteCodeStart);
+    void dumpMethodMemStats();
+
+    // Get the method data builder for additional customization
+    InterpMethodDataBuilder& GetMethodDataBuilder() { return m_methodDataBuilder; }
 
     int32_t* GetCode(int32_t *pCodeSize);
+
+#if MEASURE_MEM_ALLOC
+    // Memory statistics for profiling.
+    using InterpMemStats = MemStats<InterpMemKindTraits>;
+    using InterpAggregateMemStats = AggregateMemStats<InterpMemKindTraits>;
+
+    static InterpAggregateMemStats s_aggStats;
+    static InterpMemStats s_maxStats;
+    static bool s_dspMemStats;
+
+    // Histograms for memory distribution (in KB)
+    static Histogram s_memAllocHist;
+    static Histogram s_memUsedHist;
+
+    void finishMemStats();
+    static void dumpAggregateMemStats(FILE* file);
+    static void dumpMaxMemStats(FILE* file);
+    static void dumpMemStatsHistograms(FILE* file);
+    static void initMemStats();
+#endif // MEASURE_MEM_ALLOC
 };
-
-/*****************************************************************************
- *  operator new
- *
- *  Uses the compiler's AllocMemPool0, which will eventually free automatically at the end of compilation (doesn't yet).
- */
-
-inline void* operator new(size_t sz, InterpCompiler* compiler)
-{
-    return compiler->AllocMemPool0(sz);
-}
-
-inline void* operator new[](size_t sz, InterpCompiler* compiler)
-{
-    return compiler->AllocMemPool0(sz);
-}
-
-inline void operator delete(void* ptr, InterpCompiler* compiler)
-{
-    // Nothing to do, memory will be freed when the compiler is destroyed
-}
-
-inline void operator delete[](void* ptr, InterpCompiler* compiler)
-{
-    // Nothing to do, memory will be freed when the compiler is destroyed
-}
 
 template<typename T>
 int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
@@ -1101,11 +1153,7 @@ int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
         _dataItems->Add(LookupAsPtrs[i]);
     }
 
-    void* hashItemPayload = _compiler->AllocMemPool0(sizeof(VarSizedDataWithPayload<T>));
-    if (hashItemPayload == nullptr)
-        NOMEM();
-
-    VarSizedDataWithPayload<T>* pLookup = new(hashItemPayload) VarSizedDataWithPayload<T>();
+    VarSizedDataWithPayload<T>* pLookup = new (_compiler->getAllocator(IMK_VarSizedDataItem)) VarSizedDataWithPayload<T>();
     memcpy(&pLookup->payload, &lookup, sizeof(T));
 
     checkAddedNew(dn_simdhash_ght_try_insert(

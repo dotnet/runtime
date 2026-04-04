@@ -16,24 +16,28 @@ namespace System.IO.Compression
         // Delegate that will be invoked on stream disposing
         private readonly Action<ZipArchiveEntry?>? _onClosed;
 
+        // When true, notifies the entry on first write operation
+        private bool _notifyEntryOnWrite;
+
         // Instance that will be passed to _onClose delegate
         private readonly ZipArchiveEntry? _zipArchiveEntry;
         private bool _isDisposed;
 
         internal WrappedStream(Stream baseStream, bool closeBaseStream)
-            : this(baseStream, closeBaseStream, null, null) { }
+            : this(baseStream, closeBaseStream, entry: null, onClosed: null, notifyEntryOnWrite: false) { }
 
-        private WrappedStream(Stream baseStream, bool closeBaseStream, ZipArchiveEntry? entry, Action<ZipArchiveEntry?>? onClosed)
+        private WrappedStream(Stream baseStream, bool closeBaseStream, ZipArchiveEntry? entry, Action<ZipArchiveEntry?>? onClosed, bool notifyEntryOnWrite)
         {
             _baseStream = baseStream;
             _closeBaseStream = closeBaseStream;
             _onClosed = onClosed;
+            _notifyEntryOnWrite = notifyEntryOnWrite;
             _zipArchiveEntry = entry;
             _isDisposed = false;
         }
 
-        internal WrappedStream(Stream baseStream, ZipArchiveEntry entry, Action<ZipArchiveEntry?>? onClosed)
-            : this(baseStream, false, entry, onClosed) { }
+        internal WrappedStream(Stream baseStream, ZipArchiveEntry entry, Action<ZipArchiveEntry?>? onClosed, bool notifyEntryOnWrite = false)
+            : this(baseStream, false, entry, onClosed, notifyEntryOnWrite) { }
 
         public override long Length
         {
@@ -144,6 +148,7 @@ namespace System.IO.Compression
             ThrowIfCantSeek();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.SetLength(value);
         }
 
@@ -152,6 +157,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.Write(buffer, offset, count);
         }
 
@@ -160,6 +166,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.Write(source);
         }
 
@@ -168,6 +175,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.WriteByte(value);
         }
 
@@ -176,6 +184,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             return _baseStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
@@ -184,7 +193,17 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             return _baseStream.WriteAsync(buffer, cancellationToken);
+        }
+
+        private void NotifyWrite()
+        {
+            if (_notifyEntryOnWrite)
+            {
+                _zipArchiveEntry?.MarkAsModified();
+                _notifyEntryOnWrite = false; // Only notify once
+            }
         }
 
         public override void Flush()
@@ -315,7 +334,7 @@ namespace System.IO.Compression
             if (_superStream.Position != _positionInSuperStream)
                 _superStream.Seek(_positionInSuperStream, SeekOrigin.Begin);
             if (_positionInSuperStream + count > _endInSuperStream)
-                count = (int)(_endInSuperStream - _positionInSuperStream);
+                count = (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream);
 
             Debug.Assert(count >= 0);
             Debug.Assert(count <= origCount);
@@ -338,7 +357,7 @@ namespace System.IO.Compression
             if (_superStream.Position != _positionInSuperStream)
                 _superStream.Seek(_positionInSuperStream, SeekOrigin.Begin);
             if (_positionInSuperStream + count > _endInSuperStream)
-                count = (int)(_endInSuperStream - _positionInSuperStream);
+                count = (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream);
 
             Debug.Assert(count >= 0);
             Debug.Assert(count <= origCount);
@@ -376,7 +395,7 @@ namespace System.IO.Compression
 
                 if (_positionInSuperStream > _endInSuperStream - buffer.Length)
                 {
-                    buffer = buffer.Slice(0, (int)(_endInSuperStream - _positionInSuperStream));
+                    buffer = buffer.Slice(0, (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream));
                 }
 
                 int ret = await _superStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
@@ -688,6 +707,261 @@ namespace System.IO.Compression
                 if (!_leaveOpenOnClose && _baseStream != null)
                     await _baseStream.DisposeAsync().ConfigureAwait(false); // Close my super-stream (flushes the last data if we ever wrote any)
                 _saveCrcAndSizes?.Invoke(_initialPosition, Position, _checksum, _baseBaseStream, _zipArchiveEntry, _onClose);
+                _isDisposed = true;
+            }
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    internal sealed class CrcValidatingReadStream : Stream
+    {
+        private readonly Stream _baseStream;
+        private uint _runningCrc;       // CRC32 computed incrementally over bytes read
+        private readonly uint _expectedCrc;
+        private long _totalBytesRead;
+        private readonly long _expectedLength;
+        private bool _isDisposed;
+        private bool _crcValidated;     // Whether CRC check has been performed
+        private bool _crcAbandoned;     // Set when seeking makes CRC validation unreliable
+
+        public CrcValidatingReadStream(Stream baseStream, uint expectedCrc, long expectedLength)
+        {
+            ArgumentNullException.ThrowIfNull(baseStream);
+            ArgumentOutOfRangeException.ThrowIfNegative(expectedLength);
+
+            _baseStream = baseStream;
+            _expectedCrc = expectedCrc;
+            _expectedLength = expectedLength;
+            _runningCrc = 0;
+        }
+
+        public override bool CanRead => !_isDisposed && _baseStream.CanRead;
+        public override bool CanSeek => !_isDisposed && _baseStream.CanSeek;
+        public override bool CanWrite => false;
+
+        public override long Length
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return _baseStream.Length;
+            }
+        }
+
+        public override long Position
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return _baseStream.Position;
+            }
+            set
+            {
+                ThrowIfDisposed();
+                ThrowIfCantSeek();
+
+                _baseStream.Position = value;
+
+                if (value == 0)
+                {
+                    ResetCrcState();
+                }
+                else
+                {
+                    _crcAbandoned = true;
+                }
+            }
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ThrowIfDisposed();
+            ValidateBufferArguments(buffer, offset, count);
+
+            return Read(new Span<byte>(buffer, offset, count));
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            ThrowIfDisposed();
+
+            int bytesRead = _baseStream.Read(buffer);
+            // Only process when a real read occurred or EOF was signaled
+            // (EOF = requested > 0 but got 0 back). Skip zero-length requests.
+            if (buffer.Length > 0)
+            {
+                ProcessBytesRead(buffer.Slice(0, bytesRead));
+            }
+
+            return bytesRead;
+        }
+
+        public override int ReadByte()
+        {
+            byte b = default;
+            return Read(new Span<byte>(ref b)) == 1 ? b : -1;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            ValidateBufferArguments(buffer, offset, count);
+
+            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            int bytesRead = await _baseStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            // Only process when a real read occurred or EOF was signaled
+            // (EOF = requested > 0 but got 0 back). Skip zero-length requests.
+            if (buffer.Length > 0)
+            {
+                ProcessBytesRead(buffer.Span.Slice(0, bytesRead));
+            }
+
+            return bytesRead;
+        }
+
+        private void ProcessBytesRead(ReadOnlySpan<byte> data)
+        {
+            if (_crcAbandoned)
+            {
+                return;
+            }
+
+            if (data.Length == 0)
+            {
+                // EOF reached. Only validate CRC if we've read exactly the expected number of bytes.
+                // If _totalBytesRead < _expectedLength the declared size was larger than the actual
+                // data (e.g. a tampered-but-not-truncated entry);
+                // We don't throw here because the caller (decompressor) will surface that as an error!
+                // If _totalBytesRead == _expectedLength we can validate the CRC now, which covers
+                // zero-length entries and the final EOF read after all expected bytes were consumed.
+                if (_totalBytesRead == _expectedLength)
+                {
+                    ValidateCrc();
+                }
+
+                return;
+            }
+
+            _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, data);
+            _totalBytesRead += data.Length;
+
+            if (_totalBytesRead == _expectedLength)
+            {
+                ValidateCrc();
+            }
+            else if (_totalBytesRead > _expectedLength)
+            {
+                throw new InvalidDataException(SR.UnexpectedStreamLength);
+            }
+        }
+
+        private void ValidateCrc()
+        {
+            if (_crcValidated || _crcAbandoned)
+            {
+                return;
+            }
+
+            if (_runningCrc != _expectedCrc)
+            {
+                throw new InvalidDataException(SR.CrcMismatch);
+            }
+            _crcValidated = true;  // only mark validated on success
+        }
+
+        /// <summary>
+        /// Resets CRC tracking state so validation can be recomputed from the beginning of the stream.
+        /// </summary>
+        private void ResetCrcState()
+        {
+            _runningCrc = 0;
+            _totalBytesRead = 0;
+            _crcAbandoned = false;
+            _crcValidated = false;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
+        }
+
+        public override void Flush()
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            ThrowIfDisposed();
+            ThrowIfCantSeek();
+
+            long newPosition = _baseStream.Seek(offset, origin);
+
+            if (newPosition == 0)
+            {
+                ResetCrcState();
+            }
+            else
+            {
+                // we should always start from the beginning of the stream
+                // so any seek that doesn't put us back at the start means we can't reliably validate CRC anymore
+                _crcAbandoned = true;
+            }
+
+            return newPosition;
+        }
+
+        public override void SetLength(long value)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.SetLengthRequiresSeekingAndWriting);
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_isDisposed)
+            {
+                throw new ObjectDisposedException(GetType().ToString(), SR.HiddenStreamName);
+            }
+        }
+
+        private void ThrowIfCantSeek()
+        {
+            if (!CanSeek)
+            {
+                throw new NotSupportedException(SR.SeekingNotSupported);
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !_isDisposed)
+            {
+                _baseStream.Dispose();
+                _isDisposed = true;
+            }
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (!_isDisposed)
+            {
+                await _baseStream.DisposeAsync().ConfigureAwait(false);
                 _isDisposed = true;
             }
             await base.DisposeAsync().ConfigureAwait(false);

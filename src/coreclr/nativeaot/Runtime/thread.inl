@@ -146,6 +146,11 @@ inline bool Thread::IsDoNotTriggerGcSet()
     return IsStateSet(TSF_DoNotTriggerGc);
 }
 
+inline bool Thread::IsSuspensionTrapped()
+{
+    return IsStateSet(TSF_SuspensionTrapped);
+}
+
 inline bool Thread::IsCurrentThreadInCooperativeMode()
 {
 #ifndef DACCESS_COMPILE

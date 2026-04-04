@@ -8,6 +8,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -49,7 +50,7 @@ namespace System.Diagnostics
         ///     Specifies the name of the application that is to be started, as well as a set
         ///     of command line arguments to pass to the application.
         /// </devdoc>
-        public ProcessStartInfo(string fileName, string arguments)
+        public ProcessStartInfo(string fileName, string? arguments)
         {
             _fileName = fileName;
             _arguments = arguments;
@@ -117,6 +118,84 @@ namespace System.Diagnostics
         public bool RedirectStandardOutput { get; set; }
         public bool RedirectStandardError { get; set; }
 
+        /// <summary>
+        /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard input of the child process.
+        /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardInput"/> must be <see langword="false"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The handle does not need to be inheritable; the runtime will duplicate it as inheritable if needed.
+        /// </para>
+        /// <para>
+        /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
+        /// <see cref="System.IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="System.IO.File.OpenNullHandle"/> to provide an empty input,
+        /// or <see cref="System.Console.OpenStandardInputHandle"/> to inherit the parent's standard input
+        /// (the default behavior when this property is <see langword="null"/>).
+        /// </para>
+        /// <para>
+        /// It's recommended to dispose the handle right after starting the process.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="RedirectStandardInput"/>
+        /// and requires <see cref="UseShellExecute"/> to be <see langword="false"/>.
+        /// </para>
+        /// </remarks>
+        /// <value>A <see cref="SafeFileHandle"/> to use as the standard input handle of the child process, or <see langword="null"/> to use the default behavior.</value>
+        public SafeFileHandle? StandardInputHandle { get; set; }
+
+        /// <summary>
+        /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard output of the child process.
+        /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardOutput"/> must be <see langword="false"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The handle does not need to be inheritable; the runtime will duplicate it as inheritable if needed.
+        /// </para>
+        /// <para>
+        /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
+        /// <see cref="System.IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="System.IO.File.OpenNullHandle"/> to discard output,
+        /// or <see cref="System.Console.OpenStandardOutputHandle"/> to inherit the parent's standard output
+        /// (the default behavior when this property is <see langword="null"/>).
+        /// </para>
+        /// <para>
+        /// It's recommended to dispose the handle right after starting the process.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="RedirectStandardOutput"/>
+        /// and requires <see cref="UseShellExecute"/> to be <see langword="false"/>.
+        /// </para>
+        /// </remarks>
+        /// <value>A <see cref="SafeFileHandle"/> to use as the standard output handle of the child process, or <see langword="null"/> to use the default behavior.</value>
+        public SafeFileHandle? StandardOutputHandle { get; set; }
+
+        /// <summary>
+        /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard error of the child process.
+        /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardError"/> must be <see langword="false"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The handle does not need to be inheritable; the runtime will duplicate it as inheritable if needed.
+        /// </para>
+        /// <para>
+        /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
+        /// <see cref="System.IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="System.IO.File.OpenNullHandle"/> to discard error output,
+        /// or <see cref="System.Console.OpenStandardErrorHandle"/> to inherit the parent's standard error
+        /// (the default behavior when this property is <see langword="null"/>).
+        /// </para>
+        /// <para>
+        /// It's recommended to dispose the handle right after starting the process.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="RedirectStandardError"/>
+        /// and requires <see cref="UseShellExecute"/> to be <see langword="false"/>.
+        /// </para>
+        /// </remarks>
+        /// <value>A <see cref="SafeFileHandle"/> to use as the standard error handle of the child process, or <see langword="null"/> to use the default behavior.</value>
+        public SafeFileHandle? StandardErrorHandle { get; set; }
+
         public Encoding? StandardInputEncoding { get; set; }
 
         public Encoding? StandardErrorEncoding { get; set; }
@@ -152,6 +231,19 @@ namespace System.Diagnostics
 
         public bool ErrorDialog { get; set; }
         public IntPtr ErrorDialogParentHandle { get; set; }
+
+        public bool UseShellExecute
+        {
+            get;
+            set
+            {
+                if (value)
+                {
+                    SafeProcessHandle.EnsureShellExecuteFunc();
+                }
+                field = value;
+            }
+        }
 
         [AllowNull]
         public string UserName
@@ -212,6 +304,81 @@ namespace System.Diagnostics
                 }
 
                 stringBuilder.Append(Arguments);
+            }
+        }
+
+        internal void ThrowIfInvalid(out bool anyRedirection)
+        {
+            if (FileName.Length == 0)
+            {
+                throw new InvalidOperationException(SR.FileNameMissing);
+            }
+            if (StandardInputEncoding != null && !RedirectStandardInput)
+            {
+                throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
+            }
+            if (StandardOutputEncoding != null && !RedirectStandardOutput)
+            {
+                throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
+            }
+            if (StandardErrorEncoding != null && !RedirectStandardError)
+            {
+                throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
+            }
+            if (!string.IsNullOrEmpty(Arguments) && HasArgumentList)
+            {
+                throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
+            }
+            if (HasArgumentList)
+            {
+                int argumentCount = ArgumentList.Count;
+                for (int i = 0; i < argumentCount; i++)
+                {
+                    if (ArgumentList[i] is null)
+                    {
+                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
+                    }
+                }
+            }
+
+            anyRedirection = RedirectStandardInput || RedirectStandardOutput || RedirectStandardError;
+            bool anyHandle = StandardInputHandle is not null || StandardOutputHandle is not null || StandardErrorHandle is not null;
+            if (UseShellExecute && (anyRedirection || anyHandle))
+            {
+                throw new InvalidOperationException(SR.CantRedirectStreams);
+            }
+
+            if (anyHandle)
+            {
+                if (StandardInputHandle is not null && RedirectStandardInput)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+                if (StandardOutputHandle is not null && RedirectStandardOutput)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+                if (StandardErrorHandle is not null && RedirectStandardError)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+
+                ValidateHandle(StandardInputHandle, nameof(StandardInputHandle));
+                ValidateHandle(StandardOutputHandle, nameof(StandardOutputHandle));
+                ValidateHandle(StandardErrorHandle, nameof(StandardErrorHandle));
+            }
+
+            static void ValidateHandle(SafeFileHandle? handle, string paramName)
+            {
+                if (handle is not null)
+                {
+                    if (handle.IsInvalid)
+                    {
+                        throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
+                    }
+
+                    ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
+                }
             }
         }
     }

@@ -18,8 +18,12 @@ internal sealed class InteropSyncBlockInfo : IData<InteropSyncBlockInfo>
         CCW = type.Fields.TryGetValue(nameof(CCW), out Target.FieldInfo ccwField)
             ? target.ReadPointer(address + (ulong)ccwField.Offset)
             : TargetPointer.Null;
+        CCF = type.Fields.TryGetValue(nameof(CCF), out Target.FieldInfo ccfField)
+            ? target.ReadPointer(address + (ulong)ccfField.Offset)
+            : TargetPointer.Null;
     }
 
     public TargetPointer RCW { get; init; }
     public TargetPointer CCW { get; init; }
+    public TargetPointer CCF { get; init; }
 }

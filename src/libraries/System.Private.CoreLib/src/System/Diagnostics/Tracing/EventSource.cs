@@ -356,7 +356,7 @@ namespace System.Diagnostics.Tracing
         {
             ArgumentNullException.ThrowIfNull(eventSourceType);
 
-            EventSourceAttribute? attrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute));
+            EventSourceAttribute? attrib = (EventSourceAttribute?)EventSourceHelpers.GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute));
             string name = eventSourceType.Name;
             if (attrib != null)
             {
@@ -412,6 +412,7 @@ namespace System.Diagnostics.Tracing
         {
             return GenerateManifest(eventSourceType, assemblyPathToIncludeInManifest, EventManifestOptions.None);
         }
+
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
         /// documented at in EventManifest Schema https://learn.microsoft.com/windows/desktop/WES/eventmanifestschema-schema.
@@ -441,7 +442,7 @@ namespace System.Diagnostics.Tracing
 
             ArgumentNullException.ThrowIfNull(eventSourceType);
 
-            byte[]? manifestBytes = CreateManifestAndDescriptors(eventSourceType, assemblyPathToIncludeInManifest, null, flags);
+            byte[]? manifestBytes = EventSourceHelpers.CreateManifestAndDescriptors(eventSourceType, assemblyPathToIncludeInManifest, null, flags);
             return (manifestBytes == null) ? null : Encoding.UTF8.GetString(manifestBytes, 0, manifestBytes.Length);
         }
 
@@ -1263,7 +1264,7 @@ namespace System.Diagnostics.Tracing
                 set => m_Reserved = value;
             }
 
-#region private
+            #region private
             /// <summary>
             /// Initializes the members of this EventData object to point at a previously-pinned
             /// tracelogging-compatible metadata blob.
@@ -1271,6 +1272,7 @@ namespace System.Diagnostics.Tracing
             /// <param name="pointer">Pinned tracelogging-compatible metadata blob.</param>
             /// <param name="size">The size of the metadata blob.</param>
             /// <param name="reserved">Value for reserved: 2 for per-provider metadata, 1 for per-event metadata</param>
+            [RequiresUnsafe]
             internal unsafe void SetMetadata(byte* pointer, int size, int reserved)
             {
                 this.m_Ptr = (ulong)pointer;
@@ -1319,6 +1321,7 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         protected unsafe void WriteEventCore(int eventId, int eventDataCount, EventData* data)
         {
             WriteEventWithRelatedActivityIdCore(eventId, null, eventDataCount, data);
@@ -1354,6 +1357,7 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventData* data)
         {
             if (IsEnabled())
@@ -1565,10 +1569,11 @@ namespace System.Diagnostics.Tracing
             // NOTE: we nop out this method body if !IsSupported using ILLink.Substitutions.
             this.Dispose(false);
         }
-#endregion
+        #endregion
 
-#region private
+        #region private
 
+        [RequiresUnsafe]
         private unsafe void WriteEventRaw(
             string? eventName,
             ref EventDescriptor eventDescriptor,
@@ -1757,7 +1762,7 @@ namespace System.Diagnostics.Tracing
         {
             ArgumentNullException.ThrowIfNull(eventSourceType);
 
-            EventSourceAttribute? attrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
+            EventSourceAttribute? attrib = (EventSourceAttribute?)EventSourceHelpers.GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
             if (attrib != null && attrib.Name != null)
                 return attrib.Name;
 
@@ -1786,6 +1791,7 @@ namespace System.Diagnostics.Tracing
             return new Guid(bytes.Slice(0, 16));
         }
 
+        [RequiresUnsafe]
         private static unsafe void DecodeObjects(object?[] decodedObjects, Type[] parameterTypes, EventData* data)
         {
             for (int i = 0; i < decodedObjects.Length; i++, data++)
@@ -1954,6 +1960,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [Conditional("DEBUG")]
+        [RequiresUnsafe]
         private static unsafe void AssertValidString(EventData* data)
         {
             Debug.Assert(data->Size >= 0 && data->Size % 2 == 0, "String size should be even");
@@ -1984,6 +1991,7 @@ namespace System.Diagnostics.Tracing
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
+        [RequiresUnsafe]
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
             if (IsEnabled())
@@ -2147,6 +2155,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        [RequiresUnsafe]
         private unsafe void WriteToAllListeners(EventWrittenEventArgs eventCallbackArgs, int eventDataCount, EventData* data)
         {
             Debug.Assert(m_eventData != null);
@@ -2891,7 +2900,7 @@ namespace System.Diagnostics.Tracing
             {
                 // get the metadata via reflection.
                 Debug.Assert(m_rawManifest == null);
-                m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
+                m_rawManifest = EventSourceHelpers.CreateManifestAndDescriptors(this.GetType(), Name, this);
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
@@ -3030,66 +3039,388 @@ namespace System.Diagnostics.Tracing
             return false;
         }
 
-        // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
-        // When that is the case, we have the build the custom assemblies on a member by hand.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
-            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
-                            "access this member and is safe to call.")]
-        internal static Attribute? GetCustomAttributeHelper(
-            MemberInfo member,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties)]
-            Type attributeType,
-            EventManifestOptions flags = EventManifestOptions.None)
+        private static class EventSourceHelpers
         {
-            Debug.Assert(attributeType == typeof(EventAttribute) || attributeType == typeof(EventSourceAttribute));
-            // AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
-            // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
-            if (!member.Module.Assembly.ReflectionOnly && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
+            // Use reflection to look at the attributes of a class, and generate a manifest for it (as UTF8) and
+            // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
+            // at run time.  'source' is the event source to place the descriptors.  If it is null,
+            // then the descriptors are not created, and just the manifest is generated.
+            public static byte[]? CreateManifestAndDescriptors(
+                [DynamicallyAccessedMembers(ManifestMemberTypes)]
+                Type eventSourceType,
+                string? eventSourceDllName,
+                EventSource? source,
+                EventManifestOptions flags = EventManifestOptions.None)
             {
-                // Let the runtime do the work for us, since we can execute code in this context.
-                return member.GetCustomAttribute(attributeType, inherit: false);
-            }
+                ManifestBuilder? manifest = null;
+                bool bNeedsManifest = source != null ? !source.SelfDescribingEvents : true;
+                Exception? exception = null; // exception that might get raised during validation b/c we couldn't/didn't recover from a previous error
+                byte[]? res = null;
 
-            foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
-            {
-                if (AttributeTypeNamesMatch(attributeType, data.Constructor.ReflectedType!))
+                if (eventSourceType.IsAbstract && (flags & EventManifestOptions.Strict) == 0)
+                    return null;
+
+                try
                 {
-                    Attribute? attr = null;
-
-                    Debug.Assert(data.ConstructorArguments.Count <= 1);
-
-                    if (data.ConstructorArguments.Count == 1)
+                    MethodInfo[] methods = eventSourceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    EventAttribute defaultEventAttribute;
+                    int eventId = 1;        // The number given to an event that does not have a explicitly given ID.
+                    Dictionary<int, EventMetadata>? eventData = null;
+                    Dictionary<string, string>? eventsByName = null;
+                    if (source != null || (flags & EventManifestOptions.Strict) != 0)
                     {
-                        attr = (Attribute?)Activator.CreateInstance(attributeType, [data.ConstructorArguments[0].Value]);
+                        eventData = new Dictionary<int, EventMetadata>();
+                        ref EventMetadata newEventMetadata = ref CollectionsMarshal.GetValueRefOrAddDefault(eventData, 0, out _);
+                        newEventMetadata.Name = ""; // Event 0 is the 'write messages string' event, and has an empty name.
                     }
-                    else if (data.ConstructorArguments.Count == 0)
+
+                    // See if we have localization information.
+                    ResourceManager? resources = null;
+                    EventSourceAttribute? eventSourceAttrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
+                    if (eventSourceAttrib != null && eventSourceAttrib.LocalizationResources != null)
+                        resources = new ResourceManager(eventSourceAttrib.LocalizationResources, eventSourceType.Assembly);
+
+                    if (source?.GetType() == typeof(NativeRuntimeEventSource))
                     {
-                        attr = (Attribute?)Activator.CreateInstance(attributeType);
+                        // Don't emit nor generate the manifest for NativeRuntimeEventSource i.e., Microsoft-Windows-DotNETRuntime.
+                        manifest = new ManifestBuilder(resources, flags);
+                        bNeedsManifest = false;
+                    }
+                    else
+                    {
+                        // Try to get name and GUID directly from the source. Otherwise get it from the Type's attribute.
+                        string providerName = source?.Name ?? GetName(eventSourceType, flags);
+                        Guid providerGuid = source?.Guid ?? GetGuid(eventSourceType);
+
+                        manifest = new ManifestBuilder(providerName, providerGuid, eventSourceDllName, resources, flags);
                     }
 
-                    if (attr != null)
+                    // Add an entry unconditionally for event ID 0 which will be for a string message.
+                    manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
+                    manifest.AddEventParameter(typeof(string), "message");
+                    manifest.EndEvent();
+
+                    // eventSourceType must be sealed and must derive from this EventSource
+                    if ((flags & EventManifestOptions.Strict) != 0)
                     {
-                        foreach (CustomAttributeNamedArgument namedArgument in data.NamedArguments)
+                        bool typeMatch = GetEventSourceBaseType(eventSourceType, (flags & EventManifestOptions.AllowEventSourceOverride) != 0, eventSourceType.Assembly.ReflectionOnly) != null;
+
+                        if (!typeMatch)
                         {
-                            PropertyInfo p = attributeType.GetProperty(namedArgument.MemberInfo.Name, BindingFlags.Public | BindingFlags.Instance)!;
-                            object value = namedArgument.TypedValue.Value!;
+                            manifest.ManifestError(SR.EventSource_TypeMustDeriveFromEventSource);
+                        }
+                        if (!eventSourceType.IsAbstract && !eventSourceType.IsSealed)
+                        {
+                            manifest.ManifestError(SR.EventSource_TypeMustBeSealedOrAbstract);
+                        }
+                    }
 
-                            if (p.PropertyType.IsEnum)
+                    // Collect task, opcode, keyword and channel information
+                    foreach (string providerEnumKind in (ReadOnlySpan<string>)["Keywords", "Tasks", "Opcodes"])
+                    {
+                        Type? nestedType = eventSourceType.GetNestedType(providerEnumKind);
+                        if (nestedType != null)
+                        {
+                            if (eventSourceType.IsAbstract)
                             {
-                                string val = value.ToString()!;
-                                value = Enum.Parse(p.PropertyType, val);
+                                manifest.ManifestError(SR.Format(SR.EventSource_AbstractMustNotDeclareKTOC, nestedType.Name));
+                            }
+                            else
+                            {
+                                foreach (FieldInfo staticField in nestedType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+                                {
+                                    AddProviderEnumKind(manifest, staticField, providerEnumKind);
+                                }
+                            }
+                        }
+                    }
+                    // ensure we have keywords for the session-filtering reserved bits
+                    {
+                        manifest.AddKeyword("Session3", (long)0x1000 << 32);
+                        manifest.AddKeyword("Session2", (long)0x2000 << 32);
+                        manifest.AddKeyword("Session1", (long)0x4000 << 32);
+                        manifest.AddKeyword("Session0", (long)0x8000 << 32);
+                    }
+
+                    if (eventSourceType != typeof(EventSource))
+                    {
+                        for (int i = 0; i < methods.Length; i++)
+                        {
+                            MethodInfo method = methods[i];
+
+                            // Compat: until v4.5.1 we ignored any non-void returning methods as well as virtual methods for
+                            // the only reason of limiting the number of methods considered to be events. This broke a common
+                            // design of having event sources implement specific interfaces. To fix this in a compatible way
+                            // we will now allow both non-void returning and virtual methods to be Event methods, as long
+                            // as they are marked with the [Event] attribute
+                            if (/* method.IsVirtual || */ method.IsStatic)
+                            {
+                                continue;
                             }
 
-                            p.SetValue(attr, value, null);
-                        }
+                            // Get the EventDescriptor (from the Custom attributes)
+                            EventAttribute? eventAttribute = (EventAttribute?)GetCustomAttributeHelper(method, typeof(EventAttribute), flags);
 
-                        return attr;
+                            if (eventSourceType.IsAbstract)
+                            {
+                                if (eventAttribute != null)
+                                {
+                                    manifest.ManifestError(SR.Format(SR.EventSource_AbstractMustNotDeclareEventMethods, method.Name, eventAttribute.EventId));
+                                }
+                                continue;
+                            }
+                            else if (eventAttribute == null)
+                            {
+                                // Methods that don't return void can't be events, if they're NOT marked with [Event].
+                                // (see Compat comment above)
+                                if (method.ReturnType != typeof(void))
+                                {
+                                    continue;
+                                }
+
+                                // Continue to ignore virtual methods if they do NOT have the [Event] attribute
+                                // (see Compat comment above)
+                                if (method.IsVirtual)
+                                {
+                                    continue;
+                                }
+
+                                // If we explicitly mark the method as not being an event, then honor that.
+                                if (IsCustomAttributeDefinedHelper(method, typeof(NonEventAttribute), flags))
+                                    continue;
+
+                                defaultEventAttribute = new EventAttribute(eventId);
+                                eventAttribute = defaultEventAttribute;
+                            }
+                            else if (eventAttribute.EventId <= 0)
+                            {
+                                manifest.ManifestError(SR.EventSource_NeedPositiveId, true);
+                                continue;   // don't validate anything else for this event
+                            }
+                            if (method.Name.LastIndexOf('.') >= 0)
+                            {
+                                manifest.ManifestError(SR.Format(SR.EventSource_EventMustNotBeExplicitImplementation, method.Name, eventAttribute.EventId));
+                            }
+
+                            eventId++;
+                            string eventName = method.Name;
+
+                            if (eventAttribute.Opcode == EventOpcode.Info)      // We are still using the default opcode.
+                            {
+                                // By default pick a task ID derived from the EventID, starting with the highest task number and working back
+                                bool noTask = (eventAttribute.Task == EventTask.None);
+                                if (noTask)
+                                    eventAttribute.Task = (EventTask)(0xFFFE - eventAttribute.EventId);
+
+                                // Unless we explicitly set the opcode to Info (to override the auto-generate of Start or Stop opcodes,
+                                // pick a default opcode based on the event name (either Info or start or stop if the name ends with that suffix).
+                                if (!eventAttribute.IsOpcodeSet)
+                                    eventAttribute.Opcode = GetOpcodeWithDefault(EventOpcode.Info, eventName);
+
+                                // Make the stop opcode have the same task as the start opcode.
+                                if (noTask)
+                                {
+                                    if (eventAttribute.Opcode == EventOpcode.Start)
+                                    {
+                                        if (eventName.EndsWith(ActivityStartSuffix, StringComparison.Ordinal))
+                                        {
+                                            string taskName = eventName[..^ActivityStartSuffix.Length]; // Remove the Start suffix to get the task name
+
+                                            // Add a task that is just the task name for the start event.   This suppress the auto-task generation
+                                            // That would otherwise happen (and create 'TaskName'Start as task name rather than just 'TaskName'
+                                            manifest.AddTask(taskName, (int)eventAttribute.Task);
+                                        }
+                                    }
+                                    else if (eventAttribute.Opcode == EventOpcode.Stop)
+                                    {
+                                        // Find the start associated with this stop event.  We require start to be immediately before the stop
+                                        int startEventId = eventAttribute.EventId - 1;
+                                        Debug.Assert(0 <= startEventId);
+                                        if (eventData != null)
+                                        {
+                                            ref EventMetadata startEventMetadata = ref CollectionsMarshal.GetValueRefOrNullRef(eventData, startEventId);
+                                            if (!Unsafe.IsNullRef(ref startEventMetadata))
+                                            {
+                                                // If you remove the Stop and add a Start does that name match the Start Event's Name?
+                                                // Ideally we would throw an error
+                                                if (startEventMetadata.Descriptor.Opcode == (byte)EventOpcode.Start &&
+                                                    startEventMetadata.Name.EndsWith(ActivityStartSuffix, StringComparison.Ordinal) &&
+                                                    eventName.EndsWith(ActivityStopSuffix, StringComparison.Ordinal) &&
+                                                    startEventMetadata.Name.AsSpan()[..^ActivityStartSuffix.Length].SequenceEqual(
+                                                        eventName.AsSpan()[..^ActivityStopSuffix.Length]))
+                                                {
+                                                    // Make the stop event match the start event
+                                                    eventAttribute.Task = (EventTask)startEventMetadata.Descriptor.Task;
+                                                    noTask = false;
+                                                }
+                                            }
+                                        }
+                                        if (noTask && (flags & EventManifestOptions.Strict) != 0)        // Throw an error if we can compatibly.
+                                        {
+                                            throw new ArgumentException(SR.EventSource_StopsFollowStarts);
+                                        }
+                                    }
+                                }
+                            }
+
+                            ParameterInfo[] args = method.GetParameters();
+
+                            bool hasRelatedActivityID = RemoveFirstArgIfRelatedActivityId(ref args);
+                            if (!(source != null && source.SelfDescribingEvents))
+                            {
+                                manifest.StartEvent(eventName, eventAttribute);
+                                for (int fieldIdx = 0; fieldIdx < args.Length; fieldIdx++)
+                                {
+                                    manifest.AddEventParameter(args[fieldIdx].ParameterType, args[fieldIdx].Name!);
+                                }
+                                manifest.EndEvent();
+                            }
+
+                            if (source != null || (flags & EventManifestOptions.Strict) != 0)
+                            {
+                                Debug.Assert(eventData != null);
+                                // Do checking for user errors (optional, but not a big deal so we do it).
+                                DebugCheckEvent(ref eventsByName, eventData, method, eventAttribute, manifest, flags);
+
+                                // add the channel keyword for Event Viewer channel based filters. This is added for creating the EventDescriptors only
+                                // and is not required for the manifest
+                                if (eventAttribute.Channel != EventChannel.None)
+                                {
+                                    unchecked
+                                    {
+                                        eventAttribute.Keywords |= (EventKeywords)manifest.GetChannelKeyword(eventAttribute.Channel, (ulong)eventAttribute.Keywords);
+                                    }
+                                }
+
+                                if (manifest.HasResources)
+                                {
+                                    string eventKey = "event_" + eventName;
+                                    if (manifest.GetLocalizedMessage(eventKey, CultureInfo.CurrentUICulture, etwFormat: false) is string msg)
+                                    {
+                                        // overwrite inline message with the localized message
+                                        eventAttribute.Message = msg;
+                                    }
+                                }
+
+                                AddEventDescriptor(ref eventData, eventName, eventAttribute, args, hasRelatedActivityID);
+                            }
+                        }
+                    }
+
+                    // Tell the TraceLogging stuff where to start allocating its own IDs.
+                    NameInfo.ReserveEventIDsBelow(eventId);
+
+                    if (source != null)
+                    {
+                        Debug.Assert(eventData != null);
+                        source.m_eventData = eventData;     // officially initialize it. We do this at most once (it is racy otherwise).
+                        source.m_channelData = manifest.GetChannelData();
+                    }
+
+                    // if this is an abstract event source we've already performed all the validation we can
+                    if (!eventSourceType.IsAbstract && (source == null || !source.SelfDescribingEvents))
+                    {
+                        bNeedsManifest = (flags & EventManifestOptions.OnlyIfNeededForRegistration) == 0 || manifest.GetChannelData().Length > 0;
+
+                        // if the manifest is not needed and we're not requested to validate the event source return early
+                        if (!bNeedsManifest && (flags & EventManifestOptions.Strict) == 0)
+                            return null;
+
+                        res = manifest.CreateManifest();
+                        res = (res.Length > 0) ? res : null;
                     }
                 }
+                catch (Exception e)
+                {
+                    // if this is a runtime manifest generation let the exception propagate
+                    if ((flags & EventManifestOptions.Strict) == 0)
+                        throw;
+                    // else store it to include it in the Argument exception we raise below
+                    exception = e;
+                }
+
+                if ((flags & EventManifestOptions.Strict) != 0 && (manifest?.Errors.Count > 0 || exception != null))
+                {
+                    string msg = string.Empty;
+
+                    if (manifest?.Errors.Count > 0)
+                    {
+                        bool firstError = true;
+                        foreach (string error in manifest.Errors)
+                        {
+                            if (!firstError)
+                                msg += Environment.NewLine;
+                            firstError = false;
+                            msg += error;
+                        }
+                    }
+                    else
+                        msg = "Unexpected error: " + exception!.Message;
+
+                    throw new ArgumentException(msg, exception);
+                }
+
+                return bNeedsManifest ? res : null;
             }
 
-            return null;
+
+            // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
+            // When that is the case, we have the build the custom assemblies on a member by hand.
+            internal static Attribute? GetCustomAttributeHelper(
+                MemberInfo member,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties)]
+                Type attributeType,
+                EventManifestOptions flags = EventManifestOptions.None)
+            {
+                Debug.Assert(attributeType == typeof(EventAttribute) || attributeType == typeof(EventSourceAttribute));
+                // AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
+                // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
+                if (!member.Module.Assembly.ReflectionOnly && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
+                {
+                    // Let the runtime do the work for us, since we can execute code in this context.
+                    return member.GetCustomAttribute(attributeType, inherit: false);
+                }
+
+                foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
+                {
+                    if (AttributeTypeNamesMatch(attributeType, data.Constructor.ReflectedType!))
+                    {
+                        Attribute? attr = null;
+
+                        Debug.Assert(data.ConstructorArguments.Count <= 1);
+
+                        if (data.ConstructorArguments.Count == 1)
+                        {
+                            attr = (Attribute?)Activator.CreateInstance(attributeType, [data.ConstructorArguments[0].Value]);
+                        }
+                        else if (data.ConstructorArguments.Count == 0)
+                        {
+                            attr = (Attribute?)Activator.CreateInstance(attributeType);
+                        }
+
+                        if (attr != null)
+                        {
+                            foreach (CustomAttributeNamedArgument namedArgument in data.NamedArguments)
+                            {
+                                PropertyInfo p = attributeType.GetProperty(namedArgument.MemberInfo.Name, BindingFlags.Public | BindingFlags.Instance)!;
+                                object value = namedArgument.TypedValue.Value!;
+
+                                if (p.PropertyType.IsEnum)
+                                {
+                                    string val = value.ToString()!;
+                                    value = Enum.Parse(p.PropertyType, val);
+                                }
+
+                                p.SetValue(attr, value, null);
+                            }
+
+                            return attr;
+                        }
+                    }
+                }
+
+                return null;
+            }
         }
 
         /// <summary>
@@ -3145,332 +3476,6 @@ namespace System.Diagnostics.Tracing
                 }
             }
             return ret;
-        }
-
-        // Use reflection to look at the attributes of a class, and generate a manifest for it (as UTF8) and
-        // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
-        // at run time.  'source' is the event source to place the descriptors.  If it is null,
-        // then the descriptors are not created, and just the manifest is generated.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
-            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                            "has dynamically accessed members requirements, but its use of this method satisfies " +
-                            "these requirements because it passes in the result of GetType with the same annotations.")]
-        private static byte[]? CreateManifestAndDescriptors(
-            [DynamicallyAccessedMembers(ManifestMemberTypes)]
-            Type eventSourceType,
-            string? eventSourceDllName,
-            EventSource? source,
-            EventManifestOptions flags = EventManifestOptions.None)
-        {
-            ManifestBuilder? manifest = null;
-            bool bNeedsManifest = source != null ? !source.SelfDescribingEvents : true;
-            Exception? exception = null; // exception that might get raised during validation b/c we couldn't/didn't recover from a previous error
-            byte[]? res = null;
-
-            if (eventSourceType.IsAbstract && (flags & EventManifestOptions.Strict) == 0)
-                return null;
-
-            try
-            {
-                MethodInfo[] methods = eventSourceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                EventAttribute defaultEventAttribute;
-                int eventId = 1;        // The number given to an event that does not have a explicitly given ID.
-                Dictionary<int, EventMetadata>? eventData = null;
-                Dictionary<string, string>? eventsByName = null;
-                if (source != null || (flags & EventManifestOptions.Strict) != 0)
-                {
-                    eventData = new Dictionary<int, EventMetadata>();
-                    ref EventMetadata newEventMetadata = ref CollectionsMarshal.GetValueRefOrAddDefault(eventData, 0, out _);
-                    newEventMetadata.Name = ""; // Event 0 is the 'write messages string' event, and has an empty name.
-                }
-
-                // See if we have localization information.
-                ResourceManager? resources = null;
-                EventSourceAttribute? eventSourceAttrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
-                if (eventSourceAttrib != null && eventSourceAttrib.LocalizationResources != null)
-                    resources = new ResourceManager(eventSourceAttrib.LocalizationResources, eventSourceType.Assembly);
-
-                if (source?.GetType() == typeof(NativeRuntimeEventSource))
-                {
-                    // Don't emit nor generate the manifest for NativeRuntimeEventSource i.e., Microsoft-Windows-DotNETRuntime.
-                    manifest = new ManifestBuilder(resources, flags);
-                    bNeedsManifest = false;
-                }
-                else
-                {
-                    // Try to get name and GUID directly from the source. Otherwise get it from the Type's attribute.
-                    string providerName = source?.Name ?? GetName(eventSourceType, flags);
-                    Guid providerGuid = source?.Guid ?? GetGuid(eventSourceType);
-
-                    manifest = new ManifestBuilder(providerName, providerGuid, eventSourceDllName, resources, flags);
-                }
-
-                // Add an entry unconditionally for event ID 0 which will be for a string message.
-                manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
-                manifest.AddEventParameter(typeof(string), "message");
-                manifest.EndEvent();
-
-                // eventSourceType must be sealed and must derive from this EventSource
-                if ((flags & EventManifestOptions.Strict) != 0)
-                {
-                    bool typeMatch = GetEventSourceBaseType(eventSourceType, (flags & EventManifestOptions.AllowEventSourceOverride) != 0, eventSourceType.Assembly.ReflectionOnly) != null;
-
-                    if (!typeMatch)
-                    {
-                        manifest.ManifestError(SR.EventSource_TypeMustDeriveFromEventSource);
-                    }
-                    if (!eventSourceType.IsAbstract && !eventSourceType.IsSealed)
-                    {
-                        manifest.ManifestError(SR.EventSource_TypeMustBeSealedOrAbstract);
-                    }
-                }
-
-                // Collect task, opcode, keyword and channel information
-                foreach (string providerEnumKind in (ReadOnlySpan<string>)["Keywords", "Tasks", "Opcodes"])
-                {
-                    Type? nestedType = eventSourceType.GetNestedType(providerEnumKind);
-                    if (nestedType != null)
-                    {
-                        if (eventSourceType.IsAbstract)
-                        {
-                            manifest.ManifestError(SR.Format(SR.EventSource_AbstractMustNotDeclareKTOC, nestedType.Name));
-                        }
-                        else
-                        {
-                            foreach (FieldInfo staticField in nestedType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
-                            {
-                                AddProviderEnumKind(manifest, staticField, providerEnumKind);
-                            }
-                        }
-                    }
-                }
-                // ensure we have keywords for the session-filtering reserved bits
-                {
-                    manifest.AddKeyword("Session3", (long)0x1000 << 32);
-                    manifest.AddKeyword("Session2", (long)0x2000 << 32);
-                    manifest.AddKeyword("Session1", (long)0x4000 << 32);
-                    manifest.AddKeyword("Session0", (long)0x8000 << 32);
-                }
-
-                if (eventSourceType != typeof(EventSource))
-                {
-                    for (int i = 0; i < methods.Length; i++)
-                    {
-                        MethodInfo method = methods[i];
-
-                        // Compat: until v4.5.1 we ignored any non-void returning methods as well as virtual methods for
-                        // the only reason of limiting the number of methods considered to be events. This broke a common
-                        // design of having event sources implement specific interfaces. To fix this in a compatible way
-                        // we will now allow both non-void returning and virtual methods to be Event methods, as long
-                        // as they are marked with the [Event] attribute
-                        if (/* method.IsVirtual || */ method.IsStatic)
-                        {
-                            continue;
-                        }
-
-                        // Get the EventDescriptor (from the Custom attributes)
-                        EventAttribute? eventAttribute = (EventAttribute?)GetCustomAttributeHelper(method, typeof(EventAttribute), flags);
-
-                        if (eventSourceType.IsAbstract)
-                        {
-                            if (eventAttribute != null)
-                            {
-                                manifest.ManifestError(SR.Format(SR.EventSource_AbstractMustNotDeclareEventMethods, method.Name, eventAttribute.EventId));
-                            }
-                            continue;
-                        }
-                        else if (eventAttribute == null)
-                        {
-                            // Methods that don't return void can't be events, if they're NOT marked with [Event].
-                            // (see Compat comment above)
-                            if (method.ReturnType != typeof(void))
-                            {
-                                continue;
-                            }
-
-                            // Continue to ignore virtual methods if they do NOT have the [Event] attribute
-                            // (see Compat comment above)
-                            if (method.IsVirtual)
-                            {
-                                continue;
-                            }
-
-                            // If we explicitly mark the method as not being an event, then honor that.
-                            if (IsCustomAttributeDefinedHelper(method, typeof(NonEventAttribute), flags))
-                                continue;
-
-                            defaultEventAttribute = new EventAttribute(eventId);
-                            eventAttribute = defaultEventAttribute;
-                        }
-                        else if (eventAttribute.EventId <= 0)
-                        {
-                            manifest.ManifestError(SR.EventSource_NeedPositiveId, true);
-                            continue;   // don't validate anything else for this event
-                        }
-                        if (method.Name.LastIndexOf('.') >= 0)
-                        {
-                            manifest.ManifestError(SR.Format(SR.EventSource_EventMustNotBeExplicitImplementation, method.Name, eventAttribute.EventId));
-                        }
-
-                        eventId++;
-                        string eventName = method.Name;
-
-                        if (eventAttribute.Opcode == EventOpcode.Info)      // We are still using the default opcode.
-                        {
-                            // By default pick a task ID derived from the EventID, starting with the highest task number and working back
-                            bool noTask = (eventAttribute.Task == EventTask.None);
-                            if (noTask)
-                                eventAttribute.Task = (EventTask)(0xFFFE - eventAttribute.EventId);
-
-                            // Unless we explicitly set the opcode to Info (to override the auto-generate of Start or Stop opcodes,
-                            // pick a default opcode based on the event name (either Info or start or stop if the name ends with that suffix).
-                            if (!eventAttribute.IsOpcodeSet)
-                                eventAttribute.Opcode = GetOpcodeWithDefault(EventOpcode.Info, eventName);
-
-                            // Make the stop opcode have the same task as the start opcode.
-                            if (noTask)
-                            {
-                                if (eventAttribute.Opcode == EventOpcode.Start)
-                                {
-                                    if (eventName.EndsWith(ActivityStartSuffix, StringComparison.Ordinal))
-                                    {
-                                        string taskName = eventName[..^ActivityStartSuffix.Length]; // Remove the Start suffix to get the task name
-
-                                        // Add a task that is just the task name for the start event.   This suppress the auto-task generation
-                                        // That would otherwise happen (and create 'TaskName'Start as task name rather than just 'TaskName'
-                                        manifest.AddTask(taskName, (int)eventAttribute.Task);
-                                    }
-                                }
-                                else if (eventAttribute.Opcode == EventOpcode.Stop)
-                                {
-                                    // Find the start associated with this stop event.  We require start to be immediately before the stop
-                                    int startEventId = eventAttribute.EventId - 1;
-                                    Debug.Assert(0 <= startEventId);
-                                    if (eventData != null)
-                                    {
-                                        ref EventMetadata startEventMetadata = ref CollectionsMarshal.GetValueRefOrNullRef(eventData, startEventId);
-                                        if (!Unsafe.IsNullRef(ref startEventMetadata))
-                                        {
-                                            // If you remove the Stop and add a Start does that name match the Start Event's Name?
-                                            // Ideally we would throw an error
-                                            if (startEventMetadata.Descriptor.Opcode == (byte)EventOpcode.Start &&
-                                                startEventMetadata.Name.EndsWith(ActivityStartSuffix, StringComparison.Ordinal) &&
-                                                eventName.EndsWith(ActivityStopSuffix, StringComparison.Ordinal) &&
-                                                startEventMetadata.Name.AsSpan()[..^ActivityStartSuffix.Length].SequenceEqual(
-                                                    eventName.AsSpan()[..^ActivityStopSuffix.Length]))
-                                            {
-                                                // Make the stop event match the start event
-                                                eventAttribute.Task = (EventTask)startEventMetadata.Descriptor.Task;
-                                                noTask = false;
-                                            }
-                                        }
-                                    }
-                                    if (noTask && (flags & EventManifestOptions.Strict) != 0)        // Throw an error if we can compatibly.
-                                    {
-                                        throw new ArgumentException(SR.EventSource_StopsFollowStarts);
-                                    }
-                                }
-                            }
-                        }
-
-                        ParameterInfo[] args = method.GetParameters();
-
-                        bool hasRelatedActivityID = RemoveFirstArgIfRelatedActivityId(ref args);
-                        if (!(source != null && source.SelfDescribingEvents))
-                        {
-                            manifest.StartEvent(eventName, eventAttribute);
-                            for (int fieldIdx = 0; fieldIdx < args.Length; fieldIdx++)
-                            {
-                                manifest.AddEventParameter(args[fieldIdx].ParameterType, args[fieldIdx].Name!);
-                            }
-                            manifest.EndEvent();
-                        }
-
-                        if (source != null || (flags & EventManifestOptions.Strict) != 0)
-                        {
-                            Debug.Assert(eventData != null);
-                            // Do checking for user errors (optional, but not a big deal so we do it).
-                            DebugCheckEvent(ref eventsByName, eventData, method, eventAttribute, manifest, flags);
-
-                            // add the channel keyword for Event Viewer channel based filters. This is added for creating the EventDescriptors only
-                            // and is not required for the manifest
-                            if (eventAttribute.Channel != EventChannel.None)
-                            {
-                                unchecked
-                                {
-                                    eventAttribute.Keywords |= (EventKeywords)manifest.GetChannelKeyword(eventAttribute.Channel, (ulong)eventAttribute.Keywords);
-                                }
-                            }
-
-                            if (manifest.HasResources)
-                            {
-                                string eventKey = "event_" + eventName;
-                                if (manifest.GetLocalizedMessage(eventKey, CultureInfo.CurrentUICulture, etwFormat: false) is string msg)
-                                {
-                                    // overwrite inline message with the localized message
-                                    eventAttribute.Message = msg;
-                                }
-                            }
-
-                            AddEventDescriptor(ref eventData, eventName, eventAttribute, args, hasRelatedActivityID);
-                        }
-                    }
-                }
-
-                // Tell the TraceLogging stuff where to start allocating its own IDs.
-                NameInfo.ReserveEventIDsBelow(eventId);
-
-                if (source != null)
-                {
-                    Debug.Assert(eventData != null);
-                    source.m_eventData = eventData;     // officially initialize it. We do this at most once (it is racy otherwise).
-                    source.m_channelData = manifest.GetChannelData();
-                }
-
-                // if this is an abstract event source we've already performed all the validation we can
-                if (!eventSourceType.IsAbstract && (source == null || !source.SelfDescribingEvents))
-                {
-                    bNeedsManifest = (flags & EventManifestOptions.OnlyIfNeededForRegistration) == 0 || manifest.GetChannelData().Length > 0;
-
-                    // if the manifest is not needed and we're not requested to validate the event source return early
-                    if (!bNeedsManifest && (flags & EventManifestOptions.Strict) == 0)
-                        return null;
-
-                    res = manifest.CreateManifest();
-                    res = (res.Length > 0) ? res : null;
-                }
-            }
-            catch (Exception e)
-            {
-                // if this is a runtime manifest generation let the exception propagate
-                if ((flags & EventManifestOptions.Strict) == 0)
-                    throw;
-                // else store it to include it in the Argument exception we raise below
-                exception = e;
-            }
-
-            if ((flags & EventManifestOptions.Strict) != 0 && (manifest?.Errors.Count > 0 || exception != null))
-            {
-                string msg = string.Empty;
-
-                if (manifest?.Errors.Count > 0)
-                {
-                    bool firstError = true;
-                    foreach (string error in manifest.Errors)
-                    {
-                        if (!firstError)
-                            msg += Environment.NewLine;
-                        firstError = false;
-                        msg += error;
-                    }
-                }
-                else
-                    msg = "Unexpected error: " + exception!.Message;
-
-                throw new ArgumentException(msg, exception);
-            }
-
-            return bNeedsManifest ? res : null;
         }
 
         private static bool RemoveFirstArgIfRelatedActivityId(ref ParameterInfo[] args)
@@ -3914,6 +3919,22 @@ namespace System.Diagnostics.Tracing
                 EventSourceInitHelper.PreregisterEventProviders(id, name, EventSourceInitHelper.GetMetricsEventSource);
             }
         }
+
+#if CORECLR
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void InitializeDefaultEventSources(Exception* pException)
+        {
+            try
+            {
+                InitializeDefaultEventSources();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
 #endregion
     }
 
@@ -4064,637 +4085,6 @@ namespace System.Diagnostics.Tracing
         /// Only one of EtwManifestEventFormat or EtwSelfDescribingEventFormat should be specified
         /// </summary>
         EtwSelfDescribingEventFormat = 8,
-    }
-
-    /// <summary>
-    /// An EventListener represents a target for the events generated by EventSources (that is subclasses
-    /// of <see cref="EventSource"/>), in the current appdomain. When a new EventListener is created
-    /// it is logically attached to all eventSources in that appdomain. When the EventListener is Disposed, then
-    /// it is disconnected from the event eventSources. Note that there is a internal list of STRONG references
-    /// to EventListeners, which means that relying on the lack of references to EventListeners to clean up
-    /// EventListeners will NOT work. You must call EventListener.Dispose explicitly when a dispatcher is no
-    /// longer needed.
-    /// <para>
-    /// Once created, EventListeners can enable or disable on a per-eventSource basis using verbosity levels
-    /// (<see cref="EventLevel"/>) and bitfields (<see cref="EventKeywords"/>) to further restrict the set of
-    /// events to be sent to the dispatcher. The dispatcher can also send arbitrary commands to a particular
-    /// eventSource using the 'SendCommand' method. The meaning of the commands are eventSource specific.
-    /// </para><para>
-    /// The Null Guid (that is (new Guid()) has special meaning as a wildcard for 'all current eventSources in
-    /// the appdomain'. Thus it is relatively easy to turn on all events in the appdomain if desired.
-    /// </para><para>
-    /// It is possible for there to be many EventListener's defined in a single appdomain. Each dispatcher is
-    /// logically independent of the other listeners. Thus when one dispatcher enables or disables events, it
-    /// affects only that dispatcher (other listeners get the events they asked for). It is possible that
-    /// commands sent with 'SendCommand' would do a semantic operation that would affect the other listeners
-    /// (like doing a GC, or flushing data ...), but this is the exception rather than the rule.
-    /// </para><para>
-    /// Thus the model is that each EventSource keeps a list of EventListeners that it is sending events
-    /// to. Associated with each EventSource-dispatcher pair is a set of filtering criteria that determine for
-    /// that eventSource what events that dispatcher will receive.
-    /// </para><para>
-    /// Listeners receive the events on their 'OnEventWritten' method. Thus subclasses of EventListener must
-    /// override this method to do something useful with the data.
-    /// </para><para>
-    /// In addition, when new eventSources are created, the 'OnEventSourceCreate' method is called. The
-    /// invariant associated with this callback is that every eventSource gets exactly one
-    /// 'OnEventSourceCreate' call for ever eventSource that can potentially send it log messages. In
-    /// particular when a EventListener is created, typically a series of OnEventSourceCreate' calls are
-    /// made to notify the new dispatcher of all the eventSources that existed before the EventListener was
-    /// created.
-    /// </para>
-    /// </summary>
-    public abstract class EventListener : IDisposable
-    {
-        private event EventHandler<EventSourceCreatedEventArgs>? _EventSourceCreated;
-
-        /// <summary>
-        /// This event is raised whenever a new eventSource is 'attached' to the dispatcher.
-        /// This can happen for all existing EventSources when the EventListener is created
-        /// as well as for any EventSources that come into existence after the EventListener
-        /// has been created.
-        ///
-        /// These 'catch up' events are called during the construction of the EventListener.
-        /// Subclasses need to be prepared for that.
-        ///
-        /// In a multi-threaded environment, it is possible that 'EventSourceEventWrittenCallback'
-        /// events for a particular eventSource to occur BEFORE the EventSourceCreatedCallback is issued.
-        /// </summary>
-        public event EventHandler<EventSourceCreatedEventArgs>? EventSourceCreated
-        {
-            add
-            {
-                CallBackForExistingEventSources(false, value);
-
-                this._EventSourceCreated = (EventHandler<EventSourceCreatedEventArgs>?)Delegate.Combine(_EventSourceCreated, value);
-            }
-            remove
-            {
-                this._EventSourceCreated = (EventHandler<EventSourceCreatedEventArgs>?)Delegate.Remove(_EventSourceCreated, value);
-            }
-        }
-
-        /// <summary>
-        /// This event is raised whenever an event has been written by a EventSource for which
-        /// the EventListener has enabled events.
-        /// </summary>
-        public event EventHandler<EventWrittenEventArgs>? EventWritten;
-
-        /// <summary>
-        /// Create a new EventListener in which all events start off turned off (use EnableEvents to turn
-        /// them on).
-        /// </summary>
-        protected EventListener()
-        {
-            // This will cause the OnEventSourceCreated callback to fire.
-            CallBackForExistingEventSources(true, (obj, args) =>
-                args.EventSource!.AddListener((EventListener)obj!));
-        }
-
-        /// <summary>
-        /// Dispose should be called when the EventListener no longer desires 'OnEvent*' callbacks. Because
-        /// there is an internal list of strong references to all EventListeners, calling 'Dispose' directly
-        /// is the only way to actually make the listen die. Thus it is important that users of EventListener
-        /// call Dispose when they are done with their logging.
-        /// </summary>
-        public virtual void Dispose()
-        {
-            lock (EventListenersLock)
-            {
-                if (s_Listeners != null)
-                {
-                    if (this == s_Listeners)
-                    {
-                        EventListener cur = s_Listeners;
-                        s_Listeners = this.m_Next;
-                        RemoveReferencesToListenerInEventSources(cur);
-                    }
-                    else
-                    {
-                        // Find 'this' from the s_Listeners linked list.
-                        EventListener prev = s_Listeners;
-                        while (true)
-                        {
-                            EventListener? cur = prev.m_Next;
-                            if (cur == null)
-                                break;
-                            if (cur == this)
-                            {
-                                // Found our Listener, remove references to it in the eventSources
-                                prev.m_Next = cur.m_Next;       // Remove entry.
-                                RemoveReferencesToListenerInEventSources(cur);
-                                break;
-                            }
-                            prev = cur;
-                        }
-                    }
-                }
-                Validate();
-            }
-
-#if FEATURE_PERFTRACING
-            // Remove the listener from the EventPipe dispatcher. EventCommand.Update with enable==false removes it.
-            EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, false, EventLevel.LogAlways, (EventKeywords)0);
-#endif // FEATURE_PERFTRACING
-        }
-        // We don't expose a Dispose(bool), because the contract is that you don't have any non-syncronous
-        // 'cleanup' associated with this object
-
-        /// <summary>
-        /// Enable all events from the eventSource identified by 'eventSource' to the current
-        /// dispatcher that have a verbosity level of 'level' or lower.
-        ///
-        /// This call can have the effect of REDUCING the number of events sent to the
-        /// dispatcher if 'level' indicates a less verbose level than was previously enabled.
-        ///
-        /// This call never has an effect on other EventListeners.
-        ///
-        /// </summary>
-        public void EnableEvents(EventSource eventSource, EventLevel level)
-        {
-            EnableEvents(eventSource, level, EventKeywords.None);
-        }
-        /// <summary>
-        /// Enable all events from the eventSource identified by 'eventSource' to the current
-        /// dispatcher that have a verbosity level of 'level' or lower and have a event keyword
-        /// matching any of the bits in 'matchAnyKeyword'.
-        ///
-        /// This call can have the effect of REDUCING the number of events sent to the
-        /// dispatcher if 'level' indicates a less verbose level than was previously enabled or
-        /// if 'matchAnyKeyword' has fewer keywords set than where previously set.
-        ///
-        /// This call never has an effect on other EventListeners.
-        /// </summary>
-        public void EnableEvents(EventSource eventSource, EventLevel level, EventKeywords matchAnyKeyword)
-        {
-            EnableEvents(eventSource, level, matchAnyKeyword, null);
-        }
-        /// <summary>
-        /// Enable all events from the eventSource identified by 'eventSource' to the current
-        /// dispatcher that have a verbosity level of 'level' or lower and have a event keyword
-        /// matching any of the bits in 'matchAnyKeyword' as well as any (eventSource specific)
-        /// effect passing additional 'key-value' arguments 'arguments' might have.
-        ///
-        /// This call can have the effect of REDUCING the number of events sent to the
-        /// dispatcher if 'level' indicates a less verbose level than was previously enabled or
-        /// if 'matchAnyKeyword' has fewer keywords set than where previously set.
-        ///
-        /// This call never has an effect on other EventListeners.
-        /// </summary>
-        public void EnableEvents(EventSource eventSource, EventLevel level, EventKeywords matchAnyKeyword, IDictionary<string, string?>? arguments)
-        {
-            ArgumentNullException.ThrowIfNull(eventSource);
-
-            eventSource.SendCommand(this, EventProviderType.None, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
-
-#if FEATURE_PERFTRACING
-            if (eventSource.GetType() == typeof(NativeRuntimeEventSource))
-            {
-                EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, true, level, matchAnyKeyword);
-            }
-#endif // FEATURE_PERFTRACING
-        }
-        /// <summary>
-        /// Disables all events coming from eventSource identified by 'eventSource'.
-        ///
-        /// This call never has an effect on other EventListeners.
-        /// </summary>
-        public void DisableEvents(EventSource eventSource)
-        {
-            ArgumentNullException.ThrowIfNull(eventSource);
-
-            eventSource.SendCommand(this, EventProviderType.None, 0, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None, null);
-
-#if FEATURE_PERFTRACING
-            if (eventSource.GetType() == typeof(NativeRuntimeEventSource))
-            {
-                EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None);
-            }
-#endif // FEATURE_PERFTRACING
-        }
-
-        /// <summary>
-        /// EventSourceIndex is small non-negative integer (suitable for indexing in an array)
-        /// identifying EventSource. It is unique per-appdomain. Some EventListeners might find
-        /// it useful to store additional information about each eventSource connected to it,
-        /// and EventSourceIndex allows this extra information to be efficiently stored in a
-        /// (growable) array (eg List(T)).
-        /// </summary>
-        protected internal static int EventSourceIndex(EventSource eventSource) { return eventSource.m_id; }
-
-        /// <summary>
-        /// This method is called whenever a new eventSource is 'attached' to the dispatcher.
-        /// This can happen for all existing EventSources when the EventListener is created
-        /// as well as for any EventSources that come into existence after the EventListener
-        /// has been created.
-        ///
-        /// These 'catch up' events are called during the construction of the EventListener.
-        /// Subclasses need to be prepared for that.
-        ///
-        /// In a multi-threaded environment, it is possible that 'OnEventWritten' callbacks
-        /// for a particular eventSource to occur BEFORE the OnEventSourceCreated is issued.
-        /// </summary>
-        /// <param name="eventSource"></param>
-        protected internal virtual void OnEventSourceCreated(EventSource eventSource)
-        {
-            EventHandler<EventSourceCreatedEventArgs>? callBack = this._EventSourceCreated;
-            if (callBack != null)
-            {
-                EventSourceCreatedEventArgs args = new EventSourceCreatedEventArgs();
-                args.EventSource = eventSource;
-                callBack(this, args);
-            }
-        }
-
-        /// <summary>
-        /// This method is called whenever an event has been written by a EventSource for which
-        /// the EventListener has enabled events.
-        /// </summary>
-        /// <param name="eventData"></param>
-        protected internal virtual void OnEventWritten(EventWrittenEventArgs eventData)
-        {
-            this.EventWritten?.Invoke(this, eventData);
-        }
-
-#region private
-        /// <summary>
-        /// This routine adds newEventSource to the global list of eventSources, it also assigns the
-        /// ID to the eventSource (which is simply the ordinal in the global list).
-        ///
-        /// EventSources currently do not pro-actively remove themselves from this list. Instead
-        /// when eventSources's are GCed, the weak handle in this list naturally gets nulled, and
-        /// we will reuse the slot. Today this list never shrinks (but we do reuse entries
-        /// that are in the list). This seems OK since the expectation is that EventSources
-        /// tend to live for the lifetime of the appdomain anyway (they tend to be used in
-        /// global variables).
-        /// </summary>
-        /// <param name="newEventSource"></param>
-        internal static void AddEventSource(EventSource newEventSource)
-        {
-            lock (EventListenersLock)
-            {
-                Debug.Assert(s_EventSources != null);
-
-                // Periodically search the list for existing entries to reuse, this avoids
-                // unbounded memory use if we keep recycling eventSources (an unlikely thing).
-                int newIndex = -1;
-                if (s_EventSources.Count % 64 == 63)   // on every block of 64, fill up the block before continuing
-                {
-                    int i = s_EventSources.Count;      // Work from the top down.
-                    while (0 < i)
-                    {
-                        --i;
-                        WeakReference<EventSource> weakRef = s_EventSources[i];
-                        if (!weakRef.TryGetTarget(out _))
-                        {
-                            newIndex = i;
-                            weakRef.SetTarget(newEventSource);
-                            break;
-                        }
-                    }
-                }
-                if (newIndex < 0)
-                {
-                    newIndex = s_EventSources.Count;
-                    s_EventSources.Add(new WeakReference<EventSource>(newEventSource));
-                }
-                newEventSource.m_id = newIndex;
-
-#if DEBUG
-                // Disable validation of EventSource/EventListener connections in case a call to EventSource.AddListener
-                // causes a recursive call into this method.
-                bool previousValue = s_ConnectingEventSourcesAndListener;
-                s_ConnectingEventSourcesAndListener = true;
-                try
-                {
-#endif
-                    // Add every existing dispatcher to the new EventSource
-                    for (EventListener? listener = s_Listeners; listener != null; listener = listener.m_Next)
-                        newEventSource.AddListener(listener);
-#if DEBUG
-                }
-                finally
-                {
-                    s_ConnectingEventSourcesAndListener = previousValue;
-                }
-#endif
-
-                Validate();
-            }
-        }
-
-        // Whenever we have async callbacks from native code, there is an ugly issue where
-        // during .NET shutdown native code could be calling the callback, but the CLR
-        // has already prohibited callbacks to managed code in the appdomain, causing the CLR
-        // to throw a COMPLUS_BOOT_EXCEPTION.   The guideline we give is that you must unregister
-        // such callbacks on process shutdown or appdomain so that unmanaged code will never
-        // do this.  This is what this callback is for.
-        // See bug 724140 for more
-        internal static void DisposeOnShutdown()
-        {
-            Debug.Assert(EventSource.IsSupported);
-            List<EventSource> sourcesToDispose = new List<EventSource>();
-            lock (EventListenersLock)
-            {
-                Debug.Assert(s_EventSources != null);
-                foreach (WeakReference<EventSource> esRef in s_EventSources)
-                {
-                    if (esRef.TryGetTarget(out EventSource? es))
-                    {
-                        sourcesToDispose.Add(es);
-                    }
-                }
-            }
-
-            // Do not invoke Dispose under the lock as this can lead to a deadlock.
-            // See https://github.com/dotnet/runtime/issues/48342 for details.
-            Debug.Assert(!Monitor.IsEntered(EventListenersLock));
-            foreach (EventSource es in sourcesToDispose)
-            {
-                es.Dispose();
-            }
-        }
-
-        // If an EventListener calls Dispose without calling DisableEvents first we want to issue the Disable command now
-        private static void CallDisableEventsIfNecessary(EventDispatcher eventDispatcher, EventSource eventSource)
-        {
-#if DEBUG
-            // Disable validation of EventSource/EventListener connections in case a call to EventSource.AddListener
-            // causes a recursive call into this method.
-            bool previousValue = s_ConnectingEventSourcesAndListener;
-            s_ConnectingEventSourcesAndListener = true;
-            try
-            {
-#endif
-                if (eventDispatcher.m_EventEnabled == null)
-                {
-                    return;
-                }
-
-                foreach (bool value in eventDispatcher.m_EventEnabled.Values)
-                {
-                    if (value)
-                    {
-                        eventDispatcher.m_Listener.DisableEvents(eventSource);
-                    }
-                }
-#if DEBUG
-            }
-            finally
-            {
-                s_ConnectingEventSourcesAndListener = previousValue;
-            }
-#endif
-        }
-
-        /// <summary>
-        /// Helper used in code:Dispose that removes any references to 'listenerToRemove' in any of the
-        /// eventSources in the appdomain.
-        ///
-        /// The EventListenersLock must be held before calling this routine.
-        /// </summary>
-        private static void RemoveReferencesToListenerInEventSources(EventListener listenerToRemove)
-        {
-            Debug.Assert(Monitor.IsEntered(EventListenersLock));
-            // Foreach existing EventSource in the appdomain
-            Debug.Assert(s_EventSources != null);
-
-            // First pass to call DisableEvents
-            WeakReference<EventSource>[] eventSourcesSnapshot = s_EventSources.ToArray();
-            foreach (WeakReference<EventSource> eventSourceRef in eventSourcesSnapshot)
-            {
-                if (eventSourceRef.TryGetTarget(out EventSource? eventSource))
-                {
-                    EventDispatcher? cur = eventSource.m_Dispatchers;
-                    while (cur != null)
-                    {
-                        if (cur.m_Listener == listenerToRemove)
-                        {
-                            CallDisableEventsIfNecessary(cur, eventSource);
-                        }
-
-                        cur = cur.m_Next;
-                    }
-                }
-            }
-
-            // DisableEvents can call back to user code and we have to start over since s_EventSources and
-            // eventSource.m_Dispatchers could have mutated
-            foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
-            {
-                if (eventSourceRef.TryGetTarget(out EventSource? eventSource)
-                    && eventSource.m_Dispatchers != null)
-                {
-                    // Is the first output dispatcher the dispatcher we are removing?
-                    if (eventSource.m_Dispatchers.m_Listener == listenerToRemove)
-                    {
-                        eventSource.m_Dispatchers = eventSource.m_Dispatchers.m_Next;
-                    }
-                    else
-                    {
-                        // Remove 'listenerToRemove' from the eventSource.m_Dispatchers linked list.
-                        EventDispatcher? prev = eventSource.m_Dispatchers;
-                        while (true)
-                        {
-                            EventDispatcher? cur = prev.m_Next;
-                            if (cur == null)
-                            {
-                                Debug.Fail("EventSource did not have a registered EventListener!");
-                                break;
-                            }
-                            if (cur.m_Listener == listenerToRemove)
-                            {
-                                prev.m_Next = cur.m_Next;       // Remove entry.
-                                break;
-                            }
-                            prev = cur;
-                        }
-                    }
-                }
-            }
-        }
-
-
-        /// <summary>
-        /// Checks internal consistency of EventSources/Listeners.
-        /// </summary>
-        [Conditional("DEBUG")]
-        internal static void Validate()
-        {
-#if DEBUG
-            // Don't run validation code if we're in the middle of modifying the connections between EventSources and EventListeners.
-            if (s_ConnectingEventSourcesAndListener)
-            {
-                return;
-            }
-#endif
-
-            lock (EventListenersLock)
-            {
-                Debug.Assert(s_EventSources != null);
-                // Get all listeners
-                Dictionary<EventListener, bool> allListeners = new Dictionary<EventListener, bool>();
-                EventListener? cur = s_Listeners;
-                while (cur != null)
-                {
-                    allListeners.Add(cur, true);
-                    cur = cur.m_Next;
-                }
-
-                // For all eventSources
-                int id = -1;
-                foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
-                {
-                    id++;
-                    if (!eventSourceRef.TryGetTarget(out EventSource? eventSource))
-                        continue;
-                    Debug.Assert(eventSource.m_id == id, "Unexpected event source ID.");
-
-                    // None listeners on eventSources exist in the dispatcher list.
-                    EventDispatcher? dispatcher = eventSource.m_Dispatchers;
-                    while (dispatcher != null)
-                    {
-                        Debug.Assert(allListeners.ContainsKey(dispatcher.m_Listener), "EventSource has a listener not on the global list.");
-                        dispatcher = dispatcher.m_Next;
-                    }
-
-                    // Every dispatcher is on Dispatcher List of every eventSource.
-                    foreach (EventListener listener in allListeners.Keys)
-                    {
-                        dispatcher = eventSource.m_Dispatchers;
-                        while (true)
-                        {
-                            Debug.Assert(dispatcher != null, "Listener is not on all eventSources.");
-                            if (dispatcher.m_Listener == listener)
-                                break;
-                            dispatcher = dispatcher.m_Next;
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets a global lock that is intended to protect the code:s_Listeners linked list and the
-        /// code:s_EventSources list.  (We happen to use the s_EventSources list as the lock object)
-        /// </summary>
-        internal static object EventListenersLock
-        {
-            get
-            {
-                if (s_EventSources == null)
-                {
-                    Interlocked.CompareExchange(ref s_EventSources, new List<WeakReference<EventSource>>(2), null);
-                }
-                return s_EventSources;
-            }
-        }
-
-        private void CallBackForExistingEventSources(bool addToListenersList, EventHandler<EventSourceCreatedEventArgs>? callback)
-        {
-            // Pre-registered EventSources may not have been constructed yet but we need to do so now to ensure they are
-            // reported to the EventListener.
-            EventSourceInitHelper.EnsurePreregisteredEventSourcesExist();
-
-            lock (EventListenersLock)
-            {
-                Debug.Assert(s_EventSources != null);
-
-                // Disallow creating EventListener reentrancy.
-                if (s_CreatingListener)
-                {
-                    throw new InvalidOperationException(SR.EventSource_ListenerCreatedInsideCallback);
-                }
-
-                try
-                {
-                    s_CreatingListener = true;
-
-                    if (addToListenersList)
-                    {
-                        // Add to list of listeners in the system, do this BEFORE firing the 'OnEventSourceCreated' so that
-                        // Those added sources see this listener.
-                        this.m_Next = s_Listeners;
-                        s_Listeners = this;
-                    }
-
-                    if (callback != null)
-                    {
-                        // Find all existing eventSources call OnEventSourceCreated to 'catchup'
-                        // Note that we DO have reentrancy here because 'AddListener' calls out to user code (via OnEventSourceCreated callback)
-                        // We tolerate this by iterating over a copy of the list here. New event sources will take care of adding listeners themselves
-                        // EventSources are not guaranteed to be added at the end of the s_EventSource list -- We re-use slots when a new source
-                        // is created.
-                        WeakReference<EventSource>[] eventSourcesSnapshot = s_EventSources.ToArray();
-
-#if DEBUG
-                        bool previousValue = s_ConnectingEventSourcesAndListener;
-                        s_ConnectingEventSourcesAndListener = true;
-                        try
-                        {
-#endif
-                            for (int i = 0; i < eventSourcesSnapshot.Length; i++)
-                            {
-                                WeakReference<EventSource> eventSourceRef = eventSourcesSnapshot[i];
-                                if (eventSourceRef.TryGetTarget(out EventSource? eventSource))
-                                {
-                                    EventSourceCreatedEventArgs args = new EventSourceCreatedEventArgs();
-                                    args.EventSource = eventSource;
-                                    callback(this, args);
-                                }
-                            }
-#if DEBUG
-                        }
-                        finally
-                        {
-                            s_ConnectingEventSourcesAndListener = previousValue;
-                        }
-#endif
-                    }
-
-                    Validate();
-                }
-                finally
-                {
-                    s_CreatingListener = false;
-                }
-            }
-        }
-
-        // Instance fields
-        internal volatile EventListener? m_Next;                         // These form a linked list in s_Listeners
-
-        // static fields
-
-        /// <summary>
-        /// The list of all listeners in the appdomain.  Listeners must be explicitly disposed to remove themselves
-        /// from this list.   Note that EventSources point to their listener but NOT the reverse.
-        /// </summary>
-        internal static EventListener? s_Listeners;
-        /// <summary>
-        /// The list of all active eventSources in the appdomain.  Note that eventSources do NOT
-        /// remove themselves from this list this is a weak list and the GC that removes them may
-        /// not have happened yet.  Thus it can contain event sources that are dead (thus you have
-        /// to filter those out.
-        /// </summary>
-        internal static List<WeakReference<EventSource>>? s_EventSources;
-
-        /// <summary>
-        /// Used to disallow reentrancy.
-        /// </summary>
-        private static bool s_CreatingListener;
-
-#if DEBUG
-        /// <summary>
-        /// Used to disable validation of EventSource and EventListener connectivity.
-        /// This is needed when an EventListener is in the middle of being published to all EventSources
-        /// and another EventSource is created as part of the process.
-        /// </summary>
-        [ThreadStatic]
-        private static bool s_ConnectingEventSourcesAndListener;
-#endif
-
-#endregion
     }
 
     /// <summary>
@@ -4936,6 +4326,7 @@ namespace System.Diagnostics.Tracing
             TimeStamp = DateTime.UtcNow;
         }
 
+        [RequiresUnsafe]
         internal unsafe EventWrittenEventArgs(EventSource eventSource, int eventId, Guid* pActivityID, Guid* pChildActivityID)
             : this(eventSource, eventId)
         {
@@ -5299,933 +4690,6 @@ namespace System.Diagnostics.Tracing
         /// event sources using the new validation code
         /// </summary>
         AllowEventSourceOverride = 0x8,
-    }
-
-    /// <summary>
-    /// ManifestBuilder is designed to isolate the details of the message of the event from the
-    /// rest of EventSource.  This one happens to create XML.
-    /// </summary>
-    internal sealed class ManifestBuilder
-    {
-        /// <summary>
-        /// Build a manifest for 'providerName' with the given GUID, which will be packaged into 'dllName'.
-        /// 'resources, is a resource manager.  If specified all messages are localized using that manager.
-        /// </summary>
-        public ManifestBuilder(string providerName, Guid providerGuid, string? dllName, ResourceManager? resources,
-                               EventManifestOptions flags) : this(resources, flags)
-        {
-            this.providerName = providerName;
-
-            sb = new StringBuilder();
-            events = new StringBuilder();
-            templates = new StringBuilder();
-            sb.AppendLine("<instrumentationManifest xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
-            sb.AppendLine(" <instrumentation xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:win=\"http://manifests.microsoft.com/win/2004/08/windows/events\">");
-            sb.AppendLine("  <events xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
-            sb.Append($"<provider name=\"{providerName}\" guid=\"{{{providerGuid}}}\"");
-            if (dllName != null)
-                sb.Append($" resourceFileName=\"{dllName}\" messageFileName=\"{dllName}\"");
-
-            sb.Append(" symbol=\"");
-            int pos = sb.Length;
-            sb.Append(providerName); // Period and dash are illegal; replace them.
-            sb.Replace('.', '_', pos, sb.Length - pos).Replace("-", "", pos, sb.Length - pos);
-            sb.AppendLine("\">");
-        }
-
-        /// <summary>
-        /// <term>Will NOT build a manifest!</term> If the intention is to build a manifest don't use this constructor.
-        ///'resources, is a resource manager.  If specified all messages are localized using that manager.
-        /// </summary>
-        internal ManifestBuilder(ResourceManager? resources, EventManifestOptions flags)
-        {
-            providerName = "";
-
-            this.flags = flags;
-
-            this.resources = resources;
-            sb = null;
-            events = null;
-            templates = null;
-            opcodeTab = new Dictionary<int, string>();
-            stringTab = new Dictionary<string, string>();
-            errors = new List<string>();
-            perEventByteArrayArgIndices = new Dictionary<string, List<int>>();
-        }
-
-        public void AddOpcode(string name, int value)
-        {
-            if ((flags & EventManifestOptions.Strict) != 0)
-            {
-                if (value <= 10 || value >= 239)
-                {
-                    ManifestError(SR.Format(SR.EventSource_IllegalOpcodeValue, name, value));
-                }
-
-                if (opcodeTab.TryGetValue(value, out string? prevName) && !name.Equals(prevName, StringComparison.Ordinal))
-                {
-                    ManifestError(SR.Format(SR.EventSource_OpcodeCollision, name, prevName, value));
-                }
-            }
-
-            opcodeTab[value] = name;
-        }
-
-        public void AddTask(string name, int value)
-        {
-            if ((flags & EventManifestOptions.Strict) != 0)
-            {
-                if (value <= 0 || value >= 65535)
-                {
-                    ManifestError(SR.Format(SR.EventSource_IllegalTaskValue, name, value));
-                }
-
-                if (taskTab != null && taskTab.TryGetValue(value, out string? prevName) && !name.Equals(prevName, StringComparison.Ordinal))
-                {
-                    ManifestError(SR.Format(SR.EventSource_TaskCollision, name, prevName, value));
-                }
-            }
-
-            taskTab ??= new Dictionary<int, string>();
-            taskTab[value] = name;
-        }
-
-        public void AddKeyword(string name, ulong value)
-        {
-            if ((value & (value - 1)) != 0) // Must be zero or a power of 2
-            {
-                ManifestError(SR.Format(SR.EventSource_KeywordNeedPowerOfTwo, $"0x{value:x}", name), true);
-            }
-            if ((flags & EventManifestOptions.Strict) != 0)
-            {
-                if (value >= 0x0000100000000000UL && !name.StartsWith("Session", StringComparison.Ordinal))
-                {
-                    ManifestError(SR.Format(SR.EventSource_IllegalKeywordsValue, name, $"0x{value:x}"));
-                }
-
-                if (keywordTab != null && keywordTab.TryGetValue(value, out string? prevName) && !name.Equals(prevName, StringComparison.Ordinal))
-                {
-                    ManifestError(SR.Format(SR.EventSource_KeywordCollision, name, prevName, $"0x{value:x}"));
-                }
-            }
-
-            keywordTab ??= new Dictionary<ulong, string>();
-            keywordTab[value] = name;
-        }
-
-        /// <summary>
-        /// Add a channel.  channelAttribute can be null
-        /// </summary>
-        public void AddChannel(string? name, int value, EventChannelAttribute? channelAttribute)
-        {
-            EventChannel chValue = (EventChannel)value;
-            if (value < (int)EventChannel.Admin || value > 255)
-                ManifestError(SR.Format(SR.EventSource_EventChannelOutOfRange, name, value));
-            else if (chValue >= EventChannel.Admin && chValue <= EventChannel.Debug &&
-                     channelAttribute != null && EventChannelToChannelType(chValue) != channelAttribute.EventChannelType)
-            {
-                // we want to ensure developers do not define EventChannels that conflict with the builtin ones,
-                // but we want to allow them to override the default ones...
-                ManifestError(SR.Format(SR.EventSource_ChannelTypeDoesNotMatchEventChannelValue,
-                                                                            name, ((EventChannel)value).ToString()));
-            }
-
-            // TODO: validate there are no conflicting manifest exposed names (generally following the format "provider/type")
-
-            ulong kwd = GetChannelKeyword(chValue);
-
-            channelTab ??= new Dictionary<int, ChannelInfo>(4);
-            channelTab[value] = new ChannelInfo { Name = name, Keywords = kwd, Attribs = channelAttribute };
-        }
-
-        private static EventChannelType EventChannelToChannelType(EventChannel channel)
-        {
-            Debug.Assert(channel >= EventChannel.Admin && channel <= EventChannel.Debug);
-            return (EventChannelType)((int)channel - (int)EventChannel.Admin + (int)EventChannelType.Admin);
-        }
-
-        private static EventChannelAttribute GetDefaultChannelAttribute(EventChannel channel)
-        {
-            EventChannelAttribute attrib = new EventChannelAttribute();
-            attrib.EventChannelType = EventChannelToChannelType(channel);
-            if (attrib.EventChannelType <= EventChannelType.Operational)
-                attrib.Enabled = true;
-            return attrib;
-        }
-
-        public ulong[] GetChannelData()
-        {
-            if (this.channelTab == null)
-            {
-                return [];
-            }
-
-            // We create an array indexed by the channel id for fast look up.
-            // E.g. channelMask[Admin] will give you the bit mask for Admin channel.
-            int maxkey = -1;
-            foreach (int item in this.channelTab.Keys)
-            {
-                if (item > maxkey)
-                {
-                    maxkey = item;
-                }
-            }
-
-            ulong[] channelMask = new ulong[maxkey + 1];
-            foreach (KeyValuePair<int, ChannelInfo> item in this.channelTab)
-            {
-                channelMask[item.Key] = item.Value.Keywords;
-            }
-
-            return channelMask;
-        }
-
-        public void StartEvent(string eventName, EventAttribute eventAttribute)
-        {
-            Debug.Assert(numParams == 0);
-            Debug.Assert(this.eventName == null);
-            this.eventName = eventName;
-            numParams = 0;
-            byteArrArgIndices = null;
-
-            events?.Append("  <event value=\"").Append(eventAttribute.EventId).
-                Append("\" version=\"").Append(eventAttribute.Version).
-                Append("\" level=\"");
-            AppendLevelName(events, eventAttribute.Level);
-            events?.Append("\" symbol=\"").Append(eventName).Append('"');
-
-            // at this point we add to the manifest's stringTab a message that is as-of-yet
-            // "untranslated to manifest convention", b/c we don't have the number or position
-            // of any byte[] args (which require string format index updates)
-            WriteMessageAttrib(events, "event", eventName, eventAttribute.Message);
-
-            if (eventAttribute.Keywords != 0)
-            {
-                events?.Append(" keywords=\"");
-                AppendKeywords(events, (ulong)eventAttribute.Keywords, eventName);
-                events?.Append('"');
-            }
-
-            if (eventAttribute.Opcode != 0)
-            {
-                string? str = GetOpcodeName(eventAttribute.Opcode, eventName);
-                events?.Append(" opcode=\"").Append(str).Append('"');
-            }
-
-            if (eventAttribute.Task != 0)
-            {
-                string? str = GetTaskName(eventAttribute.Task, eventName);
-                events?.Append(" task=\"").Append(str).Append('"');
-            }
-
-            if (eventAttribute.Channel != 0)
-            {
-                string? str = GetChannelName(eventAttribute.Channel, eventName, eventAttribute.Message);
-                events?.Append(" channel=\"").Append(str).Append('"');
-            }
-        }
-
-        public void AddEventParameter(Type type, string name)
-        {
-            if (numParams == 0)
-                templates?.Append("  <template tid=\"").Append(eventName).AppendLine("Args\">");
-            if (type == typeof(byte[]))
-            {
-                // mark this index as "extraneous" (it has no parallel in the managed signature)
-                // we use these values in TranslateToManifestConvention()
-                byteArrArgIndices ??= new List<int>(4);
-                byteArrArgIndices.Add(numParams);
-
-                // add an extra field to the template representing the length of the binary blob
-                numParams++;
-                templates?.Append("   <data name=\"").Append(name).AppendLine("Size\" inType=\"win:UInt32\"/>");
-            }
-            numParams++;
-            templates?.Append("   <data name=\"").Append(name).Append("\" inType=\"").Append(GetTypeName(type)).Append('"');
-            // TODO: for 'byte*' types it assumes the user provided length is named using the same naming convention
-            //       as for 'byte[]' args (blob_arg_name + "Size")
-            if ((type.IsArray || type.IsPointer) && type.GetElementType() == typeof(byte))
-            {
-                // add "length" attribute to the "blob" field in the template (referencing the field added above)
-                templates?.Append(" length=\"").Append(name).Append("Size\"");
-            }
-            // ETW does not support 64-bit value maps, so we don't specify these as ETW maps
-            if (type.IsEnum && Enum.GetUnderlyingType(type) != typeof(ulong) && Enum.GetUnderlyingType(type) != typeof(long))
-            {
-                templates?.Append(" map=\"").Append(type.Name).Append('"');
-                mapsTab ??= new Dictionary<string, Type>();
-                mapsTab.TryAdd(type.Name, type);        // Remember that we need to dump the type enumeration
-            }
-
-            templates?.AppendLine("/>");
-        }
-        public void EndEvent()
-        {
-            Debug.Assert(eventName != null);
-
-            if (numParams > 0)
-            {
-                templates?.AppendLine("  </template>");
-                events?.Append(" template=\"").Append(eventName).Append("Args\"");
-            }
-            events?.AppendLine("/>");
-
-            if (byteArrArgIndices != null)
-                perEventByteArrayArgIndices[eventName] = byteArrArgIndices;
-
-            // at this point we have all the information we need to translate the C# Message
-            // to the manifest string we'll put in the stringTab
-            string prefixedEventName = "event_" + eventName;
-            if (stringTab.TryGetValue(prefixedEventName, out string? msg))
-            {
-                msg = TranslateToManifestConvention(msg, eventName);
-                stringTab[prefixedEventName] = msg;
-            }
-
-            eventName = null;
-            numParams = 0;
-            byteArrArgIndices = null;
-        }
-
-        // Channel keywords are generated one per channel to allow channel based filtering in event viewer. These keywords are autogenerated
-        // by mc.exe for compiling a manifest and are based on the order of the channels (fields) in the Channels inner class (when advanced
-        // channel support is enabled), or based on the order the predefined channels appear in the EventAttribute properties (for simple
-        // support). The manifest generated *MUST* have the channels specified in the same order (that's how our computed keywords are mapped
-        // to channels by the OS infrastructure).
-        // If channelKeyworkds is present, and has keywords bits in the ValidPredefinedChannelKeywords then it is
-        // assumed that the keyword for that channel should be that bit.
-        // otherwise we allocate a channel bit for the channel.
-        // explicit channel bits are only used by WCF to mimic an existing manifest,
-        // so we don't dont do error checking.
-        public ulong GetChannelKeyword(EventChannel channel, ulong channelKeyword = 0)
-        {
-            // strip off any non-channel keywords, since we are only interested in channels here.
-            channelKeyword &= ValidPredefinedChannelKeywords;
-            channelTab ??= new Dictionary<int, ChannelInfo>(4);
-
-            if (channelTab.Count == MaxCountChannels)
-                ManifestError(SR.EventSource_MaxChannelExceeded);
-
-            if (!channelTab.TryGetValue((int)channel, out ChannelInfo? info))
-            {
-                // If we were not given an explicit channel, allocate one.
-                if (channelKeyword == 0)
-                {
-                    channelKeyword = nextChannelKeywordBit;
-                    nextChannelKeywordBit >>= 1;
-                }
-            }
-            else
-            {
-                channelKeyword = info.Keywords;
-            }
-
-            return channelKeyword;
-        }
-
-        public byte[] CreateManifest()
-        {
-            string str = CreateManifestString();
-            return (str != "") ? Encoding.UTF8.GetBytes(str) : [];
-        }
-
-        public IList<string> Errors => errors;
-
-        public bool HasResources => resources != null;
-
-        /// <summary>
-        /// When validating an event source it adds the error to the error collection.
-        /// When not validating it throws an exception if runtimeCritical is "true".
-        /// Otherwise the error is ignored.
-        /// </summary>
-        /// <param name="msg"></param>
-        /// <param name="runtimeCritical"></param>
-        public void ManifestError(string msg, bool runtimeCritical = false)
-        {
-            if ((flags & EventManifestOptions.Strict) != 0)
-                errors.Add(msg);
-            else if (runtimeCritical)
-                throw new ArgumentException(msg);
-        }
-
-        private string CreateManifestString()
-        {
-            Span<char> ulongHexScratch = stackalloc char[16]; // long enough for ulong.MaxValue formatted as hex
-
-            // Write out the channels
-            if (channelTab != null)
-            {
-                sb?.AppendLine(" <channels>");
-                var sortedChannels = new List<KeyValuePair<int, ChannelInfo>>();
-                foreach (KeyValuePair<int, ChannelInfo> p in channelTab) { sortedChannels.Add(p); }
-                sortedChannels.Sort((p1, p2) => -Comparer<ulong>.Default.Compare(p1.Value.Keywords, p2.Value.Keywords));
-
-                foreach (KeyValuePair<int, ChannelInfo> kvpair in sortedChannels)
-                {
-                    int channel = kvpair.Key;
-                    ChannelInfo channelInfo = kvpair.Value;
-
-                    string? channelType = null;
-                    bool enabled = false;
-                    string? fullName = null;
-
-                    if (channelInfo.Attribs != null)
-                    {
-                        EventChannelAttribute attribs = channelInfo.Attribs;
-                        if (Enum.IsDefined(attribs.EventChannelType))
-                            channelType = attribs.EventChannelType.ToString();
-                        enabled = attribs.Enabled;
-                    }
-
-                    fullName ??= providerName + "/" + channelInfo.Name;
-
-                    sb?.Append("  <channel chid=\"").Append(channelInfo.Name).Append("\" name=\"").Append(fullName).Append('"');
-                    Debug.Assert(channelInfo.Name != null);
-                    WriteMessageAttrib(sb, "channel", channelInfo.Name, null);
-                    sb?.Append(" value=\"").Append(channel).Append('"');
-                    if (channelType != null)
-                        sb?.Append(" type=\"").Append(channelType).Append('"');
-                    sb?.Append(" enabled=\"").Append(enabled ? "true" : "false").AppendLine("\"/>");
-                }
-                sb?.AppendLine(" </channels>");
-            }
-
-            // Write out the tasks
-            if (taskTab != null)
-            {
-                sb?.AppendLine(" <tasks>");
-                var sortedTasks = new List<int>(taskTab.Keys);
-                sortedTasks.Sort();
-
-                foreach (int task in sortedTasks)
-                {
-                    sb?.Append("  <task");
-                    WriteNameAndMessageAttribs(sb, "task", taskTab[task]);
-                    sb?.Append(" value=\"").Append(task).AppendLine("\"/>");
-                }
-                sb?.AppendLine(" </tasks>");
-            }
-
-            // Write out the maps
-
-            // Scoping the call to enum GetFields to a local function to limit the trimming suppressions
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Trimmer does not trim enums")]
-            static FieldInfo[] GetEnumFields(Type localEnumType)
-            {
-                Debug.Assert(localEnumType.IsEnum);
-                return localEnumType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
-            }
-
-            if (mapsTab != null)
-            {
-                sb?.AppendLine(" <maps>");
-                foreach (Type enumType in mapsTab.Values)
-                {
-                    bool isbitmap = EventSource.IsCustomAttributeDefinedHelper(enumType, typeof(FlagsAttribute), flags);
-                    string mapKind = isbitmap ? "bitMap" : "valueMap";
-                    sb?.Append("  <").Append(mapKind).Append(" name=\"").Append(enumType.Name).AppendLine("\">");
-
-                    // write out each enum value
-                    FieldInfo[] staticFields = GetEnumFields(enumType);
-                    bool anyValuesWritten = false;
-                    foreach (FieldInfo staticField in staticFields)
-                    {
-                        object? constantValObj = staticField.GetRawConstantValue();
-
-                        if (constantValObj != null)
-                        {
-                            ulong hexValue;
-                            if (constantValObj is ulong)
-                                hexValue = (ulong)constantValObj;    // This is the only integer type that can't be represented by a long.
-                            else
-                                hexValue = (ulong)Convert.ToInt64(constantValObj); // Handles all integer types except ulong.
-
-                            // ETW requires all bitmap values to be powers of 2.  Skip the ones that are not.
-                            // TODO: Warn people about the dropping of values.
-                            if (isbitmap && !BitOperations.IsPow2(hexValue))
-                                continue;
-
-                            hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                            ReadOnlySpan<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
-
-                            sb?.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
-                            WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
-                            sb?.AppendLine("/>");
-                            anyValuesWritten = true;
-                        }
-                    }
-
-                    // the OS requires that bitmaps and valuemaps have at least one value or it reject the whole manifest.
-                    // To avoid that put a 'None' entry if there are no other values.
-                    if (!anyValuesWritten)
-                    {
-                        sb?.Append("   <map value=\"0x0\"");
-                        WriteMessageAttrib(sb, "map", enumType.Name + ".None", "None");
-                        sb?.AppendLine("/>");
-                    }
-                    sb?.Append("  </").Append(mapKind).AppendLine(">");
-                }
-                sb?.AppendLine(" </maps>");
-            }
-
-            // Write out the opcodes
-            sb?.AppendLine(" <opcodes>");
-            var sortedOpcodes = new List<int>(opcodeTab.Keys);
-            sortedOpcodes.Sort();
-
-            foreach (int opcode in sortedOpcodes)
-            {
-                sb?.Append("  <opcode");
-                WriteNameAndMessageAttribs(sb, "opcode", opcodeTab[opcode]);
-                sb?.Append(" value=\"").Append(opcode).AppendLine("\"/>");
-            }
-            sb?.AppendLine(" </opcodes>");
-
-            // Write out the keywords
-            if (keywordTab != null)
-            {
-                sb?.AppendLine(" <keywords>");
-                var sortedKeywords = new List<ulong>(keywordTab.Keys);
-                sortedKeywords.Sort();
-
-                foreach (ulong keyword in sortedKeywords)
-                {
-                    sb?.Append("  <keyword");
-                    WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
-                    keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                    ReadOnlySpan<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
-                    sb?.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
-                }
-                sb?.AppendLine(" </keywords>");
-            }
-
-            sb?.AppendLine(" <events>");
-            sb?.Append(events);
-            sb?.AppendLine(" </events>");
-
-            sb?.AppendLine(" <templates>");
-            if (templates?.Length > 0)
-            {
-                sb?.Append(templates);
-            }
-            else
-            {
-                // Work around a corner-case ETW issue where a manifest with no templates causes
-                // ETW events to not get sent to their associated channel.
-                sb?.AppendLine("    <template tid=\"_empty\"></template>");
-            }
-            sb?.AppendLine(" </templates>");
-
-            sb?.AppendLine("</provider>");
-            sb?.AppendLine("</events>");
-            sb?.AppendLine("</instrumentation>");
-
-            // Output the localization information.
-            sb?.AppendLine("<localization>");
-
-            var sortedStrings = new string[stringTab.Keys.Count];
-            stringTab.Keys.CopyTo(sortedStrings, 0);
-            Array.Sort(sortedStrings, StringComparer.Ordinal);
-
-            CultureInfo ci = CultureInfo.CurrentUICulture;
-            sb?.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");
-            sb?.AppendLine("  <stringTable>");
-            foreach (string stringKey in sortedStrings)
-            {
-                string? val = GetLocalizedMessage(stringKey, ci, etwFormat: true);
-                sb?.Append("   <string id=\"").Append(stringKey).Append("\" value=\"").Append(val).AppendLine("\"/>");
-            }
-            sb?.AppendLine("  </stringTable>");
-            sb?.AppendLine(" </resources>");
-
-            sb?.AppendLine("</localization>");
-            sb?.AppendLine("</instrumentationManifest>");
-            return sb?.ToString() ?? "";
-        }
-
-#region private
-        private void WriteNameAndMessageAttribs(StringBuilder? stringBuilder, string elementName, string name)
-        {
-            stringBuilder?.Append(" name=\"").Append(name).Append('"');
-            WriteMessageAttrib(sb, elementName, name, name);
-        }
-        private void WriteMessageAttrib(StringBuilder? stringBuilder, string elementName, string name, string? value)
-        {
-            string? key = null;
-
-            // See if the user wants things localized.
-            if (resources != null)
-            {
-                // resource fallback: strings in the neutral culture will take precedence over inline strings
-                key = elementName + "_" + name;
-                if (resources.GetString(key, CultureInfo.InvariantCulture) is string localizedString)
-                    value = localizedString;
-            }
-
-            if (value == null)
-                return;
-
-            key ??= elementName + "_" + name;
-            stringBuilder?.Append(" message=\"$(string.").Append(key).Append(")\"");
-
-            if (stringTab.TryGetValue(key, out string? prevValue) && !prevValue.Equals(value))
-            {
-                ManifestError(SR.Format(SR.EventSource_DuplicateStringKey, key), true);
-                return;
-            }
-
-            stringTab[key] = value;
-        }
-        internal string? GetLocalizedMessage(string key, CultureInfo ci, bool etwFormat)
-        {
-            string? value = null;
-            if (resources != null)
-            {
-                string? localizedString = resources.GetString(key, ci);
-                if (localizedString != null)
-                {
-                    value = localizedString;
-                    if (etwFormat && key.StartsWith("event_", StringComparison.Ordinal))
-                    {
-                        string evtName = key.Substring("event_".Length);
-                        value = TranslateToManifestConvention(value, evtName);
-                    }
-                }
-            }
-            if (etwFormat && value == null)
-                stringTab.TryGetValue(key, out value);
-
-            return value;
-        }
-
-        private static void AppendLevelName(StringBuilder? sb, EventLevel level)
-        {
-            if ((int)level < 16)
-            {
-                sb?.Append("win:");
-            }
-
-            sb?.Append(level switch // avoid boxing that comes from level.ToString()
-            {
-                EventLevel.LogAlways => nameof(EventLevel.LogAlways),
-                EventLevel.Critical => nameof(EventLevel.Critical),
-                EventLevel.Error => nameof(EventLevel.Error),
-                EventLevel.Warning => nameof(EventLevel.Warning),
-                EventLevel.Informational => nameof(EventLevel.Informational),
-                EventLevel.Verbose => nameof(EventLevel.Verbose),
-                _ => ((int)level).ToString()
-            });
-        }
-
-        private string? GetChannelName(EventChannel channel, string eventName, string? eventMessage)
-        {
-            if (channelTab == null || !channelTab.TryGetValue((int)channel, out ChannelInfo? info))
-            {
-                if (channel < EventChannel.Admin) // || channel > EventChannel.Debug)
-                    ManifestError(SR.Format(SR.EventSource_UndefinedChannel, channel, eventName));
-
-                // allow channels to be auto-defined.  The well known ones get their well known names, and the
-                // rest get names Channel<N>.  This allows users to modify the Manifest if they want more advanced features.
-                channelTab ??= new Dictionary<int, ChannelInfo>(4);
-
-                string channelName = channel.ToString();        // For well know channels this is a nice name, otherwise a number
-                if (EventChannel.Debug < channel)
-                    channelName = "Channel" + channelName;      // Add a 'Channel' prefix for numbers.
-
-                AddChannel(channelName, (int)channel, GetDefaultChannelAttribute(channel));
-                if (!channelTab.TryGetValue((int)channel, out info))
-                    ManifestError(SR.Format(SR.EventSource_UndefinedChannel, channel, eventName));
-            }
-            // events that specify admin channels *must* have non-null "Message" attributes
-            if (resources != null)
-                eventMessage ??= resources.GetString("event_" + eventName, CultureInfo.InvariantCulture);
-
-            Debug.Assert(info!.Attribs != null);
-            if (info.Attribs.EventChannelType == EventChannelType.Admin && eventMessage == null)
-                ManifestError(SR.Format(SR.EventSource_EventWithAdminChannelMustHaveMessage, eventName, info.Name));
-            return info.Name;
-        }
-        private string GetTaskName(EventTask task, string eventName)
-        {
-            if (task == EventTask.None)
-                return "";
-
-            taskTab ??= new Dictionary<int, string>();
-            if (!taskTab.TryGetValue((int)task, out string? ret))
-                ret = taskTab[(int)task] = eventName;
-            return ret;
-        }
-
-        private string? GetOpcodeName(EventOpcode opcode, string eventName)
-        {
-            switch (opcode)
-            {
-                case EventOpcode.Info:
-                    return "win:Info";
-                case EventOpcode.Start:
-                    return "win:Start";
-                case EventOpcode.Stop:
-                    return "win:Stop";
-                case EventOpcode.DataCollectionStart:
-                    return "win:DC_Start";
-                case EventOpcode.DataCollectionStop:
-                    return "win:DC_Stop";
-                case EventOpcode.Extension:
-                    return "win:Extension";
-                case EventOpcode.Reply:
-                    return "win:Reply";
-                case EventOpcode.Resume:
-                    return "win:Resume";
-                case EventOpcode.Suspend:
-                    return "win:Suspend";
-                case EventOpcode.Send:
-                    return "win:Send";
-                case EventOpcode.Receive:
-                    return "win:Receive";
-            }
-
-            if (opcodeTab == null || !opcodeTab.TryGetValue((int)opcode, out string? ret))
-            {
-                ManifestError(SR.Format(SR.EventSource_UndefinedOpcode, opcode, eventName), true);
-                ret = null;
-            }
-
-            return ret;
-        }
-
-        private void AppendKeywords(StringBuilder? sb, ulong keywords, string eventName)
-        {
-            // ignore keywords associate with channels
-            // See ValidPredefinedChannelKeywords def for more.
-            keywords &= ~ValidPredefinedChannelKeywords;
-
-            bool appended = false;
-            for (ulong bit = 1; bit != 0; bit <<= 1)
-            {
-                if ((keywords & bit) != 0)
-                {
-                    string? keyword = null;
-                    if ((keywordTab == null || !keywordTab.TryGetValue(bit, out keyword)) &&
-                        (bit >= (ulong)0x1000000000000))
-                    {
-                        // do not report Windows reserved keywords in the manifest (this allows the code
-                        // to be resilient to potential renaming of these keywords)
-                        keyword = string.Empty;
-                    }
-                    if (keyword == null)
-                    {
-                        ManifestError(SR.Format(SR.EventSource_UndefinedKeyword, "0x" + bit.ToString("x", CultureInfo.CurrentCulture), eventName), true);
-                        keyword = string.Empty;
-                    }
-
-                    if (keyword.Length != 0)
-                    {
-                        if (appended)
-                        {
-                            sb?.Append(' ');
-                        }
-
-                        sb?.Append(keyword);
-                        appended = true;
-                    }
-                }
-            }
-        }
-
-        private string GetTypeName(Type type)
-        {
-            if (type.IsEnum)
-            {
-                string typeName = GetTypeName(type.GetEnumUnderlyingType());
-                return typeName switch // ETW requires enums to be unsigned.
-                {
-                    "win:Int8" => "win:UInt8",
-                    "win:Int16" => "win:UInt16",
-                    "win:Int32" => "win:UInt32",
-                    "win:Int64" => "win:UInt64",
-                    _ => typeName,
-                };
-            }
-
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Boolean:
-                    return "win:Boolean";
-                case TypeCode.Byte:
-                    return "win:UInt8";
-                case TypeCode.Char:
-                case TypeCode.UInt16:
-                    return "win:UInt16";
-                case TypeCode.UInt32:
-                    return "win:UInt32";
-                case TypeCode.UInt64:
-                    return "win:UInt64";
-                case TypeCode.SByte:
-                    return "win:Int8";
-                case TypeCode.Int16:
-                    return "win:Int16";
-                case TypeCode.Int32:
-                    return "win:Int32";
-                case TypeCode.Int64:
-                    return "win:Int64";
-                case TypeCode.String:
-                    return "win:UnicodeString";
-                case TypeCode.Single:
-                    return "win:Float";
-                case TypeCode.Double:
-                    return "win:Double";
-                case TypeCode.DateTime:
-                    return "win:FILETIME";
-                default:
-                    if (type == typeof(Guid))
-                        return "win:GUID";
-                    else if (type == typeof(IntPtr))
-                        return "win:Pointer";
-                    else if ((type.IsArray || type.IsPointer) && type.GetElementType() == typeof(byte))
-                        return "win:Binary";
-
-                    ManifestError(SR.Format(SR.EventSource_UnsupportedEventTypeInManifest, type.Name), true);
-                    return string.Empty;
-            }
-        }
-
-        private static void UpdateStringBuilder([NotNull] ref StringBuilder? stringBuilder, string eventMessage, int startIndex, int count)
-        {
-            stringBuilder ??= new StringBuilder();
-            stringBuilder.Append(eventMessage, startIndex, count);
-        }
-
-        private static readonly string[] s_escapes = ["&amp;", "&lt;", "&gt;", "&apos;", "&quot;", "%r", "%n", "%t"];
-        // Manifest messages use %N conventions for their message substitutions.   Translate from
-        // .NET conventions.   We can't use RegEx for this (we are in mscorlib), so we do it 'by hand'
-        private string TranslateToManifestConvention(string eventMessage, string evtName)
-        {
-            StringBuilder? stringBuilder = null;        // We lazily create this
-            int writtenSoFar = 0;
-            for (int i = 0; ;)
-            {
-                if (i >= eventMessage.Length)
-                {
-                    if (stringBuilder == null)
-                        return eventMessage;
-                    UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
-                    return stringBuilder.ToString();
-                }
-
-                int chIdx;
-                if (eventMessage[i] == '%')
-                {
-                    // handle format message escaping character '%' by escaping it
-                    UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
-                    stringBuilder.Append("%%");
-                    i++;
-                    writtenSoFar = i;
-                }
-                else if (i < eventMessage.Length - 1 &&
-                    (eventMessage[i] == '{' && eventMessage[i + 1] == '{' || eventMessage[i] == '}' && eventMessage[i + 1] == '}'))
-                {
-                    // handle C# escaped '{" and '}'
-                    UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
-                    stringBuilder.Append(eventMessage[i]);
-                    i++; i++;
-                    writtenSoFar = i;
-                }
-                else if (eventMessage[i] == '{')
-                {
-                    int leftBracket = i;
-                    i++;
-                    int argNum = 0;
-                    while (i < eventMessage.Length && char.IsDigit(eventMessage[i]))
-                    {
-                        argNum = argNum * 10 + eventMessage[i] - '0';
-                        i++;
-                    }
-                    if (i < eventMessage.Length && eventMessage[i] == '}')
-                    {
-                        i++;
-                        UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, leftBracket - writtenSoFar);
-                        int manIndex = TranslateIndexToManifestConvention(argNum, evtName);
-                        stringBuilder.Append('%').Append(manIndex);
-                        // An '!' after the insert specifier {n} will be interpreted as a literal.
-                        // We'll escape it so that mc.exe does not attempt to consider it the
-                        // beginning of a format string.
-                        if (i < eventMessage.Length && eventMessage[i] == '!')
-                        {
-                            i++;
-                            stringBuilder.Append("%!");
-                        }
-                        writtenSoFar = i;
-                    }
-                    else
-                    {
-                        ManifestError(SR.Format(SR.EventSource_UnsupportedMessageProperty, evtName, eventMessage));
-                    }
-                }
-                else if ((chIdx = "&<>'\"\r\n\t".IndexOf(eventMessage[i])) >= 0)
-                {
-                    UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
-                    i++;
-                    stringBuilder.Append(s_escapes[chIdx]);
-                    writtenSoFar = i;
-                }
-                else
-                    i++;
-            }
-        }
-
-        private int TranslateIndexToManifestConvention(int idx, string evtName)
-        {
-            if (perEventByteArrayArgIndices.TryGetValue(evtName, out List<int>? byteArrArgIndices))
-            {
-                foreach (int byArrIdx in byteArrArgIndices)
-                {
-                    if (idx >= byArrIdx)
-                        ++idx;
-                    else
-                        break;
-                }
-            }
-            return idx + 1;
-        }
-
-        private sealed class ChannelInfo
-        {
-            public string? Name;
-            public ulong Keywords;
-            public EventChannelAttribute? Attribs;
-        }
-
-        private readonly Dictionary<int, string> opcodeTab;
-        private Dictionary<int, string>? taskTab;
-        private Dictionary<int, ChannelInfo>? channelTab;
-        private Dictionary<ulong, string>? keywordTab;
-        private Dictionary<string, Type>? mapsTab;
-        private readonly Dictionary<string, string> stringTab;       // Maps unlocalized strings to localized ones
-
-        // WCF used EventSource to mimic a existing ETW manifest.   To support this
-        // in just their case, we allowed them to specify the keywords associated
-        // with their channels explicitly.   ValidPredefinedChannelKeywords is
-        // this set of channel keywords that we allow to be explicitly set.  You
-        // can ignore these bits otherwise.
-        internal const ulong ValidPredefinedChannelKeywords = 0xF000000000000000;
-        private ulong nextChannelKeywordBit = 0x8000000000000000;   // available Keyword bit to be used for next channel definition, grows down
-        private const int MaxCountChannels = 8; // a manifest can defined at most 8 ETW channels
-
-        private readonly StringBuilder? sb;               // Holds the provider information.
-        private readonly StringBuilder? events;           // Holds the events.
-        private readonly StringBuilder? templates;
-        private readonly string providerName;
-        private readonly ResourceManager? resources;      // Look up localized strings here.
-        private readonly EventManifestOptions flags;
-        private readonly List<string> errors;           // list of currently encountered errors
-        private readonly Dictionary<string, List<int>> perEventByteArrayArgIndices;  // "event_name" -> List_of_Indices_of_Byte[]_Arg
-
-        // State we track between StartEvent and EndEvent.
-        private string? eventName;               // Name of the event currently being processed.
-        private int numParams;                  // keeps track of the number of args the event has.
-        private List<int>? byteArrArgIndices;   // keeps track of the index of each byte[] argument
-#endregion
     }
 
     /// <summary>

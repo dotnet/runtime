@@ -13,6 +13,10 @@
 #endif
 #include "comcallablewrapper.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif
+
 //#define ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP 1
 
 #define STUBMANAGER_RANGELIST(stubManager) (stubManager::g_pManager->GetRangeList())
@@ -639,6 +643,10 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         ExecutionManager::Unload(pDomainLoaderAllocatorDestroyIterator);
         pDomainLoaderAllocatorDestroyIterator->UninitVirtualCallStubManager();
 
+#ifdef FEATURE_INTERPRETER
+        InterpDispatchCache_ClearForLoaderAllocator(pDomainLoaderAllocatorDestroyIterator);
+#endif
+
         // TODO: Do we really want to perform this on each LoaderAllocator?
         MethodTable::ClearMethodDataCache();
 
@@ -1044,17 +1052,8 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
     // Initialize managed loader allocator reference holder
     //
 
-    MethodTable *pMT = CoreLibBinder::GetClass(CLASS__LOADERALLOCATOR);
-
-    *pKeepLoaderAllocatorAlive = (LOADERALLOCATORREF)AllocateObject(pMT);
-
-    MethodDescCallSite initLoaderAllocator(METHOD__LOADERALLOCATOR__CTOR, (OBJECTREF *)pKeepLoaderAllocatorAlive);
-
-    ARG_SLOT args[] = {
-        ObjToArgSlot(*pKeepLoaderAllocatorAlive)
-    };
-
-    initLoaderAllocator.Call(args);
+    UnmanagedCallersOnlyCaller initLoaderAllocator(METHOD__LOADERALLOCATOR__CREATE);
+    initLoaderAllocator.InvokeThrowing(pKeepLoaderAllocatorAlive);
 
     m_hLoaderAllocatorObjectHandle = AppDomain::GetCurrentDomain()->CreateLongWeakHandle(*pKeepLoaderAllocatorAlive);
 
