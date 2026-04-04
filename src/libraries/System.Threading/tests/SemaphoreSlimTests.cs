@@ -622,9 +622,6 @@ namespace System.Threading.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static async Task WaitAsync_AvailableWaitHandle_ConcurrentInit_StaysConsistent()
         {
-            // Stress test for the race where AvailableWaitHandle is lazily initialized concurrently
-            // with the lock-free WaitAsync fast path consuming the last permit (count 1→0).
-            // Invariant: the wait handle must be non-signaled whenever CurrentCount == 0.
             const int Iterations = 10_000;
             var sem = new SemaphoreSlim(1, 1);
 
@@ -635,16 +632,21 @@ namespace System.Threading.Tests
                     _ = sem.AvailableWaitHandle;
             });
 
-            for (int i = 0; i < Iterations; i++)
+            try
             {
-                await sem.WaitAsync();
-                // Count is 0; the handle must not be signaled.
-                Assert.False(sem.AvailableWaitHandle.WaitOne(0));
-                sem.Release();
+                for (int i = 0; i < Iterations; i++)
+                {
+                    await sem.WaitAsync();
+                    // Count is 0; the handle must not be signaled.
+                    Assert.False(sem.AvailableWaitHandle.WaitOne(0));
+                    sem.Release();
+                }
             }
-
-            cts.Cancel();
-            await accessor;
+            finally
+            {
+                cts.Cancel();
+                await accessor;
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
