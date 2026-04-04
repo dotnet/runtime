@@ -278,7 +278,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
-        public static void MissingTransitiveDependency_ExceptionMessageContainsRequestingAssemblyChain()
+        public static void MissingTransitiveDependency_ShowsRequestingAssemblyChain()
         {
             // MissingDependency.Root depends on MissingDependency.Mid which depends on MissingDependency.Leaf.
             // MissingDependency.Leaf.dll is not deployed (via PrivateAssets=all in Mid's project reference).

@@ -1115,7 +1115,7 @@ public:
         return m_AssemblyCache.LookupAssembly(pSpec, fThrow);
     }
 
-    Assembly* FindCachedParentAssembly(Assembly* pAssembly);
+    void GetParentAssemblyChain(Assembly *pStartAssembly, SString &chain, int maxDepth);
 
 private:
     PEAssembly* FindCachedFile(AssemblySpec* pSpec, BOOL fThrow = TRUE);

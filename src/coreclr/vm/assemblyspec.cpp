@@ -731,16 +731,17 @@ PEAssembly *AssemblySpecBindingCache::LookupFile(AssemblySpec *pSpec, BOOL fThro
     }
 }
 
-// Caller should hold a lock for this cache when calling this method
-Assembly *AssemblySpecBindingCache::LookupParentAssemblyForAssembly(Assembly *pAssembly)
+// Caller must hold DomainCacheCrst.
+// The binding cache may contain multiple entries for the same assembly
+// (bound under different AssemblySpecs), possibly with a different parent.
+// The first match found during iteration wins, so the map is best-effort.
+void AssemblySpecBindingCache::GetParentAssemblyMap(MapSHash<Assembly*, Assembly*> &parentMap)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
-        PRECONDITION(pAssembly != NULL);
     }
     CONTRACTL_END;
 
@@ -748,16 +749,18 @@ Assembly *AssemblySpecBindingCache::LookupParentAssemblyForAssembly(Assembly *pA
     while (!i.end())
     {
         AssemblyBinding *b = (AssemblyBinding*) i.GetValue();
-        if (!b->IsError() && b->GetAssembly() == pAssembly)
+        if (!b->IsError())
         {
+            Assembly *pAssembly = b->GetAssembly();
             Assembly *pParent = b->GetParentAssembly();
-            if (pParent != NULL)
-                return pParent;
+            if (pAssembly != NULL && pParent != NULL)
+            {
+                if (parentMap.LookupPtr(pAssembly) == NULL)
+                    parentMap.Add(pAssembly, pParent);
+            }
         }
         ++i;
     }
-
-    return NULL;
 }
 
 

@@ -3043,20 +3043,43 @@ BOOL AppDomain::IsCached(AssemblySpec *pSpec)
     return m_AssemblyCache.Contains(pSpec);
 }
 
-Assembly* AppDomain::FindCachedParentAssembly(Assembly* pAssembly)
+void AppDomain::GetParentAssemblyChain(Assembly *pStartAssembly, SString &chain, int maxDepth)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
 
-    // LookupParentAssemblyForAssembly iterates over the values in cache.
-    // Take the lock to protect against concurrent modifications.
+    // Hold the lock for the entire chain build so that all Assembly*
+    // from the cache are safe from collectible ALC unload.
     DomainCacheCrstHolderForGCPreemp lock(this);
-    return m_AssemblyCache.LookupParentAssemblyForAssembly(pAssembly);
+
+    MapSHash<Assembly*, Assembly*> parentMap;
+    m_AssemblyCache.GetParentAssemblyMap(parentMap);
+
+    Assembly *pWalkAssembly = pStartAssembly;
+    for (int depth = 0; depth < maxDepth && pWalkAssembly != NULL; depth++)
+    {
+        Assembly *pParent;
+        if (!parentMap.Lookup(pWalkAssembly, &pParent))
+            break;
+
+        if (pParent == pWalkAssembly)
+            break;
+
+        StackSString parentName;
+        pParent->GetDisplayName(parentName);
+        chain.Append(W("\n --> "));
+        chain.Append(parentName);
+
+        if (pParent->IsSystem())
+            break;
+
+        pWalkAssembly = pParent;
+    }
 }
 
 PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/)

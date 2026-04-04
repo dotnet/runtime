@@ -1662,31 +1662,9 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
 
             EX_TRY
             {
-                Assembly *pWalkAssembly = pParentAssembly;
-                int depth = 0;
                 const int MaxChainDepth = 10;
-
-                // The binding cache may contain multiple entries for the same assembly
-                // (bound under different AssemblySpecs), possibly with a different parent.
-                // LookupParentAssemblyForAssembly returns the first match found during
-                // iteration, so the chain is best-effort to provide what info we can
-                while (pWalkAssembly != NULL && depth < MaxChainDepth)
-                {
-                    pParentAssembly = AppDomain::GetCurrentDomain()->FindCachedParentAssembly(pWalkAssembly);
-                    if (pParentAssembly == NULL || pParentAssembly == pWalkAssembly)
-                        break;
-
-                    StackSString parentName;
-                    pParentAssembly->GetDisplayName(parentName);
-                    requestingChain.Append(W("\n --> "));
-                    requestingChain.Append(parentName);
-
-                    if (pParentAssembly->IsSystem())
-                        break;
-
-                    pWalkAssembly = pParentAssembly;
-                    depth++;
-                }
+                AppDomain::GetCurrentDomain()->GetParentAssemblyChain(
+                    pParentAssembly, requestingChain, MaxChainDepth);
             }
             EX_CATCH
             {

@@ -494,7 +494,7 @@ class AssemblySpecBindingCache
 
     Assembly *LookupAssembly(AssemblySpec *pSpec, BOOL fThrow=TRUE);
     PEAssembly *LookupFile(AssemblySpec *pSpec, BOOL fThrow = TRUE);
-    Assembly *LookupParentAssemblyForAssembly(Assembly *pAssembly);
+    void GetParentAssemblyMap(MapSHash<Assembly*, Assembly*> &parentMap);
 
     BOOL StoreAssembly(AssemblySpec *pSpec, Assembly *pAssembly);
     BOOL StorePEAssembly(AssemblySpec *pSpec, PEAssembly *pPEAssembly);
