@@ -46,29 +46,55 @@ PhaseStatus WasmRegAlloc::doRegisterAllocation()
 // Arguments:
 //   bb - the basic block whose start is being processed
 //
+// Notes:
+//   This relies on m_currentFunclet to try and avoid work in some cases.
+//
 void WasmRegAlloc::recordVarLocationsAtStartOfBB(BasicBlock* bb)
 {
-    // We expect that RA has left the main method physical register assignments
-    // in the local vars (eg that RA processes the main method last and codegen
-    // processes it first). Verify this.
+    // Register assignments only change at funclet boundaries
     //
-    bool const isFuncEntry = m_compiler->fgFirstBB == bb;
+    bool const isFuncEntry    = m_compiler->fgFirstBB == bb;
+    bool const isFuncletEntry = m_compiler->bbIsFuncletBeg(bb);
 
-    if (isFuncEntry)
+    if (!isFuncletEntry && !isFuncEntry)
     {
-#ifdef DEBUG
-        JITDUMP("Recording Var Locations at start of method entry " FMT_BB "\n", bb->bbNum);
+        return;
+    }
 
-        PerFuncletData* const            rootFuncData  = m_perFuncletData[ROOT_FUNC_IDX];
-        const jitstd::vector<regNumber>& assignments   = rootFuncData->m_physicalRegAssignments;
+    unsigned const funcIdx = isFuncEntry ? ROOT_FUNC_IDX : m_compiler->funGetFuncIdx(bb);
+
+    // Walk all the assignments for this funclet, and update or verify the LclVarDscs accordingly.
+    //
+    auto updateOrVerifyAssignments = [=](bool verify = false) {
+        PerFuncletData* const            funcData      = m_perFuncletData[funcIdx];
+        const jitstd::vector<regNumber>& assignments   = funcData->m_physicalRegAssignments;
         bool                             hasAssignment = false;
+
+        if (isFuncletEntry)
+        {
+            JITDUMP("%s Var Locations to start of funclet %u entry " FMT_BB "\n", verify ? "Reporting" : "Updating",
+                    funcIdx, bb->bbNum);
+        }
+        else
+        {
+            JITDUMP("%s Var Locations to start of method entry " FMT_BB "\n", verify ? "Reporting" : "Updating",
+                    bb->bbNum);
+        }
 
         for (unsigned varIdx = 0; varIdx < assignments.size(); varIdx++)
         {
             unsigned const   lclNum = m_compiler->lvaTrackedIndexToLclNum(varIdx);
             LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
             regNumber const  reg    = assignments[varIdx];
-            assert(varDsc->GetRegNum() == reg);
+
+            if (verify)
+            {
+                assert(varDsc->GetRegNum() == reg);
+            }
+            else
+            {
+                varDsc->SetRegNum(reg);
+            }
 
             if (reg != REG_STK)
             {
@@ -78,42 +104,25 @@ void WasmRegAlloc::recordVarLocationsAtStartOfBB(BasicBlock* bb)
         }
 
         JITDUMP("%s\n", hasAssignment ? "" : "  <none>");
+    };
+
+    // The current assignments may alread hold the desired state.
+    //
+    if (m_currentFunclet == funcIdx)
+    {
+#ifdef DEBUG
+        // No work required, just verify/dump the current state
+        updateOrVerifyAssignments(/* verify */ true);
 #endif // DEBUG
 
         return;
     }
 
-    // Register assignments only change at funclet boundaries
+    updateOrVerifyAssignments();
+
+    // Record what the LclVarDsc assignments hold.
     //
-    bool const isFuncletEntry = m_compiler->bbIsFuncletBeg(bb);
-
-    if (!isFuncletEntry)
-    {
-        return;
-    }
-
-    unsigned const                   funcIdx       = m_compiler->funGetFuncIdx(bb);
-    PerFuncletData* const            funcData      = m_perFuncletData[funcIdx];
-    const jitstd::vector<regNumber>& assignments   = funcData->m_physicalRegAssignments;
-    bool                             hasAssignment = false;
-
-    JITDUMP("Recording Var Locations at start of funclet %u entry" FMT_BB "\n", funcIdx, bb->bbNum);
-
-    for (unsigned varIdx = 0; varIdx < assignments.size(); varIdx++)
-    {
-        unsigned const   lclNum = m_compiler->lvaTrackedIndexToLclNum(varIdx);
-        LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
-        regNumber const  reg    = assignments[varIdx];
-        varDsc->SetRegNum(reg);
-
-        if (reg != REG_STK)
-        {
-            JITDUMP("  V%02u(%s)", lclNum, getRegName(reg));
-            hasAssignment = true;
-        }
-    }
-
-    JITDUMP("%s\n", hasAssignment ? "" : "  <none>");
+    m_currentFunclet = funcIdx;
 }
 
 bool WasmRegAlloc::willEnregisterLocalVars() const
