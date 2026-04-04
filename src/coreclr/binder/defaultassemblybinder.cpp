@@ -4,7 +4,6 @@
 #include "common.h"
 #include "assemblybindercommon.hpp"
 #include "defaultassemblybinder.h"
-#include "assemblyhashtraits.hpp"
 
 using namespace BINDER_SPACE;
 
@@ -28,21 +27,11 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
     hr = AssemblyBinderCommon::BindAssembly(this,
                                             pAssemblyName,
                                             excludeAppPaths,
-                                            ppCoreCLRFoundAssembly);
+                                            ppCoreCLRFoundAssembly,
+                                            ppExistingAssemblyOnFailure);
     if (!FAILED(hr))
     {
         (*ppCoreCLRFoundAssembly)->SetBinder(this);
-    }
-    else if (ppExistingAssemblyOnFailure != nullptr)
-    {
-        // The bind failed. If there is an existing assembly with the same simple name in the
-        // execution context, return it so the caller can provide a more informative error message.
-        BINDER_SPACE::Assembly *pExistingAssembly = GetAppContext()->GetExecutionContext()->Lookup(pAssemblyName);
-        if (pExistingAssembly != nullptr)
-        {
-            pExistingAssembly->AddRef();
-            *ppExistingAssemblyOnFailure = pExistingAssembly;
-        }
     }
 
     return hr;
