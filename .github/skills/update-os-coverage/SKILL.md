@@ -168,15 +168,15 @@ For each reference found in step 3:
 
    AzureLinux (e.g. `AzureLinux.3.Amd64.Open`) appears as both a standalone VM queue and the primary host queue for container-based distros. It does not follow the container image pattern above.
 
-    Architecture suffixes vary: `Amd64`, `Arm64`, `ArmArch`, `Arm32` for queue names; `amd64`, `arm64v8`, `arm32v7` for image tags.
+   Architecture suffixes vary: `Amd64`, `Arm64`, `ArmArch`, `Arm32` for queue names; `amd64`, `arm64v8`, `arm32v7` for image tags.
 
-    When both generic and processor-specific aliases exist in `image-info` (for example, `ubuntu-26.04-helix-webassembly` and `ubuntu-26.04-helix-webassembly-amd64`), **prefer the processor-specific tag** when the queue/environment is processor-specific:
+   When both generic and processor-specific aliases exist in `image-info` (for example, `ubuntu-26.04-helix-webassembly` and `ubuntu-26.04-helix-webassembly-amd64`), **prefer the processor-specific tag** when the queue/environment is processor-specific:
 
-    - `...Amd64...` queue → prefer `*-amd64`
-    - `...Arm64...` / `...ArmArch...` queue → prefer `*-arm64v8`
-    - `...Arm32...` queue → prefer `*-arm32v7`
+   - `...Amd64...` queue → prefer `*-amd64`
+   - `...Arm64...` / `...ArmArch...` queue → prefer `*-arm64v8`
+   - `...Arm32...` queue → prefer `*-arm32v7`
 
-    Use the generic alias only when the surrounding environment is intentionally architecture-agnostic or when no processor-specific tag exists in `image-info`.
+   Use the generic alias only when the surrounding environment is intentionally architecture-agnostic or when no processor-specific tag exists in `image-info`.
 
    For ARM-based queues, host queues are often `Ubuntu.2204.ArmArch.Open`, but some queues (for example `helix_linux_arm64_oldest`) use AzureLinux-based host queues such as `AzureLinux.3.Arm64.Open`. Follow the existing pattern for the specific queue in `eng/pipelines/helix-platforms.yml` when updating versions.
 
