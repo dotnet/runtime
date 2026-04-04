@@ -20,15 +20,12 @@ WasmRegAlloc::WasmRegAlloc(Compiler* compiler)
     , m_codeGen(compiler->codeGen)
     , m_currentBlock(nullptr)
     , m_currentFunclet(ROOT_FUNC_IDX)
-    , m_virtualRegAssignments(compiler->getAllocator(CMK_LSRA))
     , m_perFuncletData(compiler->compFuncCount(), nullptr, compiler->getAllocator(CMK_LSRA))
 {
 }
 
 PhaseStatus WasmRegAlloc::doRegisterAllocation()
 {
-    m_virtualRegAssignments.resize(m_compiler->lvaTrackedCount, REG_STK);
-
     for (unsigned i = 0; i < m_compiler->compFuncCount(); i++)
     {
         m_perFuncletData[i] = new (m_compiler->getAllocator(CMK_LSRA)) PerFuncletData(m_compiler);
@@ -51,22 +48,56 @@ PhaseStatus WasmRegAlloc::doRegisterAllocation()
 //
 void WasmRegAlloc::recordVarLocationsAtStartOfBB(BasicBlock* bb)
 {
+    // We expect that RA has left the main method physical register assignments
+    // in the local vars (eg that RA processes the main method last and codegen
+    // processes it first). Verify this.
+    //
+    bool const isFuncEntry = m_compiler->fgFirstBB == bb;
+
+    if (isFuncEntry)
+    {
+#ifdef DEBUG
+        JITDUMP("Recording Var Locations at start of method entry " FMT_BB "\n", bb->bbNum);
+
+        PerFuncletData* const            rootFuncData  = m_perFuncletData[ROOT_FUNC_IDX];
+        const jitstd::vector<regNumber>& assignments   = rootFuncData->m_physicalRegAssignments;
+        bool                             hasAssignment = false;
+
+        for (unsigned varIdx = 0; varIdx < assignments.size(); varIdx++)
+        {
+            unsigned const   lclNum = m_compiler->lvaTrackedIndexToLclNum(varIdx);
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+            regNumber const  reg    = assignments[varIdx];
+            assert(varDsc->GetRegNum() == reg);
+
+            if (reg != REG_STK)
+            {
+                JITDUMP("  V%02u(%s)", lclNum, getRegName(reg));
+                hasAssignment = true;
+            }
+        }
+
+        JITDUMP("%s\n", hasAssignment ? "" : "  <none>");
+#endif // DEBUG
+
+        return;
+    }
+
     // Register assignments only change at funclet boundaries
     //
     bool const isFuncletEntry = m_compiler->bbIsFuncletBeg(bb);
-    bool const isFuncEntry    = m_compiler->fgFirstBB == bb;
 
-    if (!isFuncletEntry && !isFuncEntry)
+    if (!isFuncletEntry)
     {
         return;
     }
 
-    JITDUMP("Recording Var Locations at start of " FMT_BB "\n", bb->bbNum);
-
-    unsigned const                   funcIdx       = isFuncEntry ? ROOT_FUNC_IDX : m_compiler->funGetFuncIdx(bb);
+    unsigned const                   funcIdx       = m_compiler->funGetFuncIdx(bb);
     PerFuncletData* const            funcData      = m_perFuncletData[funcIdx];
     const jitstd::vector<regNumber>& assignments   = funcData->m_physicalRegAssignments;
     bool                             hasAssignment = false;
+
+    JITDUMP("Recording Var Locations at start of funclet %u entry" FMT_BB "\n", funcIdx, bb->bbNum);
 
     for (unsigned varIdx = 0; varIdx < assignments.size(); varIdx++)
     {
@@ -156,8 +187,6 @@ void WasmRegAlloc::InitializeCandidate(LclVarDsc* varDsc)
     regNumber reg = AllocateVirtualRegister(varDsc->GetRegisterType());
     varDsc->SetRegNum(reg);
     varDsc->lvLRACandidate = true;
-
-    m_virtualRegAssignments[varDsc->lvVarIndex] = reg;
 }
 
 //------------------------------------------------------------------------
@@ -964,11 +993,7 @@ void WasmRegAlloc::ResolveReferences()
                     varDsc->SetArgInitReg(physReg);
                 }
 
-                // This is the location for this local in this funclet.
-                //
-                varDsc->SetRegNum(physReg);
-                varDsc->lvRegister = true;
-                varDsc->lvOnFrame  = false;
+                data->m_physicalRegAssignments[varDsc->lvVarIndex] = physReg;
             }
             return physReg;
         };
@@ -985,6 +1010,9 @@ void WasmRegAlloc::ResolveReferences()
             data->m_fpReg = (spVirtReg == fpVirtReg) ? data->m_spReg : allocPhysReg(fpVirtReg, nullptr);
         }
 
+        // Do likewise for the enregisgtered locals.
+        // Note we do not update the LclVarDsc here.
+        //
         for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
         {
             unsigned   lclNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
@@ -1002,8 +1030,6 @@ void WasmRegAlloc::ResolveReferences()
             {
                 allocPhysReg(varDsc->GetRegNum(), varDsc);
             }
-
-            data->m_physicalRegAssignments[varIndex] = varDsc->GetRegNum();
         }
 
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
@@ -1040,7 +1066,10 @@ void WasmRegAlloc::ResolveReferences()
                 regNumber physReg = REG_NA;
                 if (node->OperIs(GT_STORE_LCL_VAR))
                 {
-                    physReg = m_compiler->lvaGetDesc(node->AsLclVarCommon())->GetRegNum();
+                    LclVarDsc* const varDsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
+                    WasmValueType    type;
+                    unsigned         index = UnpackWasmReg(varDsc->GetRegNum(), &type);
+                    physReg                = data->m_physicalRegAssignments[varDsc->lvVarIndex];
                 }
                 else if (genIsValidReg(node->GetRegNum()))
                 {
@@ -1090,13 +1119,23 @@ void WasmRegAlloc::ResolveReferences()
                 decls->push_back({type, physRegs.DeclaredCount});
             }
         }
+    }
 
-        // Reset all lcl var assignments back to their virtual registers.
-        //
-        for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
+    // Set all lcl var assignments to the main method's allocations.
+    //
+    const jitstd::vector<regNumber>& mainFuncAssignment = m_perFuncletData[ROOT_FUNC_IDX]->m_physicalRegAssignments;
+    for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
+    {
+        LclVarDsc* const varDsc      = m_compiler->lvaGetDescByTrackedIndex(varIndex);
+        regNumber const  assignedReg = mainFuncAssignment[varIndex];
+
+        if (genIsValidReg(assignedReg))
         {
-            LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(varIndex);
-            varDsc->SetRegNum(m_virtualRegAssignments[varIndex]);
+            varDsc->SetRegNum(mainFuncAssignment[varIndex]);
+
+            // may want to set these earlier
+            varDsc->lvRegister = true;
+            varDsc->lvOnFrame  = false;
         }
     }
 }

@@ -75,15 +75,15 @@ struct VirtualRegReferences
 
 class WasmRegAlloc : public RegAllocInterface
 {
-    Compiler*                 m_compiler;
-    CodeGenInterface*         m_codeGen;
-    BasicBlock*               m_currentBlock;
-    unsigned                  m_currentFunclet;
-    VirtualRegStack           m_virtualRegs[static_cast<int>(WasmValueType::Count)];
-    TemporaryRegStack         m_temporaryRegs[static_cast<int>(WasmValueType::Count)];
-    jitstd::vector<regNumber> m_virtualRegAssignments;
+    Compiler*         m_compiler;
+    CodeGenInterface* m_codeGen;
+    BasicBlock*       m_currentBlock;
+    unsigned          m_currentFunclet;
+    VirtualRegStack   m_virtualRegs[static_cast<int>(WasmValueType::Count)];
+    TemporaryRegStack m_temporaryRegs[static_cast<int>(WasmValueType::Count)];
 
-    // We need to allocate per funclet. This struct holds the per-funclet state.
+    // We allocate per funclet. This struct holds the per-funclet state.
+    // (we treat the main fuction body as a funclet).
     //
     struct PerFuncletData
     {
@@ -106,7 +106,7 @@ class WasmRegAlloc : public RegAllocInterface
         regNumber m_spReg;
         regNumber m_fpReg;
 
-        // Chunked list of virtual reg references in this region.
+        // Chunked list of virtual reg references in this funclet.
         //
         unsigned              m_lastVirtualRegRefsCount;
         VirtualRegReferences* m_virtualRegRefs;
