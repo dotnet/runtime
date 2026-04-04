@@ -11,6 +11,7 @@ if (FEATURE_DYNAMIC_CODE_COMPILED)
   set(FEATURE_TIERED_COMPILATION 1)
   set(FEATURE_REJIT 1)
   set(FEATURE_PGO 1)
+  set(FEATURE_CORPROFILER 1)
 endif()
 
 # On desktop, if dynamic code compiled is false, we still enable static linking so we don't have to add platform manifest entries
@@ -47,14 +48,10 @@ if(NOT DEFINED FEATURE_DBGIPC)
   endif()
 endif(NOT DEFINED FEATURE_DBGIPC)
 
-# ICorProfiler is supported by default
-set(FEATURE_CORPROFILER 1)
-
 if(CLR_CMAKE_TARGET_ARCH_WASM)
   # FEATURE_INTERPRETER is already enabled by default
   set(FEATURE_PORTABLE_ENTRYPOINTS 1)
   set(FEATURE_PORTABLE_HELPERS 1)
-  set(FEATURE_CORPROFILER 0)
 endif(CLR_CMAKE_TARGET_ARCH_WASM)
 
 if(CLR_CMAKE_TARGET_BROWSER)
