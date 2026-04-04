@@ -155,7 +155,7 @@ namespace System.IO.Enumeration
                     ApcRoutine: IntPtr.Zero,
                     ApcContext: IntPtr.Zero,
                     IoStatusBlock: &statusBlock,
-                    FileInformation: (IntPtr)_buffer,
+                    FileInformation: _buffer,
                     Length: (uint)_bufferLength,
                     FileInformationClass: Interop.NtDll.FILE_INFORMATION_CLASS.FileFullDirectoryInformation,
                     ReturnSingleEntry: Interop.BOOLEAN.FALSE,
