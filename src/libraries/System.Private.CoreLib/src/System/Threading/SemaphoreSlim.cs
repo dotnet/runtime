@@ -685,14 +685,14 @@ namespace System.Threading
             if (m_waitHandle is null)
             {
                 int current = m_currentCount;
-                // The waiter checks are best-effort: a sync waiter incrementing m_waitCount inside
-                // the lock may not be visible yet, but the CAS will fail if the count has changed.
+                // Best-effort waiter checks: m_waitCount or m_asyncHead may be updated after
+                // this read, but the CAS will fail if m_currentCount was concurrently decremented.
                 if (current > 0
                     && Volatile.Read(ref m_asyncHead) is null
                     && Volatile.Read(ref m_waitCount) == 0
                     && Interlocked.CompareExchange(ref m_currentCount, current - 1, current) == current)
                 {
-                    // Handle the rare race where AvailableWaitHandle was initialised concurrently.
+                    // Handle the rare race where AvailableWaitHandle was initialized concurrently.
                     if (current == 1 && m_waitHandle is not null)
                     {
                         lock (m_lockObjAndDisposed)
