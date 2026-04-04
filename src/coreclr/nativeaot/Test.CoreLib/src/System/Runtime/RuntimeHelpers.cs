@@ -15,8 +15,5 @@ namespace System.Runtime.CompilerServices
                 return string.FIRST_CHAR_OFFSET;
             }
         }
-
-        [Intrinsic]
-        internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
     }
 }
