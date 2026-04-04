@@ -59,7 +59,7 @@ namespace ILLink.Tasks.Tests
         }
 
         [Fact]
-        public void StartupHookSupport_RespectExplicitValue()
+        public void StartupHookSupport_RespectsExplicitValue()
         {
             var properties = new Dictionary<string, string>
             {
