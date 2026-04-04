@@ -175,13 +175,13 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
                 format.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION);
                 errorString.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, simpleName, loadedAssemblyName);
             }
-            COMPlusThrow(kFileLoadException, IDS_EE_FILELOAD_ERROR_GENERIC, name, errorString);
+            COMPlusThrowHR(hr, IDS_EE_FILELOAD_ERROR_GENERIC, name.GetUnicode(), errorString.GetUnicode());
         }
         else if (hr == COR_E_FILELOAD)
         {
             StackSString errorString;
             errorString.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
-            COMPlusThrow(kFileLoadException, IDS_EE_FILELOAD_ERROR_GENERIC, name, errorString);
+            COMPlusThrowHR(hr, IDS_EE_FILELOAD_ERROR_GENERIC, name.GetUnicode(), errorString.GetUnicode());
         }
         else
         {
