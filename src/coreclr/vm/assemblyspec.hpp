@@ -347,6 +347,7 @@ class AssemblySpecBindingCache
         inline void SetAssembly(Assembly* pAssembly){ LIMITED_METHOD_CONTRACT; m_pAssembly = pAssembly; };
         inline PEAssembly* GetFile(){ LIMITED_METHOD_CONTRACT; return m_pPEAssembly;};
         inline Assembly* GetParentAssembly(){ WRAPPER_NO_CONTRACT; return m_spec.GetParentAssembly(); };
+        inline void ClearParentAssembly(){ WRAPPER_NO_CONTRACT; m_spec.SetParentAssembly(NULL); };
         inline BOOL IsError(){ LIMITED_METHOD_CONTRACT; return (m_exceptionType!=EXTYPE_NONE);};
 
         // bound to the file, but failed later
