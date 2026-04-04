@@ -125,6 +125,8 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     childErrorHandle = Console.OpenStandardErrorHandle();
                 }
+
+                ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
             }
 
             return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);

@@ -1247,6 +1247,8 @@ namespace System.Diagnostics
                             ProcessUtils.s_processStartLock.ExitWriteLock();
                         }
                     }
+
+                    ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
                 }
 
                 if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles))

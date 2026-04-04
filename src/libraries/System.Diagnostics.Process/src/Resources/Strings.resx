@@ -357,4 +357,10 @@
   <data name="InheritedHandles_OnlySelectedSafeHandlesAreSupported" xml:space="preserve">
     <value>InheritedHandles only supports SafeFileHandle and SafePipeHandle. Other handle types are not supported.</value>
   </data>
+  <data name="InheritedHandles_MustNotContainStandardHandles" xml:space="preserve">
+    <value>InheritedHandles must not contain standard handles. They are always inherited.</value>
+  </data>
+  <data name="InheritedHandles_MustNotContainDuplicates" xml:space="preserve">
+    <value>InheritedHandles must not contain duplicates.</value>
+  </data>
 </root>

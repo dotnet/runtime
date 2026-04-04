@@ -402,7 +402,7 @@ namespace System.Diagnostics
             if (InheritedHandles is not null)
             {
                 IList<SafeHandle> list = InheritedHandles;
-                var snapshot = new SafeHandle[list.Count];
+                SafeHandle[] snapshot = new SafeHandle[list.Count];
                 for (int i = 0; i < snapshot.Length; i++)
                 {
                     SafeHandle? handle = list[i];
@@ -427,8 +427,18 @@ namespace System.Diagnostics
                             throw new ArgumentException(SR.InheritedHandles_OnlySelectedSafeHandlesAreSupported, nameof(InheritedHandles));
                     }
 
+                    nint rawValue = handle.DangerousGetHandle();
+                    for (int j = 0; j < i; j++)
+                    {
+                        if (snapshot[j].DangerousGetHandle() == rawValue)
+                        {
+                            throw new ArgumentException(SR.InheritedHandles_MustNotContainDuplicates, nameof(InheritedHandles));
+                        }
+                    }
+
                     snapshot[i] = handle;
                 }
+
                 inheritedHandles = snapshot;
             }
             else
@@ -466,6 +476,31 @@ namespace System.Diagnostics
                     }
 
                     ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
+                }
+            }
+        }
+
+        internal static void ValidateInheritedHandles(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
+            SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles = null)
+        {
+            if (inheritedHandles is null || inheritedHandles.Length == 0 || !ProcessUtils.PlatformSupportsConsole)
+            {
+                return;
+            }
+
+            Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null);
+
+            nint input = stdinHandle.DangerousGetHandle();
+            nint output = stdoutHandle.DangerousGetHandle();
+            nint error = stderrHandle.DangerousGetHandle();
+
+            for (int i = 0; i < inheritedHandles.Length; i++)
+            {
+                nint handle = inheritedHandles[i].DangerousGetHandle();
+                if (handle == input || handle == output || handle == error)
+                {
+                    // After process start, the Windows implementation unconditionally disables inheritance for all provided inheritable handles.
+                    throw new ArgumentException(SR.InheritedHandles_MustNotContainStandardHandles, nameof(InheritedHandles));
                 }
             }
         }

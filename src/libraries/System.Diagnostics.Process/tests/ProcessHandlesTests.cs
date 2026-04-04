@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
@@ -434,6 +435,56 @@ namespace System.Diagnostics.Tests
             Assert.Equal(expectInherited ? RemoteExecutor.SuccessExitCode : HandleNotInheritedExitCode, exitCode);
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void CanInheritMoreThanOneHandle()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe);
+
+            RemoteInvokeOptions options = new();
+
+            using (readPipe)
+            using (writePipe)
+            using (SafeFileHandle nullHandle = File.OpenNullHandle())
+            using (SafeFileHandle notInherited = File.OpenNullHandle())
+            {
+                // "notInherited" is not added on purpose
+                options.StartInfo.InheritedHandles = [readPipe, writePipe, nullHandle];
+
+                using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                    static (string handlesStr) =>
+                    {
+                        string[] handlesStrings = handlesStr.Split(' ');
+
+                        using SafeFileHandle firstPipe = new(nint.Parse(handlesStrings[0]), ownsHandle: true);
+                        using SafeFileHandle secondPipe = new(nint.Parse(handlesStrings[1]), ownsHandle: true);
+                        using SafeFileHandle nullFile = new(nint.Parse(handlesStrings[2]), ownsHandle: true);
+                        using SafeFileHandle notInherited = new(nint.Parse(handlesStrings[3]), ownsHandle: false);
+
+                        // These APIs need to fetch some data from the OS.
+                        Assert.Equal(FileHandleType.Pipe, firstPipe.Type);
+                        Assert.False(firstPipe.IsAsync);
+                        Assert.Equal(FileHandleType.Pipe, secondPipe.Type);
+                        Assert.False(secondPipe.IsAsync);
+                        Assert.Equal(FileHandleType.CharacterDevice, nullFile.Type);
+                        Assert.False(nullFile.IsAsync);
+
+                        try
+                        {
+                            // This handle was not on the allow list, so we can't use it.
+                            _ = notInherited.IsAsync;
+                        }
+                        catch
+                        {
+                            return RemoteExecutor.SuccessExitCode;
+                        }
+
+                        return RemoteExecutor.SuccessExitCode * -1;
+                    },
+                    $"{readPipe.DangerousGetHandle()} {writePipe.DangerousGetHandle()} {nullHandle.DangerousGetHandle()} {notInherited.DangerousGetHandle()}",
+                    options);
+            }
+        }
+
         [Fact]
         public void InheritedHandles_ThrowsForNullHandle()
         {
@@ -470,6 +521,68 @@ namespace System.Diagnostics.Tests
             Assert.False(handle.IsInvalid);
 
             ProcessStartInfo startInfo = new("hostname") { InheritedHandles = [handle] };
+            Assert.Throws<ArgumentException>(() => Process.Start(startInfo));
+        }
+
+        [Theory]
+        [InlineData("input")]
+        [InlineData("output")]
+        [InlineData("error")]
+        public void InheritedHandles_ThrowsForStandardHandles(string whichHandle)
+        {
+            string exe = OperatingSystem.IsWindows() ? "cmd" : "sh";
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe);
+
+            using (readPipe)
+            using (writePipe)
+            {
+                SafeFileHandle handle = whichHandle == "input" ? readPipe : writePipe;
+                ProcessStartInfo startInfo = new(exe)
+                {
+                    StandardInputHandle = whichHandle == "input" ? handle : null,
+                    StandardOutputHandle = whichHandle == "output" ? handle : null,
+                    StandardErrorHandle = whichHandle == "error" ? handle : null,
+                    InheritedHandles = [handle]
+                };
+
+                Assert.Throws<ArgumentException>(() => Process.Start(startInfo));
+            }
+        }
+
+        [Theory]
+        [InlineData("input")]
+        [InlineData("output")]
+        [InlineData("error")]
+        public void InheritedHandles_ThrowsForParentStandardHandles(string whichHandle)
+        {
+            string exe = OperatingSystem.IsWindows() ? "cmd" : "sh";
+            SafeFileHandle handle = whichHandle switch
+            {
+                "input" => Console.OpenStandardInputHandle(),
+                "output" => Console.OpenStandardOutputHandle(),
+                "error" => Console.OpenStandardErrorHandle(),
+                _ => throw new UnreachableException()
+            };
+
+            ProcessStartInfo startInfo = new(exe)
+            {
+                InheritedHandles = [handle]
+            };
+
+            Assert.Throws<ArgumentException>(() => Process.Start(startInfo));
+        }
+
+        [Fact]
+        public void InheritedHandles_ThrowsForDuplicates()
+        {
+            string exe = OperatingSystem.IsWindows() ? "cmd" : "sh";
+            using SafeFileHandle nullHandle = File.OpenNullHandle();
+
+            ProcessStartInfo startInfo = new(exe)
+            {
+                InheritedHandles = [nullHandle, nullHandle]
+            };
+
             Assert.Throws<ArgumentException>(() => Process.Start(startInfo));
         }
     }
