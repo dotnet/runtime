@@ -31,7 +31,7 @@ namespace System.IO.Enumeration
         private Interop.NtDll.FILE_FULL_DIR_INFORMATION* _entry;
         private TResult? _current;
 
-        private IntPtr _buffer;
+        private void* _buffer;
         private int _bufferLength;
         private IntPtr _directoryHandle;
         private string? _currentPath;
@@ -43,7 +43,7 @@ namespace System.IO.Enumeration
             // We'll only suppress the media insertion prompt on the topmost directory as that is the
             // most likely scenario and we don't want to take the perf hit for large enumerations.
             // (We weren't consistent with how we handled this historically.)
-            using (default(DisableMediaInsertionPrompt))
+            using (DisableMediaInsertionPrompt.Create())
             {
                 // We need to initialize the directory handle up front to ensure
                 // we immediately throw IO exceptions for missing directory/etc.
@@ -61,9 +61,9 @@ namespace System.IO.Enumeration
             try
             {
                 // NtQueryDirectoryFile needs its buffer to be 64bit aligned to work
-                // successfully with FileFullDirectoryInformation on ARM32. AllocHGlobal
-                // will return pointers aligned as such, new byte[] does not.
-                _buffer = Marshal.AllocHGlobal(_bufferLength);
+                // successfully with FileFullDirectoryInformation on ARM32. AlignedAlloc
+                // guarantees the required alignment, new byte[] does not.
+                _buffer = NativeMemory.AlignedAlloc((nuint)_bufferLength, sizeof(ulong));
             }
             catch
             {
@@ -89,7 +89,7 @@ namespace System.IO.Enumeration
                 ApcRoutine: IntPtr.Zero,
                 ApcContext: IntPtr.Zero,
                 IoStatusBlock: &statusBlock,
-                FileInformation: _buffer,
+                FileInformation: (IntPtr)_buffer,
                 Length: (uint)_bufferLength,
                 FileInformationClass: Interop.NtDll.FILE_INFORMATION_CLASS.FileFullDirectoryInformation,
                 ReturnSingleEntry: Interop.BOOLEAN.FALSE,
@@ -308,12 +308,12 @@ namespace System.IO.Enumeration
                         _pending = null;
                     }
 
-                    if (_buffer != default)
+                    if (_buffer != null)
                     {
-                        Marshal.FreeHGlobal(_buffer);
+                        NativeMemory.Free(_buffer);
                     }
 
-                    _buffer = default;
+                    _buffer = null;
                 }
             }
 
