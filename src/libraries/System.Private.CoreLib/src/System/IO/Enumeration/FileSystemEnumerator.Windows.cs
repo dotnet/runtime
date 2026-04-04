@@ -383,7 +383,7 @@ namespace System.IO.Enumeration
 
                     if (_buffer != null)
                     {
-                        NativeMemory.Free(_buffer);
+                        NativeMemory.AlignedFree(_buffer);
                     }
 
                     _buffer = null;
