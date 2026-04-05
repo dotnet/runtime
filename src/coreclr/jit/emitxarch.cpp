@@ -20964,7 +20964,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             else if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += opSize == EA_16BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C;
+                result.insLatency += (EA_SIZE_IN_BYTES(opSize) <= 16) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C;
             }
             else
             {
