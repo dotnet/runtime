@@ -461,6 +461,112 @@ namespace System.Text.RegularExpressions.Tests
                             new CaptureData("anyexpress1", 10, 11),
                         }
                     };
+
+                    // ExpressionConditional with balancing groups inside a loop
+
+                    // Balancing group conditional with alternation in no-branch, no match
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|((?'1'\S)+|(?'1'\s)))+(?!(?'-1'))", "abc", RegexOptions.None,
+                        Array.Empty<CaptureData>()
+                    };
+
+                    // Balancing group conditional with nested captures in alternation
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'){6})|((?'1'(?'2'\S))+|(?'1'(?'2'\s))))+(?!(?'-1'))", "it not", RegexOptions.None, new[]
+                        {
+                            new CaptureData("it ", 0, 3),
+                            new CaptureData("not", 3, 3),
+                        }
+                    };
+
+                    // Alternation in capturing group in no-branch, no match expected
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|((?'1'a)+|(?'1'b)))+(?!(?'-1'))", "abc", RegexOptions.None,
+                        Array.Empty<CaptureData>()
+                    };
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|((?'1'a)+|(?'1'b)))+(?!(?'-1'))", "aaa", RegexOptions.None,
+                        Array.Empty<CaptureData>()
+                    };
+
+                    // No-branch with quantifier but no wrapping capture group
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?'1'\S)+)+(?!(?'-1'))", "abc", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("b", 1, 1),
+                            new CaptureData("c", 2, 1),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?'1'a)+)+(?!(?'-1'))", "aaa", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("a", 1, 1),
+                            new CaptureData("a", 2, 1),
+                        }
+                    };
+
+                    // No-branch with quantifier inside wrapping capture group
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|((?'1'\S)+))+(?!(?'-1'))", "abc", RegexOptions.None,
+                        Array.Empty<CaptureData>()
+                    };
+
+                    // Non-capturing group wrapping alternation in no-branch
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?:(?'1'a)+|(?'1'b)))+(?!(?'-1'))", "aaa", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("a", 1, 1),
+                            new CaptureData("a", 2, 1),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?:(?'1'a)+|(?'1'b)))+(?!(?'-1'))", "abc", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("b", 1, 1),
+                        }
+                    };
+
+                    // Balancing group conditional with single char in no-branch
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?'1'a))+(?!(?'-1'))", "aaa", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("a", 1, 1),
+                            new CaptureData("a", 2, 1),
+                        }
+                    };
+
+                    // Balancing group conditional with multi-word input
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|(?'1'\S)+)+(?!(?'-1'))", "hello world", RegexOptions.None, new[]
+                        {
+                            new CaptureData("h", 0, 1),
+                            new CaptureData("e", 1, 1),
+                            new CaptureData("l", 2, 1),
+                            new CaptureData("l", 3, 1),
+                            new CaptureData("o", 4, 1),
+                            new CaptureData("w", 6, 1),
+                            new CaptureData("o", 7, 1),
+                            new CaptureData("r", 8, 1),
+                            new CaptureData("l", 9, 1),
+                            new CaptureData("d", 10, 1),
+                        }
+                    };
                 }
 
                 // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/62094
