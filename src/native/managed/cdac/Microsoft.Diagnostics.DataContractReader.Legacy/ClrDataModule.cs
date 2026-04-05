@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -371,24 +370,61 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
     int IXCLRDataModule.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
     {
-        return reqCode switch
+        int hr = HResults.S_OK;
+        try
         {
-            0xf0000001 /*DACDATAMODULEPRIV_REQUEST_GET_MODULEDATA*/ => DacPrivateRequestGetModuleData(inBufferSize, inBuffer, outBufferSize, outBuffer),
-            _ => _legacyModule is not null ? _legacyModule.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL
-        };
+            if (inBufferSize != 0 || inBuffer is not null || outBuffer is null)
+                throw new ArgumentException();
+
+            switch (reqCode)
+            {
+                case (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION:
+                    if (outBufferSize != sizeof(uint))
+                        throw new ArgumentException();
+                    *(uint*)outBuffer = 3;
+                    break;
+
+                case 0xf0000000 /*DACDATAMODULEPRIV_REQUEST_GET_MODULEPTR*/:
+                    if (outBufferSize != sizeof(DacpGetModuleAddress))
+                        throw new ArgumentException();
+                    ((DacpGetModuleAddress*)outBuffer)->ModulePtr = _address.ToClrDataAddress(_target);
+                    break;
+
+                case 0xf0000001 /*DACDATAMODULEPRIV_REQUEST_GET_MODULEDATA*/:
+                    if (outBufferSize != sizeof(DacpGetModuleData))
+                        throw new ArgumentException();
+                    PopulateModuleData((DacpGetModuleData*)outBuffer);
+                    break;
+
+                default:
+                    throw new ArgumentException();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            byte[] localBuffer = new byte[(int)outBufferSize];
+            fixed (byte* localOutBuffer = localBuffer)
+            {
+                int hrLocal = _legacyModule.Request(reqCode, inBufferSize, inBuffer, outBufferSize, localOutBuffer);
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK)
+                    Debug.Assert(new ReadOnlySpan<byte>(outBuffer, (int)outBufferSize).SequenceEqual(localBuffer));
+            }
+        }
+#endif
+
+        return hr;
     }
 
-    private int DacPrivateRequestGetModuleData(uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
+    private void PopulateModuleData(DacpGetModuleData* getModuleData)
     {
-        // Validate params.
-        // Input: Nothing.
-        // Output: a DacpGetModuleData structure.
-        if (inBufferSize != 0 || inBuffer != null || outBufferSize != sizeof(DacpGetModuleData) || outBuffer == null)
-            return HResults.E_INVALIDARG;
-
-        // Cast outbuffer to DacpGetModuleData and zero it out
-        DacpGetModuleData* getModuleData = (DacpGetModuleData*)outBuffer;
-        Unsafe.InitBlock(getModuleData, 0, (uint)sizeof(DacpGetModuleData));
+        *getModuleData = default;
 
         Contracts.ILoader contract = _target.Contracts.Loader;
         Contracts.ModuleHandle moduleHandle = contract.GetModuleHandleFromModulePtr(_address);
@@ -427,31 +463,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             getModuleData->InMemoryPdbAddress = symbolBuffer.ToClrDataAddress(_target);
             getModuleData->InMemoryPdbSize = symbolBufferSize;
         }
-
-#if DEBUG
-        if (_legacyModule is not null)
-        {
-            DacpGetModuleData getModuleDataLocal = default;
-            int hrLocal = _legacyModule.Request(
-                0xf0000001 /*DACDATAMODULEPRIV_REQUEST_GET_MODULEDATA*/,
-                0,
-                null,
-                (uint)sizeof(DacpGetModuleData),
-                (byte*)&getModuleDataLocal);
-            Debug.Assert(HResults.S_OK == hrLocal, $"cDAC: {HResults.S_OK}, DAC: {hrLocal}");
-
-            Debug.Assert(getModuleDataLocal.IsDynamic == getModuleData->IsDynamic, $"cDAC: {getModuleData->IsDynamic}, DAC: {getModuleDataLocal.IsDynamic}");
-            Debug.Assert(getModuleDataLocal.IsInMemory == getModuleData->IsInMemory, $"cDAC: {getModuleData->IsInMemory}, DAC: {getModuleDataLocal.IsInMemory}");
-            Debug.Assert(getModuleDataLocal.IsFileLayout == getModuleData->IsFileLayout, $"cDAC: {getModuleData->IsFileLayout}, DAC: {getModuleDataLocal.IsFileLayout}");
-            Debug.Assert(getModuleDataLocal.PEAssembly == getModuleData->PEAssembly, $"cDAC: {getModuleData->PEAssembly}, DAC: {getModuleDataLocal.PEAssembly}");
-            Debug.Assert(getModuleDataLocal.LoadedPEAddress == getModuleData->LoadedPEAddress, $"cDAC: {getModuleData->LoadedPEAddress}, DAC: {getModuleDataLocal.LoadedPEAddress}");
-            Debug.Assert(getModuleDataLocal.LoadedPESize == getModuleData->LoadedPESize, $"cDAC: {getModuleData->LoadedPESize}, DAC: {getModuleDataLocal.LoadedPESize}");
-            Debug.Assert(getModuleDataLocal.InMemoryPdbAddress == getModuleData->InMemoryPdbAddress, $"cDAC: {getModuleData->InMemoryPdbAddress}, DAC: {getModuleDataLocal.InMemoryPdbAddress}");
-            Debug.Assert(getModuleDataLocal.InMemoryPdbSize == getModuleData->InMemoryPdbSize, $"cDAC: {getModuleData->InMemoryPdbSize}, DAC: {getModuleDataLocal.InMemoryPdbSize}");
-        }
-#endif
-
-        return HResults.S_OK;
     }
 
     int IXCLRDataModule.StartEnumAppDomains(ulong* handle)

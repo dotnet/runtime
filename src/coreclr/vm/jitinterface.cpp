@@ -81,6 +81,8 @@
 // Hence, we add them here.
 GARY_IMPL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
 GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
+GARY_IMPL(VMAUXILIARYSYMBOLDEF, hlpAuxiliarySymbolTable, MAX_AUXILIARY_SYMBOLS);
+GVAL_IMPL_INIT(DWORD, g_auxiliarySymbolCount, 0);
 
 #else // DACCESS_COMPILE
 
@@ -7558,6 +7560,16 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
 
                 ftn->GenerateFunctionPointerCall(&cxt.TransientResolver, &cxt.Header);
             }
+            else if (CoreLibBinder::IsClass(pMT->GetTypicalMethodTable(), CLASS__STRUCTURE_MARSHALER))
+            {
+                DynamicResolver* newResolver;
+                COR_ILMETHOD_DECODER* newHeader;
+                if (StructMarshalStubs::TryGenerateStructMarshallingMethod(ftn, &newResolver, &newHeader))
+                {
+                    cxt.TransientResolver = newResolver;
+                    cxt.Header = newHeader;
+                }
+            }
         }
 
         scopeHnd = cxt.HasTransientMethodDetails()
@@ -13155,7 +13167,11 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
 
         // If we're a reverse IL stub, we need to use the TrackTransitions variant
         // so we have the target MethodDesc entrypoint to tell the debugger about.
-        if (CORProfilerTrackTransitions() || ftn->IsILStub())
+        bool trackTransitions = ftn->IsILStub();
+#ifdef PROFILING_SUPPORTED
+        trackTransitions = trackTransitions || CORProfilerTrackTransitions();
+#endif // PROFILING_SUPPORTED
+        if (trackTransitions)
         {
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
         }

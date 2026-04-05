@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -31,6 +32,7 @@ namespace System.Diagnostics
         private bool _isRemoteMachine;
         private string _machineName;
         private ProcessInfo? _processInfo;
+        private string? _processName;
 
         private ProcessThreadCollection? _threads;
         private ProcessModuleCollection? _modules;
@@ -82,8 +84,6 @@ namespace System.Diagnostics
         internal AsyncStreamReader? _error;
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
-
-        private static int s_cachedSerializationSwitch;
 
         /// <devdoc>
         ///    <para>
@@ -145,13 +145,7 @@ namespace System.Diagnostics
         ///    </para>
         /// </devdoc>
         public int BasePriority
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.BasePriority;
-            }
-        }
+            => GetProcessInfo().BasePriority;
 
         /// <devdoc>
         ///    <para>
@@ -257,6 +251,21 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets the friendly name of the process.</summary>
+        public string ProcessName
+        {
+            get
+            {
+                EnsureState(State.HaveNonExitedId);
+                string? processName = _processName ??= ProcessManager.GetProcessName(_processId, _machineName, _isRemoteMachine, ref _processInfo);
+                if (processName is null)
+                {
+                    ThrowNoProcessInfo();
+                }
+                return processName;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the maximum allowable working set for the associated process.
         /// </summary>
@@ -319,121 +328,46 @@ namespace System.Diagnostics
         }
 
         public long NonpagedSystemMemorySize64
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.PoolNonPagedBytes;
-            }
-        }
+            => GetProcessInfo().PoolNonPagedBytes;
 
         [Obsolete("Process.NonpagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.")]
         public int NonpagedSystemMemorySize
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.PoolNonPagedBytes);
-            }
-        }
-
+            => unchecked((int)GetProcessInfo().PoolNonPagedBytes);
 
         public long PagedMemorySize64
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.PageFileBytes;
-            }
-        }
+            => GetProcessInfo().PageFileBytes;
 
         [Obsolete("Process.PagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedMemorySize64 instead.")]
         public int PagedMemorySize
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.PageFileBytes);
-            }
-        }
-
+            => unchecked((int)GetProcessInfo().PageFileBytes);
 
         public long PagedSystemMemorySize64
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.PoolPagedBytes;
-            }
-        }
+            => GetProcessInfo().PoolPagedBytes;
 
         [Obsolete("Process.PagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedSystemMemorySize64 instead.")]
         public int PagedSystemMemorySize
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.PoolPagedBytes);
-            }
-        }
-
+            => unchecked((int)GetProcessInfo().PoolPagedBytes);
 
         public long PeakPagedMemorySize64
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.PageFileBytesPeak;
-            }
-        }
+            => GetProcessInfo().PageFileBytesPeak;
 
         [Obsolete("Process.PeakPagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakPagedMemorySize64 instead.")]
         public int PeakPagedMemorySize
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.PageFileBytesPeak);
-            }
-        }
+            => unchecked((int)GetProcessInfo().PageFileBytesPeak);
 
         public long PeakWorkingSet64
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.WorkingSetPeak;
-            }
-        }
+            => GetProcessInfo().WorkingSetPeak;
 
         [Obsolete("Process.PeakWorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakWorkingSet64 instead.")]
         public int PeakWorkingSet
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.WorkingSetPeak);
-            }
-        }
+            => unchecked((int)GetProcessInfo().WorkingSetPeak);
 
         public long PeakVirtualMemorySize64
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.VirtualBytesPeak;
-            }
-        }
+            => GetProcessInfo().VirtualBytesPeak;
 
         [Obsolete("Process.PeakVirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.")]
         public int PeakVirtualMemorySize
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.VirtualBytesPeak);
-            }
-        }
+            => unchecked((int)GetProcessInfo().VirtualBytesPeak);
 
         /// <devdoc>
         ///    <para>
@@ -492,23 +426,11 @@ namespace System.Diagnostics
         }
 
         public long PrivateMemorySize64
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.PrivateBytes;
-            }
-        }
+            => GetProcessInfo().PrivateBytes;
 
         [Obsolete("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
         public int PrivateMemorySize
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.PrivateBytes);
-            }
-        }
+            => unchecked((int)GetProcessInfo().PrivateBytes);
 
         /// <devdoc>
         ///    <para>
@@ -538,13 +460,7 @@ namespace System.Diagnostics
         }
 
         public int SessionId
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.SessionId;
-            }
-        }
+            => GetProcessInfo().SessionId;
 
         /// <devdoc>
         ///    <para>
@@ -591,12 +507,12 @@ namespace System.Diagnostics
             {
                 if (_threads == null)
                 {
-                    EnsureState(State.HaveProcessInfo);
-                    int count = _processInfo!._threadInfoList.Count;
+                    ProcessInfo processInfo = GetProcessInfo();
+                    int count = processInfo._threadInfoList.Count;
                     ProcessThread[] newThreadsArray = new ProcessThread[count];
                     for (int i = 0; i < count; i++)
                     {
-                        newThreadsArray[i] = new ProcessThread(_isRemoteMachine, _processId, (ThreadInfo)_processInfo._threadInfoList[i]);
+                        newThreadsArray[i] = new ProcessThread(_isRemoteMachine, _processId, (ThreadInfo)processInfo._threadInfoList[i]);
                     }
 
                     ProcessThreadCollection newThreads = new ProcessThreadCollection(newThreadsArray);
@@ -610,32 +526,20 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
+                ProcessInfo processInfo = GetProcessInfo();
                 EnsureHandleCountPopulated();
-                return _processInfo!.HandleCount;
+                return processInfo.HandleCount;
             }
         }
 
         partial void EnsureHandleCountPopulated();
 
         public long VirtualMemorySize64
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.VirtualBytes;
-            }
-        }
+            => GetProcessInfo().VirtualBytes;
 
         [Obsolete("Process.VirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.VirtualMemorySize64 instead.")]
         public int VirtualMemorySize
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.VirtualBytes);
-            }
-        }
+            => unchecked((int)GetProcessInfo().VirtualBytes);
 
         /// <devdoc>
         ///    <para>
@@ -669,7 +573,6 @@ namespace System.Diagnostics
                 }
             }
         }
-
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -742,23 +645,11 @@ namespace System.Diagnostics
         }
 
         public long WorkingSet64
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.WorkingSet;
-            }
-        }
+            => GetProcessInfo().WorkingSet;
 
         [Obsolete("Process.WorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.WorkingSet64 instead.")]
         public int WorkingSet
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.WorkingSet);
-            }
-        }
+            => unchecked((int)GetProcessInfo().WorkingSet);
 
         public event EventHandler Exited
         {
@@ -954,7 +845,7 @@ namespace System.Diagnostics
                 {
                     if (_haveProcessHandle)
                     {
-                        SetProcessId(ProcessManager.GetProcessIdFromHandle(_processHandle!));
+                        SetProcessId(_processHandle!.ProcessId);
                     }
                     else
                     {
@@ -971,22 +862,6 @@ namespace System.Diagnostics
             if ((state & State.IsLocal) != (State)0 && _isRemoteMachine)
             {
                 throw new NotSupportedException(SR.NotSupportedRemote);
-            }
-
-            if ((state & State.HaveProcessInfo) != (State)0)
-            {
-                if (_processInfo == null)
-                {
-                    if ((state & State.HaveNonExitedId) != State.HaveNonExitedId)
-                    {
-                        EnsureState(State.HaveNonExitedId);
-                    }
-                    _processInfo = ProcessManager.GetProcessInfo(_processId, _machineName);
-                    if (_processInfo == null)
-                    {
-                        throw new InvalidOperationException(SR.NoProcessInfo);
-                    }
-                }
             }
 
             if ((state & State.Exited) != (State)0)
@@ -1034,12 +909,13 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process GetProcessById(int processId, string machineName)
         {
-            if (!ProcessManager.IsProcessRunning(processId, machineName))
+            bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
+            if (!ProcessManager.IsProcessRunning(processId, machineName, isRemoteMachine))
             {
                 throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
             }
 
-            return new Process(machineName, ProcessManager.IsRemoteMachine(machineName), processId, null);
+            return new Process(machineName, isRemoteMachine, processId, null);
         }
 
         /// <devdoc>
@@ -1050,7 +926,13 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process GetProcessById(int processId)
         {
-            return GetProcessById(processId, ".");
+            // Avoid calling GetProcessById(processId, ".") so that remote machine code is not included when only local machine support is needed.
+            if (!ProcessManager.IsProcessRunning(processId))
+            {
+                throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
+            }
+
+            return new Process(".", false, processId, null);
         }
 
         /// <devdoc>
@@ -1066,7 +948,27 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName)
         {
-            return GetProcessesByName(processName, ".");
+            // Avoid calling GetProcessesByName(processName, ".") so that remote machine code is not included when only local machine support is needed.
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            // Normalize empty processName to null so that GetProcessInfos treats it as "no filter".
+            ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: string.IsNullOrEmpty(processName) ? null : processName);
+            return CreateProcessArray(processInfos, ".", false);
+        }
+
+        /// <summary>
+        /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
+        /// remote computer. These process resources share the specified process name.
+        /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static Process[] GetProcessesByName(string? processName, string machineName)
+        {
+            bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            // Normalize empty processName to null so that GetProcessInfos treats it as "no filter".
+            ProcessManager.GetProcessInfos(ref processInfos, string.IsNullOrEmpty(processName) ? null : processName, machineName, isRemoteMachine);
+            return CreateProcessArray(processInfos, machineName, isRemoteMachine);
         }
 
         /// <devdoc>
@@ -1080,7 +982,10 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses()
         {
-            return GetProcesses(".");
+            // Avoid calling GetProcesses(".") so that remote machine code is not included when only local machine support is needed.
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: null);
+            return CreateProcessArray(processInfos, ".", false);
         }
 
         /// <devdoc>
@@ -1095,10 +1000,18 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses(string machineName)
         {
-            bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processNameFilter: null, machineName);
-            Process[] processes = new Process[processInfos.Length];
-            for (int i = 0; i < processInfos.Length; i++)
+            bool isRemoteMachine = ProcessManager.HandleRemoteMachineSupport(machineName);
+            ArrayBuilder<ProcessInfo> processInfos = default;
+            ProcessManager.GetProcessInfos(ref processInfos, processNameFilter: null, machineName, isRemoteMachine);
+            return CreateProcessArray(processInfos, machineName, isRemoteMachine);
+        }
+
+        private static Process[] CreateProcessArray(ArrayBuilder<ProcessInfo> processInfos, string machineName, bool isRemoteMachine)
+        {
+            if (processInfos.Count == 0)
+                return [];
+            Process[] processes = new Process[processInfos.Count];
+            for (int i = 0; i < processes.Length; i++)
             {
                 ProcessInfo processInfo = processInfos[i];
                 processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
@@ -1180,6 +1093,7 @@ namespace System.Diagnostics
             _havePriorityClass = false;
             _haveExitTime = false;
             _havePriorityBoostEnabled = false;
+            _processName = null;
             RefreshCore();
         }
 
@@ -1247,77 +1161,25 @@ namespace System.Diagnostics
             Close();
 
             ProcessStartInfo startInfo = StartInfo;
-            if (startInfo.FileName.Length == 0)
-            {
-                throw new InvalidOperationException(SR.FileNameMissing);
-            }
-            if (startInfo.StandardInputEncoding != null && !startInfo.RedirectStandardInput)
-            {
-                throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
-            }
-            if (startInfo.StandardOutputEncoding != null && !startInfo.RedirectStandardOutput)
-            {
-                throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
-            }
-            if (startInfo.StandardErrorEncoding != null && !startInfo.RedirectStandardError)
-            {
-                throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
-            }
-            if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.HasArgumentList)
-            {
-                throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
-            }
-            if (startInfo.HasArgumentList)
-            {
-                int argumentCount = startInfo.ArgumentList.Count;
-                for (int i = 0; i < argumentCount; i++)
-                {
-                    if (startInfo.ArgumentList[i] is null)
-                    {
-                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
-                    }
-                }
-            }
+            startInfo.ThrowIfInvalid(out bool anyRedirection);
 
-            bool anyRedirection = startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError;
-            bool anyHandle = startInfo.StandardInputHandle is not null || startInfo.StandardOutputHandle is not null || startInfo.StandardErrorHandle is not null;
-            if (startInfo.UseShellExecute && (anyRedirection || anyHandle))
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
-                throw new InvalidOperationException(SR.CantRedirectStreams);
-            }
-
-            if (anyHandle)
-            {
-                if (startInfo.StandardInputHandle is not null && startInfo.RedirectStandardInput)
-                {
-                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
-                }
-                if (startInfo.StandardOutputHandle is not null && startInfo.RedirectStandardOutput)
-                {
-                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
-                }
-                if (startInfo.StandardErrorHandle is not null && startInfo.RedirectStandardError)
-                {
-                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
-                }
-
-                ValidateHandle(startInfo.StandardInputHandle, nameof(startInfo.StandardInputHandle));
-                ValidateHandle(startInfo.StandardOutputHandle, nameof(startInfo.StandardOutputHandle));
-                ValidateHandle(startInfo.StandardErrorHandle, nameof(startInfo.StandardErrorHandle));
+                throw new PlatformNotSupportedException();
             }
 
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
 
-            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref s_cachedSerializationSwitch);
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
 
             SafeFileHandle? parentInputPipeHandle = null;
             SafeFileHandle? parentOutputPipeHandle = null;
             SafeFileHandle? parentErrorPipeHandle = null;
 
-            SafeFileHandle? childInputPipeHandle = null;
-            SafeFileHandle? childOutputPipeHandle = null;
-            SafeFileHandle? childErrorPipeHandle = null;
+            SafeFileHandle? childInputHandle = null;
+            SafeFileHandle? childOutputHandle = null;
+            SafeFileHandle? childErrorHandle = null;
 
             try
             {
@@ -1329,7 +1191,7 @@ namespace System.Diagnostics
                     // Some process could be started in the meantime, so in order to prevent accidental handle inheritance,
                     // a writer lock is used around the pipe creation code.
 
-                    bool requiresLock = anyRedirection && !SupportsAtomicNonInheritablePipeCreation;
+                    bool requiresLock = anyRedirection && !ProcessUtils.SupportsAtomicNonInheritablePipeCreation;
 
                     if (requiresLock)
                     {
@@ -1340,41 +1202,41 @@ namespace System.Diagnostics
                     {
                         if (startInfo.StandardInputHandle is not null)
                         {
-                            childInputPipeHandle = startInfo.StandardInputHandle;
+                            childInputHandle = startInfo.StandardInputHandle;
                         }
                         else if (startInfo.RedirectStandardInput)
                         {
-                            SafeFileHandle.CreateAnonymousPipe(out childInputPipeHandle, out parentInputPipeHandle);
+                            SafeFileHandle.CreateAnonymousPipe(out childInputHandle, out parentInputPipeHandle);
                         }
-                        else if (!OperatingSystem.IsAndroid())
+                        else if (ProcessUtils.PlatformSupportsConsole)
                         {
-                            childInputPipeHandle = Console.OpenStandardInputHandle();
+                            childInputHandle = Console.OpenStandardInputHandle();
                         }
 
                         if (startInfo.StandardOutputHandle is not null)
                         {
-                            childOutputPipeHandle = startInfo.StandardOutputHandle;
+                            childOutputHandle = startInfo.StandardOutputHandle;
                         }
                         else if (startInfo.RedirectStandardOutput)
                         {
-                            SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputPipeHandle, asyncRead: OperatingSystem.IsWindows());
+                            SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputHandle, asyncRead: OperatingSystem.IsWindows());
                         }
-                        else if (!OperatingSystem.IsAndroid())
+                        else if (ProcessUtils.PlatformSupportsConsole)
                         {
-                            childOutputPipeHandle = Console.OpenStandardOutputHandle();
+                            childOutputHandle = Console.OpenStandardOutputHandle();
                         }
 
                         if (startInfo.StandardErrorHandle is not null)
                         {
-                            childErrorPipeHandle = startInfo.StandardErrorHandle;
+                            childErrorHandle = startInfo.StandardErrorHandle;
                         }
                         else if (startInfo.RedirectStandardError)
                         {
-                            SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorPipeHandle, asyncRead: OperatingSystem.IsWindows());
+                            SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorHandle, asyncRead: OperatingSystem.IsWindows());
                         }
-                        else if (!OperatingSystem.IsAndroid())
+                        else if (ProcessUtils.PlatformSupportsConsole)
                         {
-                            childErrorPipeHandle = Console.OpenStandardErrorHandle();
+                            childErrorHandle = Console.OpenStandardErrorHandle();
                         }
                     }
                     finally
@@ -1386,7 +1248,7 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (!StartCore(startInfo, childInputPipeHandle, childOutputPipeHandle, childErrorPipeHandle))
+                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle))
                 {
                     return false;
                 }
@@ -1409,15 +1271,15 @@ namespace System.Diagnostics
                 // by the caller via StartInfo.StandardInputHandle/OutputHandle/ErrorHandle.
                 if (startInfo.StandardInputHandle is null)
                 {
-                    childInputPipeHandle?.Dispose();
+                    childInputHandle?.Dispose();
                 }
                 if (startInfo.StandardOutputHandle is null)
                 {
-                    childOutputPipeHandle?.Dispose();
+                    childOutputHandle?.Dispose();
                 }
                 if (startInfo.StandardErrorHandle is null)
                 {
-                    childErrorPipeHandle?.Dispose();
+                    childErrorHandle?.Dispose();
                 }
             }
 
@@ -1441,18 +1303,6 @@ namespace System.Diagnostics
             }
 
             return true;
-        }
-
-        private static void ValidateHandle(SafeFileHandle? handle, string paramName)
-        {
-            if (handle is not null)
-            {
-                if (handle.IsInvalid)
-                {
-                    throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
-                }
-                ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
-            }
         }
 
         /// <devdoc>
@@ -1563,14 +1413,10 @@ namespace System.Diagnostics
             {
                 if (Associated)
                 {
-                    _processInfo ??= ProcessManager.GetProcessInfo(_processId, _machineName);
-                    if (_processInfo is not null)
+                    string? processName = _processName ??= ProcessManager.GetProcessName(_processId, _machineName, _isRemoteMachine, ref _processInfo);
+                    if (!string.IsNullOrEmpty(processName))
                     {
-                        string processName = _processInfo.ProcessName;
-                        if (processName.Length != 0)
-                        {
-                            result = $"{result} ({processName})";
-                        }
+                        result = $"{result} ({processName})";
                     }
                 }
             }
@@ -1784,7 +1630,6 @@ namespace System.Diagnostics
             _output.BeginReadLine();
         }
 
-
         /// <devdoc>
         /// <para>
         /// Instructs the <see cref='System.Diagnostics.Process'/> component to start
@@ -1911,13 +1756,6 @@ namespace System.Diagnostics
             ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
-        private static Win32Exception CreateExceptionForErrorStartingProcess(string errorMessage, int errorCode, string fileName, string? workingDirectory)
-        {
-            string directoryForException = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;
-            string msg = SR.Format(SR.ErrorStartingProcess, fileName, directoryForException, errorMessage);
-            return new Win32Exception(errorCode, msg);
-        }
-
         /// <summary>
         /// This enum defines the operation mode for redirected process stream.
         /// We don't support switching between synchronous mode and asynchronous mode.
@@ -1935,9 +1773,27 @@ namespace System.Diagnostics
             HaveId = 0x1,
             IsLocal = 0x2,
             HaveNonExitedId = HaveId | 0x4,
-            HaveProcessInfo = 0x8,
-            Exited = 0x10,
-            Associated = 0x20,
+            Exited = 0x8,
+            Associated = 0x10,
         }
+
+        private ProcessInfo GetProcessInfo()
+        {
+            ProcessInfo? processInfo = _processInfo;
+            if (processInfo == null)
+            {
+                EnsureState(State.HaveNonExitedId);
+                _processInfo = processInfo = ProcessManager.GetProcessInfo(_processId, _machineName, _isRemoteMachine);
+                if (processInfo == null)
+                {
+                    ThrowNoProcessInfo();
+                }
+            }
+            return processInfo;
+        }
+
+        [DoesNotReturn]
+        private static void ThrowNoProcessInfo() =>
+            throw new InvalidOperationException(SR.NoProcessInfo);
     }
 }

@@ -188,6 +188,11 @@ int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
     return 0;
 }
 
+int32_t SystemNative_GetPlatformSIGSTOP(void)
+{
+    return SIGSTOP;
+}
+
 void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler)
 {
     assert(signalHandler);

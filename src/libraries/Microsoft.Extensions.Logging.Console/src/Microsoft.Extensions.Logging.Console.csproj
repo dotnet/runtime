@@ -30,7 +30,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs" Link="Common\System\IO\StreamExtensions.netstandard.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StreamPolyfills.cs" Link="Common\Polyfills\StreamPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StreamMemoryPolyfills.cs" Link="Common\Polyfills\StreamMemoryPolyfills.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
@@ -39,6 +40,8 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
+    <Compile Include="$(CommonPath)Polyfills\TextWriterPolyfills.cs" Link="Common\Polyfills\TextWriterPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\EncodingPolyfills.cs" Link="Common\Polyfills\EncodingPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup>

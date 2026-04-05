@@ -723,10 +723,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             GetEmitter()->emitIns(INS_unreachable);
             break;
 
-        case GT_PINVOKE_PROLOG:
-            // TODO-WASM-CQ re-establish the global stack pointer here?
-            break;
-
         default:
 #ifdef DEBUG
             if (JitConfig.JitWasmNyiToR2RUnsupported())
@@ -1835,7 +1831,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GenTree* const index = node->Index();
 
     assert(varTypeIsIntegral(index->TypeGet()));
-    var_types indexType = index->TypeGet();
+    var_types indexType = genActualType(index->TypeGet());
 
     // Generate the bounds check if necessary.
     //
@@ -1851,22 +1847,21 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(baseReg));
         GetEmitter()->emitIns_I(ins_Load(TYP_INT), EA_4BYTE, node->gtLenOffset);
 
-        // Extend array length if needed.
+        // If index type is long, extend array length
         if (indexType == TYP_LONG)
         {
             GetEmitter()->emitIns(INS_i64_extend_u_i32);
         }
 
         // compare
-        GetEmitter()->emitIns(indexType == TYP_INT ? INS_i32_ge_u : INS_i64_ge_u);
+        GetEmitter()->emitIns(indexType == TYP_LONG ? INS_i64_ge_u : INS_i32_ge_u);
 
         genJumpToThrowHlpBlk(SCK_RNGCHK_FAIL);
     }
 
     // Zero extend index if necessary.
-    if (genTypeSize(indexType) < TARGET_POINTER_SIZE)
+    if (indexType != TYP_I_IMPL)
     {
-        assert(TARGET_POINTER_SIZE == 8);
         GetEmitter()->emitIns(INS_i64_extend_u_i32);
     }
 
@@ -2906,7 +2901,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     assert(isNativeOp || blkOp->GetLayout()->HasGCPtr());
 #endif // DEBUG
 
-    bool      nullCheckDest = ((blkOp->gtFlags & GTF_IND_NONFAULTING) == 0) && !dstOnStack;
+    bool      nullCheckDest = (blkOp->gtFlags & GTF_IND_NONFAULTING) == 0;
     bool      nullCheckSrc  = false;
     GenTree*  dest          = blkOp->Addr();
     GenTree*  src           = blkOp->Data();
@@ -2923,7 +2918,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     {
         nullCheckSrc = (src->gtFlags & GTF_IND_NONFAULTING) == 0;
         src          = src->gtGetOp1();
-        srcReg       = GetMultiUseOperandReg(src);
+        // We need to match lowering and only fetch a register for src when we're expected to.
+        if (!isNativeOp || nullCheckSrc)
+        {
+            srcReg = GetMultiUseOperandReg(src);
+        }
         assert(!src->isContained());
     }
     else if (src->OperIs(GT_CNS_INT, GT_INIT_VAL))
@@ -2953,6 +2952,10 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         destReg    = GetFramePointerReg();
         destOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
         assert(fpBased);
+    }
+    else if (isNativeOp && !nullCheckDest)
+    {
+        // We need to match lowering in this specific case by not fetching a register for dest.
     }
     else if (isCopyBlk || nullCheckDest)
     {
@@ -2984,6 +2987,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         if (src->isContained())
         {
             assert(isCopyBlk);
+            assert(srcReg != REG_NA);
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
             if (srcOffset != 0)
             {
@@ -3103,7 +3107,34 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 
 void CodeGen::genStructReturn(GenTree* treeNode)
 {
-    NYI_WASM("genStructReturn");
+    assert(treeNode->OperIs(GT_RETURN));
+
+    GenTree* op1       = treeNode->AsOp()->GetReturnValue();
+    GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+
+    const ReturnTypeDesc& retTypeDesc = m_compiler->compRetTypeDesc;
+    const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+
+    assert(regCount <= MAX_RET_REG_COUNT);
+
+    if (actualOp1->OperIsFieldList())
+    {
+        // Go through and consume the fields in the field list so liveness is correct.
+        unsigned regIndex = 0;
+        for (GenTreeFieldList::Use& use : actualOp1->AsFieldList()->Uses())
+        {
+            genConsumeReg(use.GetNode());
+            regIndex++;
+        }
+
+        // We should only have one field in the field list, and MAX_RET_REG_COUNT is 1 on Wasm.
+        assert(regIndex == regCount);
+        assert(regIndex == 1);
+
+        return;
+    }
+
+    NYI_WASM("genStructReturn non-fieldlist cases");
 }
 
 void CodeGen::genEmitGSCookieCheck(bool tailCall)
