@@ -1,12 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
-using System.IO.Pipes;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -105,7 +101,6 @@ namespace System.Diagnostics.Tests
         private unsafe int RunWithInvalidHandles(ProcessStartInfo startInfo)
         {
             const nint INVALID_HANDLE_VALUE = -1;
-            const int CREATE_SUSPENDED = 4;
 
             // RemoteExector has provided us with the right path and arguments,
             // we just need to add the terminating null character.
@@ -132,7 +127,7 @@ namespace System.Diagnostics.Tests
                     ref unused_SecAttrs,
                     ref unused_SecAttrs,
                     bInheritHandles: false,
-                    CREATE_SUSPENDED | Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
+                    Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
                     null,
                     null,
                     &startupInfoEx,
@@ -149,37 +144,13 @@ namespace System.Diagnostics.Tests
             {
                 using SafeProcessHandle safeProcessHandle = new(processInfo.hProcess, ownsHandle: true);
 
-                // We have started a suspended process, so we can get process by Id before it exits.
-                // As soon as SafeProcessHandle.WaitForExit* are implemented (#126293), we can use them instead.
-                using Process process = Process.GetProcessById(processInfo.dwProcessId);
-
-                if (ResumeThread(processInfo.hThread) == -1)
-                {
-                    throw new Win32Exception();
-                }
-
-                try
-                {
-                    process.WaitForExit(WaitInMS);
-
-                    // To avoid "Process was not started by this object, so requested information cannot be determined."
-                    // we fetch the exit code directly here.
-                    Assert.True(Interop.Kernel32.GetExitCodeProcess(safeProcessHandle, out int exitCode));
-
-                    return exitCode;
-                }
-                finally
-                {
-                    process.Kill();
-                }
+                ProcessExitStatus exitStatus = safeProcessHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
+                return exitStatus.ExitCode;
             }
             finally
             {
                 Interop.Kernel32.CloseHandle(processInfo.hThread);
             }
         }
-
-        [LibraryImport(Interop.Libraries.Kernel32)]
-        private static partial int ResumeThread(nint hThread);
     }
 }

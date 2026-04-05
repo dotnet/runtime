@@ -91,10 +91,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void Process_Start_WithStandardHandles_CanRedirectIO(bool restrictHandles)
+        [Fact]
+        public void Process_Start_WithStandardHandles_CanRedirectIO()
         {
             string errorFile = Path.GetTempFileName();
             try
@@ -108,8 +106,7 @@ namespace System.Diagnostics.Tests
                 {
                     StandardInputHandle = inputHandle,
                     StandardOutputHandle = outputWrite,
-                    StandardErrorHandle = errorHandle,
-                    InheritedHandles = restrictHandles ? [] : null
+                    StandardErrorHandle = errorHandle
                 };
 
                 using (outputRead)

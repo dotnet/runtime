@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -21,73 +23,62 @@ namespace Microsoft.Win32.SafeHandles
 
         private static Func<ProcessStartInfo, SafeProcessHandle>? s_startWithShellExecute;
 
-        internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
-            SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles = null)
+        internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             if (startInfo.UseShellExecute)
-            {
-                // Nulls are allowed only for ShellExecute.
-                Debug.Assert(stdinHandle is null && stdoutHandle is null && stderrHandle is null, "All of the standard handles must be null for ShellExecute.");
                 return s_startWithShellExecute!(startInfo);
-            }
-
-            Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null, "All of the standard handles must be provided.");
 
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
             //    * The handles are duplicated as inheritable before they are passed to CreateProcess so
             //      that the child process can use them
 
-            ValueStringBuilder commandLine = new(stackalloc char[256]);
+            var commandLine = new ValueStringBuilder(stackalloc char[256]);
             ProcessUtils.BuildCommandLine(startInfo, ref commandLine);
 
-            Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
+            Interop.Kernel32.STARTUPINFO startupInfo = default;
             Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
             Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
             SafeProcessHandle procSH = new SafeProcessHandle();
 
             // Inheritable copies of the child handles for CreateProcess
-            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
-            bool hasInheritedHandles = inheritedHandles is not null;
+            SafeFileHandle? inheritableStdinHandle = null;
+            SafeFileHandle? inheritableStdoutHandle = null;
+            SafeFileHandle? inheritableStderrHandle = null;
 
-            // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance.
-            // For that, we need a reader lock (concurrent starts with different explicit lists are safe).
-            // When InheritedHandles is not set, we use the existing approach with a writer lock.
-            if (hasInheritedHandles)
-            {
-                ProcessUtils.s_processStartLock.EnterReadLock();
-            }
-            else
-            {
-                // Take a global lock to synchronize all redirect pipe handle creations and CreateProcess
-                // calls. We do not want one process to inherit the handles created concurrently for another
-                // process, as that will impact the ownership and lifetimes of those handles now inherited
-                // into multiple child processes.
-                ProcessUtils.s_processStartLock.EnterWriteLock();
-            }
+            // Take a global lock to synchronize all redirect pipe handle creations and CreateProcess
+            // calls. We do not want one process to inherit the handles created concurrently for another
+            // process, as that will impact the ownership and lifetimes of those handles now inherited
+            // into multiple child processes.
 
-            void* attributeListBuffer = null;
-            SafeHandle?[]? handlesToRelease = null;
-            IntPtr* handlesToInherit = null;
-
+            ProcessUtils.s_processStartLock.EnterWriteLock();
             try
             {
-                startupInfoEx.StartupInfo.cb = hasInheritedHandles ? sizeof(Interop.Kernel32.STARTUPINFOEX) : sizeof(Interop.Kernel32.STARTUPINFO);
+                startupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
 
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref startupInfoEx.StartupInfo.hStdInput, ref stdinRefAdded);
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref startupInfoEx.StartupInfo.hStdOutput, ref stdoutRefAdded);
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref startupInfoEx.StartupInfo.hStdError, ref stderrRefAdded);
+                if (stdinHandle is not null || stdoutHandle is not null || stderrHandle is not null)
+                {
+                    Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null, "All or none of the standard handles must be provided.");
 
-                // If STARTF_USESTDHANDLES is not set, the new process will inherit the standard handles.
-                startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
+                    ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref inheritableStdinHandle);
+                    ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref inheritableStdoutHandle);
+                    ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref inheritableStderrHandle);
+
+                    startupInfo.hStdInput = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
+                    startupInfo.hStdOutput = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
+                    startupInfo.hStdError = (inheritableStderrHandle ?? stderrHandle).DangerousGetHandle();
+
+                    // If STARTF_USESTDHANDLES is not set, the new process will inherit the standard handles.
+                    startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
+                }
 
                 if (startInfo.WindowStyle != ProcessWindowStyle.Normal)
                 {
-                    startupInfoEx.StartupInfo.wShowWindow = (short)ProcessUtils.GetShowWindowFromWindowStyle(startInfo.WindowStyle);
-                    startupInfoEx.StartupInfo.dwFlags |= Interop.Advapi32.StartupInfoOptions.STARTF_USESHOWWINDOW;
+                    startupInfo.wShowWindow = (short)ProcessUtils.GetShowWindowFromWindowStyle(startInfo.WindowStyle);
+                    startupInfo.dwFlags |= Interop.Advapi32.StartupInfoOptions.STARTF_USESHOWWINDOW;
                 }
 
                 // set up the creation flags parameter
-                int creationFlags = hasInheritedHandles ? Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT : 0;
+                int creationFlags = 0;
                 if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
                 if (startInfo.CreateNewProcessGroup) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NEW_PROCESS_GROUP;
 
@@ -104,26 +95,6 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     workingDirectory = null;
                 }
-
-                // When InheritedHandles is set, build a PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict
-                // inheritance to only the explicitly specified handles.
-                int handleCount = 0;
-                if (hasInheritedHandles)
-                {
-                    int maxHandleCount = 3 + inheritedHandles!.Length;
-                    handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
-                    Span<nint> handlesToInheritSpan = new Span<nint>(handlesToInherit, maxHandleCount);
-
-                    // Add valid effective stdio handles (already made inheritable via DuplicateAsInheritableIfNeeded)
-                    AddToInheritListIfValid(startupInfoEx.StartupInfo.hStdInput, handlesToInheritSpan, ref handleCount);
-                    AddToInheritListIfValid(startupInfoEx.StartupInfo.hStdOutput, handlesToInheritSpan, ref handleCount);
-                    AddToInheritListIfValid(startupInfoEx.StartupInfo.hStdError, handlesToInheritSpan, ref handleCount);
-
-                    EnableInheritanceAndAddRef(inheritedHandles, handlesToInheritSpan, ref handleCount, ref handlesToRelease);
-                    BuildProcThreadAttributeList(handlesToInherit, handleCount, ref attributeListBuffer);
-                }
-
-                startupInfoEx.lpAttributeList = attributeListBuffer;
 
                 bool retVal;
                 int errorCode = 0;
@@ -149,12 +120,6 @@ namespace Microsoft.Win32.SafeHandles
                         logonFlags = Interop.Advapi32.LogonFlags.LOGON_NETCREDENTIALS_ONLY;
                     }
 
-                    // CreateProcessWithLogonW does not support STARTUPINFOEX. CreateProcessWithTokenW docs mention STARTUPINFOEX,
-                    // but they don't mention that EXTENDED_STARTUPINFO_PRESENT is not supported anyway.
-                    // CreateProcessAsUserW supports both, but it's too restrictive and simply different than CreateProcessWithLogonW in many ways.
-                    Debug.Assert(!hasInheritedHandles, "Inheriting handles is not supported when starting with alternate credentials.");
-                    Debug.Assert(startupInfoEx.StartupInfo.cb == sizeof(Interop.Kernel32.STARTUPINFO));
-
                     commandLine.NullTerminate();
                     fixed (char* passwordInClearTextPtr = startInfo.PasswordInClearText ?? string.Empty)
                     fixed (char* environmentBlockPtr = environmentBlock)
@@ -165,20 +130,18 @@ namespace Microsoft.Win32.SafeHandles
 
                         try
                         {
-                            Interop.Kernel32.STARTUPINFO startupInfo = startupInfoEx.StartupInfo;
-
                             retVal = Interop.Advapi32.CreateProcessWithLogonW(
                                 startInfo.UserName,
                                 startInfo.Domain,
                                 (passwordPtr != IntPtr.Zero) ? passwordPtr : (IntPtr)passwordInClearTextPtr,
                                 logonFlags,
-                                null,                // we don't need this since all the info is in commandLine
+                                null,            // we don't need this since all the info is in commandLine
                                 commandLinePtr,
                                 creationFlags,
-                                environmentBlockPtr,
+                                (IntPtr)environmentBlockPtr,
                                 workingDirectory,
-                                &startupInfo,        // pointer to STARTUPINFO
-                                &processInfo         // pointer to PROCESS_INFORMATION
+                                ref startupInfo,        // pointer to STARTUPINFO
+                                ref processInfo         // pointer to PROCESS_INFORMATION
                             );
                             if (!retVal)
                                 errorCode = Marshal.GetLastWin32Error();
@@ -196,20 +159,17 @@ namespace Microsoft.Win32.SafeHandles
                     fixed (char* environmentBlockPtr = environmentBlock)
                     fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
                     {
-                        // When InheritedHandles is set but handleCount is 0 (e.g. empty list, no stdio),
-                        // pass false to prevent all inheritable handles from leaking to the child.
-                        bool bInheritHandles = !hasInheritedHandles || handleCount > 0;
                         retVal = Interop.Kernel32.CreateProcess(
                             null,                // we don't need this since all the info is in commandLine
                             commandLinePtr,      // pointer to the command line string
                             ref unused_SecAttrs, // address to process security attributes, we don't need to inherit the handle
                             ref unused_SecAttrs, // address to thread security attributes.
-                            bInheritHandles,     // handle inheritance flag
+                            true,                // handle inheritance flag
                             creationFlags,       // creation flags
-                            environmentBlockPtr, // pointer to new environment block
+                            (IntPtr)environmentBlockPtr, // pointer to new environment block
                             workingDirectory,    // pointer to current directory name
-                            &startupInfoEx,      // pointer to STARTUPINFOEX
-                            &processInfo         // pointer to PROCESS_INFORMATION
+                            ref startupInfo,     // pointer to STARTUPINFO
+                            ref processInfo      // pointer to PROCESS_INFORMATION
                         );
                         if (!retVal)
                             errorCode = Marshal.GetLastWin32Error();
@@ -237,45 +197,13 @@ namespace Microsoft.Win32.SafeHandles
             }
             finally
             {
-                // If the provided handle was inheritable, just release the reference we added.
-                // Otherwise if we created a valid duplicate, close it.
+                // Only dispose duplicated handles, not the original handles passed by the caller.
+                // When the handle was invalid or already inheritable, no duplication was needed.
+                inheritableStdinHandle?.Dispose();
+                inheritableStdoutHandle?.Dispose();
+                inheritableStderrHandle?.Dispose();
 
-                if (stdinRefAdded)
-                    stdinHandle.DangerousRelease();
-                else if (startupInfoEx.StartupInfo.hStdInput > 0)
-                    Interop.Kernel32.CloseHandle(startupInfoEx.StartupInfo.hStdInput);
-
-                if (stdoutRefAdded)
-                    stdoutHandle.DangerousRelease();
-                else if (startupInfoEx.StartupInfo.hStdOutput > 0)
-                    Interop.Kernel32.CloseHandle(startupInfoEx.StartupInfo.hStdOutput);
-
-                if (stderrRefAdded)
-                    stderrHandle.DangerousRelease();
-                else if (startupInfoEx.StartupInfo.hStdError > 0)
-                    Interop.Kernel32.CloseHandle(startupInfoEx.StartupInfo.hStdError);
-
-                NativeMemory.Free(handlesToInherit);
-
-                if (attributeListBuffer is not null)
-                {
-                    Interop.Kernel32.DeleteProcThreadAttributeList(attributeListBuffer);
-                    NativeMemory.Free(attributeListBuffer);
-                }
-
-                if (handlesToRelease is not null)
-                {
-                    DisableInheritanceAndRelease(handlesToRelease);
-                }
-
-                if (hasInheritedHandles)
-                {
-                    ProcessUtils.s_processStartLock.ExitReadLock();
-                }
-                else
-                {
-                    ProcessUtils.s_processStartLock.ExitWriteLock();
-                }
+                ProcessUtils.s_processStartLock.ExitWriteLock();
 
                 commandLine.Dispose();
             }
@@ -405,102 +333,6 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static void AddToInheritListIfValid(nint handle, Span<nint> handlesToInherit, ref int handleCount)
-        {
-            // The user can't specify invalid handle via ProcessStartInfo.Standard*Handle APIs.
-            // However, Console.OpenStandard*Handle() can return INVALID_HANDLE_VALUE for a process
-            // that was started with INVALID_HANDLE_VALUE as given standard handle.
-            if (handle <= 0)
-            {
-                return;
-            }
-
-            handlesToInherit[handleCount++] = handle;
-        }
-
-        /// <summary>
-        /// Creates and populates a PROC_THREAD_ATTRIBUTE_LIST with a PROC_THREAD_ATTRIBUTE_HANDLE_LIST entry.
-        /// </summary>
-        private static unsafe void BuildProcThreadAttributeList(
-            IntPtr* handlesToInherit,
-            int handleCount,
-            ref void* attributeListBuffer)
-        {
-            nuint size = 0;
-            int attributeCount = handleCount > 0 ? 1 : 0;
-            Interop.Kernel32.InitializeProcThreadAttributeList(null, attributeCount, 0, ref size);
-
-            attributeListBuffer = NativeMemory.Alloc(size);
-
-            if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeListBuffer, attributeCount, 0, ref size))
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-            }
-
-            if (handleCount > 0 && !Interop.Kernel32.UpdateProcThreadAttribute(
-                attributeListBuffer,
-                0,
-                (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
-                handlesToInherit,
-                (nuint)(handleCount * sizeof(IntPtr)),
-                null,
-                null))
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-            }
-        }
-
-        private static void EnableInheritanceAndAddRef(
-            SafeHandle[] inheritedHandles,
-            Span<nint> handlesToInherit,
-            ref int handleCount,
-            ref SafeHandle?[]? handlesToRelease)
-        {
-            handlesToRelease = new SafeHandle[inheritedHandles.Length];
-            int handleIndex = 0;
-            bool ignore = false;
-
-            foreach (SafeHandle handle in inheritedHandles)
-            {
-                Debug.Assert(handle is not null && !handle.IsInvalid);
-
-                // Enable inheritance on this handle so the child process can use it.
-                // The following sys-call is going to throw for any pseudo handles (e.g. current process/thread), which cannot be inherited.
-                // That's desired since such handles are not valid to be added to the allow list.
-                // It's defacto our validation that the handles passed in the allow list are actually inheritable handles.
-                if (!Interop.Kernel32.SetHandleInformation(
-                    handle,
-                    Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
-                    Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT))
-                {
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
-                }
-
-                // Transfer ref ownership to handlesToRelease; DisableInheritanceAndRelease will release it.
-                handle.DangerousAddRef(ref ignore);
-                handlesToInherit[handleCount++] = handle.DangerousGetHandle();
-                handlesToRelease[handleIndex++] = handle;
-            }
-        }
-
-        private static void DisableInheritanceAndRelease(SafeHandle?[] handlesToRelease)
-        {
-            foreach (SafeHandle? safeHandle in handlesToRelease)
-            {
-                if (safeHandle is null)
-                {
-                    break;
-                }
-
-                // Remove the inheritance flag so they are not unintentionally inherited by other processes started after this point.
-                // Since we used DangerousAddRef before, the handle cannot be closed at this point, so it's safe to call SetHandleInformation.
-                // The only scenario where it could fail is if user has created a copy of the handle and closed the original handle,
-                // in such case we still don't want to throw as the process was successfully started.
-                Interop.Kernel32.SetHandleInformation(safeHandle, Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT, 0);
-                safeHandle.DangerousRelease();
-            }
-        }
-
         private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
 
         private bool SignalCore(PosixSignal signal)
@@ -527,6 +359,144 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return true;
+        }
+
+        private ProcessExitStatus WaitForExitCore()
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            processWaitHandle.WaitOne(Timeout.Infinite);
+
+            return new ProcessExitStatus(GetExitCode(), false);
+        }
+
+        private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            if (!processWaitHandle.WaitOne(milliseconds))
+            {
+                exitStatus = null;
+                return false;
+            }
+
+            exitStatus = new ProcessExitStatus(GetExitCode(), false);
+            return true;
+        }
+
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
+        {
+            bool wasKilledOnTimeout = false;
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            if (!processWaitHandle.WaitOne(milliseconds))
+            {
+                wasKilledOnTimeout = KillCore();
+                processWaitHandle.WaitOne(Timeout.Infinite);
+            }
+
+            return new ProcessExitStatus(GetExitCode(), wasKilledOnTimeout);
+        }
+
+        private async Task<ProcessExitStatus> WaitForExitAsyncCore(CancellationToken cancellationToken)
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            CancellationTokenRegistration ctr = default;
+
+            try
+            {
+                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    processWaitHandle,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    ctr = cancellationToken.UnsafeRegister(
+                        static state =>
+                        {
+                            var (taskSource, token) = ((TaskCompletionSource<bool> taskSource, CancellationToken token))state!;
+                            taskSource.TrySetCanceled(token);
+                        },
+                        (tcs, cancellationToken));
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                ctr.Dispose();
+                registeredWaitHandle?.Unregister(null);
+            }
+
+            return new ProcessExitStatus(GetExitCode(), false);
+        }
+
+        private async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsyncCore(CancellationToken cancellationToken)
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            CancellationTokenRegistration ctr = default;
+            StrongBox<bool> wasKilledBox = new(false);
+
+            try
+            {
+                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    processWaitHandle,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    ctr = cancellationToken.UnsafeRegister(
+                        static state =>
+                        {
+                            var (handle, wasCancelled) = ((SafeProcessHandle, StrongBox<bool>))state!;
+                            wasCancelled.Value = handle.KillCore();
+                        },
+                        (this, wasKilledBox));
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                ctr.Dispose();
+                registeredWaitHandle?.Unregister(null);
+            }
+
+            return new ProcessExitStatus(GetExitCode(), wasKilledBox.Value);
+        }
+
+        private bool KillCore()
+        {
+            if (Interop.Kernel32.TerminateProcess(this, exitCode: -1))
+            {
+                return true;
+            }
+
+            int error = Marshal.GetLastPInvokeError();
+            return error switch
+            {
+                Interop.Errors.ERROR_ACCESS_DENIED => false, // process already exited
+                _ => throw new Win32Exception(error),
+            };
+        }
+
+        private int GetExitCode()
+        {
+            if (!Interop.Kernel32.GetExitCodeProcess(this, out int exitCode))
+            {
+                throw new Win32Exception();
+            }
+
+            return exitCode;
         }
     }
 }

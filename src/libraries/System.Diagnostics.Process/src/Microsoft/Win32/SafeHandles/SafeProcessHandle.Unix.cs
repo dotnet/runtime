@@ -13,6 +13,7 @@ using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace Microsoft.Win32.SafeHandles
@@ -28,10 +29,12 @@ namespace Microsoft.Win32.SafeHandles
 
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
+        private readonly ProcessWaitState.Holder? _waitStateHolder;
 
         private SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
             ProcessId = processId;
+            _waitStateHolder = waitStateHolder;
 
             _handle = waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
             _handle.DangerousAddRef(ref _releaseRef);
@@ -50,9 +53,10 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (_releaseRef)
             {
-                Debug.Assert(_handle != null);
+                Debug.Assert(_handle is not null);
                 _handle.DangerousRelease();
             }
+            _waitStateHolder?.Dispose();
             return true;
         }
 
@@ -92,19 +96,24 @@ namespace Microsoft.Win32.SafeHandles
         private delegate SafeProcessHandle StartWithShellExecuteDelegate(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
         private static StartWithShellExecuteDelegate? s_startWithShellExecute;
 
-        private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandlesSnapshot = null)
+        private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
-            SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandlesSnapshot, out ProcessWaitState.Holder? waitStateHolder);
+            SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
 
-            // For standalone SafeProcessHandle.Start, we dispose the wait state holder immediately.
-            // The DangerousAddRef on the SafeWaitHandle (Unix) keeps the handle alive.
-            waitStateHolder?.Dispose();
+            // The wait state holder is stored in the SafeProcessHandle (via the constructor) and will be
+            // disposed when the SafeProcessHandle is released. This keeps the ProcessWaitState alive
+            // so that WaitForExit* methods can retrieve the exit status.
+            // For the Process class path (which has its own Holder), we still need to dispose if
+            // the started process somehow didn't capture the holder (e.g. shell execute returning invalid handle).
+            if (waitStateHolder is not null && startedProcess._waitStateHolder is null)
+            {
+                waitStateHolder.Dispose();
+            }
 
             return startedProcess;
         }
 
-        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
-            SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder)
+        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
         {
             waitStateHolder = null;
 
@@ -143,12 +152,10 @@ namespace Microsoft.Win32.SafeHandles
                 startInfo, filename, argv, env, cwd,
                 setCredentials, userId, groupId, groups,
                 stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                inheritedHandles,
                 out waitStateHolder);
         }
 
-        private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
-            SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
+        private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
         {
             IDictionary<string, string?> env = startInfo.Environment;
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
@@ -185,7 +192,6 @@ namespace Microsoft.Win32.SafeHandles
                     startInfo, filename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                    null,
                     out waitStateHolder,
                     throwOnNoExec: false); // return invalid handle instead of throwing on ENOEXEC
 
@@ -206,7 +212,6 @@ namespace Microsoft.Win32.SafeHandles
                 startInfo, filename, openFileArgv, env, cwd,
                 setCredentials, userId, groupId, groups,
                 stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                null,
                 out waitStateHolder);
 
             return result;
@@ -224,7 +229,7 @@ namespace Microsoft.Win32.SafeHandles
             IDictionary<string, string?> env, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
             SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
-            bool usesTerminal, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder, bool throwOnNoExec = true)
+            bool usesTerminal, out ProcessWaitState.Holder? waitStateHolder, bool throwOnNoExec = true)
         {
             waitStateHolder = null;
 
@@ -254,8 +259,7 @@ namespace Microsoft.Win32.SafeHandles
                 errno = Interop.Sys.ForkAndExecProcess(
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
-                    out childPid, stdinHandle, stdoutHandle, stderrHandle,
-                    inheritedHandles);
+                    out childPid, stdinHandle, stdoutHandle, stderrHandle);
 
                 if (errno == 0)
                 {
@@ -293,6 +297,177 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return new SafeProcessHandle(childPid, waitStateHolder!);
+        }
+
+        private ProcessExitStatus WaitForExitCore()
+        {
+            if (_waitStateHolder is not null)
+            {
+                _waitStateHolder._state.WaitForExit(Timeout.Infinite);
+                return CreateExitStatusFromWaitState(_waitStateHolder._state, canceled: false);
+            }
+
+            // Fallback: wait on the underlying ManualResetEvent handle.
+            using ManualResetEvent mre = new(false);
+            mre.SetSafeWaitHandle(new SafeWaitHandle(handle, ownsHandle: false));
+            mre.WaitOne(Timeout.Infinite);
+            return new ProcessExitStatus(0, false);
+        }
+
+        private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            if (_waitStateHolder is not null)
+            {
+                if (!_waitStateHolder._state.WaitForExit(milliseconds))
+                {
+                    exitStatus = null;
+                    return false;
+                }
+
+                exitStatus = CreateExitStatusFromWaitState(_waitStateHolder._state, canceled: false);
+                return true;
+            }
+
+            // Fallback: wait on the underlying ManualResetEvent handle.
+            using ManualResetEvent mre = new(false);
+            mre.SetSafeWaitHandle(new SafeWaitHandle(handle, ownsHandle: false));
+            if (!mre.WaitOne(milliseconds))
+            {
+                exitStatus = null;
+                return false;
+            }
+
+            exitStatus = new ProcessExitStatus(0, false);
+            return true;
+        }
+
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
+        {
+            if (_waitStateHolder is not null)
+            {
+                if (!_waitStateHolder._state.WaitForExit(milliseconds))
+                {
+                    bool wasKilled = SignalCore(PosixSignal.SIGKILL);
+                    _waitStateHolder._state.WaitForExit(Timeout.Infinite);
+                    return CreateExitStatusFromWaitState(_waitStateHolder._state, canceled: wasKilled);
+                }
+
+                return CreateExitStatusFromWaitState(_waitStateHolder._state, canceled: false);
+            }
+
+            // Fallback: wait on the underlying ManualResetEvent handle.
+            using ManualResetEvent mre = new(false);
+            mre.SetSafeWaitHandle(new SafeWaitHandle(handle, ownsHandle: false));
+            bool timedOut = !mre.WaitOne(milliseconds);
+            bool killed = false;
+            if (timedOut)
+            {
+                killed = SignalCore(PosixSignal.SIGKILL);
+                mre.WaitOne(Timeout.Infinite);
+            }
+
+            return new ProcessExitStatus(0, killed);
+        }
+
+        private async Task<ProcessExitStatus> WaitForExitAsyncCore(CancellationToken cancellationToken)
+        {
+            if (_waitStateHolder is not null)
+            {
+                ProcessWaitState waitState = _waitStateHolder._state;
+
+                if (!cancellationToken.CanBeCanceled)
+                {
+                    return await Task.Run(() =>
+                    {
+                        waitState.WaitForExit(Timeout.Infinite);
+                        return CreateExitStatusFromWaitState(waitState, canceled: false);
+                    }, cancellationToken).ConfigureAwait(false);
+                }
+
+                SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
+
+                using (readHandle)
+                using (writeHandle)
+                {
+                    using CancellationTokenRegistration registration = cancellationToken.Register(static state =>
+                    {
+                        ((SafeFileHandle)state!).Close();
+                    }, writeHandle);
+
+                    return await Task.Run(() =>
+                    {
+                        ManualResetEvent exitEvent = waitState.EnsureExitedEvent();
+                        using ManualResetEvent pipeEvent = new(false);
+                        pipeEvent.SetSafeWaitHandle(new SafeWaitHandle(readHandle.DangerousGetHandle(), ownsHandle: false));
+
+                        int index = WaitHandle.WaitAny([exitEvent, pipeEvent]);
+                        if (index == 1)
+                        {
+                            throw new OperationCanceledException(cancellationToken);
+                        }
+
+                        return CreateExitStatusFromWaitState(waitState, canceled: false);
+                    }, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            // Fallback for handles without ProcessWaitState.
+            return await Task.Run(WaitForExitCore, cancellationToken).ConfigureAwait(false);
+        }
+
+        private async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsyncCore(CancellationToken cancellationToken)
+        {
+            if (_waitStateHolder is not null)
+            {
+                ProcessWaitState waitState = _waitStateHolder._state;
+
+                if (!cancellationToken.CanBeCanceled)
+                {
+                    return await Task.Run(() =>
+                    {
+                        waitState.WaitForExit(Timeout.Infinite);
+                        return CreateExitStatusFromWaitState(waitState, canceled: false);
+                    }, cancellationToken).ConfigureAwait(false);
+                }
+
+                SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
+
+                using (readHandle)
+                using (writeHandle)
+                {
+                    using CancellationTokenRegistration registration = cancellationToken.Register(static state =>
+                    {
+                        ((SafeFileHandle)state!).Close();
+                    }, writeHandle);
+
+                    return await Task.Run(() =>
+                    {
+                        ManualResetEvent exitEvent = waitState.EnsureExitedEvent();
+                        using ManualResetEvent pipeEvent = new(false);
+                        pipeEvent.SetSafeWaitHandle(new SafeWaitHandle(readHandle.DangerousGetHandle(), ownsHandle: false));
+
+                        int index = WaitHandle.WaitAny([exitEvent, pipeEvent]);
+                        if (index == 1)
+                        {
+                            // Cancellation requested: kill the process, then wait for exit.
+                            bool wasKilled = SignalCore(PosixSignal.SIGKILL);
+                            waitState.WaitForExit(Timeout.Infinite);
+                            return CreateExitStatusFromWaitState(waitState, canceled: wasKilled);
+                        }
+
+                        return CreateExitStatusFromWaitState(waitState, canceled: false);
+                    }, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            // Fallback for handles without ProcessWaitState.
+            return await Task.Run(WaitForExitCore, cancellationToken).ConfigureAwait(false);
+        }
+
+        private static ProcessExitStatus CreateExitStatusFromWaitState(ProcessWaitState waitState, bool canceled)
+        {
+            int exitCode = waitState.ExitCode ?? 0;
+            return new ProcessExitStatus(exitCode, canceled);
         }
     }
 }

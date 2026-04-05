@@ -10,12 +10,12 @@ namespace Microsoft.Win32.SafeHandles
     {
         public SafeProcessHandle() : base (default(bool)) { }
         public SafeProcessHandle(System.IntPtr existingHandle, bool ownsHandle) : base (default(bool)) { }
+        protected override bool ReleaseHandle() { throw null; }
+        public int ProcessId { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public void Kill() { }
-        public int ProcessId { get { throw null; } }
-        protected override bool ReleaseHandle() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
@@ -24,6 +24,26 @@ namespace Microsoft.Win32.SafeHandles
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static Microsoft.Win32.SafeHandles.SafeProcessHandle Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public System.Diagnostics.ProcessExitStatus WaitForExit() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public bool TryWaitForExit(System.TimeSpan timeout, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Diagnostics.ProcessExitStatus? exitStatus) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public System.Diagnostics.ProcessExitStatus WaitForExitOrKillOnTimeout(System.TimeSpan timeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
 }
 namespace System.Diagnostics
@@ -253,9 +273,10 @@ namespace System.Diagnostics
         [System.ComponentModel.EditorAttribute("System.Diagnostics.Design.StartFileNameEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string FileName { get { throw null; } set { } }
-        public System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle>? InheritedHandles { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool LoadUserProfile { get { throw null; } set { } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public bool UseCredentialsForNetworkingOnly { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.Security.SecureString? Password { get { throw null; } set { } }
@@ -266,12 +287,10 @@ namespace System.Diagnostics
         public bool RedirectStandardOutput { get { throw null; } set { } }
         public System.Text.Encoding? StandardErrorEncoding { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardErrorHandle { get { throw null; } set { } }
-        public System.Text.Encoding? StandardInputEncoding { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardInputHandle { get { throw null; } set { } }
-        public System.Text.Encoding? StandardOutputEncoding { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardOutputHandle { get { throw null; } set { } }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public bool UseCredentialsForNetworkingOnly { get { throw null; } set { } }
+        public System.Text.Encoding? StandardInputEncoding { get { throw null; } set { } }
+        public System.Text.Encoding? StandardOutputEncoding { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string UserName { get { throw null; } set { } }
         public bool UseShellExecute { get { throw null; } set { } }

@@ -7,7 +7,6 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Text;
@@ -1162,7 +1161,7 @@ namespace System.Diagnostics
             Close();
 
             ProcessStartInfo startInfo = StartInfo;
-            startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
+            startInfo.ThrowIfInvalid(out bool anyRedirection);
 
             if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
@@ -1247,11 +1246,9 @@ namespace System.Diagnostics
                             ProcessUtils.s_processStartLock.ExitWriteLock();
                         }
                     }
-
-                    ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
                 }
 
-                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles))
+                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle))
                 {
                     return false;
                 }

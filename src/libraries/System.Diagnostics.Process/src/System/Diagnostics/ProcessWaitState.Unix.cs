@@ -343,6 +343,22 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>
+        /// Gets the exit code of the process after it has exited.
+        /// This must only be called after the process has exited (e.g. after WaitForExit returns true).
+        /// </summary>
+        internal int? ExitCode
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    Debug.Assert(_exited);
+                    return _exitCode;
+                }
+            }
+        }
+
         private void CheckForNonChildExit()
         {
             Debug.Assert(Monitor.IsEntered(_gate));

@@ -19,10 +19,10 @@ internal static partial class Interop
             string? appName,
             char* cmdLine,
             int creationFlags,
-            char* environmentBlock,
+            IntPtr environmentBlock,
             string? lpCurrentDirectory,
-            Interop.Kernel32.STARTUPINFO* lpStartupInfo,
-            Interop.Kernel32.PROCESS_INFORMATION* lpProcessInformation);
+            ref Interop.Kernel32.STARTUPINFO lpStartupInfo,
+            ref Interop.Kernel32.PROCESS_INFORMATION lpProcessInformation);
 
         [Flags]
         internal enum LogonFlags
