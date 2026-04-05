@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <ArtifactsDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', '..', '..', '..', 'artifacts', 'toolset'))</ArtifactsDir>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_SOURCEGENERATION</DefineConstants>

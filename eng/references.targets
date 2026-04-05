@@ -45,13 +45,25 @@
     </ProjectReference>
   </ItemGroup>
 
+  <PropertyGroup>
+    <CoreResGenDependsOn>$(CoreResGenDependsOn);Add_ResolvedProjectReferencePathsToCoreCompileInputs</CoreResGenDependsOn>
+  </PropertyGroup>
+
+  <Target Name="Add_ResolvedProjectReferencePathsToCoreCompileInputs">
+    <ItemGroup>
+      <CoreCompileInputs Include="@(_ResolvedProjectReferencePaths)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="ReplaceCoreLibSrcWithRefAssemblyForCompilation"
           AfterTargets="FindReferenceAssembliesForReferences"
+          Deferred="Item:ReferencePathWithRefAssemblies:w;Item:_resolvedCoreLibProjectReference:r"
           Condition="'$(CompileUsingReferenceAssemblies)' != 'true' and '@(_coreLibProjectReference)' != ''">
     <ItemGroup>
       <_resolvedCoreLibProjectReference Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(CoreLibProject)'))" />
-      <ReferencePathWithRefAssemblies Remove="@(_resolvedCoreLibProjectReference)" />
-      <ReferencePathWithRefAssemblies Include="@(_resolvedCoreLibProjectReference->Metadata('ReferenceAssembly'))" />
+      <CoreCompileInputs Include="@(_resolvedCoreLibProjectReference)" />
+      <ReferencePathWithRefAssemblies Deferred="true" Remove="@(_resolvedCoreLibProjectReference)" />
+      <ReferencePathWithRefAssemblies Deferred="true" Include="@(_resolvedCoreLibProjectReference->Metadata('ReferenceAssembly'))" />
     </ItemGroup>
   </Target>
 

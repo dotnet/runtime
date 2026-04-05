@@ -99,7 +99,7 @@
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="CombineLinkerXmlFiles"
+  <UsingTask TaskName="CombineLinkerXmlFiles" PrecomputationMode="Dynamic"
              AssemblyFile="$(ILLinkTasksAssembly)"
              TaskFactory="TaskHostFactory"
              Condition="'$(ILLinkTasksAssembly)' != ''" />

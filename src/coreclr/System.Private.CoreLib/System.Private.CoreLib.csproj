@@ -52,7 +52,7 @@
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
-    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+    <DocumentationFile>$(IntermediateOutputPath)$(MSBuildProjectName).xml</DocumentationFile>
   </PropertyGroup>
 
   <!-- Platform specific properties -->

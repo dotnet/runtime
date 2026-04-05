@@ -6,6 +6,10 @@
 
     <!-- Libraries have always added a description set to assembly name so include that here. -->
     <Description Condition="'$(Description)' == ''">$(AssemblyName)</Description>
+
+    <!-- Precompute: Resolve this at evaluation time so it's available when deferred properties are initialized -->
+    <AssemblyAttributeOrOperator Condition="'$(MSBuildProjectExtension)' == '.csproj'">|</AssemblyAttributeOrOperator>
+    <AssemblyAttributeOrOperator Condition="'$(MSBuildProjectExtension)' == '.vbproj'">Or</AssemblyAttributeOrOperator>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
@@ -36,24 +40,26 @@
           BeforeTargets="GetAssemblyAttributes"
           Condition="'$(IsSourceProject)' == 'true'"
           PrecomputeMerge="ResolveReferences"
-          Deferred="Item:ReferencePath:r">
+          Deferred="Item:ReferencePath:r;Property:IncludeDllSafeSearchPathAttribute:w;Item:AssemblyAttribute:w;Property:AssemblyAttributeOrOperator:r;Property:TargetFrameworkIdentifier:r">
+
     <!-- We want to apply the IncludeDllSafeSearchPathAttribute on all source assemblies that may contain DllImport -->
-    <!-- Precompute: Use DeferredCondition on individual properties since @(ReferencePath) is deferred from RAR.
-         DeferredCondition is valid on items/properties but not on PropertyGroup elements. -->
-    <PropertyGroup Condition="'$(IncludeDllSafeSearchPathAttribute)' == ''">
-      <IncludeDllSafeSearchPathAttribute DeferredCondition="@(ReferencePath->AnyHaveMetadataValue('Filename', 'System.Runtime.InteropServices'))">true</IncludeDllSafeSearchPathAttribute>
-      <IncludeDllSafeSearchPathAttribute DeferredCondition="@(ReferencePath->AnyHaveMetadataValue('Filename', 'System.Private.CoreLib'))">true</IncludeDllSafeSearchPathAttribute>
-      <IncludeDllSafeSearchPathAttribute DeferredCondition="'$(TargetFrameworkIdentifier)' == '.NETStandard' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'netstandard'))">true</IncludeDllSafeSearchPathAttribute>
-      <IncludeDllSafeSearchPathAttribute DeferredCondition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'mscorlib'))">true</IncludeDllSafeSearchPathAttribute>
+    <!-- Precompute: Each PropertyGroup has a DeferredCondition so it is only evaluated at compute time
+         when ReferencePath items are available from RAR. -->
+    <PropertyGroup DeferredCondition="'$(IncludeDllSafeSearchPathAttribute)' == '' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'System.Runtime.InteropServices'))">
+      <IncludeDllSafeSearchPathAttribute Deferred="true">true</IncludeDllSafeSearchPathAttribute>
+    </PropertyGroup>
+    <PropertyGroup DeferredCondition="'$(IncludeDllSafeSearchPathAttribute)' == '' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'System.Private.CoreLib'))">
+      <IncludeDllSafeSearchPathAttribute Deferred="true">true</IncludeDllSafeSearchPathAttribute>
+    </PropertyGroup>
+    <PropertyGroup DeferredCondition="'$(IncludeDllSafeSearchPathAttribute)' == '' and '$(TargetFrameworkIdentifier)' == '.NETStandard' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'netstandard'))">
+      <IncludeDllSafeSearchPathAttribute Deferred="true">true</IncludeDllSafeSearchPathAttribute>
+    </PropertyGroup>
+    <PropertyGroup DeferredCondition="'$(IncludeDllSafeSearchPathAttribute)' == '' and '$(TargetFrameworkIdentifier)' == '.NETFramework' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'mscorlib'))">
+      <IncludeDllSafeSearchPathAttribute Deferred="true">true</IncludeDllSafeSearchPathAttribute>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <AssemblyAttributeOrOperator Condition="'$(MSBuildProjectExtension)' == '.csproj'">|</AssemblyAttributeOrOperator>
-      <AssemblyAttributeOrOperator Condition="'$(MSBuildProjectExtension)' == '.vbproj'">Or</AssemblyAttributeOrOperator>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(IncludeDllSafeSearchPathAttribute)' == 'true'">
-      <AssemblyAttribute Include="System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute">
+    <ItemGroup DeferredCondition="'$(IncludeDllSafeSearchPathAttribute)' == 'true'">
+      <AssemblyAttribute Deferred="true" Include="System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute">
         <_Parameter1>System.Runtime.InteropServices.DllImportSearchPath.AssemblyDirectory $(AssemblyAttributeOrOperator) System.Runtime.InteropServices.DllImportSearchPath.System32</_Parameter1>
         <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
       </AssemblyAttribute>
@@ -118,18 +124,18 @@
     </ItemGroup>
 
     <ItemGroup Condition="'@(_unsupportedOSPlatforms)' != ''">
-      <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform">
+      <AssemblyAttributeStatic Include="System.Runtime.Versioning.UnsupportedOSPlatform">
         <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
-      </AssemblyAttribute>
+      </AssemblyAttributeStatic>
 
       <!-- Ensure this platform is included in the platforms enabled for the CA1416 analyzer -->
       <SupportedPlatform Include="@(_unsupportedOSPlatforms)" />
     </ItemGroup>
 
     <ItemGroup Condition="'@(_supportedOSPlatforms)' != ''">
-      <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
+      <AssemblyAttributeStatic Include="System.Runtime.Versioning.SupportedOSPlatform">
         <_Parameter1>%(_supportedOSPlatforms.Identity)</_Parameter1>
-      </AssemblyAttribute>
+      </AssemblyAttributeStatic>
 
       <!-- Ensure this platform is included in the platforms enabled for the CA1416 analyzer -->
       <SupportedPlatform Include="@(_supportedOSPlatforms)" />
@@ -140,7 +146,8 @@
        Use a target for that until https://github.com/dotnet/sdk/issues/14836 is implemented. -->
   <Target Name="RemoveSupportedOSTargetPlatformAttributeFromProjects"
           AfterTargets="GetAssemblyAttributes"
-          BeforeTargets="CreateGeneratedAssemblyInfoInputsCacheFile">
+          BeforeTargets="CreateGeneratedAssemblyInfoInputsCacheFile"
+          Deferred="Item:AssemblyAttribute:w;Property:IsTestProject:r;Property:AddOSPlatformAttributes:r">
     <ItemGroup>
       <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute"
                          Condition="'$(IsTestProject)' == 'true' or '$(AddOSPlatformAttributes)' == 'false'" />

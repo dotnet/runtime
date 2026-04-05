@@ -29,7 +29,7 @@
         of child processes, and attach a debugger to msbuild. After that you can set a bp on the exception
         you are seeing.
   -->
-  <UsingTask TaskName="CreateRuntimeRootILLinkDescriptorFile"
+  <UsingTask TaskName="CreateRuntimeRootILLinkDescriptorFile" PrecomputationMode="Dynamic"
              AssemblyFile="$(ILLinkTasksAssembly)"
              TaskFactory="TaskHostFactory"
              Condition="'$(ILLinkTasksAssembly)' != ''" />
@@ -47,7 +47,7 @@
                                            RuntimeRootDescriptorFilePath="$(_ILLinkRuntimeRootDescriptorFilePath)" />
   </Target>
 
-  <UsingTask TaskName="CombineLinkerXmlFiles"
+  <UsingTask TaskName="CombineLinkerXmlFiles" PrecomputationMode="Dynamic"
              AssemblyFile="$(ILLinkTasksAssembly)"
              TaskFactory="TaskHostFactory"
              Condition="'$(ILLinkTasksAssembly)' != ''" />
