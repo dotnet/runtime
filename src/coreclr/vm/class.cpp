@@ -574,12 +574,10 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     {
         // ClassifyMethodReturnKind calls IsTypeDefOrRefImplementedInSystemModule which
         // does type resolution that may trigger GC. We suppress GC_NOTRIGGER here because
-        // we're only resolving well-known system types (Task/ValueTask) in practice.
-        // Note: ClassifyMethodReturnKind matches by type name without verifying the assembly
-        // reference, so a user-defined type named "Task" or "ValueTask" (e.g. via extern
-        // alias) could be misidentified and induce GC-triggering resolution paths. Accepted
-        // as Won't Fix given this requires an extremely unlikely combination of naming
-        // collision, extern alias usage, and hot reload of such a method while debugging.
+        // these types are typically referenced via System.Runtime which is likely already
+        // resolved at this point. However, if the TypeRef/AssemblyRef for Task or ValueTask
+        // has not been resolved yet, the resolution path could trigger GC. Accepted as
+        // Won't Fix given this is unlikely in practice.
         CONTRACT_VIOLATION(GCViolation);
         returnKind = ClassifyMethodReturnKind(
             SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
@@ -603,7 +601,7 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
         LOG((LF_ENC, LL_INFO100,
             "EEClass::AddMethod rejecting infrastructure async method (methodDef: 0x%08x)\n",
             methodDef));
-        return COR_E_BADIMAGEFORMAT;
+        return CORDBG_E_ENC_EDIT_NOT_SUPPORTED;
     }
 
     MethodDesc* pNewMD;
