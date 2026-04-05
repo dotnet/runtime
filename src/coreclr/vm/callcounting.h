@@ -400,52 +400,6 @@ inline PCODE CallCountingStub::GetTargetForMethod() const
     return GetData()->TargetForMethod;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// CallCountingManager::CallCountingStubManager
-
-class CallCountingStubManager;
-typedef VPTR(CallCountingStubManager) PTR_CallCountingStubManager;
-
-class CallCountingStubManager : public StubManager
-{
-    VPTR_VTABLE_CLASS(CallCountingStubManager, StubManager);
-    friend class RangeSectionStubManager;
-
-private:
-    SPTR_DECL(CallCountingStubManager, g_pManager);
-
-#ifndef DACCESS_COMPILE
-public:
-    CallCountingStubManager();
-
-public:
-    static void Init();
-#endif
-
-#ifdef _DEBUG
-public:
-    virtual const char *DbgGetName(); // override
-#endif
-
-#ifdef DACCESS_COMPILE
-public:
-    virtual LPCWSTR GetStubManagerName(PCODE addr);
-#endif
-
-protected:
-    virtual BOOL CheckIsStub_Internal(PCODE entryPoint); // override
-    virtual BOOL DoTraceStub(PCODE callCountingStubEntryPoint, TraceDestination *trace); // override
-
-#ifdef DACCESS_COMPILE
-protected:
-    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags); // override
-#endif
-
-    DISABLE_COPY(CallCountingStubManager);
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #undef DISABLE_COPY
 
 #endif // FEATURE_TIERED_COMPILATION
