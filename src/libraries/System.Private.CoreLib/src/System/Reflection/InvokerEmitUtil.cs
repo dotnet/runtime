@@ -141,10 +141,14 @@ namespace System.Reflection
         }
 
         public static InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase method, bool backwardsCompat)
+            => CreateInvokeDelegate_RefArgs(method, backwardsCompat, constructorWithoutAllocation: false);
+
+        public static InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase method, bool backwardsCompat, bool constructorWithoutAllocation)
         {
             Debug.Assert(!method.ContainsGenericParameters);
+            Debug.Assert(!constructorWithoutAllocation || method is RuntimeConstructorInfo);
 
-            bool emitNew = method is RuntimeConstructorInfo;
+            bool emitNew = method is RuntimeConstructorInfo && !constructorWithoutAllocation;
             bool hasThis = !(emitNew || method.IsStatic);
 
             // The first parameter is unused but supports treating the DynamicMethod as an instance method which is slightly faster than a static.
@@ -190,7 +194,7 @@ namespace System.Reflection
                 }
             }
 
-            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat, constructorWithoutAllocation);
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
@@ -205,7 +209,7 @@ namespace System.Reflection
             il.Emit(OpCodes.Ldobj, parameterType);
         }
 
-        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
+        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat, bool constructorWithoutAllocation = false)
         {
             // For CallStack reasons, don't inline target method.
             // Mono interpreter does not support\need this.
@@ -224,6 +228,11 @@ namespace System.Reflection
             {
                 il.Emit(OpCodes.Newobj, (ConstructorInfo)method);
             }
+            else if (method is RuntimeConstructorInfo)
+            {
+                // Constructor invocation on an existing target object.
+                il.Emit(OpCodes.Call, (ConstructorInfo)method);
+            }
             else if (method.IsStatic || method.DeclaringType!.IsValueType)
             {
                 il.Emit(OpCodes.Call, (MethodInfo)method);
@@ -241,6 +250,10 @@ namespace System.Reflection
                 {
                     il.Emit(OpCodes.Box, returnType);
                 }
+            }
+            else if (constructorWithoutAllocation)
+            {
+                il.Emit(OpCodes.Ldnull);
             }
             else
             {

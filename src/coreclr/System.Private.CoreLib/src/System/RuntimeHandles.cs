@@ -1203,15 +1203,36 @@ namespace System
         [RequiresUnsafe]
         internal static object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor)
         {
-            object? result = null;
-            InvokeMethod(
-                ObjectHandleOnStack.Create(ref target),
-                arguments,
-                ObjectHandleOnStack.Create(ref sig),
-                isConstructor ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-                ObjectHandleOnStack.Create(ref result));
-            return result;
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                object? result = null;
+                InvokeMethod(
+                    ObjectHandleOnStack.Create(ref target),
+                    arguments,
+                    ObjectHandleOnStack.Create(ref sig),
+                    isConstructor ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                    ObjectHandleOnStack.Create(ref result));
+                return result;
+            }
+
+            MethodBase? method = RuntimeType.GetMethodBase(sig.DeclaringType, sig.MethodHandle);
+            if (method is null)
+            {
+                throw new InvalidOperationException(SR.Arg_InvalidHandle);
+            }
+
+            Reflection.InvokerEmitUtil.InvokeFunc_RefArgs thunk = method is Reflection.RuntimeConstructorInfo && !isConstructor
+                ? s_invokeMethodCtorNoAllocCache.GetValue(method, static m => Reflection.InvokerEmitUtil.CreateInvokeDelegate_RefArgs(m, backwardsCompat: true, constructorWithoutAllocation: true))
+                : s_invokeMethodCache.GetValue(method, static m => Reflection.InvokerEmitUtil.CreateInvokeDelegate_RefArgs(m, backwardsCompat: true));
+
+            return thunk(target, (IntPtr*)arguments);
         }
+
+        private static readonly ConditionalWeakTable<MethodBase, Reflection.InvokerEmitUtil.InvokeFunc_RefArgs> s_invokeMethodCache =
+            new();
+
+        private static readonly ConditionalWeakTable<MethodBase, Reflection.InvokerEmitUtil.InvokeFunc_RefArgs> s_invokeMethodCtorNoAllocCache =
+            new();
 
         /// <summary>
         /// For a true boxed Nullable{T}, re-box to a boxed {T} or null, otherwise just return the input.
@@ -2146,6 +2167,8 @@ namespace System
 
         #region Internal Members
         internal CallingConventions CallingConvention => (CallingConventions)(_managedCallingConventionAndArgIteratorFlags & 0xff);
+        internal RuntimeMethodHandleInternal MethodHandle => _pMethod;
+        internal RuntimeType DeclaringType => _declaringType;
         internal RuntimeType[] Arguments
         {
             get
