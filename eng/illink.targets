@@ -197,10 +197,15 @@
        rewriting the assembly to an "output assembly" -->
   <UsingTask TaskName="ILLink"
              AssemblyFile="$(ILLinkTasksAssembly)"
+             PrecomputationMode="Dynamic"
              TaskFactory="TaskHostFactory"
              Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="ILLinkTrimAssembly"
+          PrecomputeInputs="$(ILLinkTrimAssemblyPath)"
+          PrecomputeOutputs="$(ILLinkTrimInputPath)#dir"
+          PrecomputeMerge="CoreCompile"
           Condition="'$(ILLinkTrimAssembly)' == 'true'"
+          Deferred="Item:FileWrites:w;Item:ReferencePathWithRefAssemblies:r;Property:ILLinkTrimAssemblySymbols:r;Property:DeterministicSourcePaths:r"
           DependsOnTargets="PrepareForAssembliesTrim">
     <PropertyGroup>
       <!-- default action for assemblies with IsTrimmable attribute -->
@@ -209,8 +214,12 @@
       <ILLinkArgs>$(ILLinkArgs) --action skip</ILLinkArgs>
       <!-- trim the target assembly -->
       <ILLinkArgs>$(ILLinkArgs) --action link $(TargetName)</ILLinkArgs>
-      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
-      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)') and '$(DeterministicSourcePaths)' == 'true'">$(ILLinkArgs) --preserve-symbol-paths</ILLinkArgs>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(ILLinkRewritePDBs)' == 'true'" DeferredCondition="Exists('$(ILLinkTrimAssemblySymbols)')">
+      <ILLinkArgsDeferred Deferred="true" Condition="'$(DeterministicSourcePaths)' == 'true'">--preserve-symbol-paths</ILLinkArgsDeferred>
+      <ILLinkArgsDeferred Deferred="true">$(ILLinkArgsDeferred) -b true</ILLinkArgsDeferred>
+    </PropertyGroup>
+    <PropertyGroup>
       <!-- pass the non-embedded descriptors xml file on the command line -->
       <ILLinkArgs Condition="'@(ILLinkDescriptorsLibraryBuildXml)' != ''">$(ILLinkArgs) -x "@(ILLinkDescriptorsLibraryBuildXml->'%(FullPath)', '" -x "')"</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkSubstitutionsLibraryBuildXml)' != ''">$(ILLinkArgs) --substitutions "$(ILLinkSubstitutionsLibraryBuildXml)"</ILLinkArgs>
@@ -229,45 +238,48 @@
 
     <!-- Move the assembly into a subdirectory for ILLink -->
     <Move SourceFiles="$(ILLinkTrimAssemblyPath)"
-          DestinationFolder="$(ILLinkTrimInputPath)">
+          DestinationFolder="$(ILLinkTrimInputPath)"
+          PrecomputationMode="Dynamic">
       <Output TaskParameter="MovedFiles" ItemName="FileWrites" />
     </Move>
 
     <!-- Move the PDB into a subdirectory for ILLink if we are rewriting PDBs -->
     <Move SourceFiles="$(ILLinkTrimAssemblySymbols)"
           DestinationFolder="$(ILLinkTrimInputPath)"
-          Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">
+          Condition="'$(ILLinkRewritePDBs)' == 'true'"
+          DeferredCondition="Exists('$(ILLinkTrimAssemblySymbols)')"
+          PrecomputationMode="Dynamic">
       <Output TaskParameter="MovedFiles" ItemName="FileWrites" />
     </Move>
 
     <ItemGroup>
-      <_DependencyDirectoriesTemp Include="@(ReferencePathWithRefAssemblies->'%(RootDir)%(Directory)')" />
+      <_DependencyDirectoriesTemp Deferred="true" Include="@(ReferencePathWithRefAssemblies->'%(RootDir)%(Directory)')" />
       <!-- Remove duplicate directories by batching over them -->
       <!-- Add project references first to give precedence to project-specific files -->
-      <_DependencyDirectories Condition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'=='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />
-      <_DependencyDirectories Condition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'!='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />
+      <_DependencyDirectories Deferred="true" DeferredCondition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'=='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />
+      <_DependencyDirectories Deferred="true" DeferredCondition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'!='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />
       <!-- Remove trailing slash to work around response file parsing behavior -->
-      <_DependencyDirectoriesSlash Include="@(_DependencyDirectories)">
+      <_DependencyDirectoriesSlash Deferred="true" Include="@(_DependencyDirectories)">
         <PathWithSlash>$([MSBuild]::EnsureTrailingSlash('%(Identity)'))</PathWithSlash>
       </_DependencyDirectoriesSlash>
-      <_DependencyDirectoriesNoSlash Include="@(_DependencyDirectoriesSlash)">
+      <_DependencyDirectoriesNoSlash Deferred="true" Include="@(_DependencyDirectoriesSlash)">
         <PathWithoutSlash>$([System.String]::new('%(PathWithSlash)').TrimEnd($([System.IO.Path]::DirectorySeparatorChar)))</PathWithoutSlash>
       </_DependencyDirectoriesNoSlash>
-      <_DependencyDirectories Remove="@(_DependencyDirectories)" />
-      <_DependencyDirectories Include="%(_DependencyDirectoriesNoSlash.PathWithoutSlash)" />
+      <_DependencyDirectories Deferred="true" Remove="@(_DependencyDirectories)" />
+      <_DependencyDirectories Deferred="true" Include="%(_DependencyDirectoriesNoSlash.PathWithoutSlash)" />
       <ILLinkTrimInputAssembly Include="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)">
         <RootMode>library</RootMode>
       </ILLinkTrimInputAssembly>
     </ItemGroup>
 
-    <PropertyGroup>
-      <ILLinkArgs Condition="@(_DependencyDirectories->Count()) > 0">$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
+    <PropertyGroup DeferredCondition="@(_DependencyDirectories->Count()) > 0">
+      <ILLinkArgsDeferred Deferred="true">$(ILLinkArgsDeferred) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgsDeferred>
     </PropertyGroup>
 
     <ILLink AssemblyPaths=""
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             OutputDirectory="$(ILLinkTrimOutputPath)"
-            ExtraArgs="$(ILLinkArgs)"
+            ExtraArgs="$(ILLinkArgs) $(ILLinkArgsDeferred)"
             ToolExe="$(_DotNetHostFileName)"
             ToolPath="$(_DotNetHostDirectory)" />
   </Target>
