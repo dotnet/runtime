@@ -1866,7 +1866,7 @@ namespace System.Reflection
             try
             {
                 object?[]? parameters = *pContract->CtorArgs;
-                byte[]? argIsValueType = *pContract->ArgIsValueType;
+                bool[]? argIsValueType = *pContract->ArgIsValueType;
                 object? target = *pContract->CtorTarget;
 
                 int argCount = pContract->ArgCount;
@@ -1882,9 +1882,9 @@ namespace System.Reflection
 
                 object ctorTarget = target;
                 object?[] ctorArgs = parameters;
-                byte[] argIsValueTypeFlags = argIsValueType;
+                bool[] argIsValueTypeFlags = argIsValueType;
 
-                if (pContract->CtorEntryPoint == IntPtr.Zero)
+                if (pContract->CtorEntryPoint == null)
                 {
                     throw new InvalidOperationException("Invalid constructor entry point.");
                 }
@@ -1899,7 +1899,7 @@ namespace System.Reflection
                 if (argCount == 1)
                 {
                     object? arg0 = ctorArgs[0];
-                    if (argIsValueTypeFlags[0] == 0)
+                    if (!argIsValueTypeFlags[0])
                     {
                         InstanceCalliHelper.Call((delegate*<object, object?, void>)pContract->CtorEntryPoint, ctorTarget, arg0);
                     }
@@ -1968,7 +1968,7 @@ namespace System.Reflection
                     bool hasValueTypeArg = false;
                     for (int i = 0; i < argCount; i++)
                     {
-                        if (argIsValueTypeFlags[i] != 0)
+                        if (argIsValueTypeFlags[i])
                         {
                             hasValueTypeArg = true;
                         }
@@ -1976,12 +1976,12 @@ namespace System.Reflection
 
                     if (hasValueTypeArg)
                     {
-                        if (pContract->CtorInvokeStubEntryPoint == IntPtr.Zero)
+                        if (pContract->CtorInvokeStubEntryPoint == null)
                         {
                             throw new InvalidOperationException("Invalid constructor invoke stub entry point.");
                         }
 
-                        ((delegate*<object, object?[], IntPtr, void>)pContract->CtorInvokeStubEntryPoint)(ctorTarget, ctorArgs, pContract->CtorEntryPoint);
+                        ((delegate*<object, object?[], void*, void>)pContract->CtorInvokeStubEntryPoint)(ctorTarget, ctorArgs, pContract->CtorEntryPoint);
                         *pResult = ctorTarget;
                         return;
                     }
@@ -2009,12 +2009,12 @@ namespace System.Reflection
                     return;
                 }
 
-                if (pContract->CtorInvokeStubEntryPoint == IntPtr.Zero)
+                if (pContract->CtorInvokeStubEntryPoint == null)
                 {
                     throw new InvalidOperationException("Invalid constructor invoke stub entry point.");
                 }
 
-                ((delegate*<object, object?[], IntPtr, void>)pContract->CtorInvokeStubEntryPoint)(ctorTarget, ctorArgs, pContract->CtorEntryPoint);
+                ((delegate*<object, object?[], void*, void>)pContract->CtorInvokeStubEntryPoint)(ctorTarget, ctorArgs, pContract->CtorEntryPoint);
                 *pResult = ctorTarget;
                 return;
             }
@@ -2028,11 +2028,11 @@ namespace System.Reflection
         private unsafe struct NativeCtorInvokeContract
         {
             public object[]* CtorArgs;
-            public byte[]* ArgIsValueType;
+            public bool[]* ArgIsValueType;
             public int ArgCount;
             public object* CtorTarget;
-            public IntPtr CtorEntryPoint;
-            public IntPtr CtorInvokeStubEntryPoint;
+            public void* CtorEntryPoint;
+            public void* CtorInvokeStubEntryPoint;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]

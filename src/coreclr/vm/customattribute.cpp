@@ -1046,24 +1046,22 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
 
     struct
     {
-        OBJECTREF ctorArgs;
-        OBJECTREF ctorArgIsValueTypeFlags;
-        OBJECTREF ctorArgsObj;
+        PTRARRAYREF ctorArgs;
+        BOOLARRAYREF ctorArgIsValueTypeFlags;
         OBJECTREF ctorTarget;
         OBJECTREF ctorResult;
     } gc;
     gc.ctorArgs = NULL;
     gc.ctorArgIsValueTypeFlags = NULL;
-    gc.ctorArgsObj = NULL;
     gc.ctorTarget = NULL;
     gc.ctorResult = NULL;
     GCPROTECT_BEGIN(gc);
 
-    gc.ctorArgs = (OBJECTREF)AllocateObjectArray(cArgs, g_pObjectClass);
-    gc.ctorArgIsValueTypeFlags = (OBJECTREF)(U1ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_U1, cArgs);
+    gc.ctorArgs = (PTRARRAYREF)AllocateObjectArray(cArgs, g_pObjectClass);
+    gc.ctorArgIsValueTypeFlags = (BOOLARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_BOOLEAN, cArgs);
     gc.ctorTarget = th.GetMethodTable()->Allocate();
 
-    BYTE* argIsValueTypeFlags = ((U1ARRAYREF)gc.ctorArgIsValueTypeFlags)->GetDataPtr();
+    CLR_BOOL* argIsValueTypeFlags = reinterpret_cast<CLR_BOOL*>(static_cast<void*>(gc.ctorArgIsValueTypeFlags->GetDataPtr()));
 
     if (pBlob)
     {
@@ -1094,7 +1092,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
                 if (argTypeForParse.IsArray())
                     argTypeForParse = argTypeForParse.GetArrayElementTypeHandle();
 
-                argIsValueTypeFlags[i] = paramType.IsValueType() ? 1 : 0;
+                argIsValueTypeFlags[i] = CLR_BOOL_ARG(paramType.IsValueType());
 
                 ARG_SLOT data = GetDataFromBlob(
                     pCtorMD->GetAssembly(),
@@ -1120,7 +1118,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
                     argObj = pMTValue->Box((void*)ArgSlotEndiannessFixup(&data, pMTValue->GetNumInstanceFieldBytes()));
                 }
 
-                ((PTRARRAYREF)gc.ctorArgs)->SetAt(i, argObj);
+                gc.ctorArgs->SetAt(i, argObj);
             }
 
             // Reset signature enumeration before we leave argument processing.
@@ -1164,21 +1162,20 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
         }
     }
 
-    gc.ctorArgsObj = gc.ctorArgs;
     PCODE ctorEntryPoint = pCtorMD->GetSingleCallableAddrOfCode();
     PCODE ctorInvokeStubEntryPoint = needsCtorInvokeStub ? GetOrCreateCustomAttributeCtorInvokeStub(pCtorMD, th) : (PCODE)NULL;
 
     struct NativeCtorInvokeContract
     {
-        OBJECTREF* ctorArgs;
-        OBJECTREF* argIsValueType;
+        PTRARRAYREF* ctorArgs;
+        BOOLARRAYREF* argIsValueType;
         INT32 argCount;
         OBJECTREF* ctorTarget;
         PCODE ctorEntryPoint;
         PCODE ctorInvokeStubEntryPoint;
     } contract;
 
-    contract.ctorArgs = &gc.ctorArgsObj;
+    contract.ctorArgs = &gc.ctorArgs;
     contract.argIsValueType = &gc.ctorArgIsValueTypeFlags;
     contract.argCount = (INT32)cArgs;
     contract.ctorTarget = &gc.ctorTarget;
