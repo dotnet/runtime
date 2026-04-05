@@ -5662,6 +5662,11 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 
     TryRetypingFloatingPointStoreToIntegerStore(lclStore);
 
+    if (lclStore->OperIs(GT_STORE_LCL_FLD) && (JitConfig.JitEnableStoreLclFldCoalescing() != 0))
+    {
+        LowerStoreCoalescing(lclStore);
+    }
+
     GenTree*   src           = lclStore->gtGetOp1();
     LclVarDsc* varDsc        = m_compiler->lvaGetDesc(lclStore);
     const bool srcIsMultiReg = src->IsMultiRegNode();
@@ -10436,6 +10441,7 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
     }
 
     data->targetType = ind->TypeGet();
+    data->accessSize = ind->Size();
     data->value      = isStore ? ind->Data() : nullptr;
     if (ind->Addr()->OperIs(GT_LEA))
     {
@@ -10458,6 +10464,10 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
         data->index    = index == nullptr ? nullptr : index;
         data->scale    = ind->Addr()->AsAddrMode()->GetScale();
         data->offset   = ind->Addr()->AsAddrMode()->Offset();
+        if ((base != nullptr) && base->OperIs(GT_LCL_VAR))
+        {
+            data->lclNum = base->AsLclVar()->GetLclNum();
+        }
     }
     else if (isNodeInvariant(m_compiler, ind->Addr(), true))
     {
@@ -10466,6 +10476,10 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
         data->index    = nullptr;
         data->scale    = 1;
         data->offset   = 0;
+        if ((ind->Addr() != nullptr) && ind->Addr()->OperIs(GT_LCL_VAR))
+        {
+            data->lclNum = ind->Addr()->AsLclVar()->GetLclNum();
+        }
     }
     else
     {
@@ -10483,8 +10497,533 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
 
     data->rangeStart = range.FirstNode();
     data->rangeEnd   = range.LastNode();
+    data->storeFlags = ind->gtFlags;
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// GetStoreCoalescingData: get the data needed to perform store coalescing for either
+//    STOREIND/STORE_BLK or STORE_LCL_FLD.
+//
+// Arguments:
+//    store - the store node
+//    data  - [OUT] coalescing data
+//
+// Return Value:
+//    true if the data was successfully retrieved, false otherwise.
+//
+bool Lowering::GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* data) const
+{
+    if (store->OperIs(GT_STOREIND, GT_STORE_BLK))
+    {
+        return GetLoadStoreCoalescingData(store->AsIndir(), data);
+    }
+
+    if (!store->OperIs(GT_STORE_LCL_FLD))
+    {
+        return false;
+    }
+
+    auto isNodeInvariant = [](Compiler* compiler, GenTree* node) {
+        if (node->OperIsConst())
+        {
+            return true;
+        }
+
+        return node->OperIs(GT_LCL_VAR) && !compiler->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
+    };
+
+    auto* lclStore = store->AsLclFld();
+    if (!isNodeInvariant(m_compiler, lclStore->Data()))
+    {
+        return false;
+    }
+
+    bool               isClosedRange = false;
+    LIR::ReadOnlyRange range         = BlockRange().GetTreeRange(store, &isClosedRange);
+    if (!isClosedRange)
+    {
+        return false;
+    }
+
+    LclVarDsc* varDsc      = m_compiler->lvaGetDesc(lclStore);
+    data->targetType       = store->TypeGet();
+    data->accessSize       = lclStore->GetSize();
+    data->value            = lclStore->Data();
+    data->offset           = lclStore->GetLclOffs();
+    data->lclNum           = lclStore->GetLclNum();
+    data->isLocalStoreNode = true;
+    data->isAddressExposed = varDsc->IsAddressExposed();
+    data->storeFlags       = store->gtFlags;
+    data->rangeStart       = range.FirstNode();
+    data->rangeEnd         = range.LastNode();
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// LowerCheckCoalescedStoreAtomicity: decide whether it's safe to coalesce two adjacent
+//    stores into a single wider store without violating atomicity guarantees.
+//
+// Arguments:
+//    currStore - the current store node
+//    prevStore - the previous store node
+//    currData  - coalescing data for the current store
+//    prevData  - coalescing data for the previous store
+//
+// Return Value:
+//    true if it is safe to coalesce the two stores, false otherwise.
+//
+bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       currStore,
+                                                 GenTree*                       prevStore,
+                                                 const LoadStoreCoalescingData& currData,
+                                                 const LoadStoreCoalescingData& prevData)
+{
+    // Now the hardest part: decide whether it's safe to use an unaligned write.
+    //
+    // IND<byte> is always fine (and all IND<X> created here from such)
+    // IND<simd> is not required to be atomic per our Memory Model
+    bool     allowsNonAtomic = currData.AllowsNonAtomic() && prevData.AllowsNonAtomic();
+    int      minOffset       = min(prevData.offset, currData.offset);
+    int      maxEndOffset    = max(prevData.offset + static_cast<int>(prevData.accessSize),
+                                   currData.offset + static_cast<int>(currData.accessSize));
+    unsigned combinedSize    = static_cast<unsigned>(maxEndOffset - minOffset);
+
+    if (!allowsNonAtomic && (currData.lclNum == m_compiler->info.compRetBuffArg))
+    {
+        // RetBuf is a private stack memory, so we don't need to worry about atomicity.
+        allowsNonAtomic = true;
+    }
+
+    if (!allowsNonAtomic && currData.IsLocalStore() && !currData.isAddressExposed && !prevData.isAddressExposed)
+    {
+        allowsNonAtomic = true;
+    }
+
+    if (!allowsNonAtomic && currData.IsLocalStore())
+    {
+        // During lowering we cannot rely on the final stack offset yet. Instead, use the stack-home
+        // alignment guarantees implied by local allocation: locals are naturally aligned up to pointer
+        // size, and address-exposed locals must be conservative beyond that.
+        unsigned homeAlignment = min(m_compiler->lvaLclStackHomeSize(currData.lclNum), (unsigned)TARGET_POINTER_SIZE);
+        bool     isCombinedStoreAtomic = (combinedSize <= homeAlignment) && ((minOffset % combinedSize) == 0);
+
+#ifdef TARGET_ARM64
+        if (currData.accessSize == TARGET_POINTER_SIZE)
+        {
+            // Per Arm ARM, a 128-bit SIMD write that is 64-bit aligned is treated as a pair of
+            // single-copy atomic 64-bit writes.
+            isCombinedStoreAtomic = (homeAlignment >= TARGET_POINTER_SIZE) && ((minOffset % TARGET_POINTER_SIZE) == 0);
+        }
+#endif
+
+        return isCombinedStoreAtomic;
+    }
+
+    if (!allowsNonAtomic && (genTypeSize(currStore) > 1) && !varTypeIsSIMD(currStore))
+    {
+        // Ignore indices for now, they can invalidate our alignment assumptions.
+        // Although, we can take scale into account.
+        if (currData.index != nullptr)
+        {
+            return false;
+        }
+
+        // Base address being TYP_REF gives us a hint that data is pointer-aligned.
+        if (!currData.baseAddr->TypeIs(TYP_REF))
+        {
+            return false;
+        }
+
+        // Check whether the combined indir is still aligned.
+        bool isCombinedIndirAtomic =
+            (combinedSize <= TARGET_POINTER_SIZE) && ((minOffset % static_cast<int>(combinedSize)) == 0);
+
+        if (combinedSize == 2 * TARGET_POINTER_SIZE)
+        {
+#ifdef TARGET_ARM64
+            // Per Arm Architecture Reference Manual for A-profile architecture:
+            //
+            // * Writes from SIMD and floating-point registers of a 128-bit value that is 64-bit aligned in memory
+            //   are treated as a pair of single - copy atomic 64 - bit writes.
+            //
+            // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null)
+            //
+            // And we assume on ARM64 TYP_LONG/TYP_REF are always 64-bit aligned, otherwise
+            // we're already doing a load that has no atomicity guarantees.
+            isCombinedIndirAtomic = true;
+#endif
+        }
+        else if (combinedSize > TARGET_POINTER_SIZE)
+        {
+            return false;
+        }
+
+        if (!isCombinedIndirAtomic)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// LowerStoreCoalescing: if the given store is followed by a similar adjacent constant store,
+//    try to merge them into a single wider store. Supports STOREIND/STORE_BLK and STORE_LCL_FLD.
+//
+// Arguments:
+//    node - current store node
+//
+void Lowering::LowerStoreCoalescing(GenTree* node)
+{
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (!m_compiler->opts.OptimizationEnabled())
+    {
+        return;
+    }
+
+    if (!node->OperIs(GT_STOREIND, GT_STORE_BLK, GT_STORE_LCL_FLD))
+    {
+        return;
+    }
+
+    do
+    {
+        LoadStoreCoalescingData currData;
+        LoadStoreCoalescingData prevData;
+
+        if (!GetStoreCoalescingData(node, &currData))
+        {
+            return;
+        }
+
+        GenTree* prevTree = currData.rangeStart->gtPrev;
+        while ((prevTree != nullptr) && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
+        {
+            prevTree = prevTree->gtPrev;
+        }
+
+        if (prevTree == nullptr)
+        {
+            return;
+        }
+
+        if (node->OperIs(GT_STORE_LCL_FLD))
+        {
+            if (!prevTree->OperIs(GT_STORE_LCL_FLD))
+            {
+                return;
+            }
+        }
+        else if (!prevTree->OperIs(GT_STOREIND, GT_STORE_BLK))
+        {
+            return;
+        }
+
+        if (!GetStoreCoalescingData(prevTree, &prevData))
+        {
+            return;
+        }
+
+        bool const allowOverlapOptimization = node->OperIs(GT_STORE_LCL_FLD);
+        bool const sameLocation = currData.IsAddressEqual(prevData, /*ignoreOffset*/ true, allowOverlapOptimization);
+
+        if (!sameLocation)
+        {
+            return;
+        }
+
+        if ((currData.offset == prevData.offset) && (currData.targetType == prevData.targetType))
+        {
+            if (m_compiler->gtTreeHasSideEffects(prevData.value, GTF_SIDE_EFFECT | GTF_GLOB_EFFECT | GTF_ASG) ||
+                m_compiler->gtTreeHasSideEffects(currData.value, GTF_SIDE_EFFECT | GTF_GLOB_EFFECT | GTF_ASG))
+            {
+                return;
+            }
+
+            BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
+            continue;
+        }
+
+        if (!varTypeIsIntegral(node) && !varTypeIsSIMD(node))
+        {
+            return;
+        }
+
+        assert(prevData.IsStore());
+        assert(currData.IsStore());
+
+        if (!prevData.value->OperIsConst() || !currData.value->OperIsConst())
+        {
+            return;
+        }
+
+        if (prevData.value->IsCnsIntOrI() && prevData.value->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        {
+            return;
+        }
+
+        if (currData.value->IsCnsIntOrI() && currData.value->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        {
+            return;
+        }
+
+        if (node->OperIs(GT_STOREIND, GT_STORE_BLK) && !node->AsIndir()->Addr()->OperIs(GT_LEA))
+        {
+            return;
+        }
+
+        var_types  oldType             = node->TypeGet();
+        var_types  newType             = TYP_UNDEF;
+        bool       tryReusingPrevValue = false;
+        int const  minOffset           = min(prevData.offset, currData.offset);
+        int const  prevEndOffset       = prevData.offset + static_cast<int>(prevData.accessSize);
+        int const  currEndOffset       = currData.offset + static_cast<int>(currData.accessSize);
+        int const  maxEndOffset        = max(prevEndOffset, currEndOffset);
+        int const  combinedSize        = maxEndOffset - minOffset;
+        bool const prevContainsCurr    = (prevData.offset <= currData.offset) && (prevEndOffset >= currEndOffset);
+        bool const currContainsPrev    = (currData.offset <= prevData.offset) && (currEndOffset >= prevEndOffset);
+        bool const storesAreAdjacent   = (prevEndOffset == currData.offset) || (currEndOffset == prevData.offset);
+        bool const storesHaveSameSize  = prevData.accessSize == currData.accessSize;
+
+        if (allowOverlapOptimization && currContainsPrev)
+        {
+            BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
+            continue;
+        }
+
+        if (allowOverlapOptimization && prevContainsCurr)
+        {
+            if (!varTypeIsIntegral(node))
+            {
+                return;
+            }
+
+            switch (combinedSize)
+            {
+                case 1:
+                    newType = TYP_UBYTE;
+                    break;
+                case 2:
+                    newType = TYP_USHORT;
+                    break;
+                case 4:
+                    newType = TYP_INT;
+                    break;
+#ifdef TARGET_64BIT
+                case 8:
+                    newType = TYP_LONG;
+                    break;
+#endif
+                default:
+                    return;
+            }
+        }
+        else
+        {
+            if (!storesAreAdjacent || !storesHaveSameSize)
+            {
+                return;
+            }
+
+            if (abs(prevData.offset - currData.offset) != static_cast<int>(prevData.accessSize))
+            {
+                return;
+            }
+
+            switch (oldType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                    newType = TYP_USHORT;
+                    break;
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                    newType = TYP_INT;
+                    break;
+
+#ifdef TARGET_64BIT
+                case TYP_INT:
+                    newType = TYP_LONG;
+                    break;
+
+#if defined(FEATURE_HW_INTRINSICS)
+                case TYP_LONG:
+                case TYP_REF:
+                    newType = TYP_SIMD16;
+                    if ((oldType == TYP_REF) &&
+                        (!currData.value->IsIntegralConst(0) || !prevData.value->IsIntegralConst(0)))
+                    {
+                        return;
+                    }
+                    break;
+
+#if defined(TARGET_AMD64)
+                case TYP_SIMD16:
+                    if (m_compiler->getPreferredVectorByteLength() >= 32)
+                    {
+                        newType = TYP_SIMD32;
+                        break;
+                    }
+                    tryReusingPrevValue = true;
+                    break;
+
+                case TYP_SIMD32:
+                    if (m_compiler->getPreferredVectorByteLength() >= 64)
+                    {
+                        newType = TYP_SIMD64;
+                        break;
+                    }
+                    tryReusingPrevValue = true;
+                    break;
+#elif defined(TARGET_ARM64)
+                case TYP_SIMD16:
+                    tryReusingPrevValue = true;
+                    break;
+#endif
+#endif
+#endif
+                default:
+                    return;
+            }
+        }
+
+        if (!LowerCheckCoalescedStoreAtomicity(node, prevTree, currData, prevData))
+        {
+            return;
+        }
+
+        if (tryReusingPrevValue)
+        {
+#if defined(FEATURE_HW_INTRINSICS)
+            LIR::Use use;
+            if (currData.value->OperIs(GT_CNS_VEC) && GenTree::Compare(prevData.value, currData.value) &&
+                BlockRange().TryGetUse(prevData.value, &use))
+            {
+                GenTree* prevValueTmp =
+                    m_compiler->gtNewLclvNode(use.ReplaceWithLclVar(m_compiler), prevData.value->TypeGet());
+                BlockRange().InsertBefore(currData.value, prevValueTmp);
+                BlockRange().Remove(currData.value);
+
+                if (node->OperIsLocalStore())
+                {
+                    node->AsLclVarCommon()->Data() = prevValueTmp;
+                }
+                else
+                {
+                    node->AsIndir()->Data() = prevValueTmp;
+                }
+            }
+#endif
+            return;
+        }
+
+        assert(newType != TYP_UNDEF);
+
+        if (node->OperIs(GT_STOREIND, GT_STORE_BLK))
+        {
+            auto* ind     = node->AsStoreInd();
+            auto* prevInd = prevTree->AsStoreInd();
+
+            assert(!m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind));
+            assert(!m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd));
+
+            BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
+
+            ind->Data()->ClearContained();
+            GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
+            addr->SetOffset(min(prevData.offset, currData.offset));
+
+            ind->gtType         = newType;
+            ind->Data()->gtType = newType;
+        }
+        else
+        {
+            auto* lclStore = node->AsLclFld();
+            BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
+
+            lclStore->Data()->ClearContained();
+            lclStore->gtType         = newType;
+            lclStore->Data()->gtType = newType;
+            lclStore->SetLclOffs(min(prevData.offset, currData.offset));
+        }
+
+#if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
+        if (varTypeIsSIMD(oldType))
+        {
+            int8_t* lowerCns = prevData.value->AsVecCon()->gtSimdVal.i8;
+            int8_t* upperCns = currData.value->AsVecCon()->gtSimdVal.i8;
+
+            if (prevData.offset > currData.offset)
+            {
+                std::swap(lowerCns, upperCns);
+            }
+
+            simd_t   newCns   = {};
+            uint32_t oldWidth = genTypeSize(oldType);
+            memcpy(newCns.i8, lowerCns, oldWidth);
+            memcpy(newCns.i8 + oldWidth, upperCns, oldWidth);
+
+            currData.value->AsVecCon()->gtSimdVal = newCns;
+            continue;
+        }
+#endif
+
+        size_t lowerCns = static_cast<size_t>(prevData.value->AsIntCon()->IconValue());
+        size_t upperCns = static_cast<size_t>(currData.value->AsIntCon()->IconValue());
+
+#if defined(TARGET_64BIT) && defined(FEATURE_HW_INTRINSICS)
+        if (varTypeIsSIMD(newType))
+        {
+            if (prevData.offset > currData.offset)
+            {
+                std::swap(lowerCns, upperCns);
+            }
+
+            int8_t val[16];
+            memcpy(val, &lowerCns, 8);
+            memcpy(val + 8, &upperCns, 8);
+            GenTreeVecCon* vecCns = m_compiler->gtNewVconNode(newType, &val);
+
+            BlockRange().InsertAfter(currData.value, vecCns);
+            BlockRange().Remove(currData.value);
+
+            if (node->OperIsLocalStore())
+            {
+                node->AsLclVarCommon()->Data() = vecCns;
+            }
+            else
+            {
+                node->AsIndir()->Data() = vecCns;
+            }
+
+            continue;
+        }
+#endif
+
+        size_t prevMask = ~(size_t(0)) >> (sizeof(size_t) - prevData.accessSize) * BITS_PER_BYTE;
+        size_t currMask = ~(size_t(0)) >> (sizeof(size_t) - currData.accessSize) * BITS_PER_BYTE;
+        size_t newMask  = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(newType)) * BITS_PER_BYTE;
+        lowerCns &= prevMask;
+        upperCns &= currMask;
+
+        size_t val = 0;
+        val |= (lowerCns << ((prevData.offset - minOffset) * BITS_PER_BYTE));
+        val |= (upperCns << ((currData.offset - minOffset) * BITS_PER_BYTE));
+        val &= newMask;
+        JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
+
+        auto* intCon      = currData.value->AsIntCon();
+        intCon->gtIconVal = static_cast<ssize_t>(val);
+        if (genTypeSize(oldType) == 1 && node->OperIsIndir())
+        {
+            node->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
+        }
+    } while (true);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -10515,371 +11054,7 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
 //
 void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 {
-// LA, RISC-V and ARM32 more likely to receive a terrible performance hit from
-// unaligned accesses making this optimization questionable.
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    if (!m_compiler->opts.OptimizationEnabled())
-    {
-        return;
-    }
-
-    if (!ind->OperIs(GT_STOREIND, GT_STORE_BLK))
-    {
-        // Load coalescing is not yet supported
-        return;
-    }
-
-    // We're going to do it in a loop while we see suitable STOREINDs to coalesce.
-    // E.g.: we have the following LIR sequence:
-    //
-    //     ...addr nodes...
-    //   STOREIND(int)
-    //     ...addr nodes...
-    //   STOREIND(short)
-    //     ...addr nodes...
-    //   STOREIND(short) <-- we're here
-    //
-    // First we merge two 'short' stores, then we merge the result with the 'int' store
-    // to get a single store of 8 bytes.
-    do
-    {
-        LoadStoreCoalescingData currData;
-        LoadStoreCoalescingData prevData;
-
-        // Get coalescing data for the current STOREIND
-        if (!GetLoadStoreCoalescingData(ind, &currData))
-        {
-            return;
-        }
-
-        GenTree* prevTree = currData.rangeStart->gtPrev;
-        // Now we need to find the previous STOREIND,
-        // we can ignore any NOPs or IL_OFFSETs in-between
-        while ((prevTree != nullptr) && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
-        {
-            prevTree = prevTree->gtPrev;
-        }
-
-        // It's not a store - bail out.
-        if ((prevTree == nullptr) || !prevTree->OperIs(GT_STOREIND, GT_STORE_BLK))
-        {
-            return;
-        }
-
-        // Get coalescing data for the previous STOREIND
-        GenTreeIndir* prevInd = prevTree->AsIndir();
-        if (!GetLoadStoreCoalescingData(prevInd, &prevData))
-        {
-            return;
-        }
-
-        if (!currData.IsAddressEqual(prevData, /*ignoreOffset*/ true))
-        {
-            // Non-offset part of the address is not the same - bail out.
-            return;
-        }
-
-        // The same offset means that we're storing to the same location of the same width.
-        // Just remove the previous store then.
-        if (prevData.offset == currData.offset)
-        {
-            BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
-            continue;
-        }
-
-        // TODO-ARM64-CQ: enable TYP_REF if we find a case where it's beneficial.
-        // The algorithm does support TYP_REF (with null value), but it seems to be not worth
-        // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
-        // items at once. Although, it may be profitable to do "stp q0, q0, [addr]".
-        if (!varTypeIsIntegral(ind) && !varTypeIsSIMD(ind))
-        {
-            return;
-        }
-
-        assert(ind->OperIs(GT_STOREIND));
-        assert(prevInd->OperIs(GT_STOREIND));
-        assert(prevData.IsStore());
-        assert(currData.IsStore());
-
-        // For now, only non-relocatable constants are supported for data.
-        if (!prevData.value->OperIsConst() || !currData.value->OperIsConst())
-        {
-            return;
-        }
-
-        if (prevData.value->IsCnsIntOrI() && prevData.value->AsIntCon()->ImmedValNeedsReloc(m_compiler))
-        {
-            return;
-        }
-
-        if (currData.value->IsCnsIntOrI() && currData.value->AsIntCon()->ImmedValNeedsReloc(m_compiler))
-        {
-            return;
-        }
-
-        // Otherwise, the difference between two offsets has to match the size of the type.
-        // We don't support overlapping stores.
-        if (abs(prevData.offset - currData.offset) != (int)genTypeSize(prevData.targetType))
-        {
-            return;
-        }
-
-        // For now, we require the current STOREIND to have LEA (previous store may not have it)
-        // So we can easily adjust the offset, consider making it more flexible in future.
-        if (!ind->Addr()->OperIs(GT_LEA))
-        {
-            return;
-        }
-
-        // Now the hardest part: decide whether it's safe to use an unaligned write.
-        //
-        // IND<byte> is always fine (and all IND<X> created here from such)
-        // IND<simd> is not required to be atomic per our Memory Model
-        bool allowsNonAtomic =
-            ((ind->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0) && ((prevInd->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0);
-
-        if (!allowsNonAtomic && currData.baseAddr->OperIs(GT_LCL_VAR) &&
-            (currData.baseAddr->AsLclVar()->GetLclNum() == m_compiler->info.compRetBuffArg))
-        {
-            // RetBuf is a private stack memory, so we don't need to worry about atomicity.
-            allowsNonAtomic = true;
-        }
-
-        if (!allowsNonAtomic && (genTypeSize(ind) > 1) && !varTypeIsSIMD(ind))
-        {
-            // TODO-CQ: if we see that the target is a local memory (non address exposed)
-            // we can use any type (including SIMD) for a new load.
-
-            // Ignore indices for now, they can invalidate our alignment assumptions.
-            // Although, we can take scale into account.
-            if (currData.index != nullptr)
-            {
-                return;
-            }
-
-            // Base address being TYP_REF gives us a hint that data is pointer-aligned.
-            if (!currData.baseAddr->TypeIs(TYP_REF))
-            {
-                return;
-            }
-
-            // Check whether the combined indir is still aligned.
-            bool isCombinedIndirAtomic = (genTypeSize(ind) < TARGET_POINTER_SIZE) &&
-                                         (min(prevData.offset, currData.offset) % (genTypeSize(ind) * 2)) == 0;
-
-            if (genTypeSize(ind) == TARGET_POINTER_SIZE)
-            {
-#ifdef TARGET_ARM64
-                // Per Arm Architecture Reference Manual for A-profile architecture:
-                //
-                // * Writes from SIMD and floating-point registers of a 128-bit value that is 64-bit aligned in memory
-                //   are treated as a pair of single - copy atomic 64 - bit writes.
-                //
-                // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null)
-                //
-                // And we assume on ARM64 TYP_LONG/TYP_REF are always 64-bit aligned, otherwise
-                // we're already doing a load that has no atomicity guarantees.
-                isCombinedIndirAtomic = true;
-#endif
-            }
-
-            if (!isCombinedIndirAtomic)
-            {
-                return;
-            }
-        }
-
-        // Since we're merging two stores of the same type, the new type is twice wider.
-        var_types oldType             = ind->TypeGet();
-        var_types newType             = TYP_UNDEF;
-        bool      tryReusingPrevValue = false;
-        switch (oldType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-                newType = TYP_USHORT;
-                break;
-
-            case TYP_SHORT:
-            case TYP_USHORT:
-                newType = TYP_INT;
-                break;
-
-#ifdef TARGET_64BIT
-            case TYP_INT:
-                newType = TYP_LONG;
-                break;
-
-#if defined(FEATURE_HW_INTRINSICS)
-            case TYP_LONG:
-            case TYP_REF:
-                // TLDR: we should be here only if one of the conditions is true:
-                // 1) Both GT_INDs have GTF_IND_ALLOW_NON_ATOMIC flag
-                // 2) ARM64: Data is at least 8-byte aligned
-                // 3) AMD64: Data is at least 16-byte aligned on AMD/Intel with AVX+
-                //
-                newType = TYP_SIMD16;
-                if ((oldType == TYP_REF) &&
-                    (!currData.value->IsIntegralConst(0) || !prevData.value->IsIntegralConst(0)))
-                {
-                    // For TYP_REF we only support null values. In theory, we can also support frozen handles, e.g.:
-                    //
-                    //   arr[1] = "hello";
-                    //   arr[0] = "world";
-                    //
-                    // but we don't want to load managed references into SIMD registers (we can only do so
-                    // when we can issue a nongc region for a block)
-                    return;
-                }
-                break;
-
-#if defined(TARGET_AMD64)
-            case TYP_SIMD16:
-                if (m_compiler->getPreferredVectorByteLength() >= 32)
-                {
-                    newType = TYP_SIMD32;
-                    break;
-                }
-                tryReusingPrevValue = true;
-                break;
-
-            case TYP_SIMD32:
-                if (m_compiler->getPreferredVectorByteLength() >= 64)
-                {
-                    newType = TYP_SIMD64;
-                    break;
-                }
-                tryReusingPrevValue = true;
-                break;
-#elif defined(TARGET_ARM64) // TARGET_AMD64
-            case TYP_SIMD16:
-                tryReusingPrevValue = true;
-                break;
-
-#endif // TARGET_ARM64
-#endif // FEATURE_HW_INTRINSICS
-#endif // TARGET_64BIT
-
-            // TYP_FLOAT and TYP_DOUBLE aren't needed here - they're expected to
-            // be converted to TYP_INT/TYP_LONG for constant value.
-            //
-            // TYP_UINT and TYP_ULONG are not legal for GT_IND.
-            //
-            default:
-                return;
-        }
-
-        // If we can't merge these two stores into a single store, we can at least
-        // cache prevData.value to a local and reuse it in currData.
-        // Normally, LSRA is expected to do this for us, but it's not always the case for SIMD.
-        if (tryReusingPrevValue)
-        {
-#if defined(FEATURE_HW_INTRINSICS)
-            LIR::Use use;
-            if (currData.value->OperIs(GT_CNS_VEC) && GenTree::Compare(prevData.value, currData.value) &&
-                BlockRange().TryGetUse(prevData.value, &use))
-            {
-                GenTree* prevValueTmp =
-                    m_compiler->gtNewLclvNode(use.ReplaceWithLclVar(m_compiler), prevData.value->TypeGet());
-                BlockRange().InsertBefore(currData.value, prevValueTmp);
-                BlockRange().Remove(currData.value);
-                ind->Data() = prevValueTmp;
-            }
-#endif // FEATURE_HW_INTRINSICS
-            return;
-        }
-
-        assert(newType != TYP_UNDEF);
-
-        // We should not be here for stores requiring write barriers.
-        assert(!m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind->AsStoreInd()));
-        assert(!m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd->AsStoreInd()));
-
-        // Delete previous STOREIND entirely
-        BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
-
-        // It's not expected to be contained yet, but just in case...
-        ind->Data()->ClearContained();
-
-        // We know it's always LEA for now
-        GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
-
-        // Update offset to be the minimum of the two
-        addr->SetOffset(min(prevData.offset, currData.offset));
-
-        // Update type for both STOREIND and val
-        ind->gtType         = newType;
-        ind->Data()->gtType = newType;
-
-#if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
-        // Upgrading two SIMD stores to a wider SIMD store.
-        // Only on x64 since ARM64 has no options above SIMD16
-        if (varTypeIsSIMD(oldType))
-        {
-            int8_t* lowerCns = prevData.value->AsVecCon()->gtSimdVal.i8;
-            int8_t* upperCns = currData.value->AsVecCon()->gtSimdVal.i8;
-
-            // if the previous store was at a higher address, swap the constants
-            if (prevData.offset > currData.offset)
-            {
-                std::swap(lowerCns, upperCns);
-            }
-
-            simd_t   newCns   = {};
-            uint32_t oldWidth = genTypeSize(oldType);
-            memcpy(newCns.i8, lowerCns, oldWidth);
-            memcpy(newCns.i8 + oldWidth, upperCns, oldWidth);
-
-            ind->Data()->AsVecCon()->gtSimdVal = newCns;
-            continue;
-        }
-#endif
-
-        size_t lowerCns = (size_t)prevData.value->AsIntCon()->IconValue();
-        size_t upperCns = (size_t)currData.value->AsIntCon()->IconValue();
-
-        // if the previous store was at a higher address, swap the constants
-        if (prevData.offset > currData.offset)
-        {
-            std::swap(lowerCns, upperCns);
-        }
-
-#if defined(TARGET_64BIT) && defined(FEATURE_HW_INTRINSICS)
-        // We're promoting two TYP_LONG/TYP_REF into TYP_SIMD16
-        // All legality checks were done above.
-        if (varTypeIsSIMD(newType))
-        {
-            // Replace two 64bit constants with a single 128bit constant
-            int8_t val[16];
-            memcpy(val, &lowerCns, 8);
-            memcpy(val + 8, &upperCns, 8);
-            GenTreeVecCon* vecCns = m_compiler->gtNewVconNode(newType, &val);
-
-            BlockRange().InsertAfter(ind->Data(), vecCns);
-            BlockRange().Remove(ind->Data());
-            ind->gtOp2 = vecCns;
-            continue;
-        }
-#endif // TARGET_64BIT && FEATURE_HW_INTRINSICS
-
-        // Trim the constants to the size of the type, e.g. for TYP_SHORT and TYP_USHORT
-        // the mask will be 0xFFFF, for TYP_INT - 0xFFFFFFFF.
-        size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_PER_BYTE;
-        lowerCns &= mask;
-        upperCns &= mask;
-
-        size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_PER_BYTE)));
-        JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
-
-        ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
-        if (genTypeSize(oldType) == 1)
-        {
-            // A mark for future foldings that this IND doesn't need to be atomic.
-            ind->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
-        }
-
-    } while (true);
-#endif // TARGET_XARCH || TARGET_ARM64
+    LowerStoreCoalescing(ind);
 }
 
 //------------------------------------------------------------------------

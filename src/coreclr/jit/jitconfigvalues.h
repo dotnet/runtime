@@ -91,6 +91,7 @@ CONFIG_INTEGER(JitHideAlignBehindJmp, "JitHideAlignBehindJmp", 1)
 
 // Track stores to locals done through return buffers.
 CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, "JitOptimizeStructHiddenBuffer", 1)
+RELEASE_CONFIG_INTEGER(JitEnableStoreLclFldCoalescing, "JitEnableStoreLclFldCoalescing", 1)
 
 CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
                "JitUnrollLoopMaxIterationCount",
