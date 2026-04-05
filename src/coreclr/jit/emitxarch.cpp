@@ -20913,7 +20913,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 // ins   reg, mem
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
+                result.insLatency += opSize == EA_16BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C;
             }
             else
             {
@@ -20943,11 +20943,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
+        case INS_lddqu:
         case INS_movntdqa:
         {
             assert(memAccessKind == PERFSCORE_MEMORY_READ);
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
+            result.insLatency += opSize == EA_16BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C;
             break;
         }
 
@@ -20963,20 +20964,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             else if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
+                result.insLatency += opSize == EA_16BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C;
             }
             else
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency += PERFSCORE_LATENCY_2C;
             }
-            break;
-        }
-
-        case INS_lddqu:
-        {
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
             break;
         }
 
@@ -21147,7 +21141,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             else
             {
-                result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_4C : PERFSCORE_LATENCY_2C;
+                result.insLatency += opSize == EA_16BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_4C;
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             }
             break;
@@ -21231,7 +21225,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pmovzxdq:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
+            result.insLatency += opSize == EA_16BYTE ? PERFSCORE_LATENCY_1C : PERFSCORE_LATENCY_3C;
             break;
         }
 
@@ -21259,7 +21253,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vcvtuqq2ps:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_7C : PERFSCORE_LATENCY_5C;
+            result.insLatency += opSize == EA_16BYTE ? PERFSCORE_LATENCY_5C : PERFSCORE_LATENCY_7C;
             break;
         }
 
@@ -21349,8 +21343,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpgatherdd:
         case INS_vgatherdps:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_13C : PERFSCORE_LATENCY_11C;
+            if (opSize == EA_16BYTE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                result.insLatency += PERFSCORE_LATENCY_11C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                result.insLatency += PERFSCORE_LATENCY_13C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_8C;
+                result.insLatency += PERFSCORE_LATENCY_17C;
+            }
             break;
         }
 
@@ -21361,8 +21369,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vgatherqps:
         case INS_vgatherqpd:
         {
-            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
-            result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_11C : PERFSCORE_LATENCY_9C;
+            if (opSize == EA_16BYTE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency += PERFSCORE_LATENCY_9C;
+            }
+            else if (opSize == EA_32BYTE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                result.insLatency += PERFSCORE_LATENCY_11C;
+            }
+            else
+            {
+                assert(opSize == EA_64BYTE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                result.insLatency += PERFSCORE_LATENCY_13C;
+            }
             break;
         }
 
