@@ -309,7 +309,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// genFuncletEpilog: codegen for funclet eplogs.
+// genFuncletEpilog: codegen for funclet epilogs.
 //
 // For Wasm, funclet epilogs are empty
 //

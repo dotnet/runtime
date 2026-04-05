@@ -83,7 +83,7 @@ class WasmRegAlloc : public RegAllocInterface
     TemporaryRegStack m_temporaryRegs[static_cast<int>(WasmValueType::Count)];
 
     // We allocate per funclet. This struct holds the per-funclet state.
-    // (we treat the main fuction body as a funclet).
+    // (we treat the main function body as a funclet).
     //
     struct PerFuncletData
     {

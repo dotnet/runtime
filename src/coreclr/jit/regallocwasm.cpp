@@ -110,7 +110,7 @@ void WasmRegAlloc::recordVarLocationsAtStartOfBB(BasicBlock* bb)
         JITDUMP("%s\n", hasAssignment ? "" : "  <none>");
     };
 
-    // The current assignments may alread hold the desired state.
+    // The current assignments may already hold the desired state.
     //
     if (m_currentFunclet == funcIdx)
     {
@@ -1026,7 +1026,7 @@ void WasmRegAlloc::ResolveReferences()
             data->m_fpReg = (spVirtReg == fpVirtReg) ? data->m_spReg : allocPhysReg(fpVirtReg, nullptr);
         }
 
-        // Do likewise for the enregisgtered locals.
+        // Do likewise for the enregistered locals.
         // Note we do not update the LclVarDsc here.
         //
         for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
@@ -1080,8 +1080,6 @@ void WasmRegAlloc::ResolveReferences()
                 if (node->OperIs(GT_STORE_LCL_VAR))
                 {
                     LclVarDsc* const varDsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
-                    WasmValueType    type;
-                    unsigned         index = UnpackWasmReg(varDsc->GetRegNum(), &type);
                     physReg                = data->m_physicalRegAssignments[varDsc->lvVarIndex];
                 }
                 else if (genIsValidReg(node->GetRegNum()))
