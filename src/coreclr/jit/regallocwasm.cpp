@@ -711,15 +711,19 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 void WasmRegAlloc::CollectReference(GenTree* node)
 {
     PerFuncletData* const data = m_perFuncletData[m_currentFunclet];
-
-    // We may make multiple consecutive collection calls for the same node, but we only need to record it once.
-    //
-    if (node == data->m_lastCollectedNode)
-    {
-        return;
-    }
-
     VirtualRegReferences* refs = data->m_virtualRegRefs;
+
+    // We may make multiple consecutive collection calls for the same node.
+    // We only want to collect it once.
+    //
+    if (data->m_lastVirtualRegRefsCount > 0)
+    {
+        assert(refs != nullptr);
+        if (node == refs->Nodes[data->m_lastVirtualRegRefsCount - 1])
+        {
+            return;
+        }
+    }
 
     if (refs == nullptr)
     {
@@ -736,7 +740,6 @@ void WasmRegAlloc::CollectReference(GenTree* node)
 
     assert(data->m_lastVirtualRegRefsCount < ARRAY_SIZE(refs->Nodes));
     refs->Nodes[data->m_lastVirtualRegRefsCount++] = node;
-    data->m_lastCollectedNode                      = node;
 }
 
 //------------------------------------------------------------------------
@@ -1003,12 +1006,6 @@ void WasmRegAlloc::ResolveReferences()
             assert(genIsValidReg(physReg));
             if ((varDsc != nullptr) && varDsc->lvIsRegCandidate())
             {
-                if (!inFunclet && (varDsc->lvIsParam || varDsc->lvIsParamRegTarget))
-                {
-                    // This is the register codegen will move the local from its ABI location in prolog.
-                    varDsc->SetArgInitReg(physReg);
-                }
-
                 data->m_physicalRegAssignments[varDsc->lvVarIndex] = physReg;
             }
             return physReg;
@@ -1080,7 +1077,7 @@ void WasmRegAlloc::ResolveReferences()
                 if (node->OperIs(GT_STORE_LCL_VAR))
                 {
                     LclVarDsc* const varDsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
-                    physReg                = data->m_physicalRegAssignments[varDsc->lvVarIndex];
+                    physReg                 = data->m_physicalRegAssignments[varDsc->lvVarIndex];
                 }
                 else if (genIsValidReg(node->GetRegNum()))
                 {
@@ -1144,9 +1141,19 @@ void WasmRegAlloc::ResolveReferences()
         {
             varDsc->SetRegNum(mainFuncAssignment[varIndex]);
 
-            // may want to set these earlier
-            varDsc->lvRegister = true;
+            // While register allocations are fixed per-funclet, they are unlikely
+            // to agree across all funclets.
+            //
+            varDsc->lvRegister = (m_compiler->compFuncCount() == 1);
             varDsc->lvOnFrame  = false;
+
+            if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
+            {
+                // This is the register codegen will move the local to from its
+                // ABI location in main function's prolog.
+                //
+                varDsc->SetArgInitReg(assignedReg);
+            }
         }
     }
 }

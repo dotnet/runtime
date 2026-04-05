@@ -91,7 +91,6 @@ class WasmRegAlloc : public RegAllocInterface
             : m_spReg(REG_NA)
             , m_fpReg(REG_NA)
             , m_lastVirtualRegRefsCount(0)
-            , m_lastCollectedNode(nullptr)
             , m_virtualRegRefs(nullptr)
             , m_physicalRegAssignments(comp->lvaTrackedCount, REG_STK, comp->getAllocator(CMK_LSRA))
         {
@@ -110,7 +109,6 @@ class WasmRegAlloc : public RegAllocInterface
         // Chunked list of virtual reg references in this funclet.
         //
         unsigned              m_lastVirtualRegRefsCount;
-        GenTree*              m_lastCollectedNode;
         VirtualRegReferences* m_virtualRegRefs;
 
         // Map from local tracked index to phys reg for that local, in this funclet.
