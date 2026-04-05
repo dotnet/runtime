@@ -16,7 +16,6 @@
 #include "runtimehandles.h"
 #include "typestring.h"
 #include "callhelpers.h"
-#include "dllimport.h"
 
 static TypeHandle GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, Assembly* pAssembly)
 {
@@ -899,126 +898,6 @@ extern "C" BOOL QCALLTYPE CustomAttribute_ParseAttributeUsageAttribute(
     return TRUE;
 }
 
-struct CustomAttributeCtorInvokeHashBlob : ILStubHashBlobBase
-{
-    MethodDesc* pCtorMD;
-    MethodTable* pAttributeMT;
-};
-
-static Signature BuildCustomAttributeCtorInvokeStubSignature(LoaderAllocator* pLoaderAllocator)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pLoaderAllocator));
-    }
-    CONTRACTL_END;
-
-    SigBuilder sigBuilder;
-    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-    sigBuilder.AppendData(3);
-    sigBuilder.AppendElementType(ELEMENT_TYPE_VOID);
-    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
-    sigBuilder.AppendElementType(ELEMENT_TYPE_SZARRAY);
-    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
-    sigBuilder.AppendElementType(ELEMENT_TYPE_I);
-
-    DWORD cbSig = 0;
-    PVOID pSigRaw = sigBuilder.GetSignature(&cbSig);
-    AllocMemHolder<BYTE> pSig(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbSig)));
-    memcpy(pSig, pSigRaw, cbSig);
-
-    Signature signature(pSig, cbSig);
-    pSig.SuppressRelease();
-    return signature;
-}
-
-static PCODE GetOrCreateCustomAttributeCtorInvokeStub(MethodDesc* pCtorMD, TypeHandle attributeType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pCtorMD));
-    }
-    CONTRACTL_END;
-
-    Module* pLoaderModule = pCtorMD->GetLoaderModule();
-
-    CustomAttributeCtorInvokeHashBlob hashBlob;
-    hashBlob.m_cbSizeOfBlob = sizeof(hashBlob);
-    hashBlob.pCtorMD = pCtorMD;
-    hashBlob.pAttributeMT = attributeType.GetMethodTable();
-
-    ILStubHashBlob* pHashBlob = reinterpret_cast<ILStubHashBlob*>(&hashBlob);
-    MethodDesc* pStubMD = pLoaderModule->GetILStubCache()->LookupStubMethodDesc(pHashBlob);
-    if (pStubMD == NULL)
-    {
-        LoaderAllocator* pLoaderAllocator = pCtorMD->GetLoaderAllocator();
-        AllocMemTracker amTracker;
-        Signature stubSig = BuildCustomAttributeCtorInvokeStubSignature(pLoaderAllocator);
-
-        SigTypeContext typeContext(pCtorMD);
-        ILStubLinker sl(
-            pCtorMD->GetModule(),
-            stubSig,
-            &typeContext,
-            pCtorMD,
-            ILSTUB_LINKER_FLAG_NONE);
-
-        ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
-
-        MetaSig ctorSig(pCtorMD, attributeType);
-        UINT argCount = ctorSig.NumFixedArgs();
-
-        pCode->EmitLDARG(0);
-
-        for (UINT i = 0; i < argCount; i++)
-        {
-            CorElementType type = ctorSig.NextArg();
-            _ASSERTE(type != ELEMENT_TYPE_END);
-            TypeHandle argType = ctorSig.GetLastTypeHandleThrowing();
-
-            pCode->EmitLDARG(1);
-            pCode->EmitLDC(i);
-            pCode->EmitLDELEM_REF();
-            pCode->EmitUNBOX_ANY(pCode->GetToken(argType));
-        }
-
-        pCode->EmitLDARG(2);
-        pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, argCount + 1, 0);
-        pCode->EmitRET();
-
-        pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
-            pLoaderAllocator,
-            pLoaderModule->GetILStubCache()->GetOrCreateStubMethodTable(pLoaderModule),
-            ILSTUB_DELEGATE_SHUFFLE_THUNK,
-            pCtorMD->GetModule(),
-            stubSig.GetRawSig(),
-            stubSig.GetRawSigLen(),
-            &typeContext,
-            &sl);
-
-        MetaSig targetSigMeta(pCtorMD, attributeType);
-        SigBuilder targetSigBuilder;
-        MethodDesc::CreateDerivedTargetSig(targetSigMeta, &targetSigBuilder);
-
-        DWORD cbTargetSig = 0;
-        PCCOR_SIGNATURE pTargetSig = reinterpret_cast<PCCOR_SIGNATURE>(targetSigBuilder.GetSignature(&cbTargetSig));
-
-        ILStubResolver* pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
-        pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
-        pResolver->SetStubTargetMethodDesc(pCtorMD);
-
-        pStubMD = pLoaderModule->GetILStubCache()->InsertStubMethodDesc(pStubMD, pHashBlob);
-    }
-
-    return pStubMD->GetSingleCallableAddrOfCode();
-}
-
 extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     QCall::ModuleHandle pModule,
     QCall::ObjectHandleOnStack pCaType,
@@ -1047,21 +926,19 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     struct
     {
         PTRARRAYREF ctorArgs;
-        BOOLARRAYREF ctorArgIsValueTypeFlags;
-        OBJECTREF ctorTarget;
+        OBJECTREF ctorMethod;
+        OBJECTREF ctorDeclaringType;
         OBJECTREF ctorResult;
     } gc;
     gc.ctorArgs = NULL;
-    gc.ctorArgIsValueTypeFlags = NULL;
-    gc.ctorTarget = NULL;
+    gc.ctorMethod = NULL;
+    gc.ctorDeclaringType = NULL;
     gc.ctorResult = NULL;
     GCPROTECT_BEGIN(gc);
 
     gc.ctorArgs = (PTRARRAYREF)AllocateObjectArray(cArgs, g_pObjectClass);
-    gc.ctorArgIsValueTypeFlags = (BOOLARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_BOOLEAN, cArgs);
-    gc.ctorTarget = th.GetMethodTable()->Allocate();
-
-    CLR_BOOL* argIsValueTypeFlags = reinterpret_cast<CLR_BOOL*>(static_cast<void*>(gc.ctorArgIsValueTypeFlags->GetDataPtr()));
+    gc.ctorMethod = pMethod.Get();
+    gc.ctorDeclaringType = pCaType.Get();
 
     if (pBlob)
     {
@@ -1091,8 +968,6 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
                 TypeHandle argTypeForParse = paramType;
                 if (argTypeForParse.IsArray())
                     argTypeForParse = argTypeForParse.GetArrayElementTypeHandle();
-
-                argIsValueTypeFlags[i] = CLR_BOOL_ARG(paramType.IsValueType());
 
                 ARG_SLOT data = GetDataFromBlob(
                     pCtorMD->GetAssembly(),
@@ -1149,38 +1024,18 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     if (*pcNamedArgs == 0 && pBlob != pEndBlob)
         COMPlusThrow(kCustomAttributeFormatException);
 
-    bool needsCtorInvokeStub = (cArgs > 6);
-    if (!needsCtorInvokeStub && cArgs > 1)
-    {
-        for (UINT argIndex = 0; argIndex < cArgs; argIndex++)
-        {
-            if (argIsValueTypeFlags[argIndex] != 0)
-            {
-                needsCtorInvokeStub = true;
-                break;
-            }
-        }
-    }
-
-    PCODE ctorEntryPoint = pCtorMD->GetSingleCallableAddrOfCode();
-    PCODE ctorInvokeStubEntryPoint = needsCtorInvokeStub ? GetOrCreateCustomAttributeCtorInvokeStub(pCtorMD, th) : (PCODE)NULL;
-
     struct NativeCtorInvokeContract
     {
         PTRARRAYREF* ctorArgs;
-        BOOLARRAYREF* argIsValueType;
         INT32 argCount;
-        OBJECTREF* ctorTarget;
-        PCODE ctorEntryPoint;
-        PCODE ctorInvokeStubEntryPoint;
+        OBJECTREF* ctorMethod;
+        OBJECTREF* ctorDeclaringType;
     } contract;
 
     contract.ctorArgs = &gc.ctorArgs;
-    contract.argIsValueType = &gc.ctorArgIsValueTypeFlags;
     contract.argCount = (INT32)cArgs;
-    contract.ctorTarget = &gc.ctorTarget;
-    contract.ctorEntryPoint = ctorEntryPoint;
-    contract.ctorInvokeStubEntryPoint = ctorInvokeStubEntryPoint;
+    contract.ctorMethod = &gc.ctorMethod;
+    contract.ctorDeclaringType = &gc.ctorDeclaringType;
 
     UnmanagedCallersOnlyCaller invokeCustomAttributeCtor(METHOD__CUSTOMATTRIBUTE__INVOKE_CUSTOM_ATTRIBUTE_CTOR);
     invokeCustomAttributeCtor.InvokeThrowing(&contract, &gc.ctorResult);
