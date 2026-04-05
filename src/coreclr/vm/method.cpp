@@ -2479,13 +2479,13 @@ void BuildAsyncVariantSignature(
 
     if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
     {
-        // "... Task ... Method(args);" → "... void ... Method(args);"
+        // "... Task ... Method(args);" -> "... void ... Method(args);"
         taskTypePrefixSize = 1 + tokenLen;     // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
         taskTypePrefixReplacementSize = 1;     // ELEMENT_TYPE_VOID
     }
     else
     {
-        // "... Task<T> ... Method(args);" → "... T ... Method(args);"
+        // "... Task<T> ... Method(args);" -> "... T ... Method(args);"
         taskTypePrefixSize = 2 + tokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
         taskTypePrefixReplacementSize = 0;
     }

@@ -283,8 +283,8 @@ MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG
 
 // Given a task-returning method signature, compute the async variant signature
 // by stripping the Task/ValueTask wrapper from the return type.
-// For NonGenericTaskReturningMethod: "... Task ... Method(args)" → "... void ... Method(args)"
-// For GenericTaskReturningMethod:    "... Task<T> ... Method(args)" → "... T ... Method(args)"
+// For NonGenericTaskReturningMethod: "... Task ... Method(args)" -> "... void ... Method(args)"
+// For GenericTaskReturningMethod:    "... Task<T> ... Method(args)" -> "... T ... Method(args)"
 // If pDestSig is non-null, the new signature is written there (caller must allocate at least *pAsyncSigLen bytes).
 // *pAsyncSigLen is always set to the required output size.
 void BuildAsyncVariantSignature(
