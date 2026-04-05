@@ -811,11 +811,11 @@ namespace System
 
                 // We measure the leading zeros of the divisor
                 int shift = BitOperations.LeadingZeroCount(divHi);
-                int backShift = sizeof(ulong) * 8 - shift;
 
                 // And, we make sure the most significant bit is set
                 if (shift > 0)
                 {
+                    int backShift = sizeof(ulong) * 8 - shift;
                     divHi = (divHi << shift) | (divLo >> backShift);
                     divLo <<= shift;
 
@@ -893,17 +893,27 @@ namespace System
                     (highRes, leftUpper) = Math.DivRem(left._upper, divisor);
                 }
 
-                ulong leftLower = left._lower;
-                int shift = BitOperations.LeadingZeroCount(divisor);
-                if (shift > 0)
+#pragma warning disable SYSLIB5004 // X86Base.DivRem is experimental
+                if (X86Base.X64.IsSupported)
                 {
-                    divisor <<= shift;
-                    leftUpper = (leftUpper << shift) | (leftLower >> (64 - shift));
-                    leftLower <<= shift;
+                    (ulong lowRes, ulong remainder) = X86Base.X64.DivRem(left._lower, leftUpper, divisor);
+                    return (new UInt128(highRes, lowRes), remainder);
                 }
-                (ulong lowRes, ulong remainder) = Divide128BitsBy64BitsCore(leftUpper, leftLower, divisor);
+#pragma warning restore SYSLIB5004
+                else
+                {
+                    ulong leftLower = left._lower;
+                    int shift = BitOperations.LeadingZeroCount(divisor);
+                    if (shift > 0)
+                    {
+                        divisor <<= shift;
+                        leftUpper = (leftUpper << shift) | (leftLower >> (64 - shift));
+                        leftLower <<= shift;
+                    }
+                    (ulong lowRes, ulong remainder) = Divide128BitsBy64BitsCore(leftUpper, leftLower, divisor);
 
-                return (new UInt128(highRes, lowRes), remainder >> shift);
+                    return (new UInt128(highRes, lowRes), remainder >> shift);
+                }
             }
 
             static (ulong Quotient, ulong Remainder) Divide128BitsBy64BitsCore(ulong hi, ulong lo, ulong divisor)
