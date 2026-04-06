@@ -41,6 +41,7 @@
 #define OSSL_PKEY_PARAM_RSA_D            "d"
 #define OSSL_PKEY_PARAM_RSA_FACTOR1      "rsa-factor1"
 #define OSSL_PKEY_PARAM_RSA_FACTOR2      "rsa-factor2"
+#define OSSL_PKEY_PARAM_RSA_FACTOR3      "rsa-factor3"
 #define OSSL_PKEY_PARAM_RSA_EXPONENT1    "rsa-exponent1"
 #define OSSL_PKEY_PARAM_RSA_EXPONENT2    "rsa-exponent2"
 #define OSSL_PKEY_PARAM_RSA_COEFFICIENT1 "rsa-coefficient1"

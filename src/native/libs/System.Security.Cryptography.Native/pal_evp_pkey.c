@@ -181,12 +181,15 @@ done:
 typedef bool (*RsaGetKeyFn)(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d);
 typedef bool (*RsaGetFactorsFn)(const void* key, BIGNUM** p, BIGNUM** q);
 typedef bool (*RsaGetCrtParamsFn)(const void* key, BIGNUM** dp, BIGNUM** dq, BIGNUM** inverseQ);
+// Returns true if the key has more than 2 prime factors (multi-prime RSA).
+typedef bool (*RsaIsMultiPrimeFn)(const void* key);
 
 static int32_t QuickRsaCheckCore(const void* key,
                                  bool isPublic,
                                  RsaGetKeyFn getKey,
                                  RsaGetFactorsFn getFactors,
-                                 RsaGetCrtParamsFn getCrtParams)
+                                 RsaGetCrtParamsFn getCrtParams,
+                                 RsaIsMultiPrimeFn isMultiPrime)
 {
     // This method does some lightweight key consistency checks on an RSA key to make sure all supplied values are
     // sensible. This is not intended to be a strict key check that verifies a key conforms to any particular set
@@ -255,6 +258,14 @@ static int32_t QuickRsaCheckCore(const void* key,
     if (isPublic)
     {
         ret = 1;
+        goto done;
+    }
+
+    // We do not support validating multi-prime RSA. Multi-prime RSA is not common. For these, we fall back to the
+    // OpenSSL key check.
+    if (isMultiPrime(key))
+    {
+        ret = -1;
         goto done;
     }
 
@@ -495,24 +506,20 @@ static bool RsaLegacyGetCrtParams(const void* key, BIGNUM** dp, BIGNUM** dq, BIG
     return true;
 }
 
+static bool RsaLegacyIsMultiPrime(const void* key)
+{
+    // This function is only called when EVP_PKEY_get0_RSA is available, so RSA_get_multi_prime_extra_count
+    // should always exist. Guard defensively to avoid a NULL function pointer call.
+    if (!API_EXISTS(RSA_get_multi_prime_extra_count))
+        return false;
+
+    const RSA* rsa = (const RSA*)key;
+    return RSA_get_multi_prime_extra_count(rsa) != 0;
+}
+
 static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
 {
-    // We do not support validating multi-prime RSA. Multi-prime RSA is not common. For these, we fall back to the
-    // OpenSSL key check. If the legacy API is unavailable, treat as indeterminate.
-    if (!isPublic)
-    {
-        if (!API_EXISTS(RSA_get_multi_prime_extra_count))
-        {
-            return -1;
-        }
-
-        if (RSA_get_multi_prime_extra_count(rsa) != 0)
-        {
-            return -1;
-        }
-    }
-
-    return QuickRsaCheckCore(rsa, isPublic, RsaLegacyGetKey, RsaLegacyGetFactors, RsaLegacyGetCrtParams);
+    return QuickRsaCheckCore(rsa, isPublic, RsaLegacyGetKey, RsaLegacyGetFactors, RsaLegacyGetCrtParams, RsaLegacyIsMultiPrime);
 }
 
 #ifdef NEED_OPENSSL_3_0
@@ -554,10 +561,26 @@ static bool RsaEvpGetCrtParams(const void* key, BIGNUM** dp, BIGNUM** dq, BIGNUM
            EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_COEFFICIENT1, inverseQ);
 }
 
+static bool RsaEvpIsMultiPrime(const void* key)
+{
+    const EVP_PKEY* pkey = (const EVP_PKEY*)key;
+    BIGNUM* factor3 = NULL;
+
+    if (EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR3, &factor3))
+    {
+        BN_clear_free(factor3);
+        return true;
+    }
+
+    BN_clear_free(factor3);
+    ERR_clear_error();
+    return false;
+}
+
 // EVP-based version of QuickRsaCheck for OpenSSL 3.0+ where legacy RSA APIs may not be available.
 static int32_t QuickRsaCheckEvp(const EVP_PKEY* pkey, bool isPublic)
 {
-    return QuickRsaCheckCore(pkey, isPublic, RsaEvpGetKey, RsaEvpGetFactors, RsaEvpGetCrtParams);
+    return QuickRsaCheckCore(pkey, isPublic, RsaEvpGetKey, RsaEvpGetFactors, RsaEvpGetCrtParams, RsaEvpIsMultiPrime);
 }
 #endif // NEED_OPENSSL_3_0
 
