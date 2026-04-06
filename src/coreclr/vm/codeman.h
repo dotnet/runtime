@@ -109,7 +109,7 @@ enum StubCodeBlockKind : int
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef FEATURE_TIERED_COMPILATION
     STUB_CODE_BLOCK_CALLCOUNTING = 0xA,
-#endif
+#endif // FEATURE_TIERED_COMPILATION
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholders returned by code:GetStubCodeBlockKind
