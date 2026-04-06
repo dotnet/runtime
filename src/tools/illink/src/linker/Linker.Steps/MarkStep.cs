@@ -1528,10 +1528,7 @@ namespace Mono.Linker.Steps
         {
             ModuleDefinition module = assembly.MainModule;
             foreach (ExportedType exportedType in module.ExportedTypes)
-            {
                 MarkingHelpers.MarkExportedType(exportedType, module, new DependencyInfo(DependencyKind.ExportedType, assembly), new MessageOrigin(assembly));
-                MarkingHelpers.MarkForwardedScope(CreateTypeReferenceForExportedTypeTarget(exportedType, module), new MessageOrigin(assembly));
-            }
         }
 
         static TypeReference CreateTypeReferenceForExportedTypeTarget(ExportedType exportedType, ModuleDefinition module)
@@ -1569,8 +1566,7 @@ namespace Mono.Linker.Steps
 
             protected override void ProcessExportedType(ExportedType exportedType)
             {
-                // Exported types are handled separately in MarkExportedTypes, which is always called
-                // before TypeReferenceMarker. Nothing to do here.
+                markingHelpers.MarkForwardedScope(MarkStep.CreateTypeReferenceForExportedTypeTarget(exportedType, assembly.MainModule), new MessageOrigin(assembly));
             }
 
             protected override void ProcessExtra()
