@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.IO;
 using System.Net.Test.Common;
 using System.Security.Principal;
-using System.Threading.Tasks;
 
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Security.Enterprise.Tests
@@ -64,8 +63,7 @@ namespace System.Net.Security.Enterprise.Tests
 
             if (token is null)
             {
-                // No cached Kerberos TGT available (kinit not run); skip.
-                return;
+                throw new SkipTestException("Kerberos TGT is not available (kinit not run).");
             }
 
             Assert.True(token.Length > 0);
@@ -74,7 +72,7 @@ namespace System.Net.Security.Enterprise.Tests
 
         [Theory]
         [MemberData(nameof(LoopbackAuthenticationSuccessCases))]
-        public async Task ClientServerAuthentication_Succeeds(NetworkCredential credential, string targetName)
+        public void ClientServerAuthentication_Succeeds(NetworkCredential credential, string targetName)
         {
             using var client = new NegotiateAuthentication(new NegotiateAuthenticationClientOptions
             {
@@ -93,7 +91,8 @@ namespace System.Net.Security.Enterprise.Tests
             byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out clientStatus);
             Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
 
-            while (true)
+            const int MaxIterations = 20;
+            for (int i = 0; i < MaxIterations; i++)
             {
                 byte[]? serverToken = server.GetOutgoingBlob(clientToken, out serverStatus);
                 if (serverStatus == NegotiateAuthenticationStatusCode.Completed)
@@ -123,7 +122,7 @@ namespace System.Net.Security.Enterprise.Tests
         [Theory]
         [MemberData(nameof(LoopbackAuthenticationSuccessCases))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/12345")]
-        public async Task ClientServerAuthentication_WrapUnwrap_Succeeds(NetworkCredential credential, string targetName)
+        public void ClientServerAuthentication_WrapUnwrap_Succeeds(NetworkCredential credential, string targetName)
         {
             using var client = new NegotiateAuthentication(new NegotiateAuthenticationClientOptions
             {
@@ -142,11 +141,16 @@ namespace System.Net.Security.Enterprise.Tests
             NegotiateAuthenticationStatusCode clientStatus, serverStatus;
             byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out clientStatus);
 
-            while (true)
+            const int MaxIterations = 20;
+            for (int i = 0; i < MaxIterations; i++)
             {
                 byte[]? serverToken = server.GetOutgoingBlob(clientToken, out serverStatus);
                 if (serverStatus == NegotiateAuthenticationStatusCode.Completed)
                 {
+                    if (serverToken is not null)
+                    {
+                        client.GetOutgoingBlob(serverToken, out clientStatus);
+                    }
                     break;
                 }
 
@@ -191,6 +195,7 @@ namespace System.Net.Security.Enterprise.Tests
 
             if (clientStatus >= NegotiateAuthenticationStatusCode.GenericFailure)
             {
+                // Authentication failed at the first step, which is acceptable.
                 return;
             }
 
@@ -198,7 +203,8 @@ namespace System.Net.Security.Enterprise.Tests
             Assert.NotNull(clientToken);
 
             bool authFailed = false;
-            while (true)
+            const int MaxIterations = 20;
+            for (int i = 0; i < MaxIterations; i++)
             {
                 byte[]? serverToken = server.GetOutgoingBlob(clientToken, out serverStatus);
                 if (serverStatus >= NegotiateAuthenticationStatusCode.GenericFailure)
@@ -230,7 +236,7 @@ namespace System.Net.Security.Enterprise.Tests
         [Theory]
         [InlineData(ProtectionLevel.Sign)]
         [InlineData(ProtectionLevel.EncryptAndSign)]
-        public async Task ClientServerAuthentication_ProtectionLevel_Succeeds(ProtectionLevel protectionLevel)
+        public void ClientServerAuthentication_ProtectionLevel_Succeeds(ProtectionLevel protectionLevel)
         {
             using var client = new NegotiateAuthentication(new NegotiateAuthenticationClientOptions
             {
@@ -248,7 +254,8 @@ namespace System.Net.Security.Enterprise.Tests
             NegotiateAuthenticationStatusCode clientStatus, serverStatus;
             byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out clientStatus);
 
-            while (true)
+            const int MaxIterations = 20;
+            for (int i = 0; i < MaxIterations; i++)
             {
                 byte[]? serverToken = server.GetOutgoingBlob(clientToken, out serverStatus);
                 if (serverStatus == NegotiateAuthenticationStatusCode.Completed)
