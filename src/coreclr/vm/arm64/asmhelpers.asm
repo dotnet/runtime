@@ -62,10 +62,6 @@
     IMPORT $g_GCShadowEnd
 #endif // WRITE_BARRIER_CHECK
 
-#ifdef FEATURE_COMINTEROP
-    IMPORT CLRToCOMWorker
-#endif // FEATURE_COMINTEROP
-
     IMPORT JIT_WriteBarrier_Table_Loc
     IMPORT JIT_WriteBarrier_Loc
 
@@ -206,42 +202,6 @@ NoFloatingPointRetVal
         ret
 
     LEAF_END
-
-; ------------------------------------------------------------------
-; GenericCLRToCOMCallStub that erects a CLRToCOMMethodFrame and calls into the runtime
-; (CLRToCOMWorker) to dispatch rare cases of the interface call.
-;
-; On entry:
-;   x0          : 'this' object
-;   x12         : Interface MethodDesc*
-;   plus user arguments in registers and on the stack
-;
-; On exit:
-;   x0/x1/s0-s3/d0-d3 set to return value of the call as appropriate
-;
-    NESTED_ENTRY GenericCLRToCOMCallStub
-
-        PROLOG_WITH_TRANSITION_BLOCK ASM_ENREGISTERED_RETURNTYPE_MAXSIZE
-
-        add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
-        mov         x1, x12                         ; pMethodDesc
-
-        ; Call CLRToCOMWorker(TransitionBlock *, CLRToCOMCallMethodDesc *).
-        ; This call will set up the rest of the frame (including the vfptr, the GS cookie and
-        ; linking to the thread), make the client call and return with correct registers set
-        ; (x0/x1/s0-s3/d0-d3 as appropriate).
-
-        bl          CLRToCOMWorker
-
-        ; x0 = fpRetSize
-
-        ; The return value is stored before float argument registers
-        add         x1, sp, #(__PWTB_FloatArgumentRegisters - ASM_ENREGISTERED_RETURNTYPE_MAXSIZE)
-        bl          setStubReturnValue
-
-        EPILOG_WITH_TRANSITION_BLOCK_RETURN
-
-    NESTED_END
 
 ; ------------------------------------------------------------------
 ; COM to CLR stub called the first time a particular method is invoked.
@@ -731,6 +691,21 @@ CallHelper2
     adrp     x1, g_pGetGCStaticBase
     ldr      x1, [x1, g_pGetGCStaticBase]
     br       x1
+    LEAF_END
+
+; ------------------------------------------------------------------
+; __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
+    LEAF_ENTRY  JIT_WriteBarrier_Callable
+
+    ; Setup args for JIT_WriteBarrier. x14 = dst ; x15 = val
+    mov     x14, x0                     ; x14 = dst
+    mov     x15, x1                     ; x15 = val
+
+    ; Branch to the write barrier
+    adrp    x17, JIT_WriteBarrier_Loc
+    ldr     x17, [x17, JIT_WriteBarrier_Loc]
+    br      x17
+
     LEAF_END
 
 #ifdef PROFILING_SUPPORTED

@@ -59,7 +59,6 @@ class ComCallMethodDesc;
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8    // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          8    // bytes
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         8    // bytes
-#define COM_STUBS_SEPARATE_FP_LOCATIONS
 #define CALLDESCR_REGTYPEMAP                    1
 #endif
 

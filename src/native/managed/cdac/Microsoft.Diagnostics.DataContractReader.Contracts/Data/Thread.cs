@@ -42,7 +42,9 @@ internal sealed class Thread : IData<Thread>
         ThreadLocalDataPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(ThreadLocalDataPtr)].Offset);
 
         DebuggerFilterContext = target.ReadPointer(address + (ulong)type.Fields[nameof(DebuggerFilterContext)].Offset);
-        ProfilerFilterContext = target.ReadPointer(address + (ulong)type.Fields[nameof(ProfilerFilterContext)].Offset);
+        ProfilerFilterContext = type.Fields.TryGetValue(nameof(ProfilerFilterContext), out Target.FieldInfo profilerFilterContextInfo)
+            ? target.ReadPointer(address + (ulong)profilerFilterContextInfo.Offset)
+            : TargetPointer.Null;
     }
 
     public uint Id { get; init; }
