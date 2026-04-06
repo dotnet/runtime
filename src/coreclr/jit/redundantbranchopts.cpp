@@ -716,7 +716,7 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
 
 //------------------------------------------------------------------------
 // optRedundantDominatingBranch: see if we can optimize a branch in a
-//    donminating block.
+//    dominating block.
 //
 // Arguments:
 //   block - conditional block to examine
