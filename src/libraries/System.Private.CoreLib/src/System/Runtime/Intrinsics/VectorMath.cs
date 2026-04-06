@@ -3222,9 +3222,8 @@ namespace System.Runtime.Intrinsics
             return ax + ax * g * poly + (TVectorDouble.Create(PIBY2) & gtHalf);
         }
 
-        public static TVectorDouble AcosDouble<TVectorDouble, TVectorUInt64>(TVectorDouble x)
+        public static TVectorDouble AcosDouble<TVectorDouble>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
-            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
             // This code is based on `acos` from amd/aocl-libm-ose
             // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
@@ -3350,7 +3349,7 @@ namespace System.Runtime.Intrinsics
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
             // Polynomial coefficients from Sollya (AMD aocl-libm-ose acosf.c)
-            const double C1 = 0.166667014360427856445;  // 0x1.5555fcp-3
+            const double C1 = 0.1666679084300995;       // 0x1.5555fcp-3
             const double C2 = 0.074944347143173218;     // 0x1.32f8d8p-4
             const double C3 = 0.045550186187028885;     // 0x1.7525aap-5
             const double C4 = 0.023858169093728065;     // 0x1.86e46ap-6

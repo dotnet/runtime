@@ -764,7 +764,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.AcosDouble<Vector512<double>, Vector512<ulong>>(vector);
+                return VectorMath.AcosDouble<Vector512<double>>(vector);
             }
             else
             {

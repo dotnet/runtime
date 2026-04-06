@@ -828,7 +828,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.AcosDouble<Vector64<double>, Vector64<ulong>>(vector);
+                return VectorMath.AcosDouble<Vector64<double>>(vector);
             }
             else
             {
