@@ -25,6 +25,7 @@ public enum ThreadState
     Background          = 0x00000200,   // Thread is a background thread
     Unstarted           = 0x00000400,   // Thread has never been started
     Dead                = 0x00000800,   // Thread is dead
+    ReportDead          = 0x00001000,   // Thread is dead for the purposes of the debugger
     ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
 }
 

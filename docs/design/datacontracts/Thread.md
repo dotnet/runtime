@@ -179,7 +179,7 @@ ThreadData GetThreadData(TargetPointer address)
     return new ThreadData(
         Id: target.Read<uint>(address + /* Thread::Id offset */),
         OSId: target.ReadNUInt(address + /* Thread::OSId offset */),
-        State: target.Read<uint>(address + /* Thread::State offset */),
+        State: target.Read<uint>(address + /* Thread::State offset */) /* -> convert to contract enum */,
         PreemptiveGCDisabled: (target.Read<uint>(address + /* Thread::PreemptiveGCDisabled offset */) & 0x1) != 0,
         AllocContextPointer: allocContextPointer,
         AllocContextLimit: allocContextLimit,
