@@ -291,7 +291,6 @@ When updating the context from a TransitionFrame, the IP, SP, and all ABI specif
 
 The following Frame types also use this mechanism:
 * FramedMethodFrame
-* CLRToCOMMethodFrame
 * PInvokeCallIFrame
 * PrestubMethodFrame
 * StubDispatchFrame

@@ -30,7 +30,6 @@
 #include "wrappers.h"
 
 #include "appdomain.inl"
-#include "vmholder.h"
 #include "exceptmacros.h"
 #include "minipal/time.h"
 #include "minipal/thread.h"
@@ -1248,6 +1247,8 @@ Thread::Thread()
 
     m_debuggerFilterContext = NULL;
     m_fInteropDebuggingHijacked = FALSE;
+
+#if defined(PROFILING_SUPPORTED)
     m_profilerCallbackState = 0;
 
     for (int i = 0; i < MAX_NOTIFICATION_PROFILERS + 1; ++i)
@@ -1256,6 +1257,7 @@ Thread::Thread()
     }
 
     m_pProfilerFilterContext = NULL;
+#endif // PROFILING_SUPPORTED
 
     m_CacheStackBase = 0;
     m_CacheStackLimit = 0;
