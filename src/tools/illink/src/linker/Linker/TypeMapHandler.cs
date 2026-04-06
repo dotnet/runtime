@@ -107,8 +107,15 @@ namespace Mono.Linker
             _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
 
             // Mark the target type as instantiated
-            if (entry.TargetType is { } targetType && _context.Resolve(targetType) is TypeDefinition targetTypeDef)
-                _context.Annotations.MarkInstantiated(targetTypeDef);
+            if (entry.TargetType is { } targetType)
+            {
+                // Strip parameterized types (array, pointer, etc.) to use the element type,
+                // since those types cannot be resolved at the definition level by the trimmer.
+                while (targetType is TypeSpecification { ElementType: var elementType } and not GenericInstanceType)
+                    targetType = elementType;
+                if (_context.Resolve(targetType) is TypeDefinition targetTypeDef)
+                    _context.Annotations.MarkInstantiated(targetTypeDef);
+            }
         }
 
         public void ProcessType(TypeDefinition definition)
@@ -158,8 +165,8 @@ namespace Mono.Linker
             {
                 // Strip parameterized types (array, pointer, etc.) to use the element type as the trim target,
                 // since those types cannot be tracked at the definition level by the trimmer.
-                while (trimTarget is TypeSpecification and not GenericInstanceType)
-                    trimTarget = ((TypeSpecification)trimTarget).ElementType;
+                while (trimTarget is TypeSpecification { ElementType: var elementType } and not GenericInstanceType)
+                    trimTarget = elementType;
                 RecordTypeMapEntry(attr, group, trimTarget, _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
             }
             else if (attr.Attribute.ConstructorArguments is [_, { Value: TypeReference }])
@@ -178,8 +185,8 @@ namespace Mono.Linker
                 // This is a TypeMapAssociationAttribute with two constructor type arguments (source and proxy).
                 // Strip parameterized types (array, pointer, etc.) to use the element type as the source type,
                 // since those types cannot be tracked at the definition level by the trimmer.
-                while (sourceType is TypeSpecification and not GenericInstanceType)
-                    sourceType = ((TypeSpecification)sourceType).ElementType;
+                while (sourceType is TypeSpecification { ElementType: var elementType } and not GenericInstanceType)
+                    sourceType = elementType;
                 RecordTypeMapEntry(attr, group, sourceType, _unmarkedProxyTypeMapEntries, _referencedProxyTypeMaps, _pendingProxyTypeMapEntries);
                 return;
             }
