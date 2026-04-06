@@ -381,14 +381,14 @@ static int32_t QuickRsaCheckCore(const void* key,
     // If we made it to the end, everything looks good.
     ret = 1;
 done:
-    BN_clear_free(n);
-    BN_clear_free(e);
-    BN_clear_free(d);
-    BN_clear_free(p);
-    BN_clear_free(q);
-    BN_clear_free(dp);
-    BN_clear_free(dq);
-    BN_clear_free(inverseQ);
+    if (n) BN_clear_free(n);
+    if (e) BN_clear_free(e);
+    if (d) BN_clear_free(d);
+    if (p) BN_clear_free(p);
+    if (q) BN_clear_free(q);
+    if (dp) BN_clear_free(dp);
+    if (dq) BN_clear_free(dq);
+    if (inverseQ) BN_clear_free(inverseQ);
     if (x) BN_clear_free(x);
     if (y) BN_clear_free(y);
     if (pM1) BN_clear_free(pM1);
@@ -420,9 +420,9 @@ static bool RsaLegacyGetKey(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d)
 
     if (!*n || !*e || (sharedD && !*d))
     {
-        BN_clear_free(*n);
-        BN_clear_free(*e);
-        BN_clear_free(*d);
+        if (*n) BN_clear_free(*n);
+        if (*e) BN_clear_free(*e);
+        if (*d) BN_clear_free(*d);
         *n = *e = *d = NULL;
         return false;
     }
@@ -450,8 +450,8 @@ static bool RsaLegacyGetFactors(const void* key, BIGNUM** p, BIGNUM** q)
 
     if (!*p || !*q)
     {
-        BN_clear_free(*p);
-        BN_clear_free(*q);
+        if (*p) BN_clear_free(*p);
+        if (*q) BN_clear_free(*q);
         *p = *q = NULL;
         return false;
     }
@@ -481,9 +481,9 @@ static bool RsaLegacyGetCrtParams(const void* key, BIGNUM** dp, BIGNUM** dq, BIG
 
     if (!*dp || !*dq || !*inverseQ)
     {
-        BN_clear_free(*dp);
-        BN_clear_free(*dq);
-        BN_clear_free(*inverseQ);
+        if (*dp) BN_clear_free(*dp);
+        if (*dq) BN_clear_free(*dq);
+        if (*inverseQ) BN_clear_free(*inverseQ);
         *dp = *dq = *inverseQ = NULL;
         return false;
     }
@@ -604,6 +604,7 @@ static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*chec
         {
             return false;
         }
+
         if (result == 1)
         {
             return true;

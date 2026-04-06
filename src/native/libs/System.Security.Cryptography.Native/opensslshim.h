@@ -212,10 +212,14 @@ typedef struct rsa_meth_st RSA_METHOD;
 
 #ifndef RSA_FLAG_EXT_PKEY
 #define RSA_FLAG_EXT_PKEY 0x0020
+#else
+c_static_assert(RSA_FLAG_EXT_PKEY == 0x0020);
 #endif
 
 #ifndef RSA_F_RSA_NULL_PRIVATE_DECRYPT
 #define RSA_F_RSA_NULL_PRIVATE_DECRYPT 0
+#else
+c_static_assert(RSA_F_RSA_NULL_PRIVATE_DECRYPT == 0);
 #endif
 
 const RSA* EVP_PKEY_get0_RSA(const EVP_PKEY* pkey);
@@ -227,6 +231,9 @@ void RSA_get0_factors(const RSA* r, const BIGNUM** p, const BIGNUM** q);
 void RSA_get0_crt_params(const RSA* r, const BIGNUM** dmp1, const BIGNUM** dmq1, const BIGNUM** iqmp);
 int RSA_meth_get_flags(const RSA_METHOD* meth);
 int RSA_test_flags(const RSA* r, int flags);
+#else
+c_static_assert(RSA_FLAG_EXT_PKEY == 0x0020);
+c_static_assert(RSA_F_RSA_NULL_PRIVATE_DECRYPT == 0);
 #endif
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_4_0_RTM
