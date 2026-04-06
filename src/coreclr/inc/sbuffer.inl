@@ -23,7 +23,7 @@ inline SBuffer::SBuffer(PreallocFlag flag, void *buffer, COUNT_T size)
     m_flags(0),
     m_buffer(NULL)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(buffer));
@@ -32,7 +32,7 @@ inline SBuffer::SBuffer(PreallocFlag flag, void *buffer, COUNT_T size)
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     m_buffer = UseBuffer((BYTE *) buffer, &size);
     m_allocation = size;
@@ -41,7 +41,7 @@ inline SBuffer::SBuffer(PreallocFlag flag, void *buffer, COUNT_T size)
     m_revision = 0;
 #endif
 
-    RETURN;
+    return;
 }
 
 inline SBuffer::SBuffer()
@@ -50,19 +50,19 @@ inline SBuffer::SBuffer()
     m_flags(0),
     m_buffer(NULL)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         CONSTRUCTOR_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifdef _DEBUG
     m_revision = 0;
 #endif
 
-    RETURN;
+    return;
 }
 
 inline SBuffer::SBuffer(COUNT_T size)
@@ -71,14 +71,14 @@ inline SBuffer::SBuffer(COUNT_T size)
     m_flags(0),
     m_buffer(NULL)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {;
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckSize(size));
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Resize(size);
 
@@ -86,7 +86,7 @@ inline SBuffer::SBuffer(COUNT_T size)
     m_revision = 0;
 #endif
 
-    RETURN;
+    return;
 }
 
 inline SBuffer::SBuffer(const SBuffer &buffer)
@@ -95,15 +95,14 @@ inline SBuffer::SBuffer(const SBuffer &buffer)
     m_flags(0),
     m_buffer(NULL)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(buffer.Check());
-        POSTCONDITION(Equals(buffer));
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Set(buffer);
 
@@ -111,20 +110,20 @@ inline SBuffer::SBuffer(const SBuffer &buffer)
     m_revision = 0;
 #endif
 
-    RETURN;
+    _ASSERTE(Equals(buffer));
+    return;
 }
 
 inline SBuffer::SBuffer(SBuffer &&buffer)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(buffer.Check());
-        POSTCONDITION(Check());
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     m_size = buffer.m_size;
     m_allocation = buffer.m_allocation;
@@ -137,7 +136,8 @@ inline SBuffer::SBuffer(SBuffer &&buffer)
 
     buffer.InitializeInstance();
 
-    RETURN;
+    _ASSERTE(Check());
+    return;
 }
 
 inline SBuffer::SBuffer(const BYTE *buffer, COUNT_T size)
@@ -146,16 +146,15 @@ inline SBuffer::SBuffer(const BYTE *buffer, COUNT_T size)
     m_flags(0),
     m_buffer(NULL)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(buffer));
         PRECONDITION(CheckSize(size));
-        POSTCONDITION(Equals(buffer, size));
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Set(buffer, size);
 
@@ -163,7 +162,8 @@ inline SBuffer::SBuffer(const BYTE *buffer, COUNT_T size)
     m_revision = 0;
 #endif
 
-    RETURN;
+    _ASSERTE(Equals(buffer, size));
+    return;
 }
 
 
@@ -173,35 +173,35 @@ inline SBuffer::SBuffer(ImmutableFlag immutable, const BYTE *buffer, COUNT_T siz
     m_flags(IMMUTABLE),
     m_buffer(const_cast<BYTE*>(buffer))
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(buffer));
         PRECONDITION(CheckSize(size));
-        POSTCONDITION(Equals(buffer, size));
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifdef _DEBUG
     m_revision = 0;
 #endif
 
-    RETURN;
+    _ASSERTE(Equals(buffer, size));
+    return;
 }
 
 inline SBuffer::~SBuffer()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         DESTRUCTOR_CHECK;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (IsAllocated())
     {
@@ -212,7 +212,7 @@ inline SBuffer::~SBuffer()
     m_revision = 0;
 #endif
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::InitializeInstance()
@@ -229,16 +229,15 @@ inline void SBuffer::InitializeInstance()
 
 inline void SBuffer::Set(const SBuffer &buffer)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(buffer.Check());
-        POSTCONDITION(Equals(buffer));
         THROWS;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (buffer.IsImmutable()
         && (IsImmutable() || m_allocation < buffer.GetSize()))
@@ -273,21 +272,21 @@ inline void SBuffer::Set(const SBuffer &buffer)
         MoveMemory(m_buffer, buffer.m_buffer, buffer.m_size);
     }
 
-    RETURN;
+    _ASSERTE(Equals(buffer));
+    return;
 }
 
 inline void SBuffer::Set(const BYTE *buffer, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(buffer, size == 0 ? NULL_OK : NULL_NOT_OK));
         PRECONDITION(CheckSize(size));
-        POSTCONDITION(Equals(buffer, size));
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Resize(size);
     EnsureMutable();
@@ -299,23 +298,23 @@ inline void SBuffer::Set(const BYTE *buffer, COUNT_T size)
     if (size != 0)
         MoveMemory(m_buffer, buffer, size);
 
-    RETURN;
+    _ASSERTE(Equals(buffer, size));
+    return;
 }
 
 inline void SBuffer::SetImmutable(const BYTE *buffer, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(buffer, size == 0 ? NULL_OK : NULL_NOT_OK));
         PRECONDITION(CheckSize(size));
-        POSTCONDITION(Equals(buffer, size));
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
 
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SBuffer temp(Immutable, buffer, size);
 
@@ -325,7 +324,8 @@ inline void SBuffer::SetImmutable(const BYTE *buffer, COUNT_T size)
         Set(temp);
     }
 
-    RETURN;
+    _ASSERTE(Equals(buffer, size));
+    return;
 }
 
 inline COUNT_T SBuffer::GetSize() const
@@ -338,53 +338,53 @@ inline COUNT_T SBuffer::GetSize() const
 
 inline void SBuffer::SetSize(COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckSize(size));
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Resize(size);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::MaximizeSize()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!IsImmutable())
         Resize(m_allocation);
 
-    RETURN;
+    return;
 }
 
 inline COUNT_T SBuffer::GetAllocation() const
 {
-    CONTRACT(COUNT_T)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN m_allocation;
+    return m_allocation;
 }
 
 inline void SBuffer::Preallocate(COUNT_T allocation)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         if (allocation) THROWS; else NOTHROW;
         INSTANCE_CHECK;
@@ -393,79 +393,79 @@ inline void SBuffer::Preallocate(COUNT_T allocation)
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (allocation > m_allocation)
         ReallocateBuffer(allocation, PRESERVE);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Trim()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!IsImmutable())
         ReallocateBuffer(m_size, PRESERVE);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Zero()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ZeroMemory(m_buffer, m_size);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Fill(BYTE value)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     memset(m_buffer, value, m_size);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Fill(const Iterator &i, BYTE value, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckIteratorRange(i, size));
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     memset(i.m_ptr, value, size);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Copy(const Iterator &to, const CIterator &from, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckIteratorRange(to, size));
@@ -473,18 +473,18 @@ inline void SBuffer::Copy(const Iterator &to, const CIterator &from, COUNT_T siz
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DebugDestructBuffer(to.m_ptr, size);
 
     DebugCopyConstructBuffer(to.m_ptr, from.m_ptr, size);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Move(const Iterator &to, const CIterator &from, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckIteratorRange(to, size));
@@ -492,7 +492,7 @@ inline void SBuffer::Move(const Iterator &to, const CIterator &from, COUNT_T siz
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DebugDestructBuffer(to.m_ptr, size);
 
@@ -500,12 +500,12 @@ inline void SBuffer::Move(const Iterator &to, const CIterator &from, COUNT_T siz
 
     DebugConstructBuffer(from.m_ptr, size);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Copy(const Iterator &i, const SBuffer &source)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckIteratorRange(i, source.GetSize()));
@@ -513,18 +513,18 @@ inline void SBuffer::Copy(const Iterator &i, const SBuffer &source)
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DebugDestructBuffer(i.m_ptr, source.m_size);
 
     DebugCopyConstructBuffer(i.m_ptr, source.m_buffer, source.m_size);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Copy(const Iterator &i, const void *source, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckSize(size));
@@ -534,18 +534,18 @@ inline void SBuffer::Copy(const Iterator &i, const void *source, COUNT_T size)
         GC_NOTRIGGER;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DebugDestructBuffer(i.m_ptr, size);
 
     DebugCopyConstructBuffer(i.m_ptr, (const BYTE *) source, size);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Copy(void *dest, const CIterator &i, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckSize(size));
@@ -554,121 +554,119 @@ inline void SBuffer::Copy(void *dest, const CIterator &i, COUNT_T size)
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     memcpy(dest, i.m_ptr, size);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Insert(const Iterator &i, const SBuffer &source)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         PRECONDITION(CheckIteratorRange(i,0));
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Replace(i, 0, source.GetSize());
     Copy(i, source, source.GetSize());
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Insert(const Iterator &i, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         PRECONDITION(CheckIteratorRange(i,0));
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Replace(i, 0, size);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Clear()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Delete(Begin(), GetSize());
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Delete(const Iterator &i, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckIteratorRange(i, size));
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Replace(i, size, 0);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, const SBuffer &insert)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckIteratorRange(i, deleteSize));
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Replace(i, deleteSize, insert.GetSize());
     Copy(i, insert, insert.GetSize());
 
-    RETURN;
+    return;
 }
 
 inline int SBuffer::Compare(const SBuffer &compare) const
 {
-    CONTRACT(int)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(compare.Check());
-        POSTCONDITION(RETVAL == -1 || RETVAL == 0 || RETVAL == 1);
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN Compare(compare.m_buffer, compare.m_size);
+    return Compare(compare.m_buffer, compare.m_size);
 }
 
 inline int SBuffer::Compare(const BYTE *compare, COUNT_T size) const
 {
-    CONTRACT(int)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(compare));
         PRECONDITION(CheckSize(size));
-        POSTCONDITION(RETVAL == -1 || RETVAL == 0 || RETVAL == 1);
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     COUNT_T smaller;
     int equals;
@@ -693,28 +691,34 @@ inline int SBuffer::Compare(const BYTE *compare, COUNT_T size) const
     result = memcmp(m_buffer, compare, size);
 
     if (result == 0)
-        RETURN equals;
+        {
+        _ASSERTE(equals == -1 || equals == 0 || equals == 1);
+            return equals;
+        }
     else
-        RETURN result;
+        {
+        _ASSERTE(result == -1 || result == 0 || result == 1);
+            return result;
+        }
 }
 
 inline BOOL SBuffer::Equals(const SBuffer &compare) const
 {
-    CONTRACT(int)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(compare.Check());
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN Equals(compare.m_buffer, compare.m_size);
+    return Equals(compare.m_buffer, compare.m_size);
 }
 
 inline BOOL SBuffer::Equals(const BYTE *compare, COUNT_T size) const
 {
-    CONTRACT(int)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(compare));
@@ -722,17 +726,17 @@ inline BOOL SBuffer::Equals(const BYTE *compare, COUNT_T size) const
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_size != size)
-        RETURN FALSE;
+        return FALSE;
     else
-        RETURN (memcmp(m_buffer, compare, size) == 0);
+        return (memcmp(m_buffer, compare, size) == 0);
 }
 
 inline BOOL SBuffer::Match(const CIterator &i, const SBuffer &match) const
 {
-    CONTRACT(int)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckIteratorRange(i));
@@ -740,14 +744,14 @@ inline BOOL SBuffer::Match(const CIterator &i, const SBuffer &match) const
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN Match(i, match.m_buffer, match.m_size);
+    return Match(i, match.m_buffer, match.m_size);
 }
 
 inline BOOL SBuffer::Match(const CIterator &i, const BYTE *match, COUNT_T size) const
 {
-    CONTRACT(int)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckIteratorRange(i));
@@ -756,14 +760,14 @@ inline BOOL SBuffer::Match(const CIterator &i, const BYTE *match, COUNT_T size) 
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     COUNT_T remaining = (COUNT_T) (m_buffer + m_size - i.m_ptr);
 
     if (remaining < size)
-        RETURN FALSE;
+        return FALSE;
 
-    RETURN (memcmp(i.m_ptr, match, size) == 0);
+    return (memcmp(i.m_ptr, match, size) == 0);
 }
 
 //----------------------------------------------------------------------------
@@ -772,7 +776,7 @@ inline BOOL SBuffer::Match(const CIterator &i, const BYTE *match, COUNT_T size) 
 //----------------------------------------------------------------------------
 inline void SBuffer::EnsureMutable() const
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckBufferClosed());
@@ -780,12 +784,12 @@ inline void SBuffer::EnsureMutable() const
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (IsImmutable())
         const_cast<SBuffer *>(this)->ReallocateBuffer(m_allocation, PRESERVE);
 
-    RETURN;
+    return;
 }
 
 //----------------------------------------------------------------------------
@@ -794,18 +798,15 @@ inline void SBuffer::EnsureMutable() const
 //----------------------------------------------------------------------------
 FORCEINLINE void SBuffer::Resize(COUNT_T size, Preserve preserve)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckSize(size));
-        POSTCONDITION(GetSize() == size);
-        POSTCONDITION(m_allocation >= GetSize());
-        POSTCONDITION(CheckInvariant(*this));
         if (size > 0) THROWS; else NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifdef _DEBUG
     // Change our revision
@@ -826,7 +827,10 @@ FORCEINLINE void SBuffer::Resize(COUNT_T size, Preserve preserve)
 
     m_size = size;
 
-    RETURN;
+    _ASSERTE(GetSize() == size);
+    _ASSERTE(m_allocation >= GetSize());
+    _ASSERTE(CheckInvariant(*this));
+    return;
 }
 
 //----------------------------------------------------------------------------
@@ -836,18 +840,15 @@ FORCEINLINE void SBuffer::Resize(COUNT_T size, Preserve preserve)
 //----------------------------------------------------------------------------
 inline void SBuffer::ResizePadded(COUNT_T size, Preserve preserve)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckSize(size));
-        POSTCONDITION(GetSize() == size);
-        POSTCONDITION(m_allocation >= GetSize());
-        POSTCONDITION(CheckInvariant(*this));
         if (size > 0) THROWS; else NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifdef _DEBUG
     // Change our revision
@@ -872,7 +873,10 @@ inline void SBuffer::ResizePadded(COUNT_T size, Preserve preserve)
 
     m_size = size;
 
-    RETURN;
+    _ASSERTE(GetSize() == size);
+    _ASSERTE(m_allocation >= GetSize());
+    _ASSERTE(CheckInvariant(*this));
+    return;
 }
 
 //----------------------------------------------------------------------------
@@ -882,18 +886,16 @@ inline void SBuffer::ResizePadded(COUNT_T size, Preserve preserve)
 //----------------------------------------------------------------------------
 inline void SBuffer::TweakSize(COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckSize(size));
         PRECONDITION(size <= GetAllocation());
-        POSTCONDITION(GetSize() == size);
-        POSTCONDITION(CheckInvariant(*this));
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifdef _DEBUG
     // Change our revision
@@ -909,7 +911,9 @@ inline void SBuffer::TweakSize(COUNT_T size)
 
     m_size = size;
 
-    RETURN;
+    _ASSERTE(GetSize() == size);
+    _ASSERTE(CheckInvariant(*this));
+    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -954,16 +958,15 @@ static const int SBUFFER_ALIGNMENT = 4;
 //----------------------------------------------------------------------------
 inline BYTE *SBuffer::NewBuffer(COUNT_T allocation)
 {
-    CONTRACT(BYTE*)
+    CONTRACTL
     {
         PRECONDITION(CheckSize(allocation));
         PRECONDITION(allocation > 0);
-        POSTCONDITION(CheckPointer(RETVAL));
         THROWS;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifdef SBUFFER_CANARY_CHECKS
 
@@ -986,7 +989,7 @@ inline BYTE *SBuffer::NewBuffer(COUNT_T allocation)
 
     CONSISTENCY_CHECK(CheckBuffer(buffer, allocation));
 
-    RETURN buffer;
+    return buffer;
 }
 
 //----------------------------------------------------------------------------
@@ -994,7 +997,7 @@ inline BYTE *SBuffer::NewBuffer(COUNT_T allocation)
 //----------------------------------------------------------------------------
 inline BYTE *SBuffer::UseBuffer(BYTE *buffer, COUNT_T *allocation)
 {
-    CONTRACT(BYTE*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -1003,9 +1006,8 @@ inline BYTE *SBuffer::UseBuffer(BYTE *buffer, COUNT_T *allocation)
         PRECONDITION(CheckPointer(buffer));
         PRECONDITION(CheckSize(*allocation));
 //        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(CheckSize(*allocation));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifdef SBUFFER_CANARY_CHECKS
 
@@ -1035,7 +1037,8 @@ inline BYTE *SBuffer::UseBuffer(BYTE *buffer, COUNT_T *allocation)
 
     CONSISTENCY_CHECK(CheckBuffer(buffer, *allocation));
 
-    RETURN buffer;
+    _ASSERTE(CheckSize(*allocation));
+    return buffer;
 }
 
 //----------------------------------------------------------------------------
@@ -1043,15 +1046,14 @@ inline BYTE *SBuffer::UseBuffer(BYTE *buffer, COUNT_T *allocation)
 //----------------------------------------------------------------------------
 inline void SBuffer::DeleteBuffer(BYTE *buffer, COUNT_T allocation)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION(CheckSize(allocation));
-        POSTCONDITION(CheckPointer(buffer));
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CONSISTENCY_CHECK(CheckBuffer(buffer, allocation));
 
@@ -1065,7 +1067,7 @@ inline void SBuffer::DeleteBuffer(BYTE *buffer, COUNT_T allocation)
 
 #endif
 
-    RETURN;
+    return;
 }
 
 //----------------------------------------------------------------------------
@@ -1104,17 +1106,16 @@ inline CHECK SBuffer::CheckBuffer(const BYTE *buffer, COUNT_T allocation) const
 
 inline BYTE *SBuffer::OpenRawBuffer(COUNT_T size)
 {
-    CONTRACT(BYTE*)
+    CONTRACTL
     {
 #if _DEBUG
         PRECONDITION_MSG(!IsOpened(), "Can't nest calls to OpenBuffer()");
 #endif
         PRECONDITION(CheckSize(size));
-        POSTCONDITION(GetSize() == size);
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Resize(size);
     EnsureMutable();
@@ -1123,7 +1124,8 @@ inline BYTE *SBuffer::OpenRawBuffer(COUNT_T size)
     SetOpened();
 #endif
 
-    RETURN m_buffer;
+    _ASSERTE(GetSize() == size);
+    return m_buffer;
 }
 
 //----------------------------------------------------------------------------
@@ -1132,7 +1134,7 @@ inline BYTE *SBuffer::OpenRawBuffer(COUNT_T size)
 //----------------------------------------------------------------------------
 inline void SBuffer::CloseRawBuffer()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
 #if _DEBUG
         PRECONDITION(IsOpened());
@@ -1140,11 +1142,11 @@ inline void SBuffer::CloseRawBuffer()
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CloseRawBuffer(m_size);
 
-    RETURN;
+    return;
 }
 
 //----------------------------------------------------------------------------
@@ -1155,7 +1157,7 @@ inline void SBuffer::CloseRawBuffer()
 //----------------------------------------------------------------------------
 inline void SBuffer::CloseRawBuffer(COUNT_T finalSize)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
 #if _DEBUG
         PRECONDITION_MSG(IsOpened(),  "Can only CloseRawBuffer() after a call to OpenRawBuffer()");
@@ -1165,7 +1167,7 @@ inline void SBuffer::CloseRawBuffer(COUNT_T finalSize)
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #if _DEBUG
     ClearOpened();
@@ -1175,7 +1177,7 @@ inline void SBuffer::CloseRawBuffer(COUNT_T finalSize)
 
     CONSISTENCY_CHECK(CheckBuffer(m_buffer, m_allocation));
 
-    RETURN;
+    return;
 }
 
 inline SBuffer::operator const void *() const
@@ -1208,63 +1210,63 @@ inline const BYTE &SBuffer::operator[](int index) const
 
 inline SBuffer::Iterator SBuffer::Begin()
 {
-    CONTRACT(SBuffer::Iterator)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // This is a bit unfortunate to have to do here, but it's our
     // last opportunity before possibly doing a *i= with the iterator
     EnsureMutable();
 
-    RETURN Iterator(this, 0);
+    return Iterator(this, 0);
 }
 
 inline SBuffer::Iterator SBuffer::End()
 {
-    CONTRACT(SBuffer::Iterator)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // This is a bit unfortunate to have to do here, but it's our
     // last opportunity before possibly doing a *i= with the iterator
     EnsureMutable();
 
-    RETURN Iterator(this, m_size);
+    return Iterator(this, m_size);
 }
 
 inline SBuffer::CIterator SBuffer::Begin() const
 {
-    CONTRACT(SBuffer::CIterator)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN SBuffer::CIterator(this, 0);
+    return SBuffer::CIterator(this, 0);
 }
 
 inline SBuffer::CIterator SBuffer::End() const
 {
-    CONTRACT(SBuffer::CIterator)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN CIterator(const_cast<SBuffer*>(this), m_size);
+    return CIterator(const_cast<SBuffer*>(this), m_size);
 }
 
 inline BOOL SBuffer::IsAllocated() const
@@ -1386,19 +1388,19 @@ inline int SBuffer::GetRepresentationField() const
 
 inline void SBuffer::SetRepresentationField(int value)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION((value & ~REPRESENTATION_MASK) == 0);
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     m_flags &= ~REPRESENTATION_MASK;
     m_flags |= value;
 
-    RETURN;
+    return;
 }
 
 #if _DEBUG
@@ -1426,7 +1428,7 @@ inline void SBuffer::ClearOpened()
 
 inline void SBuffer::DebugMoveBuffer(_Out_writes_bytes_(size) BYTE *to, BYTE *from, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(to, size == 0 ? NULL_OK : NULL_NOT_OK));
@@ -1436,10 +1438,10 @@ inline void SBuffer::DebugMoveBuffer(_Out_writes_bytes_(size) BYTE *to, BYTE *fr
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (size == 0) // special case
-      RETURN;
+      return;
 
     // Handle overlapping ranges
     if (to > from && to < from + size)
@@ -1459,12 +1461,12 @@ inline void SBuffer::DebugMoveBuffer(_Out_writes_bytes_(size) BYTE *to, BYTE *fr
     else
         DebugStompUnusedBuffer(from, size);
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::DebugCopyConstructBuffer(_Out_writes_bytes_(size) BYTE *to, const BYTE *from, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(to, size == 0 ? NULL_OK : NULL_NOT_OK));
@@ -1474,19 +1476,19 @@ inline void SBuffer::DebugCopyConstructBuffer(_Out_writes_bytes_(size) BYTE *to,
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (size != 0) {
         CONSISTENCY_CHECK(CheckUnusedBuffer(to, size));
         memmove(to, from, size);
     }
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::DebugConstructBuffer(BYTE *buffer, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(buffer, size == 0 ? NULL_OK : NULL_NOT_OK));
@@ -1496,18 +1498,18 @@ inline void SBuffer::DebugConstructBuffer(BYTE *buffer, COUNT_T size)
         SUPPORTS_DAC;
         DEBUG_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (size != 0) {
       CONSISTENCY_CHECK(CheckUnusedBuffer(buffer, size));
     }
 
-    RETURN;
+    return;
 }
 
 inline void SBuffer::DebugDestructBuffer(BYTE *buffer, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(buffer, size == 0 ? NULL_OK : NULL_NOT_OK));
@@ -1517,14 +1519,14 @@ inline void SBuffer::DebugDestructBuffer(BYTE *buffer, COUNT_T size)
         DEBUG_ONLY;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (size != 0)
     {
         DebugStompUnusedBuffer(buffer, size);
     }
 
-    RETURN;
+    return;
 }
 
 static const BYTE GARBAGE_FILL_CHARACTER = '$';
@@ -1533,7 +1535,7 @@ extern const DWORD g_garbageFillBuffer[];
 
 inline void SBuffer::DebugStompUnusedBuffer(BYTE *buffer, COUNT_T size)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(buffer, size == 0 ? NULL_OK : NULL_NOT_OK));
@@ -1544,7 +1546,7 @@ inline void SBuffer::DebugStompUnusedBuffer(BYTE *buffer, COUNT_T size)
         DEBUG_ONLY;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #if _DEBUG
     if (!IsImmutable()
@@ -1556,7 +1558,7 @@ inline void SBuffer::DebugStompUnusedBuffer(BYTE *buffer, COUNT_T size)
     }
 #endif
 
-    RETURN;
+    return;
 }
 
 #if _DEBUG
@@ -1715,21 +1717,20 @@ inline CHECK SBuffer::Index::DoCheck(SCOUNT_T delta) const
 
 inline void SBuffer::Index::Resync(const SBuffer *buffer, BYTE *value) const
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         // INSTANCE_CHECK -  Iterator is out of sync with its object now by definition
-        POSTCONDITION(CheckPointer(this));
         PRECONDITION(CheckPointer(buffer));
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     const_cast<Index*>(this)->CheckedIteratorBase<SBuffer>::Resync(const_cast<SBuffer*>(buffer));
     const_cast<Index*>(this)->m_ptr = value;
 
-    RETURN;
+    return;
 }
 
 #ifdef _MSC_VER

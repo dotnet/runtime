@@ -658,13 +658,12 @@ Debugger *CreateDebugger(void)
 extern "C"{
 HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface)
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         NOTHROW; // use HRESULTS instead
         GC_NOTRIGGER;
-        POSTCONDITION(FAILED(RETVAL) || (rcInterface == NULL) || (*rcInterface != NULL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HRESULT hr = S_OK;
 
@@ -685,7 +684,8 @@ HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface)
         *rcInterface = g_pDebugger;
     }
 
-    RETURN hr;
+    _ASSERTE(FAILED(hr) || (rcInterface == NULL) || (*rcInterface != NULL));
+    return hr;
 }
 }
 
@@ -1158,13 +1158,12 @@ HRESULT Debugger::CheckInitMethodInfoTable()
 // Checks if the m_pModules table has been allocated, and if not does so.
 HRESULT Debugger::CheckInitModuleTable()
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        POSTCONDITION(m_pModules != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_pModules == NULL)
     {
@@ -1172,7 +1171,8 @@ HRESULT Debugger::CheckInitModuleTable()
 
         if (pModules == NULL)
         {
-            RETURN (E_OUTOFMEMORY);
+            _ASSERTE(m_pModules != NULL);
+            return (E_OUTOFMEMORY);
         }
 
         if (InterlockedCompareExchangeT(&m_pModules, pModules, NULL) != NULL)
@@ -1181,19 +1181,19 @@ HRESULT Debugger::CheckInitModuleTable()
         }
     }
 
-    RETURN (S_OK);
+    _ASSERTE(m_pModules != NULL);
+    return (S_OK);
 }
 
 // Checks if the m_pModules table has been allocated, and if not does so.
 HRESULT Debugger::CheckInitPendingFuncEvalTable()
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        POSTCONDITION(GetPendingEvals() != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
 
@@ -1203,7 +1203,7 @@ HRESULT Debugger::CheckInitPendingFuncEvalTable()
 
         if (pPendingEvals == NULL)
         {
-            RETURN(E_OUTOFMEMORY);
+            return(E_OUTOFMEMORY);
         }
 
         // Since we're setting, we need an LValue and not just an accessor.
@@ -1214,7 +1214,8 @@ HRESULT Debugger::CheckInitPendingFuncEvalTable()
     }
 #endif
 
-    RETURN (S_OK);
+    _ASSERTE(GetPendingEvals() != NULL);
+    return (S_OK);
 }
 
 

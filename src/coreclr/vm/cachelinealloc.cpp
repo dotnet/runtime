@@ -85,15 +85,14 @@ CCacheLineAllocator::~CCacheLineAllocator()
 
 void *CCacheLineAllocator::VAlloc(ULONG cbSize)
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(CONTRACT_RETURN NULL);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+        INJECT_FAULT(return NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // helper to call virtual free to release memory
 
@@ -112,7 +111,7 @@ void *CCacheLineAllocator::VAlloc(ULONG cbSize)
             if(tempPtr->m_pAddr[i] == NULL)
             {
                 tempPtr->m_pAddr[i] = pv;
-                RETURN pv;
+                return pv;
             }
         }
 
@@ -128,10 +127,10 @@ LNew:
         {
             // couldn't find space to register this page
             ClrVirtualFree(pv, 0, MEM_RELEASE);
-            RETURN NULL;
+            return NULL;
         }
     }
-    RETURN pv;
+    return pv;
 }
 
 ///////////////////////////////////////////////////////
@@ -144,21 +143,20 @@ void CCacheLineAllocator::VFree(void* pv)
 {
     BOOL bRes = FALSE;
 
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pv));
-        POSTCONDITION(bRes);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // helper to call virtual free to release memory
 
     bRes = ClrVirtualFree (pv, 0, MEM_RELEASE);
 
-    RETURN_VOID;
+    return;
 }
 
 ///////////////////////////////////////////////////////
@@ -169,15 +167,14 @@ void CCacheLineAllocator::VFree(void* pv)
 //WARNING: must have a lock when calling this function
 void *CCacheLineAllocator::GetCacheLine64()
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(CONTRACT_RETURN NULL);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+        INJECT_FAULT(return NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LPCacheLine tempPtr = m_freeList64.RemoveHead();
     if (tempPtr == NULL)
@@ -187,7 +184,7 @@ void *CCacheLineAllocator::GetCacheLine64()
         // Virtual Allocation for some more cache lines
         BYTE* ptr = (BYTE*)VAlloc(AllocSize);
         if(!ptr)
-            RETURN NULL;
+            return NULL;
 
         tempPtr = (LPCacheLine)ptr;
         // Link all the buckets
@@ -206,7 +203,7 @@ void *CCacheLineAllocator::GetCacheLine64()
 
     // initialize cacheline, 64 bytes
     memset((void*)tempPtr,0,64);
-    RETURN tempPtr;
+    return tempPtr;
 }
 
 
@@ -218,22 +215,21 @@ void *CCacheLineAllocator::GetCacheLine64()
 //WARNING: must have a lock when calling this function
 void *CCacheLineAllocator::GetCacheLine32()
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(CONTRACT_RETURN NULL);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+        INJECT_FAULT(return NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LPCacheLine tempPtr = m_freeList32.RemoveHead();
     if (tempPtr != NULL)
     {
         // initialize cacheline, 32 bytes
         memset((void*)tempPtr,0,32);
-        RETURN tempPtr;
+        return tempPtr;
     }
     tempPtr = (LPCacheLine)GetCacheLine64();
     if (tempPtr != NULL)
@@ -241,7 +237,7 @@ void *CCacheLineAllocator::GetCacheLine32()
         m_freeList32.InsertHead(tempPtr);
         tempPtr = (LPCacheLine)((BYTE *)tempPtr+32);
     }
-    RETURN tempPtr;
+    return tempPtr;
 }
 ///////////////////////////////////////////////////////
 //    void CCacheLineAllocator::FreeCacheLine64(void * tempPtr)

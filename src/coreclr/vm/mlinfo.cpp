@@ -37,13 +37,12 @@ namespace
     //==========================================================================
     CustomMarshalerInfo *SetupCustomMarshalerInfo(LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes, Assembly *pAssembly, TypeHandle hndManagedType)
     {
-        CONTRACT (CustomMarshalerInfo*)
+        CONTRACTL
         {
             STANDARD_VM_CHECK;
             PRECONDITION(CheckPointer(pAssembly));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         EEMarshalingData *pMarshalingData = NULL;
 
@@ -51,19 +50,18 @@ namespace
         pMarshalingData = pAssembly->GetLoaderAllocator()->GetMarshalingData();
 
         // Retrieve the custom marshaler helper from the EE marshaling data.
-        RETURN pMarshalingData->GetCustomMarshalerInfo(pAssembly, hndManagedType, strMarshalerTypeName, cMarshalerTypeNameBytes, strCookie, cCookieStrBytes);
+        return pMarshalingData->GetCustomMarshalerInfo(pAssembly, hndManagedType, strMarshalerTypeName, cMarshalerTypeNameBytes, strCookie, cCookieStrBytes);
     }
 
 #ifdef FEATURE_COMINTEROP
     CustomMarshalerInfo *GetIEnumeratorCustomMarshalerInfo(Assembly *pAssembly)
     {
-        CONTRACT (CustomMarshalerInfo*)
+        CONTRACTL
         {
             STANDARD_VM_CHECK;
             PRECONDITION(CheckPointer(pAssembly));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         EEMarshalingData *pMarshalingData = NULL;
 
@@ -71,7 +69,7 @@ namespace
         pMarshalingData = pAssembly->GetLoaderAllocator()->GetMarshalingData();
 
         // Retrieve the custom marshaler helper from the EE marshaling data.
-        RETURN pMarshalingData->GetIEnumeratorMarshalerInfo();
+        return pMarshalingData->GetIEnumeratorMarshalerInfo();
     }
 #endif // FEATURE_COMINTEROP
 
@@ -442,20 +440,19 @@ EEMarshalingData::~EEMarshalingData()
 
 void *EEMarshalingData::operator new(size_t size, LoaderHeap *pHeap)
 {
-    CONTRACT (void*)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pHeap));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     void* mem = pHeap->AllocMem(S_SIZE_T(sizeof(EEMarshalingData)));
 
-    RETURN mem;
+    return mem;
 }
 
 
@@ -468,14 +465,13 @@ void EEMarshalingData::operator delete(void *pMem)
 
 CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes)
 {
-    CONTRACT (CustomMarshalerInfo*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pAssembly));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CustomMarshalerInfo *pCMInfo = NULL;
     NewHolder<CustomMarshalerInfo> pNewCMInfo(NULL);
@@ -487,7 +483,9 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
 
     // Lookup the custom marshaler helper in the hashtable.
     if (m_CMInfoHashTable.GetValue(&Key, (HashDatum*)&pCMInfo))
-        RETURN pCMInfo;
+        {
+            return pCMInfo;
+        }
 
     {
         GCX_COOP();
@@ -517,7 +515,7 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
         // Verify that the custom marshaler helper has not already been added by another thread.
         if (m_CMInfoHashTable.GetValue(&Key, (HashDatum*)&pCMInfo))
         {
-            RETURN pCMInfo;
+            return pCMInfo;
         }
 
         // Add the custom marshaler helper to the hash table.
@@ -529,19 +527,18 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
         // Release the lock and return the custom marshaler info.
     }
 
-    RETURN pNewCMInfo;
+    return pNewCMInfo;
 }
 
 #ifdef FEATURE_COMINTEROP
 CustomMarshalerInfo *EEMarshalingData::GetIEnumeratorMarshalerInfo()
 {
-    CONTRACT (CustomMarshalerInfo*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_pIEnumeratorMarshalerInfo == NULL)
     {
@@ -556,7 +553,7 @@ CustomMarshalerInfo *EEMarshalingData::GetIEnumeratorMarshalerInfo()
         }
     }
 
-    RETURN m_pIEnumeratorMarshalerInfo;
+    return m_pIEnumeratorMarshalerInfo;
 }
 #endif // FEATURE_COMINTEROP
 
@@ -3067,15 +3064,14 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 #if defined(FEATURE_COMINTEROP)
 DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
 {
-    CONTRACT (DispParamMarshaler*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     NewHolder<DispParamMarshaler> pDispParamMarshaler = NULL;
 
@@ -3130,7 +3126,7 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
     }
 
     pDispParamMarshaler.SuppressRelease();
-    RETURN pDispParamMarshaler;
+    return pDispParamMarshaler;
 }
 
 DispatchWrapperType MarshalInfo::GetDispWrapperType()
@@ -3279,14 +3275,13 @@ void ArrayMarshalInfo::InitForSafeArray(MarshalInfo::MarshalScenario ms, TypeHan
 
 void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInfo::MarshalScenario ms, TypeHandle thElement, CorNativeType ntElement, BOOL isAnsi)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!thElement.IsNull());
-        POSTCONDITION(!IsValid() || !m_thElement.IsNull());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CorElementType etElement = ELEMENT_TYPE_END;
 
@@ -3564,7 +3559,8 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
 
 LExit:;
 
-    RETURN;
+    _ASSERTE(!IsValid() || !m_thElement.IsNull());
+    return;
 }
 
 bool IsUnsupportedTypedrefReturn(MetaSig& msig)

@@ -429,7 +429,7 @@ class Stub
         //-------------------------------------------------------------------
         static Stub* RecoverStubAndSize(PCODE pEntryPoint, DWORD *pSize)
         {
-            CONTRACT(Stub*)
+            CONTRACTL
             {
                 NOTHROW;
                 GC_NOTRIGGER;
@@ -437,11 +437,11 @@ class Stub
 
                 PRECONDITION(pEntryPoint && pSize);
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
             Stub *pStub = Stub::RecoverStub(pEntryPoint);
             *pSize = sizeof(Stub) + pStub->GetNumCodeBytes();
-            RETURN pStub;
+            return pStub;
         }
 
         HRESULT CloneStub(BYTE *pBuffer, DWORD dwBufferSize)

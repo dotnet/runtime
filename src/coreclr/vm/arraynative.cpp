@@ -72,8 +72,6 @@ void memmoveGCRefs(void *dest, const void *src, size_t len)
     _ASSERTE(IS_ALIGNED(src, sizeof(SIZE_T)));
     _ASSERTE(IS_ALIGNED(len, sizeof(SIZE_T)));
 
-    _ASSERTE(CheckPointer(dest));
-    _ASSERTE(CheckPointer(src));
 
     if (len != 0 && dest != src)
     {

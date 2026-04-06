@@ -85,12 +85,12 @@ void ComCallMethodDesc::InitField(FieldDesc* pFD, BOOL isGetter)
 // too late to make this computation - the metadata is no longer available.
 void ComCallMethodDesc::InitNativeInfo()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(!IsNativeInfoInitialized());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     m_StackBytes = (UINT16)-1;
 
@@ -355,7 +355,7 @@ Done:
         m_flags |= enum_NativeInfoInitialized;
     }
     EX_SWALLOW_NONTRANSIENT
-    RETURN;
+    return;
 }
 
 namespace
@@ -455,14 +455,12 @@ namespace
 
 PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppStubMD)
 {
-    CONTRACT(PCODE)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(ppStubMD));
-        POSTCONDITION(CheckPointer(*ppStubMD));
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodDesc * pStubMD;
 
@@ -498,7 +496,7 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
     }
 #endif // TARGET_X86
 
-    RETURN JitILStub(pStubMD);
+    return JitILStub(pStubMD);
 }
 
 PLATFORM_THREAD_LOCAL HRESULT t_ComPreStubLastHResult;

@@ -14,15 +14,15 @@
 
 inline ULONG PEImage::AddRef()
 {
-    CONTRACT(ULONG)
+    CONTRACTL
     {
         PRECONDITION(m_refCount>0 && m_refCount < COUNT_T_MAX);
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN (static_cast<ULONG>(InterlockedIncrement(&m_refCount)));
+    return (static_cast<ULONG>(InterlockedIncrement(&m_refCount)));
 }
 
 inline const SString &PEImage::GetPath()

@@ -1557,16 +1557,15 @@ typedef Wrapper<SyncBlock*, DoNothing<SyncBlock*>, VoidDeleteSyncBlockMemory, 0>
 // get the sync block for an existing object
 SyncBlock *ObjHeader::GetSyncBlock()
 {
-    CONTRACT(SyncBlock *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PTR_SyncBlock syncBlock = GetBaseObject()->PassiveGetSyncBlock();
     DWORD      indx = 0;
@@ -1579,7 +1578,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
         PTR_SyncTableEntry pEntries(SyncTableEntry::GetSyncTableEntry());
         _ASSERTE(pEntries[GetHeaderSyncBlockIndex()].m_Object == GetBaseObject());
 #endif // _DEBUG
-        RETURN syncBlock;
+        return syncBlock;
     }
 
     //Need to get it from the cache
@@ -1589,7 +1588,9 @@ SyncBlock *ObjHeader::GetSyncBlock()
         //Try one more time
         syncBlock = GetBaseObject()->PassiveGetSyncBlock();
         if (syncBlock)
-            RETURN syncBlock;
+            {
+                return syncBlock;
+            }
 
         SyncBlockMemoryHolder syncBlockMemoryHolder(SyncBlockCache::GetSyncBlockCache()->GetNextFreeSyncBlock());
         syncBlock = syncBlockMemoryHolder;
@@ -1663,7 +1664,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
         // SyncBlockCache::LockHolder goes out of scope here
     }
 
-    RETURN syncBlock;
+    return syncBlock;
 }
 
 // ***************************************************************************

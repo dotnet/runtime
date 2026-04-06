@@ -471,7 +471,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 /* static */ MethodDesc *MethodTable::GetMethodDescForInterfaceMethodAndServer(
                             TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -480,9 +480,8 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(!ownerType.IsNull());
         PRECONDITION(ownerType.GetMethodTable()->HasSameTypeDefAs(pItfMD->GetMethodTable()));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
     VALIDATEOBJECTREF(*pServer);
 
 #ifdef _DEBUG
@@ -505,7 +504,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
             FALSE,              // allowInstParam
             TRUE);              // forceRemotableMethod
 
-        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD));
+        return(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD));
     }
 #endif // !FEATURE_COMINTEROP
 
@@ -526,11 +525,11 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         implTypeHandle = implTypeObj->GetType();
         GCPROTECT_END();
 
-        RETURN(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
+        return(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
 
     // Handle pure CLR types.
-    RETURN (pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
+    return (pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -538,7 +537,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 // get the method desc given the interface method desc on a COM implemented server
 MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -546,9 +545,8 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(IsComObjectType());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable * pItfMT =  pItfMD->GetMethodTable();
     _ASSERTE(pItfMT != NULL);
@@ -556,7 +554,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
         // We now handle __ComObject class that doesn't have Dynamic Interface Map
     if (!HasDynamicInterfaceMap())
     {
-        RETURN(pItfMD);
+        return(pItfMD);
     }
     else
     {
@@ -571,7 +569,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
 
         if (tgt != NULL)
         {
-            RETURN(NonVirtualEntry2MethodDesc(tgt));
+            return(NonVirtualEntry2MethodDesc(tgt));
         }
 
         // The interface is not in the static class definition so we need to look at the
@@ -581,7 +579,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
         // This interface was added to the class dynamically so it is implemented
         // by the COM object. We treat this dynamically added interface the same
         // way we treat COM objects. That is by using the interface vtable.
-        RETURN(pItfMD);
+        return(pItfMD);
     }
 }
 #endif // FEATURE_COMINTEROP
@@ -4079,16 +4077,15 @@ OBJECTREF MethodTable::FastBox(void** data)
 //==========================================================================
 OBJECTREF MethodTable::GetManagedClassObject()
 {
-    CONTRACT(OBJECTREF) {
+    CONTRACTL {
 
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(GetAuxiliaryData()->m_hExposedClassObject != 0);
         //REENTRANT
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifdef _DEBUG
     // Force a GC here because GetManagedClassObject could trigger GC nondeterministicaly
@@ -4101,7 +4098,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
         CheckRestore();
         TypeHandle(this).AllocateManagedClassObject(&GetAuxiliaryDataForWrite()->m_hExposedClassObject);
     }
-    RETURN(GetManagedClassObjectIfExists());
+    return(GetManagedClassObjectIfExists());
 }
 
 #endif //!DACCESS_COMPILE
@@ -5297,14 +5294,13 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
                                     UINT32 slotNumber,
                                     DispatchMapEntry *pEntry)
 {
-    CONTRACT (BOOL) {
+    CONTRACTL {
         INSTANCE_CHECK;
         MODE_ANY;
         THROWS;
         GC_TRIGGERS;
-        POSTCONDITION(!RETVAL || pEntry->IsValid());
         PRECONDITION(typeID != TYPE_ID_THIS_CLASS);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     // Start at the current type and work up the inheritance chain
     MethodTable *pCurMT = this;
@@ -5314,12 +5310,14 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
         if (pCurMT->FindDispatchEntryForCurrentType(
                 typeID, slotNumber, pEntry))
         {
-            RETURN (TRUE);
+            _ASSERTE(!(TRUE) || pEntry->IsValid());
+            return (TRUE);
         }
         pCurMT = pCurMT->GetParentMethodTable();
         iCurInheritanceChainDelta++;
     }
-    RETURN (FALSE);
+    _ASSERTE(!(FALSE) || pEntry->IsValid());
+    return (FALSE);
 }
 
 #ifndef DACCESS_COMPILE
@@ -5374,12 +5372,11 @@ MethodTable::FindDispatchImpl(
     DispatchSlot * pImplSlot,
     BOOL           throwOnConflict)
 {
-    CONTRACT (BOOL) {
+    CONTRACTL {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pImplSlot));
-        POSTCONDITION(!RETVAL || !pImplSlot->IsNull() || IsComObjectType());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     LOG((LF_LOADER, LL_INFO10000, "SD: MT::FindDispatchImpl: searching %s.\n", GetClass()->GetDebugClassName()));
 
@@ -5422,7 +5419,7 @@ MethodTable::FindDispatchImpl(
                 if (!(pIfcMT->HasInstantiation()))
                 {
                     _ASSERTE(!"Should not have gotten here. If you did, it's probably because multiple interface instantiation hasn't been checked in yet. This code only works on top of that.");
-                    RETURN(FALSE);
+                    return(FALSE);
                 }
 
                 // Get the type of T (as in IList<T>)
@@ -5441,7 +5438,7 @@ MethodTable::FindDispatchImpl(
                    *pImplSlot = ds;
                 }
 
-                RETURN(TRUE);
+                return(TRUE);
 
             }
             else
@@ -5498,13 +5495,13 @@ MethodTable::FindDispatchImpl(
                             *pImplSlot = ds;
                         }
 
-                        RETURN(TRUE);
+                        return(TRUE);
                     }
                 }
             }
 
             // This contract is not implemented by this class or any parent class.
-            RETURN(FALSE);
+            return(FALSE);
         }
 
 
@@ -5522,7 +5519,8 @@ MethodTable::FindDispatchImpl(
     *pImplSlot = GetRestoredSlot(slotNumber);
 
     // Successfully determined the target for the given target
-    RETURN (TRUE);
+    _ASSERTE(!(TRUE) || !pImplSlot->IsNull() || IsComObjectType());
+    return (TRUE);
 }
 
 #ifndef DACCESS_COMPILE
@@ -5737,15 +5735,14 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     ClassLoadLevel level
 )
 {
-    CONTRACT(BOOL) {
+    CONTRACTL {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pInterfaceMD));
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(CheckPointer(ppDefaultMethod));
-        POSTCONDITION(!RETVAL || (*ppDefaultMethod) != nullptr);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
 #ifdef FEATURE_DEFAULT_INTERFACES
     struct MatchCandidate
@@ -5904,20 +5901,20 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                 ThrowAmbiguousResolutionException(this, pInterfaceMT, pInterfaceMD);
 
             *ppDefaultMethod = pBestCandidateMD;
-            RETURN(FALSE);
+            return(FALSE);
         }
     }
 
     if (pBestCandidateMD != NULL)
     {
         *ppDefaultMethod = pBestCandidateMD;
-        RETURN(TRUE);
+        return(TRUE);
     }
 #else
     *ppDefaultMethod = NULL;
 #endif // FEATURE_DEFAULT_INTERFACES
 
-    RETURN(FALSE);
+    return(FALSE);
 }
 #endif // DACCESS_COMPILE
 
@@ -6830,7 +6827,6 @@ MethodDesc * MethodTable::MethodDataObject::GetDeclMethodDesc(UINT32 slotNumber)
     if (pMDRet == NULL)
     {
         pMDRet = GetImplMethodDesc(slotNumber)->GetDeclMethodDesc(slotNumber);
-        _ASSERTE(CheckPointer(pMDRet));
         pEntry->SetDeclMethodDesc(pMDRet);
     }
     else
@@ -6880,7 +6876,6 @@ MethodDesc *MethodTable::MethodDataObject::GetImplMethodDesc(UINT32 slotNumber)
     {
         _ASSERTE(slotNumber < GetNumVirtuals());
         pMDRet = m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber);
-        _ASSERTE(CheckPointer(pMDRet));
         pEntry->SetImplMethodDesc(pMDRet);
     }
     else
@@ -8812,15 +8807,14 @@ EEClassNativeLayoutInfo const* MethodTable::EnsureNativeLayoutInfoInitialized()
 #ifndef DACCESS_COMPILE
 PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMTOwner, ClassLoadLevel loadLevel /*= CLASS_LOADED*/)
 {
-    CONTRACT(PTR_MethodTable)
+    CONTRACTL
     {
         GC_TRIGGERS;
         THROWS;
         PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
         PRECONDITION(CheckPointer(pMTOwner));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable *pResult = m_pMap->GetMethodTable();
     if (pResult->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
@@ -8835,7 +8829,8 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
         if (pResult->IsFullyLoaded())
             SetInterface(pResult);
     }
-    RETURN (pResult);
+    _ASSERTE(CheckPointer((pResult)));
+    return (pResult);
 }
 #endif // DACCESS_COMPILE
 

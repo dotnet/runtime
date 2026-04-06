@@ -97,28 +97,27 @@ public:
 // ============================================================================
 EEHashEntry_t * EEModuleTokenHashTableHelper::AllocateEntry(EEModuleTokenPair *pKey, BOOL bDeepCopy, void *pHeap)
 {
-    CONTRACT (EEHashEntry_t*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(CONTRACT_RETURN NULL);
+        INJECT_FAULT(return NULL);
         PRECONDITION(CheckPointer(pKey));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(!bDeepCopy && "Deep copy is not supported by the EEModuleTokenHashTableHelper");
 
     EEHashEntry_t *pEntry = (EEHashEntry_t *) new (nothrow) BYTE[SIZEOF_EEHASH_ENTRY + sizeof(EEModuleTokenPair)];
     if (!pEntry)
-        RETURN NULL;
+        return NULL;
 
     EEModuleTokenPair *pEntryKey = (EEModuleTokenPair *) pEntry->Key;
     pEntryKey->m_tk = pKey->m_tk;
     pEntryKey->m_pModule = pKey->m_pModule;
 
-    RETURN pEntry;
+    return pEntry;
 } // EEHashEntry_t * EEModuleTokenHashTableHelper::AllocateEntry()
 
 
@@ -259,23 +258,25 @@ void ComMTMemberInfoMap::Init(size_t sizeOfPtr)
 
 ComMTMethodProps *ComMTMemberInfoMap::GetMethodProps(mdToken tk, Module *pModule)
 {
-    CONTRACT (ComMTMethodProps*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     EEModuleTokenPair TokenModulePair(tk, pModule);
     HashDatum Data;
 
     if (m_TokenToComMTMethodPropsMap.GetValue(&TokenModulePair, &Data))
-        RETURN (ComMTMethodProps *)Data;
+        {
+        _ASSERTE(CheckPointer((ComMTMethodProps *)Data, NULL_OK));
+            return (ComMTMethodProps *)Data;
+        }
 
-    RETURN NULL;
+    return NULL;
 } // ComMTMethodProps *ComMTMemberInfoMap::GetMethodProps()
 
 
@@ -1389,13 +1390,13 @@ public:
 
     BOOL IsVbRefType()
     {
-        CONTRACT(BOOL)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         // Get the arg, and skip decorations.
         SigPointer pt = GetArgProps();
@@ -1412,15 +1413,15 @@ public:
 
         // Is it just Object?
         if (mt == ELEMENT_TYPE_OBJECT)
-            RETURN TRUE;
+            return TRUE;
 
         // A particular class?
         if (mt == ELEMENT_TYPE_CLASS)
         {
             // Exclude "string".
             if (pt.IsStringType(m_pModule, GetSigTypeContext()))
-                RETURN FALSE;
-            RETURN TRUE;
+                return FALSE;
+            return TRUE;
         }
 
         // A particular valuetype?
@@ -1428,12 +1429,12 @@ public:
         {
             // Include "variant".
             if (pt.IsClass(m_pModule, g_VariantClassName, GetSigTypeContext()))
-                RETURN TRUE;
-            RETURN FALSE;
+                return TRUE;
+            return FALSE;
         }
 
         // An array, a string, or POD.
-        RETURN FALSE;
+        return FALSE;
     }
 }; // class MetaSigExport : public MetaSig
 

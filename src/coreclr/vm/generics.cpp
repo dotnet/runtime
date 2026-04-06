@@ -26,13 +26,12 @@
 /* static */
 TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     CorElementType et = thGenericArg.GetSignatureCorElementType();
@@ -40,19 +39,20 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     // Note that generic variables do not share
 
     if (CorTypeInfo::IsObjRef_NoThrow(et))
-        RETURN(TypeHandle(g_pCanonMethodTableClass));
+        return(TypeHandle(g_pCanonMethodTableClass));
 
     if (et == ELEMENT_TYPE_VALUETYPE)
     {
         // Don't share structs. But sharability must be propagated through
         // them (i.e. struct<object> * shares with struct<string> *)
-        RETURN(TypeHandle(thGenericArg.GetCanonicalMethodTable()));
+        return(TypeHandle(thGenericArg.GetCanonicalMethodTable()));
     }
 
     _ASSERTE(et != ELEMENT_TYPE_PTR && et != ELEMENT_TYPE_FNPTR);
-    RETURN(thGenericArg);
+    return(thGenericArg);
 #else
-    RETURN (thGenericArg);
+    _ASSERTE(CheckPointer((thGenericArg)));
+    return (thGenericArg);
 #endif // FEATURE_SHARE_GENERIC_CODE
 }
 
@@ -118,15 +118,13 @@ TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(const TypeKey *pTypeKe
                                                           LoadTypesFlag fLoadTypes/*=LoadTypes*/,
                                                           ClassLoadLevel level/*=CLASS_LOADED*/)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
-        POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == LoadTypes) ? NULL_NOT_OK : NULL_OK)));
-        POSTCONDITION(RETVAL.IsNull() || RETVAL.CheckLoadLevel(level));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     Instantiation inst = pTypeKey->GetInstantiation();
     DWORD ntypars = inst.GetNumArgs();
@@ -148,7 +146,7 @@ TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(const TypeKey *pTypeKe
     TypeKey canonKey(pTypeKey->GetModule(), pTypeKey->GetTypeToken(), Instantiation(repInst, ntypars));
     ret = ClassLoader::LoadConstructedTypeThrowing(&canonKey, fLoadTypes, level);
 
-    RETURN(ret);
+    return(ret);
 }
 
 // Create a non-canonical instantiation of a generic type, by
@@ -160,7 +158,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     const TypeKey         *pTypeKey,
     AllocMemTracker *pamTracker)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pTypeKey));
@@ -168,10 +166,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         PRECONDITION(pTypeKey->HasInstantiation());
         PRECONDITION(ClassLoader::IsSharableInstantiation(pTypeKey->GetInstantiation()));
         PRECONDITION(!TypeHandle::IsCanonicalSubtypeInstantiation(pTypeKey->GetInstantiation()));
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL.CheckMatchesKey(pTypeKey));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     Module *pLoaderModule = ClassLoader::ComputeLoaderModule(pTypeKey);
     LoaderAllocator* pAllocator=pLoaderModule->GetLoaderAllocator();
@@ -491,7 +487,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // We never have non-virtual slots in this method table (set SetNumVtableSlots and SetNumVirtuals above)
     _ASSERTE(!pMT->HasNonVirtualSlots());
 
-    RETURN(TypeHandle(pMT));
+    return(TypeHandle(pMT));
 } // ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation
 
 #endif // !DACCESS_COMPILE

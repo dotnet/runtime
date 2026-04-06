@@ -759,7 +759,7 @@ GenerationTable::GenerationTable() : mutex(CrstLeafLock, CRST_UNSAFE_ANYMODE)
 
 void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -768,7 +768,7 @@ void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd
         PRECONDITION(CheckPointer(rangeStart));
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     CrstHolder holder(&mutex);
 
@@ -783,16 +783,16 @@ void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd
             _ASSERTE (genDescTable[i].generation == generation);
             _ASSERTE (genDescTable[i].rangeEnd == rangeEnd);
             _ASSERTE (genDescTable[i].rangeEndReserved == rangeEndReserved);
-            RETURN;
+            return;
         }
     }
     AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
-    RETURN;
+    return;
 }
 
 void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -801,7 +801,7 @@ void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* ra
         PRECONDITION(CheckPointer(rangeStart));
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     _ASSERTE (mutex.OwnedByCurrentThread());
     if (count >= capacity)
@@ -813,7 +813,7 @@ void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* ra
             count = capacity = 0;
             delete[] genDescTable;
             genDescTable = nullptr;
-            RETURN;
+            return;
         }
         memcpy(newGenDescTable, genDescTable, sizeof(genDescTable[0]) * count);
         delete[] genDescTable;
@@ -828,7 +828,7 @@ void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* ra
     genDescTable[count].rangeEndReserved = rangeEndReserved;
 
     count = count + 1;
-    RETURN;
+    return;
 }
 
 HRESULT GenerationTable::GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges)
@@ -879,7 +879,7 @@ static void GenWalkFunc(void * context,
                         BYTE * rangeEnd,
                         BYTE * rangeEndReserved)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -889,11 +889,11 @@ static void GenWalkFunc(void * context,
         PRECONDITION(CheckPointer(rangeStart));
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     GenerationTable *generationTable = (GenerationTable *)context;
     generationTable->AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
-    RETURN;
+    return;
 }
 
 void GenerationTable::Refresh()
@@ -923,16 +923,15 @@ static Volatile<LONG> s_generationTableWriterCount;
 
 void __stdcall UpdateGenerationBounds()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY; // can be called even on GC threads
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(InterlockedIncrement(&s_generationTableWriterCount) == 1);
-        POSTCONDITION(InterlockedDecrement(&s_generationTableWriterCount) == 0);
 #endif // PROFILING_SUPPORTED
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
 #ifdef PROFILING_SUPPORTED
     // Notify the profiler of start of the collection
@@ -952,22 +951,24 @@ void __stdcall UpdateGenerationBounds()
 
         if (s_currentGenerationTable == nullptr)
         {
-            RETURN;
+            _ASSERTE(InterlockedDecrement(&s_generationTableWriterCount) == 0);
+            return;
         }
         s_currentGenerationTable->Refresh();
     }
 #endif // PROFILING_SUPPORTED
-    RETURN;
+    _ASSERTE(InterlockedDecrement(&s_generationTableWriterCount) == 0);
+    return;
 }
 
 void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY; // can be called even on GC threads
-    } CONTRACT_END;
+    } CONTRACTL_END;
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
     {
@@ -977,7 +978,7 @@ void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t
         }
     }
 #endif // PROFILING_SUPPORTED
-    RETURN;
+    return;
 }
 
 #ifdef PROFILING_SUPPORTED

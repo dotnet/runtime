@@ -80,7 +80,7 @@ namespace
 // Convert ObjectRef to a COM IP, based on MethodTable* pMT.
 IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnableCustomizedQueryInterface)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -88,9 +88,8 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
         PRECONDITION(CheckPointer(poref));
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(g_fComStarted && "COM has not been started up, make sure EnsureComStarted is called before any COM objects are used!");
-        POSTCONDITION((*poref) != NULL ? CheckPointer(RETVAL) : CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     BOOL        fReleaseWrapper     = false;
     HRESULT     hr                  = E_NOINTERFACE;
@@ -98,7 +97,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
     size_t      ul                  = 0;
 
     if (*poref == NULL)
-        RETURN NULL;
+        return NULL;
 
     if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
     {
@@ -110,7 +109,8 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
         if (FAILED(hr))
             COMPlusThrowHR(hr);
 
-        RETURN pvObj;
+        _ASSERTE((*poref) != NULL ? CheckPointer(pvObj) : CheckPointer(pvObj, NULL_OK));
+        return pvObj;
     }
 
     if (!g_pConfig->IsBuiltInCOMSupported())
@@ -147,7 +147,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
         COMPlusThrowHR(hr);
 
     pUnk.SuppressRelease();
-    RETURN pUnk;
+    return pUnk;
 }
 
 
@@ -156,7 +156,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
 // Convert ObjectRef to a COM IP of the requested type.
 IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType *pFetchedIpType)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -164,9 +164,8 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         PRECONDITION((ReqIpType & (ComIpType_Dispatch | ComIpType_Unknown)) != 0);
         PRECONDITION(CheckPointer(poref));
         PRECONDITION(ReqIpType != 0);
-        POSTCONDITION((*poref) != NULL ? CheckPointer(RETVAL) : CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // COM had better be started up at this point.
     _ASSERTE(g_fComStarted && "COM has not been started up, make sure EnsureComStarted is called before any COM objects are used!");
@@ -178,7 +177,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
     ComIpType   FetchedIpType   = ComIpType_None;
 
     if (*poref == NULL)
-        RETURN NULL;
+        return NULL;
 
     if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
     {
@@ -212,7 +211,8 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         if (pFetchedIpType != NULL)
             *pFetchedIpType = FetchedIpType;
 
-        RETURN pvObj;
+        _ASSERTE((*poref) != NULL ? CheckPointer(pvObj) : CheckPointer(pvObj, NULL_OK));
+        return pvObj;
     }
 
     if (!g_pConfig->IsBuiltInCOMSupported())
@@ -292,7 +292,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
     if (pFetchedIpType)
         *pFetchedIpType = FetchedIpType;
 
-    RETURN pUnk;
+    return pUnk;
 }
 
 
@@ -302,15 +302,14 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
 //+----------------------------------------------------------------------------
 IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComIP /* = true */)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(poref));
-        POSTCONDITION((*poref) != NULL ? CheckPointer(RETVAL, throwIfNoComIP ? NULL_NOT_OK : NULL_OK) : CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ASSERT_PROTECTED(poref);
 
@@ -323,7 +322,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
     size_t      ul              = 0;
 
     if (*poref == NULL)
-        RETURN NULL;
+        return NULL;
 
     if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
     {
@@ -333,7 +332,8 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
         if (FAILED(hr))
             COMPlusThrowHR(hr);
 
-        RETURN pvObj;
+        _ASSERTE((*poref) != NULL ? CheckPointer(pvObj, throwIfNoComIP ? NULL_NOT_OK : NULL_OK) : CheckPointer(pvObj, NULL_OK));
+        return pvObj;
     }
 
     MethodTable *pMT = (*poref)->GetMethodTable();
@@ -365,7 +365,8 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
     if (throwIfNoComIP && pUnk == NULL)
         COMPlusThrowHR(hr);
 
-    RETURN pUnk;
+    _ASSERTE((*poref) != NULL ? CheckPointer(pUnk, throwIfNoComIP ? NULL_NOT_OK : NULL_OK) : CheckPointer(pUnk, NULL_OK));
+    return pUnk;
 }
 
 

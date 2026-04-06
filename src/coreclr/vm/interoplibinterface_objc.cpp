@@ -274,7 +274,7 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     _In_ OBJECTHANDLE throwable,
     _Outptr_ void** context)
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         THROWS;
         MODE_PREEMPTIVE;
@@ -282,7 +282,7 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
         PRECONDITION(throwable != NULL);
         PRECONDITION(context != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     void* callback = NULL;
     void* callbackContext = NULL;
@@ -315,7 +315,7 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     }
 
     *context = callbackContext;
-    RETURN callback;
+    return callback;
 }
 
 void ObjCMarshalNative::BeforeRefCountedHandleCallbacks()

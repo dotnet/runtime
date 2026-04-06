@@ -122,14 +122,13 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 /* static */
 Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths)
 {
-    CONTRACT(Assembly*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pBinder));
         PRECONDITION(pImage != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Assembly *pLoadedAssembly = NULL;
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
@@ -171,7 +170,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
     bindOperation.SetResult(pPEAssembly.GetValue());
 
-    RETURN pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
+    return pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
 }
 
 extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly)

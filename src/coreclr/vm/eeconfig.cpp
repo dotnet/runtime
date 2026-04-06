@@ -31,14 +31,13 @@ int GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 // Poor mans narrow
 LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
 {
-    CONTRACT (LPUTF8)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(str, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     if (str != 0) {
         LPCWSTR fromPtr = str;
@@ -47,9 +46,9 @@ LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
         while(*fromPtr != 0)
             *toPtr++ = (char) *fromPtr++;
         *toPtr = 0;
-        RETURN result;
+        return result;
     }
-    RETURN NULL;
+    return NULL;
 }
 
 /**************************************************************/

@@ -106,16 +106,15 @@ public:
     // @todo move this into a .inl file as many class users of this class don't need to include this body
     FORCEINLINE void * UnsafeAllocNoThrow(unsigned Size)
     {
-        CONTRACT (void*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(CONTRACT_RETURN NULL;);
+            INJECT_FAULT(return NULL;);
             PRECONDITION(m_CheckpointDepth > 0);
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
 #ifdef _DEBUG
         m_Allocs++;
@@ -125,7 +124,8 @@ public:
         //special case, 0 size alloc, return non-null but invalid pointer
         if (Size == 0)
         {
-            RETURN (void*)-1;
+            _ASSERTE(CheckPointer((void*)-1, NULL_OK));
+            return (void*)-1;
         }
 
         // Round size up to ensure alignment.
@@ -143,7 +143,7 @@ public:
         {
             if (!AllocNewBlockForBytes(n))
             {
-                RETURN NULL;
+                return NULL;
             }
         }
 
@@ -160,7 +160,7 @@ public:
         m_FirstBlock->m_Sentinel = new(m_FirstFree - sizeof(Sentinel)) Sentinel(m_FirstBlock->m_Sentinel);
 #endif
 
-        RETURN ret;
+        return ret;
     }
 
     FORCEINLINE void * AllocNoThrow(S_UINT32 size)

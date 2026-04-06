@@ -211,34 +211,32 @@ struct RCW
     // return exposed ComObject
     COMOBJECTREF GetExposedObject()
     {
-        CONTRACT(COMOBJECTREF)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE;
             PRECONDITION(m_SyncBlockIndex != 0);
-            POSTCONDITION(RETVAL != NULL);
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN (COMOBJECTREF) ObjectToOBJECTREF(g_pSyncTable[m_SyncBlockIndex].m_Object);
+        return (COMOBJECTREF) ObjectToOBJECTREF(g_pSyncTable[m_SyncBlockIndex].m_Object);
     }
 
     //-------------------------------------------------
     // returns the sync block for the RCW
     SyncBlock *GetSyncBlock()
     {
-        CONTRACT(SyncBlock*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE;
             PRECONDITION(m_SyncBlockIndex != 0);
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN g_pSyncTable[m_SyncBlockIndex].m_SyncBlock;
+        return g_pSyncTable[m_SyncBlockIndex].m_SyncBlock;
     }
 
     //--------------------------------------------------------------------------
@@ -384,33 +382,31 @@ struct RCW
     // GetWrapper context cookie
     LPVOID GetWrapperCtxCookie()
     {
-        CONTRACT (LPVOID)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_UnkEntry.m_pCtxCookie;
+        return m_UnkEntry.m_pCtxCookie;
     }
 
     inline Thread *GetSTAThread()
     {
-        CONTRACT (Thread *)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         CtxEntry *pCtxEntry = GetWrapperCtxEntryNoRef();
         if (pCtxEntry)
-            RETURN pCtxEntry->GetSTAThread();
-        RETURN NULL;
+            return pCtxEntry->GetSTAThread();
+        return NULL;
     }
 
     // Function to enter the context. The specified callback function will
@@ -551,35 +547,33 @@ private :
     // Returns an addref'ed context entry
     CtxEntry* GetWrapperCtxEntry()
     {
-        CONTRACT (CtxEntry*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(!IsFreeThreaded());         // Must not be free-threaded, otherwise CtxEntry = NULL
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         CtxEntry *pCtxEntry = m_UnkEntry.GetCtxEntry();
         pCtxEntry->AddRef();
-        RETURN pCtxEntry;
+        return pCtxEntry;
     }
 
     // Returns an non-addref'ed context entry
     CtxEntry *GetWrapperCtxEntryNoRef()
     {
-        CONTRACT (CtxEntry *)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         CtxEntry *pCtxEntry = m_UnkEntry.GetCtxEntry();
-        RETURN pCtxEntry;
+        return pCtxEntry;
     }
 };
 
@@ -1140,16 +1134,15 @@ public:
 
     AppDomain* GetDomain()
     {
-        CONTRACT (AppDomain*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pDomain;
+        return m_pDomain;
     }
 
     // Worker function called to release wrappers in the pCtxCookie context.
@@ -1190,21 +1183,20 @@ public:
 
     RCW* LookupWrapperUnsafe(LPVOID pUnk)
     {
-        CONTRACT (RCW*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE;
             PRECONDITION(CheckPointer(pUnk));
             PRECONDITION(LOCKHELD());
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         // We don't want the GC messing with the hash table underneath us.
         GCX_FORBID();
 
-        RETURN m_HashMap.Lookup(pUnk);
+        return m_HashMap.Lookup(pUnk);
     }
 
 #endif //DACCESS_COMPILE

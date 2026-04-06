@@ -26,18 +26,20 @@ PtrHashMap *PEImage::s_ijwFixupDataHash;
 /* static */
 void PEImage::Startup()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckStartup());
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (CheckStartup())
-        RETURN;
+        {
+        _ASSERTE(CheckStartup());
+            return;
+        }
 
     s_hashLock.Init(CrstPEImage, (CrstFlags)(CRST_REENTRANCY|CRST_TAKEN_DURING_SHUTDOWN));
     LockOwner lock = { &s_hashLock, IsOwnerOfCrst };
@@ -49,7 +51,8 @@ void PEImage::Startup()
     s_ijwFixupDataHash = ::new PtrHashMap;
     s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
 
-    RETURN;
+    _ASSERTE(CheckStartup());
+    return;
 }
 
 /* static */
@@ -711,11 +714,11 @@ PTR_PEImageLayout PEImage::CreateFlatLayout()
 /* static */
 PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 {
-    CONTRACT(PTR_PEImage)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PEImageHolder pImage(new PEImage(NULL /*path*/));
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFromByteArray(pImage, array, size);
@@ -723,20 +726,19 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 
     SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
     pImage->SetLayout(IMAGE_FLAT,pLayout);
-    RETURN dac_cast<PTR_PEImage>(pImage.Extract());
+    return dac_cast<PTR_PEImage>(pImage.Extract());
 }
 
 #ifndef TARGET_UNIX
 /* static */
 PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 {
-    CONTRACT(PTR_PEImage)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(hMod!=NULL);
-        POSTCONDITION(RETVAL->HasLoadedLayout());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     StackSString path;
     WszGetModuleFileName(hMod, path);
@@ -756,7 +758,8 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
     }
 
     _ASSERTE(pImage->m_pLayouts[IMAGE_FLAT] != NULL);
-    RETURN dac_cast<PTR_PEImage>(pImage.Extract());
+    _ASSERTE(dac_cast<PTR_PEImage>(pImage.Extract())->HasLoadedLayout());
+    return dac_cast<PTR_PEImage>(pImage.Extract());
 }
 #endif // !TARGET_UNIX
 

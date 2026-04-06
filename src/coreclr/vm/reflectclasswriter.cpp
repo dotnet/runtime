@@ -14,23 +14,19 @@
 //******************************************************
 HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR szName)
 {
-    CONTRACT(HRESULT) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
         // we know that the com implementation is ours so we use mode-any to simplify
         // having to switch mode
         MODE_ANY;
-        INJECT_FAULT(CONTRACT_RETURN(E_OUTOFMEMORY));
+        INJECT_FAULT(return(E_OUTOFMEMORY));
 
         PRECONDITION(CheckPointer(pCeeGen));
         PRECONDITION(CheckPointer(pUnk));
 
-        POSTCONDITION(SUCCEEDED(RETVAL) ? CheckPointer(m_emitter) : TRUE);
-        POSTCONDITION(SUCCEEDED(RETVAL) ? CheckPointer(m_importer) : TRUE);
-        POSTCONDITION(SUCCEEDED(RETVAL) ? CheckPointer(m_pEmitHelper) : TRUE);
-        POSTCONDITION(SUCCEEDED(RETVAL) ? CheckPointer(m_internalimport) : TRUE);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Initialize the Import and Emitter interfaces
     m_emitter = NULL;
@@ -44,26 +40,26 @@ HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR s
     // Get the interfaces
     HRESULT hr = pUnk->QueryInterface(IID_IMetaDataEmit2, (void**)&m_emitter);
     if (FAILED(hr))
-        RETURN(hr);
+        return(hr);
 
     hr = pUnk->QueryInterface(IID_IMetaDataImport, (void**)&m_importer);
     if (FAILED(hr))
-        RETURN(hr);
+        return(hr);
 
     hr = pUnk->QueryInterface(IID_IMetaDataEmitHelper, (void**)&m_pEmitHelper);
     if (FAILED(hr))
-        RETURN(hr);
+        return(hr);
 
     hr = GetMDInternalInterfaceFromPublic(pUnk, IID_IMDInternalImport, (void**)&m_internalimport);
     if (FAILED(hr))
-        RETURN(hr);
+        return(hr);
 
     // <TODO> We will need to set this at some point.</TODO>
     hr = m_emitter->SetModuleProps(szName);
     if (FAILED(hr))
-        RETURN(hr);
+        return(hr);
 
-    RETURN(S_OK);
+    return(S_OK);
 }
 
 

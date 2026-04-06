@@ -56,16 +56,18 @@ static void ValidatePEFileMachineType(PEAssembly *pPEAssembly)
 
 void PEAssembly::EnsureLoaded()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         INSTANCE_CHECK;
-        POSTCONDITION(IsLoaded());
         STANDARD_VM_CHECK;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (IsReflectionEmit())
-        RETURN;
+        {
+        _ASSERTE(IsLoaded());
+            return;
+        }
 
     // Ensure that loaded layout is available.
     PEImageLayout* pLayout = GetPEImage()->GetOrCreateLayout(
@@ -91,7 +93,8 @@ void PEAssembly::EnsureLoaded()
     }
 #endif
 
-    RETURN;
+    _ASSERTE(IsLoaded());
+    return;
 }
 
 // ------------------------------------------------------------
@@ -192,17 +195,15 @@ void PEAssembly::GetPathOrCodeBase(SString &result)
 
 PTR_CVOID PEAssembly::GetMetadata(COUNT_T *pSize)
 {
-    CONTRACT(PTR_CVOID)
+    CONTRACTL
     {
         INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(pSize, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (IsReflectionEmit()
          || !GetPEImage()->HasHeaders()
@@ -210,28 +211,26 @@ PTR_CVOID PEAssembly::GetMetadata(COUNT_T *pSize)
     {
         if (pSize != NULL)
             *pSize = 0;
-        RETURN NULL;
+        return NULL;
     }
     else
     {
-        RETURN GetPEImage()->GetMetadata(pSize);
+        return GetPEImage()->GetMetadata(pSize);
     }
 }
 #endif // #ifndef DACCESS_COMPILE
 
 PTR_CVOID PEAssembly::GetLoadedMetadata(COUNT_T *pSize)
 {
-    CONTRACT(PTR_CVOID)
+    CONTRACTL
     {
         INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(pSize, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!HasLoadedPEImage()
          || !GetLoadedLayout()->HasHeaders()
@@ -239,17 +238,17 @@ PTR_CVOID PEAssembly::GetLoadedMetadata(COUNT_T *pSize)
     {
         if (pSize != NULL)
             *pSize = 0;
-        RETURN NULL;
+        return NULL;
     }
     else
     {
-        RETURN GetLoadedLayout()->GetMetadata(pSize);
+        return GetLoadedLayout()->GetMetadata(pSize);
     }
 }
 
 TADDR PEAssembly::GetIL(RVA il)
 {
-    CONTRACT(TADDR)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(il != 0);
@@ -257,13 +256,12 @@ TADDR PEAssembly::GetIL(RVA il)
 #ifndef DACCESS_COMPILE
         PRECONDITION(HasLoadedPEImage());
 #endif
-        POSTCONDITION(RETVAL != NULL);
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PEImageLayout *image = NULL;
     image = GetLoadedLayout();
@@ -274,7 +272,7 @@ TADDR PEAssembly::GetIL(RVA il)
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL_RANGE);
 #endif
 
-    RETURN image->GetRvaData(il);
+    return image->GetRvaData(il);
 }
 
 #ifndef DACCESS_COMPILE
@@ -472,16 +470,15 @@ void PEAssembly::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *p
 
 PEAssembly* PEAssembly::LoadAssembly(mdAssemblyRef kAssemblyRef)
 {
-    CONTRACT(PEAssembly *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IMDInternalImport* pImport = GetMDImport();
     if (((TypeFromToken(kAssemblyRef) != mdtAssembly) &&
@@ -495,7 +492,7 @@ PEAssembly* PEAssembly::LoadAssembly(mdAssemblyRef kAssemblyRef)
 
     spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(this));
 
-    RETURN GetAppDomain()->BindAssemblySpec(&spec, TRUE);
+    return GetAppDomain()->BindAssemblySpec(&spec, TRUE);
 }
 
 // dwLocation maps to System.Reflection.ResourceLocation
@@ -824,18 +821,17 @@ PEAssembly *PEAssembly::OpenSystem()
 /* static */
 PEAssembly *PEAssembly::DoOpenSystem()
 {
-    CONTRACT(PEAssembly *)
+    CONTRACTL
     {
-        POSTCONDITION(CheckPointer(RETVAL));
         STANDARD_VM_CHECK;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ETWOnStartup (FusionBinding_V1, FusionBindingEnd_V1);
     ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
     IfFailThrow(GetAppDomain()->GetDefaultBinder()->BindToSystem(&pBoundAssembly));
 
-    RETURN new PEAssembly(pBoundAssembly, NULL, TRUE);
+    return new PEAssembly(pBoundAssembly, NULL, TRUE);
 }
 
 PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult)
@@ -846,19 +842,18 @@ PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult)
 /* static */
 PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBinder *pFallbackBinder)
 {
-    CONTRACT(PEAssembly *)
+    CONTRACTL
     {
         PRECONDITION(CheckPointer(pAssemblyEmit));
         STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Set up the metadata pointers in the PEAssembly. (This is the only identity
     // we have.)
     SafeComHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    RETURN new PEAssembly(NULL, pEmit, FALSE, pFallbackBinder);
+    return new PEAssembly(NULL, pEmit, FALSE, pFallbackBinder);
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -941,12 +936,12 @@ void PEAssembly::PathToUrl(SString &string)
 
 void PEAssembly::UrlToPath(SString &string)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SString::Iterator i = string.Begin();
 
@@ -967,7 +962,7 @@ void PEAssembly::UrlToPath(SString &string)
     }
 #endif
 
-    RETURN;
+    return;
 }
 
 BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)

@@ -2350,37 +2350,37 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetMethodInfo(Module *pModule, mdMe
 
 DebuggerMethodInfo *DebuggerMethodInfoTable::GetFirstMethodInfo(HASHFIND *info)
 {
-    CONTRACT(DebuggerMethodInfo*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
 
         PRECONDITION(CheckPointer(info));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
     DebuggerMethodInfoEntry *entry = PTR_DebuggerMethodInfoEntry
         (PTR_HOST_TO_TADDR(FindFirstEntry(info)));
     if (entry == NULL)
-        RETURN NULL;
+        return NULL;
     else
-        RETURN entry->mi;
+        {
+            return entry->mi;
+        }
 }
 
 DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
 {
-    CONTRACT(DebuggerMethodInfo*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
 
         PRECONDITION(CheckPointer(info));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
@@ -2398,9 +2398,11 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
     }
 
     if (entry == NULL)
-        RETURN NULL;
+        return NULL;
     else
-        RETURN entry->mi;
+        {
+            return entry->mi;
+        }
 }
 
 

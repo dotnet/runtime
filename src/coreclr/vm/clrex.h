@@ -320,17 +320,17 @@ class EEMessageException : public EEException
 
     static PVOID GetEEMessageExceptionVPtr()
     {
-        CONTRACT (PVOID)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         EEMessageException boilerplate(E_FAIL);
-        RETURN (PVOID&)boilerplate;
+        _ASSERTE(CheckPointer((PVOID&)boilerplate));
+        return (PVOID&)boilerplate;
     }
 
     BOOL GetResourceMessage(UINT iResourceID, SString &result);

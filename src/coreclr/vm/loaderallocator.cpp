@@ -1699,15 +1699,14 @@ void LoaderAllocator::UninitVirtualCallStubManager()
 
 EEMarshalingData *LoaderAllocator::GetMarshalingData()
 {
-    CONTRACT (EEMarshalingData*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(m_pMarshalingData));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!m_pMarshalingData)
     {
@@ -1720,7 +1719,7 @@ EEMarshalingData *LoaderAllocator::GetMarshalingData()
         }
     }
 
-    RETURN m_pMarshalingData;
+    return m_pMarshalingData;
 }
 
 void LoaderAllocator::DeleteMarshalingData()

@@ -56,7 +56,7 @@ struct ConnectionCookie
     // Currently called only from Cooperative mode.
     static ConnectionCookie* CreateConnectionCookie(OBJECTHANDLE hndEventProvObj)
     {
-        CONTRACT (ConnectionCookie*)
+        CONTRACTL
         {
             THROWS;
             GC_NOTRIGGER;
@@ -64,9 +64,9 @@ struct ConnectionCookie
             INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(NULL != hndEventProvObj);
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN (new ConnectionCookie(hndEventProvObj));
+        return (new ConnectionCookie(hndEventProvObj));
     }
 
     SLink           m_Link;

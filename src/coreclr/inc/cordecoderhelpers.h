@@ -119,7 +119,7 @@ inline BOOL HasStrongNameSignature(const TDecoder& decoder)
 template<typename TDecoder>
 inline PTR_CVOID GetMetadata(const TDecoder& decoder, COUNT_T *pSize)
 {
-    CONTRACT(PTR_CVOID)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -127,7 +127,7 @@ inline PTR_CVOID GetMetadata(const TDecoder& decoder, COUNT_T *pSize)
         PRECONDITION(decoder.CheckCorHeader());
         PRECONDITION(CheckPointer(pSize, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IMAGE_DATA_DIRECTORY *pDir = &decoder.GetCorHeader()->MetaData;
 
@@ -136,9 +136,9 @@ inline PTR_CVOID GetMetadata(const TDecoder& decoder, COUNT_T *pSize)
 
     RVA rva = VAL32(pDir->VirtualAddress);
     if (rva == 0)
-        RETURN NULL;
+        return NULL;
 
-    RETURN dac_cast<PTR_VOID>(decoder.GetRvaData(rva));
+    return dac_cast<PTR_VOID>(decoder.GetRvaData(rva));
 }
 
 // ------------------------------------------------------------
@@ -164,15 +164,15 @@ inline BOOL HasManagedEntryPoint(const TDecoder& decoder)
 template<typename TDecoder>
 inline ULONG GetEntryPointToken(const TDecoder& decoder)
 {
-    CONTRACT(ULONG)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(decoder.CheckCorHeader());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN VAL32(IMAGE_COR20_HEADER_FIELD(*decoder.GetCorHeader(), EntryPointToken));
+    return VAL32(IMAGE_COR20_HEADER_FIELD(*decoder.GetCorHeader(), EntryPointToken));
 }
 
 // ------------------------------------------------------------
@@ -182,14 +182,14 @@ inline ULONG GetEntryPointToken(const TDecoder& decoder)
 template<typename TDecoder>
 inline const void *GetResources(const TDecoder& decoder, COUNT_T *pSize)
 {
-    CONTRACT(const void *)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(decoder.CheckCorHeader());
         PRECONDITION(CheckPointer(pSize, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IMAGE_DATA_DIRECTORY *pDir = &decoder.GetCorHeader()->Resources;
 
@@ -198,9 +198,9 @@ inline const void *GetResources(const TDecoder& decoder, COUNT_T *pSize)
 
     RVA rva = VAL32(pDir->VirtualAddress);
     if (rva == 0)
-        RETURN NULL;
+        return NULL;
 
-    RETURN (void *)decoder.GetRvaData(rva);
+    return (void *)decoder.GetRvaData(rva);
 }
 
 template<typename TDecoder>
@@ -234,19 +234,19 @@ inline CHECK CheckResource(const TDecoder& decoder, COUNT_T offset)
 template<typename TDecoder>
 inline const void *GetResource(const TDecoder& decoder, COUNT_T offset, COUNT_T *pSize)
 {
-    CONTRACT(const void *)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(decoder.CheckCorHeader());
         PRECONDITION(CheckPointer(pSize, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IMAGE_DATA_DIRECTORY *pDir = &decoder.GetCorHeader()->Resources;
 
     if (CheckResource(decoder, offset) == FALSE)
-        RETURN NULL;
+        return NULL;
 
     void *resourceBlob = (void *)decoder.GetRvaData(VAL32(pDir->VirtualAddress) + offset);
     _ASSERTE(resourceBlob != NULL);
@@ -258,7 +258,7 @@ inline const void *GetResource(const TDecoder& decoder, COUNT_T offset, COUNT_T 
     }
 
     // ECMA-335 II.24.2.4: Each resource entry is preceded by a 4-byte length prefix.
-    RETURN (const void *)((BYTE *)resourceBlob + sizeof(DWORD));
+    return (const void *)((BYTE *)resourceBlob + sizeof(DWORD));
 }
 
 // ------------------------------------------------------------
@@ -268,31 +268,31 @@ inline const void *GetResource(const TDecoder& decoder, COUNT_T offset, COUNT_T 
 template<typename TDecoder>
 inline PTR_IMAGE_DEBUG_DIRECTORY GetDebugDirectoryEntry(const TDecoder& decoder, UINT index)
 {
-    CONTRACT(PTR_IMAGE_DEBUG_DIRECTORY)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!decoder.HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG))
-        RETURN NULL;
+        return NULL;
 
     COUNT_T cbDebugDir;
     TADDR taDebugDir = decoder.GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_DEBUG, &cbDebugDir);
 
     if (taDebugDir == (TADDR)0)
-        RETURN NULL;
+        return NULL;
 
     UINT cNumEntries = cbDebugDir / sizeof(IMAGE_DEBUG_DIRECTORY);
     if (index >= cNumEntries)
-        RETURN NULL;
+        return NULL;
 
     PTR_IMAGE_DEBUG_DIRECTORY pDebugEntry = dac_cast<PTR_IMAGE_DEBUG_DIRECTORY>(taDebugDir);
     pDebugEntry += index;
 
-    RETURN pDebugEntry;
+    return pDebugEntry;
 }
 
 // ------------------------------------------------------------

@@ -1030,17 +1030,15 @@ void DebuggerController::CancelOutstandingThreadStarter(Thread * pThread)
 // How: initializes the critical section
 HRESULT DebuggerController::Initialize()
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         // This can be called in an "early attach" case, so DebuggerIsInvolved()
         // will be b/c we don't realize the debugger's attaching to us.
         //PRECONDITION(DebuggerIsInvolved());
-        POSTCONDITION(CheckPointer(g_patches));
-        POSTCONDITION(RETVAL == S_OK);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (g_patches == NULL)
     {
@@ -1071,7 +1069,8 @@ HRESULT DebuggerController::Initialize()
 
     _ASSERTE(g_patches != NULL);
 
-    RETURN (S_OK);
+    _ASSERTE((S_OK) == S_OK);
+    return (S_OK);
 }
 
 
@@ -3114,7 +3113,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 #endif
 )
 {
-    CONTRACT(DPOSS_ACTION)
+    CONTRACTL
     {
         // @todo - should this throw or not?
         NOTHROW;
@@ -3126,9 +3125,8 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         PRECONDITION(CheckPointer(address));
         PRECONDITION(!HasLock());
 
-        POSTCONDITION(!HasLock()); // make sure we're not leaking the controller lock
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CONTRACT_VIOLATION(ThrowsViolation);
 
@@ -3145,7 +3143,8 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
     {
 
         LOG((LF_CORDB|LF_ENC, LL_INFO1000, "DC::DPOSS returning, no patch table.\n"));
-        RETURN (used);
+        _ASSERTE(!HasLock());
+        return (used);
     }
     _ASSERTE(g_patches != NULL);
 
@@ -3340,7 +3339,8 @@ Exit:
 
     }
 
-    RETURN used;
+    _ASSERTE(!HasLock());
+    return used;
 }
 
 bool DebuggerController::IsSingleStepEnabled()

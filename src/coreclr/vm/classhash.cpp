@@ -138,7 +138,7 @@ bool EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data, Loader::LoadF
                                                    Module **ppModule, mdTypeDef *pCL,
                                                    mdExportedType *pmdFoundExportedType)
 {
-    CONTRACT(bool)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -148,10 +148,9 @@ bool EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data, Loader::LoadF
 
         PRECONDITION(CheckPointer(pCL));
         PRECONDITION(CheckPointer(ppModule));
-        POSTCONDITION(*ppModule != nullptr || loadFlag != Loader::Load);
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     DWORD dwData = (DWORD)dac_cast<TADDR>(Data);
     _ASSERTE((dwData & EECLASSHASH_TYPEHANDLE_DISCR) == EECLASSHASH_TYPEHANDLE_DISCR);
@@ -166,7 +165,8 @@ bool EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data, Loader::LoadF
         _ASSERTE(*ppModule != nullptr); // Should never fail.
     }
 
-    RETURN (*ppModule != nullptr);
+    _ASSERTE(*ppModule != nullptr || loadFlag != Loader::Load);
+    return (*ppModule != nullptr);
 }
 
 /* static */

@@ -99,17 +99,17 @@ BOOL WebcilDecoder::HasContents() const
 
 BOOL WebcilDecoder::HasWebcilHeaders() const
 {
-    CONTRACT(BOOL)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(HasContents());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_size < sizeof(WebcilHeader))
-        RETURN FALSE;
+        return FALSE;
 
     const WebcilHeader *pHeader = (const WebcilHeader *)(m_base);
     if (pHeader->Id[0] != WEBCIL_MAGIC_W ||
@@ -117,23 +117,23 @@ BOOL WebcilDecoder::HasWebcilHeaders() const
         pHeader->Id[2] != WEBCIL_MAGIC_I ||
         pHeader->Id[3] != WEBCIL_MAGIC_L)
     {
-        RETURN FALSE;
+        return FALSE;
     }
 
     if (pHeader->VersionMajor != WEBCIL_VERSION_MAJOR ||
         pHeader->VersionMinor != WEBCIL_VERSION_MINOR)
     {
-        RETURN FALSE;
+        return FALSE;
     }
 
     if (pHeader->CoffSections == 0 || pHeader->CoffSections > WEBCIL_MAX_SECTIONS)
-        RETURN FALSE;
+        return FALSE;
 
     COUNT_T headerEnd = sizeof(WebcilHeader) + (COUNT_T)pHeader->CoffSections * sizeof(WebcilSectionHeader);
     if (m_size < headerEnd)
-        RETURN FALSE;
+        return FALSE;
 
-    RETURN TRUE;
+    return TRUE;
 }
 
 BOOL WebcilDecoder::HasBaseRelocations() const
@@ -361,18 +361,17 @@ CHECK WebcilDecoder::CheckCorHeader() const
 
 IMAGE_COR20_HEADER *WebcilDecoder::GetCorHeader() const
 {
-    CONTRACT(IMAGE_COR20_HEADER *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(HasCorHeader());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     FindCorHeader();
-    RETURN m_pCorHeader;
+    return m_pCorHeader;
 }
 
 // ------------------------------------------------------------
@@ -554,38 +553,38 @@ CHECK WebcilDecoder::CheckRva(RVA rva, COUNT_T size, int forbiddenFlags, IsNullO
 
 TADDR WebcilDecoder::GetRvaData(RVA rva, IsNullOK ok) const
 {
-    CONTRACT(TADDR)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if ((rva == 0) && (ok == NULL_NOT_OK))
-        RETURN (TADDR)NULL;
+        return (TADDR)NULL;
 
     // Webcil is always flat — translate RVA via section table to file offset
     COUNT_T offset = RvaToOffset(rva);
-    RETURN (m_base + offset);
+    return (m_base + offset);
 }
 
 RVA WebcilDecoder::GetDataRva(const TADDR data) const
 {
-    CONTRACT(RVA)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (data == (TADDR)NULL)
-        RETURN 0;
+        return 0;
 
     // Webcil is always flat — convert file offset to RVA
     COUNT_T offset = (COUNT_T)(data - m_base);
-    RETURN OffsetToRva(offset);
+    return OffsetToRva(offset);
 }
 
 BOOL WebcilDecoder::PointerInPE(PTR_CVOID data) const
@@ -650,56 +649,56 @@ CHECK WebcilDecoder::CheckOffset(COUNT_T fileOffset, COUNT_T size, IsNullOK ok) 
 
 TADDR WebcilDecoder::GetOffsetData(COUNT_T fileOffset, IsNullOK ok) const
 {
-    CONTRACT(TADDR)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if ((fileOffset == 0) && (ok == NULL_NOT_OK))
-        RETURN (TADDR)NULL;
+        return (TADDR)NULL;
 
-    RETURN GetRvaData(OffsetToRva(fileOffset));
+    return GetRvaData(OffsetToRva(fileOffset));
 }
 
 COUNT_T WebcilDecoder::RvaToOffset(RVA rva) const
 {
-    CONTRACT(COUNT_T)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (rva == 0)
-        RETURN 0;
+        return 0;
 
     const WebcilSectionHeader *section = RvaToSection(rva);
     _ASSERTE(section != NULL);
 
-    RETURN rva - section->VirtualAddress + section->PointerToRawData;
+    return rva - section->VirtualAddress + section->PointerToRawData;
 }
 
 RVA WebcilDecoder::OffsetToRva(COUNT_T fileOffset) const
 {
-    CONTRACT(RVA)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (fileOffset == 0)
-        RETURN 0;
+        return 0;
 
     const WebcilSectionHeader *section = OffsetToSection(fileOffset);
     _ASSERTE(section != NULL);
 
-    RETURN fileOffset - section->PointerToRawData + section->VirtualAddress;
+    return fileOffset - section->PointerToRawData + section->VirtualAddress;
 }
 
 // ------------------------------------------------------------

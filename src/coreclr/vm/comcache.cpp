@@ -120,17 +120,16 @@ static void CheckForFuncEvalAbort(HRESULT hr)
 //
 STDAPI_(LPSTREAM) CreateMemStm(DWORD cb, BYTE** ppBuf)
 {
-    CONTRACT(LPSTREAM)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(CONTRACT_RETURN NULL);
+        INJECT_FAULT(return NULL);
         PRECONDITION(CheckPointer(ppBuf, NULL_OK));
         PRECONDITION(CheckPointer(ppBuf, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LPSTREAM        pstm = NULL;
 
@@ -144,7 +143,7 @@ STDAPI_(LPSTREAM) CreateMemStm(DWORD cb, BYTE** ppBuf)
     if(ppBuf)
         *ppBuf = pMem;
 
-    RETURN pstm;
+    return pstm;
 }
 
 //=====================================================================
@@ -338,18 +337,15 @@ CtxEntry* CtxEntryCache::FindCtxEntry(LPVOID pCtxCookie, Thread *pThread)
     CtxEntry *pCtxEntry = NULL;
     Thread *pSTAThread = NULL;
 
-    CONTRACT (CtxEntry*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pCtxCookie));
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(pCtxCookie == pCtxEntry->GetCtxCookie());
-        POSTCONDITION(pSTAThread == pCtxEntry->GetSTAThread());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Find our STA (if any)
     if (pThread->GetApartment() == Thread::AS_InSTA)
@@ -393,7 +389,9 @@ CtxEntry* CtxEntryCache::FindCtxEntry(LPVOID pCtxCookie, Thread *pThread)
     }
 
     // Returned the found or allocated entry.
-    RETURN pCtxEntry;
+    _ASSERTE(pCtxCookie == pCtxEntry->GetCtxCookie());
+    _ASSERTE(pSTAThread == pCtxEntry->GetSTAThread());
+    return pCtxEntry;
 }
 
 
@@ -570,14 +568,13 @@ VOID IUnkEntry::Free()
 // Get IUnknown for the current context from IUnkEntry
 IUnknown* IUnkEntry::GetIUnknownForCurrContext(bool fNoAddRef)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, (fNoAddRef ? NULL_OK : NULL_NOT_OK)));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IUnknown* pUnk = NULL;
     LPVOID pCtxCookie = GetCurrentCtxCookie();
@@ -600,22 +597,22 @@ IUnknown* IUnkEntry::GetIUnknownForCurrContext(bool fNoAddRef)
     if (pUnk == NULL && !fNoAddRef)
         pUnk = UnmarshalIUnknownForCurrContext();
 
-    RETURN pUnk;
+    _ASSERTE(CheckPointer(pUnk, (fNoAddRef ? NULL_OK : NULL_NOT_OK)));
+    return pUnk;
 }
 
 //================================================================
 // Unmarshal IUnknown for the current context from IUnkEntry
 IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(!IsFreeThreaded());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HRESULT     hrCDH               = S_OK;
     IUnknown*   pUnk                = NULL;
@@ -759,7 +756,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
         pUnk = UnmarshalIUnknownForCurrContextHelper();
     }
 
-    RETURN pUnk;
+    return pUnk;
 }
 
 //================================================================
@@ -887,15 +884,14 @@ HRESULT IUnkEntry::MarshalIUnknownToStreamCallback2(LPVOID pData)
 // Unmarshal IUnknown for the current context if the lock is held
 IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(!IsFreeThreaded());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HRESULT hrCDH = S_OK;
     IUnknown * pUnk = NULL;
@@ -954,7 +950,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
         }
     }
 
-    RETURN pUnk;
+    return pUnk;
 }
 
 //================================================================

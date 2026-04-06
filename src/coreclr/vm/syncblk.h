@@ -501,14 +501,13 @@ class SyncBlock
     // Gets the InteropInfo block, creates a new one if none is present.
     InteropSyncBlockInfo* GetInteropInfo()
     {
-        CONTRACT (InteropSyncBlockInfo*)
+        CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         if (!m_pInteropInfo)
         {
@@ -518,22 +517,22 @@ class SyncBlock
                 pInteropInfo.SuppressRelease();
         }
 
-        RETURN m_pInteropInfo;
+        _ASSERTE(m_pInteropInfo != NULL);
+        return m_pInteropInfo;
     }
 
     PTR_InteropSyncBlockInfo GetInteropInfoNoCreate()
     {
-        CONTRACT (PTR_InteropSyncBlockInfo)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             SUPPORTS_DAC;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pInteropInfo;
+        return m_pInteropInfo;
     }
 
     // Returns false if the InteropInfo block was already set - does not overwrite the previous value.

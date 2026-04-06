@@ -752,20 +752,19 @@ Instantiation FieldDesc::GetExactClassInstantiation(TypeHandle possibleObjType)
 
 TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(owner, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     if (GetApproxEnclosingMethodTable() == owner.AsMethodTable())
     {
         //Yes, this is exactly the type I was looking for.
-        RETURN(GetFieldTypeHandleThrowing());
+        return(GetFieldTypeHandleThrowing());
     }
     else
     {
@@ -786,7 +785,7 @@ TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
         SigTypeContext sigTypeContext(GetExactClassInstantiation(owner), Instantiation());
 
         // Load the exact type
-        RETURN (sig.GetTypeHandleThrowing(GetModule(), &sigTypeContext));
+        return (sig.GetTypeHandleThrowing(GetModule(), &sigTypeContext));
     }
 }
 

@@ -1108,7 +1108,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                  MethodTable*                 pMTInterfaceMapOwner,
                  HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling) const
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -1118,10 +1118,9 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != ClassLoader::LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
-        POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == ClassLoader::LoadTypes) ? NULL_NOT_OK : NULL_OK)));
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     _ASSERTE(!pRecursiveFieldGenericHandling || dropGenericArgumentLevel); // pRecursiveFieldGenericHandling can only be set if dropGenericArgumentLevel is set
     if (pRecursiveFieldGenericHandling != NULL)
@@ -1957,7 +1956,8 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
     }
 
-    RETURN thRet;
+    _ASSERTE(CheckPointer(thRet, ((fLoadTypes == ClassLoader::LoadTypes) ? NULL_NOT_OK : NULL_OK)));
+    return thRet;
 }
 
 TypeHandle SigPointer::GetGenericInstType(ModuleBase *        pModule,
@@ -2066,7 +2066,7 @@ TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - 
                                                ClassLoader::LoadTypesFlag fLoadTypes/*=LoadTypes*/,
                                                const SigTypeContext *pTypeContext)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CorTypeInfo::IsGenericVariable_NoThrow(et));
@@ -2074,10 +2074,9 @@ TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - 
         MODE_ANY;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
-        POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == ClassLoader::LoadTypes) ? NULL_NOT_OK : NULL_OK)));
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     TypeHandle res = GetTypeVariable(et, pTypeContext);
 #ifndef DACCESS_COMPILE
@@ -2086,7 +2085,7 @@ TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - 
        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
 #endif
-    RETURN(res);
+    return(res);
 }
 
 // SigPointer should be just after E_T_VAR or E_T_MVAR
@@ -2094,23 +2093,22 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
                                        const SigTypeContext *pTypeContext)
 {
 
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CorTypeInfo::IsGenericVariable_NoThrow(et));
         NOTHROW;
         GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // will return TypeHandle() if index is out of range
         SUPPORTS_DAC;
         MODE_ANY;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     uint32_t index;
     if (FAILED(GetData(&index)))
     {
         TypeHandle thNull;
-        RETURN(thNull);
+        return(thNull);
     }
 
     if (!pTypeContext
@@ -2124,15 +2122,15 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
         LOG((LF_ALWAYS, LL_INFO1000, "GENERICS: Error: GetTypeVariable on out-of-range type variable\n"));
         BAD_FORMAT_NOTHROW_ASSERT(!"Invalid type context: either this is an ill-formed signature (e.g. an invalid type variable number) or you have not provided a non-empty SigTypeContext where one is required.  Check back on the callstack for where the value of pTypeContext is first provided, and see if it is acquired from the correct place.  For calls originating from a JIT it should be acquired from the context parameter, which indicates the method being compiled.  For calls from other locations it should be acquired from the MethodTable, EEClass, TypeHandle, FieldDesc or MethodDesc being analyzed.");
         TypeHandle thNull;
-        RETURN(thNull);
+        return(thNull);
     }
     if (et == ELEMENT_TYPE_VAR)
     {
-        RETURN(pTypeContext->m_classInst[index]);
+        return(pTypeContext->m_classInst[index]);
     }
     else
     {
-        RETURN(pTypeContext->m_methodInst[index]);
+        return(pTypeContext->m_methodInst[index]);
     }
 }
 

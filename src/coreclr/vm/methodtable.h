@@ -2302,29 +2302,28 @@ public:
         // Get the interface at the current position, with whatever its normal load level is
         inline PTR_MethodTable GetInterfaceApprox()
         {
-            CONTRACT(PTR_MethodTable)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
-                POSTCONDITION(CheckPointer(RETVAL));
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
-            RETURN (m_pMap->GetMethodTable());
+            return (m_pMap->GetMethodTable());
         }
 
         inline bool CurrentInterfaceMatches(MethodTable* pMTOwner, MethodTable* pMT)
         {
-            CONTRACT(bool)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
             MethodTable *pCurrentMethodTable = m_pMap->GetMethodTable();
 
@@ -2348,23 +2347,23 @@ public:
                 }
             }
 
-            RETURN (exactMatch);
+            return (exactMatch);
         }
 
         bool CurrentInterfaceEquivalentTo(MethodTable* pMTOwner, MethodTable* pMT);
 
         inline bool HasSameTypeDefAs(MethodTable* pMT)
         {
-            CONTRACT(bool)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
-            RETURN (m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT));
+            return (m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT));
         }
 
 #ifndef DACCESS_COMPILE

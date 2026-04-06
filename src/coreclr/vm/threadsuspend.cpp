@@ -502,7 +502,6 @@ static inline BOOL CheckSuspended(Thread *pThread)
     CONTRACTL_END;
 
     _ASSERTE(GetThreadNULLOk() != pThread);
-    _ASSERTE(CheckPointer(pThread));
 
 #ifndef DISABLE_THREADSUSPEND
     DWORD dwSuspendCount;
@@ -4118,7 +4117,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 // This can be safely called if we're already suspended.
 bool Thread::SysSweepThreadsForDebug(bool forceSync)
 {
-    CONTRACT(bool) {
+    CONTRACTL {
         NOTHROW;
         DISABLED(GC_TRIGGERS); // WaitUntilConcurrentGCComplete toggle GC mode, disabled because called by unmanaged thread
 
@@ -4128,9 +4127,8 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
         PRECONDITION(GetThreadNULLOk() == NULL);
 
         // Iff we return true, then we have the TSL (or the aux lock used in workarounds).
-        POSTCONDITION(ThreadStore::HoldingThreadStore());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(!forceSync); // deprecated parameter
 
@@ -4279,7 +4277,8 @@ Label_MarkThreadAsSynced:
         {
             // If that was the last thread, then the CLR is synced.
             // We return while own the thread store lock. We return true now, which indicates this to the caller.
-            RETURN true;
+            _ASSERTE(ThreadStore::HoldingThreadStore());
+            return true;
         }
         continue;
 
@@ -4287,13 +4286,15 @@ Label_MarkThreadAsSynced:
 
     if (m_DebugWillSyncCount < 0)
     {
-        RETURN true;
+        _ASSERTE(ThreadStore::HoldingThreadStore());
+        return true;
     }
 
     // The CLR is not yet synced. We release the threadstore lock and return false.
     hldSuspendRuntimeInProgress.Release();
 
-    RETURN false;
+    _ASSERTE(ThreadStore::HoldingThreadStore());
+    return false;
 }
 
 void Thread::SysResumeFromDebug(AppDomain *pAppDomain)

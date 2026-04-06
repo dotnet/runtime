@@ -72,13 +72,12 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
                                              Module* pSigModule, PCCOR_SIGNATURE pSig, DWORD cbSig, SigTypeContext *pTypeContext,
                                              ILStubLinker* pStubLinker, BOOL isAsync /* = FALSE */)
 {
-    CONTRACT (MethodDesc*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMT, NULL_NOT_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
     AllocMemTracker amTracker;
 
     MethodDesc *pStubMD = ILStubCache::CreateNewMethodDesc(pAllocator->GetHighFrequencyHeap(),
@@ -100,7 +99,7 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     pResolver->FinalizeILStub(pStubLinker);
 
-    RETURN pStubMD;
+    return pStubMD;
 }
 
 
@@ -148,13 +147,12 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
                                              Module* pSigModule, PCCOR_SIGNATURE pSig, DWORD cbSig, BOOL isAsync, SigTypeContext *pTypeContext,
                                              AllocMemTracker* pamTracker)
 {
-    CONTRACT (MethodDesc*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMT, NULL_NOT_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // @TODO: reuse the same chunk for multiple methods
     MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(pCreationHeap,
@@ -354,7 +352,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     pMD->m_pDebugMethodTable = pMT;
 #endif // _DEBUG
 
-    RETURN pMD;
+    return pMD;
 }
 
 // Creates a DynamicMethodDesc that wraps pre-compiled R2R stub code.
@@ -369,7 +367,7 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
     DWORD cbSig,
     AllocMemTracker* pamTracker)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAllocator));
@@ -377,9 +375,8 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
         PRECONDITION(r2rEntryPoint != (PCODE)NULL);
         PRECONDITION(stubType != DynamicMethodDesc::StubNotSet);
         PRECONDITION(CheckPointer(pamTracker));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DynamicMethodDesc::ILStubType ilStubType = (DynamicMethodDesc::ILStubType)stubType;
 
@@ -441,7 +438,7 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
 
     LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::CreateR2RBackedILStub StubMD: %p\n", pMD));
 
-    RETURN pMD;
+    return pMD;
 }
 
 //
@@ -450,15 +447,14 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
 //
 MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
 {
-    CONTRACT (MethodTable*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifdef _DEBUG
     if (pModule->IsSystem())
@@ -487,7 +483,7 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
         }
     }
 
-    RETURN m_pStubMT;
+    return m_pStubMT;
 }
 
 
@@ -585,12 +581,11 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
     bool& bILStubCreator,
     MethodDesc *pLastMD)
 {
-    CONTRACT (MethodDesc*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodDesc*     pMD         = NULL;
 
@@ -675,7 +670,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 #endif // _DEBUG
 #endif // DACCESS_COMPILE
 
-    RETURN pMD;
+    return pMD;
 }
 
 void ILStubCache::DeleteEntry(ILStubHashBlob* pHashBlob)

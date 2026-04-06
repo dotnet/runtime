@@ -542,12 +542,11 @@ LPWSTR CLRConfig::GetConfigValue(const ConfigStringInfo & info)
 // static
 HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, _Outptr_result_z_ LPWSTR * outVal)
 {
-    CONTRACT(HRESULT) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT (CONTRACT_RETURN E_OUTOFMEMORY);
-        POSTCONDITION(CheckPointer(outVal, NULL_OK)); // TODO: Should this check be *outVal instead of outVal?
-    } CONTRACT_END;
+        INJECT_FAULT (return E_OUTOFMEMORY);
+    } CONTRACTL_END;
 
     LPWSTR result = NULL;
 
@@ -568,7 +567,7 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, _Outptr_result_
     }
 
     *outVal = result;
-    RETURN S_OK;
+    return S_OK;
 }
 
 //
