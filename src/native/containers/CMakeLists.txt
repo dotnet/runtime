@@ -22,11 +22,11 @@ add_library(dn-containers-no-lto OBJECT ${SOURCES})
 configure_file(dn-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/dn-config.h)
 
 target_include_directories(dn-containers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(dn-containers PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(dn-containers PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CLR_SRC_NATIVE_DIR})
 set_target_properties(dn-containers PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
 
 target_include_directories(dn-containers-no-lto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(dn-containers-no-lto PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(dn-containers-no-lto PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CLR_SRC_NATIVE_DIR})
 set_target_properties(dn-containers-no-lto
     PROPERTIES
     CLR_CONTROL_FLOW_GUARD ON

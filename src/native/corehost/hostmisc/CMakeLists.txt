@@ -10,7 +10,6 @@ set(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/utils.c
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.cpp
-    ${CLR_SRC_NATIVE_DIR}/minipal/mutex.c
 )
 
 set(HEADERS
@@ -57,22 +56,17 @@ endif()
 
 
 add_library(hostmisc STATIC ${SOURCES})
-target_link_libraries(hostmisc PUBLIC hostmisc_interface)
+target_link_libraries(hostmisc PUBLIC hostmisc_interface minipal)
 if (MSVC)
     target_sources(hostmisc PRIVATE ${HEADERS})
 endif()
 
 add_library(hostmisc_public OBJECT ${SOURCES})
-target_link_libraries(hostmisc_public PUBLIC hostmisc_interface)
+target_link_libraries(hostmisc_public PUBLIC hostmisc_interface minipal_objects)
 set_target_properties(hostmisc_public PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 add_library(hostmisc::public ALIAS hostmisc_public)
 
-# C (and C++ wrapper) implementation of hostmisc used by the standalone apphost and singlefilehost.
-# On non-Windows, this provides a pure C implementation that avoids C++ runtime dependencies.
-# On Windows, C++ wrappers (pal.windows.c_impl.cpp) delegate to the C++ PAL.
-# Note: fxr_resolver.c is NOT included here; it is compiled directly into the standalone apphost
-# (which also provides dn-containers).
 set(HOSTMISC_C_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/trace.c
     ${CMAKE_CURRENT_LIST_DIR}/utils.c
@@ -82,13 +76,11 @@ set(HOSTMISC_C_SOURCES
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND HOSTMISC_C_SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/pal.windows.c_impl.cpp
-        ${CLR_SRC_NATIVE_DIR}/minipal/mutex.c)
+        ${CMAKE_CURRENT_LIST_DIR}/pal.windows.c_impl.cpp)
 else()
     list(APPEND HOSTMISC_C_SOURCES
         ${CMAKE_CURRENT_LIST_DIR}/pal.unix.c
-        ${CMAKE_CURRENT_LIST_DIR}/fxr_resolver.c
-        ${CLR_SRC_NATIVE_DIR}/minipal/mutex.c)
+        ${CMAKE_CURRENT_LIST_DIR}/fxr_resolver.c)
 endif()
 
 add_library(hostmisc_c OBJECT ${HOSTMISC_C_SOURCES})
@@ -100,9 +92,9 @@ target_include_directories(hostmisc_c PUBLIC
     ${CLR_SRC_NATIVE_DIR}
     ${CLR_ARTIFACTS_OBJ_DIR})
 if(CLR_CMAKE_TARGET_WIN32)
-    target_link_libraries(hostmisc_c PUBLIC hostmisc)
+    target_link_libraries(hostmisc_c PUBLIC hostmisc minipal_objects)
 else()
-    target_link_libraries(hostmisc_c PUBLIC dn-containers)
+    target_link_libraries(hostmisc_c PUBLIC dn-containers minipal_objects)
     target_link_libraries(hostmisc_c PUBLIC
         ${CMAKE_DL_LIBS}
         $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)

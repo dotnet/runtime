@@ -4,14 +4,14 @@
 include_directories(..)
 
 set(SOURCES
-    ./apphost_main.c
+    ../apphost_main.c
     ./apphost_hostfxr_resolver.c
 )
 
 set(HEADERS
     ../../hostmisc/bundle_marker.h
     ../../hostmisc/pal.h
-    ./apphost_hostfxr_resolver.h
+    ../apphost_hostfxr_resolver.h
 )
 
 add_compile_definitions(FEATURE_APPHOST)
@@ -19,8 +19,6 @@ add_compile_definitions(FEATURE_APPHOST)
 if(CLR_CMAKE_TARGET_WIN32)
     # fxr_resolver.c uses dn-containers (dn_vector_t), build it here alongside the containers library
     add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
-    target_include_directories(dn-containers PRIVATE ${CLR_SRC_NATIVE_DIR})
-    target_include_directories(dn-containers-no-lto PRIVATE ${CLR_SRC_NATIVE_DIR})
 
     list(APPEND SOURCES
         ../../hostmisc/fxr_resolver.c

@@ -92,10 +92,9 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
 
     if(NOT CLR_CMAKE_TARGET_WIN32)
         add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
-        target_include_directories(dn-containers PRIVATE ${CLR_SRC_NATIVE_DIR})
-        target_include_directories(dn-containers-no-lto PRIVATE ${CLR_SRC_NATIVE_DIR})
     endif()
 
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
     add_subdirectory(hostcommon)
     add_subdirectory(hostmisc)
     add_subdirectory(nethost)

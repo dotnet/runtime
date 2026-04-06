@@ -49,7 +49,6 @@ pal_char_t* c_fx_ver_as_str(const c_fx_ver_t* ver, pal_char_t* out_str, size_t o
 #endif
 
 #ifdef __cplusplus
-#include "pal.h"
 
 // Note: This is intended to implement SemVer 2.0
 struct fx_ver_t

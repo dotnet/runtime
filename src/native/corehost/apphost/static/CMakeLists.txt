@@ -8,16 +8,9 @@ include_directories(..)
 include_directories(../..)
 include_directories(../../hostmisc)
 include_directories(../../json)
-include_directories(../standalone)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
-
-if(NOT CLR_CMAKE_TARGET_WIN32)
-    add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
-    target_include_directories(dn-containers PRIVATE ${CLR_SRC_NATIVE_DIR})
-    target_include_directories(dn-containers-no-lto PRIVATE ${CLR_SRC_NATIVE_DIR})
-endif()
 
 add_subdirectory(../../hostmisc hostmisc)
 
@@ -35,12 +28,12 @@ set(SOURCES
     ./apphost_hostfxr_resolver.cpp
     ./hostpolicy_resolver.cpp
     ../../hostpolicy/static/coreclr_resolver.cpp
-    ../standalone/apphost_main.c
+    ../apphost_main.c
 )
 
 set(HEADERS
     ../../hostmisc/bundle_marker.h
-    ../standalone/apphost_hostfxr_resolver.h
+    ../apphost_hostfxr_resolver.h
     ../../fxr_resolver.h
 )
 
