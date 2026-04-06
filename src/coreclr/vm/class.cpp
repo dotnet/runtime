@@ -703,18 +703,9 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
                 // newly added async method is called on value type instantiations.
                 if (isAsyncTaskReturning)
                 {
-                    // Allocate the async variant signature from this instantiation's own
-                    // LoaderAllocator. We cannot reuse pAsyncVariantSig (allocated from pMT's
-                    // allocator) because pMTMaybe may belong to a different LoaderAllocator
-                    // (e.g. collectible ALC), and the signature pointer is stored as a raw
-                    // pointer in AsyncMethodData.
-                    LoaderAllocator* pInstAllocator = pMTMaybe->GetLoaderAllocator();
-                    BYTE* pInstAsyncSig = (BYTE*)(void*)pInstAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cAsyncVariantSig));
-                    memcpy(pInstAsyncSig, pAsyncVariantSig, cAsyncVariantSig);
-
                     MethodDesc* pAsyncVariantMDUnused;
                     if (FAILED(AddMethodDesc(pMTMaybe, methodDef, dwImplFlags, dwMemberAttrs,
-                                              asyncVariantFlags, pInstAsyncSig, cAsyncVariantSig, &pAsyncVariantMDUnused)))
+                                              asyncVariantFlags, pAsyncVariantSig, cAsyncVariantSig, &pAsyncVariantMDUnused)))
                     {
                         LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod failed to add async variant for instantiation: 0x%08x\n", hr));
                         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
