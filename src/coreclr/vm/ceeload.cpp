@@ -497,11 +497,14 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         m_pInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
     }
 
+#ifdef PROFILING_SUPPORTED_DATA
     // These will be initialized in NotifyProfilerLoadFinished, set them to
     // a safe initial value now.
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
+#endif // PROFILING_SUPPORTED_DATA
+
 #ifdef PROFILING_SUPPORTED
     // set profiler related JIT flags
     if (CORProfilerDisableInlining())

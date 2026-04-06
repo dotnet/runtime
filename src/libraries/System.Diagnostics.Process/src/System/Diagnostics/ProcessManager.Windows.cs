@@ -18,25 +18,50 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
+        // Allows PerformanceCounterLib (and its dependencies) to be trimmed when remote machine
+        // support is not used. s_getRemoteProcessInfos is only assigned in HandleRemoteMachineSupport,
+        // which is only called from public APIs that accept a remote machine name.
+        private delegate void GetRemoteProcessInfosDelegate(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter, string machineName);
+        private static GetRemoteProcessInfosDelegate? s_getRemoteProcessInfos;
+
+        /// <summary>
+        /// Initializes remote machine support if necessary. This method should be called in all public
+        /// entrypoints with machineName argument.
+        /// </summary>
+        /// <param name="machineName">The target machine name.</param>
+        /// <returns>true if the machine is remote; otherwise, false.</returns>
+        internal static bool HandleRemoteMachineSupport(string machineName)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(machineName);
+            if (IsRemoteMachine(machineName))
+            {
+                s_getRemoteProcessInfos ??= NtProcessManager.GetProcessInfos;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Gets process infos for each process on the local machine.</summary>
+        /// <param name="builder">The builder to add found process infos to.</param>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
+        internal static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
+        {
+            Dictionary<int, ProcessInfo> processInfos = NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
+            builder = new ArrayBuilder<ProcessInfo>(processInfos.Count);
+            foreach (KeyValuePair<int, ProcessInfo> entry in processInfos)
+            {
+                builder.Add(entry.Value);
+            }
+        }
+
         /// <summary>Gets whether the process with the specified ID is currently running.</summary>
         /// <param name="processId">The process ID.</param>
         /// <returns>true if the process is running; otherwise, false.</returns>
         public static bool IsProcessRunning(int processId)
         {
-            return IsProcessRunning(processId, ".");
-        }
-
-        /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
-        /// <param name="processId">The process ID.</param>
-        /// <param name="machineName">The machine name.</param>
-        /// <returns>true if the process is running; otherwise, false.</returns>
-        public static bool IsProcessRunning(int processId, string machineName)
-        {
-            // Performance optimization for the local machine:
-            // First try to OpenProcess by id, if valid handle is returned verify that process is running
-            // When the attempt to open a handle fails due to lack of permissions enumerate all processes and compare ids
-            // Attempt to open handle for Idle process (processId == 0) fails with ERROR_INVALID_PARAMETER
-            if (processId != 0 && !IsRemoteMachine(machineName))
+            // Performance optimization: First try to OpenProcess by id.
+            // Attempt to open handle for Idle process (processId == 0) fails with ERROR_INVALID_PARAMETER.
+            if (processId != 0)
             {
                 using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION | ProcessOptions.SYNCHRONIZE, false, processId))
                 {
@@ -57,77 +82,77 @@ namespace System.Diagnostics
                 }
             }
 
-            return Array.IndexOf(GetProcessIds(machineName), processId) >= 0;
+            return Array.IndexOf(GetProcessIds(), processId) >= 0;
+        }
+
+        /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
+        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
+        /// <returns>true if the process is running; otherwise, false.</returns>
+        public static bool IsProcessRunning(int processId, string machineName, bool isRemoteMachine)
+        {
+            if (!isRemoteMachine)
+            {
+                return IsProcessRunning(processId);
+            }
+
+            return Array.IndexOf(GetProcessIds(machineName, isRemoteMachine), processId) >= 0;
         }
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <param name="machineName">The target machine.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
+        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter, string machineName, bool isRemoteMachine)
         {
-            if (!IsRemoteMachine(machineName))
+            if (!isRemoteMachine)
             {
-                return NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
+                GetProcessInfos(ref builder, processNameFilter);
+                return;
             }
 
-            ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
-            if (string.IsNullOrEmpty(processNameFilter))
-            {
-                return processInfos;
-            }
-
-            ArrayBuilder<ProcessInfo> results = default;
-            foreach (ProcessInfo pi in processInfos)
-            {
-                if (string.Equals(processNameFilter, pi.ProcessName, StringComparison.OrdinalIgnoreCase))
-                {
-                    results.Add(pi);
-                }
-            }
-
-            return results.ToArray();
+            s_getRemoteProcessInfos!(ref builder, processNameFilter, machineName);
         }
 
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
         /// <param name="processId">The process ID.</param>
         /// <param name="machineName">The machine name.</param>
+        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
         /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
-        public static ProcessInfo? GetProcessInfo(int processId, string machineName)
+        public static ProcessInfo? GetProcessInfo(int processId, string machineName, bool isRemoteMachine)
         {
-            if (IsRemoteMachine(machineName))
+            if (isRemoteMachine)
             {
                 // remote case: we take the hit of looping through all results
-                ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
-                foreach (ProcessInfo processInfo in processInfos)
+                ArrayBuilder<ProcessInfo> builder = default;
+                s_getRemoteProcessInfos!(ref builder, processNameFilter: null, machineName);
+                for (int i = 0; i < builder.Count; i++)
                 {
-                    if (processInfo.ProcessId == processId)
-                    {
-                        return processInfo;
-                    }
+                    if (builder[i].ProcessId == processId)
+                        return builder[i];
                 }
             }
             else
             {
                 // local case: do not use performance counter and also attempt to get the matching (by pid) process only
-                ProcessInfo[] processInfos = NtProcessInfoHelper.GetProcessInfos(processId);
-                if (processInfos.Length == 1)
-                {
-                    return processInfos[0];
-                }
+                Dictionary<int, ProcessInfo> processInfos = NtProcessInfoHelper.GetProcessInfos(processId);
+                if (processInfos.TryGetValue(processId, out ProcessInfo? processInfo))
+                    return processInfo;
             }
 
             return null;
         }
 
-        internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
+        internal static string? GetProcessName(int processId, string machineName, bool isRemoteMachine, ref ProcessInfo? processInfo)
         {
             if (processInfo is not null)
             {
                 return processInfo.ProcessName;
             }
 
-            if (!IsRemoteMachine(machineName))
+            if (!isRemoteMachine)
             {
                 string? processName = Interop.Kernel32.GetProcessName((uint)processId);
                 if (processName is not null)
@@ -139,36 +164,37 @@ namespace System.Diagnostics
                 }
             }
 
-            processInfo = GetProcessInfo(processId, machineName);
+            processInfo = GetProcessInfo(processId, machineName, isRemoteMachine);
             return processInfo?.ProcessName;
         }
 
         /// <summary>Gets the IDs of all processes on the specified machine.</summary>
         /// <param name="machineName">The machine to examine.</param>
+        /// <param name="isRemoteMachine">Whether the machine is remote; avoids a redundant <see cref="IsRemoteMachine"/> call.</param>
         /// <returns>An array of process IDs from the specified machine.</returns>
-        public static int[] GetProcessIds(string machineName)
+        public static int[] GetProcessIds(string machineName, bool isRemoteMachine)
         {
-            // Due to the lack of support for EnumModules() on coresysserver, we rely
-            // on PerformanceCounters to get the ProcessIds for both remote desktop
-            // and the local machine, unlike Desktop on which we rely on PCs only for
-            // remote machines.
-            return IsRemoteMachine(machineName) ?
-                NtProcessManager.GetProcessIds(machineName, true) :
-                GetProcessIds();
+            if (!isRemoteMachine)
+            {
+                return GetProcessIds();
+            }
+
+            ArrayBuilder<ProcessInfo> builder = default;
+            s_getRemoteProcessInfos!(ref builder, processNameFilter: null, machineName);
+
+            int[] ids = new int[builder.Count];
+            for (int i = 0; i < ids.Length; i++)
+            {
+                ids[i] = builder[i].ProcessId;
+            }
+
+            return ids;
         }
 
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
         public static int[] GetProcessIds()
         {
             return NtProcessManager.GetProcessIds();
-        }
-
-        /// <summary>Gets the ID of a process from a handle to the process.</summary>
-        /// <param name="processHandle">The handle.</param>
-        /// <returns>The process ID.</returns>
-        public static int GetProcessIdFromHandle(SafeProcessHandle processHandle)
-        {
-            return NtProcessManager.GetProcessIdFromHandle(processHandle);
         }
 
         /// <summary>Gets an array of module infos for the specified process.</summary>
@@ -179,7 +205,7 @@ namespace System.Diagnostics
             return NtProcessManager.GetModules(processId);
         }
 
-        private static bool IsRemoteMachineCore(string machineName)
+        internal static bool IsRemoteMachine(string machineName)
         {
             ReadOnlySpan<char> baseName = machineName.AsSpan(machineName.StartsWith('\\') ? 2 : 0);
             return
@@ -398,15 +424,6 @@ namespace System.Diagnostics
             }
         }
 
-        public static int[] GetProcessIds(string machineName, bool isRemoteMachine)
-        {
-            ProcessInfo[] infos = GetProcessInfos(machineName, isRemoteMachine);
-            int[] ids = new int[infos.Length];
-            for (int i = 0; i < infos.Length; i++)
-                ids[i] = infos[i].ProcessId;
-            return ids;
-        }
-
         public static int[] GetProcessIds()
         {
             int[] processIds = ArrayPool<int>.Shared.Rent(256);
@@ -449,44 +466,28 @@ namespace System.Diagnostics
             return modules.Count == 0 ? null : modules[0];
         }
 
-        public static int GetProcessIdFromHandle(SafeProcessHandle processHandle)
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter, string machineName)
         {
-            return Interop.Kernel32.GetProcessId(processHandle);
-        }
-
-        public static ProcessInfo[] GetProcessInfos(string machineName, bool isRemoteMachine)
-        {
+            PerformanceCounterLib library;
             try
             {
                 // We don't want to call library.Close() here because that would cause us to unload all of the perflibs.
                 // On the next call to GetProcessInfos, we'd have to load them all up again, which is SLOW!
-                PerformanceCounterLib library = PerformanceCounterLib.GetPerformanceCounterLib(machineName, new CultureInfo("en"));
-                return GetProcessInfos(library);
+                library = PerformanceCounterLib.GetPerformanceCounterLib(machineName, new CultureInfo("en"));
             }
             catch (Exception e)
             {
-                if (isRemoteMachine)
-                {
-                    throw new InvalidOperationException(SR.CouldntConnectToRemoteMachine, e);
-                }
-                else
-                {
-                    throw;
-                }
+                throw new InvalidOperationException(SR.CouldntConnectToRemoteMachine, e);
             }
-        }
-
-        private static ProcessInfo[] GetProcessInfos(PerformanceCounterLib library)
-        {
-            ProcessInfo[] processInfos;
 
             int retryCount = 5;
+            Dictionary<int, ProcessInfo> processInfos;
             do
             {
                 try
                 {
                     byte[]? dataPtr = library.GetPerformanceData(PerfCounterQueryString);
-                    processInfos = GetProcessInfos(library, ProcessPerfCounterId, ThreadPerfCounterId, dataPtr);
+                    processInfos = GetProcessInfos(library, dataPtr);
                 }
                 catch (Exception e)
                 {
@@ -495,15 +496,19 @@ namespace System.Diagnostics
 
                 --retryCount;
             }
-            while (processInfos.Length == 0 && retryCount != 0);
+            while (processInfos.Count == 0 && retryCount != 0);
 
-            if (processInfos.Length == 0)
+            if (processInfos.Count == 0)
                 throw new InvalidOperationException(SR.ProcessDisabled);
 
-            return processInfos;
+            foreach (KeyValuePair<int, ProcessInfo> entry in processInfos)
+            {
+                if (processNameFilter is null || processNameFilter.Equals(entry.Value.ProcessName, StringComparison.OrdinalIgnoreCase))
+                    builder.Add(entry.Value);
+            }
         }
 
-        private static ProcessInfo[] GetProcessInfos(PerformanceCounterLib library, int processIndex, int threadIndex, ReadOnlySpan<byte> data)
+        private static Dictionary<int, ProcessInfo> GetProcessInfos(PerformanceCounterLib library, ReadOnlySpan<byte> data)
         {
             Dictionary<int, ProcessInfo> processInfos = new Dictionary<int, ProcessInfo>();
             List<ThreadInfo> threadInfos = new List<ThreadInfo>();
@@ -532,9 +537,9 @@ namespace System.Diagnostics
                     string counterName = library.GetCounterName(counter.CounterNameTitleIndex);
 
                     counters[j] = counter;
-                    if (type.ObjectNameTitleIndex == processIndex)
+                    if (type.ObjectNameTitleIndex == ProcessPerfCounterId)
                         counters[j].CounterNameTitlePtr = (int)GetValueId(counterName);
-                    else if (type.ObjectNameTitleIndex == threadIndex)
+                    else if (type.ObjectNameTitleIndex == ThreadPerfCounterId)
                         counters[j].CounterNameTitlePtr = (int)GetValueId(counterName);
 
                     counterPos += counter.ByteLength;
@@ -553,7 +558,7 @@ namespace System.Diagnostics
                     {
                         // continue
                     }
-                    else if (type.ObjectNameTitleIndex == processIndex)
+                    else if (type.ObjectNameTitleIndex == ProcessPerfCounterId)
                     {
                         ProcessInfo processInfo = GetProcessInfo(data.Slice(instancePos + instance.ByteLength), counters);
                         if (processInfo.ProcessId == 0 && !instanceName.Equals("Idle", StringComparison.OrdinalIgnoreCase))
@@ -594,7 +599,7 @@ namespace System.Diagnostics
                             }
                         }
                     }
-                    else if (type.ObjectNameTitleIndex == threadIndex)
+                    else if (type.ObjectNameTitleIndex == ThreadPerfCounterId)
                     {
                         ThreadInfo threadInfo = GetThreadInfo(data.Slice(instancePos + instance.ByteLength), counters);
                         if (threadInfo._threadId != 0)
@@ -624,9 +629,7 @@ namespace System.Diagnostics
                 }
             }
 
-            ProcessInfo[] temp = new ProcessInfo[processInfos.Values.Count];
-            processInfos.Values.CopyTo(temp, 0);
-            return temp;
+            return processInfos;
         }
 
         private static unsafe ThreadInfo GetThreadInfo(ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
@@ -999,7 +1002,7 @@ namespace System.Diagnostics
         /// <param name="processIdFilter">Optional filter used to filter processes down to only those with the specified id.</param>
         /// <param name="processNameFilter">Optional filter used to filter processes down to only those with the specified name.</param>
         /// <remarks>All specified non-null filters are applied.</remarks>
-        internal static unsafe ProcessInfo[] GetProcessInfos(int? processIdFilter = null, string? processNameFilter = null)
+        internal static unsafe Dictionary<int, ProcessInfo> GetProcessInfos(int? processIdFilter = null, string? processNameFilter = null)
         {
             // Start with the default buffer size.
             uint bufferSize = MostRecentSize;
@@ -1045,7 +1048,7 @@ namespace System.Diagnostics
         // kicked in since new call to NtQuerySystemInformation
         private static uint GetEstimatedBufferSize(uint actualSize) => actualSize + 1024 * 10;
 
-        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter, string? processNameFilter)
+        private static unsafe Dictionary<int, ProcessInfo> GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter, string? processNameFilter)
         {
             // Use a dictionary to avoid duplicate entries if any
             // 60 is a reasonable number for processes on a normal machine.
@@ -1059,7 +1062,7 @@ namespace System.Diagnostics
 
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
                 int processId = pi.UniqueProcessId.ToInt32();
-                if (processIdFilter == null || processIdFilter.GetValueOrDefault() == processId)
+                if (processIdFilter is null || processIdFilter.GetValueOrDefault() == processId)
                 {
                     string? processName = null;
                     ReadOnlySpan<char> processNameSpan =
@@ -1069,7 +1072,7 @@ namespace System.Diagnostics
                             processId == NtProcessManager.IdleProcessID ? "Idle" :
                             processId.ToString(CultureInfo.InvariantCulture)); // use the process ID for a normal process without a name
 
-                    if (string.IsNullOrEmpty(processNameFilter) || processNameSpan.Equals(processNameFilter, StringComparison.OrdinalIgnoreCase))
+                    if (processNameFilter is null || processNameSpan.Equals(processNameFilter, StringComparison.OrdinalIgnoreCase))
                     {
                         processName ??= processNameSpan.ToString();
 
@@ -1125,9 +1128,7 @@ namespace System.Diagnostics
                 processInformationOffset += (int)pi.NextEntryOffset;
             }
 
-            ProcessInfo[] temp = new ProcessInfo[processInfos.Values.Count];
-            processInfos.Values.CopyTo(temp, 0);
-            return temp;
+            return processInfos;
         }
 
         // This function generates the short form of process name.
