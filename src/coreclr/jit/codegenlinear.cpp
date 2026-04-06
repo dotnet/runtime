@@ -217,9 +217,7 @@ void CodeGen::genCodeForFunclet(FuncInfoDsc* funcInfo)
     }
     else
     {
-        JITDUMP("\n=============== Generating code for funclet #%u\n", 1); // fix
-
-        BasicBlock* const startBlock = funcInfo->GetStartBlock(m_compiler);
+        JITDUMP("\n=============== Generating code for funclet\n");
     }
 
     for (BasicBlock* const block : funcInfo->Blocks(m_compiler))
@@ -229,7 +227,7 @@ void CodeGen::genCodeForFunclet(FuncInfoDsc* funcInfo)
 }
 
 //------------------------------------------------------------------------
-// genCodeForFunclet: Generate code for a basic block
+// genCodeForBlock: Generate code for a basic block
 //
 // Arguments:
 //    block - the basic block for which code is being generated
