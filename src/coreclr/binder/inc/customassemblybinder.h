@@ -20,7 +20,7 @@ public:
     HRESULT BindUsingPEImage(PEImage* pPEImage,
         bool excludeAppPaths,
         BINDER_SPACE::Assembly** ppAssembly,
-        BINDER_SPACE::Assembly** ppExistingAssemblyOnMvidMismatch = nullptr) override;
+        BINDER_SPACE::Assembly** ppExistingAssemblyOnConflict = nullptr) override;
 
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
         BINDER_SPACE::Assembly** ppAssembly) override;

@@ -119,7 +119,7 @@ Exit:;
 HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                  /* in */ bool excludeAppPaths,
                                                  /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly,
-                                                 /* [out, optional] */ BINDER_SPACE::Assembly **ppExistingAssemblyOnMvidMismatch)
+                                                 /* [out, optional] */ BINDER_SPACE::Assembly **ppExistingAssemblyOnConflict)
 {
     HRESULT hr = S_OK;
 
@@ -167,16 +167,16 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                 {
                     // The assembly was found but the version is incompatible.
                     // Return the existing assembly so the caller can provide an informative error message.
-                    if (ppExistingAssemblyOnMvidMismatch != nullptr)
+                    if (ppExistingAssemblyOnConflict != nullptr)
                     {
-                        *ppExistingAssemblyOnMvidMismatch = pExistingAssembly.Extract();
+                        *ppExistingAssemblyOnConflict = pExistingAssembly.Extract();
                     }
                     goto Exit;
                 }
             }
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly, ppExistingAssemblyOnMvidMismatch);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly, ppExistingAssemblyOnConflict);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);
