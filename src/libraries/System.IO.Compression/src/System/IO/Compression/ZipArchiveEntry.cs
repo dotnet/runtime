@@ -23,7 +23,6 @@ namespace System.IO.Compression
         private ZipVersionNeededValues _versionMadeBySpecification;
         private ZipVersionNeededValues _versionToExtract;
         private BitFlagValues _generalPurposeBitFlag;
-        private readonly bool _isEncrypted;
         private ZipCompressionMethod _storedCompressionMethod;
         private DateTimeOffset _lastModified;
         private long _compressedSize;
@@ -72,13 +71,12 @@ namespace System.IO.Compression
             _versionMadeBySpecification = (ZipVersionNeededValues)cd.VersionMadeBySpecification;
             _versionToExtract = (ZipVersionNeededValues)cd.VersionNeededToExtract;
             _generalPurposeBitFlag = (BitFlagValues)cd.GeneralPurposeBitFlag;
-            _isEncrypted = (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
             // Initialize _headerCompressionMethod from the central directory.
             // For AES entries, this will be 99 (WinZip AES wrapper indicator) and never changes.
             _headerCompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
             // For AES-encrypted entries, the real compression method is stored in the AES extra field (0x9901)
             // Parse it now so that people can see the actual value before opening the entry.
-            if (_isEncrypted && cd.AesExtraField.HasValue)
+            if (IsEncrypted && cd.AesExtraField.HasValue)
             {
                 WinZipAesExtraField aesField = cd.AesExtraField.Value;
                 // Set the real compression method from the AES extra field
@@ -94,7 +92,7 @@ namespace System.IO.Compression
                     _ => throw new InvalidDataException(SR.InvalidAesStrength)
                 };
             }
-            else if (_isEncrypted)
+            else if (IsEncrypted)
             {
                 // Encrypted but no AES extra field means ZipCrypto
                 Encryption = ZipEncryptionMethod.ZipCrypto;
@@ -209,7 +207,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Gets a value that indicates whether the entry is encrypted.
         /// </summary>
-        public bool IsEncrypted => _isEncrypted;
+        public bool IsEncrypted => (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
 
         /// <summary>
         /// Gets the encryption method used to encrypt the entry.
@@ -442,6 +440,9 @@ namespace System.IO.Compression
         {
             ThrowIfInvalidArchive();
 
+            if (IsEncrypted && password.IsEmpty)
+                throw new ArgumentException(SR.PasswordRequired, nameof(password));
+
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
@@ -519,6 +520,9 @@ namespace System.IO.Compression
 
             if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
                 throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+
+            if (IsEncrypted && password.IsEmpty)
+                throw new ArgumentException(SR.PasswordRequired, nameof(password));
 
             bool usePassword = IsEncrypted && !password.IsEmpty;
 
@@ -1311,6 +1315,7 @@ namespace System.IO.Compression
         {
             return new WinZipAesExtraField
             {
+                VendorVersion = 2,
                 AesStrength = Encryption switch
                 {
                     ZipEncryptionMethod.Aes128 => (byte)1,
@@ -1499,41 +1504,37 @@ namespace System.IO.Compression
             }
             else
             {
+                bool isCreateMode = _archive.Mode == ZipArchiveMode.Create;
+
                 if (Encryption == ZipEncryptionMethod.ZipCrypto)
                 {
-                    // Streaming mode for encryption: sizes and CRC unknown upfront
-                    _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
+                    _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
-                    Debug.Assert(_crc32 == 0);
                 }
                 else if (UseAesEncryption())
                 {
                     _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
-
-                    // Set compression method to 99 (AES indicator) in the header
                     CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
                     aesExtraField = CreateAesExtraField();
                     aesExtraFieldSize = WinZipAesExtraField.TotalSize;
                 }
-                // if we have a non-seekable stream, don't worry about sizes at all, and just set the right bit
-                // if we are using the data descriptor, then sizes and crc should be set to 0 in the header
-                else if (_archive.Mode == ZipArchiveMode.Create && !_archive.ArchiveStream.CanSeek)
+                else if (isCreateMode && !_archive.ArchiveStream.CanSeek)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
-                    // the crc should not have been set if we are in create mode, but clear it just to be sure
                     Debug.Assert(_crc32 == 0);
                 }
-                else // if we are not in streaming mode, we have to decide if we want to write zip64 headers
+                else
                 {
-                    // We are in seekable mode so we will not need to write a data descriptor
+                    // Seekable mode: sizes and CRC are known, no data descriptor needed.
                     _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
+
                     if (ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
                 || (_archive._forceZip64 && _archive.Mode == ZipArchiveMode.Update)
@@ -1543,7 +1544,6 @@ namespace System.IO.Compression
                         compressedSizeTruncated = ZipHelper.Mask32Bit;
                         uncompressedSizeTruncated = ZipHelper.Mask32Bit;
 
-                        // prepare Zip64 extra field object. If we have one of the sizes, the other must go in there
                         zip64ExtraField = new()
                         {
                             CompressedSize = _compressedSize,
@@ -1612,8 +1612,9 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressionMethod..], compressionMethodToWrite);
 
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.LastModified..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
-            // when using aes encryption, ae-2 standard dictates crc to be 0
-            uint crcToWrite = UseAesEncryption() ? 0 : _crc32;
+            // When using data descriptors, CRC must be 0 in the local header.
+            // For AE-2, CRC is always 0 regardless.
+            uint crcToWrite = (UseAesEncryption() || (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0) ? 0 : _crc32;
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.Crc32..], crcToWrite);
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressedSize..], compressedSizeTruncated);
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.UncompressedSize..], uncompressedSizeTruncated);

@@ -120,6 +120,9 @@ public partial class ZipArchiveEntry
         if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
             throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
 
+        if (IsEncrypted && password.IsEmpty)
+            throw new ArgumentException(SR.PasswordRequired, nameof(password));
+
         bool usePassword = IsEncrypted && !password.IsEmpty;
 
         switch (_archive.Mode)
@@ -163,6 +166,9 @@ public partial class ZipArchiveEntry
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
+
+        if (IsEncrypted && password.IsEmpty)
+            throw new ArgumentException(SR.PasswordRequired, nameof(password));
 
         bool usePassword = IsEncrypted && !password.IsEmpty;
 
