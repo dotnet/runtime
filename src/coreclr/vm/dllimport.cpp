@@ -461,7 +461,7 @@ public:
             }
 
 #if defined(TARGET_X86)
-            // we store the real managed argument stack size in the stub MethodDesc on non-X86
+            // we store the real native argument stack size in the stub MethodDesc
             UINT stackSize = pStubMD->SizeOfNativeArgStack();
 
             if (!FitsInU2(stackSize))
