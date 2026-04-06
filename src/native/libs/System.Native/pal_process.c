@@ -26,7 +26,15 @@
 #if !defined(HAVE_CLOSE_RANGE)
 #include <sys/syscall.h>
 #if !defined(__NR_close_range)
-#define __NR_close_range 436
+// close_range was added in Linux 5.9. The syscall number is 436 for all
+// architectures using the generic syscall table (asm-generic/unistd.h),
+// which covers aarch64, riscv, s390x, ppc64le, and others. The exception
+// is alpha, which has its own syscall table and uses 546 instead.
+# if defined(__alpha__)
+#  define __NR_close_range 546
+# else
+#  define __NR_close_range 436
+# endif
 #endif // !defined(__NR_close_range)
 #endif // !defined(HAVE_CLOSE_RANGE)
 #endif // defined(__linux__)
