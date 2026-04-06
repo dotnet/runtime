@@ -692,6 +692,7 @@ struct ILStubEHClauseBuilder
     ILCodeLabel* handlerBeginLabel;
     ILCodeLabel* handlerEndLabel;
     DWORD typeToken;
+    ILStubEHClauseBuilder* next;
 };
 
 
@@ -725,6 +726,7 @@ protected:
 
     void DeleteCodeLabels();
     void DeleteCodeStreams();
+    void DeleteEHClauses();
 
     struct ILInstruction
     {
@@ -885,8 +887,9 @@ protected:
     // can span different ILCodeStream instances (the PInvoke stub's
     // try-finally, for example, begins on the Marshal stream and the
     // handler ends on the Cleanup stream).
-    SArray<ILStubEHClauseBuilder> m_buildingEHClauses;
-    SArray<ILStubEHClauseBuilder> m_finishedEHClauses;
+    ILStubEHClauseBuilder* m_pBuildingEHClauseStack;
+    ILStubEHClauseBuilder* m_pFinishedEHClauseHead;
+    ILStubEHClauseBuilder* m_pFinishedEHClauseTail;
 };  // class ILStubLinker
 
 

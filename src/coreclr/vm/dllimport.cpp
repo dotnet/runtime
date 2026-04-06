@@ -2330,8 +2330,10 @@ void PInvokeStubLinker::End(DWORD dwStubFlags)
     else
     {
         // No cleanup needed - cancel the inner try block started in Begin().
-        _ASSERTE(m_buildingEHClauses.GetCount() > 0);
-        m_buildingEHClauses.SetCount(m_buildingEHClauses.GetCount() - 1);
+        _ASSERTE(m_pBuildingEHClauseStack != NULL);
+        ILStubEHClauseBuilder* pCancel = m_pBuildingEHClauseStack;
+        m_pBuildingEHClauseStack = pCancel->next;
+        delete pCancel;
     }
 
     if (IsExceptionCleanupNeeded())
