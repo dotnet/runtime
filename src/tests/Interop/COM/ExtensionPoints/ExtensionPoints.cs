@@ -42,6 +42,7 @@ public class ExtensionPoints
 
     [Fact]
     [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/126567")]
     public static unsafe void Validate_Managed_IMallocSpy()
     {
         Console.WriteLine($"Running {nameof(Validate_Managed_IMallocSpy)}...");
