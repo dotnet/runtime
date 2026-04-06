@@ -30,6 +30,7 @@ namespace System.IO.Compression
         private long _uncompressedSize;
         private long _offsetOfLocalHeader;
         private long? _storedOffsetOfCompressedData;
+        private long _endOfLocalEntryData;
         private uint _crc32;
         // An array of buffers, each a maximum of MaxSingleBufferSize in size
         private byte[][]? _compressedBytes;
@@ -1006,6 +1007,17 @@ namespace System.IO.Compression
 
         private bool AreSizesTooLarge => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
 
+        /// <summary>
+        /// The position immediately after all entry data (including any trailing data descriptor).
+        /// Pre-computed during the Update-mode write phase from the next entry's local header offset
+        /// or the central directory start offset.
+        /// </summary>
+        internal long EndOfLocalEntryData
+        {
+            get => _endOfLocalEntryData;
+            set => _endOfLocalEntryData = value;
+        }
+
         private static CompressionLevel MapCompressionLevel(BitFlagValues generalPurposeBitFlag, ZipCompressionMethod compressionMethod)
         {
             // Information about the Deflate compression option is stored in bits 1 and 2 of the general purpose bit flags.
@@ -1263,18 +1275,11 @@ namespace System.IO.Compression
                         }
                     }
 
-                    // If we know that we need to update the file header (but don't need to load and update the data itself)
-                    // then advance the position past it.
-                    if (_compressedSize != 0)
+                    // Advance the stream past the compressed data and any trailing data descriptor
+                    // by seeking to the pre-computed end-of-entry boundary.
+                    if (_endOfLocalEntryData > _archive.ArchiveStream.Position)
                     {
-                        _archive.ArchiveStream.Seek(_compressedSize, SeekOrigin.Current);
-                    }
-
-                    // If the original entry had a data descriptor after the compressed data, skip past it
-                    // so that subsequent entries are written at the correct position.
-                    if (hadDataDescriptor)
-                    {
-                        SkipDataDescriptor();
+                        _archive.ArchiveStream.Seek(_endOfLocalEntryData, SeekOrigin.Begin);
                     }
                 }
             }
@@ -1292,36 +1297,6 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)_generalPurposeBitFlag);
             _archive.ArchiveStream.Write(flagBytes);
             _archive.ArchiveStream.Position = savedPosition;
-        }
-
-        /// <summary>
-        /// Reads past a data descriptor that follows the compressed data in the archive stream.
-        /// The data descriptor signature (0x08074B50) is optional per the ZIP spec, so we read the
-        /// first 4 bytes to detect it and seek past the remaining fields accordingly.
-        /// </summary>
-        private void SkipDataDescriptor()
-        {
-            Span<byte> signatureBuffer = stackalloc byte[sizeof(uint)];
-            _archive.ArchiveStream.ReadExactly(signatureBuffer);
-            _archive.ArchiveStream.Seek(GetDataDescriptorSkipBytes(signatureBuffer), SeekOrigin.Current);
-        }
-
-        /// <summary>
-        /// Given the first 4 bytes read after the compressed data, returns the number of
-        /// remaining bytes to seek past the data descriptor. Detects the optional signature
-        /// and uses 32-bit or 64-bit field sizes as appropriate.
-        /// </summary>
-        private int GetDataDescriptorSkipBytes(ReadOnlySpan<byte> leadingBytes)
-        {
-            bool hasSignature = leadingBytes.SequenceEqual(ZipLocalFileHeader.DataDescriptorSignatureConstantBytes);
-
-            return AreSizesTooLarge
-                ? (hasSignature
-                    ? ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.Crc32 + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize
-                    : ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize)
-                : (hasSignature
-                    ? ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.Crc32 + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.UncompressedSize
-                    : ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.UncompressedSize);
         }
 
         private const int MetadataBufferLength = ZipLocalFileHeader.FieldLengths.VersionNeededToExtract + ZipLocalFileHeader.FieldLengths.GeneralPurposeBitFlags;

@@ -366,7 +366,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
 
             entriesToWrite = new(_entries.Count);
 
-            long[] entryEndOffsets = ComputeEntryEndOffsets();
+            ComputeEntryEndOffsets();
 
             for (int i = 0; i < _entries.Count; i++)
             {
@@ -378,7 +378,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                 }
                 else
                 {
-                    WriteFileCalculateOffsets(entry, entryEndOffsets[i], ref startingOffset, ref nextFileOffset);
+                    WriteFileCalculateOffsets(entry, ref startingOffset, ref nextFileOffset);
 
                     // We want to re-write entries which are after the starting offset of the first entry which has pending data to write.
                     // NB: the existing ZipArchiveEntries are sorted in _entries by their position ascending.

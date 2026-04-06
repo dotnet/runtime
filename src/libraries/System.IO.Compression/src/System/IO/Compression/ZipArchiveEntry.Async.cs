@@ -419,18 +419,11 @@ public partial class ZipArchiveEntry
                     }
                 }
 
-                // If we know that we need to update the file header (but don't need to load and update the data itself)
-                // then advance the position past it.
-                if (_compressedSize != 0)
+                // Advance the stream past the compressed data and any trailing data descriptor
+                // by seeking to the pre-computed end-of-entry boundary.
+                if (_endOfLocalEntryData > _archive.ArchiveStream.Position)
                 {
-                    _archive.ArchiveStream.Seek(_compressedSize, SeekOrigin.Current);
-                }
-
-                // If the original entry had a data descriptor after the compressed data, skip past it
-                // so that subsequent entries are written at the correct position.
-                if (hadDataDescriptor)
-                {
-                    await SkipDataDescriptorAsync(cancellationToken).ConfigureAwait(false);
+                    _archive.ArchiveStream.Seek(_endOfLocalEntryData, SeekOrigin.Begin);
                 }
             }
         }
@@ -444,13 +437,6 @@ public partial class ZipArchiveEntry
         BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)_generalPurposeBitFlag);
         await _archive.ArchiveStream.WriteAsync(flagBytes, cancellationToken).ConfigureAwait(false);
         _archive.ArchiveStream.Position = savedPosition;
-    }
-
-    private async ValueTask SkipDataDescriptorAsync(CancellationToken cancellationToken)
-    {
-        byte[] signatureBuffer = new byte[sizeof(uint)];
-        await _archive.ArchiveStream.ReadExactlyAsync(signatureBuffer, cancellationToken).ConfigureAwait(false);
-        _archive.ArchiveStream.Seek(GetDataDescriptorSkipBytes(signatureBuffer), SeekOrigin.Current);
     }
 
     // Using _offsetOfLocalHeader, seeks back to where CRC and sizes should be in the header,
