@@ -87,6 +87,13 @@
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
   </PropertyGroup>
 
+  <!-- Enable runtime async for CoreCLR -->
+  <!-- RISC-V: https://github.com/dotnet/runtime/issues/124934 -->
+  <!-- LoongArch: https://github.com/dotnet/runtime/issues/124935 -->
+  <PropertyGroup Condition="'$(TargetArchitecture)' != 'riscv64' and '$(TargetArchitecture)' != 'loongarch64' and '$(RuntimeFlavor)' != 'Mono'">
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+
   <!-- Assembly attributes -->
   <PropertyGroup>
     <Description>$(AssemblyName)</Description>
