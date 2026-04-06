@@ -1557,18 +1557,6 @@ namespace Mono.Linker.Steps
                 markingHelpers.MarkForwardedScope(CreateTypeReferenceForExportedTypeTarget(exportedType, assembly.MainModule), new MessageOrigin(assembly));
             }
 
-            static TypeReference CreateTypeReferenceForExportedTypeTarget(ExportedType exportedType, ModuleDefinition module)
-            {
-                TypeReference? declaringTypeReference = null;
-                if (exportedType.DeclaringType != null)
-                    declaringTypeReference = CreateTypeReferenceForExportedTypeTarget(exportedType.DeclaringType, module);
-
-                return new TypeReference(exportedType.Namespace, exportedType.Name, module, exportedType.Scope)
-                {
-                    DeclaringType = declaringTypeReference
-                };
-            }
-
             protected override void ProcessExtra()
             {
                 // Also mark the scopes of metadata typeref rows to cover any not discovered by the traversal.
@@ -1579,6 +1567,18 @@ namespace Mono.Linker.Steps
                         continue;
                     markingHelpers.MarkForwardedScope(typeReference, new MessageOrigin(assembly));
                 }
+            }
+
+            static TypeReference CreateTypeReferenceForExportedTypeTarget(ExportedType exportedType, ModuleDefinition module)
+            {
+                TypeReference? declaringTypeReference = null;
+                if (exportedType.DeclaringType != null)
+                    declaringTypeReference = CreateTypeReferenceForExportedTypeTarget(exportedType.DeclaringType, module);
+
+                return new TypeReference(exportedType.Namespace, exportedType.Name, module, exportedType.Scope)
+                {
+                    DeclaringType = declaringTypeReference
+                };
             }
         }
 
