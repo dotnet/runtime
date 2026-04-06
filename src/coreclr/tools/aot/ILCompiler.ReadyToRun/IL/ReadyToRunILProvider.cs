@@ -135,24 +135,38 @@ namespace Internal.IL
             Debug.Assert(_manifestMutableModule != null);
             var wrappedMethodIL = new ManifestModuleWrappedMethodIL();
 
-            if (method.IsAsync)
+            // Check IsAsyncVariant() before IsAsync because AsyncMethodVariant delegates IsAsync to its target,
+            // so both would be true. The variant needs the async thunk IL, not the task-returning thunk.
+            if (method.IsAsyncVariant())
+            {
+                var amv = (AsyncMethodVariant)method;
+                if (NeedsAsyncThunk(method))
+                {
+                    if (!wrappedMethodIL.Initialize(_manifestMutableModule,
+                        AsyncThunkILEmitter.EmitAsyncMethodThunk(method, method.GetTargetOfAsyncVariant()),
+                        method,
+                        false))
+                    {
+                        wrappedMethodIL = null;
+                    }
+                }
+                else
+                {
+                    // The async variant uses real ECMA IL (method has MethodImplAttributes.Async flag).
+                    // Wrap the AsyncEcmaMethodIL for cross-module token translation.
+                    if (!wrappedMethodIL.Initialize(_manifestMutableModule,
+                        new AsyncEcmaMethodIL(amv, EcmaMethodIL.Create(amv.Target)),
+                        method,
+                        false))
+                    {
+                        wrappedMethodIL = null;
+                    }
+                }
+            }
+            else if (method.IsAsync)
             {
                 Debug.Assert(NeedsTaskReturningThunk(method));
                 if (!wrappedMethodIL.Initialize(_manifestMutableModule, GetMethodILForAsyncMethod(method), (EcmaMethod)method, false))
-                {
-                    // If we could not initialize the wrapped method IL, we should store a null.
-                    // That will result in the IL code for the method being unavailable for use in
-                    // the compilation, which is version safe.
-                    wrappedMethodIL = null;
-                }
-            }
-            else if (method.IsAsyncVariant())
-            {
-                Debug.Assert(NeedsAsyncThunk(method));
-                if (!wrappedMethodIL.Initialize(_manifestMutableModule,
-                    AsyncThunkILEmitter.EmitAsyncMethodThunk(method, method.GetTargetOfAsyncVariant()),
-                    method,
-                    false))
                 {
                     // If we could not initialize the wrapped method IL, we should store a null.
                     // That will result in the IL code for the method being unavailable for use in
