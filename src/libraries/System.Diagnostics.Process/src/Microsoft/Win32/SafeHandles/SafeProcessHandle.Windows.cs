@@ -492,7 +492,8 @@ namespace Microsoft.Win32.SafeHandles
 
                 // Remove the inheritance flag so they are not unintentionally inherited by other processes started after this point.
                 // Since we used DangerousAddRef before, the handle cannot be closed at this point, so it's safe to call SetHandleInformation.
-                Interop.Kernel32.SetHandleInformation(safeHandle, Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT, 0);
+                bool success = Interop.Kernel32.SetHandleInformation(safeHandle, Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT, 0);
+                Debug.Assert(success);
                 safeHandle.DangerousRelease();
             }
         }
