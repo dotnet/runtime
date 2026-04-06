@@ -214,7 +214,11 @@ static int32_t QuickRsaCheckCore(const void* key,
 
     if (!getKey(key, &n, &e, &d))
     {
-        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        if (ERR_peek_error() == 0)
+        {
+            ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        }
+
         goto done;
     }
 
