@@ -47,6 +47,7 @@ namespace System.Formats.Tar.Tests
 
             Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
             Assert.Empty(Directory.EnumerateFileSystemEntries(destDir));
+            Assert.DoesNotContain("outside.txt", Directory.EnumerateFileSystemEntries(destDir).Select(Path.GetFileName));
         }
     }
 }
