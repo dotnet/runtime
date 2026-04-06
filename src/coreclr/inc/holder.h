@@ -619,7 +619,7 @@ FORCEINLINE void DoNothing()
 }
 
 //-----------------------------------------------------------------------------
-// Holder/Wrapper are the simplest way to define holders - they synthesizes a base class out of
+// Holder/Wrapper are the simplest way to define holders - they synthesize a base class from
 // function pointers
 //-----------------------------------------------------------------------------
 

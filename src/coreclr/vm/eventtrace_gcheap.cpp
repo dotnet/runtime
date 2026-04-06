@@ -61,11 +61,14 @@ BOOL ETW::GCLog::ShouldTrackMovementForEtw()
 BOOL ETW::GCLog::ShouldWalkStaticsAndCOMForEtw()
 {
     LIMITED_METHOD_CONTRACT;
-
+#ifdef FEATURE_COMINTEROP
     return s_forcedGCInProgress &&
         ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
                                      TRACE_LEVEL_INFORMATION,
                                      CLR_GCHEAPDUMP_KEYWORD);
+#else
+    return FALSE;
+#endif // FEATURE_COMINTEROP
 }
 
 // Batches the list of moved/surviving references for the GCBulkMovedObjectRanges /
@@ -505,9 +508,9 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 //---------------------------------------------------------------------------------------
 // WalkStaticsAndCOMForETW walks both CCW/RCW objects and static variables.
 //---------------------------------------------------------------------------------------
-
 VOID ETW::GCLog::WalkStaticsAndCOMForETW()
 {
+#ifdef FEATURE_COMINTEROP
     CONTRACTL
     {
         NOTHROW;
@@ -537,6 +540,7 @@ VOID ETW::GCLog::WalkStaticsAndCOMForETW()
     {
     }
     EX_END_CATCH
+#endif // FEATURE_COMINTEROP
 }
 
 
