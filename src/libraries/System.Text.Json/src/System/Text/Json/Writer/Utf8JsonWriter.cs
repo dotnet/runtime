@@ -334,31 +334,8 @@ namespace System.Text.Json
         /// </exception>
         public void Reset(Stream utf8Json, JsonWriterOptions options)
         {
-            CheckNotDisposed();
-
-            if (utf8Json == null)
-            {
-                throw new ArgumentNullException(nameof(utf8Json));
-            }
-
-            if (!utf8Json.CanWrite)
-            {
-                throw new ArgumentException(SR.StreamNotWritable);
-            }
-
-            _stream = utf8Json;
-            if (_arrayBufferWriter == null)
-            {
-                _arrayBufferWriter = new ArrayBufferWriter<byte>();
-            }
-            else
-            {
-                _arrayBufferWriter.Clear();
-            }
-
-            _output = null;
+            Reset(utf8Json);
             SetOptions(options);
-            ResetHelper();
         }
 
         /// <summary>
@@ -400,14 +377,8 @@ namespace System.Text.Json
         /// </exception>
         public void Reset(IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
         {
-            CheckNotDisposed();
-
-            _output = bufferWriter ?? throw new ArgumentNullException(nameof(bufferWriter));
-            _stream = null;
-            _arrayBufferWriter = null;
-
+            Reset(bufferWriter);
             SetOptions(options);
-            ResetHelper();
         }
 
         internal void ResetAllStateForCacheReuse()
