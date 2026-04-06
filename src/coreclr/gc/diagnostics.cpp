@@ -1645,15 +1645,15 @@ void gc_heap::record_interesting_info_per_heap()
             ((expand_mechanism == expand_reuse_bestfit) ? "X" : ""), // BF
             (get_gc_data_per_heap()->is_mechanism_bit_set (gc_mark_list_bit) ? "X" : ""), // ML
             (get_gc_data_per_heap()->is_mechanism_bit_set (gc_demotion_bit) ? "X" : ""), // DM
-            (size_t)interesting_data_per_gc[idp_pre_short],
-            (size_t)interesting_data_per_gc[idp_post_short],
-            (size_t)interesting_data_per_gc[idp_merged_pin],
-            (size_t)interesting_data_per_gc[idp_converted_pin],
-            (size_t)interesting_data_per_gc[idp_pre_pin],
-            (size_t)interesting_data_per_gc[idp_post_pin],
-            (size_t)interesting_data_per_gc[idp_pre_and_post_pin],
-            (size_t)interesting_data_per_gc[idp_pre_short_padded],
-            (size_t)interesting_data_per_gc[idp_post_short_padded]));
+            interesting_data_per_gc[idp_pre_short],
+            interesting_data_per_gc[idp_post_short],
+            interesting_data_per_gc[idp_merged_pin],
+            interesting_data_per_gc[idp_converted_pin],
+            interesting_data_per_gc[idp_pre_pin],
+            interesting_data_per_gc[idp_post_pin],
+            interesting_data_per_gc[idp_pre_and_post_pin],
+            interesting_data_per_gc[idp_pre_short_padded],
+            interesting_data_per_gc[idp_post_short_padded]));
 }
 
 void gc_heap::record_global_mechanisms()
