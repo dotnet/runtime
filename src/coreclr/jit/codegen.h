@@ -608,7 +608,7 @@ protected:
     void genReserveFuncletProlog(BasicBlock* block);
     void genReserveFuncletEpilog(BasicBlock* block);
     void genFuncletProlog(BasicBlock* block);
-    void genFuncletEpilog();
+    void genFuncletEpilog(BasicBlock* block);
     void genCaptureFuncletPrologEpilogInfo();
 
     void genUpdateCurrentFunclet(BasicBlock* block);
