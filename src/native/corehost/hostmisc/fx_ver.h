@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "pal_c.h"
+#include "pal.h"
 
 #ifdef __cplusplus
 extern "C" {

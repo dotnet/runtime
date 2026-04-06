@@ -9,8 +9,8 @@ set(SOURCES
 )
 
 set(HEADERS
-    ../../hostmisc/bundle_marker_c.h
-    ../../hostmisc/pal_c.h
+    ../../hostmisc/bundle_marker.h
+    ../../hostmisc/pal.h
     ./apphost_hostfxr_resolver.h
 )
 

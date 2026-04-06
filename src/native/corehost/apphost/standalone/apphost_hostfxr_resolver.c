@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "apphost_hostfxr_resolver.h"
-#include "pal_c.h"
-#include "trace_c.h"
-#include "utils_c.h"
-#include "fxr_resolver_c.h"
+#include "trace.h"
+#include "utils.h"
+#include "fxr_resolver.h"
 
 #include <assert.h>
 #include <string.h>

@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// C++ implementations of the C PAL API (pal_c.h) for Windows.
+// C++ implementations of the C PAL API (pal.h) for Windows.
 // These extern "C" wrappers delegate to the C++ pal:: namespace functions
 // so that C code (e.g. apphost_main.c, fxr_resolver.c) can call them.
 
 #include "pal.h"
 #include "trace.h"
-#include "pal_c.h"
 
 #include <cassert>
 #include <cstdlib>

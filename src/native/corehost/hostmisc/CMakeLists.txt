@@ -14,7 +14,6 @@ set(SOURCES
 )
 
 set(HEADERS
-    ${CMAKE_CURRENT_LIST_DIR}/trace_c.h
     ${CMAKE_CURRENT_LIST_DIR}/trace.h
     ${CMAKE_CURRENT_LIST_DIR}/utils.h
     ${CMAKE_CURRENT_LIST_DIR}/pal.h

@@ -4,7 +4,6 @@
 #include "utils.h"
 #include "trace.h"
 #include "bundle/info.h"
-#include "utils_c.h"
 #if defined(TARGET_WINDOWS)
 #include <_version.h>
 #else

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "bundle_marker_c.h"
+#include "bundle_marker.h"
 
 #include <stdint.h>
 #include <string.h>

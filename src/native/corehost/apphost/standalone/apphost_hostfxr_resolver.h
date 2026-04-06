@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include "hostfxr.h"
 #include "error_codes.h"
-#include "pal_c.h" // for pal_char_t
+#include "pal.h" // for pal_char_t
 
 // Opaque hostfxr resolver handle
 typedef struct hostfxr_resolver

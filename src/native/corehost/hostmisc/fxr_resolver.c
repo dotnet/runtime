@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "fxr_resolver_c.h"
-#include "pal_c.h"
-#include "trace_c.h"
-#include "utils_c.h"
+#include "fxr_resolver.h"
+#include "trace.h"
+#include "utils.h"
 #include "fx_ver.h"
 
 #include <dn-vector.h>

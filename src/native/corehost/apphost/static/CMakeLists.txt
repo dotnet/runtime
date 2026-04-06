@@ -39,7 +39,7 @@ set(SOURCES
 )
 
 set(HEADERS
-    ../../hostmisc/bundle_marker_c.h
+    ../../hostmisc/bundle_marker.h
     ../standalone/apphost_hostfxr_resolver.h
     ../../fxr_resolver.h
 )

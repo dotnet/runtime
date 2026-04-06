@@ -7,9 +7,9 @@
 // interface, so it can also reference C++-linked functions like
 // initialize_static_createdump and the statically-linked hostfxr functions.
 
-#include "pal_c.h"
+#include "pal.h"
 #include "apphost_hostfxr_resolver.h"
-#include "trace_c.h"
+#include "trace.h"
 
 #include <assert.h>
 #include <cstdlib>
