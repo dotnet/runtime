@@ -659,6 +659,19 @@ namespace System.Runtime
 #endif
         }
 
+#if !NATIVEAOT
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        internal static void RhThrowEx(object* pExceptionObj, ExInfo* pExInfo, Exception* _)
+        {
+            object exceptionObj = *pExceptionObj;
+            RhThrowEx(exceptionObj, ref *pExInfo);
+
+            Debug.Fail("unreachable");
+            FallbackFailFast(RhFailFastReason.InternalError, null);
+        }
+#endif
+
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
 #if NATIVEAOT
@@ -694,6 +707,18 @@ namespace System.Runtime
 #endif
         }
 
+#if !NATIVEAOT
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        internal static void RhRethrow(ExInfo* pActiveExInfo, ExInfo* pExInfo, Exception* _)
+        {
+            RhRethrow(ref *pActiveExInfo, ref *pExInfo);
+
+            Debug.Fail("unreachable");
+            FallbackFailFast(RhFailFastReason.InternalError, null);
+        }
+#endif
+
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
 #endif
@@ -723,6 +748,18 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, null);
 #endif
         }
+
+#if !NATIVEAOT
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        internal static void RhThrowHwEx(uint exceptionCode, ExInfo* pExInfo, Exception* _)
+        {
+            RhThrowHwEx(exceptionCode, ref *pExInfo);
+
+            Debug.Fail("unreachable");
+            FallbackFailFast(RhFailFastReason.InternalError, null);
+        }
+#endif
 
         [StackTraceHidden]
         private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo)

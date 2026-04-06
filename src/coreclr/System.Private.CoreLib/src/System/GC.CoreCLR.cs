@@ -312,31 +312,42 @@ namespace System
         [RequiresUnsafe]
         private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
 
-        private static unsafe uint RunFinalizers()
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe uint RunFinalizers(Exception* pException)
         {
-            Thread currentThread = Thread.CurrentThread;
-
-            uint count = 0;
-            while (true)
+            try
             {
-                object? target = null;
-                void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
-                if (fptr == null)
-                    break;
+                Thread currentThread = Thread.CurrentThread;
 
-                try
+                uint count = 0;
+                while (true)
                 {
-                    ((delegate*<object, void>)fptr)(target!);
-                }
-                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
-                {
-                    // the handler returned "true" means the exception is now "handled" and we should continue.
+                    object? target = null;
+                    void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
+                    if (fptr == null)
+                        break;
+
+                    try
+                    {
+                        ((delegate*<object, void>)fptr)(target!);
+                    }
+                    catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
+                    {
+                        // the handler returned "true" means the exception is now "handled" and we should continue.
+                    }
+
+                    currentThread.ResetFinalizerThread();
+                    count++;
                 }
 
-                currentThread.ResetFinalizerThread();
-                count++;
+                return count;
             }
-            return count;
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return default;
+            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
