@@ -391,7 +391,7 @@ namespace System.Formats.Tar.Tests
             Assert.True(File.Exists(linkPath), $"{linkPath}' does not exist.");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
         public async Task HardLinkExtraction_CopyContentsAsync()
         {
             using TempDirectory root = new TempDirectory();

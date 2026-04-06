@@ -270,5 +270,95 @@ namespace System.Linq.Tests
             var count = new[] { 0, 1, 2 }.AsQueryable().LeftJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2, (n1, n2) => n1 + n2, EqualityComparer<int>.Default).Count();
             Assert.Equal(3, count);
         }
+
+        [Fact]
+        public void TupleLeftJoin_Basic()
+        {
+            CustomerRec[] outer = {
+                new CustomerRec{ name = "Prakash", custID = 98022 },
+                new CustomerRec{ name = "Tim", custID = 99021 },
+                new CustomerRec{ name = "Robert", custID = 99022 }
+            };
+            OrderRec[] inner = {
+                new OrderRec{ orderID = 45321, custID = 99022, total = 50 },
+                new OrderRec{ orderID = 43421, custID = 29022, total = 20 },
+                new OrderRec{ orderID = 95421, custID = 98022, total = 9 }
+            };
+
+            var result = outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.custID, e => e.custID).ToList();
+
+            Assert.Equal(3, result.Count);
+            Assert.Contains(result, r => r.Outer.name == "Prakash" && r.Inner.orderID == 95421);
+            Assert.Contains(result, r => r.Outer.name == "Tim" && r.Inner.orderID == 0);
+            Assert.Contains(result, r => r.Outer.name == "Robert" && r.Inner.orderID == 45321);
+        }
+
+        [Fact]
+        public void TupleLeftJoin_WithComparer()
+        {
+            CustomerRec[] outer = {
+                new CustomerRec{ name = "Prakash", custID = 98022 },
+                new CustomerRec{ name = "Tim", custID = 99021 }
+            };
+            AnagramRec[] inner = {
+                new AnagramRec{ name = "miT", orderID = 43455, total = 10 }
+            };
+
+            var result = outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.name, e => e.name, new AnagramEqualityComparer()).ToList();
+
+            Assert.Equal(2, result.Count);
+            Assert.Contains(result, r => r.Outer.name == "Tim" && r.Inner.name == "miT");
+            Assert.Contains(result, r => r.Outer.name == "Prakash" && r.Inner.name == null);
+        }
+
+        [Fact]
+        public void TupleLeftJoin_OuterNull()
+        {
+            IQueryable<CustomerRec> outer = null;
+            OrderRec[] inner = { new OrderRec{ orderID = 45321, custID = 98022, total = 50 } };
+
+            AssertExtensions.Throws<ArgumentNullException>("outer", () => outer.LeftJoin(inner.AsQueryable(), e => e.custID, e => e.custID));
+        }
+
+        [Fact]
+        public void TupleLeftJoin_InnerNull()
+        {
+            CustomerRec[] outer = { new CustomerRec{ name = "Prakash", custID = 98022 } };
+            IEnumerable<OrderRec> inner = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => outer.AsQueryable().LeftJoin(inner, e => e.custID, e => e.custID));
+        }
+
+        [Fact]
+        public void TupleLeftJoin_OuterKeySelectorNull()
+        {
+            CustomerRec[] outer = { new CustomerRec{ name = "Prakash", custID = 98022 } };
+            OrderRec[] inner = { new OrderRec{ orderID = 45321, custID = 98022, total = 50 } };
+
+            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => outer.AsQueryable().LeftJoin(inner.AsQueryable(), (Expression<Func<CustomerRec, int>>)null, e => e.custID));
+        }
+
+        [Fact]
+        public void TupleLeftJoin_InnerKeySelectorNull()
+        {
+            CustomerRec[] outer = { new CustomerRec{ name = "Prakash", custID = 98022 } };
+            OrderRec[] inner = { new OrderRec{ orderID = 45321, custID = 98022, total = 50 } };
+
+            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.AsQueryable().LeftJoin(inner.AsQueryable(), e => e.custID, (Expression<Func<OrderRec, int>>)null));
+        }
+
+        [Fact]
+        public void TupleLeftJoin1()
+        {
+            var count = new[] { 0, 1, 2 }.AsQueryable().LeftJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2).Count();
+            Assert.Equal(3, count);
+        }
+
+        [Fact]
+        public void TupleLeftJoin2()
+        {
+            var count = new[] { 0, 1, 2 }.AsQueryable().LeftJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2, EqualityComparer<int>.Default).Count();
+            Assert.Equal(3, count);
+        }
     }
 }

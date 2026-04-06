@@ -40,4 +40,18 @@ internal class ARMGCInfoTraits : IGCInfoTraits
     public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => 2;
 
     public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => true;
+
+    // Preserved (non-scratch): r4-r11 (and r14/LR is special)
+    // Scratch: r0-r3, r12, r14
+    public static bool IsScratchRegister(uint regNum) => regNum <= 3 || regNum == 12 || regNum == 14;
+
+    // ARM has a fixed stack parameter scratch area.
+    // Stack slots with GC_SP_REL base in [0, scratchAreaSize) are scratch slots.
+    public static bool IsScratchStackSlot(int spOffset, uint spBase, uint fixedStackParameterScratchArea)
+    {
+        // GC_SP_REL = 1
+        return spBase == 1
+            && spOffset >= 0
+            && (uint)spOffset < fixedStackParameterScratchArea;
+    }
 }

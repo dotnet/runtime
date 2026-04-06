@@ -110,6 +110,10 @@ public abstract class ContractRegistry
     /// Gets an instance of the AuxiliarySymbols contract for the target.
     /// </summary>
     public virtual IAuxiliarySymbols AuxiliarySymbols => GetContract<IAuxiliarySymbols>();
+    /// <summary>
+    /// Gets an instance of the Debugger contract for the target.
+    /// </summary>
+    public virtual IDebugger Debugger => GetContract<IDebugger>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
 
