@@ -109,12 +109,6 @@ namespace ILCompiler
                 }
             }
 
-            // TODO: Enable async inlining. https://github.com/dotnet/runtime/issues/124665
-            if (callee.IsAsyncThunk() || callee.IsAsyncCall())
-            {
-                return false;
-            }
-
             _nodeFactory.DetectGenericCycles(caller, callee);
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
@@ -377,6 +371,8 @@ namespace ILCompiler
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             if (nodeFactory.CrossModuleInlningInfo != null)
                 nodeFactory.CrossModuleInlningInfo.Initialize(SymbolNodeFactory);
+            if (nodeFactory.ImportReferenceProvider != null)
+                nodeFactory.ImportReferenceProvider.Initialize(SymbolNodeFactory);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
@@ -531,7 +527,7 @@ namespace ILCompiler
                 componentGraph.AddRoot(componentFactory.Win32ResourcesNode, "Win32 resources");
             }
             componentGraph.ComputeMarkedNodes();
-            componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
+            componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode);
             ReadyToRunObjectWriter.EmitObject(
                 outputFile,
                 componentModule: inputModule,
@@ -653,14 +649,19 @@ namespace ILCompiler
         // The _finishedFirstCompilationRunInPhase2 variable works in concert some checking to ensure that we don't violate any of this model
         private bool _finishedFirstCompilationRunInPhase2 = false;
 
-        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<EcmaMethod> methodsThatNeedILBodies)
+        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<MethodDesc> methodsThatNeedILBodies)
         {
             lock (_methodsToRecompile)
             {
                 _methodsToRecompile.Add(methodToBeRecompiled);
                 if (methodsThatNeedILBodies != null)
+                {
                     foreach (var method in methodsThatNeedILBodies)
+                    {
+                        Debug.Assert(method.IsMethodDefinition);
                         _methodsWhichNeedMutableILBodies.Add(method);
+                    }
+                }
             }
         }
 

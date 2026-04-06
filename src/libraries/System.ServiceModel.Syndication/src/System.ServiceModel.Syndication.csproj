@@ -67,4 +67,9 @@
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\DateTimeOffsetPolyfills.cs" Link="Common\Polyfills\DateTimeOffsetPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StreamPolyfills.cs" Link="Common\Polyfills\StreamPolyfills.cs" />
+  </ItemGroup>
+
 </Project>

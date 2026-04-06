@@ -217,7 +217,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
                 HttpResponseMessage response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.Equal<byte>(Array.Empty<byte>(), await response.Content.ReadAsByteArrayAsync());
+                byte[] responseBody = await response.Content.ReadAsByteArrayAsync();
+                Assert.Equal(Array.Empty<byte>(), responseBody);
 
                 var trailingHeaders = GetTrailingHeaders(response);
                 Assert.Contains("amazingtrailer", trailingHeaders.GetValues("MyCoolTrailerHeader"));

@@ -1912,16 +1912,9 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
     m_compiler->funSetCurrentFunc(m_compiler->funGetFuncIdx(block));
 
     // Check the current funclet index for correctness
-    if (m_compiler->funCurrentFunc()->funKind == FUNC_FILTER)
-    {
-        assert(m_compiler->ehGetDsc(m_compiler->funCurrentFunc()->funEHIndex)->ebdFilter == block);
-    }
-    else
-    {
-        // We shouldn't see FUNC_ROOT
-        assert(m_compiler->funCurrentFunc()->funKind == FUNC_HANDLER);
-        assert(m_compiler->ehGetDsc(m_compiler->funCurrentFunc()->funEHIndex)->ebdHndBeg == block);
-    }
+    FuncInfoDsc* const currentFunc = m_compiler->funCurrentFunc();
+    assert(currentFunc->funKind != FUNC_ROOT);
+    assert(currentFunc->GetStartBlock(m_compiler) == block);
 }
 
 //----------------------------------------------------------------------
@@ -1961,7 +1954,25 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
             m_compiler->compGetHelperFtn((CorInfoHelpFunc)i);
         }
     }
-#endif
+
+#if defined(TARGET_WASM)
+    // Allow the JIT to fail R2R at this point, so we can skip over methods
+    // that compile without assert but then have Wasm validation errors
+    //
+    static ConfigMethodRange JitR2RUnsupportedRange;
+    JitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange());
+    assert(!JitR2RUnsupportedRange.Error());
+    const unsigned hash    = m_compiler->impInlineRoot()->info.compMethodHash();
+    const bool     inRange = !JitR2RUnsupportedRange.IsEmpty() && JitR2RUnsupportedRange.Contains(hash);
+
+    if (inRange)
+    {
+        JITDUMP("Failing R2R codegen because of JitR2RUnsupportedRange. Hash is 0x%08x, range is ", hash);
+        JITDUMPEXEC(JitR2RUnsupportedRange.Dump());
+        implReadyToRunUnsupported();
+    }
+#endif // defined(TARGET_WASM)
+#endif // DEBUG
 }
 
 //----------------------------------------------------------------------

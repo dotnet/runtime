@@ -37,6 +37,7 @@ namespace System.Globalization
             return value;
         }
 
+        [RequiresUnsafe]
         internal static unsafe int GetLocaleInfoEx(string lpLocaleName, uint lcType, char* lpLCData, int cchData)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -345,6 +346,7 @@ namespace System.Globalization
 
         // EnumSystemLocaleEx callback.
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe Interop.BOOL EnumSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
             EnumLocaleData* context = (EnumLocaleData*)contextHandle;
@@ -368,6 +370,7 @@ namespace System.Globalization
 
         // EnumSystemLocaleEx callback.
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe Interop.BOOL EnumAllSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
             try
@@ -389,6 +392,7 @@ namespace System.Globalization
 
         // EnumTimeFormatsEx callback itself.
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe Interop.BOOL EnumTimeCallback(char* lpTimeFormatString, void* lParam)
         {
             try

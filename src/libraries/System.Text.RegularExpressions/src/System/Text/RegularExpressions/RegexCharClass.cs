@@ -102,6 +102,9 @@ namespace System.Text.RegularExpressions
         internal const string NotECMADigitClass = "\x01\x02\x00" + ECMADigitRanges;
 
         internal const string NotNewLineClass = "\x01\x02\x00\x0A\x0B";
+        internal const string NotAnyNewLineClass = "\x01\x06\x00\x0A\x0E\x85\x86\u2028\u202A";
+        /// <summary>Character class for [\n\v\f\r\u0085\u2028\u2029] — all AnyNewLine chars, used in anchor lowering.</summary>
+        internal const string AnyNewLineClass = "\x00\x06\x00\x0A\x0E\x85\x86\u2028\u202A";
 
         internal const string AnyClass = "\x00\x01\x00\x00";
         private const string EmptyClass = "\x00\x00\x00";
@@ -877,6 +880,72 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
+        /// Determines conservatively whether <paramref name="subset"/> is a subset of <paramref name="superset"/>
+        /// (i.e. every character in subset is also in superset). Returns false if the subset relationship cannot be determined.
+        /// </summary>
+        public static bool IsSubsetOf(string subset, string superset)
+        {
+            // Identical sets are trivially subsets.
+            if (subset == superset)
+            {
+                return true;
+            }
+
+            // If superset is the universal set, everything is a subset.
+            if (superset == AnyClass)
+            {
+                return true;
+            }
+
+            // If subset can be easily enumerated, check that every character in it is also in superset.
+            if (!IsNegated(subset) && CanEasilyEnumerateSetContents(subset))
+            {
+                for (int i = SetStartIndex; i < SetStartIndex + subset[SetLengthIndex]; i += 2)
+                {
+                    int curSetEnd = subset[i + 1];
+                    for (int c = subset[i]; c < curSetEnd; c++)
+                    {
+                        if (!CharInClass((char)c, superset))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            // If both sets are composed entirely of Unicode categories, check that all
+            // categories in subset are also present in superset.
+            Span<UnicodeCategory> categories1 = stackalloc UnicodeCategory[16], categories2 = stackalloc UnicodeCategory[16];
+            if (TryGetOnlyCategories(subset, categories1, out int numCategories1, out bool negated1) && !negated1 &&
+                TryGetOnlyCategories(superset, categories2, out int numCategories2, out bool negated2) && !negated2)
+            {
+                foreach (UnicodeCategory cat1 in categories1.Slice(0, numCategories1))
+                {
+                    bool found = false;
+                    foreach (UnicodeCategory cat2 in categories2.Slice(0, numCategories2))
+                    {
+                        if (cat1 == cat2)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Gets whether the specified set is a named set with a reasonably small count
         /// of Unicode characters.
         /// </summary>
@@ -1122,55 +1191,6 @@ namespace System.Text.RegularExpressions
             return (uint)chDiv8 < (uint)ascii.Length ?
                 (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
                 (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
-        }
-
-        /// <summary>Determines whether the characters that match the specified set are known to all be word characters.</summary>
-        public static bool IsKnownWordClassSubset(string set)
-        {
-            // Check for common sets that we know to be subsets of \w.
-            if (set is
-                WordClass or DigitClass or LetterClass or LetterOrDigitClass or
-                AsciiLetterClass or AsciiLetterOrDigitClass or
-                HexDigitClass or HexDigitUpperClass or HexDigitLowerClass)
-            {
-                return true;
-            }
-
-            // Check for sets composed of Unicode categories that are part of \w.
-            Span<UnicodeCategory> categories = stackalloc UnicodeCategory[16];
-            if (TryGetOnlyCategories(set, categories, out int numCategories, out bool negated) && !negated)
-            {
-                foreach (UnicodeCategory cat in categories.Slice(0, numCategories))
-                {
-                    if (!IsWordCategory(cat))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            // If we can enumerate every character in the set quickly, do so, checking to see whether they're all in \w.
-            if (CanEasilyEnumerateSetContents(set))
-            {
-                for (int i = SetStartIndex; i < SetStartIndex + set[SetLengthIndex]; i += 2)
-                {
-                    int curSetEnd = set[i + 1];
-                    for (int c = set[i]; c < curSetEnd; c++)
-                    {
-                        if (!CharInClass((char)c, WordClass))
-                        {
-                            return false;
-                        }
-                    }
-                }
-
-                return true;
-            }
-
-            // Unlikely to be a subset of \w, and we don't know for sure.
-            return false;
         }
 
         /// <summary>Determines whether a character is considered a word character for the purposes of testing a word character boundary.</summary>

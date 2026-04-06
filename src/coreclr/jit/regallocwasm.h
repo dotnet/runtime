@@ -128,6 +128,7 @@ private:
     void      CollectReferencesForStoreInd(GenTreeStoreInd* node);
     void      CollectReferencesForBlockStore(GenTreeBlk* node);
     void      CollectReferencesForLclVar(GenTreeLclVar* lclVar);
+    void      CollectReferencesForIndexAddr(GenTreeIndexAddr* indexAddrNode);
     void      RewriteLocalStackStore(GenTreeLclVarCommon* node);
     void      CollectReference(GenTree* node);
     void      RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);

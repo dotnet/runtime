@@ -30,7 +30,6 @@
 #include "wrappers.h"
 
 #include "appdomain.inl"
-#include "vmholder.h"
 #include "exceptmacros.h"
 #include "minipal/time.h"
 #include "minipal/thread.h"
@@ -1082,6 +1081,7 @@ void InitThreadManager()
 
 #define X86_WRITE_BARRIER_REGISTER(reg) \
     SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_##reg, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg)); \
+    SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg); \
     ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), W("@WriteBarrier" #reg));
 
         ENUM_X86_WRITE_BARRIER_REGISTERS()
@@ -1092,6 +1092,7 @@ void InitThreadManager()
         JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 #endif // TARGET_X86
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
+        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), "JIT_WriteBarrier");
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), W("@WriteBarrier"));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1101,8 +1102,10 @@ void InitThreadManager()
 
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
+        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), "JIT_CheckedWriteBarrier");
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
+        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), "JIT_ByRefWriteBarrier");
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
@@ -1244,6 +1247,8 @@ Thread::Thread()
 
     m_debuggerFilterContext = NULL;
     m_fInteropDebuggingHijacked = FALSE;
+
+#if defined(PROFILING_SUPPORTED)
     m_profilerCallbackState = 0;
 
     for (int i = 0; i < MAX_NOTIFICATION_PROFILERS + 1; ++i)
@@ -1252,6 +1257,7 @@ Thread::Thread()
     }
 
     m_pProfilerFilterContext = NULL;
+#endif // PROFILING_SUPPORTED
 
     m_CacheStackBase = 0;
     m_CacheStackLimit = 0;
@@ -1811,9 +1817,8 @@ void Thread::InitializationForManagedThreadInNative(_In_ Thread* pThread)
 #ifdef FEATURE_OBJCMARSHAL
     {
         GCX_COOP_THREAD_EXISTS(pThread);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__AUTORELEASEPOOL__CREATEAUTORELEASEPOOL);
-        DECLARE_ARGHOLDER_ARRAY(args, 0);
-        CALL_MANAGED_METHOD_NORET(args);
+        UnmanagedCallersOnlyCaller createAutoreleasePool(METHOD__AUTORELEASEPOOL__CREATEAUTORELEASEPOOL);
+        createAutoreleasePool.InvokeThrowing();
     }
 #endif // FEATURE_OBJCMARSHAL
 }
@@ -1832,9 +1837,8 @@ void Thread::CleanUpForManagedThreadInNative(_In_ Thread* pThread)
 #ifdef FEATURE_OBJCMARSHAL
     {
         GCX_COOP_THREAD_EXISTS(pThread);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__AUTORELEASEPOOL__DRAINAUTORELEASEPOOL);
-        DECLARE_ARGHOLDER_ARRAY(args, 0);
-        CALL_MANAGED_METHOD_NORET(args);
+        UnmanagedCallersOnlyCaller drainAutoreleasePool(METHOD__AUTORELEASEPOOL__DRAINAUTORELEASEPOOL);
+        drainAutoreleasePool.InvokeThrowing();
     }
 #endif // FEATURE_OBJCMARSHAL
 }
@@ -2466,10 +2470,11 @@ void Thread::CleanupDetachedThreads()
         // Instead, run that clean up here when the Thread is detached,
         // which is definitely after the thread has exited.
         PTR_Thread pThread = (PTR_Thread)iter.GetElement();
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ON_THREAD_EXITING);
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(pThread->GetExposedObject());
-        CALL_MANAGED_METHOD_NORET(args);
+        OBJECTREF exposedObj = pThread->GetExposedObject();
+        GCPROTECT_BEGIN(exposedObj);
+        UnmanagedCallersOnlyCaller onThreadExiting(METHOD__THREAD__ON_THREAD_EXITING);
+        onThreadExiting.InvokeThrowing(&exposedObj);
+        GCPROTECT_END();
 
         pThread->DecExternalCount(FALSE);
     }

@@ -62,7 +62,7 @@ public static partial class DataContractSerializerTests
         };
         for (int i = 0; i < objs.Length; ++i)
         {
-            Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<DateTimeOffset>(objs[i], serializedStrings[i]), objs[i]);
+            Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<DateTimeOffset>(objs[i], serializedStrings[i]), objs[i]);
         }
     }
 
@@ -85,31 +85,31 @@ public static partial class DataContractSerializerTests
     [Fact]
     public static void DCS_CharAsRoot()
     {
-        Assert.StrictEqual(char.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<char>(char.MinValue, @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</char>"));
-        Assert.StrictEqual(char.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<char>(char.MaxValue, @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">65535</char>"));
-        Assert.StrictEqual('a', DataContractSerializerHelper.SerializeAndDeserialize<char>('a', @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">97</char>"));
-        Assert.StrictEqual('\u00F1', DataContractSerializerHelper.SerializeAndDeserialize<char>('\u00F1', @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">241</char>"));
-        Assert.StrictEqual('\u6F22', DataContractSerializerHelper.SerializeAndDeserialize<char>('\u6F22', @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">28450</char>"));
+        Assert.Equal(char.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<char>(char.MinValue, @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</char>"));
+        Assert.Equal(char.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<char>(char.MaxValue, @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">65535</char>"));
+        Assert.Equal('a', DataContractSerializerHelper.SerializeAndDeserialize<char>('a', @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">97</char>"));
+        Assert.Equal('\u00F1', DataContractSerializerHelper.SerializeAndDeserialize<char>('\u00F1', @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">241</char>"));
+        Assert.Equal('\u6F22', DataContractSerializerHelper.SerializeAndDeserialize<char>('\u6F22', @"<char xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">28450</char>"));
     }
 
     [Fact]
     public static void DCS_ByteAsRoot()
     {
-        Assert.StrictEqual(10, DataContractSerializerHelper.SerializeAndDeserialize<byte>(10, @"<unsignedByte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">10</unsignedByte>"));
-        Assert.StrictEqual(byte.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<byte>(byte.MinValue, @"<unsignedByte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</unsignedByte>"));
-        Assert.StrictEqual(byte.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<byte>(byte.MaxValue, @"<unsignedByte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">255</unsignedByte>"));
+        Assert.Equal(10, DataContractSerializerHelper.SerializeAndDeserialize<byte>(10, @"<unsignedByte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">10</unsignedByte>"));
+        Assert.Equal(byte.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<byte>(byte.MinValue, @"<unsignedByte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</unsignedByte>"));
+        Assert.Equal(byte.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<byte>(byte.MaxValue, @"<unsignedByte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">255</unsignedByte>"));
     }
 
     [Fact]
     public static void DCS_DateTimeAsRoot()
     {
         var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2), @"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2013-01-02T00:00:00</dateTime>"), new DateTime(2013, 1, 2));
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local), string.Format(@"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2013-01-02T03:04:05.006{0:+;-}{1}</dateTime>", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hh\:mm"))), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local));
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified), @"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2013-01-02T03:04:05.006</dateTime>"), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified));
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc), @"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2013-01-02T03:04:05.006Z</dateTime>"), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc));
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc), @"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0001-01-01T00:00:00Z</dateTime>"), DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc), @"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">9999-12-31T23:59:59.9999999Z</dateTime>"), DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc));
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2), @"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2013-01-02T00:00:00</dateTime>"), new DateTime(2013, 1, 2));
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local), string.Format(@"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2013-01-02T03:04:05.006{0:+;-}{1}</dateTime>", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hh\:mm"))), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local));
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified), @"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2013-01-02T03:04:05.006</dateTime>"), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified));
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc), @"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2013-01-02T03:04:05.006Z</dateTime>"), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc));
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc), @"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0001-01-01T00:00:00Z</dateTime>"), DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc), @"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">9999-12-31T23:59:59.9999999Z</dateTime>"), DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc));
     }
 
     [Fact]
@@ -129,33 +129,33 @@ public static partial class DataContractSerializerTests
     {
         foreach (decimal value in new decimal[] { (decimal)-1.2, (decimal)0, (decimal)2.3, decimal.MinValue, decimal.MaxValue })
         {
-            Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<decimal>(value, string.Format(@"<decimal xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</decimal>", value.ToString(CultureInfo.InvariantCulture))), value);
+            Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<decimal>(value, string.Format(@"<decimal xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</decimal>", value.ToString(CultureInfo.InvariantCulture))), value);
         }
     }
 
     [Fact]
     public static void DCS_DoubleAsRoot()
     {
-        Assert.StrictEqual(-1.2, DataContractSerializerHelper.SerializeAndDeserialize<double>(-1.2, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.2</double>"));
-        Assert.StrictEqual(0, DataContractSerializerHelper.SerializeAndDeserialize<double>(0, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</double>"));
-        Assert.StrictEqual(2.3, DataContractSerializerHelper.SerializeAndDeserialize<double>(2.3, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2.3</double>"));
-        Assert.StrictEqual(double.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<double>(double.MinValue, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.7976931348623157E+308</double>"));
-        Assert.StrictEqual(double.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<double>(double.MaxValue, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">1.7976931348623157E+308</double>"));
+        Assert.Equal(-1.2, DataContractSerializerHelper.SerializeAndDeserialize<double>(-1.2, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.2</double>"));
+        Assert.Equal(0, DataContractSerializerHelper.SerializeAndDeserialize<double>(0, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</double>"));
+        Assert.Equal(2.3, DataContractSerializerHelper.SerializeAndDeserialize<double>(2.3, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2.3</double>"));
+        Assert.Equal(double.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<double>(double.MinValue, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.7976931348623157E+308</double>"));
+        Assert.Equal(double.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<double>(double.MaxValue, @"<double xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">1.7976931348623157E+308</double>"));
     }
 
     [Fact]
     public static void DCS_FloatAsRoot()
     {
-        Assert.StrictEqual((float)-1.2, DataContractSerializerHelper.SerializeAndDeserialize<float>((float)-1.2, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.2</float>"));
-        Assert.StrictEqual((float)0, DataContractSerializerHelper.SerializeAndDeserialize<float>((float)0, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</float>"));
-        Assert.StrictEqual((float)2.3, DataContractSerializerHelper.SerializeAndDeserialize<float>((float)2.3, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2.3</float>"));
+        Assert.Equal((float)-1.2, DataContractSerializerHelper.SerializeAndDeserialize<float>((float)-1.2, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-1.2</float>"));
+        Assert.Equal((float)0, DataContractSerializerHelper.SerializeAndDeserialize<float>((float)0, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">0</float>"));
+        Assert.Equal((float)2.3, DataContractSerializerHelper.SerializeAndDeserialize<float>((float)2.3, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2.3</float>"));
     }
 
     [Fact]
     public static void DCS_FloatAsRoot_NotNetFramework()
     {
-        Assert.StrictEqual(float.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<float>(float.MinValue, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-3.4028235E+38</float>"));
-        Assert.StrictEqual(float.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<float>(float.MaxValue, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">3.4028235E+38</float>"));
+        Assert.Equal(float.MinValue, DataContractSerializerHelper.SerializeAndDeserialize<float>(float.MinValue, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-3.4028235E+38</float>"));
+        Assert.Equal(float.MaxValue, DataContractSerializerHelper.SerializeAndDeserialize<float>(float.MaxValue, @"<float xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">3.4028235E+38</float>"));
     }
 
     [Fact]
@@ -163,12 +163,12 @@ public static partial class DataContractSerializerTests
     {
         DateOnly value = new DateOnly(2024, 12, 31);
         string expected = @"<dateOnly xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2024-12-31</dateOnly>";
-        Assert.StrictEqual(value, DataContractSerializerHelper.SerializeAndDeserialize<DateOnly>(value, expected));
+        Assert.Equal(value, DataContractSerializerHelper.SerializeAndDeserialize<DateOnly>(value, expected));
 
         // Nullable
         DateOnly? nullable = new DateOnly(2001, 1, 1);
         string expectedNullable = @"<dateOnly xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">2001-01-01</dateOnly>";
-        Assert.StrictEqual(nullable, DataContractSerializerHelper.SerializeAndDeserialize<DateOnly?>(nullable, expectedNullable));
+        Assert.Equal(nullable, DataContractSerializerHelper.SerializeAndDeserialize<DateOnly?>(nullable, expectedNullable));
     }
 
     [Fact]
@@ -187,7 +187,7 @@ public static partial class DataContractSerializerTests
         ms.Position = 0;
         using var reader = XmlDictionaryReader.CreateBinaryReader(ms, null, XmlDictionaryReaderQuotas.Max, null, null);
         var roundTrip = (DateOnly)dcs.ReadObject(reader)!;
-        Assert.StrictEqual(dateOnly, roundTrip);
+        Assert.Equal(dateOnly, roundTrip);
     }
 
     [Fact]
@@ -195,12 +195,12 @@ public static partial class DataContractSerializerTests
     {
         TimeOnly value = new TimeOnly(13, 5, 7, 123); // 13:05:07.123
         string expected = @"<timeOnly xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">13:05:07.123</timeOnly>";
-        Assert.StrictEqual(value, DataContractSerializerHelper.SerializeAndDeserialize<TimeOnly>(value, expected));
+        Assert.Equal(value, DataContractSerializerHelper.SerializeAndDeserialize<TimeOnly>(value, expected));
 
         // Whole second (no fraction should be emitted)
         TimeOnly wholeSecond = new TimeOnly(6, 30, 0);
         string expectedWhole = @"<timeOnly xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">06:30:00</timeOnly>";
-        Assert.StrictEqual(wholeSecond, DataContractSerializerHelper.SerializeAndDeserialize<TimeOnly>(wholeSecond, expectedWhole));
+        Assert.Equal(wholeSecond, DataContractSerializerHelper.SerializeAndDeserialize<TimeOnly>(wholeSecond, expectedWhole));
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public static partial class DataContractSerializerTests
         ms.Position = 0;
         using var reader = XmlDictionaryReader.CreateBinaryReader(ms, null, XmlDictionaryReaderQuotas.Max, null, null);
         var roundTrip = (TimeOnly)dcs.ReadObject(reader)!;
-        Assert.StrictEqual(timeOnly, roundTrip);
+        Assert.Equal(timeOnly, roundTrip);
     }
 
     [Fact]
@@ -247,7 +247,7 @@ public static partial class DataContractSerializerTests
     {
         foreach (Guid value in new Guid[] { Guid.NewGuid(), Guid.Empty })
         {
-            Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<Guid>(value, string.Format(@"<guid xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</guid>", value.ToString())), value);
+            Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<Guid>(value, string.Format(@"<guid xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</guid>", value.ToString())), value);
         }
     }
 
@@ -256,7 +256,7 @@ public static partial class DataContractSerializerTests
     {
         foreach (int value in new int[] { -1, 0, 2, int.MinValue, int.MaxValue })
         {
-            Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<int>(value, string.Format(@"<int xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</int>", value)), value);
+            Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<int>(value, string.Format(@"<int xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</int>", value)), value);
         }
     }
 
@@ -265,24 +265,24 @@ public static partial class DataContractSerializerTests
     {
         foreach (long value in new long[] { (long)-1, (long)0, (long)2, long.MinValue, long.MaxValue })
         {
-            Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<long>(value, string.Format(@"<long xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</long>", value)), value);
+            Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<long>(value, string.Format(@"<long xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</long>", value)), value);
         }
     }
 
     [Fact]
     public static void DCS_ObjectAsRoot()
     {
-        Assert.StrictEqual(1, DataContractSerializerHelper.SerializeAndDeserialize<object>(1, @"<z:anyType i:type=""a:int"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://www.w3.org/2001/XMLSchema"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"">1</z:anyType>"));
-        Assert.StrictEqual(true, DataContractSerializerHelper.SerializeAndDeserialize<object>(true, @"<z:anyType i:type=""a:boolean"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://www.w3.org/2001/XMLSchema"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"">true</z:anyType>"));
-        Assert.StrictEqual("abc", DataContractSerializerHelper.SerializeAndDeserialize<object>("abc", @"<z:anyType i:type=""a:string"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://www.w3.org/2001/XMLSchema"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"">abc</z:anyType>"));
+        Assert.Equal(1, DataContractSerializerHelper.SerializeAndDeserialize<object>(1, @"<z:anyType i:type=""a:int"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://www.w3.org/2001/XMLSchema"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"">1</z:anyType>"));
+        Assert.Equal(true, DataContractSerializerHelper.SerializeAndDeserialize<object>(true, @"<z:anyType i:type=""a:boolean"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://www.w3.org/2001/XMLSchema"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"">true</z:anyType>"));
+        Assert.Equal("abc", DataContractSerializerHelper.SerializeAndDeserialize<object>("abc", @"<z:anyType i:type=""a:string"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://www.w3.org/2001/XMLSchema"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"">abc</z:anyType>"));
         Assert.Null(DataContractSerializerHelper.SerializeAndDeserialize<object>(null, @"<z:anyType i:nil=""true"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""/>"));
     }
 
     [Fact]
     public static void DCS_XmlQualifiedNameAsRoot()
     {
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<XmlQualifiedName>(new XmlQualifiedName("abc", "def"), @"<z:QName xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""def"">a:abc</z:QName>"), new XmlQualifiedName("abc", "def"));
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<XmlQualifiedName>(XmlQualifiedName.Empty, @"<z:QName xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""/>"), XmlQualifiedName.Empty);
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<XmlQualifiedName>(new XmlQualifiedName("abc", "def"), @"<z:QName xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""def"">a:abc</z:QName>"), new XmlQualifiedName("abc", "def"));
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<XmlQualifiedName>(XmlQualifiedName.Empty, @"<z:QName xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""/>"), XmlQualifiedName.Empty);
     }
 
     [Fact]
@@ -290,7 +290,7 @@ public static partial class DataContractSerializerTests
     {
         foreach (short value in new short[] { (short)-1.2, (short)0, (short)2.3, short.MinValue, short.MaxValue })
         {
-            Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<short>(value, string.Format(@"<short xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</short>", value)), value);
+            Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<short>(value, string.Format(@"<short xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</short>", value)), value);
         }
     }
 
@@ -299,7 +299,7 @@ public static partial class DataContractSerializerTests
     {
         foreach (sbyte value in new sbyte[] { (sbyte)3, (sbyte)0, sbyte.MinValue, sbyte.MaxValue })
         {
-            Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<sbyte>(value, string.Format(@"<byte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</byte>", value)), value);
+            Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<sbyte>(value, string.Format(@"<byte xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</byte>", value)), value);
         }
     }
 
@@ -317,10 +317,10 @@ public static partial class DataContractSerializerTests
     [Fact]
     public static void DCS_TimeSpanAsRoot()
     {
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<TimeSpan>(new TimeSpan(1, 2, 3), @"<duration xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">PT1H2M3S</duration>"), new TimeSpan(1, 2, 3));
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<TimeSpan>(TimeSpan.Zero, @"<duration xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">PT0S</duration>"), TimeSpan.Zero);
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<TimeSpan>(TimeSpan.MinValue, @"<duration xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-P10675199DT2H48M5.4775808S</duration>"), TimeSpan.MinValue);
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<TimeSpan>(TimeSpan.MaxValue, @"<duration xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">P10675199DT2H48M5.4775807S</duration>"), TimeSpan.MaxValue);
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<TimeSpan>(new TimeSpan(1, 2, 3), @"<duration xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">PT1H2M3S</duration>"), new TimeSpan(1, 2, 3));
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<TimeSpan>(TimeSpan.Zero, @"<duration xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">PT0S</duration>"), TimeSpan.Zero);
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<TimeSpan>(TimeSpan.MinValue, @"<duration xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">-P10675199DT2H48M5.4775808S</duration>"), TimeSpan.MinValue);
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<TimeSpan>(TimeSpan.MaxValue, @"<duration xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">P10675199DT2H48M5.4775807S</duration>"), TimeSpan.MaxValue);
     }
 
     [Fact]
@@ -328,7 +328,7 @@ public static partial class DataContractSerializerTests
     {
         foreach (uint value in new uint[] { (uint)3, (uint)0, uint.MinValue, uint.MaxValue })
         {
-            Assert.StrictEqual<uint>(DataContractSerializerHelper.SerializeAndDeserialize<uint>(value, string.Format(@"<unsignedInt xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</unsignedInt>", value)), value);
+            Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<uint>(value, string.Format(@"<unsignedInt xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</unsignedInt>", value)), value);
         }
     }
 
@@ -337,7 +337,7 @@ public static partial class DataContractSerializerTests
     {
         foreach (ulong value in new ulong[] { (ulong)3, (ulong)0, ulong.MinValue, ulong.MaxValue })
         {
-            Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<ulong>(value, string.Format(@"<unsignedLong xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</unsignedLong>", value)), value);
+            Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<ulong>(value, string.Format(@"<unsignedLong xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</unsignedLong>", value)), value);
         }
     }
 
@@ -346,15 +346,15 @@ public static partial class DataContractSerializerTests
     {
         foreach (ushort value in new ushort[] { (ushort)3, (ushort)0, ushort.MinValue, ushort.MaxValue })
         {
-            Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<ushort>(value, string.Format(@"<unsignedShort xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</unsignedShort>", value)), value);
+            Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<ushort>(value, string.Format(@"<unsignedShort xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</unsignedShort>", value)), value);
         }
     }
 
     [Fact]
     public static void DCS_UriAsRoot()
     {
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<Uri>(new Uri("http://abc/"), @"<anyURI xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">http://abc/</anyURI>"), new Uri("http://abc/"));
-        Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<Uri>(new Uri("http://abc/def/x.aspx?p1=12&p2=34"), @"<anyURI xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">http://abc/def/x.aspx?p1=12&amp;p2=34</anyURI>"), new Uri("http://abc/def/x.aspx?p1=12&p2=34"));
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<Uri>(new Uri("http://abc/"), @"<anyURI xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">http://abc/</anyURI>"), new Uri("http://abc/"));
+        Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<Uri>(new Uri("http://abc/def/x.aspx?p1=12&p2=34"), @"<anyURI xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">http://abc/def/x.aspx?p1=12&amp;p2=34</anyURI>"), new Uri("http://abc/def/x.aspx?p1=12&p2=34"));
     }
 
     [Fact]
@@ -930,9 +930,9 @@ public static partial class DataContractSerializerTests
 
         Assert.NotNull(y);
         Assert.NotNull(y.PropX);
-        Assert.StrictEqual(x.PropX.PropC, y.PropX.PropC);
-        Assert.StrictEqual(((MyTypeC)x.PropX).PropB, ((MyTypeC)y.PropX).PropB);
-        Assert.StrictEqual(x.PropY, y.PropY);
+        Assert.Equal(x.PropX.PropC, y.PropX.PropC);
+        Assert.Equal(((MyTypeC)x.PropX).PropB, ((MyTypeC)y.PropX).PropB);
+        Assert.Equal(x.PropY, y.PropY);
     }
 
     [Fact]
@@ -978,14 +978,14 @@ public static partial class DataContractSerializerTests
     public static void DCS_EnumAsRoot()
     {
         //The approved types for an enum are byte, sbyte, short, ushort, int, uint, long, or ulong.
-        Assert.StrictEqual(MyEnum.Two, DataContractSerializerHelper.SerializeAndDeserialize<MyEnum>(MyEnum.Two, @"<MyEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Two</MyEnum>"));
-        Assert.StrictEqual(ByteEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize<ByteEnum>(ByteEnum.Option1, @"<ByteEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</ByteEnum>"));
-        Assert.StrictEqual(SByteEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize<SByteEnum>(SByteEnum.Option1, @"<SByteEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</SByteEnum>"));
-        Assert.StrictEqual(ShortEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize<ShortEnum>(ShortEnum.Option1, @"<ShortEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</ShortEnum>"));
-        Assert.StrictEqual(IntEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize(IntEnum.Option1, @"<IntEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</IntEnum>"));
-        Assert.StrictEqual(UIntEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize<UIntEnum>(UIntEnum.Option1, @"<UIntEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</UIntEnum>"));
-        Assert.StrictEqual(LongEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize(LongEnum.Option1, @"<LongEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</LongEnum>"));
-        Assert.StrictEqual(ULongEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize<ULongEnum>(ULongEnum.Option1, @"<ULongEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</ULongEnum>"));
+        Assert.Equal(MyEnum.Two, DataContractSerializerHelper.SerializeAndDeserialize<MyEnum>(MyEnum.Two, @"<MyEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Two</MyEnum>"));
+        Assert.Equal(ByteEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize<ByteEnum>(ByteEnum.Option1, @"<ByteEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</ByteEnum>"));
+        Assert.Equal(SByteEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize<SByteEnum>(SByteEnum.Option1, @"<SByteEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</SByteEnum>"));
+        Assert.Equal(ShortEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize<ShortEnum>(ShortEnum.Option1, @"<ShortEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</ShortEnum>"));
+        Assert.Equal(IntEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize(IntEnum.Option1, @"<IntEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</IntEnum>"));
+        Assert.Equal(UIntEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize<UIntEnum>(UIntEnum.Option1, @"<UIntEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</UIntEnum>"));
+        Assert.Equal(LongEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize(LongEnum.Option1, @"<LongEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</LongEnum>"));
+        Assert.Equal(ULongEnum.Option1, DataContractSerializerHelper.SerializeAndDeserialize<ULongEnum>(ULongEnum.Option1, @"<ULongEnum xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">Option1</ULongEnum>"));
     }
 
     [Fact]
@@ -995,8 +995,8 @@ public static partial class DataContractSerializerTests
         TypeWithEnumMembers y = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithEnumMembers>(x, @"<TypeWithEnumMembers xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><F1>Three</F1><P1>Two</P1></TypeWithEnumMembers>");
 
         Assert.NotNull(y);
-        Assert.StrictEqual(x.F1, y.F1);
-        Assert.StrictEqual(x.P1, y.P1);
+        Assert.Equal(x.F1, y.F1);
+        Assert.Equal(x.P1, y.P1);
     }
 
     [Fact]
@@ -1005,8 +1005,8 @@ public static partial class DataContractSerializerTests
         var x = new DCClassWithEnumAndStruct(true);
         var y = DataContractSerializerHelper.SerializeAndDeserialize<DCClassWithEnumAndStruct>(x, @"<DCClassWithEnumAndStruct xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><MyEnum1>One</MyEnum1><MyStruct><Data>Data</Data></MyStruct></DCClassWithEnumAndStruct>");
 
-        Assert.StrictEqual(x.MyStruct, y.MyStruct);
-        Assert.StrictEqual(x.MyEnum1, y.MyEnum1);
+        Assert.Equal(x.MyStruct, y.MyStruct);
+        Assert.Equal(x.MyEnum1, y.MyEnum1);
     }
 
     [Fact]
@@ -1019,7 +1019,7 @@ public static partial class DataContractSerializerTests
 
         Dictionary<string, object> y = DataContractSerializerHelper.SerializeAndDeserialize<Dictionary<string, object>>(x, @"<ArrayOfKeyValueOfstringanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfstringanyType><Key>Key1</Key><Value i:type=""ArrayOfKeyValueOfstringanyType""><KeyValueOfstringanyType><Key>subkey1</Key><Value i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">subkey1value</Value></KeyValueOfstringanyType></Value></KeyValueOfstringanyType></ArrayOfKeyValueOfstringanyType>");
         Assert.NotNull(y);
-        Assert.StrictEqual(1, y.Count);
+        Assert.Equal(1, y.Count);
         Assert.True(y["Key1"] is Dictionary<string, object>);
         Assert.Equal("subkey1value", ((y["Key1"] as Dictionary<string, object>)["subkey1"]) as string);
     }
@@ -1053,7 +1053,7 @@ public static partial class DataContractSerializerTests
             ScreenOrientation = "horizontal"
         };
         var actual = DataContractSerializerHelper.SerializeAndDeserialize(obj, "<AppEnvironment xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><screen_dpi_x0028_x_x003A_y_x0029_>440</screen_dpi_x0028_x_x003A_y_x0029_><screen_x003A_orientation>horizontal</screen_x003A_orientation></AppEnvironment>");
-        Assert.StrictEqual(obj.ScreenDpi, actual.ScreenDpi);
+        Assert.Equal(obj.ScreenDpi, actual.ScreenDpi);
         Assert.Equal(obj.ScreenOrientation, actual.ScreenOrientation);
     }
 
@@ -1079,12 +1079,12 @@ public static partial class DataContractSerializerTests
 
         var y = DataContractSerializerHelper.SerializeAndDeserialize<DictionaryWithVariousKeyValueTypes>(x, @"<DictionaryWithVariousKeyValueTypes xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><WithEnums xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:KeyValueOfMyEnumMyEnumzbP0weY4><a:Key>Two</a:Key><a:Value>Three</a:Value></a:KeyValueOfMyEnumMyEnumzbP0weY4><a:KeyValueOfMyEnumMyEnumzbP0weY4><a:Key>One</a:Key><a:Value>One</a:Value></a:KeyValueOfMyEnumMyEnumzbP0weY4></WithEnums><WithNullables xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:KeyValueOfNullableOfshortNullableOfboolean_ShTDFhl_P><a:Key>-32768</a:Key><a:Value>true</a:Value></a:KeyValueOfNullableOfshortNullableOfboolean_ShTDFhl_P><a:KeyValueOfNullableOfshortNullableOfboolean_ShTDFhl_P><a:Key>0</a:Key><a:Value>false</a:Value></a:KeyValueOfNullableOfshortNullableOfboolean_ShTDFhl_P><a:KeyValueOfNullableOfshortNullableOfboolean_ShTDFhl_P><a:Key>32767</a:Key><a:Value i:nil=""true""/></a:KeyValueOfNullableOfshortNullableOfboolean_ShTDFhl_P></WithNullables><WithStructs xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:KeyValueOfStructNotSerializableStructNotSerializablezbP0weY4><a:Key><value>10</value></a:Key><a:Value><value>12</value></a:Value></a:KeyValueOfStructNotSerializableStructNotSerializablezbP0weY4><a:KeyValueOfStructNotSerializableStructNotSerializablezbP0weY4><a:Key><value>2147483647</value></a:Key><a:Value><value>-2147483648</value></a:Value></a:KeyValueOfStructNotSerializableStructNotSerializablezbP0weY4></WithStructs></DictionaryWithVariousKeyValueTypes>");
 
-        Assert.StrictEqual(MyEnum.Three, y.WithEnums[MyEnum.Two]);
-        Assert.StrictEqual(MyEnum.One, y.WithEnums[MyEnum.One]);
-        Assert.StrictEqual(new StructNotSerializable() { value = 12 }, y.WithStructs[new StructNotSerializable() { value = 10 }]);
-        Assert.StrictEqual(new StructNotSerializable() { value = int.MinValue }, y.WithStructs[new StructNotSerializable() { value = int.MaxValue }]);
-        Assert.StrictEqual(true, y.WithNullables[short.MinValue]);
-        Assert.StrictEqual(false, y.WithNullables[0]);
+        Assert.Equal(MyEnum.Three, y.WithEnums[MyEnum.Two]);
+        Assert.Equal(MyEnum.One, y.WithEnums[MyEnum.One]);
+        Assert.Equal(new StructNotSerializable() { value = 12 }, y.WithStructs[new StructNotSerializable() { value = 10 }]);
+        Assert.Equal(new StructNotSerializable() { value = int.MinValue }, y.WithStructs[new StructNotSerializable() { value = int.MaxValue }]);
+        Assert.Equal(true, y.WithNullables[short.MinValue]);
+        Assert.Equal(false, y.WithNullables[0]);
         Assert.Null(y.WithNullables[short.MaxValue]);
     }
 
@@ -1105,10 +1105,10 @@ public static partial class DataContractSerializerTests
         var y = DataContractSerializerHelper.SerializeAndDeserialize<WithDuplicateNames>(x, "<WithDuplicateNames xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><ClassA1 xmlns:a=\"http://schemas.datacontract.org/2004/07/DuplicateTypeNamesTest.ns1\"><a:Name>Hello World! \u6F22 \u00F1</a:Name></ClassA1><ClassA2 xmlns:a=\"http://schemas.datacontract.org/2004/07/DuplicateTypeNamesTest.ns2\"><a:Nombre/></ClassA2><EnumA1>two</EnumA1><EnumA2>dos</EnumA2><StructA1 xmlns:a=\"http://schemas.datacontract.org/2004/07/DuplicateTypeNamesTest.ns1\"><a:Text/></StructA1><StructA2 xmlns:a=\"http://schemas.datacontract.org/2004/07/DuplicateTypeNamesTest.ns2\"><a:Texto/></StructA2></WithDuplicateNames>");
 
         Assert.Equal(x.ClassA1.Name, y.ClassA1.Name);
-        Assert.StrictEqual(x.StructA1, y.StructA1);
-        Assert.StrictEqual(x.EnumA1, y.EnumA1);
-        Assert.StrictEqual(x.EnumA2, y.EnumA2);
-        Assert.StrictEqual(x.StructA2, y.StructA2);
+        Assert.Equal(x.StructA1, y.StructA1);
+        Assert.Equal(x.EnumA1, y.EnumA1);
+        Assert.Equal(x.EnumA2, y.EnumA2);
+        Assert.Equal(x.StructA2, y.StructA2);
     }
 
     [Fact]
@@ -1134,10 +1134,10 @@ public static partial class DataContractSerializerTests
     private static void VerifyXElementObject(XElement x1, XElement x2, bool checkFirstAttribute = true)
     {
         Assert.Equal(x1.Value, x2.Value);
-        Assert.StrictEqual(x1.Name, x2.Name);
+        Assert.Equal(x1.Name, x2.Name);
         if (checkFirstAttribute)
         {
-            Assert.StrictEqual(x1.FirstAttribute.Name, x2.FirstAttribute.Name);
+            Assert.Equal(x1.FirstAttribute.Name, x2.FirstAttribute.Name);
             Assert.Equal(x1.FirstAttribute.Value, x2.FirstAttribute.Value);
         }
     }
@@ -1158,7 +1158,7 @@ public static partial class DataContractSerializerTests
         var original = new WithArrayOfXElement(true);
         var actual = DataContractSerializerHelper.SerializeAndDeserialize<WithArrayOfXElement>(original, @"<WithArrayOfXElement xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a xmlns:a=""http://schemas.datacontract.org/2004/07/System.Xml.Linq""><a:XElement><item xmlns=""http://p.com/"">item0</item></a:XElement><a:XElement><item xmlns=""http://p.com/"">item1</item></a:XElement><a:XElement><item xmlns=""http://p.com/"">item2</item></a:XElement></a></WithArrayOfXElement>");
 
-        Assert.StrictEqual(original.a.Length, actual.a.Length);
+        Assert.Equal(original.a.Length, actual.a.Length);
         VerifyXElementObject(original.a[0], actual.a[0], checkFirstAttribute: false);
         VerifyXElementObject(original.a[1], actual.a[1], checkFirstAttribute: false);
         VerifyXElementObject(original.a[2], actual.a[2], checkFirstAttribute: false);
@@ -1170,7 +1170,7 @@ public static partial class DataContractSerializerTests
         var original = new WithListOfXElement(true);
         var actual = DataContractSerializerHelper.SerializeAndDeserialize<WithListOfXElement>(original, @"<WithListOfXElement xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><list xmlns:a=""http://schemas.datacontract.org/2004/07/System.Xml.Linq""><a:XElement><item xmlns=""http://p.com/"">item0</item></a:XElement><a:XElement><item xmlns=""http://p.com/"">item1</item></a:XElement><a:XElement><item xmlns=""http://p.com/"">item2</item></a:XElement></list></WithListOfXElement>");
 
-        Assert.StrictEqual(original.list.Count, actual.list.Count);
+        Assert.Equal(original.list.Count, actual.list.Count);
         VerifyXElementObject(original.list[0], actual.list[0], checkFirstAttribute: false);
         VerifyXElementObject(original.list[1], actual.list[1], checkFirstAttribute: false);
         VerifyXElementObject(original.list[2], actual.list[2], checkFirstAttribute: false);
@@ -1407,8 +1407,8 @@ public static partial class DataContractSerializerTests
         value.ListProperty.AddRange(new string[] { "one", "two", "three" });
         var actual = DataContractSerializerHelper.SerializeAndDeserialize<DerivedClassWithSameProperty>(value, @"<DerivedClassWithSameProperty xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><DateTimeProperty>0001-01-01T00:00:00</DateTimeProperty><IntProperty>0</IntProperty><ListProperty i:nil=""true"" xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><StringProperty i:nil=""true""/><DateTimeProperty>0001-01-01T00:00:00.00001</DateTimeProperty><IntProperty>5</IntProperty><ListProperty xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:string>one</a:string><a:string>two</a:string><a:string>three</a:string></ListProperty><StringProperty>TestString</StringProperty></DerivedClassWithSameProperty>");
 
-        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
-        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.Equal(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.NotNull(actual.ListProperty);
         Assert.True(value.ListProperty.Count == actual.ListProperty.Count);
@@ -1452,7 +1452,7 @@ public static partial class DataContractSerializerTests
     {
         EnumFlags value1 = EnumFlags.One | EnumFlags.Four;
         var value2 = DataContractSerializerHelper.SerializeAndDeserialize<EnumFlags>(value1, @"<EnumFlags xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"">One Four</EnumFlags>");
-        Assert.StrictEqual(value1, value2);
+        Assert.Equal(value1, value2);
     }
 
     [Fact]
@@ -1483,13 +1483,13 @@ public static partial class DataContractSerializerTests
         var actual = DataContractSerializerHelper.SerializeAndDeserialize(item, baseline);
 
         // Assert
-        Assert.StrictEqual(item.OptionalInt, actual.OptionalInt);
-        Assert.StrictEqual(item.Optional, actual.Optional);
-        Assert.StrictEqual(item.Optionull, actual.Optionull);
-        Assert.StrictEqual(item.OptionullInt, actual.OptionullInt);
+        Assert.Equal(item.OptionalInt, actual.OptionalInt);
+        Assert.Equal(item.Optional, actual.Optional);
+        Assert.Equal(item.Optionull, actual.Optionull);
+        Assert.Equal(item.OptionullInt, actual.OptionullInt);
         Assert.Null(actual.Struct2);
-        Assert.StrictEqual(item.Struct1.Value.A, actual.Struct1.Value.A);
-        Assert.StrictEqual(item.Struct1.Value.B, actual.Struct1.Value.B);
+        Assert.Equal(item.Struct1.Value.A, actual.Struct1.Value.A);
+        Assert.Equal(item.Struct1.Value.B, actual.Struct1.Value.B);
     }
 
     [Fact]
@@ -1507,8 +1507,8 @@ public static partial class DataContractSerializerTests
     {
         var value = new InternalType() { InternalProperty = 12 };
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<InternalType>(value, @"<InternalType xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><InternalProperty>12</InternalProperty><PrivateProperty>100</PrivateProperty></InternalType>");
-        Assert.StrictEqual(deserializedValue.InternalProperty, value.InternalProperty);
-        Assert.StrictEqual(deserializedValue.GetPrivatePropertyValue(), value.GetPrivatePropertyValue());
+        Assert.Equal(deserializedValue.InternalProperty, value.InternalProperty);
+        Assert.Equal(deserializedValue.GetPrivatePropertyValue(), value.GetPrivatePropertyValue());
     }
 
     [Fact]
@@ -1544,8 +1544,8 @@ public static partial class DataContractSerializerTests
     {
         var value = new PrivateType();
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<PrivateType>(value, @"<DataContractSerializerTests.PrivateType xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><InternalProperty>1</InternalProperty><PrivateProperty>2</PrivateProperty></DataContractSerializerTests.PrivateType>");
-        Assert.StrictEqual(deserializedValue.GetInternalPropertyValue(), value.GetInternalPropertyValue());
-        Assert.StrictEqual(deserializedValue.GetPrivatePropertyValue(), value.GetPrivatePropertyValue());
+        Assert.Equal(deserializedValue.GetInternalPropertyValue(), value.GetInternalPropertyValue());
+        Assert.Equal(deserializedValue.GetPrivatePropertyValue(), value.GetPrivatePropertyValue());
     }
 
 #region private type has to be in with in the class
@@ -1632,7 +1632,7 @@ public static partial class DataContractSerializerTests
             @"<KnownTypesThroughConstructor xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><EnumValue i:type=""MyEnum"">One</EnumValue><SimpleTypeValue i:type=""SimpleKnownTypeValue""><StrProperty>PropertyValue</StrProperty></SimpleTypeValue></KnownTypesThroughConstructor>",
             null, () => { return new DataContractSerializer(typeof(KnownTypesThroughConstructor), new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
 
-        Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
+        Assert.Equal((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
         Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
@@ -1647,9 +1647,9 @@ public static partial class DataContractSerializerTests
             @"<KnownTypesThroughConstructor xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><EnumValue i:type=""a:DateTimeOffset"" xmlns:a=""http://schemas.datacontract.org/2004/07/System""><a:DateTime>2015-11-11T00:00:00Z</a:DateTime><a:OffsetMinutes>0</a:OffsetMinutes></EnumValue><SimpleTypeValue i:type=""a:DateTimeOffset"" xmlns:a=""http://schemas.datacontract.org/2004/07/System""><a:DateTime>2015-11-11T00:00:00Z</a:DateTime><a:OffsetMinutes>0</a:OffsetMinutes></SimpleTypeValue></KnownTypesThroughConstructor>",
             null, () => { return new DataContractSerializer(typeof(KnownTypesThroughConstructor), new Type[] { typeof(DateTimeOffset), typeof(DateTimeOffset) }); });
 
-        Assert.StrictEqual((DateTimeOffset)value.EnumValue, (DateTimeOffset)actual.EnumValue);
+        Assert.Equal((DateTimeOffset)value.EnumValue, (DateTimeOffset)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is DateTimeOffset);
-        Assert.StrictEqual((DateTimeOffset)actual.SimpleTypeValue, (DateTimeOffset)actual.SimpleTypeValue);
+        Assert.Equal((DateTimeOffset)actual.SimpleTypeValue, (DateTimeOffset)actual.SimpleTypeValue);
     }
 
     [Fact]
@@ -1661,7 +1661,7 @@ public static partial class DataContractSerializerTests
             @"<KnownTypesThroughConstructor xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><EnumValue i:type=""MyEnum"">One</EnumValue><SimpleTypeValue i:type=""SimpleKnownTypeValue""><StrProperty>PropertyValue</StrProperty></SimpleTypeValue></KnownTypesThroughConstructor>",
             new DataContractSerializerSettings() { KnownTypes = new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) } });
 
-        Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
+        Assert.Equal((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
         Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
@@ -1675,7 +1675,7 @@ public static partial class DataContractSerializerTests
             @"<ChangedRoot xmlns=""http://changedNamespace"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:EnumValue i:type=""a:MyEnum"">One</a:EnumValue><a:SimpleTypeValue i:type=""a:SimpleKnownTypeValue""><a:StrProperty>PropertyValue</a:StrProperty></a:SimpleTypeValue></ChangedRoot>",
             null, () => { return new DataContractSerializer(typeof(KnownTypesThroughConstructor), "ChangedRoot", "http://changedNamespace", new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
 
-        Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
+        Assert.Equal((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
         Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
@@ -1690,7 +1690,7 @@ public static partial class DataContractSerializerTests
             @"<ChangedRoot xmlns=""http://changedNamespace"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:EnumValue i:type=""a:MyEnum"">One</a:EnumValue><a:SimpleTypeValue i:type=""a:SimpleKnownTypeValue""><a:StrProperty>PropertyValue</a:StrProperty></a:SimpleTypeValue></ChangedRoot>",
             null, () => { return new DataContractSerializer(typeof(KnownTypesThroughConstructor), xmlDictionary.Add("ChangedRoot"), xmlDictionary.Add("http://changedNamespace"), new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
 
-        Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
+        Assert.Equal((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
         Assert.Equal("PropertyValue", ((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty);
     }
@@ -1704,7 +1704,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.Message, actual.Message);
         Assert.Equal(value.Source, actual.Source);
         Assert.Equal(value.StackTrace, actual.StackTrace);
-        Assert.StrictEqual(value.HResult, actual.HResult);
+        Assert.Equal(value.HResult, actual.HResult);
         Assert.Equal(value.HelpLink, actual.HelpLink);
     }
 
@@ -1718,7 +1718,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.ParamName, actual.ParamName);
         Assert.Equal(value.Source, actual.Source);
         Assert.Equal(value.StackTrace, actual.StackTrace);
-        Assert.StrictEqual(value.HResult, actual.HResult);
+        Assert.Equal(value.HResult, actual.HResult);
         Assert.Equal(value.HelpLink, actual.HelpLink);
     }
 
@@ -1731,7 +1731,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.Message, actual.Message);
         Assert.Equal(value.Source, actual.Source);
         Assert.Equal(value.StackTrace, actual.StackTrace);
-        Assert.StrictEqual(value.HResult, actual.HResult);
+        Assert.Equal(value.HResult, actual.HResult);
         Assert.Equal(value.HelpLink, actual.HelpLink);
     }
 
@@ -1744,13 +1744,13 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.Message, actual.Message);
         Assert.Equal(value.Source, actual.Source);
         Assert.Equal(value.StackTrace, actual.StackTrace);
-        Assert.StrictEqual(value.HResult, actual.HResult);
+        Assert.Equal(value.HResult, actual.HResult);
         Assert.Equal(value.HelpLink, actual.HelpLink);
 
         Assert.Equal(value.InnerException.Message, actual.InnerException.Message);
         Assert.Equal(value.InnerException.Source, actual.InnerException.Source);
         Assert.Equal(value.InnerException.StackTrace, actual.InnerException.StackTrace);
-        Assert.StrictEqual(value.InnerException.HResult, actual.InnerException.HResult);
+        Assert.Equal(value.InnerException.HResult, actual.InnerException.HResult);
         Assert.Equal(value.InnerException.HelpLink, actual.InnerException.HelpLink);
     }
 
@@ -1761,7 +1761,7 @@ public static partial class DataContractSerializerTests
 
         var actual = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<TypeWithUriTypeProperty xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><ConfigUri>http://www.bing.com/</ConfigUri></TypeWithUriTypeProperty>");
 
-        Assert.StrictEqual(value.ConfigUri, actual.ConfigUri);
+        Assert.Equal(value.ConfigUri, actual.ConfigUri);
     }
 
     [Fact]
@@ -1769,7 +1769,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc)) };
         var actual = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<TypeWithDateTimeOffsetTypeProperty xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><ModifiedTime xmlns:a=""http://schemas.datacontract.org/2004/07/System""><a:DateTime>2013-01-02T03:04:05.006Z</a:DateTime><a:OffsetMinutes>0</a:OffsetMinutes></ModifiedTime></TypeWithDateTimeOffsetTypeProperty>");
-        Assert.StrictEqual(value.ModifiedTime, actual.ModifiedTime);
+        Assert.Equal(value.ModifiedTime, actual.ModifiedTime);
 
         // Assume that UTC offset doesn't change more often than once in the day 2013-01-02
         // DO NOT USE TimeZoneInfo.Local.BaseUtcOffset !
@@ -1777,11 +1777,11 @@ public static partial class DataContractSerializerTests
         // Adding offsetMinutes to ModifiedTime property so the DateTime component in serialized strings are time-zone independent
         value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6).AddMinutes(offsetMinutes)) };
         actual = DataContractSerializerHelper.SerializeAndDeserialize(value, string.Format(@"<TypeWithDateTimeOffsetTypeProperty xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><ModifiedTime xmlns:a=""http://schemas.datacontract.org/2004/07/System""><a:DateTime>2013-01-02T03:04:05.006Z</a:DateTime><a:OffsetMinutes>{0}</a:OffsetMinutes></ModifiedTime></TypeWithDateTimeOffsetTypeProperty>", offsetMinutes));
-        Assert.StrictEqual(value.ModifiedTime, actual.ModifiedTime);
+        Assert.Equal(value.ModifiedTime, actual.ModifiedTime);
 
         value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local).AddMinutes(offsetMinutes)) };
         actual = DataContractSerializerHelper.SerializeAndDeserialize(value, string.Format(@"<TypeWithDateTimeOffsetTypeProperty xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><ModifiedTime xmlns:a=""http://schemas.datacontract.org/2004/07/System""><a:DateTime>2013-01-02T03:04:05.006Z</a:DateTime><a:OffsetMinutes>{0}</a:OffsetMinutes></ModifiedTime></TypeWithDateTimeOffsetTypeProperty>", offsetMinutes));
-        Assert.StrictEqual(value.ModifiedTime, actual.ModifiedTime);
+        Assert.Equal(value.ModifiedTime, actual.ModifiedTime);
     }
 
     [Fact]
@@ -1801,56 +1801,56 @@ public static partial class DataContractSerializerTests
     {
         Tuple<int> value = new Tuple<int>(1);
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Tuple<int>>(value, @"<TupleOfint xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><m_Item1>1</m_Item1></TupleOfint>");
-        Assert.StrictEqual<Tuple<int>>(value, deserializedValue);
+        Assert.Equal(value, deserializedValue);
     }
 
     private static void DCS_Tuple2()
     {
         Tuple<int, int> value = new Tuple<int, int>(1, 2);
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Tuple<int, int>>(value, @"<TupleOfintint xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><m_Item1>1</m_Item1><m_Item2>2</m_Item2></TupleOfintint>");
-        Assert.StrictEqual<Tuple<int, int>>(value, deserializedValue);
+        Assert.Equal(value, deserializedValue);
     }
 
     private static void DCS_Tuple3()
     {
         Tuple<int, int, int> value = new Tuple<int, int, int>(1, 2, 3);
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Tuple<int, int, int>>(value, @"<TupleOfintintint xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><m_Item1>1</m_Item1><m_Item2>2</m_Item2><m_Item3>3</m_Item3></TupleOfintintint>");
-        Assert.StrictEqual<Tuple<int, int, int>>(value, deserializedValue);
+        Assert.Equal(value, deserializedValue);
     }
 
     private static void DCS_Tuple4()
     {
         Tuple<int, int, int, int> value = new Tuple<int, int, int, int>(1, 2, 3, 4);
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Tuple<int, int, int, int>>(value, @"<TupleOfintintintint xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><m_Item1>1</m_Item1><m_Item2>2</m_Item2><m_Item3>3</m_Item3><m_Item4>4</m_Item4></TupleOfintintintint>");
-        Assert.StrictEqual<Tuple<int, int, int, int>>(value, deserializedValue);
+        Assert.Equal(value, deserializedValue);
     }
 
     private static void DCS_Tuple5()
     {
         Tuple<int, int, int, int, int> value = new Tuple<int, int, int, int, int>(1, 2, 3, 4, 5);
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Tuple<int, int, int, int, int>>(value, @"<TupleOfintintintintint xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><m_Item1>1</m_Item1><m_Item2>2</m_Item2><m_Item3>3</m_Item3><m_Item4>4</m_Item4><m_Item5>5</m_Item5></TupleOfintintintintint>");
-        Assert.StrictEqual<Tuple<int, int, int, int, int>>(value, deserializedValue);
+        Assert.Equal(value, deserializedValue);
     }
 
     private static void DCS_Tuple6()
     {
         Tuple<int, int, int, int, int, int> value = new Tuple<int, int, int, int, int, int>(1, 2, 3, 4, 5, 6);
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Tuple<int, int, int, int, int, int>>(value, @"<TupleOfintintintintintint xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><m_Item1>1</m_Item1><m_Item2>2</m_Item2><m_Item3>3</m_Item3><m_Item4>4</m_Item4><m_Item5>5</m_Item5><m_Item6>6</m_Item6></TupleOfintintintintintint>");
-        Assert.StrictEqual<Tuple<int, int, int, int, int, int>>(value, deserializedValue);
+        Assert.Equal(value, deserializedValue);
     }
 
     private static void DCS_Tuple7()
     {
         Tuple<int, int, int, int, int, int, int> value = new Tuple<int, int, int, int, int, int, int>(1, 2, 3, 4, 5, 6, 7);
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Tuple<int, int, int, int, int, int, int>>(value, @"<TupleOfintintintintintintint xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><m_Item1>1</m_Item1><m_Item2>2</m_Item2><m_Item3>3</m_Item3><m_Item4>4</m_Item4><m_Item5>5</m_Item5><m_Item6>6</m_Item6><m_Item7>7</m_Item7></TupleOfintintintintintintint>");
-        Assert.StrictEqual<Tuple<int, int, int, int, int, int, int>>(value, deserializedValue);
+        Assert.Equal(value, deserializedValue);
     }
 
     private static void DCS_Tuple8()
     {
         Tuple<int, int, int, int, int, int, int, Tuple<int>> value = new Tuple<int, int, int, int, int, int, int, Tuple<int>>(1, 2, 3, 4, 5, 6, 7, new Tuple<int>(8));
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Tuple<int, int, int, int, int, int, int, Tuple<int>>>(value, @"<TupleOfintintintintintintintTupleOfintcd6ORBnm xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><m_Item1>1</m_Item1><m_Item2>2</m_Item2><m_Item3>3</m_Item3><m_Item4>4</m_Item4><m_Item5>5</m_Item5><m_Item6>6</m_Item6><m_Item7>7</m_Item7><m_Rest><m_Item1>8</m_Item1></m_Rest></TupleOfintintintintintintintTupleOfintcd6ORBnm>");
-        Assert.StrictEqual<Tuple<int, int, int, int, int, int, int, Tuple<int>>>(value, deserializedValue);
+        Assert.Equal(value, deserializedValue);
     }
 
     [Fact]
@@ -1862,8 +1862,8 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Queue<int>>(value, @"<QueueOfint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:int>1</a:int><a:int>0</a:int><a:int>0</a:int><a:int>0</a:int></_array><_head>0</_head><_size>1</_size><_tail>1</_tail><_version>2</_version></QueueOfint>");
         var a1 = value.ToArray();
         var a2 = deserializedValue.ToArray();
-        Assert.StrictEqual(a1.Length, a2.Length);
-        Assert.StrictEqual(a1[0], a2[0]);
+        Assert.Equal(a1.Length, a2.Length);
+        Assert.Equal(a1[0], a2[0]);
     }
 
     [Fact]
@@ -1876,9 +1876,9 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Stack<int>>(value, @"<StackOfint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:int>123</a:int><a:int>456</a:int><a:int>0</a:int><a:int>0</a:int></_array><_size>2</_size><_version>2</_version></StackOfint>");
         var a1 = value.ToArray();
         var a2 = deserializedValue.ToArray();
-        Assert.StrictEqual(a1.Length, a2.Length);
-        Assert.StrictEqual(a1[0], a2[0]);
-        Assert.StrictEqual(a1[1], a2[1]);
+        Assert.Equal(a1.Length, a2.Length);
+        Assert.Equal(a1[0], a2[0]);
+        Assert.Equal(a1[1], a2[1]);
     }
 
     [Fact]
@@ -1891,8 +1891,8 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Queue>(value, @"<Queue xmlns=""http://schemas.datacontract.org/2004/07/System.Collections"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:int"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">123</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">Foo</a:anyType><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/></_array><_growFactor>200</_growFactor><_head>0</_head><_size>2</_size><_tail>2</_tail><_version>2</_version></Queue>");
         var a1 = value.ToArray();
         var a2 = deserializedValue.ToArray();
-        Assert.StrictEqual(a1.Length, a2.Length);
-        Assert.StrictEqual(a1[0], a2[0]);
+        Assert.Equal(a1.Length, a2.Length);
+        Assert.Equal(a1[0], a2[0]);
     }
 
     [Fact]
@@ -1905,9 +1905,9 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Stack>(value, @"<Stack xmlns=""http://schemas.datacontract.org/2004/07/System.Collections"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:int"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">123</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">Foo</a:anyType><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/><a:anyType i:nil=""true""/></_array><_size>2</_size><_version>2</_version></Stack>");
         var a1 = value.ToArray();
         var a2 = deserializedValue.ToArray();
-        Assert.StrictEqual(a1.Length, a2.Length);
-        Assert.StrictEqual(a1[0], a2[0]);
-        Assert.StrictEqual(a1[1], a2[1]);
+        Assert.Equal(a1.Length, a2.Length);
+        Assert.Equal(a1[0], a2[0]);
+        Assert.Equal(a1[1], a2[1]);
     }
 
     [Fact]
@@ -1917,9 +1917,9 @@ public static partial class DataContractSerializerTests
         value.Add(456, "Foo");
         value.Add(123, "Bar");
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<SortedList>(value, @"<ArrayOfKeyValueOfanyTypeanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfanyTypeanyType><Key i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">123</Key><Value i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">Bar</Value></KeyValueOfanyTypeanyType><KeyValueOfanyTypeanyType><Key i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">456</Key><Value i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">Foo</Value></KeyValueOfanyTypeanyType></ArrayOfKeyValueOfanyTypeanyType>");
-        Assert.StrictEqual(value.Count, deserializedValue.Count);
-        Assert.StrictEqual(value[0], deserializedValue[0]);
-        Assert.StrictEqual(value[1], deserializedValue[1]);
+        Assert.Equal(value.Count, deserializedValue.Count);
+        Assert.Equal(value[0], deserializedValue[0]);
+        Assert.Equal(value[1], deserializedValue[1]);
     }
 
     [Fact]
@@ -1928,10 +1928,10 @@ public static partial class DataContractSerializerTests
         Version value = new Version(1, 2, 3, 4);
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<Version>(value,
             @"<Version xmlns=""http://schemas.datacontract.org/2004/07/System"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_Build>3</_Build><_Major>1</_Major><_Minor>2</_Minor><_Revision>4</_Revision></Version>");
-        Assert.StrictEqual(value.Major, deserializedValue.Major);
-        Assert.StrictEqual(value.Minor, deserializedValue.Minor);
-        Assert.StrictEqual(value.Build, deserializedValue.Build);
-        Assert.StrictEqual(value.Revision, deserializedValue.Revision);
+        Assert.Equal(value.Major, deserializedValue.Major);
+        Assert.Equal(value.Minor, deserializedValue.Minor);
+        Assert.Equal(value.Build, deserializedValue.Build);
+        Assert.Equal(value.Revision, deserializedValue.Revision);
     }
 
     [Fact]
@@ -1939,7 +1939,7 @@ public static partial class DataContractSerializerTests
     {
         TypeWithCommonTypeProperties value = new TypeWithCommonTypeProperties { Ts = new TimeSpan(1, 1, 1), Id = new Guid("ad948f1e-9ba9-44c8-8e2e-b6ba969ec987") };
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithCommonTypeProperties>(value, @"<TypeWithCommonTypeProperties xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Id>ad948f1e-9ba9-44c8-8e2e-b6ba969ec987</Id><Ts>PT1H1M1S</Ts></TypeWithCommonTypeProperties>");
-        Assert.StrictEqual<TypeWithCommonTypeProperties>(value, deserializedValue);
+        Assert.Equal(value, deserializedValue);
     }
 
     [Fact]
@@ -1947,9 +1947,9 @@ public static partial class DataContractSerializerTests
     {
         TypeWithTypeProperty value = new TypeWithTypeProperty { Id = 123, Name = "Jon Doe" };
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithTypeProperty>(value, @"<TypeWithTypeProperty xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Id>123</Id><Name>Jon Doe</Name><Type i:nil=""true"" xmlns:a=""http://schemas.datacontract.org/2004/07/System""/></TypeWithTypeProperty>");
-        Assert.StrictEqual(value.Id, deserializedValue.Id);
+        Assert.Equal(value.Id, deserializedValue.Id);
         Assert.Equal(value.Name, deserializedValue.Name);
-        Assert.StrictEqual(value.Type, deserializedValue.Type);
+        Assert.Equal(value.Type, deserializedValue.Type);
     }
 
     [Fact]
@@ -1959,7 +1959,7 @@ public static partial class DataContractSerializerTests
         value.Add("Foo");
         value.Add("Bar");
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithExplicitIEnumerableImplementation>(value, @"<ArrayOfanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><anyType i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">Foo</anyType><anyType i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">Bar</anyType></ArrayOfanyType>");
-        Assert.StrictEqual(2, deserializedValue.Count);
+        Assert.Equal(2, deserializedValue.Count);
         IEnumerator enumerator = ((IEnumerable)deserializedValue).GetEnumerator();
         enumerator.MoveNext();
         Assert.Equal("Foo", (string)enumerator.Current);
@@ -1975,11 +1975,11 @@ public static partial class DataContractSerializerTests
         value.Foo.Add(20, new Level() { Name = "Bar", LevelNo = 2 });
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithGenericDictionaryAsKnownType>(value, @"<TypeWithGenericDictionaryAsKnownType xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Foo xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:KeyValueOfintLevelQk4Xq8_SP><a:Key>10</a:Key><a:Value><LevelNo>1</LevelNo><Name>Foo</Name></a:Value></a:KeyValueOfintLevelQk4Xq8_SP><a:KeyValueOfintLevelQk4Xq8_SP><a:Key>20</a:Key><a:Value><LevelNo>2</LevelNo><Name>Bar</Name></a:Value></a:KeyValueOfintLevelQk4Xq8_SP></Foo></TypeWithGenericDictionaryAsKnownType>");
 
-        Assert.StrictEqual(2, deserializedValue.Foo.Count);
+        Assert.Equal(2, deserializedValue.Foo.Count);
         Assert.Equal("Foo", deserializedValue.Foo[10].Name);
-        Assert.StrictEqual(1, deserializedValue.Foo[10].LevelNo);
+        Assert.Equal(1, deserializedValue.Foo[10].LevelNo);
         Assert.Equal("Bar", deserializedValue.Foo[20].Name);
-        Assert.StrictEqual(2, deserializedValue.Foo[20].LevelNo);
+        Assert.Equal(2, deserializedValue.Foo[20].LevelNo);
     }
 
     [Fact]
@@ -2000,7 +2000,7 @@ public static partial class DataContractSerializerTests
         value.Articles = new List<IArticle>() { new SummaryArticle() { Title = "Bar Summary" } };
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithKnownTypeAttributeAndListOfInterfaceMember>(value, @"<TypeWithKnownTypeAttributeAndListOfInterfaceMember xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Articles xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""SummaryArticle""><Category>Summary</Category><Title>Bar Summary</Title></a:anyType></Articles></TypeWithKnownTypeAttributeAndListOfInterfaceMember>");
 
-        Assert.StrictEqual(1, deserializedValue.Articles.Count);
+        Assert.Equal(1, deserializedValue.Articles.Count);
         Assert.Equal("Summary", deserializedValue.Articles[0].Category);
         Assert.Equal("Bar Summary", deserializedValue.Articles[0].Title);
     }
@@ -2087,8 +2087,8 @@ public static partial class DataContractSerializerTests
             data2 = 4.56
         };
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<GenericTypeWithNestedGenerics<int>.InnerGeneric<double>>(value, @"<GenericTypeWithNestedGenerics.InnerGenericOfintdouble2LMUf4bh xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><data1>123</data1><data2>4.56</data2></GenericTypeWithNestedGenerics.InnerGenericOfintdouble2LMUf4bh>");
-        Assert.StrictEqual(value.data1, deserializedValue.data1);
-        Assert.StrictEqual(value.data2, deserializedValue.data2);
+        Assert.Equal(value.data1, deserializedValue.data1);
+        Assert.Equal(value.data2, deserializedValue.data2);
     }
 
     [Fact]
@@ -2108,7 +2108,7 @@ public static partial class DataContractSerializerTests
         XmlQualifiedName qname = new XmlQualifiedName("abc", "def");
         TypeWithXmlQualifiedName value = new TypeWithXmlQualifiedName() { Value = qname };
         TypeWithXmlQualifiedName deserialized = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithXmlQualifiedName>(value, @"<TypeWithXmlQualifiedName xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><q:Value xmlns:q=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:a=""def"">a:abc</q:Value></TypeWithXmlQualifiedName>");
-        Assert.StrictEqual(value.Value, deserialized.Value);
+        Assert.Equal(value.Value, deserialized.Value);
     }
 
     [Fact]
@@ -2133,7 +2133,7 @@ public static partial class DataContractSerializerTests
         List<string> list = new List<string>() { "Foo", "Bar" };
         ReadOnlyCollection<string> value = new ReadOnlyCollection<string>(list);
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<ReadOnlyCollection<string>>(value, @"<ReadOnlyCollectionOfstring xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.ObjectModel"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><list xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:string>Foo</a:string><a:string>Bar</a:string></list></ReadOnlyCollectionOfstring>");
-        Assert.StrictEqual(value.Count, deserializedValue.Count);
+        Assert.Equal(value.Count, deserializedValue.Count);
         Assert.Equal(value[0], deserializedValue[0]);
         Assert.Equal(value[1], deserializedValue[1]);
     }
@@ -2147,9 +2147,9 @@ public static partial class DataContractSerializerTests
         ReadOnlyDictionary<string, int> value = new ReadOnlyDictionary<string, int>(dict);
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ReadOnlyDictionaryOfstringint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.ObjectModel"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><m_dictionary xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:KeyValueOfstringint><a:Key>Foo</a:Key><a:Value>1</a:Value></a:KeyValueOfstringint><a:KeyValueOfstringint><a:Key>Bar</a:Key><a:Value>2</a:Value></a:KeyValueOfstringint></m_dictionary></ReadOnlyDictionaryOfstringint>");
 
-        Assert.StrictEqual(value.Count, deserializedValue.Count);
-        Assert.StrictEqual(value["Foo"], deserializedValue["Foo"]);
-        Assert.StrictEqual(value["Bar"], deserializedValue["Bar"]);
+        Assert.Equal(value.Count, deserializedValue.Count);
+        Assert.Equal(value["Foo"], deserializedValue["Foo"]);
+        Assert.Equal(value["Bar"], deserializedValue["Bar"]);
     }
 
     [Fact]
@@ -2159,7 +2159,7 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<KeyValuePair<string, object>>(value, @"<KeyValuePairOfstringanyType xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><key>FooKey</key><value i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">FooValue</value></KeyValuePairOfstringanyType>");
 
         Assert.Equal(value.Key, deserializedValue.Key);
-        Assert.StrictEqual(value.Value, deserializedValue.Value);
+        Assert.Equal(value.Value, deserializedValue.Value);
     }
 
     [Fact]
@@ -2225,8 +2225,8 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<CollectionDataContractWithCustomKeyName>(value, @"<MyHeaders xmlns=""http://schemas.microsoft.com/netservices/2010/10/servicebus/connect"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><MyHeader><MyKey>100</MyKey><MyValue>123</MyValue></MyHeader><MyHeader><MyKey>200</MyKey><MyValue>456</MyValue></MyHeader></MyHeaders>");
 
         Assert.NotNull(deserializedValue);
-        Assert.StrictEqual(value[100], deserializedValue[100]);
-        Assert.StrictEqual(value[200], deserializedValue[200]);
+        Assert.Equal(value[100], deserializedValue[100]);
+        Assert.Equal(value[200], deserializedValue[200]);
     }
 
     [Fact]
@@ -2238,8 +2238,8 @@ public static partial class DataContractSerializerTests
         var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<CollectionDataContractWithCustomKeyNameDuplicate>(value, @"<MyHeaders2 xmlns=""http://schemas.microsoft.com/netservices/2010/10/servicebus/connect"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><MyHeader2><MyKey2>100</MyKey2><MyValue2>123</MyValue2></MyHeader2><MyHeader2><MyKey2>200</MyKey2><MyValue2>456</MyValue2></MyHeader2></MyHeaders2>");
 
         Assert.NotNull(deserializedValue);
-        Assert.StrictEqual(value[100], deserializedValue[100]);
-        Assert.StrictEqual(value[200], deserializedValue[200]);
+        Assert.Equal(value[100], deserializedValue[100]);
+        Assert.Equal(value[200], deserializedValue[200]);
     }
 
     [Fact]
@@ -2252,7 +2252,7 @@ public static partial class DataContractSerializerTests
 
         Assert.NotNull(deserializedValue);
         Assert.NotNull(deserializedValue.CollectionProperty);
-        Assert.StrictEqual(value.CollectionProperty.Count, deserializedValue.CollectionProperty.Count);
+        Assert.Equal(value.CollectionProperty.Count, deserializedValue.CollectionProperty.Count);
         Assert.True(Enumerable.SequenceEqual(value.CollectionProperty, deserializedValue.CollectionProperty));
     }
 
@@ -2298,7 +2298,7 @@ public static partial class DataContractSerializerTests
             if (shouldSucceed)
             {
                 var deserializedObject = (TypeWithTypeWithIntAndStringPropertyProperty)serializer.ReadObject(reader);
-                Assert.StrictEqual(10, deserializedObject.ObjectProperty.SampleInt);
+                Assert.Equal(10, deserializedObject.ObjectProperty.SampleInt);
                 Assert.Equal("Sample string", deserializedObject.ObjectProperty.SampleString);
             }
             else
@@ -2373,7 +2373,7 @@ public static partial class DataContractSerializerTests
         var expected = new TypeWithXmlElementProperty() { Elements = new[] { productElement, categoryElement } };
         var actual = DataContractSerializerHelper.SerializeAndDeserialize(expected,
 @"<TypeWithXmlElementProperty xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Elements xmlns:a=""http://schemas.datacontract.org/2004/07/System.Xml""><a:XmlElement><Product xmlns="""">Product innertext</Product></a:XmlElement><a:XmlElement><Category xmlns="""">Category innertext</Category></a:XmlElement></Elements></TypeWithXmlElementProperty>");
-        Assert.StrictEqual(expected.Elements.Length, actual.Elements.Length);
+        Assert.Equal(expected.Elements.Length, actual.Elements.Length);
         for (int i = 0; i < expected.Elements.Length; ++i)
         {
             Assert.Equal(expected.Elements[i].InnerText, actual.Elements[i].InnerText);
@@ -2504,7 +2504,7 @@ public static partial class DataContractSerializerTests
         TypeWithPrimitiveProperties x = new TypeWithPrimitiveProperties { P1 = "abc", P2 = 11 };
         TypeWithPrimitiveProperties y = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithPrimitiveProperties>(x, @"<TypeWithPrimitiveProperties xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><P1>abc</P1><P2>11</P2></TypeWithPrimitiveProperties>");
         Assert.Equal(x.P1, y.P1);
-        Assert.StrictEqual(x.P2, y.P2);
+        Assert.Equal(x.P2, y.P2);
     }
 
     [Fact]
@@ -2513,7 +2513,7 @@ public static partial class DataContractSerializerTests
         TypeWithPrimitiveFields x = new TypeWithPrimitiveFields { P1 = "abc", P2 = 11 };
         TypeWithPrimitiveFields y = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithPrimitiveFields>(x, @"<TypeWithPrimitiveFields xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><P1>abc</P1><P2>11</P2></TypeWithPrimitiveFields>");
         Assert.Equal(x.P1, y.P1);
-        Assert.StrictEqual(x.P2, y.P2);
+        Assert.Equal(x.P2, y.P2);
     }
 
     [Fact]
@@ -2534,16 +2534,16 @@ public static partial class DataContractSerializerTests
             IntMember = 123
         };
         TypeWithAllPrimitiveProperties y = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithAllPrimitiveProperties>(x, @"<TypeWithAllPrimitiveProperties xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><BooleanMember>true</BooleanMember><CharMember>67</CharMember><DateTimeMember>2016-07-08T09:10:11</DateTimeMember><DecimalMember>-14554481076115341312123</DecimalMember><DoubleMember>123.456</DoubleMember><FloatMember>456.789</FloatMember><GuidMember>2054fd3e-e118-476a-9962-1a882be51860</GuidMember><IntMember>123</IntMember><StringMember>abc</StringMember></TypeWithAllPrimitiveProperties>");
-        Assert.StrictEqual(x.BooleanMember, y.BooleanMember);
-        //Assert.StrictEqual(x.ByteArrayMember, y.ByteArrayMember);
-        Assert.StrictEqual(x.CharMember, y.CharMember);
-        Assert.StrictEqual(x.DateTimeMember, y.DateTimeMember);
-        Assert.StrictEqual(x.DecimalMember, y.DecimalMember);
-        Assert.StrictEqual(x.DoubleMember, y.DoubleMember);
-        Assert.StrictEqual(x.FloatMember, y.FloatMember);
-        Assert.StrictEqual(x.GuidMember, y.GuidMember);
+        Assert.Equal(x.BooleanMember, y.BooleanMember);
+        //Assert.Equal(x.ByteArrayMember, y.ByteArrayMember);
+        Assert.Equal(x.CharMember, y.CharMember);
+        Assert.Equal(x.DateTimeMember, y.DateTimeMember);
+        Assert.Equal(x.DecimalMember, y.DecimalMember);
+        Assert.Equal(x.DoubleMember, y.DoubleMember);
+        Assert.Equal(x.FloatMember, y.FloatMember);
+        Assert.Equal(x.GuidMember, y.GuidMember);
         Assert.Equal(x.StringMember, y.StringMember);
-        Assert.StrictEqual(x.IntMember, y.IntMember);
+        Assert.Equal(x.IntMember, y.IntMember);
     }
 
 #region Array of primitive types
@@ -2553,7 +2553,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new bool[] { true, false, true };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfboolean xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><boolean>true</boolean><boolean>false</boolean><boolean>true</boolean></ArrayOfboolean>");
-        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.Equal(value.Length, deserialized.Length);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2562,7 +2562,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new DateTime[] { new DateTime(2000, 1, 2, 3, 4, 5, DateTimeKind.Utc), new DateTime(2011, 2, 3, 4, 5, 6, DateTimeKind.Utc) };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfdateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><dateTime>2000-01-02T03:04:05Z</dateTime><dateTime>2011-02-03T04:05:06Z</dateTime></ArrayOfdateTime>");
-        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.Equal(value.Length, deserialized.Length);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2571,7 +2571,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new decimal[] { new decimal(1, 2, 3, false, 1), new decimal(4, 5, 6, true, 2) };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfdecimal xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><decimal>5534023222971858944.1</decimal><decimal>-1106804644637321461.80</decimal></ArrayOfdecimal>");
-        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.Equal(value.Length, deserialized.Length);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2580,7 +2580,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new int[] { 123, int.MaxValue, int.MinValue };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfint xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><int>123</int><int>2147483647</int><int>-2147483648</int></ArrayOfint>");
-        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.Equal(value.Length, deserialized.Length);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2589,7 +2589,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new long[] { 123, long.MaxValue, long.MinValue };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOflong xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><long>123</long><long>9223372036854775807</long><long>-9223372036854775808</long></ArrayOflong>");
-        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.Equal(value.Length, deserialized.Length);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2598,7 +2598,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new float[] { 1.23f, 4.56f, 7.89f };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOffloat xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><float>1.23</float><float>4.56</float><float>7.89</float></ArrayOffloat>");
-        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.Equal(value.Length, deserialized.Length);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2607,7 +2607,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new double[] { 1.23, 4.56, 7.89 };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfdouble xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><double>1.23</double><double>4.56</double><double>7.89</double></ArrayOfdouble>");
-        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.Equal(value.Length, deserialized.Length);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2616,7 +2616,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new string[] { "abc", "def", "xyz" };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfstring xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><string>abc</string><string>def</string><string>xyz</string></ArrayOfstring>");
-        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.Equal(value.Length, deserialized.Length);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2629,7 +2629,7 @@ public static partial class DataContractSerializerTests
             new TypeWithPrimitiveProperties() { P1 = "def" , P2 = 456 },
         };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfTypeWithPrimitiveProperties xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><TypeWithPrimitiveProperties><P1>abc</P1><P2>123</P2></TypeWithPrimitiveProperties><TypeWithPrimitiveProperties><P1>def</P1><P2>456</P2></TypeWithPrimitiveProperties></ArrayOfTypeWithPrimitiveProperties>");
-        Assert.StrictEqual(value.Length, deserialized.Length);
+        Assert.Equal(value.Length, deserialized.Length);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2645,10 +2645,10 @@ public static partial class DataContractSerializerTests
         }
 
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, baseline: null, skipStringCompare: true);
-        Assert.StrictEqual(value.Length, deserialized.Length);
-        Assert.StrictEqual(0, deserialized[0].P2);
-        Assert.StrictEqual(1, deserialized[1].P2);
-        Assert.StrictEqual(count-1, deserialized[count-1].P2);
+        Assert.Equal(value.Length, deserialized.Length);
+        Assert.Equal(0, deserialized[0].P2);
+        Assert.Equal(1, deserialized[1].P2);
+        Assert.Equal(count-1, deserialized[count-1].P2);
     }
 
     [Fact]
@@ -2672,7 +2672,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new TypeImplementsGenericICollection<bool>() { true, false, true };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfboolean xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><boolean>true</boolean><boolean>false</boolean><boolean>true</boolean></ArrayOfboolean>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2681,7 +2681,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new TypeImplementsGenericICollection<decimal>() { new decimal(1, 2, 3, false, 1), new decimal(4, 5, 6, true, 2) };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfdecimal xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><decimal>5534023222971858944.1</decimal><decimal>-1106804644637321461.80</decimal></ArrayOfdecimal>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2692,7 +2692,7 @@ public static partial class DataContractSerializerTests
         TypeImplementsGenericICollection<int> y = DataContractSerializerHelper.SerializeAndDeserialize(x, @"<ArrayOfint xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><int>123</int><int>2147483647</int><int>-2147483648</int></ArrayOfint>");
 
         Assert.NotNull(y);
-        Assert.StrictEqual(x.Count, y.Count);
+        Assert.Equal(x.Count, y.Count);
         Assert.True(x.SequenceEqual(y));
     }
 
@@ -2701,7 +2701,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new TypeImplementsGenericICollection<long>() { 123, long.MaxValue, long.MinValue };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOflong xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><long>123</long><long>9223372036854775807</long><long>-9223372036854775808</long></ArrayOflong>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2710,7 +2710,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new TypeImplementsGenericICollection<float>() { 1.23f, 4.56f, 7.89f };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOffloat xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><float>1.23</float><float>4.56</float><float>7.89</float></ArrayOffloat>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2719,7 +2719,7 @@ public static partial class DataContractSerializerTests
     {
         var value = new TypeImplementsGenericICollection<double>() { 1.23, 4.56, 7.89 };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfdouble xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><double>1.23</double><double>4.56</double><double>7.89</double></ArrayOfdouble>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2730,7 +2730,7 @@ public static partial class DataContractSerializerTests
         TypeImplementsGenericICollection<string> deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfstring xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><string>a1</string><string>a2</string></ArrayOfstring>");
 
         Assert.NotNull(deserialized);
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(value.SequenceEqual(deserialized));
     }
 
@@ -2743,7 +2743,7 @@ public static partial class DataContractSerializerTests
             new TypeWithPrimitiveProperties() { P1 = "def" , P2 = 456 },
         };
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfTypeWithPrimitiveProperties xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><TypeWithPrimitiveProperties><P1>abc</P1><P2>123</P2></TypeWithPrimitiveProperties><TypeWithPrimitiveProperties><P1>def</P1><P2>456</P2></TypeWithPrimitiveProperties></ArrayOfTypeWithPrimitiveProperties>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value, deserialized));
     }
 
@@ -2770,7 +2770,7 @@ public static partial class DataContractSerializerTests
         value.Add(123, true);
         value.Add(456, false);
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfintboolean xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfintboolean><Key>123</Key><Value>true</Value></KeyValueOfintboolean><KeyValueOfintboolean><Key>456</Key><Value>false</Value></KeyValueOfintboolean></ArrayOfKeyValueOfintboolean>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
     }
 
@@ -2781,7 +2781,7 @@ public static partial class DataContractSerializerTests
         value.Add(123, "abc");
         value.Add(456, "def");
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfintstring xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfintstring><Key>123</Key><Value>abc</Value></KeyValueOfintstring><KeyValueOfintstring><Key>456</Key><Value>def</Value></KeyValueOfintstring></ArrayOfKeyValueOfintstring>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
     }
 
@@ -2792,7 +2792,7 @@ public static partial class DataContractSerializerTests
         value.Add("abc", 123);
         value.Add("def", 456);
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfstringint xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfstringint><Key>abc</Key><Value>123</Value></KeyValueOfstringint><KeyValueOfstringint><Key>def</Key><Value>456</Value></KeyValueOfstringint></ArrayOfKeyValueOfstringint>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value.ToArray(), deserialized.ToArray()));
     }
 
@@ -2807,7 +2807,7 @@ public static partial class DataContractSerializerTests
         value.Add(123, true);
         value.Add(456, false);
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfanyTypeanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfanyTypeanyType><Key i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">123</Key><Value i:type=""a:boolean"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">true</Value></KeyValueOfanyTypeanyType><KeyValueOfanyTypeanyType><Key i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">456</Key><Value i:type=""a:boolean"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">false</Value></KeyValueOfanyTypeanyType></ArrayOfKeyValueOfanyTypeanyType>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value.Keys.Cast<int>().ToArray(), deserialized.Keys.Cast<int>().ToArray()));
         Assert.True(Enumerable.SequenceEqual(value.Values.Cast<bool>().ToArray(), deserialized.Values.Cast<bool>().ToArray()));
     }
@@ -2819,7 +2819,7 @@ public static partial class DataContractSerializerTests
         value.Add(123, "abc");
         value.Add(456, "def");
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfanyTypeanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfanyTypeanyType><Key i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">123</Key><Value i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">abc</Value></KeyValueOfanyTypeanyType><KeyValueOfanyTypeanyType><Key i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">456</Key><Value i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">def</Value></KeyValueOfanyTypeanyType></ArrayOfKeyValueOfanyTypeanyType>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value.Keys.Cast<int>().ToArray(), deserialized.Keys.Cast<int>().ToArray()));
         Assert.True(Enumerable.SequenceEqual(value.Values.Cast<string>().ToArray(), deserialized.Values.Cast<string>().ToArray()));
     }
@@ -2831,7 +2831,7 @@ public static partial class DataContractSerializerTests
         value.Add("abc", 123);
         value.Add("def", 456);
         var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfKeyValueOfanyTypeanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfanyTypeanyType><Key i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">abc</Key><Value i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">123</Value></KeyValueOfanyTypeanyType><KeyValueOfanyTypeanyType><Key i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">def</Key><Value i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">456</Value></KeyValueOfanyTypeanyType></ArrayOfKeyValueOfanyTypeanyType>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
+        Assert.Equal(value.Count, deserialized.Count);
         Assert.True(Enumerable.SequenceEqual(value.Keys.Cast<string>().ToArray(), deserialized.Keys.Cast<string>().ToArray()));
         Assert.True(Enumerable.SequenceEqual(value.Values.Cast<int>().ToArray(), deserialized.Values.Cast<int>().ToArray()));
     }
@@ -4056,7 +4056,7 @@ public static partial class DataContractSerializerTests
     public static void DCS_KnownSerializableTypes_KeyValuePair_2()
     {
         KeyValuePair<string, int> kvp = new KeyValuePair<string, int>("the_key", 42);
-        Assert.StrictEqual(kvp, DataContractSerializerHelper.SerializeAndDeserialize<KeyValuePair<string, int>>(kvp, "<KeyValuePairOfstringint xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><key>the_key</key><value>42</value></KeyValuePairOfstringint>"));
+        Assert.Equal(kvp, DataContractSerializerHelper.SerializeAndDeserialize<KeyValuePair<string, int>>(kvp, "<KeyValuePairOfstringint xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><key>the_key</key><value>42</value></KeyValuePairOfstringint>"));
     }
 
     [Fact]
@@ -4067,7 +4067,7 @@ public static partial class DataContractSerializerTests
         q.Enqueue("second");
         Queue<string> q2 = DataContractSerializerHelper.SerializeAndDeserialize<Queue<string>>(q, "<QueueOfstring xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_array xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:string>first</a:string><a:string>second</a:string><a:string i:nil=\"true\"/><a:string i:nil=\"true\"/></_array><_head>0</_head><_size>2</_size><_tail>2</_tail><_version>3</_version></QueueOfstring>");
         Assert.Equal(q, q2);
-        Assert.StrictEqual(q.Count, q2.Count);
+        Assert.Equal(q.Count, q2.Count);
         Assert.Equal(q.Dequeue(), q2.Dequeue());
         Assert.Equal(q.Dequeue(), q2.Dequeue());
     }
@@ -4080,7 +4080,7 @@ public static partial class DataContractSerializerTests
         stk.Push("last");
         Stack<string> result = DataContractSerializerHelper.SerializeAndDeserialize<Stack<string>>(stk, "<StackOfstring xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_array xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:string>first</a:string><a:string>last</a:string><a:string i:nil=\"true\"/><a:string i:nil=\"true\"/></_array><_size>2</_size><_version>2</_version></StackOfstring>");
         Assert.Equal(stk, result);
-        Assert.StrictEqual(stk.Count, result.Count);
+        Assert.Equal(stk.Count, result.Count);
         Assert.Equal(stk.Pop(), result.Pop());
         Assert.Equal(stk.Pop(), result.Pop());
     }
@@ -4091,7 +4091,7 @@ public static partial class DataContractSerializerTests
         ReadOnlyCollection<string> roc = new ReadOnlyCollection<string>(new string[] { "one", "two", "three", "four" });
         ReadOnlyCollection<string> result = DataContractSerializerHelper.SerializeAndDeserialize<ReadOnlyCollection<string>>(roc, "<ReadOnlyCollectionOfstring xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.ObjectModel\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><list xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:string>one</a:string><a:string>two</a:string><a:string>three</a:string><a:string>four</a:string></list></ReadOnlyCollectionOfstring>");
         Assert.Equal(roc, result);
-        Assert.StrictEqual(roc.Count, result.Count);
+        Assert.Equal(roc.Count, result.Count);
 
         for (int i = 0; i < roc.Count; i++)
             Assert.Equal(roc[i], result[i]);
@@ -4103,7 +4103,7 @@ public static partial class DataContractSerializerTests
         ReadOnlyDictionary<string, int> rod = new ReadOnlyDictionary<string, int>(new Dictionary<string, int> { { "one", 1 }, { "two", 22 }, { "three", 333 }, { "four", 4444 } });
         ReadOnlyDictionary<string, int> result = DataContractSerializerHelper.SerializeAndDeserialize<ReadOnlyDictionary<string, int>>(rod, "<ReadOnlyDictionaryOfstringint xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.ObjectModel\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_dictionary xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:KeyValueOfstringint><a:Key>one</a:Key><a:Value>1</a:Value></a:KeyValueOfstringint><a:KeyValueOfstringint><a:Key>two</a:Key><a:Value>22</a:Value></a:KeyValueOfstringint><a:KeyValueOfstringint><a:Key>three</a:Key><a:Value>333</a:Value></a:KeyValueOfstringint><a:KeyValueOfstringint><a:Key>four</a:Key><a:Value>4444</a:Value></a:KeyValueOfstringint></m_dictionary></ReadOnlyDictionaryOfstringint>");
         Assert.Equal(rod, result);
-        Assert.StrictEqual(rod.Count, result.Count);
+        Assert.Equal(rod.Count, result.Count);
 
         foreach (var kvp in rod)
         {
@@ -4120,9 +4120,9 @@ public static partial class DataContractSerializerTests
         q.Enqueue("second");
         Queue q2 = DataContractSerializerHelper.SerializeAndDeserialize<Queue>(q, "<Queue xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_array xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:anyType i:type=\"b:string\" xmlns:b=\"http://www.w3.org/2001/XMLSchema\">first</a:anyType><a:anyType i:type=\"b:string\" xmlns:b=\"http://www.w3.org/2001/XMLSchema\">second</a:anyType><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/></_array><_growFactor>200</_growFactor><_head>0</_head><_size>2</_size><_tail>2</_tail><_version>2</_version></Queue>");
         Assert.Equal(q, q2);
-        Assert.StrictEqual(q.Count, q2.Count);
-        Assert.StrictEqual(q.Dequeue(), q2.Dequeue());
-        Assert.StrictEqual(q.Dequeue(), q2.Dequeue());
+        Assert.Equal(q.Count, q2.Count);
+        Assert.Equal(q.Dequeue(), q2.Dequeue());
+        Assert.Equal(q.Dequeue(), q2.Dequeue());
     }
 
     [Fact]
@@ -4133,9 +4133,9 @@ public static partial class DataContractSerializerTests
         stk.Push("last");
         Stack result = DataContractSerializerHelper.SerializeAndDeserialize<Stack>(stk, "<Stack xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_array xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:anyType i:type=\"b:string\" xmlns:b=\"http://www.w3.org/2001/XMLSchema\">first</a:anyType><a:anyType i:type=\"b:string\" xmlns:b=\"http://www.w3.org/2001/XMLSchema\">last</a:anyType><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/><a:anyType i:nil=\"true\"/></_array><_size>2</_size><_version>2</_version></Stack>");
         Assert.Equal(stk, result);
-        Assert.StrictEqual(stk.Count, result.Count);
-        Assert.StrictEqual(stk.Pop(), result.Pop());
-        Assert.StrictEqual(stk.Pop(), result.Pop());
+        Assert.Equal(stk.Count, result.Count);
+        Assert.Equal(stk.Pop(), result.Pop());
+        Assert.Equal(stk.Pop(), result.Pop());
     }
 
     [Fact]
@@ -4144,42 +4144,42 @@ public static partial class DataContractSerializerTests
     {
         // Turns out, CultureInfo is not serialzable, even if it is included in s_knownSerializableTypeInfos
         CultureInfo ci = new CultureInfo("pl");
-        Assert.StrictEqual(ci, DataContractSerializerHelper.SerializeAndDeserialize<CultureInfo>(ci, "", null, null, true));
+        Assert.Equal(ci, DataContractSerializerHelper.SerializeAndDeserialize<CultureInfo>(ci, "", null, null, true));
     }
 
     [Fact]
     public static void DCS_KnownSerializableTypes_Version()
     {
         Version ver = new Version(5, 4, 3);
-        Assert.StrictEqual(ver, DataContractSerializerHelper.SerializeAndDeserialize<Version>(ver, "<Version xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_Build>3</_Build><_Major>5</_Major><_Minor>4</_Minor><_Revision>-1</_Revision></Version>"));
+        Assert.Equal(ver, DataContractSerializerHelper.SerializeAndDeserialize<Version>(ver, "<Version xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_Build>3</_Build><_Major>5</_Major><_Minor>4</_Minor><_Revision>-1</_Revision></Version>"));
     }
 
     [Fact]
     public static void DCS_KnownSerializableTypes_Tuples()
     {
         Tuple<string> t1 = new Tuple<string>("first");
-        Assert.StrictEqual(t1, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string>>(t1, "<TupleOfstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1></TupleOfstring>"));
+        Assert.Equal(t1, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string>>(t1, "<TupleOfstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1></TupleOfstring>"));
 
         Tuple<string, string> t2 = new Tuple<string, string>("first", "second");
-        Assert.StrictEqual(t2, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string>>(t2, "<TupleOfstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2></TupleOfstringstring>"));
+        Assert.Equal(t2, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string>>(t2, "<TupleOfstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2></TupleOfstringstring>"));
 
         Tuple<string, string, string> t3 = new Tuple<string, string, string>("first", "second", "third");
-        Assert.StrictEqual(t3, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string>>(t3, "<TupleOfstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3></TupleOfstringstringstring>"));
+        Assert.Equal(t3, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string>>(t3, "<TupleOfstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3></TupleOfstringstringstring>"));
 
         Tuple<string, string, string, string> t4 = new Tuple<string, string, string, string>("first", "second", "third", "fourth");
-        Assert.StrictEqual(t4, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string>>(t4, "<TupleOfstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4></TupleOfstringstringstringstring>"));
+        Assert.Equal(t4, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string>>(t4, "<TupleOfstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4></TupleOfstringstringstringstring>"));
 
         Tuple<string, string, string, string, string> t5 = new Tuple<string, string, string, string, string>("first", "second", "third", "fourth", "fifth");
-        Assert.StrictEqual(t5, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string>>(t5, "<TupleOfstringstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5></TupleOfstringstringstringstringstring>"));
+        Assert.Equal(t5, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string>>(t5, "<TupleOfstringstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5></TupleOfstringstringstringstringstring>"));
 
         Tuple<string, string, string, string, string, string> t6 = new Tuple<string, string, string, string, string, string>("first", "second", "third", "fourth", "fifth", "sixth");
-        Assert.StrictEqual(t6, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string, string>>(t6, "<TupleOfstringstringstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5><m_Item6>sixth</m_Item6></TupleOfstringstringstringstringstringstring>"));
+        Assert.Equal(t6, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string, string>>(t6, "<TupleOfstringstringstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5><m_Item6>sixth</m_Item6></TupleOfstringstringstringstringstringstring>"));
 
         Tuple<string, string, string, string, string, string, string> t7 = new Tuple<string, string, string, string, string, string, string>("first", "second", "third", "fourth", "fifth", "sixth", "seventh");
-        Assert.StrictEqual(t7, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string, string, string>>(t7, "<TupleOfstringstringstringstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5><m_Item6>sixth</m_Item6><m_Item7>seventh</m_Item7></TupleOfstringstringstringstringstringstringstring>"));
+        Assert.Equal(t7, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string, string, string>>(t7, "<TupleOfstringstringstringstringstringstringstring xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5><m_Item6>sixth</m_Item6><m_Item7>seventh</m_Item7></TupleOfstringstringstringstringstringstringstring>"));
 
         Tuple<string, string, string, string, string, string, string, Tuple<int, int, string>> t8 = new Tuple<string, string, string, string, string, string, string, Tuple<int, int, string>>("first", "second", "third", "fourth", "fifth", "sixth", "seventh", new Tuple<int, int, string>(8, 9, "tenth"));
-        Assert.StrictEqual(t8, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string, string, string, Tuple<int, int, string>>>(t8, "<TupleOfstringstringstringstringstringstringstringTupleOfintintstringcd6ORBnm xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5><m_Item6>sixth</m_Item6><m_Item7>seventh</m_Item7><m_Rest><m_Item1>8</m_Item1><m_Item2>9</m_Item2><m_Item3>tenth</m_Item3></m_Rest></TupleOfstringstringstringstringstringstringstringTupleOfintintstringcd6ORBnm>"));
+        Assert.Equal(t8, DataContractSerializerHelper.SerializeAndDeserialize<Tuple<string, string, string, string, string, string, string, Tuple<int, int, string>>>(t8, "<TupleOfstringstringstringstringstringstringstringTupleOfintintstringcd6ORBnm xmlns=\"http://schemas.datacontract.org/2004/07/System\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><m_Item1>first</m_Item1><m_Item2>second</m_Item2><m_Item3>third</m_Item3><m_Item4>fourth</m_Item4><m_Item5>fifth</m_Item5><m_Item6>sixth</m_Item6><m_Item7>seventh</m_Item7><m_Rest><m_Item1>8</m_Item1><m_Item2>9</m_Item2><m_Item3>tenth</m_Item3></m_Rest></TupleOfstringstringstringstringstringstringstringTupleOfintintstringcd6ORBnm>"));
     }
 
     [Fact]
@@ -4214,7 +4214,7 @@ public static partial class DataContractSerializerTests
         dcs.WriteObject(ms, myFamily);
         ms.Position = 0;
         var newFamily = (Family)dcs.ReadObject(ms);
-        Assert.StrictEqual(myFamily.Members.Length, newFamily.Members.Length);
+        Assert.Equal(myFamily.Members.Length, newFamily.Members.Length);
         for (int i = 0; i < myFamily.Members.Length; ++i)
         {
             Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);

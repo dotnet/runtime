@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -28,6 +29,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="unmanaged">An unmanaged string to convert.</param>
         /// <returns>The converted managed string.</returns>
+        [RequiresUnsafe]
         public static string? ConvertToManaged(ushort* unmanaged)
         {
             if (unmanaged is null)
@@ -40,6 +42,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Frees the memory for the unmanaged string.
         /// </summary>
         /// <param name="unmanaged">The memory allocated for the unmanaged string.</param>
+        [RequiresUnsafe]
         public static void Free(ushort* unmanaged)
             => Marshal.FreeBSTR((IntPtr)unmanaged);
 
@@ -105,6 +108,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Converts the current managed string to an unmanaged string.
             /// </summary>
             /// <returns>The converted unmanaged string.</returns>
+            [RequiresUnsafe]
             public ushort* ToUnmanaged() => _ptrToFirstChar;
 
             /// <summary>

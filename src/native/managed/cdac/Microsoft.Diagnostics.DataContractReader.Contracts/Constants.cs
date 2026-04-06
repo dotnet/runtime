@@ -13,6 +13,9 @@ public static class Constants
         public const string ThreadStore = nameof(ThreadStore);
         public const string FinalizerThread = nameof(FinalizerThread);
         public const string GCThread = nameof(GCThread);
+        public const string Debugger = nameof(Debugger);
+        public const string CLRJitAttachState = nameof(CLRJitAttachState);
+        public const string MetadataUpdatesApplied = nameof(MetadataUpdatesApplied);
 
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
         public const string FeatureComWrappers = nameof(FeatureComWrappers);
@@ -20,6 +23,7 @@ public static class Constants
         public const string FeatureJavaMarshal = nameof(FeatureJavaMarshal);
         public const string FeatureOnStackReplacement = nameof(FeatureOnStackReplacement);
         public const string FeaturePortableEntrypoints = nameof(FeaturePortableEntrypoints);
+        public const string FeatureWebcil = nameof(FeatureWebcil);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
@@ -54,7 +58,6 @@ public static class Constants
         public const string StressLogValidChunkSig = nameof(StressLogValidChunkSig);
 
         public const string MethodDescAlignment = nameof(MethodDescAlignment);
-        public const string ObjectHeaderSize = nameof(ObjectHeaderSize);
         public const string ArrayBaseSize = nameof(ArrayBaseSize);
         public const string SyncBlockValueToObjectOffset = nameof(SyncBlockValueToObjectOffset);
 
@@ -66,6 +69,7 @@ public static class Constants
         public const string SyncBlockIsHashOrSyncBlockIndex = nameof(SyncBlockIsHashOrSyncBlockIndex);
         public const string SyncBlockIsHashCode = nameof(SyncBlockIsHashCode);
         public const string SyncBlockIndexMask = nameof(SyncBlockIndexMask);
+        public const string SyncBlockHashCodeMask = nameof(SyncBlockHashCodeMask);
 
         public const string ArrayBoundsZero = nameof(ArrayBoundsZero);
         public const string CoreLib = nameof(CoreLib);
@@ -84,10 +88,10 @@ public static class Constants
         public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
         public const string ClrNotificationArguments = nameof(ClrNotificationArguments);
         public const string FieldOffsetBigRVA = nameof(FieldOffsetBigRVA);
+        public const string FieldOffsetDynamicRVA = nameof(FieldOffsetDynamicRVA);
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
-        public const string ComRefcountMask = nameof(ComRefcountMask);
         public const string CCWNumInterfaces = nameof(CCWNumInterfaces);
         public const string CCWThisMask = nameof(CCWThisMask);
         public const string TearOffAddRef = nameof(TearOffAddRef);
@@ -147,11 +151,23 @@ public static class Constants
         public const string HandleTableMap = nameof(HandleTableMap);
         public const string InitialHandleTableArraySize = nameof(InitialHandleTableArraySize);
         public const string DebugDestroyedHandleValue = nameof(DebugDestroyedHandleValue);
+        public const string HandleSegmentSize = nameof(HandleSegmentSize);
         public const string HandleBlocksPerSegment = nameof(HandleBlocksPerSegment);
         public const string HandleMaxInternalTypes = nameof(HandleMaxInternalTypes);
         public const string HandlesPerBlock = nameof(HandlesPerBlock);
         public const string BlockInvalid = nameof(BlockInvalid);
         public const string TotalCpuCount = nameof(TotalCpuCount);
+        public const string CardTableInfoSize = nameof(CardTableInfoSize);
+        public const string CountFreeRegionKinds = nameof(CountFreeRegionKinds);
+        public const string GlobalFreeHugeRegions = nameof(GlobalFreeHugeRegions);
+        public const string GlobalRegionsToDecommit = nameof(GlobalRegionsToDecommit);
+        public const string BookkeepingStart = nameof(BookkeepingStart);
+        public const string GCHeapFreeableSohSegment = nameof(GCHeapFreeableSohSegment);
+        public const string GCHeapFreeableUohSegment = nameof(GCHeapFreeableUohSegment);
+        public const string GCHeapFreeRegions = nameof(GCHeapFreeRegions);
+        public const string AuxiliarySymbols = nameof(AuxiliarySymbols);
+        public const string AuxiliarySymbolCount = nameof(AuxiliarySymbolCount);
+
     }
     public static class FieldNames
     {

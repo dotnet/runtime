@@ -23,6 +23,8 @@
 #include "eventtrace.h"
 #undef ExitProcess
 
+extern MethodDesc* g_pEnvironmentCallEntryPointMethodDesc;
+
 void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
 {
     STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d sca = %d\n", exitCode, sca);
@@ -176,6 +178,15 @@ class CallStackLogger
             }
         }
 
+        MethodDesc* pMD = pCF->GetFunction();
+
+        // Skip Environment.CallEntryPoint so it doesn't appear in vanilla
+        // unhandled exception experiences.
+        if (pMD != nullptr && pMD == g_pEnvironmentCallEntryPointMethodDesc)
+        {
+            return SWA_CONTINUE;
+        }
+
         MethodDesc** itemPtr = m_frames.Append();
         if (itemPtr == nullptr)
         {
@@ -183,7 +194,7 @@ class CallStackLogger
             return SWA_ABORT;
         }
 
-        *itemPtr = pCF->GetFunction();
+        *itemPtr = pMD;
 
         return SWA_CONTINUE;
     }
@@ -715,7 +726,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
         DisplayStackOverflowException();
 
-        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET Stack overflow trace logger"));
+        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET SO Tracer"));
         if (stackDumpThreadHandle != INVALID_HANDLE_VALUE)
         {
             // Wait for the stack trace logging completion

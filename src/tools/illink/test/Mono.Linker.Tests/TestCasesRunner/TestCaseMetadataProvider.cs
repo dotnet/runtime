@@ -82,7 +82,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 values[0] = string.Concat(values[0].AsSpan(0, pos + 1), Path.Combine(inputPath, custom_assembly_path));
                         }
                         break;
-                    case "-a":
+                    case "-reference":
                         if (!Path.IsPathRooted(values[0]))
                             values[0] = Path.Combine(inputPath, values[0]);
 

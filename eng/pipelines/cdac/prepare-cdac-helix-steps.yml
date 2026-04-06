@@ -1,0 +1,52 @@
+# prepare-cdac-helix-steps.yml — Shared steps for preparing cDAC dump test Helix payloads.
+#
+# Used by CdacDumpTests, CdacXPlatDumpGen, and CdacXPlatDumpTests stages in runtime-diagnostics.yml.
+# Handles: building debuggees, preparing Helix payload, finding testhost and Helix queue.
+
+parameters:
+  buildDebuggees: true
+  skipDebuggeeCopy: false
+
+steps:
+- ${{ if parameters.buildDebuggees }}:
+  - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) msbuild
+      $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
+      /t:BuildDebuggeesOnly
+      /p:Configuration=$(_BuildConfig)
+      /p:TargetArchitecture=$(archType)
+      -bl:$(Build.SourcesDirectory)/artifacts/log/BuildDebuggees.binlog
+    displayName: 'Build Debuggees'
+
+- script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) build
+    $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
+    /p:PrepareHelixPayload=true
+    /p:SkipDebuggeeCopy=${{ parameters.skipDebuggeeCopy }}
+    /p:Configuration=$(_BuildConfig)
+    /p:HelixPayloadDir=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac
+    /p:SkipDumpVersions=net10.0
+    -bl:$(Build.SourcesDirectory)/artifacts/log/DumpTestPayload.binlog
+  displayName: 'Prepare Helix Payload'
+
+- pwsh: |
+    $testhostDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*-$(osGroup)-*-$(archType)" | Select-Object -First 1 -ExpandProperty FullName
+    if (-not $testhostDir) {
+        Write-Error "No testhost directory found matching net*-$(osGroup)-*-$(archType) under artifacts/bin/testhost/"
+        exit 1
+    }
+    Write-Host "TestHost directory: $testhostDir"
+    Write-Host "##vso[task.setvariable variable=TestHostPayloadDir]$testhostDir"
+
+    $queue = switch ("$(osGroup)_$(archType)") {
+        "windows_x64"  { "$(helix_windows_x64)" }
+        "windows_x86"  { "$(helix_windows_x64)" }
+        "windows_arm64" { "$(helix_windows_arm64)" }
+        "linux_x64"    { "$(helix_linux_x64_oldest)" }
+        "linux_arm64"  { "$(helix_linux_arm64_oldest)" }
+        "linux_arm"    { "$(helix_linux_arm32_oldest)" }
+        "osx_x64"     { "$(helix_macos_x64)" }
+        "osx_arm64"   { "$(helix_macos_arm64)" }
+        default        { Write-Error "Unsupported platform: $(osGroup)_$(archType)"; exit 1 }
+    }
+    Write-Host "Helix queue: $queue"
+    Write-Host "##vso[task.setvariable variable=CdacHelixQueue]$queue"
+  displayName: 'Find TestHost Directory and Helix Queue'

@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
 
                 case TargetArchitecture.ARM64:
-                    return target.OperatingSystem == TargetOS.OSX ?
+                    return target.IsApplePlatform ?
                         AppleArm64TransitionBlock.Instance :
                         Arm64TransitionBlock.Instance;
 
@@ -48,6 +48,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 case TargetArchitecture.RiscV64:
                     return RiscV64TransitionBlock.Instance;
+
+                case TargetArchitecture.Wasm32:
+                    return Wasm32TransitionBlock.Instance;
 
                 default:
                     throw new NotImplementedException(target.Architecture.ToString());
@@ -68,6 +71,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public bool IsARM64 => Architecture == TargetArchitecture.ARM64;
         public bool IsLoongArch64 => Architecture == TargetArchitecture.LoongArch64;
         public bool IsRiscV64 => Architecture == TargetArchitecture.RiscV64;
+        public bool IsWasm32 => Architecture == TargetArchitecture.Wasm32;
 
         /// <summary>
         /// This property is only overridden in AMD64 Unix variant of the transition block.
@@ -740,6 +744,44 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return ALIGN_UP(parmSize, stackSlotSize);
             }
             
+        }
+
+        private class Wasm32TransitionBlock : TransitionBlock
+        {
+            public static TransitionBlock Instance = new Wasm32TransitionBlock();
+
+            public override TargetArchitecture Architecture => TargetArchitecture.Wasm32;
+
+            public override int PointerSize => 4;
+
+            public override int FloatRegisterSize => 0;
+
+            public override int NumArgumentRegisters => 0;
+
+            public override int NumCalleeSavedRegisters => 0;
+
+            public override int SizeOfTransitionBlock => 0;
+
+            public override int OffsetOfArgumentRegisters => 0;
+
+            public override int OffsetOfFloatArgumentRegisters => 0;
+
+            public override int EnregisteredParamTypeMaxSize => 0;
+
+            public override int EnregisteredReturnTypeIntegerMaxSize => 0;
+
+            public override int GetRetBuffArgOffset(bool hasThis) => hasThis ? 4 : 0;
+
+            public override bool IsArgPassedByRef(TypeHandle th)
+            {
+                return WasmLowering.LowerToAbiType(th.GetRuntimeTypeHandle()) == null;
+            }
+
+            public override int StackElemSize(int parmSize, bool isValueType, bool isFloatHfa)
+            {
+                int stackSlotSize = 4;
+                return ALIGN_UP(parmSize, stackSlotSize);
+            }
         }
     }
 }

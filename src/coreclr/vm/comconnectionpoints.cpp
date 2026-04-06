@@ -539,7 +539,17 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
         // Retrieve the EE class representing the argument.
         MethodTable *pDelegateCls = MethodSig.GetLastTypeHandleThrowing().GetMethodTable();
 
-        // Make sure we activate the assembly containing the target method desc
+        // Initialize the delegate using the arguments structure.
+        MethodDesc *pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_IntPtr_RetVoid);
+        if (pDlgCtorMD == NULL)
+            pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_UIntPtr_RetVoid);
+
+        // The loader is responsible for only accepting well-formed delegate classes.
+        _ASSERTE(pDlgCtorMD);
+
+        // Make sure we activate assemblies containing target method descs.
+        pProvMethodDesc->EnsureActive();
+        pDlgCtorMD->EnsureActive();
         pEventMethodDesc->EnsureActive();
 
         // Allocate an object based on the method table of the delegate class.
@@ -547,29 +557,16 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
 
         GCPROTECT_BEGIN( pDelegate );
         {
-            // Initialize the delegate using the arguments structure.
-            // <TODO>Generics: ensure we get the right MethodDesc here and in similar places</TODO>
-            // Accept both void (object, native int) and void (object, native uint)
-            MethodDesc *pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_IntPtr_RetVoid);
-            if (pDlgCtorMD == NULL)
-                pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_UIntPtr_RetVoid);
+            UnmanagedCallersOnlyCaller invokeConnectionPointProviderMethod(METHOD__STUBHELPERS__INVOKE_CONNECTION_POINT_PROVIDER_METHOD);
 
-            // The loader is responsible for only accepting well-formed delegate classes.
-            _ASSERTE(pDlgCtorMD);
-
-            MethodDescCallSite dlgCtor(pDlgCtorMD);
-
-            ARG_SLOT CtorArgs[3] = { ObjToArgSlot(pDelegate),
-                                     ObjToArgSlot(pSubscriber),
-                                     (ARG_SLOT)pEventMethodDesc->GetMultiCallableAddrOfCode()
-                                   };
-            dlgCtor.Call(CtorArgs);
-
-            MethodDescCallSite prov(pProvMethodDesc, &pProvider);
-
-            // Do the actual invocation of the method method.
-            ARG_SLOT Args[2] = { ObjToArgSlot( pProvider ), ObjToArgSlot( pDelegate ) };
-            prov.Call(Args);
+            // Using GetMultiCallableAddrOfCode() for the event target since it is stored for future invokes.
+            invokeConnectionPointProviderMethod.InvokeThrowing(
+                &pProvider,
+                pProvMethodDesc->GetSingleCallableAddrOfCode(),
+                &pDelegate,
+                pDlgCtorMD->GetSingleCallableAddrOfCode(),
+                &pSubscriber,
+                pEventMethodDesc->GetMultiCallableAddrOfCode());
         }
         GCPROTECT_END();
     }

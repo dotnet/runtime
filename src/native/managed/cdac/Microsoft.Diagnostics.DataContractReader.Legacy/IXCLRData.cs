@@ -17,6 +17,11 @@ public struct CLRDataModuleExtent
     public uint /* CLRDataModuleExtentType */ type;
 }
 
+public struct DacpGetModuleAddress
+{
+    public ClrDataAddress ModulePtr;
+}
+
 public struct DacpGetModuleData
 {
     public uint IsDynamic;
@@ -33,6 +38,19 @@ public enum CLRDataByNameFlag : uint
 {
     CLRDATA_BYNAME_CASE_SENSITIVE = 0,
     CLRDATA_BYNAME_CASE_INSENSITIVE = 1
+}
+
+public unsafe struct EXCEPTION_RECORD64
+{
+    public const int ExceptionMaximumParameters = 15;
+
+    public uint ExceptionCode;
+    public uint ExceptionFlags;
+    public ulong ExceptionRecord;
+    public ulong ExceptionAddress;
+    public uint NumberParameters;
+    public uint _unusedAlignment;
+    public fixed ulong ExceptionInformation[ExceptionMaximumParameters];
 }
 
 [GeneratedComInterface]
@@ -231,9 +249,9 @@ public unsafe partial interface IXCLRDataProcess
         ClrDataAddress* displacement);
 
     [PreserveSig]
-    int GetExceptionStateByExceptionRecord(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionState*/ void** exState);
+    int GetExceptionStateByExceptionRecord(EXCEPTION_RECORD64* record, DacComNullableByRef<IXCLRDataExceptionState> exState);
     [PreserveSig]
-    int TranslateExceptionRecordToNotification(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionNotification*/ void* notify);
+    int TranslateExceptionRecordToNotification(EXCEPTION_RECORD64* record, [MarshalUsing(typeof(UniqueComInterfaceMarshaller<IXCLRDataExceptionNotification>))] IXCLRDataExceptionNotification notify);
 
     [PreserveSig]
     int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
@@ -486,7 +504,7 @@ public unsafe partial interface IXCLRDataTask
     int SetContext(uint contextSize, byte* context);
 
     [PreserveSig]
-    int GetCurrentExceptionState(/*IXCLRDataExceptionState*/ void** exception);
+    int GetCurrentExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception);
 
     [PreserveSig]
     int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
@@ -495,7 +513,7 @@ public unsafe partial interface IXCLRDataTask
     int GetName(uint bufLen, uint* nameLen, char* nameBuffer);
 
     [PreserveSig]
-    int GetLastExceptionState(/*IXCLRDataExceptionState*/ void** exception);
+    int GetLastExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception);
 }
 
 public enum ClrDataSourceType : uint
@@ -922,6 +940,19 @@ public unsafe partial interface IXCLRDataMethodDefinition
     int HasClassOrMethodInstantiation(int* bGeneric);
 }
 
+public enum CLRDataGeneralRequest : uint
+{
+    CLRDATA_REQUEST_REVISION = 0xe0000000,
+}
+
+[Flags]
+public enum CLRDataExceptionStateFlag : uint
+{
+    CLRDATA_EXCEPTION_DEFAULT = 0,
+    CLRDATA_EXCEPTION_NESTED = 0x1,
+    CLRDATA_EXCEPTION_PARTIAL = 0x2,
+}
+
 [GeneratedComInterface]
 [Guid("75DA9E4C-BD33-43C8-8F5C-96E8A5241F57")]
 public unsafe partial interface IXCLRDataExceptionState
@@ -929,7 +960,7 @@ public unsafe partial interface IXCLRDataExceptionState
     [PreserveSig]
     int GetFlags(uint* flags);
     [PreserveSig]
-    int GetPrevious(/*IXCLRDataExceptionState*/ void** exState);
+    int GetPrevious(DacComNullableByRef<IXCLRDataExceptionState> exState);
     [PreserveSig]
     int GetManagedObject(DacComNullableByRef<IXCLRDataValue> value);
     [PreserveSig]
@@ -943,11 +974,30 @@ public unsafe partial interface IXCLRDataExceptionState
     int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
 
     [PreserveSig]
-    int IsSameState(/*EXCEPTION_RECORD64*/ void* exRecord, uint contextSize, byte* cxRecord);
+    int IsSameState(EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord);
     [PreserveSig]
-    int IsSameState2(uint flags, /*EXCEPTION_RECORD64*/ void* exRecord, uint contextSize, byte* cxRecord);
+    int IsSameState2(uint flags, EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord);
     [PreserveSig]
     int GetTask(DacComNullableByRef<IXCLRDataTask> task);
+}
+
+[Flags]
+public enum ClrDataValueFlag : uint
+{
+    DEFAULT = 0x00000000,
+    IS_PRIMITIVE = 0x00000001,
+    IS_VALUE_TYPE = 0x00000002,
+    IS_STRING = 0x00000004,
+    IS_ARRAY = 0x00000008,
+    IS_REFERENCE = 0x00000010,
+    IS_POINTER = 0x00000020,
+    IS_ENUM = 0x00000040,
+}
+
+public static class ClrDataVLocFlag
+{
+    public const uint CLRDATA_VLOC_MEMORY = 0x00;
+    public const uint CLRDATA_VLOC_REGISTER = 0x01;
 }
 
 [GeneratedComInterface]
@@ -1062,17 +1112,17 @@ public unsafe partial interface IXCLRDataValue
 public unsafe partial interface IXCLRDataExceptionNotification
 {
     [PreserveSig]
-    int OnCodeGenerated(IXCLRDataMethodInstance* method);
+    int OnCodeGenerated(IXCLRDataMethodInstance? method);
     [PreserveSig]
-    int OnCodeDiscarded(IXCLRDataMethodInstance* method);
+    int OnCodeDiscarded(IXCLRDataMethodInstance? method);
     [PreserveSig]
     int OnProcessExecution(uint state);
     [PreserveSig]
     int OnTaskExecution(/*IXCLRDataTask*/ void* task, uint state);
     [PreserveSig]
-    int OnModuleLoaded(/*IXCLRDataModule*/ void* mod);
+    int OnModuleLoaded(IXCLRDataModule? mod);
     [PreserveSig]
-    int OnModuleUnloaded(/*IXCLRDataModule*/ void* mod);
+    int OnModuleUnloaded(IXCLRDataModule? mod);
     [PreserveSig]
     int OnTypeLoaded(/*IXCLRDataTypeInstance*/ void* typeInst);
     [PreserveSig]
@@ -1088,7 +1138,7 @@ public unsafe partial interface IXCLRDataExceptionNotification2 : IXCLRDataExcep
     [PreserveSig]
     int OnAppDomainUnloaded(/*IXCLRDataAppDomain*/ void* domain);
     [PreserveSig]
-    int OnException(/*IXCLRDataExceptionState*/ void* exception);
+    int OnException(IXCLRDataExceptionState? exception);
 }
 
 [GeneratedComInterface]
@@ -1104,7 +1154,7 @@ public unsafe partial interface IXCLRDataExceptionNotification3 : IXCLRDataExcep
 public unsafe partial interface IXCLRDataExceptionNotification4 : IXCLRDataExceptionNotification3
 {
     [PreserveSig]
-    int ExceptionCatcherEnter(IXCLRDataMethodInstance* catchingMethod, uint catcherNativeOffset);
+    int ExceptionCatcherEnter(IXCLRDataMethodInstance? catchingMethod, uint catcherNativeOffset);
 }
 
 [GeneratedComInterface]
@@ -1112,7 +1162,7 @@ public unsafe partial interface IXCLRDataExceptionNotification4 : IXCLRDataExcep
 public unsafe partial interface IXCLRDataExceptionNotification5 : IXCLRDataExceptionNotification4
 {
     [PreserveSig]
-    int OnCodeGenerated2(IXCLRDataMethodInstance* method, ClrDataAddress nativeCodeLocation);
+    int OnCodeGenerated2(IXCLRDataMethodInstance? method, ClrDataAddress nativeCodeLocation);
 }
 
 // IXCLRDataTarget3 extends ICLRDataTarget2 which extends ICLRDataTarget (defined in ICLRData.cs).

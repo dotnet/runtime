@@ -28,6 +28,12 @@ internal sealed class SignatureDecoder_1 : ISignatureDecoder
         _target = target;
     }
 
+    public void Flush()
+    {
+        _thProviders.Clear();
+        _mdhProviders.Clear();
+    }
+
     private SignatureTypeProvider<TypeHandle> GetTypeHandleProvider(ModuleHandle moduleHandle)
     {
         if (_thProviders.TryGetValue(moduleHandle, out SignatureTypeProvider<TypeHandle>? thProvider))
