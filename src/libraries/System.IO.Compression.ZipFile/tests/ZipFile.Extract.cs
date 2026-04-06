@@ -654,11 +654,13 @@ namespace System.IO.Compression.Tests
                     string content = await r.ReadToEndAsync();
                     Assert.Equal(it.Content, content);
 
-                    // Ensure opening a plain entry with a password is rejected (or simply ignored depending on API)
-                    Assert.ThrowsAny<Exception>(() =>
+                    // Opening a plain entry with a password should succeed — password is ignored
+                    using (var s = e.Open("some-password"))
+                    using (var r2 = new StreamReader(s, Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
                     {
-                        using var _ = e.Open("some-password");
-                    });
+                        string content2 = await r2.ReadToEndAsync();
+                        Assert.Equal(it.Content, content2);
+                    }
                 }
             }
         }

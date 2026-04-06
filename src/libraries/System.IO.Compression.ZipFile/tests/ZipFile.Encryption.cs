@@ -206,7 +206,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
-        public async Task OpeningPlainEntryWithPassword_Throws(bool async)
+        public async Task OpeningPlainEntryWithPassword_Succeeds(bool async)
         {
             string archivePath = GetTempArchivePath();
             var entries = new[] { ("plain.txt", "content", (string?)null, (ZipEncryptionMethod?)null) };
@@ -216,7 +216,11 @@ namespace System.IO.Compression.Tests
             {
                 ZipArchiveEntry entry = archive.GetEntry("plain.txt");
                 Assert.NotNull(entry);
-                Assert.Throws<InvalidDataException>(() => entry.Open("password"));
+
+                // Password is ignored for unencrypted entries
+                using Stream s = entry.Open("password");
+                using var reader = new StreamReader(s);
+                Assert.Equal("content", reader.ReadToEnd());
             }
         }
 

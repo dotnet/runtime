@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
@@ -83,10 +84,7 @@ namespace System.IO.Compression
             }
             else
             {
-                if (salt.Length != saltSize)
-                {
-                    throw new ArgumentException($"Salt must be {saltSize} bytes for AES-{keySizeBits}.", nameof(salt));
-                }
+                Debug.Assert(salt.Length == saltSize, $"Salt must be {saltSize} bytes for AES-{keySizeBits}.");
                 saltBytes = salt;
             }
 

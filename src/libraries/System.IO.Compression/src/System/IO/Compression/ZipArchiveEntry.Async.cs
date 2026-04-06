@@ -116,40 +116,44 @@ public partial class ZipArchiveEntry
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
-        if (password.IsEmpty)
-        {
-            throw new ArgumentException(SR.EmptyPassword, nameof(password));
-        }
 
         if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
             throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+
+        bool usePassword = IsEncrypted && !password.IsEmpty;
 
         switch (_archive.Mode)
         {
             case ZipArchiveMode.Read:
                 if (access != FileAccess.Read)
                     throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
-                if (!IsEncrypted)
-                    throw new InvalidDataException(SR.EntryNotEncrypted);
-                return await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password).ConfigureAwait(false);
+                return usePassword
+                    ? await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password).ConfigureAwait(false)
+                    : await OpenInReadModeAsync(checkOpenable: true, cancellationToken).ConfigureAwait(false);
 
             case ZipArchiveMode.Create:
-                throw new InvalidOperationException(SR.EntriesInCreateMode);
+                if (access == FileAccess.Read)
+                    throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
+                return OpenInWriteMode();
 
             case ZipArchiveMode.Update:
             default:
                 Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                if (!IsEncrypted)
-                    throw new InvalidDataException(SR.EntryNotEncrypted);
                 switch (access)
                 {
                     case FileAccess.Read:
-                        return await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password).ConfigureAwait(false);
+                        return usePassword
+                            ? await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password).ConfigureAwait(false)
+                            : await OpenInReadModeAsync(checkOpenable: true, cancellationToken).ConfigureAwait(false);
                     case FileAccess.Write:
-                        return await OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken, password).ConfigureAwait(false);
+                        return usePassword
+                            ? await OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken, password).ConfigureAwait(false)
+                            : await OpenInUpdateModeAsync(loadExistingContent: false, cancellationToken).ConfigureAwait(false);
                     case FileAccess.ReadWrite:
                     default:
-                        return await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken, password).ConfigureAwait(false);
+                        return usePassword
+                            ? await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken, password).ConfigureAwait(false)
+                            : await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken).ConfigureAwait(false);
                 }
         }
     }
@@ -159,29 +163,23 @@ public partial class ZipArchiveEntry
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
-        if (password.IsEmpty)
-        {
-            throw new ArgumentException(SR.EmptyPassword, nameof(password));
-        }
+
+        bool usePassword = IsEncrypted && !password.IsEmpty;
 
         switch (_archive.Mode)
         {
             case ZipArchiveMode.Read:
-                if (!IsEncrypted)
-                {
-                    throw new InvalidDataException(SR.EntryNotEncrypted);
-                }
-                return await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password).ConfigureAwait(false);
+                return usePassword
+                    ? await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password).ConfigureAwait(false)
+                    : await OpenInReadModeAsync(checkOpenable: true, cancellationToken).ConfigureAwait(false);
             case ZipArchiveMode.Create:
-                throw new InvalidOperationException(SR.EncryptionNotSpecified);
+                return OpenInWriteMode();
             case ZipArchiveMode.Update:
             default:
                 Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                if (!IsEncrypted)
-                {
-                    throw new InvalidDataException(SR.EntryNotEncrypted);
-                }
-                return await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken, password).ConfigureAwait(false);
+                return usePassword
+                    ? await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken, password).ConfigureAwait(false)
+                    : await OpenInUpdateModeAsync(loadExistingContent: true, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -385,7 +383,12 @@ public partial class ZipArchiveEntry
         // Get decompressed stream
         Stream decompressedStream = GetDataDecompressor(streamToDecompress);
 
-        return decompressedStream;
+        // AE-2 encrypted entries store CRC as 0 and use HMAC for integrity instead,
+        // so skip CRC validation for those. AE-1 entries store a valid CRC.
+        if (IsAesEncrypted && _aeVersion == 2)
+            return decompressedStream;
+
+        return new CrcValidatingReadStream(decompressedStream, _crc32, _uncompressedSize);
     }
 
     private async Task<Stream> WrapWithDecryptionIfNeededAsync(Stream compressedStream, ReadOnlyMemory<char> password, CancellationToken cancellationToken)

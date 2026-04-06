@@ -77,6 +77,17 @@ namespace System.IO.Compression
                                                           string sourceFileName, string entryName, CompressionLevel compressionLevel) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
 
+        /// <summary>
+        /// Adds a file from the file system to the archive under the specified entry name with encryption.
+        /// The new entry in the archive will contain the contents of the file.
+        /// The last write time of the archive entry is set to the last write time of the file on the file system.
+        /// </summary>
+        /// <param name="destination">The zip archive to add the file to.</param>
+        /// <param name="sourceFileName">The path to the file on the file system to be copied from.</param>
+        /// <param name="entryName">The name of the entry to be created.</param>
+        /// <param name="password">The password used to encrypt the entry.</param>
+        /// <param name="encryption">The encryption method to use.</param>
+        /// <returns>A wrapper for the newly created entry.</returns>
         public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination, string sourceFileName, string entryName, ReadOnlySpan<char> password, ZipEncryptionMethod encryption) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, null, password, encryption);
 
@@ -162,6 +173,12 @@ namespace System.IO.Compression
             // Argument checking gets passed down to FileStream's ctor and CreateEntry
 
             FileStream fs = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read, ZipFile.FileStreamBufferSize, useAsync);
+
+            if (encryption != ZipEncryptionMethod.None && password.IsEmpty)
+            {
+                fs.Dispose();
+                throw new ArgumentException(SR.EmptyPassword, nameof(password));
+            }
 
             ZipArchiveEntry entry;
             if (!password.IsEmpty && encryption != ZipEncryptionMethod.None)

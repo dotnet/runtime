@@ -715,11 +715,11 @@ namespace System.IO.Compression
         private byte _aesStrength;
         private ushort _compressionMethod;
 
-        public WinZipAesExtraField(ushort VendorVersion, byte AesStrength, ushort CompressionMethod)
+        public WinZipAesExtraField(ushort vendorVersion, byte aesStrength, ushort compressionMethod)
         {
-            this.VendorVersion = VendorVersion;
-            this.AesStrength = AesStrength;
-            this.CompressionMethod = CompressionMethod;
+            VendorVersion = vendorVersion;
+            AesStrength = aesStrength;
+            CompressionMethod = compressionMethod;
         }
 
         public ushort VendorVersion { get => _vendorVersion; set => _vendorVersion = value; }
@@ -747,9 +747,9 @@ namespace System.IO.Compression
                 {
                     byte[] data = field.Data;
                     aesExtraField = new WinZipAesExtraField(
-                        VendorVersion: BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(0, 2)),
-                        AesStrength: data[4],
-                        CompressionMethod: BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(5, 2))
+                        vendorVersion: BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(0, 2)),
+                        aesStrength: data[4],
+                        compressionMethod: BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(5, 2))
                     );
                     return true;
                 }
@@ -782,9 +782,9 @@ namespace System.IO.Compression
                 {
                     ReadOnlySpan<byte> data = extraFieldData.Slice(offset + 4, fieldSize);
                     aesExtraField = new WinZipAesExtraField(
-                        VendorVersion: BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(0, 2)),
-                        AesStrength: data[4],
-                        CompressionMethod: BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(5, 2))
+                        vendorVersion: BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(0, 2)),
+                        aesStrength: data[4],
+                        compressionMethod: BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(5, 2))
                     );
                     return true;
                 }

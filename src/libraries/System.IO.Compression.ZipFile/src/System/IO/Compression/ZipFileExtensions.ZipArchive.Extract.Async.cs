@@ -94,15 +94,10 @@ public static partial class ZipFileExtensions
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        ReadOnlyMemory<char> password = options.Password;
-
         foreach (ZipArchiveEntry entry in source.Entries)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!password.IsEmpty)
-                await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, options.OverwriteFiles, password, cancellationToken).ConfigureAwait(false);
-            else
-                await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, options.OverwriteFiles, cancellationToken).ConfigureAwait(false);
+            await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, options.OverwriteFiles, options.Password, cancellationToken).ConfigureAwait(false);
         }
     }
 }

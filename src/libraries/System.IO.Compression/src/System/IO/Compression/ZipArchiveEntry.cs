@@ -430,38 +430,32 @@ namespace System.IO.Compression
 
         /// <summary>
         /// Opens the entry for reading or updating with the specified password.
+        /// If the entry is not encrypted, the password is ignored and the entry is opened normally.
         /// </summary>
         /// <returns>A Stream that represents the contents of the entry.</returns>
         /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
-        /// <exception cref="ArgumentException">The password provided is empty.</exception>
+        /// <param name="password">The password used to decrypt the entry. If the entry is not encrypted, this parameter is ignored.</param>
         public Stream Open(ReadOnlySpan<char> password)
         {
             ThrowIfInvalidArchive();
-            if (password.IsEmpty)
-            {
-                throw new ArgumentException(SR.EmptyPassword, nameof(password));
-            }
+
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
-                    if (!IsEncrypted)
-                    {
-                        throw new InvalidDataException(SR.EntryNotEncrypted);
-                    }
-                    return OpenInReadMode(checkOpenable: true, password);
+                    return IsEncrypted && !password.IsEmpty
+                        ? OpenInReadMode(checkOpenable: true, password)
+                        : OpenInReadMode(checkOpenable: true);
                 case ZipArchiveMode.Create:
-                    throw new InvalidOperationException(SR.EntriesInCreateMode);
+                    return OpenInWriteMode();
                 case ZipArchiveMode.Update:
                 default:
                     Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                    if (!IsEncrypted)
-                    {
-                        throw new InvalidDataException(SR.EntryNotEncrypted);
-                    }
-                    return OpenInUpdateMode(loadExistingContent: true, password);
+                    return IsEncrypted && !password.IsEmpty
+                        ? OpenInUpdateMode(loadExistingContent: true, password)
+                        : OpenInUpdateMode();
             }
         }
 
@@ -522,39 +516,44 @@ namespace System.IO.Compression
         public Stream Open(FileAccess access, ReadOnlySpan<char> password)
         {
             ThrowIfInvalidArchive();
-            if (password.IsEmpty)
-            {
-                throw new ArgumentException(SR.EmptyPassword, nameof(password));
-            }
+
             if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
                 throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+
+            bool usePassword = IsEncrypted && !password.IsEmpty;
 
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
                     if (access != FileAccess.Read)
                         throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
-                    if (!IsEncrypted)
-                        throw new InvalidDataException(SR.EntryNotEncrypted);
-                    return OpenInReadMode(checkOpenable: true, password);
+                    return usePassword
+                        ? OpenInReadMode(checkOpenable: true, password)
+                        : OpenInReadMode(checkOpenable: true);
 
                 case ZipArchiveMode.Create:
-                    throw new InvalidOperationException(SR.EntriesInCreateMode);
+                    if (access == FileAccess.Read)
+                        throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
+                    return OpenInWriteMode();
 
                 case ZipArchiveMode.Update:
                 default:
                     Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                    if (!IsEncrypted)
-                        throw new InvalidDataException(SR.EntryNotEncrypted);
                     switch (access)
                     {
                         case FileAccess.Read:
-                            return OpenInReadMode(checkOpenable: true, password);
+                            return usePassword
+                                ? OpenInReadMode(checkOpenable: true, password)
+                                : OpenInReadMode(checkOpenable: true);
                         case FileAccess.Write:
-                            return OpenInUpdateMode(loadExistingContent: false, password);
+                            return usePassword
+                                ? OpenInUpdateMode(loadExistingContent: false, password)
+                                : OpenInUpdateMode(loadExistingContent: false);
                         case FileAccess.ReadWrite:
                         default:
-                            return OpenInUpdateMode(loadExistingContent: true, password);
+                            return usePassword
+                                ? OpenInUpdateMode(loadExistingContent: true, password)
+                                : OpenInUpdateMode(loadExistingContent: true);
                     }
             }
         }
@@ -1084,14 +1083,14 @@ namespace System.IO.Compression
             return uncompressedStream;
         }
 
-        private CrcValidatingReadStream OpenInReadMode(bool checkOpenable, ReadOnlySpan<char> password = default)
+        private Stream OpenInReadMode(bool checkOpenable, ReadOnlySpan<char> password = default)
         {
             if (checkOpenable)
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: false);
             return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData(), password);
         }
 
-        private CrcValidatingReadStream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlySpan<char> password = default)
+        private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlySpan<char> password = default)
         {
             Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offsetOfCompressedData, _compressedSize);
             Stream streamToDecompress;
@@ -1108,6 +1107,11 @@ namespace System.IO.Compression
 
             // Get decompressed stream
             Stream decompressedStream = GetDataDecompressor(streamToDecompress);
+
+            // AE-2 encrypted entries store CRC as 0 and use HMAC for integrity instead,
+            // so skip CRC validation for those. AE-1 entries store a valid CRC.
+            if (IsAesEncrypted && _aeVersion == 2)
+                return decompressedStream;
 
             return new CrcValidatingReadStream(decompressedStream, _crc32, _uncompressedSize);
         }

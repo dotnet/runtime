@@ -442,6 +442,8 @@ public static partial class ZipFile
     public static async Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName, ZipFileCreationOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (options.EncryptionMethod != ZipEncryptionMethod.None && options.Password.IsEmpty)
+            throw new ArgumentException(SR.EmptyPassword, nameof(options));
         cancellationToken.ThrowIfCancellationRequested();
 
         (sourceDirectoryName, destinationArchiveFileName) = GetFullPathsForDoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName);
@@ -465,6 +467,8 @@ public static partial class ZipFile
     public static async Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, ZipFileCreationOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (options.EncryptionMethod != ZipEncryptionMethod.None && options.Password.IsEmpty)
+            throw new ArgumentException(SR.EmptyPassword, nameof(options));
         cancellationToken.ThrowIfCancellationRequested();
 
         sourceDirectoryName = ValidateAndGetFullPathForDoCreateFromDirectory(sourceDirectoryName, destination, options.CompressionLevel);

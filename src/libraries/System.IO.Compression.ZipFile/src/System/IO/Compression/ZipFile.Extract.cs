@@ -102,7 +102,7 @@ namespace System.IO.Compression
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
         /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names and comments in this ZipArchive.
-        ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
+        ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
         ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
         ///         UTF-8 encoding for entry names or comments.<br />
         ///         This value is used as follows:</para>
@@ -157,7 +157,7 @@ namespace System.IO.Compression
         /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="overwriteFiles">True to indicate overwrite.</param>
         /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names and comments in this ZipArchive.
-        ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
+        ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
         ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
         ///         UTF-8 encoding for entry names or comments.<br />
         ///         This value is used as follows:</para>
@@ -219,7 +219,7 @@ namespace System.IO.Compression
         /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="overwriteFiles">True to indicate overwrite.</param>
         /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names and comments in this ZipArchive.
-        ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
+        ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
         ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
         ///         UTF-8 encoding for entry names or comments.<br />
         ///         This value is used as follows:</para>
@@ -261,7 +261,7 @@ namespace System.IO.Compression
         /// Exceptions related to validating the paths in the <paramref name="destinationDirectoryName"/> or the files in the zip archive contained in <paramref name="source"/> parameters are thrown before extraction. Otherwise, if an error occurs during extraction, the archive remains partially extracted.
         /// Each extracted file has the same relative path to the directory specified by <paramref name="destinationDirectoryName"/> as its source entry has to the root of the archive.
         /// If a file to be archived has an invalid last modified time, the first date and time representable in the Zip timestamp format (midnight on January 1, 1980) will be used.</remarks>
-        /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" />> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
+        /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="destinationDirectoryName" /> or <paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="PathTooLongException">The specified path in <paramref name="destinationDirectoryName" /> exceeds the system-defined maximum length.</exception>
         /// <exception cref="DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
@@ -290,7 +290,7 @@ namespace System.IO.Compression
         /// Exceptions related to validating the paths in the <paramref name="destinationDirectoryName"/> or the files in the zip archive contained in <paramref name="source"/> parameters are thrown before extraction. Otherwise, if an error occurs during extraction, the archive remains partially extracted.
         /// Each extracted file has the same relative path to the directory specified by <paramref name="destinationDirectoryName"/> as its source entry has to the root of the archive.
         /// If a file to be archived has an invalid last modified time, the first date and time representable in the Zip timestamp format (midnight on January 1, 1980) will be used.</remarks>
-        /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" />> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
+        /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="destinationDirectoryName" /> or <paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="PathTooLongException">The specified path in <paramref name="destinationDirectoryName" /> exceeds the system-defined maximum length.</exception>
         /// <exception cref="DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
@@ -325,7 +325,7 @@ namespace System.IO.Compression
         /// If <paramref name="entryNameEncoding"/> is set to <see langword="null"/>, entry names and comments are decoded according to the following rules:
         /// - For entries where the language encoding flag (in the general-purpose bit flag of the local file header) is not set, entry names and comments are decoded by using the current system default code page.
         /// - For entries where the language encoding flag is set, the entry names and comments are decoded by using UTF-8.
-        /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" />> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
+        /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
         /// -or-
         /// <paramref name="entryNameEncoding"/> is set to a Unicode encoding other than UTF-8.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="destinationDirectoryName" /> or <paramref name="source" /> is <see langword="null" />.</exception>
@@ -363,7 +363,7 @@ namespace System.IO.Compression
         /// If <paramref name="entryNameEncoding"/> is set to <see langword="null"/>, entry names and comments are decoded according to the following rules:
         /// - For entries where the language encoding flag (in the general-purpose bit flag of the local file header) is not set, entry names are decoded by using the current system default code page.
         /// - For entries where the language encoding flag is set, the entry names and comments are decoded by using UTF-8.
-        /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" />> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
+        /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
         /// -or-
         /// <paramref name="entryNameEncoding"/> is set to a Unicode encoding other than UTF-8.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="destinationDirectoryName" /> or <paramref name="source" /> is <see langword="null" />.</exception>
@@ -411,7 +411,7 @@ namespace System.IO.Compression
         /// If <paramref name="entryNameEncoding"/> is set to <see langword="null"/>, entry names and comments are decoded according to the following rules:
         /// - For entries where the language encoding flag (in the general-purpose bit flag of the local file header) is not set, entry names are decoded by using the current system default code page.
         /// - For entries where the language encoding flag is set, the entry names and comments are decoded by using UTF-8.
-        /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" />> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
+        /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
         /// -or-
         /// <paramref name="entryNameEncoding"/> is set to a Unicode encoding other than UTF-8.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="destinationDirectoryName" /> or <paramref name="source" /> is <see langword="null" />.</exception>

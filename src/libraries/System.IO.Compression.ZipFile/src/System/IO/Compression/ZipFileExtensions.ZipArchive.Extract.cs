@@ -87,14 +87,9 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(destinationDirectoryName);
             ArgumentNullException.ThrowIfNull(options);
 
-            ReadOnlySpan<char> password = options.Password.Span;
-
             foreach (ZipArchiveEntry entry in source.Entries)
             {
-                if (!password.IsEmpty)
-                    entry.ExtractRelativeToDirectory(destinationDirectoryName, options.OverwriteFiles, password);
-                else
-                    entry.ExtractRelativeToDirectory(destinationDirectoryName, options.OverwriteFiles);
+                entry.ExtractRelativeToDirectory(destinationDirectoryName, options.OverwriteFiles, options.Password.Span);
             }
         }
     }

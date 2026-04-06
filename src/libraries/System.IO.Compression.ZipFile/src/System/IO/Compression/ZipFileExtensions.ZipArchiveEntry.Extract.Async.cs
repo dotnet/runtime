@@ -125,19 +125,11 @@ public static partial class ZipFileExtensions
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        if (!options.Password.IsEmpty)
-            return ExtractToFileAsync(source, destinationFileName, options.OverwriteFiles, options.Password, cancellationToken);
-        else
-            return ExtractToFileAsync(source, destinationFileName, options.OverwriteFiles, cancellationToken);
+        return ExtractToFileAsync(source, destinationFileName, options.OverwriteFiles, options.Password, cancellationToken);
     }
 
     private static async Task ExtractToFileAsync(ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default)
     {
-        if (password.IsEmpty)
-        {
-            throw new ArgumentException(SR.EmptyPassword, nameof(password));
-        }
-
         cancellationToken.ThrowIfCancellationRequested();
 
         ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: true, out FileStreamOptions fileStreamOptions);

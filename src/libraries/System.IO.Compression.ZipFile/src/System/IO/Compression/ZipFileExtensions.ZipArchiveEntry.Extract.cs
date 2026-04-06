@@ -116,19 +116,11 @@ namespace System.IO.Compression
         {
             ArgumentNullException.ThrowIfNull(options);
 
-            if (!options.Password.IsEmpty)
-                ExtractToFile(source, destinationFileName, options.OverwriteFiles, options.Password.Span);
-            else
-                ExtractToFile(source, destinationFileName, options.OverwriteFiles);
+            ExtractToFile(source, destinationFileName, options.OverwriteFiles, options.Password.Span);
         }
 
         private static void ExtractToFile(ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlySpan<char> password)
         {
-            if (password.IsEmpty)
-            {
-                throw new ArgumentException(SR.EmptyPassword, nameof(password));
-            }
-
             ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: false, out FileStreamOptions fileStreamOptions);
 
             // When overwriting, extract to a temporary file first to avoid corrupting the destination file
