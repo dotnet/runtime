@@ -325,14 +325,14 @@ namespace System.Runtime.Loader.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
-        public static void LoadFromAssemblyPath_CustomAlc_MvidMismatch()
+        public static void LoadFromAssemblyPath_CustomAlc_VersionMismatch()
         {
             string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
             string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion2");
 
             try
             {
-                var alc = new AssemblyLoadContext("MvidMismatchTest");
+                var alc = new AssemblyLoadContext("TestALC");
 
                 Assembly loaded = alc.LoadFromAssemblyPath(v1Path);
                 string v1DisplayName = loaded.GetName().FullName;
@@ -341,6 +341,7 @@ namespace System.Runtime.Loader.Tests
                 Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
                 Assert.Contains($"'{v1DisplayName}'", ex.Message);
                 Assert.Contains(v1Path, ex.Message);
+                Assert.Equal(HResults.COR_E_FILELOAD, ex.HResult);
             }
             finally
             {
@@ -350,7 +351,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
-        public static void LoadFromAssemblyPath_DefaultAlc_Tpa_MvidMismatch()
+        public static void LoadFromAssemblyPath_DefaultAlc_Tpa_VersionMismatch()
         {
             Assembly referencedAssembly = typeof(ReferencedClassLib.Program).Assembly;
             string tpaPath = referencedAssembly.Location;
@@ -363,6 +364,7 @@ namespace System.Runtime.Loader.Tests
                 Assert.Contains("'ReferencedClassLib'", ex.Message);
                 Assert.Contains($"'{tpaDisplayName}'", ex.Message);
                 Assert.Contains(tpaPath, ex.Message);
+                Assert.Equal(HResults.FUSION_E_REF_DEF_MISMATCH, ex.HResult);
             }
             finally
             {
@@ -387,6 +389,7 @@ namespace System.Runtime.Loader.Tests
                     Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
                     Assert.Contains($"'{v1DisplayName}'", ex.Message);
                     Assert.Contains(v1Path, ex.Message);
+                    Assert.Equal(HResults.COR_E_FILELOAD, ex.HResult);
                 }
                 finally
                 {
