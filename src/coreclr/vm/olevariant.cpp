@@ -1610,7 +1610,7 @@ void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable 
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS; // CoTaskMemFree can invoke a managed IMallocSpy implementation.
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(oleArray));
@@ -1745,7 +1745,7 @@ void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS; // CoTaskMemFree can invoke a managed IMallocSpy implementation.
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(oleArray));
@@ -4176,4 +4176,3 @@ extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOn
     END_QCALL;
 }
 #endif // FEATURE_COMINTEROP
-
