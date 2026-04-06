@@ -234,6 +234,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    genCodeForCompare(treeNode->AsOp());
 	    break;
 
+	case GT_JCC:
+	    genCodeForJcc(treeNode->AsCC());
+            break;
+
         default:
 	    abort();
     }
@@ -468,8 +472,9 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
 //
 void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(tgtBlock != nullptr);
+
+    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
 
 
@@ -768,6 +773,36 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
 // clang-format off
 const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
 {
+    { }, // SGT
+    { },       // S
+    { },       // NS
+
+    { EJ_eq }, // EQ
+    { EJ_ne }, // NE
+    { EJ_lt }, // ULT (unsigned uses same branch instructions)
+    { EJ_le }, // ULE
+    { EJ_ge }, // UGE
+    { EJ_gt }, // UGT
+    { },       // C
+    { },       // NC
+
+    { EJ_eq }, // FEQ
+    { EJ_ne }, // FNE
+    { EJ_lt }, // FLT
+    { EJ_le }, // FLE
+    { EJ_ge }, // FGE
+    { EJ_gt }, // FGT
+    { },       // O
+    { },       // NO
+
+    { },       // FEQU
+    { },       // FNEU
+    { },       // FLTU
+    { },       // FLEU
+    { },       // FGEU
+    { },       // FGTU
+    { },       // P
+    { },       // NP
 };
 // clang-format on
 

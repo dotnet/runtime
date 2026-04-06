@@ -26,7 +26,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-#if 0
 const instruction emitJumpKindInstructions[] = {
 	    INS_nop,
 
@@ -40,7 +39,6 @@ const emitJumpKind emitReverseJumpKinds[] = {
 #define JMP_SMALL(en, rev, ins) EJ_##rev,
 #include "emitjmps.h"
 };
-#endif
 
 /*****************************************************************************
  * Look up the instruction for a jump kind
@@ -48,7 +46,8 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 /*static*/ instruction emitter::emitJumpKindToIns(emitJumpKind jumpKind)
 {
-    _ASSERTE(!"NYI");
+	assert(jumpKind < EJ_COUNT);
+	return emitJumpKindInstructions[jumpKind];
 }
 
 /*****************************************************************************
@@ -58,7 +57,25 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 /*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
 {
-    _ASSERTE(!"NYI");
+    switch (ins)
+    {
+        case INS_b:
+            return EJ_jmp;
+        case INS_beq:
+            return EJ_eq;
+        case INS_bne:
+            return EJ_ne;
+	case INS_blt:
+	    return EJ_lt;
+	case INS_bge:
+	    return EJ_ge;
+	case INS_bgt:
+	    return EJ_gt;
+	case INS_ble:
+	    return EJ_le;
+        default:
+            unreached();
+    }
 }
 
 /*****************************************************************************
@@ -67,7 +84,8 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 /*static*/ emitJumpKind emitter::emitReverseJumpKind(emitJumpKind jumpKind)
 {
-    _ASSERTE(!"NYI");
+    assert(jumpKind < EJ_COUNT);
+    return emitReverseJumpKinds[jumpKind];
 }
 
 
@@ -488,6 +506,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     dst = dstRW - writeableOffset;
     *dp = dst;
     return emitSizeOfInsDsc(id);
+}
+
+void emitter::emitIns_J(instruction ins, BasicBlock* dst)
+{
+    abort();
 }
 
 /*****************************************************************************

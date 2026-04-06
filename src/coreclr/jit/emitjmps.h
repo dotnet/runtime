@@ -65,6 +65,10 @@ JMP_SMALL(ne    , eq    , bne    )  // NE
 JMP_SMALL(jmp   , jmp   , b      )  // AL always
 JMP_SMALL(eq    , ne    , beq    )  // EQ
 JMP_SMALL(ne    , eq    , bne    )  // NE
+JMP_SMALL(lt    , ge    , blt )
+JMP_SMALL(ge    , lt    , bge )
+JMP_SMALL(gt    , le    , bgt )
+JMP_SMALL(le    , gt    , ble )
 
 #else
   #error Unsupported or unset target architecture

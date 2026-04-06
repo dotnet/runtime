@@ -47,7 +47,13 @@ INST(lha,	  "lha",	  0,	  D_FORM,	0xA8000000)
 INST(lwz,	  "lwz",	  0,	  D_FORM,	0x80000000)
 INST(lwa,	  "lwa",	  0,	  DS_FORM,	0xE8000000)
 INST(ld,	  "ld",		  0,	  DS_FORM,	0xE8000000)
-
+INST(b,		  "b",		  0,	  I_FORM,	0x48000000)
+INST(beq,	  "beq",	  0,	  B_FORM,	0x41820000)
+INST(bne,	  "bne",	  0,	  B_FORM,	0x40820000)
+INST(blt,         "blt",          0,      B_FORM,       0x41800000)
+INST(bge,         "bge",          0,      B_FORM,       0x40800000)
+INST(bgt,         "bgt",          0,      B_FORM,       0x41810000)
+INST(ble,         "ble",          0,      B_FORM,       0x40810000)
 // clang-format on
 /*****************************************************************************/
 #undef INST
