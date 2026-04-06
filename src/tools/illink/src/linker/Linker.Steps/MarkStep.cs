@@ -1554,7 +1554,7 @@ namespace Mono.Linker.Steps
 
             protected override void ProcessExportedType(ExportedType exportedType)
             {
-                markingHelpers.MarkForwardedScope(CreateTypeReferenceForExportedTypeTarget(exportedType, assembly.MainModule), new MessageOrigin(assembly));
+                markingHelpers.MarkForwardedScope(CreateTypeReferenceForExportedTypeTarget(exportedType), new MessageOrigin(assembly));
             }
 
             protected override void ProcessExtra()
@@ -1569,13 +1569,15 @@ namespace Mono.Linker.Steps
                 }
             }
 
-            static TypeReference CreateTypeReferenceForExportedTypeTarget(ExportedType exportedType, ModuleDefinition module)
+            TypeReference CreateTypeReferenceForExportedTypeTarget(ExportedType exportedType)
             {
                 TypeReference? declaringTypeReference = null;
                 if (exportedType.DeclaringType != null)
-                    declaringTypeReference = CreateTypeReferenceForExportedTypeTarget(exportedType.DeclaringType, module);
+                {
+                    declaringTypeReference = CreateTypeReferenceForExportedTypeTarget(exportedType.DeclaringType);
+                }
 
-                return new TypeReference(exportedType.Namespace, exportedType.Name, module, exportedType.Scope)
+                return new TypeReference(exportedType.Namespace, exportedType.Name, assembly.MainModule, exportedType.Scope)
                 {
                     DeclaringType = declaringTypeReference
                 };
