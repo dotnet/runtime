@@ -52,6 +52,7 @@
   <Target Name="Add_ResolvedProjectReferencePathsToCoreCompileInputs">
     <ItemGroup>
       <CoreCompileInputs Include="@(_ResolvedProjectReferencePaths)" />
+      <CoreCompileInputs Include="@(_ResolvedProjectReferencePaths->'%(RootDir)%(Directory)%(Filename).pdb')" />
     </ItemGroup>
   </Target>
 
