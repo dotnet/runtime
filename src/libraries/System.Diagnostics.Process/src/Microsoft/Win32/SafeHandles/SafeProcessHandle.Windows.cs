@@ -465,8 +465,6 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(handle is not null && !handle.IsInvalid);
 
                 // Enable inheritance on this handle so the child process can use it.
-                // The following sys-call is going to throw for any pseudo handles (e.g. current process/thread), which cannot be inherited.
-                // That's desired since such handles are not valid to be added to the allow list.
                 // It's defacto our validation that the handles passed in the allow list are actually inheritable handles.
                 if (!Interop.Kernel32.SetHandleInformation(
                     handle,
