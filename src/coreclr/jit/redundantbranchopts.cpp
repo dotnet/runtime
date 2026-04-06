@@ -54,6 +54,11 @@ PhaseStatus Compiler::optRedundantBranches()
 
                 madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
 
+                if (block->KindIs(BBJ_COND))
+                {
+                    madeChangesThisBlock |= m_compiler->optRedundantDominatingBranch(block);
+                }
+
                 // If we modified some flow out of block but it's still referenced and
                 // a BBJ_COND, retry; perhaps one of the later optimizations
                 // we can do has enabled one of the earlier optimizations.
@@ -707,6 +712,245 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
     rii->canInferFromFalse = (ifFalseStatus != RelopResult::Unknown);
     rii->reverseSense      = (ifFalseStatus == RelopResult::AlwaysTrue) || (ifTrueStatus == RelopResult::AlwaysFalse);
     return true;
+}
+
+//------------------------------------------------------------------------
+// optRedundantDominatingBranch: see if we can optimize a branch in a
+//    donminating block.
+//
+// Arguments:
+//   block - conditional block to examine
+//
+// Notes:
+//   This handles optimizing cases like
+//
+//   if (x > 0)    // block A, predicate pA
+//     if (x > 1)   // block B, predicate pB
+//       S;
+//
+//  into
+//
+//   if (x > 1)
+//     S;
+//
+//  by proving that pB ==> pA and that B is side effect free.
+//
+//  We may also want to make this be heuristic driven. If pA is
+//  likely false and B is expensive, this may not improve performance.
+//
+bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
+{
+    if (!block->KindIs(BBJ_COND))
+    {
+        return false;
+    }
+
+    if (block->hasSideEffects())
+    {
+        return false;
+    }
+
+    Statement* const stmt = block->lastStmt();
+
+    if (stmt == nullptr)
+    {
+        return false;
+    }
+
+    GenTree* const jumpTree = stmt->GetRootNode();
+
+    if (!jumpTree->OperIs(GT_JTRUE))
+    {
+        return false;
+    }
+
+    GenTree* const tree = jumpTree->AsOp()->gtOp1;
+
+    if (!tree->OperIsCompare())
+    {
+        return false;
+    }
+
+    const ValueNum treeNormVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
+
+    if (vnStore->IsVNConstant(treeNormVN))
+    {
+        return false;
+    }
+
+    BasicBlock* const blockTrueSucc  = block->GetTrueTarget();
+    BasicBlock* const blockFalseSucc = block->GetFalseTarget();
+    BasicBlock*       currentBlock   = block;
+    BasicBlock*       domBlockProbe  = block->bbIDom;
+    BasicBlock*       sharedSucc     = nullptr;
+    ValueNum          blockPathVN    = ValueNumStore::NoVN;
+    bool              madeChanges    = false;
+    unsigned          searchCount    = 0;
+    const unsigned    searchLimit    = 8;
+
+    JITDUMP("Checking " FMT_BB " for redundant dominating branches\n", block->bbNum);
+
+    // Walk up the dominator tree.
+    // We may be able to optimize multiple dominating branches.
+    //
+    while (domBlockProbe != nullptr)
+    {
+        // Avoid walking too far up long skinny dominator trees.
+        //
+        searchCount++;
+
+        if (searchCount > searchLimit)
+        {
+            break;
+        }
+
+        // Skip past unconditional dominators, if any, as long as they
+        // do not have side effects (since they may now become unconditionally
+        // executed along the path to block).
+        //
+        while ((domBlockProbe != nullptr) && domBlockProbe->KindIs(BBJ_ALWAYS))
+        {
+            if (domBlockProbe->GetTarget() != currentBlock)
+            {
+                domBlockProbe = nullptr;
+                break;
+            }
+
+            if (domBlockProbe->hasSideEffects())
+            {
+                domBlockProbe = nullptr;
+                break;
+            }
+
+            currentBlock  = domBlockProbe;
+            domBlockProbe = domBlockProbe->bbIDom;
+        }
+
+        if ((domBlockProbe == nullptr) || !domBlockProbe->KindIs(BBJ_COND))
+        {
+            break;
+        }
+
+        // Make sure this conditional dominator branches to the same
+        // shared block as the original block.
+        //
+        BasicBlock* const domTrueSucc  = domBlockProbe->GetTrueTarget();
+        BasicBlock* const domFalseSucc = domBlockProbe->GetFalseTarget();
+
+        const bool currentIsDomTrueSucc  = (domTrueSucc == currentBlock);
+        const bool currentIsDomFalseSucc = (domFalseSucc == currentBlock);
+
+        if (currentIsDomTrueSucc == currentIsDomFalseSucc)
+        {
+            // degenerate BBJ_COND
+            break;
+        }
+
+        BasicBlock* const candidateSharedSucc = currentIsDomTrueSucc ? domFalseSucc : domTrueSucc;
+
+        if (sharedSucc == nullptr)
+        {
+            sharedSucc = candidateSharedSucc;
+
+            if (sharedSucc == blockFalseSucc)
+            {
+                blockPathVN = treeNormVN;
+            }
+            else if (sharedSucc == blockTrueSucc)
+            {
+                blockPathVN = vnStore->GetRelatedRelop(treeNormVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
+            }
+            else
+            {
+                break;
+            }
+        }
+        else if (candidateSharedSucc != sharedSucc)
+        {
+            break;
+        }
+
+        if (blockPathVN == ValueNumStore::NoVN)
+        {
+            break;
+        }
+
+        Statement* const domStmt = domBlockProbe->lastStmt();
+        assert(domStmt != nullptr);
+
+        GenTree* const domJumpTree = domStmt->GetRootNode();
+        assert(domJumpTree->OperIs(GT_JTRUE));
+
+        GenTree* const domTree = domJumpTree->AsOp()->gtGetOp1();
+
+        if (!domTree->OperIsCompare())
+        {
+            break;
+        }
+
+        const ValueNum domNormVN = vnStore->VNNormalValue(domTree->GetVN(VNK_Liberal));
+
+        if (vnStore->IsVNConstant(domNormVN))
+        {
+            break;
+        }
+
+        ValueNum domPathVN = domNormVN;
+
+        if (currentIsDomFalseSucc)
+        {
+            domPathVN = vnStore->GetRelatedRelop(domPathVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
+        }
+
+        if (domPathVN == ValueNumStore::NoVN)
+        {
+            break;
+        }
+
+        // We found a dominating compare with the right pattern of control flow.
+        // See if the block's relop implies the dominating block's relop.
+        //
+        RelopImplicationInfo rii;
+        rii.treeNormVN   = domPathVN;
+        rii.domCmpNormVN = blockPathVN;
+
+        optRelopImpliesRelop(&rii);
+
+        if (!(rii.canInfer && rii.canInferFromTrue && !rii.reverseSense))
+        {
+            break;
+        }
+
+        JITDUMP("Optimizing branch in dominating " FMT_BB " with relop [%06u] based on " FMT_BB "'s relop [%06u]\n",
+                domBlockProbe->bbNum, dspTreeID(domTree), block->bbNum, dspTreeID(tree));
+
+        const int domRelopValue = currentIsDomTrueSucc ? 1 : 0;
+
+        // Always preserve side effects in the dominating relop.
+        //
+        if ((domTree->gtFlags & GTF_SIDE_EFFECT) != 0)
+        {
+            JITDUMP("Dominating relop has side effects, keeping it, unused\n");
+            GenTree* const relopComma    = gtNewOperNode(GT_COMMA, TYP_INT, domTree, gtNewIconNode(domRelopValue));
+            domJumpTree->AsUnOp()->gtOp1 = relopComma;
+        }
+        else
+        {
+            domTree->BashToConst(domRelopValue);
+        }
+
+        JITDUMP("\nRedundant dominating branch opt in " FMT_BB ":\n", domBlockProbe->bbNum);
+
+        fgMorphBlockStmt(domBlockProbe, domStmt DEBUGARG(__FUNCTION__), /* allowFGChange */ true,
+                         /* invalidateDFSTreeOnFGChange */ false);
+        Metrics.RedundantBranchesEliminated++;
+        madeChanges = true;
+
+        currentBlock  = domBlockProbe;
+        domBlockProbe = domBlockProbe->bbIDom;
+    }
+
+    return madeChanges;
 }
 
 //------------------------------------------------------------------------

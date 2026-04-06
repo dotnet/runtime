@@ -1768,6 +1768,22 @@ public:
         return StatementList(FirstNonPhiDef());
     }
 
+    // True if any non-phi statement in the block has side effects.
+    //
+    bool hasSideEffects() const
+    {
+        assert(!IsLIR());
+        for (Statement* const stmt : NonPhiStatements())
+        {
+            if ((stmt->GetRootNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // Simple "size" estimates
     //
     unsigned StatementCount();
