@@ -415,7 +415,7 @@ public partial class ZipArchiveEntry
                     bool headerWritten = !(_originallyInArchive && Changes == ZipArchive.ChangeState.Unchanged && !forceWrite);
                     if (headerWritten)
                     {
-                        PatchLocalFileHeaderBitFlags();
+                        await PatchLocalFileHeaderBitFlagsAsync(cancellationToken).ConfigureAwait(false);
                     }
                 }
 
@@ -434,6 +434,16 @@ public partial class ZipArchiveEntry
                 }
             }
         }
+    }
+
+    private async ValueTask PatchLocalFileHeaderBitFlagsAsync(CancellationToken cancellationToken)
+    {
+        long savedPosition = _archive.ArchiveStream.Position;
+        _archive.ArchiveStream.Position = _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags;
+        byte[] flagBytes = new byte[sizeof(ushort)];
+        BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)_generalPurposeBitFlag);
+        await _archive.ArchiveStream.WriteAsync(flagBytes, cancellationToken).ConfigureAwait(false);
+        _archive.ArchiveStream.Position = savedPosition;
     }
 
     private async ValueTask SkipDataDescriptorAsync(CancellationToken cancellationToken)
