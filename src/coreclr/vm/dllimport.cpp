@@ -460,7 +460,7 @@ public:
                 pStubMD->SetStatic();
             }
 
-#if defined(TARGET_X86)
+#ifdef TARGET_X86
             // we store the real native argument stack size in the stub MethodDesc
             UINT stackSize = pStubMD->SizeOfNativeArgStack();
 

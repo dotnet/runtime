@@ -471,7 +471,7 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
 
     _ASSERTE(pStubMD->IsILStub());
 
-#if defined(TARGET_X86)
+#ifdef TARGET_X86
     // make sure our native stack computation in code:ComCallMethodDesc.InitNativeInfo is right
     _ASSERTE(HasMarshalError() || !pStubMD->IsILStub() || pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() == m_StackBytes);
     m_StackBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
