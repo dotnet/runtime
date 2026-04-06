@@ -46,9 +46,7 @@ namespace System.Formats.Tar.Tests
             }
 
             Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
-
-            string symlinkPath = Path.Combine(destDir, "outside.txt");
-            Assert.False(File.Exists(symlinkPath) || Directory.Exists(symlinkPath), "outside.txt should not have been created.");
+            Assert.Empty(Directory.EnumerateFileSystemEntries(destDir));
         }
     }
 }

@@ -362,15 +362,16 @@ namespace System.Formats.Tar
                 // LinkName is an absolute path, or path relative to the fileDestinationPath directory.
                 // We don't check if the LinkName is empty. In that case, creation of the link will fail because link targets can't be empty.
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
+                bool isRooted = Path.IsPathRooted(linkName);
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
-                                            Path.IsPathRooted(linkName) ? Path.GetFullPath(linkName) : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
+                                            isRooted ? Path.GetFullPath(linkName) : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
                 if (linkDestination is null)
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
-                // Use the linkName for creating the symbolic link.
-                linkTargetPath = linkName;
+                // For rooted targets, use the fully-resolved path so the created symlink points to exactly the path that was validated otherwise preserve the original relative path
+                linkTargetPath = isRooted ? linkDestination : linkName;
             }
             else if (EntryType is TarEntryType.HardLink)
             {
