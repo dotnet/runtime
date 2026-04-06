@@ -480,22 +480,12 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
 
     *ppStubMD = pStubMD;
 
-#ifdef TARGET_X86
+    _ASSERTE(pStubMD->IsILStub());
+
+#if defined(TARGET_X86)
     // make sure our native stack computation in code:ComCallMethodDesc.InitNativeInfo is right
     _ASSERTE(HasMarshalError() || !pStubMD->IsILStub() || pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() == m_StackBytes);
-#else // TARGET_X86
-
-    if (pStubMD->IsILStub())
-    {
-        m_StackBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
-        _ASSERTE(m_StackBytes == pStubMD->SizeOfArgStack());
-    }
-    else
-    {
-        UINT size = pStubMD->SizeOfArgStack();
-        _ASSERTE(size <= USHRT_MAX);
-        m_StackBytes = (UINT16)size;
-    }
+    m_StackBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
 #endif // TARGET_X86
 
     RETURN JitILStub(pStubMD);

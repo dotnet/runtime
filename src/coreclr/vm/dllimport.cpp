@@ -460,7 +460,7 @@ public:
                 pStubMD->SetStatic();
             }
 
-#if !defined(TARGET_X86) && defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
+#if defined(TARGET_X86)
             // we store the real managed argument stack size in the stub MethodDesc on non-X86
             UINT stackSize = pStubMD->SizeOfNativeArgStack();
 
@@ -4012,7 +4012,7 @@ static void CreatePInvokeStubWorker(ILStubState*               pss,
         if (!FitsInU2(nativeStackSize))
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
-#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
+#ifdef TARGET_X86
         DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
 
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
@@ -5631,14 +5631,6 @@ MethodDesc* PInvoke::CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOpe
         &typeContext,
         &pLinker
     );
-
-#if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
-    if (pStubMD->IsDynamicMethod())
-    {
-        DynamicMethodDesc* pDMD = pStubMD->AsDynamicMethodDesc();
-        pDMD->SetNativeStackArgSize(3 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
-    }
-#endif
 
     szMetaSig.SuppressRelease();
 
