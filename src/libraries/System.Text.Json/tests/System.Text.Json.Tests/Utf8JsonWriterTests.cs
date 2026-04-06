@@ -1200,6 +1200,16 @@ namespace System.Text.Json.Tests
             Assert.Throws<ArgumentException>(() => writeToIBW.Reset(stream, options));
         }
 
+        [Fact]
+        public static void JsonSerializerCacheNotPoisonedByDisposedWriter()
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new DisposingInt32Converter());
+
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(1, options));
+            Assert.Equal("2", JsonSerializer.Serialize(2));
+        }
+
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
         public void ResetWithNewOptions(JsonWriterOptions options)
@@ -1264,6 +1274,18 @@ namespace System.Text.Json.Tests
             writeToIBW.Flush();
 
             Assert.NotEqual(previousWritten, output.FormattedCount);
+        }
+
+        private sealed class DisposingInt32Converter : System.Text.Json.Serialization.JsonConverter<int>
+        {
+            public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                throw new NotSupportedException();
+
+            public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+            {
+                writer.Dispose();
+                throw new InvalidOperationException();
+            }
         }
 
         [Theory]
