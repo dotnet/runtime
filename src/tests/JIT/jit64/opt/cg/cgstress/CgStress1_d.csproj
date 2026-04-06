@@ -1,8 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'x86'">true</GCStressIncompatible>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>Full</DebugType>
     <Optimize>False</Optimize>
   </PropertyGroup>
