@@ -54,6 +54,8 @@ namespace ILCompiler
             new("--composite") { Description = SR.CompositeBuildMode };
         public Option<string> CompositeKeyFile { get; } =
             new("--compositekeyfile") { Description = SR.CompositeKeyFile };
+        public Option<string> ReadyToRunHeaderSymbolName { get; } =
+            new("--rtr-header-symbol-name") { Description = SR.ReadyToRunHeaderSymbolName };
         public Option<bool> CompileNoMethods { get; } =
             new("--compile-no-methods") { Description = SR.CompileNoMethodsOption };
         public Option<bool> OutNearInput { get; } =
@@ -179,6 +181,7 @@ namespace ILCompiler
             Options.Add(InputBubbleReferenceFilePaths);
             Options.Add(Composite);
             Options.Add(CompositeKeyFile);
+            Options.Add(ReadyToRunHeaderSymbolName);
             Options.Add(CompileNoMethods);
             Options.Add(OutNearInput);
             Options.Add(SingleFileCompilation);

@@ -54,7 +54,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public void Kill()
         {
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
@@ -434,14 +434,5 @@ namespace System.Diagnostics
 
         private static bool WaitForInputIdleCore(int _ /*milliseconds*/) => throw new InvalidOperationException(SR.InputIdleUnknownError);
 
-        /// <summary>Gets the friendly name of the process.</summary>
-        public string ProcessName
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.ProcessName;
-            }
-        }
     }
 }

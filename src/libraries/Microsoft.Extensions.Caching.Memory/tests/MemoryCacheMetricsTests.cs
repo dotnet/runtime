@@ -44,16 +44,16 @@ namespace Microsoft.Extensions.Caching.Memory
             meterListener.RecordObservableInstruments();
 
             Assert.Contains(measurements, m =>
-                m.name == "cache.requests" &&
-                m.tags.Any(t => t.Key == "cache.request.type" && (string?)t.Value == "hit") &&
-                m.tags.Any(t => t.Key == "cache.name" && (string?)t.Value == "test-cache"));
+                m.name == "dotnet.cache.requests" &&
+                m.tags.Any(t => t.Key == "dotnet.cache.request.type" && (string?)t.Value == "hit") &&
+                m.tags.Any(t => t.Key == "dotnet.cache.name" && (string?)t.Value == "test-cache"));
 
             Assert.Contains(measurements, m =>
-                m.name == "cache.requests" &&
-                m.tags.Any(t => t.Key == "cache.request.type" && (string?)t.Value == "miss") &&
-                m.tags.Any(t => t.Key == "cache.name" && (string?)t.Value == "test-cache"));
+                m.name == "dotnet.cache.requests" &&
+                m.tags.Any(t => t.Key == "dotnet.cache.request.type" && (string?)t.Value == "miss") &&
+                m.tags.Any(t => t.Key == "dotnet.cache.name" && (string?)t.Value == "test-cache"));
 
-            Assert.Contains(measurements, m => m.name == "cache.entries");
+            Assert.Contains(measurements, m => m.name == "dotnet.cache.entries");
         }
 
         [Fact]
@@ -102,9 +102,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
             meterListener.RecordObservableInstruments();
 
-            Assert.Contains(measurements, m => m.name == "cache.requests");
-            Assert.Contains(measurements, m => m.name == "cache.evictions");
-            Assert.Contains(measurements, m => m.name == "cache.entries");
+            Assert.Contains(measurements, m => m.name == "dotnet.cache.requests");
+            Assert.Contains(measurements, m => m.name == "dotnet.cache.evictions");
+            Assert.Contains(measurements, m => m.name == "dotnet.cache.entries");
         }
 
         [Fact]
@@ -155,7 +155,7 @@ namespace Microsoft.Extensions.Caching.Memory
             meterListener.InstrumentPublished = (instrument, listener) =>
             {
                 if (instrument.Meter.Name == "Microsoft.Extensions.Caching.Memory.MemoryCache" &&
-                    instrument.Name == "cache.evictions")
+                    instrument.Name == "dotnet.cache.evictions")
                 {
                     listener.EnableMeasurementEvents(instrument);
                 }
@@ -238,7 +238,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Single(meterFactory.Meters);
             Meter meter = meterFactory.Meters[0];
             Assert.Equal("Microsoft.Extensions.Caching.Memory.MemoryCache", meter.Name);
-            Assert.Contains(meter.Tags, t => t.Key == "cache.name" && (string?)t.Value == "my-cache");
+            Assert.Contains(meter.Tags, t => t.Key == "dotnet.cache.name" && (string?)t.Value == "my-cache");
         }
 
         [Fact]
@@ -251,7 +251,7 @@ namespace Microsoft.Extensions.Caching.Memory
             meterListener.InstrumentPublished = (instrument, listener) =>
             {
                 if (instrument.Meter.Name == "Microsoft.Extensions.Caching.Memory.MemoryCache" &&
-                    instrument.Name == "cache.evictions")
+                    instrument.Name == "dotnet.cache.evictions")
                 {
                     listener.EnableMeasurementEvents(instrument);
                 }

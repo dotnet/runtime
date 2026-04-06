@@ -2901,7 +2901,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     assert(isNativeOp || blkOp->GetLayout()->HasGCPtr());
 #endif // DEBUG
 
-    bool      nullCheckDest = ((blkOp->gtFlags & GTF_IND_NONFAULTING) == 0) && !dstOnStack;
+    bool      nullCheckDest = (blkOp->gtFlags & GTF_IND_NONFAULTING) == 0;
     bool      nullCheckSrc  = false;
     GenTree*  dest          = blkOp->Addr();
     GenTree*  src           = blkOp->Data();
@@ -2918,7 +2918,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     {
         nullCheckSrc = (src->gtFlags & GTF_IND_NONFAULTING) == 0;
         src          = src->gtGetOp1();
-        srcReg       = GetMultiUseOperandReg(src);
+        // We need to match lowering and only fetch a register for src when we're expected to.
+        if (!isNativeOp || nullCheckSrc)
+        {
+            srcReg = GetMultiUseOperandReg(src);
+        }
         assert(!src->isContained());
     }
     else if (src->OperIs(GT_CNS_INT, GT_INIT_VAL))
@@ -2948,6 +2952,10 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         destReg    = GetFramePointerReg();
         destOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
         assert(fpBased);
+    }
+    else if (isNativeOp && !nullCheckDest)
+    {
+        // We need to match lowering in this specific case by not fetching a register for dest.
     }
     else if (isCopyBlk || nullCheckDest)
     {
@@ -2979,6 +2987,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         if (src->isContained())
         {
             assert(isCopyBlk);
+            assert(srcReg != REG_NA);
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
             if (srcOffset != 0)
             {

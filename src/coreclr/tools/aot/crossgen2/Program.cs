@@ -411,10 +411,25 @@ namespace ILCompiler
                         throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
                     }
 
+                    string rtrHeaderSymbolName = Get(_command.ReadyToRunHeaderSymbolName);
+
                     ReadyToRunContainerFormat format = Get(_command.OutputFormat);
                     if (!composite && format != ReadyToRunContainerFormat.PE && format != ReadyToRunContainerFormat.Wasm)
                     {
                         throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
+                    }
+
+                    if (rtrHeaderSymbolName is not null)
+                    {
+                        if (!composite)
+                        {
+                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameRequiresComposite);
+                        }
+
+                        if (string.IsNullOrWhiteSpace(rtrHeaderSymbolName))
+                        {
+                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameEmpty);
+                        }
                     }
 
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
@@ -602,6 +617,11 @@ namespace ILCompiler
                         }
 
                         compositeImageSettings.PublicKey = compositeStrongNameKey.ToImmutableArray();
+                    }
+
+                    if (rtrHeaderSymbolName != null)
+                    {
+                        compositeImageSettings.ReadyToRunHeaderSymbolName = rtrHeaderSymbolName;
                     }
 
                     //

@@ -959,12 +959,37 @@ public unsafe partial interface ISOSDacInterface4
     int GetClrNotification([In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] arguments, int count, int* pNeeded);
 };
 
+public struct DacpTieredVersionData
+{
+    public enum OptimizationTier
+    {
+        Unknown = 0,
+        MinOptJitted = 1,
+        Optimized = 2,
+        QuickJitted = 3,
+        OptimizedTier1 = 4,
+        ReadyToRun = 5,
+        OptimizedTier1OSR = 6,
+        QuickJittedInstrumented = 7,
+        OptimizedTier1Instrumented = 8,
+    }
+
+    public ClrDataAddress nativeCodeAddr;
+    public OptimizationTier optimizationTier;
+    public ClrDataAddress nativeCodeVersionNodePtr;
+}
+
 [GeneratedComInterface]
 [Guid("127d6abe-6c86-4e48-8e7b-220781c58101")]
 public unsafe partial interface ISOSDacInterface5
 {
     [PreserveSig]
-    int GetTieredVersions(ClrDataAddress methodDesc, int rejitId, /*struct DacpTieredVersionData*/void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs);
+    int GetTieredVersions(
+        ClrDataAddress methodDesc,
+        int rejitId,
+        [In, Out, MarshalUsing(CountElementName = nameof(cNativeCodeAddrs))] DacpTieredVersionData[]? nativeCodeAddrs,
+        int cNativeCodeAddrs,
+        int* pcNativeCodeAddrs);
 };
 
 public struct DacpMethodTableCollectibleData
