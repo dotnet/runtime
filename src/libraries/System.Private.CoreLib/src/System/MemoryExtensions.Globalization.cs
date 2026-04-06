@@ -14,9 +14,16 @@ namespace System
         /// <summary>
         /// Indicates whether the specified span contains only white-space characters.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsWhiteSpace(this ReadOnlySpan<char> span) =>
-            !string.SearchValuesStorage.WhiteSpaceChars.ContainsAnyExcept(span);
+        public static bool IsWhiteSpace(this ReadOnlySpan<char> span)
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!char.IsWhiteSpace(span[i]))
+                    return false;
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Returns a value indicating whether the specified <paramref name="value"/> occurs within the <paramref name="span"/>.
@@ -35,7 +42,6 @@ namespace System
         /// </summary>
         /// <param name="span">The source span.</param>
         /// <returns><see langword="true"/> if the span contains any whitespace characters, <see langword="false"/> otherwise.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ContainsAnyWhiteSpace(this ReadOnlySpan<char> span) =>
             string.SearchValuesStorage.WhiteSpaceChars.ContainsAny(span);
 
@@ -158,7 +164,6 @@ namespace System
         /// characters</see> in the current <paramref name="span"/>, or -1 if not founded.
         /// </summary>
         /// <param name="span">The source span.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAnyWhiteSpace(this ReadOnlySpan<char> span) =>
             string.SearchValuesStorage.WhiteSpaceChars.IndexOfAny(span);
 
@@ -167,7 +172,6 @@ namespace System
         /// non-white-space characters</see> in the current <paramref name="span"/>, or -1 if not founded.
         /// </summary>
         /// <param name="span">The source span.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAnyExceptWhiteSpace(this ReadOnlySpan<char> span) =>
             string.SearchValuesStorage.WhiteSpaceChars.IndexOfAnyExcept(span);
 
@@ -211,7 +215,6 @@ namespace System
         /// characters</see> in the current <paramref name="span"/>, or -1 if not founded.
         /// </summary>
         /// <param name="span">The source span.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAnyWhiteSpace(this ReadOnlySpan<char> span) =>
             string.SearchValuesStorage.WhiteSpaceChars.LastIndexOfAny(span);
 
@@ -220,7 +223,6 @@ namespace System
         /// non-white-space characters</see> in the current <paramref name="span"/>, or -1 if not founded.
         /// </summary>
         /// <param name="span">The source span.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAnyExceptWhiteSpace(this ReadOnlySpan<char> span) =>
             string.SearchValuesStorage.WhiteSpaceChars.LastIndexOfAnyExcept(span);
 
