@@ -179,6 +179,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
           Inputs="ThisAssembly.cs.in"
           Outputs="$(IntermediateOutputPath)ThisAssembly.cs">
     <GenerateFileFromTemplate
+      PrecomputationMode="Dynamic"
       TemplateFile="ThisAssembly.cs.in"
       Properties="AssemblyVersion=$(AssemblyVersion);AssemblyFileVersion=$(FileVersion)"
       OutputPath="$(IntermediateOutputPath)ThisAssembly.cs" />

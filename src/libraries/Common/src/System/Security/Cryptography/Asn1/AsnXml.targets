@@ -29,28 +29,36 @@
     </Task>
   </UsingTask>
 
+
+  <PropertyGroup>
+    <_AsnIntermediatePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'asnxml'))</_AsnIntermediatePath>
+  </PropertyGroup>
+
   <Target Name="CompileAsn" BeforeTargets="CoreCompile"
     Condition=" '@(AsnXml)' != '' "
     Inputs="@(AsnXml);$(MSBuildThisFileDirectory)asn.xslt"
-    Outputs="%(Identity).cs">
-
-    <PropertyGroup>
-      <_AsnIntermediatePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'asnxml'))</_AsnIntermediatePath>
-    </PropertyGroup>
+    Outputs="$(_AsnIntermediatePath)%(filename).cs">
 
     <MakeDir Directories="$(_AsnIntermediatePath)" />
 
     <XslTransformation
+      PrecomputationMode="Dynamic"
       XslInputPath="$(MSBuildThisFileDirectory)asn.xslt"
       XmlInputPaths="@(AsnXml)"
       OutputPaths="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')" />
 
     <CompareFilesIgnoreLineEndings
+      PrecomputationMode="Dynamic"
       GeneratedFile="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')"
       ExistingFile="@(AsnXml -> '%(Identity).cs')">
       <Output TaskParameter="ContentsDiffer" ItemName="_FilesDiffer" />
     </CompareFilesIgnoreLineEndings>
 
+    <Warning DeferredCondition="'@(_FilesDiffer)' == 'true'" PrecomputationMode="Dynamic"
+      Text="AsnXml regenerated files, be sure to check them in: @(AsnXml -> '%(Identity).cs')" />
+  </Target>
+
+  <Target Name="OverwriteAsnXmlGeneratedFiles" PrecomputationMode="Skip" AfterTargets="CompileAsn">
     <Copy
       Condition="'@(_FilesDiffer)' == 'true'"
       SourceFiles="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')"
@@ -61,7 +69,5 @@
     Otherwise, MSBuild will think the output from the target is still out of date, and it will continue to re-run the
     target for all inputs for incremental builds. -->
     <Touch Condition="'@(_FilesDiffer)' != 'true'" Files="@(AsnXml -> '%(Identity).cs')" />
-
-    <Warning Condition="'@(_FilesDiffer)' == 'true'" Text="AsnXml regenerated files, be sure to check them in: @(AsnXml -> '%(Identity).cs')" />
   </Target>
 </Project>
