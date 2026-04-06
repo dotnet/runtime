@@ -107,6 +107,9 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 8,
     STUB_CODE_BLOCK_VSD_VTABLE_STUB = 9,
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    STUB_CODE_BLOCK_CALLCOUNTING = 0xA,
+#endif
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholders returned by code:GetStubCodeBlockKind
@@ -115,9 +118,6 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_STUBLINK = 0x12,
     // Placeholder used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK = 0x13,
-#ifdef FEATURE_TIERED_COMPILATION
-    STUB_CODE_BLOCK_CALLCOUNTING = 0x14,
-#endif
 };
 
 inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
