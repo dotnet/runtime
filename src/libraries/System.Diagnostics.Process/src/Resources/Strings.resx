@@ -219,9 +219,6 @@
   <data name="InheritedHandlesRequiresCreateProcess" xml:space="preserve">
     <value>The InheritedHandles property cannot be used with UseShellExecute or UserName.</value>
   </data>
-  <data name="InheritedHandlesMayNotContainNull" xml:space="preserve">
-    <value>InheritedHandles may not contain null.</value>
-  </data>
   <data name="CantSetRedirectForSafeProcessHandleStart" xml:space="preserve">
     <value>The RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties cannot be used by SafeProcessHandle.Start. Use the StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties.</value>
   </data>

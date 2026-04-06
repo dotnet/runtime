@@ -410,7 +410,7 @@ namespace Microsoft.Win32.SafeHandles
             // The user can't specify invalid handle via ProcessStartInfo.Standard*Handle APIs.
             // However, Console.OpenStandard*Handle() can return INVALID_HANDLE_VALUE for a process
             // that was started with INVALID_HANDLE_VALUE as given standard handle.
-            if (handle <= 0)
+            if (handle == -1 || handle == 0)
             {
                 return;
             }
@@ -494,8 +494,6 @@ namespace Microsoft.Win32.SafeHandles
 
                 // Remove the inheritance flag so they are not unintentionally inherited by other processes started after this point.
                 // Since we used DangerousAddRef before, the handle cannot be closed at this point, so it's safe to call SetHandleInformation.
-                // The only scenario where it could fail is if user has created a copy of the handle and closed the original handle,
-                // in such case we still don't want to throw as the process was successfully started.
                 Interop.Kernel32.SetHandleInformation(safeHandle, Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT, 0);
                 safeHandle.DangerousRelease();
             }
