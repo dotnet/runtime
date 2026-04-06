@@ -672,14 +672,14 @@ BOOL CrstBase::IsSafeToTake()
         if (!fSafe)
         {
             LOG((LF_SYNC, INFO3, "Crst Level violation: Can't take level %lu lock %s because you already holding level %lu lock %s\n",
-                (ULONG)m_crstlevel, m_tag, (ULONG)(pcrst->m_crstlevel), pcrst->m_tag));
+                (unsigned long)m_crstlevel, m_tag, (unsigned long)(pcrst->m_crstlevel), pcrst->m_tag));
             // So that we can debug here.
             if (!g_fEEShutDown)
             {
                 CONSISTENCY_CHECK_MSGF(false, ("Crst Level violation: Can't take level %lu lock %s because you already holding level %lu lock %s\n",
-                                               (ULONG)m_crstlevel,
+                                               (unsigned long)m_crstlevel,
                                                m_tag,
-                                               (ULONG)(pcrst->m_crstlevel),
+                                               (unsigned long)(pcrst->m_crstlevel),
                                                pcrst->m_tag));
             }
             break;
