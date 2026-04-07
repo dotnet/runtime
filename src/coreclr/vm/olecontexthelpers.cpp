@@ -88,7 +88,6 @@ LPVOID GetCurrentCtxCookie()
     if (CoGetContextToken(&ctxptr) != S_OK)
         ctxptr = 0;
 
-    _ASSERTE(CheckPointer((LPVOID)ctxptr, NULL_OK));
     return (LPVOID)ctxptr;
 }
 

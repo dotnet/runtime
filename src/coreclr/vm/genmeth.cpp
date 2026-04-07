@@ -607,12 +607,6 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
         // canonical and exhibit some kind of code sharing.
         PRECONDITION(!getWrappedCode || pExactOrRepMT->IsCanonicalMethodTable());
         PRECONDITION(!getWrappedCode || pExactOrRepMT->IsSharedByGenericInstantiations() || ClassLoader::IsSharableInstantiation(methodInst));
-
-        // Unboxing stubs are dealt with separately in FindOrCreateAssociatedMethodDesc.  This should
-        // probably be streamlined...
-
-        // All wrapped method descriptors (except BoxedEntryPointStubs, which don't use this path) take an inst arg.
-        // The only ones that don't should have been found in the type's meth table.
     }
     CONTRACTL_END
 
@@ -630,7 +624,18 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
                                                   asyncThunk);
 
     if (resultMD != NULL)
-       return((InstantiatedMethodDesc*) resultMD);
+    {
+        InstantiatedMethodDesc *pInstMD = (InstantiatedMethodDesc*)resultMD;
+
+        // Unboxing stubs are dealt with separately in FindOrCreateAssociatedMethodDesc.  This should
+        // probably be streamlined...
+        _ASSERTE(!pInstMD->IsUnboxingStub());
+
+        // All wrapped method descriptors (except BoxedEntryPointStubs, which don't use this path) take an inst arg.
+        // The only ones that don't should have been found in the type's meth table.
+        _ASSERTE(!getWrappedCode || pInstMD->RequiresInstArg());
+        return pInstMD;
+    }
 
     return(NULL);
 }
@@ -788,9 +793,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         // if we took the fast path.
         _ASSERTE(pDefMD->IsArray() || pDefMD->GetExactDeclaringType(pExactMT) != NULL);
 
-        _ASSERTE(((pDefMD == NULL) && !allowCreate) || CheckPointer(pDefMD));
-        _ASSERTE(((pDefMD == NULL) && !allowCreate) || forceBoxedEntryPoint || !pDefMD->IsUnboxingStub());
-        _ASSERTE(((pDefMD == NULL) && !allowCreate) || allowInstParam || !pDefMD->RequiresInstArg());
         return pDefMD;
     }
 
@@ -1250,6 +1252,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         pInstMD->CheckRestore(level);
 
+        _ASSERTE(allowInstParam || !pInstMD->RequiresInstArg());
+
         return(pInstMD);
     }
 }
@@ -1397,13 +1401,18 @@ MethodDesc * MethodDesc::FindOrCreateTypicalSharedInstantiation(BOOL allowCreate
             genericMethodArgs[i] = TypeHandle(g_pCanonMethodTableClass);
     }
 
-    return(MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
-                                                        pMT,
-                                                        FALSE, /* don't get unboxing entry point */
-                                                        Instantiation(genericMethodArgs, nGenericMethodArgs),
-                                                        TRUE,
-                                                        FALSE,
-                                                        allowCreate));
+    MethodDesc* result = MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pMD,
+        pMT,
+        FALSE, /* don't get unboxing entry point */
+        Instantiation(genericMethodArgs, nGenericMethodArgs),
+        TRUE,
+        FALSE,
+        allowCreate);
+
+    _ASSERTE(result == NULL || result->IsSharedByGenericInstantiations());
+    return result;
+
 }
 
 //@GENERICSVER: Set up the typical instance (i.e., non-instantiated)

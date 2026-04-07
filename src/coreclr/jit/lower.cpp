@@ -9753,7 +9753,7 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount)
                 // matching reg and field counts"; for example, consider
                 //
                 // * STORE_LCL_VAR<struct{Vector3, int}>(CALL)
-                // * return(LCL_VAR<struct{Vector3, int}>)
+                // * RETURN(LCL_VAR<struct{Vector3, int}>)
                 //
                 // These return in two GPR registers, while the fields of the
                 // local are stored in SIMD and GPR register, so registerCount

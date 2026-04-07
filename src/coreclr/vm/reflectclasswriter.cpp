@@ -59,6 +59,10 @@ HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR s
     if (FAILED(hr))
         return(hr);
 
+    _ASSERTE(m_emitter != nullptr);
+    _ASSERTE(m_importer != nullptr);
+    _ASSERTE(m_pEmitHelper != nullptr);
+    _ASSERTE(m_internalimport != nullptr);
     return(S_OK);
 }
 

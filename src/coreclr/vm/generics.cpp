@@ -487,6 +487,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // We never have non-virtual slots in this method table (set SetNumVtableSlots and SetNumVirtuals above)
     _ASSERTE(!pMT->HasNonVirtualSlots());
 
+    _ASSERTE(TypeHandle(pMT).CheckMatchesKey(pTypeKey));
+
     return(TypeHandle(pMT));
 } // ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation
 

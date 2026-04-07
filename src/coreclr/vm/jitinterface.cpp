@@ -405,7 +405,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
     if (clsRet)
         *clsRet = CORINFO_CLASS_HANDLE(typeHndUpdated.AsPtr());
 
-    return res;
+    RETURN res;
 }
 
 enum ConvToJitSigFlags : int
@@ -4963,6 +4963,7 @@ void CEEInfo::getCallInfo(
 
     JIT_TO_EE_TRANSITION();
 
+    _ASSERTE(CheckPointer(pResult));
 
     INDEBUG(memset(pResult, 0xCC, sizeof(*pResult)));
 
@@ -8416,6 +8417,7 @@ static void getEHinfoHelper(
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(CheckPointer(pILHeader->EH));
     _ASSERTE(EHnumber < pILHeader->EH->EHCount());
 
     COR_ILMETHOD_SECT_EH_CLAUSE_FAT ehClause;

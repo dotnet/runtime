@@ -2085,6 +2085,8 @@ TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - 
        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
 #endif
+
+    _ASSSERTE(CheckPointer(RETVAL, ((fLoadTypes == ClassLoader::LoadTypes) ? NULL_NOT_OK : NULL_OK)));
     return(res);
 }
 

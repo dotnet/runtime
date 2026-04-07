@@ -376,7 +376,10 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel,
 
     PEAssemblyHolder pFile(pDomain->BindAssemblySpec(this, fThrowOnFileNotFound));
     if (pFile == NULL)
+    {
+        _ASSERTE(!fThrowOnFileNotFound);
         return NULL;
+    }
 
     return pDomain->LoadAssembly(this, pFile, targetLevel);
 }

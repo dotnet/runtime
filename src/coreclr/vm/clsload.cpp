@@ -336,10 +336,24 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
         pNameHandle->SetTokenNotToLoad(tdAllTypes);
 
     ClassLoader* classLoader = pAssembly->GetLoader();
+
+    TypeHandle result;
     if (fNotFound == ClassLoader::ThrowIfNotFound)
-        return classLoader->LoadTypeHandleThrowIfFailed(pNameHandle, level);
+        result = classLoader->LoadTypeHandleThrowIfFailed(pNameHandle, level);
     else
-        return classLoader->LoadTypeHandleThrowing(pNameHandle, level);
+        result = classLoader->LoadTypeHandleThrowing(pNameHandle, level);
+
+    if (fNotFound == ClassLoader::ThrowIfNotFound && fLoadTypes == LoadTypes)
+    {
+        _ASSERTE(!result.IsNull());
+    }
+
+    if (!result.IsNull())
+    {
+        _ASSERTE(result.CheckLoadLevel(level));
+    }
+
+    return result;
 }
 
 #ifndef DACCESS_COMPILE
@@ -398,6 +412,15 @@ TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoad
             DacNotImpl();
 #endif
         }
+    }
+
+    if (typeHnd.IsNull())
+    {
+        _ASSERTE(!pName->OKToLoad());
+    }
+    else
+    {
+        _ASSERTE(typeHnd.CheckLoadLevel(level));
     }
 
     return(typeHnd);
@@ -787,7 +810,9 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(const TypeKey *pKey,
     CONSISTENCY_CHECK(!FORBIDGC_LOADER_USE_ENABLED());
 
     Module *pLoaderModule = ComputeLoaderModule(pKey);
-    return(pLoaderModule->GetClassLoader()->LoadTypeHandleForTypeKey(pKey, typeHnd, level, pInstContext));
+    typeHnd = (pLoaderModule->GetClassLoader()->LoadTypeHandleForTypeKey(pKey, typeHnd, level, pInstContext));
+    _ASSERTE(typeHnd.IsNull() || typeHnd.GetLoadLevel() >= level);
+    return typeHnd;
 #else
     DacNotImpl();
     return(typeHnd);

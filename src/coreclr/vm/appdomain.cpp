@@ -2515,6 +2515,8 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
         GetAppDomain()->AddAssemblyToCache(pIdentity, result);
     }
 
+    _ASSERTE(result->GetLoadLevel() >= GetCurrentFileLoadLevel()
+        || result->GetLoadLevel() >= targetLevel);
     _ASSERTE(result->CheckNoError(targetLevel));
     return result;
 } // AppDomain::LoadAssembly
@@ -2633,6 +2635,8 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     // specify the minimum load level acceptable and throw if not reached.)
 
     pAssembly->RequireLoadLevel((FileLoadLevel)(immediateTargetLevel-1));
+    _ASSERTE(result->GetLoadLevel() >= GetCurrentFileLoadLevel()
+        || result->GetLoadLevel() >= targetLevel);
     _ASSERTE(pAssembly->CheckNoError(targetLevel));
     return pAssembly;
 }
@@ -2865,11 +2869,10 @@ LPCWSTR AppDomain::GetFriendlyName()
     CONTRACTL_END;
 
     if (m_friendlyName == NULL)
-        {
-            return DEFAULT_DOMAIN_FRIENDLY_NAME;
-        }
+    {
+        return DEFAULT_DOMAIN_FRIENDLY_NAME;
+    }
 
-    _ASSERTE(CheckPointer((LPCWSTR)m_friendlyName, NULL_OK));
     return (LPCWSTR)m_friendlyName;
 }
 

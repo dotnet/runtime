@@ -329,7 +329,6 @@ class EEMessageException : public EEException
         CONTRACTL_END;
 
         EEMessageException boilerplate(E_FAIL);
-        _ASSERTE(CheckPointer((PVOID&)boilerplate));
         return (PVOID&)boilerplate;
     }
 

@@ -620,6 +620,8 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
     ModuleHolder pModuleSafe(pModule);
     pModuleSafe->DoInit(pamTracker, NULL);
 
+    _ASSERTE(pModuleSafe->GetAssembly() == pAssembly);
+    _ASSERTE(pModuleSafe->GetPEAssembly() == pPEAssembly);
     return pModuleSafe.Extract();
 }
 
@@ -1680,7 +1682,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
     EX_SWALLOW_NONTERMINAL
     // We swallow any exception and say that we simply couldn't get a reader by returning NULL.
     // The only type of error that should be possible here is OOM.
-    _ASSERTE(CheckPointer((ret), NULL_OK));
     return (ret);
 }
 

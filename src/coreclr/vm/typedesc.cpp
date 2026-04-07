@@ -737,6 +737,7 @@ TypeHandle* TypeVarTypeDesc::GetConstraints(DWORD *pNumConstraints, ClassLoadLev
     }
     CONTRACTL_END;
 
+    _ASSERTE(CheckPointer(pNumConstraints));
     _ASSERTE(level == CLASS_DEPENDENCIES_LOADED || level == CLASS_LOADED);
 
     DWORD numConstraints = m_numConstraintsWithFlags;

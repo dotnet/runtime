@@ -43,6 +43,8 @@ extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCU
 
     BEGIN_QCALL;
 
+    _ASSERTE(CheckPointer(szLhs));
+    _ASSERTE(CheckPointer(szRhs));
 
     // At this point, both the left and right strings are guaranteed to have the
     // same length.
