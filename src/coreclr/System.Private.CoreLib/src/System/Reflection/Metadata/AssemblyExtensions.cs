@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -9,6 +10,7 @@ namespace System.Reflection.Metadata
     public static partial class AssemblyExtensions
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalTryGetRawMetadata")]
+        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool InternalTryGetRawMetadata(QCallAssembly assembly, ref byte* blob, ref int length);
 
@@ -28,6 +30,7 @@ namespace System.Reflection.Metadata
         /// <para>The caller is responsible for keeping the assembly object alive while accessing the metadata blob.</para>
         /// </remarks>
         [CLSCompliant(false)] // out byte* blob
+        [RequiresUnsafe]
         public static unsafe bool TryGetRawMetadata(this Assembly assembly, out byte* blob, out int length)
         {
             ArgumentNullException.ThrowIfNull(assembly);

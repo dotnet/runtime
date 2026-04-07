@@ -506,6 +506,21 @@ namespace System.Net.Security
 
             }
 
+            // Per TLS spec, the first message from the client must be ClientHello.
+            // If we are the server and haven't started the security context yet
+            // (_securityContext == null), reject any frame that is not a ClientHello.
+            if (_sslAuthenticationOptions!.IsServer && _securityContext == null)
+            {
+#pragma warning disable CS0618
+                bool isClientHello = _lastFrame.Header.Type == TlsContentType.Handshake &&
+                    _buffer.EncryptedReadOnlySpan[_lastFrame.Header.Version == SslProtocols.Ssl2 ? HandshakeTypeOffsetSsl2 : HandshakeTypeOffsetTls] == (byte)TlsHandshakeType.ClientHello;
+#pragma warning restore CS0618
+                if (!isClientHello)
+                {
+                    throw new AuthenticationException(SR.net_ssl_io_frame);
+                }
+            }
+
             return frameSize;
         }
 

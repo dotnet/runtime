@@ -18,13 +18,13 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public class X509Certificate2 : X509Certificate
     {
-        private volatile Oid? _lazySignatureAlgorithm;
-        private volatile int _lazyVersion;
-        private volatile X500DistinguishedName? _lazySubjectName;
-        private volatile X500DistinguishedName? _lazyIssuerName;
-        private volatile PublicKey? _lazyPublicKey;
-        private volatile AsymmetricAlgorithm? _lazyPrivateKey;
-        private volatile X509ExtensionCollection? _lazyExtensions;
+        private Oid? _lazySignatureAlgorithm;
+        private int _lazyVersion;
+        private X500DistinguishedName? _lazySubjectName;
+        private X500DistinguishedName? _lazyIssuerName;
+        private PublicKey? _lazyPublicKey;
+        private AsymmetricAlgorithm? _lazyPrivateKey;
+        private X509ExtensionCollection? _lazyExtensions;
         private static readonly string[] s_RsaPublicKeyPrivateKeyLabels = [PemLabels.RsaPrivateKey, PemLabels.Pkcs8PrivateKey];
         private static readonly string[] s_DsaPublicKeyPrivateKeyLabels = [PemLabels.Pkcs8PrivateKey];
 
@@ -791,7 +791,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The public key was invalid, or otherwise could not be imported.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLKem? GetMLKemPublicKey()
         {
             if (MLKemAlgorithm.FromOid(GetKeyAlgorithm()) is null)
@@ -812,7 +811,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLKem? GetMLKemPrivateKey()
         {
             MLKemAlgorithm? algorithm = MLKemAlgorithm.FromOid(GetKeyAlgorithm());
@@ -845,7 +843,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="InvalidOperationException">
         ///   The certificate already has an associated private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public X509Certificate2 CopyWithPrivateKey(MLKem privateKey)
         {
             ArgumentNullException.ThrowIfNull(privateKey);
@@ -894,7 +891,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The public key was invalid, or otherwise could not be imported.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLDsa? GetMLDsaPublicKey()
         {
             MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(GetKeyAlgorithm());
@@ -917,7 +913,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLDsa? GetMLDsaPrivateKey()
         {
             MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(GetKeyAlgorithm());
@@ -950,7 +945,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="InvalidOperationException">
         ///   The certificate already has an associated private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public X509Certificate2 CopyWithPrivateKey(MLDsa privateKey)
         {
             ArgumentNullException.ThrowIfNull(privateKey);
@@ -1835,9 +1829,9 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (rdn.HasMultipleElements)
                     {
-                        AsnValueReader reader = new AsnValueReader(rdn.RawData.Span, AsnEncodingRules.DER);
+                        ValueAsnReader reader = new ValueAsnReader(rdn.RawData.Span, AsnEncodingRules.DER);
                         // Be lax with the sort order because Windows is
-                        AsnValueReader set = reader.ReadSetOf(skipSortOrderValidation: true);
+                        ValueAsnReader set = reader.ReadSetOf(skipSortOrderValidation: true);
 
                         while (set.HasData)
                         {
@@ -1845,7 +1839,7 @@ namespace System.Security.Cryptography.X509Certificates
                             // is malformed here, because X500RelativeDistinguishedName already ensures it.
                             // So we don't bother checking that there's a value after the OID and then nothing
                             // after that.
-                            AsnValueReader attributeTypeAndValue = set.ReadSequence();
+                            ValueAsnReader attributeTypeAndValue = set.ReadSequence();
                             Oid? type = Oids.GetSharedOrNullOid(ref attributeTypeAndValue);
 
                             if (Oids.CommonNameOid.ValueEquals(type))
@@ -2029,7 +2023,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     base64ClearSize = base64Written;
                     Debug.Assert(!decryptedPkcs8.HasValue);
-                    decryptedPkcs8 = KeyFormatHelper.DecryptPkcs8(password, base64Buffer.AsMemory(0, base64Written), out int bytesRead);
+                    decryptedPkcs8 = KeyFormatHelper.DecryptPkcs8(password, base64Buffer.AsSpan(0, base64Written), out int bytesRead);
 
                     if (bytesRead != base64Written)
                     {

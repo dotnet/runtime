@@ -455,7 +455,7 @@ CrashInfo::EnumerateManagedModules()
             }
 
             DacpGetModuleData moduleData;
-            if (SUCCEEDED(hr = moduleData.Request(pClrDataModule.GetPtr())))
+            if (SUCCEEDED(hr = moduleData.Request(pClrDataModule)))
             {
                 uint64_t loadedPEAddress = CONVERT_FROM_SIGN_EXTENDED(moduleData.LoadedPEAddress);
 
@@ -464,10 +464,10 @@ CrashInfo::EnumerateManagedModules()
 
                 if (!moduleData.IsDynamic && loadedPEAddress != 0)
                 {
-                    ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
+                    WStringHolder wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
                     if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
                     {
-                        std::string moduleName = ConvertString(wszUnicodeName.GetPtr());
+                        std::string moduleName = ConvertString(wszUnicodeName);
 
                         // Change the module mapping name
                         AddOrReplaceModuleMapping(loadedPEAddress, moduleData.LoadedPESize, moduleName);
@@ -1009,7 +1009,7 @@ GetDirectory(const std::string& fileName)
 std::string
 FormatString(const char* format, ...)
 {
-    ArrayHolder<char> buffer = new char[MAX_LONGPATH + 1];
+    AStringHolder buffer = new char[MAX_LONGPATH + 1];
     va_list args;
     va_start(args, format);
     int result = vsnprintf(buffer, MAX_LONGPATH, format, args);
@@ -1031,7 +1031,7 @@ ConvertString(const WCHAR* str)
     if (len == 0)
         return { };
 
-    ArrayHolder<char> buffer = new char[len + 1];
+    AStringHolder buffer = new char[len + 1];
     minipal_convert_utf16_to_utf8((CHAR16_T*)str, cch, buffer, len + 1, 0);
     return std::string { buffer };
 }

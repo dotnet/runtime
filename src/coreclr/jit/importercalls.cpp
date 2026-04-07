@@ -3624,9 +3624,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen);
                 op1                   = arrLen;
 
-                // Getting the length of a null string should throw
-                op1->gtFlags |= GTF_EXCEPT;
-
                 retNode = op1;
                 break;
             }

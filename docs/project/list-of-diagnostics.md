@@ -118,6 +118,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0061`__ | The Queryable MinBy and MaxBy taking an IComparer\<TSource\> are obsolete. Use the new ones that take an IComparer\<TKey\>. |
 |  __`SYSLIB0062`__ | XSLT Script blocks are not supported. |
 |  __`SYSLIB0063`__ | This constructor has been deprecated and argument bool isConnected does not have any effect. Use NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle) instead. |
+|  __`SYSLIB0064`__ | RSACryptoServiceProvider.Encrypt and RSACryptoServiceProvider.Decrypt methods that take a Boolean are obsolete. Use the overload that accepts RSAEncryptionPadding instead. |
 
 ## Analyzer Warnings
 
@@ -270,7 +271,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1223`__ | Attributes deriving from JsonConverterAttribute are not supported by the source generator. |
 |  __`SYSLIB1224`__ | Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext. |
 |  __`SYSLIB1225`__ | Type includes ref like property, field or constructor parameter. |
-|  __`SYSLIB1226`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1226`__ | 'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations. |
 |  __`SYSLIB1227`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
 |  __`SYSLIB1228`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
 |  __`SYSLIB1229`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |

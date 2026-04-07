@@ -1806,9 +1806,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
         // Fire Unload Dynamic Method Event here
         ETW::MethodLog::DynamicMethodDestroyed(pMethod);
 
+#ifdef PROFILING_SUPPORTED
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackDynamicFunctionUnloads());
         (&g_profControlBlock)->DynamicMethodUnloaded((FunctionID)pMethod);
         END_PROFILER_CALLBACK();
+#endif // PROFILING_SUPPORTED
     }
 
     if (!pDynamicMethodDesc->TryDestroy())

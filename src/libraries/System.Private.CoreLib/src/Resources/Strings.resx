@@ -296,7 +296,7 @@
     <value>Decimal constructor requires an array or span of four valid decimal bytes.</value>
   </data>
   <data name="Arg_DirectoryNotFoundException" xml:space="preserve">
-    <value>Attempted to access a path that is not on the disk.</value>
+    <value>Unable to find the specified directory.</value>
   </data>
   <data name="Arg_DivideByZero" xml:space="preserve">
     <value>Attempted to divide by zero.</value>
@@ -403,8 +403,11 @@
   <data name="Arg_GuidArrayCtor" xml:space="preserve">
     <value>Byte array for Guid must be exactly {0} bytes long.</value>
   </data>
-  <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
-    <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types.</value>
+  <data name="Arg_BinaryStyleNotSupported" xml:space="preserve">
+    <value>The number style AllowBinarySpecifier is not supported on floating point data types.</value>
+  </data>
+  <data name="Arg_InvalidHexFloatStyle" xml:space="preserve">
+    <value>With the AllowHexSpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be a subset of HexFloat (AllowLeadingWhite, AllowTrailingWhite, AllowLeadingSign, AllowDecimalPoint, and AllowExponent). AllowExponent is required when AllowHexSpecifier is specified.</value>
   </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
@@ -2836,6 +2839,12 @@
   </data>
   <data name="IO_FileLoad_FileName" xml:space="preserve">
     <value>Could not load the file '{0}'.</value>
+  </data>
+  <data name="IO_DirectoryName_Name" xml:space="preserve">
+    <value>Directory path: '{0}'</value>
+  </data>
+  <data name="IO_DirectoryNotFound_Path" xml:space="preserve">
+    <value>Could not find directory '{0}'.</value>
   </data>
   <data name="IO_FileName_Name" xml:space="preserve">
     <value>File name: '{0}'</value>

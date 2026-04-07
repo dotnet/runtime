@@ -37,6 +37,8 @@
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.netstandard.cs"
              Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.netstandard.cs" />
 
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs"
+             Link="Common\src\CoreLib\System\Collections\Generic\ReferenceEqualityComparer.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />

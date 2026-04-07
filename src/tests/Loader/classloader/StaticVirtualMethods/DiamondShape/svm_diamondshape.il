@@ -1533,11 +1533,6 @@
         type([TestLibrary]TestLibrary.Utilities)
         string[1] ('IsNativeAot')
     }
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
-        string('https://github.com/dotnet/runtime/issues/124259')
-        type([TestLibrary]TestLibrary.PlatformDetection)
-        string[1] ('IsWasm')
-    }
     .entrypoint
     // Code size       23 (0x17)
     .maxstack  1
