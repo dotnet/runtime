@@ -150,9 +150,10 @@ extern "C" void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR Pr
     PORTABILITY_ASSERT("JIT_ProfilerEnterLeaveTailcallStub is not implemented on wasm");
 }
 
-extern "C" void STDCALL DelayLoad_MethodCall()
+extern "C" PCODE STDCALL DelayLoad_MethodCall(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup)
 {
-    PORTABILITY_ASSERT("DelayLoad_MethodCall is not implemented on wasm");
+    Module** ppModule = (Module**)(moduleBase + rvaOfModuleFixup);
+    return ExternalMethodFixupWorker(pTransitionBlock, (TADDR)(moduleBase + pImportThunkEntry->RelocOffset), -1, *ppModule);
 }
 
 extern "C" void STDCALL DelayLoad_Helper()

@@ -237,7 +237,7 @@ void FlushCacheForDynamicMappedStub(void* code, SIZE_T size)
 BOOL DoesSlotCallPrestub(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(!"DoesSlotCallPrestub is not supported with Portable EntryPoints");
+    /* On WASM slots never directly call the prestub*/
     return FALSE;
 }
 
