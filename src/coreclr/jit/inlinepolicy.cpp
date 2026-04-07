@@ -2744,7 +2744,7 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
 void DiscretionaryPolicy::DumpData(FILE* file) const
 {
     fprintf(file, "%u", m_CodeSize);
-    fprintf(file, ",%u", m_CallsiteFrequency);
+    fprintf(file, ",%u", (unsigned)m_CallsiteFrequency);
     fprintf(file, ",%u", m_InstructionCount);
     fprintf(file, ",%u", m_LoadStoreCount);
     fprintf(file, ",%u", m_BlockCount);
@@ -3193,7 +3193,7 @@ void ProfilePolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     JITLOG_THIS(m_RootCompiler,
                 (LL_INFO100000, "Inline %s profitable: benefit=%g (perCall=%g, local=%g, global=%g, size=%g)\n",
                  shouldInline ? "is" : "is not", benefit, perCallBenefit, localBenefit, globalImportance,
-                 (double)m_PerCallInstructionEstimate / SIZE_SCALE, (double)m_ModelCodeSizeEstimate / SIZE_SCALE));
+                 (double)m_PerCallInstructionEstimate / SIZE_SCALE));
 
     if (!shouldInline)
     {

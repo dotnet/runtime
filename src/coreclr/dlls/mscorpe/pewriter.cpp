@@ -386,8 +386,8 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
 
 #ifdef LOGGING
         LOG((LF_ZAP, LL_INFO1000000,
-             "to %-7s+%04x, old =" FMT_ADDR "new =" FMT_ADDR "%s\n",
-             cur->section->m_name, targetOffset,
+             "to %-7s+%04lx, old =" FMT_ADDR "new =" FMT_ADDR "%s\n",
+             cur->section->m_name, (unsigned long)targetOffset,
              DBG_ADDR(oldStarPos), DBG_ADDR(newStarPos),
              baseReloc ? "(BASE RELOC)" : ""));
 #endif

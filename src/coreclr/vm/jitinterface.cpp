@@ -10725,7 +10725,7 @@ void CEEInfo::reportFatalError(CorJitResult result)
     JIT_TO_EE_TRANSITION_LEAF();
 
     STRESS_LOG2(LF_JIT,LL_ERROR, "Jit reported error 0x%x while compiling 0x%p\n",
-                (int)result, (INT_PTR)getMethodBeingCompiled());
+                (int)result, (void*)(INT_PTR)getMethodBeingCompiled());
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -11997,8 +11997,8 @@ void CEEJitInfo::recordRelocation(void *       location,
             }
         }
 
-        LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
-             DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, delta));
+        LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%lld,  delta is 0x%04x\n",
+               DBG_ADDR(fixupLocation), DBG_ADDR(target), (long long)addlDelta, (unsigned int)delta));
 
         // Write the 32-bits pc-relative delta into location
         *fixupLocationRW = (INT32) delta;
@@ -12950,13 +12950,13 @@ void CEECodeGenInfo::setEHinfoWorker(
     pEHClause->Flags          = (CorExceptionFlag)clause->Flags;
 
     LOG((LF_EH, LL_INFO1000000, "Setting EH clause #%d for %s::%s\n", EHnumber, m_pMethodBeingCompiled->m_pszDebugClassName, m_pMethodBeingCompiled->m_pszDebugMethodName));
-    LOG((LF_EH, LL_INFO1000000, "    Flags         : 0x%08lx  ->  0x%08lx\n",            clause->Flags,         pEHClause->Flags));
-    LOG((LF_EH, LL_INFO1000000, "    TryOffset     : 0x%08lx  ->  0x%08lx (startpc)\n",  clause->TryOffset,     pEHClause->TryStartPC));
-    LOG((LF_EH, LL_INFO1000000, "    TryLength     : 0x%08lx  ->  0x%08lx (endpc)\n",    clause->TryLength,     pEHClause->TryEndPC));
-    LOG((LF_EH, LL_INFO1000000, "    HandlerOffset : 0x%08lx  ->  0x%08lx\n",            clause->HandlerOffset, pEHClause->HandlerStartPC));
-    LOG((LF_EH, LL_INFO1000000, "    HandlerLength : 0x%08lx  ->  0x%08lx\n",            clause->HandlerLength, pEHClause->HandlerEndPC));
-    LOG((LF_EH, LL_INFO1000000, "    ClassToken    : 0x%08lx  ->  0x%08lx\n",            clause->ClassToken,    pEHClause->ClassToken));
-    LOG((LF_EH, LL_INFO1000000, "    FilterOffset  : 0x%08lx  ->  0x%08lx\n",            clause->FilterOffset,  pEHClause->FilterOffset));
+    LOG((LF_EH, LL_INFO1000000, "    Flags         : 0x%08x  ->  0x%08x\n",            clause->Flags,         pEHClause->Flags));
+    LOG((LF_EH, LL_INFO1000000, "    TryOffset     : 0x%08x  ->  0x%08x (startpc)\n",  clause->TryOffset,     pEHClause->TryStartPC));
+    LOG((LF_EH, LL_INFO1000000, "    TryLength     : 0x%08x  ->  0x%08x (endpc)\n",    clause->TryLength,     pEHClause->TryEndPC));
+    LOG((LF_EH, LL_INFO1000000, "    HandlerOffset : 0x%08x  ->  0x%08x\n",            clause->HandlerOffset, pEHClause->HandlerStartPC));
+    LOG((LF_EH, LL_INFO1000000, "    HandlerLength : 0x%08x  ->  0x%08x\n",            clause->HandlerLength, pEHClause->HandlerEndPC));
+    LOG((LF_EH, LL_INFO1000000, "    ClassToken    : 0x%08x  ->  0x%08x\n",            clause->ClassToken,    pEHClause->ClassToken));
+    LOG((LF_EH, LL_INFO1000000, "    FilterOffset  : 0x%08x  ->  0x%08x\n",            clause->FilterOffset,  pEHClause->FilterOffset));
 
     if (IsDynamicScope(m_MethodInfo.scope) &&
         ((pEHClause->Flags & (COR_ILEXCEPTION_CLAUSE_FILTER | COR_ILEXCEPTION_CLAUSE_FINALLY | COR_ILEXCEPTION_CLAUSE_FAULT)) == 0) &&

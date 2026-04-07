@@ -745,7 +745,7 @@ CordbReferenceValue::CordbReferenceValue(CordbAppDomain *              pAppdomai
 {
     memset(&m_info, 0, sizeof(m_info));
 
-    LOG((LF_CORDB,LL_EVERYTHING,"CRV::CRV: this:0x%x\n",this));
+    LOG((LF_CORDB,LL_EVERYTHING,"CRV::CRV: this:0x%p\n",this));
     m_size = sizeof(void *);
 
     // now instantiate the value home
@@ -814,7 +814,7 @@ CordbReferenceValue::~CordbReferenceValue()
 {
     DTOR_ENTRY(this);
 
-    LOG((LF_CORDB,LL_EVERYTHING,"CRV::~CRV: this:0x%x\n",this));
+    LOG((LF_CORDB,LL_EVERYTHING,"CRV::~CRV: this:0x%p\n",this));
 
     _ASSERTE(IsNeutered());
 } // CordbReferenceValue::~CordbReferenceValue

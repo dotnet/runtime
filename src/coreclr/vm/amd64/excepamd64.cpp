@@ -194,7 +194,7 @@ RtlVirtualUnwind_Worker (
     // that the debugger is attched when we get here.
     _ASSERTE(CORDebuggerAttached());
 
-    LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: in RtlVirtualUnwind_ClrDbgSafeWorker, ControlPc=0x%p\n", ControlPc));
+    LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: in RtlVirtualUnwind_ClrDbgSafeWorker, ControlPc=0x%p\n", (void*)ControlPc));
 
     BOOL     InEpilogue = FALSE;
     BOOL     HasManagedBreakpoint = FALSE;
@@ -402,7 +402,7 @@ RtlVirtualUnwind_Worker (
 
     if (InEpilogue && HasUnmanagedBreakpoint)
     {
-        STRESS_LOG1(LF_CORDB, LL_ERROR, "RtlVirtualUnwind is about to fail b/c the ControlPc (0x%p) is in the epilog of a function which has a 0xCC in its epilog.", ControlPc);
+        STRESS_LOG1(LF_CORDB, LL_ERROR, "RtlVirtualUnwind is about to fail b/c the ControlPc (0x%p) is in the epilog of a function which has a 0xCC in its epilog.", (void*)ControlPc);
         _ASSERTE(!"RtlVirtualUnwind is about to fail b/c you are unwinding through\n"
                   "the epilogue of a function and have a 0xCC in the codestream. This is\n"
                   "probably caused by having set that breakpoint yourself in the debugger,\n"

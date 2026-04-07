@@ -1690,7 +1690,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
     if (arg->OperIsFieldList())
     {
-        JITDUMP("Argument is a FIELD_LIST\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a FIELD_LIST\n");
 
         GenTreeFieldList::Use* splitPoint = nullptr;
         // Split the field list into its register and stack parts.
@@ -1713,7 +1713,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
         if (splitPoint == nullptr)
         {
-            JITDUMP("No clean split point found, spilling FIELD_LIST\n", splitPoint->GetOffset());
+            JITDUMP("No clean split point found, spilling FIELD_LIST\n");
 
             unsigned int newLcl =
                 StoreFieldListToNewLocal(m_compiler->typGetObjLayout(callArg->GetSignatureClassHandle()),
@@ -1752,7 +1752,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     }
     else if (arg->OperIs(GT_BLK))
     {
-        JITDUMP("Argument is a BLK\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a BLK\n");
 
         GenTree*       blkAddr = arg->AsBlk()->Addr();
         target_ssize_t offset  = 0;
@@ -1767,12 +1767,12 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
             !m_compiler->lvaGetDesc(addrUse.Def()->AsLclVarCommon())->IsAddressExposed() &&
             IsInvariantInRange(addrUse.Def(), arg))
         {
-            JITDUMP("Reusing LCL_VAR\n", numRegs, stackSeg.Size);
+            JITDUMP("Reusing LCL_VAR\n");
             addrLcl = addrUse.Def()->AsLclVarCommon()->GetLclNum();
         }
         else
         {
-            JITDUMP("Spilling address\n", numRegs, stackSeg.Size);
+            JITDUMP("Spilling address\n");
             addrLcl = addrUse.ReplaceWithLclVar(m_compiler);
         }
 
@@ -1814,7 +1814,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     {
         assert(arg->OperIsLocalRead());
 
-        JITDUMP("Argument is a local\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a local\n");
 
         GenTreeLclVarCommon* lcl = arg->AsLclVarCommon();
 
@@ -2471,7 +2471,7 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
     if (lengthArg->IsIntegralConst())
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
-        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
+        JITDUMP("Size=%zd.. ", cnsSize);
         // TODO-CQ: drop the whole thing in case of 0
         if ((cnsSize > 0) && (cnsSize <= (ssize_t)m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
         {
@@ -2561,7 +2561,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
     if (lengthArg->IsIntegralConst())
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
-        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
+        JITDUMP("Size=%zd.. ", cnsSize);
         // TODO-CQ: drop the whole thing in case of 0
         if (cnsSize > 0)
         {
@@ -7781,12 +7781,12 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     DISPNODE(base);
     if (index != nullptr)
     {
-        JITDUMP("  + Index * %u + %d\n    ", scale, offset);
+        JITDUMP("  + Index * %u + %zd\n    ", scale, offset);
         DISPNODE(index);
     }
     else
     {
-        JITDUMP("  + %d\n", offset);
+        JITDUMP("  + %zd\n", offset);
     }
 
     // Save the (potentially) unused operands before changing the address to LEA.
@@ -10863,7 +10863,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         upperCns &= mask;
 
         size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_PER_BYTE)));
-        JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
+        JITDUMP("Coalesced two stores into a single store with value %lld\n", (long long)val);
 
         ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
         if (genTypeSize(oldType) == 1)

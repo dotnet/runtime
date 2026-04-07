@@ -12,7 +12,7 @@
 #ifdef DEBUG
 void hashBvNode::dump()
 {
-    printf("base: %d { ", baseIndex);
+    printf("base: %llu { ", (unsigned long long)baseIndex);
     this->foreachBit(pBit);
     printf("}\n");
 }
@@ -622,7 +622,7 @@ void hashBv::dump()
         {
             printf(" ");
         }
-        printf("%d", index);
+        printf("%llu", (unsigned long long)index);
         first = false;
         return HbvWalk::Continue;
     });
@@ -641,11 +641,11 @@ void hashBv::dumpFancy()
         {
             if (last_0 + 1 != last_1)
             {
-                printf(" %d-%d", last_0 + 1, last_1);
+                printf(" %llu-%llu", (unsigned long long)(last_0 + 1), (unsigned long long)last_1);
             }
             else
             {
-                printf(" %d", last_1);
+                printf(" %llu", (unsigned long long)last_1);
             }
             last_0 = index - 1;
         }
@@ -657,11 +657,11 @@ void hashBv::dumpFancy()
     // Print the last one
     if (last_0 + 1 != last_1)
     {
-        printf(" %d-%d", last_0 + 1, last_1);
+        printf(" %llu-%llu", (unsigned long long)(last_0 + 1), (unsigned long long)last_1);
     }
     else
     {
-        printf(" %d", last_1);
+        printf(" %llu", (unsigned long long)last_1);
     }
 
     printf("}\n");
@@ -1820,7 +1820,7 @@ void hashBv::InorderTraverseTwo(hashBv* other, dualNodeAction a)
 #ifdef DEBUG
 void SimpleDumpNode(hashBvNode* n)
 {
-    printf("base: %d\n", n->baseIndex);
+    printf("base: %llu\n", (unsigned long long)n->baseIndex);
 }
 
 void DumpNode(hashBvNode* n)
@@ -1833,7 +1833,7 @@ void SimpleDumpDualNode(hashBv* a, hashBv* b, hashBvNode* n, hashBvNode* m)
     printf("nodes: ");
     if (n)
     {
-        printf("%d,", n->baseIndex);
+        printf("%llu,", (unsigned long long)n->baseIndex);
     }
     else
     {
@@ -1841,7 +1841,7 @@ void SimpleDumpDualNode(hashBv* a, hashBv* b, hashBvNode* n, hashBvNode* m)
     }
     if (m)
     {
-        printf("%d\n", m->baseIndex);
+        printf("%llu\n", (unsigned long long)m->baseIndex);
     }
     else
     {

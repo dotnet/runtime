@@ -69,7 +69,7 @@ STDAPI DLLEXPORT OpenVirtualProcessImpl(
 {
     HRESULT hr = S_OK;
     RSExtSmartPtr<CordbProcess> pProcess;
-    PUBLIC_API_ENTRY(NULL);
+    PUBLIC_API_ENTRY((void*)0);
     EX_TRY
     {
 
@@ -1049,7 +1049,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
 
 CordbProcess::~CordbProcess()
 {
-    LOG((LF_CORDB, LL_INFO1000, "CP::~CP: deleting process 0x%08x\n", this));
+    LOG((LF_CORDB, LL_INFO1000, "CP::~CP: deleting process 0x%p\n", this));
 
     DTOR_ENTRY(this);
 
@@ -1915,7 +1915,7 @@ void CordbProcess::Terminating(BOOL fDetach)
 {
     INTERNAL_API_ENTRY(this);
 
-    LOG((LF_CORDB, LL_INFO1000,"CP::T: Terminating process 0x%x detach=%d\n", m_id, fDetach));
+    LOG((LF_CORDB, LL_INFO1000,"CP::T: Terminating process 0x%zx detach=%d\n", m_id, fDetach));
     m_terminated = true;
 
     m_cordb->ProcessStateChanged();
@@ -3507,7 +3507,7 @@ HRESULT CordbProcess::Stop(DWORD dwTimeout)
 
 HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainToken)
 {
-    LOG((LF_CORDB, LL_INFO1000, "CP::S: stopping process 0x%x(%d) with timeout %d\n", m_id, m_id,  dwTimeout));
+    LOG((LF_CORDB, LL_INFO1000, "CP::S: stopping process 0x%zx(%zu) with timeout %d\n", m_id, m_id,  dwTimeout));
 
     INTERNAL_API_ENTRY(this);
 
@@ -3645,7 +3645,7 @@ HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainTo
     event = (DebuggerIPCEvent*) _alloca(CorDBIPC_BUFFER_SIZE);
     InitIPCEvent(event, DB_IPCE_ASYNC_BREAK, false, pAppDomainToken);
 
-    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::S: sending async stop to appd 0x%x.\n", VmPtrToCookie(pAppDomainToken));
+    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::S: sending async stop to appd 0x%zx.\n", VmPtrToCookie(pAppDomainToken));
 
     hr = m_cordb->SendIPCEvent(this, event, CorDBIPC_BUFFER_SIZE);
     hr = WORST_HR(hr, event->hr);
@@ -3656,7 +3656,7 @@ HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainTo
         return hr;
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "CP::S: sent async stop to appd 0x%x.\n", VmPtrToCookie(pAppDomainToken)));
+    LOG((LF_CORDB, LL_INFO1000, "CP::S: sent async stop to appd 0x%zx.\n", VmPtrToCookie(pAppDomainToken)));
 
     // Wait for the sync complete message to come in. Note: when the sync complete message arrives to the RCEventThread,
     // it will mark the process as synchronized and _not_ dispatch any events. Instead, it will set m_stopWaitEvent
@@ -3881,7 +3881,7 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
 
     CORDBFailIfOnWin32EventThread(this);
 
-    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::CI: continuing IB,  this=0x%X\n", this);
+    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::CI: continuing IB,  this=0x%p\n", this);
 
     // Stop + Continue are executed under the Stop-Go lock. This makes them atomic.
     // We'll toggle the process-lock (b/c we communicate w/ the W32et, so that's not sufficient).
@@ -4250,7 +4250,7 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
     }
     else if (fWasSynchronized)
     {
-        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Sending continue to AppD:0x%x.\n", VmPtrToCookie(pAppDomainToken)));
+        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Sending continue to AppD:0x%zx.\n", VmPtrToCookie(pAppDomainToken)));
 #ifdef FEATURE_INTEROP_DEBUGGING
         STRESS_LOG2(LF_CORDB, LL_INFO1000, "Continue flags:special=%d, dowin32=%d\n", m_specialDeferment, fDoWin32Continue);
 #endif
@@ -4272,7 +4272,7 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
         }
         _ASSERTE(SUCCEEDED(pEvent->hr));
 
-        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Continue sent to AppD:0x%x.\n", VmPtrToCookie(pAppDomainToken)));
+        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Continue sent to AppD:0x%zx.\n", VmPtrToCookie(pAppDomainToken)));
     }
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -5187,7 +5187,7 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_LOAD_MODULE:
         {
             LOG((LF_CORDB, LL_INFO100,
-                "RCET::HRCE: load module (includes assembly loading) on thread %#x Asm:0x%08x AD:0x%08x \n",
+                "RCET::HRCE: load module (includes assembly loading) on thread %#x Asm:0x%08zx AD:0x%08zx \n",
                 dwVolatileThreadId,
                 VmPtrToCookie(pEvent->LoadModuleData.vmDomainAssembly),
                 VmPtrToCookie(pEvent->vmAppDomain)));
@@ -5254,7 +5254,7 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_UNLOAD_MODULE:
         {
-            STRESS_LOG3(LF_CORDB, LL_INFO100, "RCET::HRCE: unload module on thread %#x Mod:0x%x AD:0x%08x\n",
+            STRESS_LOG3(LF_CORDB, LL_INFO100, "RCET::HRCE: unload module on thread %#x Mod:0x%zx AD:0x%08zx\n",
                  dwVolatileThreadId,
                  VmPtrToCookie(pEvent->UnloadModuleData.vmDomainAssembly),
                  VmPtrToCookie(pEvent->vmAppDomain));
@@ -5291,7 +5291,7 @@ void CordbProcess::RawDispatchEvent(
             CordbClass *pClass = NULL;
 
             LOG((LF_CORDB, LL_INFO10000,
-                 "RCET::HRCE: load class on thread %#x Tok:0x%08x Mod:0x%08x Asm:0x%08x AD:0x%08x\n",
+                 "RCET::HRCE: load class on thread %#x Tok:0x%08x Mod:0x%08zx Asm:0x%08zx AD:0x%08zx\n",
                  dwVolatileThreadId,
                  pEvent->LoadClass.classMetadataToken,
                  VmPtrToCookie(pEvent->LoadClass.vmDomainAssembly),
@@ -5349,7 +5349,7 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_UNLOAD_CLASS:
         {
             LOG((LF_CORDB, LL_INFO10000,
-                 "RCET::HRCE: unload class on thread %#x Tok:0x%08x Mod:0x%08x AD:0x%08x\n",
+                 "RCET::HRCE: unload class on thread %#x Tok:0x%08x Mod:0x%08zx AD:0x%08zx\n",
                  dwVolatileThreadId,
                  pEvent->UnloadClass.classMetadataToken,
                  VmPtrToCookie(pEvent->UnloadClass.vmDomainAssembly),
@@ -5454,7 +5454,7 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_CREATE_APP_DOMAIN:
         {
             STRESS_LOG2(LF_CORDB, LL_INFO100,
-                 "RCET::HRCE: create appdomain on thread %#x AD:0x%08x \n",
+                 "RCET::HRCE: create appdomain on thread %#x AD:0x%08zx \n",
                  dwVolatileThreadId,
                  VmPtrToCookie(pEvent->vmAppDomain));
 
@@ -5477,7 +5477,7 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_EXIT_APP_DOMAIN:
         {
-            STRESS_LOG2(LF_CORDB, LL_INFO100, "RCET::HRCE: exit appdomain on thread %#x AD:0x%08x \n",
+            STRESS_LOG2(LF_CORDB, LL_INFO100, "RCET::HRCE: exit appdomain on thread %#x AD:0x%08zx \n",
                  dwVolatileThreadId,
                  VmPtrToCookie(pEvent->vmAppDomain));
 
@@ -5519,7 +5519,7 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_UNLOAD_ASSEMBLY:
         {
-            LOG((LF_CORDB, LL_INFO100, "RCET::DRCE: unload assembly on thread %#x Asm:0x%x AD:0x%x\n",
+            LOG((LF_CORDB, LL_INFO100, "RCET::DRCE: unload assembly on thread %#x Asm:0x%zx AD:0x%zx\n",
                  dwVolatileThreadId,
                  VmPtrToCookie(pEvent->AssemblyData.vmDomainAssembly),
                  VmPtrToCookie(pEvent->vmAppDomain)));
@@ -5636,7 +5636,7 @@ void CordbProcess::RawDispatchEvent(
         {
             LOG((LF_CORDB, LL_INFO1000, "RCET::HRCE: Name Change %d  0x%p\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->NameChange.vmAppDomain)));
+                 (void*)VmPtrToCookie(pEvent->NameChange.vmAppDomain)));
 
             pThread = NULL;
             pAppDomain.Clear();
@@ -5836,7 +5836,7 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_EXCEPTION_CALLBACK2:
         {
             STRESS_LOG4(LF_CORDB, LL_INFO100,
-                "RCET::DRCE: Exception2 0x%p 0x%X 0x%X 0x%X\n",
+                "RCET::DRCE: Exception2 0x%p 0x%zX 0x%X 0x%X\n",
                  pEvent->ExceptionCallback2.framePointer.GetSPValue(),
                  pEvent->ExceptionCallback2.nOffset,
                  pEvent->ExceptionCallback2.eventType,
@@ -6219,7 +6219,7 @@ HRESULT CordbProcess::SetAllThreadsDebugState(CorDebugThreadState state,
     }
     CordbThread * pCordbExceptThread = static_cast<CordbThread *> (pExceptThread);
 
-    LOG((LF_CORDB, LL_INFO1000, "CP::SATDS: except thread=0x%08x 0x%x\n",
+    LOG((LF_CORDB, LL_INFO1000, "CP::SATDS: except thread=0x%p 0x%zx\n",
          pExceptThread,
          (pCordbExceptThread != NULL) ? pCordbExceptThread->m_id : 0));
 
@@ -6321,7 +6321,7 @@ HRESULT CordbProcess::IsTransitionStub(CORDB_ADDRESS address, BOOL *pfTransition
         _ASSERTE(eventData.type == DB_IPCE_IS_TRANSITION_STUB_RESULT);
 
         *pfTransitionStub = eventData.IsTransitionStubResult.isStub;
-        LOG((LF_CORDB, LL_INFO1000, "CP::ITS: addr=0x%p result=%d\n", address, *pfTransitionStub));
+        LOG((LF_CORDB, LL_INFO1000, "CP::ITS: addr=0x%p result=%d\n", (void*)address, *pfTransitionStub));
         // @todo - beware that IsTransitionStub has a very important sideeffect - it synchronizes the runtime!
         // This for example covers an OS bug where SetThreadContext may silently fail if we're not synchronized.
         // (See IMDArocess::SetThreadContext for details on that bug).
@@ -6695,7 +6695,7 @@ HRESULT CordbProcess::ReadMemory(CORDB_ADDRESS address,
     // read.
     if ((*read > 0) && (*read <= size))
     {
-        LOG((LF_CORDB, LL_INFO100000, "CP::RM: read %d bytes from 0x%08x, first byte is 0x%x\n",
+        LOG((LF_CORDB, LL_INFO100000, "CP::RM: read %zu bytes from 0x%08x, first byte is 0x%x\n",
              *read, (DWORD)address, buffer[0]));
 
         if (m_initialized)
@@ -6785,7 +6785,7 @@ HRESULT CordbProcess::AdjustBuffer( CORDB_ADDRESS address,
     if (!m_runtimeOffsetsInitialized)
         return S_OK;
 
-    LOG((LF_CORDB,LL_INFO10000, "CordbProcess::AdjustBuffer at addr 0x%p\n", address));
+    LOG((LF_CORDB,LL_INFO10000, "CordbProcess::AdjustBuffer at addr 0x%p\n", (void*)address));
 
     if (mode == AB_WRITE)
     {
@@ -7321,7 +7321,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
     }
 
 
-    LOG((LF_CORDB, LL_INFO100000, "CP::WM: wrote %d bytes at 0x%08x, first byte is 0x%x\n",
+    LOG((LF_CORDB, LL_INFO100000, "CP::WM: wrote %zu bytes at 0x%08x, first byte is 0x%x\n",
          *written, (DWORD)address, buffer[0]));
 
     if (bUpdateOriginalPatchTable == TRUE )
@@ -7722,45 +7722,45 @@ HRESULT CordbProcess::GetRuntimeOffsets()
 
     LOG((LF_CORDB, LL_INFO10000, "    m_setThreadContextNeededAddr=     0x%p\n",
          m_runtimeOffsets.m_setThreadContextNeededAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_TLSIndex=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_TLSIndex=                       0x%08zx\n",
          m_runtimeOffsets.m_TLSIndex));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateOffset=            0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateOffset=            0x%08zx\n",
          m_runtimeOffsets.m_EEThreadStateOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateNCOffset=          0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateNCOffset=          0x%08zx\n",
          m_runtimeOffsets.m_EEThreadStateNCOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadPGCDisabledOffset=      0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadPGCDisabledOffset=      0x%08zx\n",
          m_runtimeOffsets.m_EEThreadPGCDisabledOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadPGCDisabledValue=       0x%08x\n",
          m_runtimeOffsets.m_EEThreadPGCDisabledValue));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadFrameOffset=            0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadFrameOffset=            0x%08zx\n",
          m_runtimeOffsets.m_EEThreadFrameOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadMaxNeededSize=          0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadMaxNeededSize=          0x%08zx\n",
          m_runtimeOffsets.m_EEThreadMaxNeededSize));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadSteppingStateMask=      0x%08x\n",
          m_runtimeOffsets.m_EEThreadSteppingStateMask));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEMaxFrameValue=                0x%08x\n",
          m_runtimeOffsets.m_EEMaxFrameValue));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadDebuggerFilterContextOffset= 0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadDebuggerFilterContextOffset= 0x%08zx\n",
          m_runtimeOffsets.m_EEThreadDebuggerFilterContextOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEFrameNextOffset=              0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEFrameNextOffset=              0x%08zx\n",
          m_runtimeOffsets.m_EEFrameNextOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEIsManagedExceptionStateMask=  0x%08x\n",
          m_runtimeOffsets.m_EEIsManagedExceptionStateMask));
-    LOG((LF_CORDB, LL_INFO10000, "    m_pPatches=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_pPatches=                       0x%p\n",
          m_runtimeOffsets.m_pPatches));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offRgData=                      0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offRgData=                      0x%08zx\n",
          m_runtimeOffsets.m_offRgData));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offCData=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offCData=                       0x%08zx\n",
          m_runtimeOffsets.m_offCData));
-    LOG((LF_CORDB, LL_INFO10000, "    m_cbPatch=                        0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_cbPatch=                        0x%08zx\n",
          m_runtimeOffsets.m_cbPatch));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offAddr=                        0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offAddr=                        0x%08zx\n",
          m_runtimeOffsets.m_offAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offOpcode=                      0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offOpcode=                      0x%08zx\n",
          m_runtimeOffsets.m_offOpcode));
-    LOG((LF_CORDB, LL_INFO10000, "    m_cbOpcode=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_cbOpcode=                       0x%08zx\n",
          m_runtimeOffsets.m_cbOpcode));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offTraceType=                   0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offTraceType=                   0x%08zx\n",
          m_runtimeOffsets.m_offTraceType));
     LOG((LF_CORDB, LL_INFO10000, "    m_traceTypeUnmanaged=             0x%08x\n",
          m_runtimeOffsets.m_traceTypeUnmanaged));
@@ -9113,7 +9113,7 @@ bool CordbProcess::IsBreakOpcodeAtAddress(const void * address)
 HRESULT
 CordbProcess::SetUnmanagedBreakpoint(CORDB_ADDRESS address, ULONG32 bufsize, BYTE buffer[], ULONG32 * bufLen)
 {
-    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBP: pProcess=%x, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
+    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBP: pProcess=%p, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
 #ifndef FEATURE_INTEROP_DEBUGGING
     return E_NOTIMPL;
 #else
@@ -9140,7 +9140,7 @@ CordbProcess::SetUnmanagedBreakpoint(CORDB_ADDRESS address, ULONG32 bufsize, BYT
 HRESULT
 CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufsize, BYTE buffer[], ULONG32 * bufLen)
 {
-    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBPI: pProcess=%x, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
+    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBPI: pProcess=%p, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
 #ifndef FEATURE_INTEROP_DEBUGGING
     return E_NOTIMPL;
 #else
@@ -9232,7 +9232,7 @@ ErrExit:
 HRESULT
 CordbProcess::ClearUnmanagedBreakpoint(CORDB_ADDRESS address)
 {
-    LOG((LF_CORDB, LL_INFO100, "CP::ClearUnBP: pProcess=%x, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
+    LOG((LF_CORDB, LL_INFO100, "CP::ClearUnBP: pProcess=%p, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
 #ifndef FEATURE_INTEROP_DEBUGGING
     return E_NOTIMPL;
 #else
@@ -9554,7 +9554,7 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
         BOOL fBlockExists;
         GetEventBlock(&fBlockExists); // throws on error
 
-        LOG((LF_CORDB, LL_EVERYTHING, "Size of CdbP is %d\n", sizeof(CordbProcess)));
+        LOG((LF_CORDB, LL_EVERYTHING, "Size of CdbP is %zu\n", sizeof(CordbProcess)));
 
         m_pEventChannel->Init(m_handle);
 
@@ -10051,7 +10051,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
     if (eventSize > CorDBIPC_BUFFER_SIZE)
         return E_INVALIDARG;
 
-    STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: sending %s to AD 0x%x, proc 0x%x(%d)\n",
+    STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: sending %s to AD 0x%zx, proc 0x%zx(%zu)\n",
          IPCENames::GetName(event->type), VmPtrToCookie(event->vmAppDomain), process->m_id, process->m_id);
 
     // For 2-way events, this check is unnecessary (since we already check for LS exit)
@@ -10400,7 +10400,7 @@ void CordbProcess::HandleRCEvent(
     // Marshals over some standard data from event.
     MarshalManagedEvent(pManagedEvent);
 
-    STRESS_LOG4(LF_CORDB, LL_INFO1000, "RCET::TP: Got %s for AD 0x%x, proc 0x%x(%d)\n",
+    STRESS_LOG4(LF_CORDB, LL_INFO1000, "RCET::TP: Got %s for AD 0x%zx, proc 0x%zx(%zu)\n",
         IPCENames::GetName(pManagedEvent->type), VmPtrToCookie(pManagedEvent->vmAppDomain), this->m_id, this->m_id);
 
     RSExtSmartPtr<ICorDebugManagedCallback2> pCallback2;
@@ -10536,7 +10536,7 @@ void CordbRCEventThread::ThreadProc()
                 // per-process mutex when checking the process's synchronized flag here.
                 if (!pProcess->GetSynchronized() && pProcess->IsSafeToSendEvents())
                 {
-                    STRESS_LOG2(LF_CORDB, LL_INFO1000, "RCET::TP: listening to process 0x%x(%d)\n",
+                    STRESS_LOG2(LF_CORDB, LL_INFO1000, "RCET::TP: listening to process 0x%zx(%zu)\n",
                                 pProcess->m_id, pProcess->m_id);
 
                     waitSet[waitCount] = pProcess->m_leftSideEventAvailable;
@@ -10812,7 +10812,7 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
         {
             pProcess->MarshalManagedEvent(pEvent);
 
-            STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: Got %s for AD 0x%x, proc 0x%x(%d)\n",
+            STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: Got %s for AD 0x%zx, proc 0x%zx(%zu)\n",
                         IPCENames::GetName(pEvent->type),
                         VmPtrToCookie(pEvent->vmAppDomain),
                         pProcess->m_id,
@@ -14273,7 +14273,7 @@ HRESULT CordbWin32EventThread::SendCreateProcessEvent(
     {
       DWORD ret = WaitForSingleObject(m_actionTakenEvent, INFINITE);
 
-        LOG((LF_CORDB, LL_EVERYTHING, "Process Handle is: %x, m_threadControlEvent is %x\n",
+        LOG((LF_CORDB, LL_EVERYTHING, "Process Handle is: %zx, m_threadControlEvent is %zx\n",
              (UINT_PTR)m_actionData.createData.lpProcessInformation->hProcess, (UINT_PTR)m_threadControlEvent));
 
         if (ret == WAIT_OBJECT_0)

@@ -184,7 +184,7 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
     //
     if (!ValidateModuleName(libFileName))
     {
-        LOG((LF_GC, LL_INFO100, "Invalid GC name found %s\n", libFileName));
+        LOG((LF_GC, LL_INFO100, "Invalid GC name found %p\n", libFileName));
         return nullptr;
     }
 

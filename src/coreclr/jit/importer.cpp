@@ -6589,7 +6589,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_LDC_I8:
                 cval.lngVal = getI8LittleEndian(codeAddr);
-                JITDUMP(" 0x%016llx", cval.lngVal);
+                JITDUMP(" 0x%016llx", (unsigned long long)cval.lngVal);
                 impPushOnStack(gtNewLconNode(cval.lngVal), typeInfo(TYP_LONG));
                 break;
 
@@ -12190,7 +12190,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
 #ifdef DEBUG
     if (verbose && 0)
     {
-        printf("Added PendingDsc - %08p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
+        printf("Added PendingDsc - %p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
     }
 #endif
 }
@@ -12255,7 +12255,7 @@ void Compiler::impReimportBlockPending(BasicBlock* block)
 #ifdef DEBUG
     if (verbose && 0)
     {
-        printf("Added PendingDsc - %08p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
+        printf("Added PendingDsc - %p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
     }
 #endif
 }

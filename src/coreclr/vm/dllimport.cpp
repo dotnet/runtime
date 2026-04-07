@@ -952,8 +952,8 @@ public:
             PrettyPrintSig(pManagedSig,  cManagedSig, "*",  &qbManaged, pStubMD->GetMDImport(), NULL);
             PrettyPrintSig(pbLocalSig,   cbSig, NULL, &qbLocal,   pIMDI, NULL);
 
-            LOG((LF_STUBS, LL_INFO1000, "incoming managed sig: %p: %s\n", pManagedSig, qbManaged.Ptr()));
-            LOG((LF_STUBS, LL_INFO1000, "locals sig:           %p: %s\n", pbLocalSig+1, qbLocal.Ptr()));
+            LOG((LF_STUBS, LL_INFO1000, "incoming managed sig: %p: %s\n", pManagedSig, (LPCSTR)qbManaged.Ptr()));
+            LOG((LF_STUBS, LL_INFO1000, "locals sig:           %p: %s\n", pbLocalSig+1, (LPCSTR)qbLocal.Ptr()));
 
             if (cleanupTryFinally.cbHandlerLength != 0)
             {
@@ -1171,7 +1171,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         if (flags & flag)
         {
-            LOG((facility, level, str));
+            LOG((facility, level, "%s", str));
         }
     }
 

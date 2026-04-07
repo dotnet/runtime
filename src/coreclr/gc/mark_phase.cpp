@@ -1249,7 +1249,7 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
                     }
                 }
                 assert (start_region);
-                dprintf (3, ("making sure heap %d gen %d has at least one region by adding region %zx", start_region));
+                dprintf (3, ("making sure heap %d gen %d has at least one region by adding region %p", hp->heap_number, gen_idx, start_region));
                 heap_segment_next (start_region) = nullptr;
 
                 assert (heap_segment_heap (start_region) == nullptr && hp != nullptr);
@@ -3408,7 +3408,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
 
         generation_skip_ratio = min (generation_skip_ratio_soh, generation_skip_ratio_loh);
 #ifdef SIMPLE_DPRINTF
-        dprintf (6666, ("h%d skip ratio soh: %d (n_gen_soh: %Id, n_eph_soh: %Id), loh: %d (n_gen_loh: %Id, n_eph_loh: %Id), size 0: %Id-%Id, 1: %Id-%Id, 2: %Id-%Id, 3: %Id-%Id",
+        dprintf (6666, ("h%d skip ratio soh: %d (n_gen_soh: %zd, n_eph_soh: %zd), loh: %d (n_gen_loh: %zd, n_eph_loh: %zd), size 0: %zd-%zd, 1: %zd-%zd, 2: %zd-%zd, 3: %zd-%zd",
             heap_number,
             generation_skip_ratio_soh, VolatileLoadWithoutBarrier (&n_gen_soh), VolatileLoadWithoutBarrier (&n_eph_soh),
             generation_skip_ratio_loh, VolatileLoadWithoutBarrier (&n_gen_loh), VolatileLoadWithoutBarrier (&n_eph_loh),

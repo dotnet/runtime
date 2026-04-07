@@ -1811,8 +1811,8 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
 #if defined(TARGET_AMD64)
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Saving REGDISPLAY with sp = 0x%p, pc = 0x%p.\n",
-            GetRegdisplaySP(&(d->info.registers)),
-            GetControlPC(&(d->info.registers))));
+            (void*)GetRegdisplaySP(&(d->info.registers)),
+            (void*)GetControlPC(&(d->info.registers))));
 #endif // TARGET_AMD64
 
         d->needParentInfo = true;

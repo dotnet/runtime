@@ -1227,7 +1227,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
     size_t opCode    = size_t(*address);
     size_t opCodeExt = (opCode << 2) | pp;
 
-    LOG((LF_CORDB, LL_INFO10000, "opCode:%02x pp:%d W:%d L:%d LL:%d ", opCode, pp, W ? 1 : 0, L ? 1 : 0, evex_LL));
+    LOG((LF_CORDB, LL_INFO10000, "opCode:%02zx pp:%d W:%d L:%d LL:%d ", opCode, pp, W ? 1 : 0, L ? 1 : 0, evex_LL));
 
     switch (opCodeMap)
     {

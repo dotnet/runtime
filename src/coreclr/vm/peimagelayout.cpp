@@ -247,7 +247,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     if (delta == 0)
         return;
 
-    LOG((LF_LOADER, LL_INFO100, "PEImage: Applying base relocations (preferred: %x, actual: %x)\n",
+    LOG((LF_LOADER, LL_INFO100, "PEImage: Applying base relocations (preferred: %p, actual: %p)\n",
         GetPreferredBase(), GetBase()));
 
     COUNT_T dirSize;

@@ -577,7 +577,7 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
         {
             dwAddr = (SIZE_T*)(*dwAddr);
         }
-        LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_REG @ 0x%x (by ref = %d)\n", dwAddr, fByRef));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_REG @ %p (by ref = %d)\n", dwAddr, fByRef));
         break;
 
     case ICorDebugInfo::VLT_STK_BYREF:
@@ -591,7 +591,7 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
         {
             dwAddr = (SIZE_T*)(*dwAddr);
         }
-        LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK @ 0x%x (by ref = %d)\n", dwAddr, fByRef));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK @ %p (by ref = %d)\n", dwAddr, fByRef));
         break;
 
     case ICorDebugInfo::VLT_STK2:
@@ -601,21 +601,21 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStk2.vls2BaseReg);
         baseReg = (const BYTE *)*(SIZE_T *)(regOffs + (BYTE*)pCtx);
         dwAddr = (SIZE_T *)(baseReg + varLoc.vlStk2.vls2Offset);
-        LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK_2 @ 0x%x\n",dwAddr));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: VLT_STK_2 @ %p\n", dwAddr));
         break;
 
     case ICorDebugInfo::VLT_REG_STK:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlRegStk.vlrsStk.vlrssBaseReg);
         baseReg = (const BYTE *)*(SIZE_T *)(regOffs + (BYTE*)pCtx);
         dwAddr = (SIZE_T *)(baseReg + varLoc.vlRegStk.vlrsStk.vlrssOffset);
-        LOG((LF_CORDB, LL_INFO100, "NVSA: REG_STK @ 0x%x\n",dwAddr));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: REG_STK @ %p\n", dwAddr));
         break;
 
     case ICorDebugInfo::VLT_STK_REG:
         regOffs = GetRegOffsInCONTEXT(varLoc.vlStkReg.vlsrStk.vlsrsBaseReg);
         baseReg = (const BYTE *)*(SIZE_T *)(regOffs + (BYTE*)pCtx);
         dwAddr = (SIZE_T *)(baseReg + varLoc.vlStkReg.vlsrStk.vlsrsOffset);
-        LOG((LF_CORDB, LL_INFO100, "NVSA: STK_REG @ 0x%x\n",dwAddr));
+          LOG((LF_CORDB, LL_INFO100, "NVSA: STK_REG @ %p\n", dwAddr));
         break;
 
     case ICorDebugInfo::VLT_REG_REG:

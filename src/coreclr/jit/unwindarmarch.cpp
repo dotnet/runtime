@@ -986,10 +986,10 @@ void UnwindPrologCodes::EnsureSize(int requiredSize)
 #ifdef DEBUG
 void UnwindPrologCodes::Dump(int indent)
 {
-    printf("%*sUnwindPrologCodes @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
-    printf("%*s  m_compiler: 0x%08p\n", indent, "", dspPtr(m_compiler));
-    printf("%*s  &upcMemLocal[0]: 0x%08p\n", indent, "", dspPtr(&upcMemLocal[0]));
-    printf("%*s  upcMem: 0x%08p\n", indent, "", dspPtr(upcMem));
+    printf("%*sUnwindPrologCodes @0x%p, size:%zu:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  m_compiler: 0x%p\n", indent, "", dspPtr(m_compiler));
+    printf("%*s  &upcMemLocal[0]: 0x%p\n", indent, "", dspPtr(&upcMemLocal[0]));
+    printf("%*s  upcMem: 0x%p\n", indent, "", dspPtr(upcMem));
     printf("%*s  upcMemSize: %d\n", indent, "", upcMemSize);
     printf("%*s  upcCodeSlot: %d\n", indent, "", upcCodeSlot);
     printf("%*s  upcHeaderSlot: %d\n", indent, "", upcHeaderSlot);
@@ -1051,10 +1051,10 @@ void UnwindEpilogCodes::EnsureSize(int requiredSize)
 #ifdef DEBUG
 void UnwindEpilogCodes::Dump(int indent)
 {
-    printf("%*sUnwindEpilogCodes @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
-    printf("%*s  m_compiler: 0x%08p\n", indent, "", dspPtr(m_compiler));
-    printf("%*s  &uecMemLocal[0]: 0x%08p\n", indent, "", dspPtr(&uecMemLocal[0]));
-    printf("%*s  uecMem: 0x%08p\n", indent, "", dspPtr(uecMem));
+    printf("%*sUnwindEpilogCodes @0x%p, size:%zu:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  m_compiler: 0x%p\n", indent, "", dspPtr(m_compiler));
+    printf("%*s  &uecMemLocal[0]: 0x%p\n", indent, "", dspPtr(&uecMemLocal[0]));
+    printf("%*s  uecMem: 0x%p\n", indent, "", dspPtr(uecMem));
     printf("%*s  uecMemSize: %d\n", indent, "", uecMemSize);
     printf("%*s  uecCodeSlot: %d\n", indent, "", uecCodeSlot);
     printf("%*s  uecFinalized: %s\n", indent, "", dspBool(uecFinalized));
@@ -1126,10 +1126,10 @@ void UnwindEpilogInfo::FinalizeOffset()
 #ifdef DEBUG
 void UnwindEpilogInfo::Dump(int indent)
 {
-    printf("%*sUnwindEpilogInfo @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
-    printf("%*s  m_compiler: 0x%08p\n", indent, "", dspPtr(m_compiler));
-    printf("%*s  epiNext: 0x%08p\n", indent, "", dspPtr(epiNext));
-    printf("%*s  epiEmitLocation: 0x%08p\n", indent, "", dspPtr(epiEmitLocation));
+    printf("%*sUnwindEpilogInfo @0x%p, size:%zu:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  m_compiler: 0x%p\n", indent, "", dspPtr(m_compiler));
+    printf("%*s  epiNext: 0x%p\n", indent, "", dspPtr(epiNext));
+    printf("%*s  epiEmitLocation: 0x%p\n", indent, "", dspPtr(epiEmitLocation));
     printf("%*s  epiStartOffset: 0x%x\n", indent, "", epiStartOffset);
     printf("%*s  epiMatches: %s\n", indent, "", dspBool(epiMatches));
     printf("%*s  epiStartIndex: %d\n", indent, "", epiStartIndex);
@@ -1715,10 +1715,10 @@ void UnwindFragmentInfo::Dump(int indent)
         ++count;
     }
 
-    printf("%*sUnwindFragmentInfo #%d, @0x%08p, size:%d:\n", indent, "", ufiNum, dspPtr(this), sizeof(*this));
-    printf("%*s  m_compiler: 0x%08p\n", indent, "", dspPtr(m_compiler));
-    printf("%*s  ufiNext: 0x%08p\n", indent, "", dspPtr(ufiNext));
-    printf("%*s  ufiEmitLoc: 0x%08p ", indent, "", dspPtr(ufiEmitLoc));
+    printf("%*sUnwindFragmentInfo #%d, @0x%p, size:%zu:\n", indent, "", ufiNum, dspPtr(this), sizeof(*this));
+    printf("%*s  m_compiler: 0x%p\n", indent, "", dspPtr(m_compiler));
+    printf("%*s  ufiNext: 0x%p\n", indent, "", dspPtr(ufiNext));
+    printf("%*s  ufiEmitLoc: 0x%p ", indent, "", dspPtr(ufiEmitLoc));
     if (ufiEmitLoc != nullptr)
     {
         ufiEmitLoc->Print(m_compiler->compMethodID);
@@ -1726,9 +1726,9 @@ void UnwindFragmentInfo::Dump(int indent)
     printf("\n");
     printf("%*s  ufiHasPhantomProlog: %s\n", indent, "", dspBool(ufiHasPhantomProlog));
     printf("%*s  %d epilog%s\n", indent, "", count, (count != 1) ? "s" : "");
-    printf("%*s  ufiEpilogList: 0x%08p\n", indent, "", dspPtr(ufiEpilogList));
-    printf("%*s  ufiEpilogLast: 0x%08p\n", indent, "", dspPtr(ufiEpilogLast));
-    printf("%*s  ufiCurCodes: 0x%08p\n", indent, "", dspPtr(ufiCurCodes));
+    printf("%*s  ufiEpilogList: 0x%p\n", indent, "", dspPtr(ufiEpilogList));
+    printf("%*s  ufiEpilogLast: 0x%p\n", indent, "", dspPtr(ufiEpilogLast));
+    printf("%*s  ufiCurCodes: 0x%p\n", indent, "", dspPtr(ufiCurCodes));
     printf("%*s  ufiSize: %u\n", indent, "", ufiSize);
     printf("%*s  ufiSetEBit: %s\n", indent, "", dspBool(ufiSetEBit));
     printf("%*s  ufiNeedExtendedCodeWordsEpilogCount: %s\n", indent, "", dspBool(ufiNeedExtendedCodeWordsEpilogCount));
@@ -2076,11 +2076,11 @@ void UnwindInfo::Dump(bool isHotCode, int indent)
         ++count;
     }
 
-    printf("%*sUnwindInfo %s@0x%08p, size:%d:\n", indent, "", isHotCode ? "" : "COLD ", dspPtr(this), sizeof(*this));
-    printf("%*s  m_compiler: 0x%08p\n", indent, "", dspPtr(m_compiler));
+    printf("%*sUnwindInfo %s@0x%p, size:%zu:\n", indent, "", isHotCode ? "" : "COLD ", dspPtr(this), sizeof(*this));
+    printf("%*s  m_compiler: 0x%p\n", indent, "", dspPtr(m_compiler));
     printf("%*s  %d fragment%s\n", indent, "", count, (count != 1) ? "s" : "");
-    printf("%*s  uwiFragmentLast: 0x%08p\n", indent, "", dspPtr(uwiFragmentLast));
-    printf("%*s  uwiEndLoc: 0x%08p\n", indent, "", dspPtr(uwiEndLoc));
+    printf("%*s  uwiFragmentLast: 0x%p\n", indent, "", dspPtr(uwiFragmentLast));
+    printf("%*s  uwiEndLoc: 0x%p\n", indent, "", dspPtr(uwiEndLoc));
     printf("%*s  uwiInitialized: 0x%08x\n", indent, "", uwiInitialized);
 
     for (pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
@@ -2526,7 +2526,7 @@ void DumpUnwindInfo(Compiler*         comp,
 
             opsize = (b1 == 0xF7) ? 16 : 32;
 
-            printf("    %02X %02X %02X    add sp, sp, #%-8u", b1, b2, b3, x * 4, opsize);
+            printf("    %02X %02X %02X    add sp, sp, #%-8u", b1, b2, b3, x * 4);
             DumpOpsize(opCol - 37, opsize);
         }
         else if (b1 == 0xF8 || b1 == 0xFA)
@@ -2544,7 +2544,7 @@ void DumpUnwindInfo(Compiler*         comp,
 
             opsize = (b1 == 0xF8) ? 16 : 32;
 
-            printf("    %02X %02X %02X %02X add sp, sp, #%-8u", b1, b2, b3, b4, x * 4, opsize);
+            printf("    %02X %02X %02X %02X add sp, sp, #%-8u", b1, b2, b3, b4, x * 4);
             DumpOpsize(opCol - 37, opsize);
         }
         else if (b1 == 0xFB || b1 == 0xFC)
@@ -2554,7 +2554,7 @@ void DumpUnwindInfo(Compiler*         comp,
 
             opsize = (b1 == 0xFB) ? 16 : 32;
 
-            printf("    %02X          nop", b1, opsize);
+            printf("    %02X          nop", b1);
             DumpOpsize(opCol - 19, opsize);
         }
         else if (b1 == 0xFD || b1 == 0xFE)
@@ -2564,7 +2564,7 @@ void DumpUnwindInfo(Compiler*         comp,
 
             opsize = (b1 == 0xFD) ? 16 : 32;
 
-            printf("    %02X          end + nop", b1, opsize);
+            printf("    %02X          end + nop", b1);
             DumpOpsize(opCol - 25, opsize);
         }
         else if (b1 == 0xFF)

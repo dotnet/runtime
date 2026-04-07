@@ -1712,7 +1712,7 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
     JITDUMP("%u likely values:\n", valuesCount)
     for (UINT32 i = 0; i < valuesCount; i++)
     {
-        JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
+        JITDUMP("  %u) %zd - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
     }
 
     // For now, we only do a single guess, but it's pretty straightforward to
@@ -1763,7 +1763,7 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
 
         if ((profiledValue >= minValue) && (profiledValue <= maxValue))
         {
-            JITDUMP("Duplicating for popular value = %u\n", profiledValue)
+            JITDUMP("Duplicating for popular value = %zd\n", profiledValue)
             DISPTREE(call)
 
             if (call->gtArgs.GetUserArgByIndex(argNum)->GetNode()->OperIsConst())
@@ -2380,7 +2380,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
             }
             else
             {
-                JITDUMP("  Argument %d of type %s must be passed as %d primitive(s)\n", argIndex,
+                JITDUMP("  Argument %d of type %s must be passed as %zu primitive(s)\n", argIndex,
                         typGetObjLayout(arg->GetSignatureClassHandle())->GetClassName(), lowering->numLoweredElements);
                 for (size_t i = 0; i < lowering->numLoweredElements; i++)
                 {
@@ -2513,7 +2513,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         }
         else
         {
-            printf("  Call returns %s as %d primitive(s) in registers\n",
+                 printf("  Call returns %s as %zu primitive(s) in registers\n",
                    typGetObjLayout(sig->retTypeClass)->GetClassName(), lowering->numLoweredElements);
             for (size_t i = 0; i < lowering->numLoweredElements; i++)
             {
@@ -7182,7 +7182,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
         for (UINT32 i = 0; i < numberOfClasses; i++)
         {
             const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
-            JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+                JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, (void*)likelyClasses[i].handle, className,
                     likelyClasses[i].likelihood);
         }
     }
@@ -11882,8 +11882,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         if (varTypeIsStruct(elemType))
         {
             JITDUMP("impArrayAccessIntrinsic: rejecting SET array intrinsic because elemType is TYP_STRUCT"
-                    " (implementation limitation)\n",
-                    arrayElemSize);
+                    " (implementation limitation)\n");
             return nullptr;
         }
 

@@ -131,7 +131,7 @@ void Compiler::lvaInitTypeRef()
         }
         else
         {
-            printf("Swift compilation returns %s as %d primitive(s) in registers\n",
+            printf("Swift compilation returns %s as %zu primitive(s) in registers\n",
                    typGetObjLayout(retTypeHnd)->GetClassName(), lowering->numLoweredElements);
             for (size_t i = 0; i < lowering->numLoweredElements; i++)
             {
@@ -1757,7 +1757,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     // (which would result in dependent promotion anyway).
     if ((m_compiler->info.compCallConv == CorInfoCallConvExtension::Swift) && varDsc->lvIsParam)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function");
+        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function", lclNum);
         return false;
     }
 #endif
@@ -6387,7 +6387,7 @@ void Compiler::lvaTableDump(FrameLayoutState curState)
     assert(codeGen->regSet.tmpAllFree());
     for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
-        printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", refCntWtdWidth, " ",
+        printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", static_cast<int>(refCntWtdWidth), " ",
                varTypeName(temp->tdTempType()));
         int offset = temp->tdTempOffs();
         printf(" [%2s%1s0x%02X]\n", isFramePointerUsed() ? STR_FPBASE : STR_SPBASE, (offset < 0 ? "-" : "+"),

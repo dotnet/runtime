@@ -99,7 +99,7 @@ void DebuggerModuleTable::AddModule(DebuggerModule *pModule)
 
     _ASSERTE(pModule != NULL);
 
-    LOG((LF_CORDB, LL_EVERYTHING, "DMT::AM: DebuggerMod:0x%x Module:0x%x\n",
+    LOG((LF_CORDB, LL_EVERYTHING, "DMT::AM: DebuggerMod:0x%p Module:0x%p\n",
         pModule, pModule->GetRuntimeModule()));
 
     DebuggerModuleEntry * pEntry = (DebuggerModuleEntry *) Add(HASH(pModule->GetRuntimeModule()));
@@ -124,7 +124,7 @@ void DebuggerModuleTable::RemoveModule(Module* pModule)
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "DMT::RM Attempting to remove Module:0x%x\n", pModule));
+    LOG((LF_CORDB, LL_INFO1000, "DMT::RM Attempting to remove Module:0x%p\n", pModule));
 
     _ASSERTE(ThreadHoldsLock());
     _ASSERTE(pModule != NULL);
@@ -140,7 +140,7 @@ void DebuggerModuleTable::RemoveModule(Module* pModule)
 
         if (pRuntimeModule == pModule)
         {
-            LOG((LF_CORDB, LL_INFO1000, "DMT::RM Removing DebuggerMod:0x%x - Module:0x%x DF:0x%x\n",
+            LOG((LF_CORDB, LL_INFO1000, "DMT::RM Removing DebuggerMod:0x%p - Module:0x%p DF:0x%p\n",
                 pDM, pModule, pDM->GetDomainAssembly()));
             TRACE_FREE(pDM);
             DeleteInteropSafe(pDM);
@@ -150,7 +150,7 @@ void DebuggerModuleTable::RemoveModule(Module* pModule)
         }
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "DMT::RM  No debugger module found for Module:0x%x\n", pModule));
+    LOG((LF_CORDB, LL_INFO1000, "DMT::RM  No debugger module found for Module:0x%p\n", pModule));
 }
 
 

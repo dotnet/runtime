@@ -752,7 +752,7 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
     {
         gtSetStmtInfo(stmt);
         fgSetStmtSeq(stmt);
-        JITDUMP("New tree:\n", dspTreeID(stmt->GetRootNode()));
+        JITDUMP("New tree:\n");
         DISPTREE(stmt->GetRootNode());
         JITDUMP("\n");
     }
@@ -2760,7 +2760,7 @@ bool Compiler::optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, PerLoopInfo* loopI
             continue;
         }
 
-        JITDUMP(" has no essential uses and will be removed\n", lclNum);
+        JITDUMP(" has no essential uses and will be removed\n");
         auto remove = [=](BasicBlock* block, Statement* stmt) {
             JITDUMP("  Removing " FMT_STMT "\n", stmt->GetID());
             fgRemoveStmt(block, stmt);

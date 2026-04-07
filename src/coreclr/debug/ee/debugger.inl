@@ -57,7 +57,7 @@ inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
         m_pRuntimeModule(pRuntimeModule),
         m_pRuntimeDomainAssembly(pDomainAssembly)
 {
-    LOG((LF_CORDB,LL_INFO10000, "DM::DM this:0x%x Module:0x%x DF:0x%x\n",
+    LOG((LF_CORDB,LL_INFO10000, "DM::DM this:%p Module:%p DF:%p\n",
         this, pRuntimeModule, pDomainAssembly));
 
     // Dynamic modules must receive ClassLoad callbacks in order to receive metadata updates as the module

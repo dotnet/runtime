@@ -7025,8 +7025,8 @@ VOID MethodTableBuilder::ValidateInterfaceMethodConstraints()
                                                    pMTItf->GetModule(),
                                                    mdTok))
             {
-                LOG((LF_CLASSLOADER, LL_INFO1000,
-                     "BADCONSTRAINTS on interface method implementation: %x\n", pTargetMD));
+                 LOG((LF_CLASSLOADER, LL_INFO1000,
+                     "BADCONSTRAINTS on interface method implementation: %p\n", pTargetMD));
                 // This exception will be due to an implicit implementation, since explicit errors
                 // will be detected in MethodImplCompareSignatures (for now, anyway).
                 CONSISTENCY_CHECK(!it.IsMethodImpl());

@@ -3364,7 +3364,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
                 printTreeID(origExpr);
                 printf(" was declared as hoistable from loop at nesting depth %d; actually hoisted from loop at depth "
                        "%d.\n",
-                       tlAndN.m_num, depth);
+                      (int)tlAndN.m_num, (int)depth);
                 assert(false);
             }
             else
@@ -5789,7 +5789,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     // the implicit "live-in" one, which is not guaranteed, but very likely.
                     if ((defIndex == 1) && !varDsc->TypeIs(TYP_STRUCT))
                     {
-                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n", lclNum);
+                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n");
                         continue;
                     }
 

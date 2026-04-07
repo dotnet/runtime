@@ -690,12 +690,12 @@ bool gc_heap::try_get_new_free_region()
 bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
 {
 #ifdef BACKGROUND_GC
-    dprintf (GC_TABLE_LOG, ("new seg %Ix, mark_array is %Ix",
+    dprintf (GC_TABLE_LOG, ("new seg %p, mark_array is %p",
         heap_segment_mem (region), mark_array));
     if (((region->flags & heap_segment_flags_ma_committed) == 0) &&
         !commit_mark_array_new_seg (__this, region))
     {
-        dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %Ix-%Ix",
+        dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %p-%p",
             get_region_start (region), heap_segment_reserved (region)));
 
         // We don't have memory to commit the mark array so we cannot use the new region.
@@ -764,7 +764,7 @@ size_t gc_heap::generation_unusable_fragmentation (generation* inst, int hn)
             unusable_frag = fo_space + (condemned_allocated * generation_free_list_space (inst) / total_plan_allocated);
         }
 
-        dprintf (3, ("h%d g%d FLa: %Id, ESa: %Id, Ca: %Id | FO: %Id, FL %Id, fl effi %.3f, unusable fl is %Id",
+        dprintf (3, ("h%d g%d FLa: %zd, ESa: %zd, Ca: %zd | FO: %zd, FL %zd, fl effi %.3f, unusable fl is %zd",
             hn, inst->gen_num,
             generation_free_list_allocated (inst), generation_end_seg_allocated (inst), (size_t)condemned_allocated,
             fo_space, generation_free_list_space (inst),
@@ -1521,7 +1521,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
 
     uint64_t elapsed = GetHighPrecisionTimeStamp () - start_us;
 
-    dprintf (8888, ("rethreaded %Id items, merging took %I64dus (%I64dms)",
+    dprintf (8888, ("rethreaded %zd items, merging took %ldus (%ldms)",
         total_num_fl_items_rethreaded_stage2, elapsed, (elapsed / 1000)));
 #endif //_DEBUG
 
@@ -1587,7 +1587,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
         total_fl_items_for_oh_count += fl_items_for_oh_count;
     }
 
-    dprintf (8888, ("total %Id fl items, %Id are for other heaps",
+    dprintf (8888, ("total %zd fl items, %zd are for other heaps",
         total_fl_items_count, total_fl_items_for_oh_count));
 
     if (total_fl_items_for_oh_count)
@@ -2142,7 +2142,7 @@ retry:
                              (pinned_plug (loh_oldest_pin()) >=
                               generation_allocation_pointer (gen))))
                         {
-                            LOG((LF_GC, LL_INFO10, "remaining pinned plug %zx while leaving segment on allocation",
+                            LOG((LF_GC, LL_INFO10, "remaining pinned plug %p while leaving segment on allocation",
                                          pinned_plug (loh_oldest_pin())));
                             dprintf (1, ("queue empty: %d", loh_pinned_plug_que_empty_p()));
                             FATAL_GC_ERROR();
@@ -2540,14 +2540,14 @@ void gc_heap::decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_
     if (pinned_surv == 0)
     {
         (*no_pinned_surv_region_count)++;
-        dprintf (REGIONS_LOG, ("region %Ix will be empty", heap_segment_mem (region)));
+        dprintf (REGIONS_LOG, ("region %p will be empty", heap_segment_mem (region)));
     }
 
     // If this region doesn't have much pinned surv left, we demote it; otherwise the region
     // will be promoted like normal.
     size_t basic_region_size = (size_t)1 << min_segment_size_shr;
     int pinned_ratio = (int)(((double)pinned_surv * 100.0) / (double)basic_region_size);
-    dprintf (REGIONS_LOG, ("h%d g%d region %Ix(%Ix) ps: %d (%d) (%s)", heap_number,
+    dprintf (REGIONS_LOG, ("h%d g%d region %zx(%p) ps: %d (%d) (%s)", heap_number,
         heap_segment_gen_num (region), (size_t)region, heap_segment_mem (region), pinned_surv, pinned_ratio,
         ((pinned_ratio >= demotion_pinned_ratio_th) ? "ND" : "D")));
 
@@ -2579,7 +2579,7 @@ void gc_heap::process_last_np_surv_region (generation* consing_gen,
     assert ((consing_gen_alloc_ptr >= heap_segment_mem (alloc_region)) &&
             (consing_gen_alloc_ptr <= heap_segment_reserved (alloc_region)));
 
-    dprintf (REGIONS_LOG, ("h%d PLN: (%s) plan gen%d->%d, consing alloc region: %p, ptr: %p (%Id) (consing gen: %d)",
+    dprintf (REGIONS_LOG, ("h%d PLN: (%s) plan gen%d->%d, consing alloc region: %p, ptr: %p (%zd) (consing gen: %d)",
         heap_number, (settings.promotion ? "promotion" : "no promotion"), current_plan_gen_num, next_plan_gen_num,
         heap_segment_mem (alloc_region),
         generation_allocation_pointer (consing_gen),
@@ -2704,7 +2704,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
                 assert (pinned_plug_que_empty_p ());
                 if (!pinned_plug_que_empty_p ())
                 {
-                    dprintf (REGIONS_LOG, ("we still have a pin at %Ix but no more regions!?", pinned_plug (oldest_pin ())));
+                    dprintf (REGIONS_LOG, ("we still have a pin at %p but no more regions!?", pinned_plug (oldest_pin ())));
                     GCToOSInterface::DebugBreak ();
                 }
 
@@ -2746,7 +2746,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
     dprintf (REGIONS_LOG, ("h%d regions in g2: %d, g1: %d, g0: %d, before processing remaining regions",
         heap_number, planned_regions_per_gen[2], planned_regions_per_gen[1], planned_regions_per_gen[0]));
 
-    dprintf (REGIONS_LOG, ("h%d g2: surv %Id(p: %Id, %.2f%%), g1: surv %Id(p: %Id, %.2f%%), g0: surv %Id(p: %Id, %.2f%%)",
+    dprintf (REGIONS_LOG, ("h%d g2: surv %zd(p: %zd, %.2f%%), g1: surv %zd(p: %zd, %.2f%%), g0: surv %zd(p: %zd, %.2f%%)",
         heap_number,
         dd_survived_size (dynamic_data_of (2)), dd_pinned_survived_size (dynamic_data_of (2)),
         (dd_survived_size (dynamic_data_of (2)) ? ((double)dd_pinned_survived_size (dynamic_data_of (2)) * 100.0 / (double)dd_survived_size (dynamic_data_of (2))) : 0),
@@ -2929,7 +2929,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
         if (plan_regions_needed > 0)
         {
             dprintf (REGIONS_LOG, ("h%d %d regions short for having at least one region per gen, special sweep on",
-                heap_number));
+                heap_number, plan_regions_needed));
             special_sweep_p = true;
         }
     }
@@ -3477,10 +3477,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
             {
 #ifdef USE_REGIONS
                 regions_per_gen[condemned_gen_index1]++;
-                dprintf (REGIONS_LOG, ("h%d PS: gen%d %p-%p (%d, surv: %d), %d regions",
+                dprintf (REGIONS_LOG, ("h%d PS: gen%d %p-%p (%zd, surv: %d), %d regions",
                     heap_number, condemned_gen_index1,
                     heap_segment_mem (seg2), heap_segment_allocated (seg2),
-                    (heap_segment_allocated (seg2) - heap_segment_mem (seg2)),
+                    (size_t)(heap_segment_allocated (seg2) - heap_segment_mem (seg2)),
                     (int)heap_segment_survived (seg2), regions_per_gen[condemned_gen_index1]));
 #endif //USE_REGIONS
 
@@ -5713,7 +5713,7 @@ bool gc_heap::should_sweep_in_plan (heap_segment* region)
         assert (heap_segment_gen_num (region) == heap_segment_plan_gen_num (region));
 
         uint8_t surv_ratio = (uint8_t)(((double)heap_segment_survived (region) * 100.0) / (double)basic_region_size);
-        dprintf (2222, ("SSIP: region %p surv %hu / %zd = %d%%(%d)",
+        dprintf (2222, ("SSIP: region %p surv %zu / %zd = %d%%(%d)",
             heap_segment_mem (region),
             heap_segment_survived (region),
             basic_region_size,
@@ -5892,7 +5892,7 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
 
 #ifdef _DEBUG
     size_t region_index = get_basic_region_index_for_address (heap_segment_mem (region));
-    dprintf (REGIONS_LOG, ("region #%zd %p survived %zd, %s recorded %d",
+    dprintf (REGIONS_LOG, ("region #%zd %p survived %zd, %s recorded %zu",
         region_index, heap_segment_mem (region), survived,
         ((survived == heap_segment_survived (region)) ? "same as" : "diff from"),
         heap_segment_survived (region)));

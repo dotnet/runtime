@@ -539,7 +539,7 @@ inline void LogAlloc(Object* object)
 
     if (LoggingOn(LF_GCALLOC, LL_INFO10))
     {
-        LogSpewAlways("Allocated %5d bytes for %s_TYPE" FMT_ADDR FMT_CLASS "\n",
+        LogSpewAlways("Allocated %5zu bytes for %s_TYPE" FMT_ADDR FMT_CLASS "\n",
                       size,
                       pMT->IsValueType() ? "VAL" : "REF",
                       DBG_ADDR(object),

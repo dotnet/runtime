@@ -1482,7 +1482,7 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(
 #ifdef DEBUG
     if (verbose)
     {
-        printf("**** getSystemVAmd64PassStructInRegisterDescriptor(0x%x (%s), ...) =>\n", dspPtr(structHnd),
+        printf("**** getSystemVAmd64PassStructInRegisterDescriptor(%p (%s), ...) =>\n", dspPtr(structHnd),
                eeGetClassName(structHnd));
         printf("        passedInRegisters = %s\n", dspBool(structPassInRegDescPtr->passedInRegisters));
         if (structPassInRegDescPtr->passedInRegisters)

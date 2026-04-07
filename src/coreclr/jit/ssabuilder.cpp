@@ -746,7 +746,7 @@ void SsaBuilder::AddMemoryDefToEHSuccessorPhis(MemoryKind memoryKind, BasicBlock
         }
 
         DBG_SSA_JITDUMP("   Added phi arg u:%d for %s to phi defn in handler block " FMT_BB ".\n", ssaNum,
-                        memoryKindNames[memoryKind], memoryKind, succ->bbNum);
+                memoryKindNames[memoryKind], succ->bbNum);
 
         if ((memoryKind == ByrefExposed) && m_compiler->byrefStatesMatchGcHeapStates)
         {
@@ -1340,7 +1340,7 @@ void Compiler::JitTestCheckSSA()
                 printf("  Node: ");
                 printTreeID(lcl);
                 printf(", SSA name = <%d, %d> -- SSA name class %d.\n", lcl->GetLclNum(), lcl->GetSsaNum(),
-                       tlAndN.m_num);
+                      (int)tlAndN.m_num);
             }
             SSAName ssaNm;
             if (labelToSSA->Lookup(tlAndN.m_num, &ssaNm))
@@ -1359,10 +1359,10 @@ void Compiler::JitTestCheckSSA()
                     printf("Node: ");
                     printTreeID(lcl);
                     printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->GetLclNum(),
-                           lcl->GetSsaNum(), tlAndN.m_num);
+                              lcl->GetSsaNum(), (int)tlAndN.m_num);
                     printf(
                         "but this SSA name <%d,%d> has already been associated with a different SSA name class: %d.\n",
-                        ssaNm.m_lvNum, ssaNm.m_ssaNum, num2);
+                        ssaNm.m_lvNum, ssaNm.m_ssaNum, (int)num2);
                     unreached();
                 }
                 // And the current node must be of the specified SSA family.
@@ -1371,7 +1371,7 @@ void Compiler::JitTestCheckSSA()
                     printf("Node: ");
                     printTreeID(lcl);
                     printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->GetLclNum(),
-                           lcl->GetSsaNum(), tlAndN.m_num);
+                              lcl->GetSsaNum(), (int)tlAndN.m_num);
                     printf("but that name class was previously bound to a different SSA name: <%d,%d>.\n",
                            ssaNm.m_lvNum, ssaNm.m_ssaNum);
                     unreached();
@@ -1388,8 +1388,8 @@ void Compiler::JitTestCheckSSA()
                     printf("Node: ");
                     printTreeID(lcl);
                     printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->GetLclNum(),
-                           lcl->GetSsaNum(), tlAndN.m_num);
-                    printf("but this SSA name has already been associated with a different name class: %d.\n", num);
+                              lcl->GetSsaNum(), (int)tlAndN.m_num);
+                    printf("but this SSA name has already been associated with a different name class: %d.\n", (int)num);
                     unreached();
                 }
                 // Add to both mappings.

@@ -531,7 +531,7 @@ BOOL EEGetThreadContext(Thread *pThread, CONTEXT *pContext)
     BOOL ret =  pThread->GetThreadContext(pContext);
 
     STRESS_LOG6(LF_SYNC, LL_INFO1000, "Got thread context ret = %d EIP = %p ESP = %p EBP = %p, pThread = %p, ContextFlags = 0x%x\n",
-        ret, GetIP(pContext), GetSP(pContext), GetFP(pContext), pThread, pContext->ContextFlags);
+        ret, (void*)GetIP(pContext), (void*)GetSP(pContext), (void*)GetFP(pContext), pThread, pContext->ContextFlags);
 
     return ret;
 
@@ -552,7 +552,7 @@ BOOL EESetThreadContext(Thread *pThread, const CONTEXT *pContext)
     BOOL ret = pThread->SetThreadContext(pContext);
 
     STRESS_LOG6(LF_SYNC, LL_INFO1000, "Set thread context ret = %d EIP = %p ESP = %p EBP = %p, pThread = %p, ContextFlags = 0x%x\n",
-        ret, GetIP((CONTEXT*)pContext), GetSP((CONTEXT*)pContext), GetFP((CONTEXT*)pContext), pThread, pContext->ContextFlags);
+        ret, (void*)GetIP((CONTEXT*)pContext), (void*)GetSP((CONTEXT*)pContext), (void*)GetFP((CONTEXT*)pContext), pThread, pContext->ContextFlags);
 
     return ret;
 }
@@ -4313,7 +4313,7 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
         return;
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "RESUME: starting resume AD:0x%x.\n", pAppDomain));
+    LOG((LF_CORDB, LL_INFO1000, "RESUME: starting resume AD:0x%p.\n", pAppDomain));
 
 
     // Make sure we completed the previous sync
@@ -4351,8 +4351,8 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
         {
             // Thread will remain suspended due to a request from the debugger.
 
-            LOG((LF_CORDB,LL_INFO10000,"Didn't unsuspend thread 0x%x"
-                "(ID:0x%x)\n", thread, thread->GetThreadId()));
+            LOG((LF_CORDB,LL_INFO10000,"Didn't unsuspend thread %p"
+                 "(ID:0x%x)\n", thread, thread->GetThreadId()));
             LOG((LF_CORDB,LL_INFO10000,"Suspending:0x%x\n",
                 thread->m_State & TS_DebugSuspendPending));
             _ASSERTE((thread->m_State & TS_DebugWillSync) == 0);
@@ -4615,7 +4615,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
             // current EIP for the penultimate stack frame.
             pES->m_ppvRetAddrPtr = (void **) GetRegdisplayPCTAddr(pRDT);
 
-            STRESS_LOG2(LF_SYNC, LL_INFO1000, "Partially Int case hijack address = 0x%x val = 0x%x\n", pES->m_ppvRetAddrPtr, *pES->m_ppvRetAddrPtr);
+            STRESS_LOG2(LF_SYNC, LL_INFO1000, "Partially Int case hijack address = %p val = %p\n", pES->m_ppvRetAddrPtr, *pES->m_ppvRetAddrPtr);
         }
         return action;
     }
@@ -4636,7 +4636,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
         pES->m_pJitManager = pCF->GetJitManager();
 
         STRESS_LOG3(LF_SYNC, LL_INFO1000, "Stopped in Jitted code at pc = %p sp = %p fullyInt=%d\n",
-            GetControlPC(pCF->GetRegisterSet()), GetRegdisplaySP(pCF->GetRegisterSet()), pES->m_IsInterruptible);
+            (void*)GetControlPC(pCF->GetRegisterSet()), (void*)GetRegdisplaySP(pCF->GetRegisterSet()), pES->m_IsInterruptible);
 
 #if defined(FEATURE_CONSERVATIVE_GC) && !defined(USE_GC_INFO_DECODER)
         if (g_pConfig->GetGCConservative())
@@ -4754,9 +4754,9 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     else
     {
 #ifdef TARGET_X86
-        STRESS_LOG2(LF_SYNC, LL_INFO1000, "Not in Jitted code at EIP = %p, &EIP = %p\n", GetControlPC(pCF->GetRegisterSet()), GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
+        STRESS_LOG2(LF_SYNC, LL_INFO1000, "Not in Jitted code at EIP = %p, &EIP = %p\n", (void*)GetControlPC(pCF->GetRegisterSet()), (void*)GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
 #else
-        STRESS_LOG1(LF_SYNC, LL_INFO1000, "Not in Jitted code at pc = %p\n", GetControlPC(pCF->GetRegisterSet()));
+        STRESS_LOG1(LF_SYNC, LL_INFO1000, "Not in Jitted code at pc = %p\n", (void*)GetControlPC(pCF->GetRegisterSet()));
 #endif
         notJittedCase = true;
     }

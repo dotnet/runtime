@@ -10573,7 +10573,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             if (INTERESTING_JUMP_NUM == 0)
                 printf("[3] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
-            printf("[3] Jump  block is at %08X - %02X = %08X\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
+            printf("[3] Jump  block is at %08zX - %02X = %08zX\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
             printf("[3] Jump        is at %08X - %02X = %08X\n", srcOffs, emitOffsAdj, srcOffs - emitOffsAdj);
             printf("[3] Label block is at %08X - %02X = %08X\n", dstOffs, emitOffsAdj, dstOffs - emitOffsAdj);
         }
@@ -10609,7 +10609,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             if (INTERESTING_JUMP_NUM == 0)
                 printf("[4] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
-            printf("[4] Jump  block is at %08X\n", blkOffs);
+            printf("[4] Jump  block is at %08zX\n", blkOffs);
             printf("[4] Jump        is at %08X\n", srcOffs);
             printf("[4] Label block is at %08X - %02X = %08X\n", dstOffs + emitOffsAdj, emitOffsAdj, dstOffs);
         }
@@ -10621,8 +10621,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = 4;
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
-               dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs, distVal);
+        printf("; %s jump [%p/%03u] from %0*zX to %0*X: dist = 0x%08zX\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+               dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs, (size_t)distVal);
     }
 #endif
 
@@ -17230,7 +17230,7 @@ bool emitter::IsRedundantLdStr(
 
         if ((prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm))
         {
-            JITDUMP("\n -- suppressing 'ldr reg%u [reg%u, #%u]' as previous 'str reg%u [reg%u, #%u]' was from same "
+            JITDUMP("\n -- suppressing 'ldr reg%u [reg%u, #%zd]' as previous 'str reg%u [reg%u, #%zd]' was from same "
                     "location.\n",
                     reg1, reg2, imm, prevReg1, prevReg2, prevImm);
             return true;
@@ -17247,7 +17247,7 @@ bool emitter::IsRedundantLdStr(
         // since load operation doesn't (and can't) change the value of its destination register.
         if ((reg1 != reg2) && (prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm) && (reg1 != REG_ZR))
         {
-            JITDUMP("\n -- suppressing 'str reg%u [reg%u, #%u]' as previous 'ldr reg%u [reg%u, #%u]' was from same "
+            JITDUMP("\n -- suppressing 'str reg%u [reg%u, #%zd]' as previous 'ldr reg%u [reg%u, #%zd]' was from same "
                     "location.\n",
                     reg1, reg2, imm, prevReg1, prevReg2, prevImm);
             return true;

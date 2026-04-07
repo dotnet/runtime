@@ -770,7 +770,7 @@ respin:
 
                     if (dwJoinWait != WAIT_OBJECT_0)
                     {
-                        STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %zx", dwJoinWait);
+                        STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %x", dwJoinWait);
                         FATAL_GC_ERROR ();
                     }
                 }
@@ -778,7 +778,7 @@ respin:
                 // avoid race due to the thread about to reset the event (occasionally) being preempted before ResetEvent()
                 if (color == join_struct.lock_color.LoadWithoutBarrier())
                 {
-                    dprintf (9999, ("---h%d %d j%d %d - respin!!! (c:%d-%d)",
+                    dprintf (9999, ("---h%d %d j%d - respin!!! (c:%d-%d)",
                         gch->heap_number, join_id, join_struct.n_threads, color, join_struct.lock_color.LoadWithoutBarrier()));
                     goto respin;
                 }
@@ -850,7 +850,7 @@ respin:
                 uint32_t dwJoinWait = join_struct.joined_event[first_thread_arrived].Wait(INFINITE, FALSE);
                 if (dwJoinWait != WAIT_OBJECT_0)
                 {
-                    STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %zx", dwJoinWait);
+                    STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %x", dwJoinWait);
                     FATAL_GC_ERROR ();
                 }
             }
@@ -1287,7 +1287,7 @@ static void safe_switch_to_thread()
 
 #define check_msl_status(msg, size) if (msl_status == msl_retry_different_heap) \
     { \
-        dprintf (5555, ("h%d RETRY %s(%Id)", heap_number, msg, size)); \
+        dprintf (5555, ("h%d RETRY %s(%zd)", heap_number, msg, size)); \
         return a_state_retry_allocate; \
     }
 
@@ -8062,7 +8062,7 @@ gc_heap::verify_free_lists ()
                 {
                     // The logic in change_heap_count depends on the coming BGC (or blocking gen 2) to rebuild the gen 2 free list.
                     // In that case, before the rebuild happens, the gen2 free list is expected to contain free list items that do not belong to the right heap.
-                    dprintf (1, ("curr free item %p should be on heap %d, but actually is on heap %d: %d", free_list, this->heap_number, region->heap->heap_number));
+                    dprintf (1, ("curr free item %p should be on heap %d, but actually is on heap %d", free_list, this->heap_number, region->heap->heap_number));
                     FATAL_GC_ERROR();
                 }
 #endif //USE_REGIONS && MULTIPLE_HEAPS

@@ -56,7 +56,7 @@ void gc_heap::update_end_gc_time_per_heap()
 
         if (heap_number == 0)
         {
-            dprintf (3, ("prev gen%d GC end time: prev start %I64d + prev gc elapsed %Id = %I64d",
+            dprintf (3, ("prev gen%d GC end time: prev start %ld + prev gc elapsed %zd = %ld",
                 gen_number, dd_previous_time_clock (dd), dd_gc_elapsed_time (dd), (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd))));
         }
 
@@ -64,7 +64,7 @@ void gc_heap::update_end_gc_time_per_heap()
 
         if (heap_number == 0)
         {
-            dprintf (3, ("updated NGC%d %Id elapsed time to %I64d - %I64d = %I64d", gen_number, dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
+            dprintf (3, ("updated NGC%d %zd elapsed time to %ld - %ld = %ld", gen_number, dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
         }
     }
 }
@@ -194,7 +194,7 @@ void gc_heap::gc1()
         if ((heap_number == 0) && (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes))
         {
             time_since_last_gen2 = (size_t)(end_gc_time - (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd)));
-            dprintf (6666, ("BGC %Id end %I64d - (prev gen2 start %I64d + elapsed %Id = %I64d) = time inbewteen gen2 %Id",
+            dprintf (6666, ("BGC %zd end %ld - (prev gen2 start %ld + elapsed %zd = %ld) = time inbewteen gen2 %zd",
                 dd_gc_clock (dd), end_gc_time, dd_previous_time_clock (dd), dd_gc_elapsed_time (dd), (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd)), time_since_last_gen2));
         }
 #endif //DYNAMIC_HEAP_COUNT
@@ -203,14 +203,14 @@ void gc_heap::gc1()
 #ifdef DYNAMIC_HEAP_COUNT
         if ((heap_number == 0) && (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes))
         {
-            dprintf (6666, ("updating BGC %Id elapsed time to %I64d - %I64d = %I64d", dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
+            dprintf (6666, ("updating BGC %zd elapsed time to %ld - %ld = %ld", dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
 
             float bgc_percent = (float)dd_gc_elapsed_time (dd) * 100.0f / (float)time_since_last_gen2;
             dynamic_heap_count_data_t::gen2_sample& g2_sample = dynamic_heap_count_data.gen2_samples[dynamic_heap_count_data.gen2_sample_index];
             g2_sample.gc_index = VolatileLoadWithoutBarrier (&(settings.gc_index));
             g2_sample.gc_duration = dd_gc_elapsed_time (dd);
             g2_sample.gc_percent = bgc_percent;
-            dprintf (6666, ("gen2 sample %d elapsed %Id * 100 / time inbetween gen2 %Id = %.3f",
+            dprintf (6666, ("gen2 sample %d elapsed %zd * 100 / time inbetween gen2 %zd = %.3f",
                 dynamic_heap_count_data.gen2_sample_index, dd_gc_elapsed_time (dd), time_since_last_gen2, bgc_percent));
             dynamic_heap_count_data.gen2_sample_index = (dynamic_heap_count_data.gen2_sample_index + 1) % dynamic_heap_count_data_t::sample_size;
             (dynamic_heap_count_data.current_gen2_samples_count)++;
@@ -566,7 +566,7 @@ void gc_heap::gc1()
                     size_t desired_per_heap_before_trim = desired_per_heap;
                     desired_per_heap = joined_youngest_desired (desired_per_heap);
 
-                    dprintf (6666, ("final gen0 bcs: total desired: %Id (%.3fmb/heap), before smooth %zd -> after smooth %zd -> after joined %zd",
+                    dprintf (6666, ("final gen0 bcs: total desired: %zd (%.3fmb/heap), before smooth %zd -> after smooth %zd -> after joined %zd",
                         total_desired, ((double)(total_desired / n_heaps)/ 1000.0 / 1000.0),
                         desired_per_heap_before_smoothing, desired_per_heap_after_smoothing, desired_per_heap));
 #endif // HOST_64BIT

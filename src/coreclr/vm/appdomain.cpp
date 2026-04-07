@@ -3616,7 +3616,7 @@ void AppDomain::ExceptionUnwind(Frame *pFrame)
     }
     CONTRACTL_END;
 
-    LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind for %8.8x\n", pFrame));
+    LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind for %p\n", pFrame));
     Thread *pThread = GetThread();
 
     LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: not first transition or abort\n"));

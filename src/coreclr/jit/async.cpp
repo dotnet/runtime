@@ -1983,8 +1983,8 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
             while (end < endOfObjRefs && *end)
                 end++;
 
-            printf("    [%3u..%3u) obj refs\n", (start - objRefs) * TARGET_POINTER_SIZE,
-                   (end - objRefs) * TARGET_POINTER_SIZE);
+                 printf("    [%3zu..%3zu) obj refs\n", (start - objRefs) * TARGET_POINTER_SIZE,
+                     (end - objRefs) * TARGET_POINTER_SIZE);
             start = end;
         }
     }

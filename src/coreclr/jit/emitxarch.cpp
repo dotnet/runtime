@@ -12040,7 +12040,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
         printf("'%s", m_compiler->eeGetFieldName(fldHnd, true, buffer, sizeof(buffer)));
         if (offs)
         {
-            printf("%+Id", offs);
+            printf("%+zd", offs);
         }
         printf("'");
     }
@@ -14003,7 +14003,7 @@ void emitter::emitDispIns(
     if (sz != 0 && sz != id->idCodeSize() && (!asmfm || m_compiler->verbose))
     {
         // Code size in the instrDesc is different from the actual code size we've been given!
-        printf(" (ECS:%d, ACS:%d)", id->idCodeSize(), sz);
+        printf(" (ECS:%d, ACS:%zu)", id->idCodeSize(), sz);
     }
 #endif
 
@@ -17721,9 +17721,11 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             {
                 printf("[3] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
             }
-            printf("[3] Jump  block is at %08X - %02X = %08X\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
-            printf("[3] Jump        is at %08X - %02X = %08X\n", srcOffs, emitOffsAdj, srcOffs - emitOffsAdj);
-            printf("[3] Label block is at %08X - %02X = %08X\n", dstOffs, emitOffsAdj, dstOffs - emitOffsAdj);
+            printf("[3] Jump  block is at %08zX - %02X = %08zX\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
+                 printf("[3] Jump        is at %08zX - %02X = %08zX\n", (size_t)srcOffs, emitOffsAdj,
+                     (size_t)(srcOffs - emitOffsAdj));
+                 printf("[3] Label block is at %08zX - %02X = %08zX\n", (size_t)dstOffs, emitOffsAdj,
+                     (size_t)(dstOffs - emitOffsAdj));
         }
 #endif
 
@@ -17764,9 +17766,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             {
                 printf("[4] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
             }
-            printf("[4] Jump  block is at %08X\n", blkOffs);
-            printf("[4] Jump        is at %08X\n", srcOffs);
-            printf("[4] Label block is at %08X - %02X = %08X\n", dstOffs + emitOffsAdj, emitOffsAdj, dstOffs);
+            printf("[4] Jump  block is at %08zX\n", blkOffs);
+                 printf("[4] Jump        is at %08zX\n", (size_t)srcOffs);
+                 printf("[4] Label block is at %08zX - %02X = %08zX\n", (size_t)(dstOffs + emitOffsAdj), emitOffsAdj,
+                     (size_t)dstOffs);
         }
 #endif
 
@@ -17788,9 +17791,9 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = id->idjShort ? ssz : lsz;
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
-               m_compiler->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs,
-               distVal);
+         printf("; %s jump [%p/%03u] from %0*zX to %0*zX: dist = 0x%08zX\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+             m_compiler->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize,
+             (size_t)dstOffs, (size_t)distVal);
     }
 #endif
 
@@ -17813,7 +17816,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             if (INDEBUG(m_compiler->verbose ||)(id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM ||
                                                 INTERESTING_JUMP_NUM == 0))
             {
-                printf("; NOTE: size of jump [%08p] mis-predicted by %d bytes\n", dspPtr(id), offsShrinkage);
+                printf("; NOTE: size of jump [%p] mis-predicted by %d bytes\n", dspPtr(id), offsShrinkage);
             }
 #endif
         }

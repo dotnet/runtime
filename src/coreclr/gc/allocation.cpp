@@ -268,7 +268,7 @@ void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* f
             num_fl_items++;
             // Get the heap its region belongs to see if we need to put it back.
             heap_segment* region = gc_heap::region_of (free_item);
-            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d",
+            dprintf (3, ("b#%2d FL %p region %zx heap %d -> %d",
                 i, free_item, (size_t)region, this_hp->heap_number, region->heap->heap_number));
             if (region->heap != this_hp)
             {
@@ -280,7 +280,7 @@ void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* f
     }
 
     end_us = GetHighPrecisionTimeStamp();
-    dprintf (3, ("total - %Id items out of %Id items are from a different heap in %I64d us",
+    dprintf (3, ("total - %zd items out of %zd items are from a different heap in %ld us",
         num_fl_items_for_oh, num_fl_items, (end_us - start_us)));
 
     *fl_items_count = num_fl_items;
@@ -364,7 +364,7 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
             num_fl_items++;
             // Get the heap its region belongs to see if we need to put it back.
             heap_segment* region = gc_heap::region_of (free_item);
-            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d",
+            dprintf (3, ("b#%2d FL %p region %zx heap %d -> %d",
                 i, free_item, (size_t)region, current_heap->heap_number, region->heap->heap_number));
             // need to keep track of heap and only check if it's not from our heap!!
             if (region->heap != current_heap)
@@ -400,7 +400,7 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
     }
 
     end_us = GetHighPrecisionTimeStamp();
-    dprintf (8888, ("h%d total %Id items rethreaded out of %Id items in %I64d us (%I64dms)",
+    dprintf (8888, ("h%d total %zd items rethreaded out of %zd items in %ld us (%ldms)",
         current_heap->heap_number, num_fl_items_rethreaded, num_fl_items, (end_us - start_us), ((end_us - start_us) / 1000)));
 
     (*num_total_fl_items) += num_fl_items;
@@ -3515,7 +3515,7 @@ uoh_allocation_action gc_heap::get_bgc_allocate_action (int gen_number)
     // doesn't make sense.
     if (bgc_begin_uoh_size[uoh_idx] >= (2 * end_uoh_size[uoh_idx]))
     {
-        dprintf (3, ("h%d alloc-ed too much before bgc started, last end %Id, this start %Id, wait",
+        dprintf (3, ("h%d alloc-ed too much before bgc started, last end %zd, this start %zd, wait",
             heap_number, end_uoh_size[uoh_idx], bgc_begin_uoh_size[uoh_idx]));
         return uoh_alloc_wait;
     }
@@ -3571,7 +3571,7 @@ void gc_heap::bgc_record_uoh_end_seg_allocation (int gen_number, size_t size)
 #ifdef SIMPLE_DPRINTF
         dynamic_data* dd_uoh = dynamic_data_of (gen_number);
         size_t gen_size = generation_size (gen_number);
-        dprintf (3, ("h%d g%d size is now %Id (inc-ed %Id), size is %Id (gen size is %Id), budget %.3fmb, new alloc %.3fmb",
+        dprintf (3, ("h%d g%d size is now %zd (inc-ed %zd), size is %zd (gen size is %zd), budget %.3fmb, new alloc %.3fmb",
             heap_number, gen_number, bgc_uoh_current_size[uoh_idx],
             (bgc_uoh_current_size[uoh_idx] - bgc_begin_uoh_size[uoh_idx]), size, gen_size,
             mb (dd_desired_allocation (dd_uoh)), (dd_new_allocation (dd_uoh) / 1000.0 / 1000.0)));
@@ -3947,7 +3947,7 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
     if (gc_heap::gc_started)
     {
         wait_for_gc_done();
-        //dprintf (5555, ("h%d TAMS g%d %Id returning a_state_retry_allocate!", heap_number, gen_number, size));
+        //dprintf (5555, ("h%d TAMS g%d %zd returning a_state_retry_allocate!", heap_number, gen_number, size));
 
         return a_state_retry_allocate;
     }
@@ -4518,27 +4518,27 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
             else
             {
                 alloc_heap = balance_heaps_uoh (acontext, size, alloc_generation_number);
-                dprintf (3, ("uoh alloc %Id on h%d", size, alloc_heap->heap_number));
+                dprintf (3, ("uoh alloc %zd on h%d", size, alloc_heap->heap_number));
                 saved_alloc_heap = alloc_heap;
             }
 
             bool alloced_on_retry = (status == a_state_retry_allocate);
 
             status = alloc_heap->try_allocate_more_space (acontext, size, flags, alloc_generation_number);
-            dprintf (3, ("UOH h%d %Id returned from TAMS, s %d", alloc_heap->heap_number, size, status));
+            dprintf (3, ("UOH h%d %zd returned from TAMS, s %d", alloc_heap->heap_number, size, status));
 
             uint64_t end_us = GetHighPrecisionTimeStamp ();
 
             if (status == a_state_retry_allocate)
             {
                 // This records that we had to retry due to decommissioned heaps or GC in progress
-                dprintf (5555, ("UOH h%d alloc %Id retry!", alloc_heap->heap_number, size));
+                dprintf (5555, ("UOH h%d alloc %zd retry!", alloc_heap->heap_number, size));
             }
             else
             {
                 if (alloced_on_retry)
                 {
-                    dprintf (5555, ("UOH h%d allocated %Id on retry (%I64dus)", alloc_heap->heap_number, size, (end_us - start_us)));
+                    dprintf (5555, ("UOH h%d allocated %zd on retry (%ldus)", alloc_heap->heap_number, size, (end_us - start_us)));
                 }
             }
         }
@@ -5628,7 +5628,7 @@ retry:
                             ((pinned_plug (oldest_pin()) < heap_segment_allocated (seg)) &&
                              (pinned_plug (oldest_pin()) >= generation_allocation_pointer (gen))))
                         {
-                            LOG((LF_GC, LL_INFO10, "remaining pinned plug %zx while leaving segment on allocation",
+                            LOG((LF_GC, LL_INFO10, "remaining pinned plug %p while leaving segment on allocation",
                                          pinned_plug (oldest_pin())));
                             FATAL_GC_ERROR();
                         }

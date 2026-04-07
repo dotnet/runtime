@@ -3377,7 +3377,7 @@ void MethodDesc::ResetCodeEntryPointForEnC()
         PTR_PCODE ppCode = GetAddrOfNativeCodeSlot();
         PCODE pCode = *ppCode;
         LOG((LF_CORDB, LL_INFO1000000, "MD::RCEPFENC: %p -> %p\n",
-            ppCode, pCode));
+            ppCode, (void*)pCode));
         *ppCode = (PCODE)NULL;
     }
 }
