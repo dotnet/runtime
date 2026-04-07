@@ -11,6 +11,7 @@ using Internal.ReadyToRunConstants;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -109,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_helperCell, otherNode._helperCell);
         }
 
-        static CorInfoWasmType[] _helperTypeParams = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
+        static CorInfoWasmType[] _helperTypeParams = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
 
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
@@ -122,38 +123,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
 
+            MethodSignature methodSignature = WasmLowering.RaiseSignature(_typeNode.Type, _context);
+            (ArgIterator argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+
+            int[] offsets = new int[methodSignature.Length];
+            Debug.Assert(offsets.Length == _typeNode.Type.Params.Types.Length - 2);
+
+            int argIndex = 0;
+            int argOffset;
+            while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
+            {
+                offsets[argIndex] = argOffset;
+                argIndex++;
+            }
+
+            argit.Reset();
+
             // The arguments are $sp, ARG0-ARGN, PortableEntrypointThunk.
             // The general logic is...
             // Compute stack offset needed.
-            int currentOffset = 0;
-
-            for (int i = 1; i < _typeNode.Type.Params.Types.Length - 1; i++)
-            {
-                WasmValueType type = _typeNode.Type.Params.Types[i];
-                switch (type)
-                {
-                    case WasmValueType.I32:
-                    case WasmValueType.F32:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 4);
-                        currentOffset += 4;
-                        break;
-                    case WasmValueType.I64:
-                    case WasmValueType.F64:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 8);
-                        currentOffset += 8;
-                        break;
-                    case WasmValueType.V128:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 16);
-                        currentOffset += 16;
-                        break;
-
-                    default:
-                        throw new System.Exception("Unexpected wasm type arg");
-                }
-            }
 
             // Align stack to 16 byte boundaries
-            int sizeOfStoredLocals = AlignmentHelper.AlignUp(currentOffset, 16);
+            int sizeOfStoredLocals = AlignmentHelper.AlignUp(argit.SizeOfFrameArgumentArray(), 16) + transitionBlock.SizeOfTransitionBlock;
 
             List<WasmExpr> expressions = new List<WasmExpr>();
             // local.get 0
@@ -178,44 +169,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // }
 
             // In the calling convention, the first arg is the sp arg, and the last is the portable entrypoint arg. Each of those are treated specially
-            currentOffset = 0;
             for (int i = 1; i < _typeNode.Type.Params.Types.Length - 1; i++)
             {
                 expressions.Add(Local.Get(0));
                 expressions.Add(Local.Get(i));
                 WasmValueType type = _typeNode.Type.Params.Types[i];
+                int currentOffset = offsets[i - 1];
                 switch (type)
                 {
                     case WasmValueType.I32:
+                        expressions.Add(I32.Store((ulong)currentOffset));
+                        break;
                     case WasmValueType.F32:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 4);
-                        if (type == WasmValueType.I32)
-                        {
-                            expressions.Add(I32.Store((ulong)currentOffset));
-                        }
-                        else
-                        {
-                            expressions.Add(F32.Store((ulong)currentOffset));
-                        }
-                        currentOffset += 4;
+                        expressions.Add(F32.Store((ulong)currentOffset));
                         break;
                     case WasmValueType.I64:
+                        expressions.Add(I64.Store((ulong)currentOffset));
+                        break;
                     case WasmValueType.F64:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 8);
-                        if (type == WasmValueType.I64)
-                        {
-                            expressions.Add(I64.Store((ulong)currentOffset));
-                        }
-                        else
-                        {
-                            expressions.Add(F64.Store((ulong)currentOffset));
-                        }
-                        currentOffset += 8;
+                        expressions.Add(F64.Store((ulong)currentOffset));
                         break;
                     case WasmValueType.V128:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 16);
                         expressions.Add(V128.Store((ulong)currentOffset));
-                        currentOffset += 16;
                         break;
 
                     default:
@@ -231,15 +206,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(Local.Get(portableEntrypointLocalIndex)); // The address of the portable entrypoint is passed as the second
             expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // The module base address is passed as the third argument
 
+            // Pass the RVA of the Module fixup as the fourth argument
+            // i32.const (RVA of Module fixup)
+            expressions.Add(I32.ConstRVA(factory.ModuleImport));
+
             // Load the helper function address and dispatch
             // global.get {module base}
             expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // Module base used to load the helper function address
-            // i32.const (RVA of R2RHelperID)
-            expressions.Add(I32.ConstRVA(_helperCell));
-            // i32.add
-            expressions.Add(I32.Add);
-            // i32.load 0
-            expressions.Add(I32.Load(0));
+            expressions.Add(I32.LoadWithRVAOffset(_helperCell)); // Load the helper call function pointer from the helper cell, using a load with an RVA offset so that the helper cell can be left as a zero in the R2R image and fixed up at runtime without needing a relocation
             // call_indirect (i32, i32, i32, i32) (returns i32)
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
@@ -262,43 +236,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //   local.set (i+1)
             // }
             // In the calling convention, the first arg is the sp arg, and the last is the portable entrypoint arg. Each of those are treated specially
-            currentOffset = 0;
             for (int i = 1; i < _typeNode.Type.Params.Types.Length - 1; i++)
             {
                 expressions.Add(Local.Get(0));
                 WasmValueType type = _typeNode.Type.Params.Types[i];
+                int currentOffset = offsets[i - 1];
                 switch (type)
                 {
                     case WasmValueType.I32:
+                        expressions.Add(I32.Load((ulong)currentOffset));
+                        break;
                     case WasmValueType.F32:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 4);
-                        if (type == WasmValueType.I32)
-                        {
-                            expressions.Add(I32.Load((ulong)currentOffset));
-                        }
-                        else
-                        {
-                            expressions.Add(F32.Load((ulong)currentOffset));
-                        }
-                        currentOffset += 4;
+                        expressions.Add(F32.Load((ulong)currentOffset));
                         break;
                     case WasmValueType.I64:
+                        expressions.Add(I64.Load((ulong)currentOffset));
+                        break;
                     case WasmValueType.F64:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 8);
-                        if (type == WasmValueType.I64)
-                        {
-                            expressions.Add(I64.Load((ulong)currentOffset));
-                        }
-                        else
-                        {
-                            expressions.Add(F64.Load((ulong)currentOffset));
-                        }
-                        currentOffset += 8;
+                        expressions.Add(F64.Load((ulong)currentOffset));
                         break;
                     case WasmValueType.V128:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 16);
                         expressions.Add(V128.Load((ulong)currentOffset));
-                        currentOffset += 16;
                         break;
 
                     default:
