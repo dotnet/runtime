@@ -2543,8 +2543,6 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_START_PREEMPTGC:
             case GT_PROF_HOOK:
             case GT_SWITCH_TABLE:
-            case GT_PINVOKE_PROLOG:
-            case GT_PINVOKE_EPILOG:
             case GT_RETURNTRAP:
             case GT_PUTARG_STK:
             case GT_IL_OFFSET:
@@ -2552,6 +2550,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_KEEPALIVE:
             case GT_SWIFT_ERROR_RET:
             case GT_GCPOLL:
+            case GT_WASM_JEXCEPT:
                 // Never remove these nodes, as they are always side-effecting.
                 //
                 // NOTE: the only side-effect of some of these nodes (GT_CMP, GT_SUB_HI) is a write to the flags

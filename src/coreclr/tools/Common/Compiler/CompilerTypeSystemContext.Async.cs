@@ -200,6 +200,45 @@ namespace ILCompiler
         }
         private AsyncVariantHashtable _asyncVariantHashtable = new AsyncVariantHashtable();
 
+        public AsyncResumptionStub GetAsyncResumptionStub(MethodDesc targetMethod, TypeDesc owningType)
+        {
+            return _asyncResumptionStubHashtable.GetOrCreateValue(new AsyncResumptionStubKey(targetMethod, owningType));
+        }
+
+        private readonly struct AsyncResumptionStubKey : System.IEquatable<AsyncResumptionStubKey>
+        {
+            public readonly MethodDesc TargetMethod;
+            public readonly TypeDesc OwningType;
+
+            public AsyncResumptionStubKey(MethodDesc targetMethod, TypeDesc owningType)
+            {
+                TargetMethod = targetMethod;
+                OwningType = owningType;
+            }
+
+            public bool Equals(AsyncResumptionStubKey other)
+                => TargetMethod == other.TargetMethod;
+
+            public override bool Equals(object obj)
+                => obj is AsyncResumptionStubKey other && Equals(other);
+
+            public override int GetHashCode()
+                => TargetMethod.GetHashCode();
+        }
+
+        private sealed class AsyncResumptionStubHashtable : LockFreeReaderHashtable<AsyncResumptionStubKey, AsyncResumptionStub>
+        {
+            protected override int GetKeyHashCode(AsyncResumptionStubKey key) => key.GetHashCode();
+            protected override int GetValueHashCode(AsyncResumptionStub value) => value.TargetMethod.GetHashCode();
+            protected override bool CompareKeyToValue(AsyncResumptionStubKey key, AsyncResumptionStub value)
+                => key.TargetMethod == value.TargetMethod;
+            protected override bool CompareValueToValue(AsyncResumptionStub value1, AsyncResumptionStub value2)
+                => value1.TargetMethod == value2.TargetMethod;
+            protected override AsyncResumptionStub CreateValueFromKey(AsyncResumptionStubKey key)
+                => new AsyncResumptionStub(key.TargetMethod, key.OwningType);
+        }
+        private AsyncResumptionStubHashtable _asyncResumptionStubHashtable = new AsyncResumptionStubHashtable();
+
         public MetadataType GetContinuationType(GCPointerMap pointerMap)
         {
             return _continuationTypeHashtable.GetOrCreateValue(pointerMap);

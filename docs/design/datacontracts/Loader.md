@@ -62,12 +62,15 @@ TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
 TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva);
+TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
 IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
+bool IsReadyToRun(ModuleHandle handle);
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
@@ -101,6 +104,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
+| `Module` | `SimpleName` | Simple name of the Module (UTF-8, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
 | `Module` | `AvailableTypeParams` | Pointer to an EETypeHashTable |
 | `Module` | `InstMethodHashTable` | Pointer to an InstMethodHashTable |
@@ -387,7 +391,17 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
 
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
 {
-    if (rva == 0)
+    return GetRvaData(peAssemblyPtr, rva, isNullOk: false);
+}
+
+TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva)
+{
+    return GetRvaData(peAssemblyPtr, rva, isNullOk: true);
+}
+
+private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNullOk)
+{
+    if (rva == 0 && !isNullOk)
         return TargetPointer.Null;
     TargetPointer peImage = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
     if(peImage == TargetPointer.Null)
@@ -562,6 +576,16 @@ private static ModuleFlags GetFlags(uint flags)
 ModuleFlags GetFlags(ModuleHandle handle)
 {
     return GetFlags(target.Read<uint>(handle.Address + /* Module::Flags offset */));
+}
+
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName)
+{
+    TargetPointer simpleNameStart = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
+    if (simpleNameStart == TargetPointer.Null)
+        return false;
+    byte[] simpleNameBytes = // Read<byte> from target starting at simpleNameStart until null terminator
+    simpleName = // convert to string, throw on invalid UTF-8
+    return true;
 }
 
 string GetPath(ModuleHandle handle)

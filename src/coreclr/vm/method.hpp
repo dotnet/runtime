@@ -1722,6 +1722,12 @@ public:
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
     }
 
+    MethodDesc* GetAsyncOtherVariantNoCreate(BOOL allowInstParam = TRUE)
+    {
+        _ASSERTE(HasAsyncOtherVariant());
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, FALSE, AsyncVariantLookup::AsyncOtherVariant);
+    }
+
     MethodDesc* GetAsyncVariant(BOOL allowInstParam = TRUE)
     {
         _ASSERT(!IsAsyncVariantMethod());
@@ -2843,7 +2849,9 @@ public:
         StubDelegateInvokeMethod = 18,
 
         StubAsyncResume = 19,
-        StubLast = 20
+
+        StubCLRToCOMEvent = 20,
+        StubLast = 21
     };
 
     enum Flag : DWORD
@@ -2965,7 +2973,8 @@ public:
         bool isStepThrough = false;
 
         ILStubType type = GetILStubType();
-        isStepThrough = type == StubUnboxingIL || type == StubInstantiating;
+
+        isStepThrough = type == StubUnboxingIL || type == StubInstantiating || type == StubCLRToCOMEvent;
 
         return isStepThrough;
     }
@@ -3462,14 +3471,11 @@ struct CLRToCOMCallInfo
     // EEImplMethodDesc that has already been initialized for COM interop.
     inline static CLRToCOMCallInfo *FromMethodDesc(MethodDesc *pMD);
 
-    union
-    {
-        // IL stub for CLR to COM call
-        PCODE m_pILStub;
+    // IL stub for CLR to COM call
+    PCODE m_pILStub;
 
-        // MethodDesc of the COM event provider to forward the call to (COM event interfaces)
-        MethodDesc *m_pEventProviderMD;
-    };
+    // MethodDesc of the COM event provider to forward the call to (COM event interfaces)
+    MethodDesc *m_pEventProviderMD;
 
     // method table of the interface which this represents
     PTR_MethodTable m_pInterfaceMT;

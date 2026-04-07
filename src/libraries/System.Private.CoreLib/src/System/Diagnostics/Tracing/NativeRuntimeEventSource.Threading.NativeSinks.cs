@@ -224,6 +224,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         public unsafe void ThreadPoolIOEnqueue(NativeOverlapped* nativeOverlapped)
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
@@ -265,6 +266,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         public unsafe void ThreadPoolIODequeue(NativeOverlapped* nativeOverlapped)
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
@@ -304,6 +306,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         public unsafe void ThreadPoolIOPack(NativeOverlapped* nativeOverlapped)
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))

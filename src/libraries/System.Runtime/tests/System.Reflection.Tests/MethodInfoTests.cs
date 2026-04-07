@@ -159,6 +159,22 @@ namespace System.Reflection.Tests
             Assert.Equal(returnValue, genReturnValue);
         }
 
+        private interface IStaticInterface
+        {
+            public static virtual string? StaticVirtual(string? s) => s;
+        }
+
+        [Fact]
+        public void CreateDelegate_StaticVirtual()
+        {
+            MethodInfo miStaticVirtual = GetMethod(typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtual));
+            const string testString = "test";
+
+            Func<string?, string?> methodDelegate = miStaticVirtual.CreateDelegate<Func<string?, string?>>();
+            string? returnValue = methodDelegate(testString);
+            Assert.Equal(testString, returnValue);
+        }
+
         [Theory]
         [InlineData(typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualMethod), null, typeof(ArgumentNullException))]
         [InlineData(typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualMethod), typeof(Delegate_Void_Int), typeof(ArgumentException))]

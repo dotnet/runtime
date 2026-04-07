@@ -279,7 +279,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     using (DirectorySearcher dirSearcher = new DirectorySearcher(deSCN))
                     {
-                        dirSearcher.Filter = "(&(objectClass=classSchema)(systemAuxiliaryClass=" + auxClassName + "))";
+                        dirSearcher.Filter = "(&(objectClass=classSchema)(systemAuxiliaryClass=" + ADUtils.EscapeRFC2254SpecialChars(auxClassName) + "))";
                         dirSearcher.PropertiesToLoad.Add("ldapDisplayName");
 
                         List<string> objectClasses = new List<string>();
@@ -331,7 +331,7 @@ namespace System.DirectoryServices.AccountManagement
                         foreach (string objectClass in _cachedBindableObjectList)
                         {
                             filter.Append("(objectClass=");
-                            filter.Append(objectClass);
+                            filter.Append(ADUtils.EscapeRFC2254SpecialChars(objectClass));
                             filter.Append(')');
                         }
 

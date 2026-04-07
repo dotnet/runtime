@@ -5,7 +5,6 @@
 #ifndef __HOLDER_H_
 #define __HOLDER_H_
 
-#include <wincrypt.h>
 #include "cor.h"
 #include "staticcontract.h"
 #include "volatile.h"
@@ -16,7 +15,6 @@
 #include <type_traits>
 
 #if defined(FEATURE_COMINTEROP) && !defined(STRIKE)
-#include <Activation.h>
 #include <Inspectable.h>
 #endif
 
@@ -30,7 +28,7 @@
 // Make sure we can recurse deep enough for FORCEINLINE
 #pragma inline_recursion(on)
 #pragma inline_depth(16)
-#pragma warning(disable:4714)
+#pragma warning(disable:4714) // function 'function' marked as __forceinline not inlined
 #endif  // _MSC_VER
 
 //------------------------------------------------------------------------------------------------
@@ -434,13 +432,6 @@ class ConditionalStateHolder
 
     HIDE_GENERATED_METHODS(ConditionalStateHolder)
 };  // class ConditionalStateHolder<>
-
-
-// Making the copy constructor private produces a warning about "can't generate copy
-// constructor" on all holders (duh, that's the point.)
-#ifdef _MSC_VER
-#pragma warning(disable:4511)
-#endif  // _MSC_VER
 
 //-----------------------------------------------------------------------------
 // BaseWrapper is just Base like a Holder, but it "transparently" proxies the type it contains,
@@ -873,7 +864,7 @@ public:
 //  USE SafeComHolder
 //
 // ReleaseHolder : COM Interface holder for use outside the VM (or on well known instances
-//                  which do not need preemptive Relesae)
+//                  which do not need preemptive Release)
 //
 // Usage example:
 //
@@ -888,6 +879,7 @@ public:
 template <typename TYPE>
 FORCEINLINE void DoTheRelease(TYPE *value)
 {
+    STATIC_CONTRACT_WRAPPER;
     if (value)
     {
         value->Release();
@@ -895,16 +887,7 @@ FORCEINLINE void DoTheRelease(TYPE *value)
 }
 
 template<typename _TYPE>
-using DoNothingHolder = SpecializedWrapper<_TYPE, DoNothing<_TYPE*>>;
-
-#ifndef SOS_INCLUDE
-template<typename _TYPE>
 using ReleaseHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
-#endif // SOS_INCLUDE
-
-template<typename _TYPE>
-using NonVMComHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
-
 
 //-----------------------------------------------------------------------------
 // StubHolder : holder for stubs
@@ -999,7 +982,6 @@ FORCEINLINE void DeleteArray(TYPE *value)
 {
     STATIC_CONTRACT_WRAPPER;
     delete [] value;
-    value = NULL;
 }
 
 template<typename _TYPE>
@@ -1102,27 +1084,17 @@ namespace detail
 
 template<typename _TYPE>
 using ResetPointerHolder = SpecializedWrapper<_TYPE, detail::ZeroMem<_TYPE>::Invoke>;
-template<typename _TYPE>
-using FieldNuller = SpecializedWrapper<_TYPE, detail::ZeroMem<_TYPE>::Invoke>;
 
 //-----------------------------------------------------------------------------
 // Wrap win32 functions using HANDLE
 //-----------------------------------------------------------------------------
 
 FORCEINLINE void VoidCloseHandle(HANDLE h) { if (h != NULL) CloseHandle(h); }
-// (UINT_PTR) -1 is INVALID_HANDLE_VALUE
-FORCEINLINE void VoidCloseFileHandle(HANDLE h) { if (h != ((HANDLE)((LONG_PTR) -1))) CloseHandle(h); }
-FORCEINLINE void VoidUnmapViewOfFile(void *ptr) { UnmapViewOfFile(ptr); }
-
-template <typename TYPE>
-FORCEINLINE void TypeUnmapViewOfFile(TYPE *ptr) { UnmapViewOfFile(ptr); }
 
 // (UINT_PTR) -1 is INVALID_HANDLE_VALUE
 //@TODO: Dangerous default value. Some Win32 functions return INVALID_HANDLE_VALUE, some return NULL (such as CreatEvent).
 typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseHandle, (UINT_PTR) -1> HandleHolder;
-typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseFileHandle, (UINT_PTR) -1> FileHandleHolder;
 
-typedef Wrapper<void *, DoNothing, VoidUnmapViewOfFile> MapViewHolder;
 
 //-----------------------------------------------------------------------------
 // Misc holders
@@ -1130,26 +1102,99 @@ typedef Wrapper<void *, DoNothing, VoidUnmapViewOfFile> MapViewHolder;
 
 // A holder for HMODULE.
 FORCEINLINE void HolderFreeLibrary(HMODULE h) { FreeLibrary(h); }
-
 typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, 0> HModuleHolder;
 
-template <typename T> FORCEINLINE
-void DoLocalFree(T* pMem)
+template<typename T>
+class LifetimeHolder final
 {
+    using Type = typename T::Type;
+    Type m_value;
+
+public:
+    LifetimeHolder() : m_value{ T::Default() } { STATIC_CONTRACT_LEAF; }
+    explicit LifetimeHolder(Type value) : m_value{ value } { STATIC_CONTRACT_LEAF; }
+
+    LifetimeHolder(const LifetimeHolder&) = delete;
+    LifetimeHolder& operator=(const LifetimeHolder&) = delete;
+
+    LifetimeHolder(LifetimeHolder&& other)
+        : m_value{ other.Detach() }
+    {
+        STATIC_CONTRACT_WRAPPER;
+    }
+
+    LifetimeHolder& operator=(LifetimeHolder&& other)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (this != &other)
+        {
+            Free();
+            m_value = other.Detach();
+        }
+        return *this;
+    }
+
+    ~LifetimeHolder() noexcept { STATIC_CONTRACT_WRAPPER; Free(); }
+
+    LifetimeHolder& operator=(Type value)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        Free();
+        m_value = value;
+        return *this;
+    }
+
+    operator Type() const { STATIC_CONTRACT_LEAF; return m_value; }
+    Type* operator&() { STATIC_CONTRACT_LEAF; _ASSERTE(m_value == T::Default()); return &m_value; }
+
+    void Free()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        T::Free(m_value);
+        m_value = T::Default();
+    }
+
+    Type Detach()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        Type value = m_value;
+        m_value = T::Default();
+        return value;
+    }
+};
+
+struct MapViewTraits final
+{
+    using Type = void*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (h != NULL)
+            ::UnmapViewOfFile(h);
+    }
+};
+
+using MapViewHolder = LifetimeHolder<MapViewTraits>;
+
+template<typename T>
+struct LocalAllocTraits final
+{
+    using Type = T;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifdef HOST_WINDOWS
-    (LocalFree)((void*)pMem);
+        ::LocalFree((void*)h);
 #else
-    (free)((void*)pMem);
+        ::free((void*)h);
 #endif
-}
+    }
+};
 
-template<typename _TYPE>
-using LocalAllocHolder = SpecializedWrapper<_TYPE, DoLocalFree<_TYPE>>;
-
-inline void BoolSet( _Out_ bool * val ) { *val = true; }
-inline void BoolUnset( _Out_ bool * val ) { *val = false; }
-
-typedef Wrapper< bool *, BoolSet, BoolUnset > BoolFlagStateHolder;
+template<typename T>
+using LocalAllocHolder = LifetimeHolder<LocalAllocTraits<T>>;
 
 //
 // We need the following methods to have volatile arguments, so that they can accept
@@ -1160,12 +1205,6 @@ FORCEINLINE void CounterIncrease(RAW_KEYWORD(volatile) LONG* p) {InterlockedIncr
 FORCEINLINE void CounterDecrease(RAW_KEYWORD(volatile) LONG* p) {InterlockedDecrement(p);};
 
 typedef Wrapper<RAW_KEYWORD(volatile) LONG*, CounterIncrease, CounterDecrease, (UINT_PTR)0, CompareDefault<RAW_KEYWORD(volatile) LONG*>> CounterHolder;
-
-
-#ifdef HOST_WINDOWS
-FORCEINLINE void RegKeyRelease(HKEY k) {RegCloseKey(k);};
-typedef Wrapper<HKEY,DoNothing,RegKeyRelease> RegKeyHolder;
-#endif // HOST_WINDOWS
 
 class ErrorModeHolder final
 {
@@ -1192,57 +1231,41 @@ public:
 // HKEYHolder : HKEY holder, Calls RegCloseKey on scope exit.
 //
 //  {
-//      HKEYHolder hFoo = NULL;
-//      RegOpenKeyEx(HKEY_CLASSES_ROOT, L"Interface",0, KEY_READ, hFoo);
+//      HKEYHolder hFoo;
+//      RegOpenKeyEx(HKEY_CLASSES_ROOT, L"Interface",0, KEY_READ, &hFoo);
 //
 //  } // close key on out of scope via RegCloseKey.
 //-----------------------------------------------------------------------------
-
-class HKEYHolder
+struct HKEYTraits final
 {
-public:
-    HKEYHolder()
-    {
-        STATIC_CONTRACT_LEAF;
-        m_value = 0;
-    }
-
-    ~HKEYHolder()
+    using Type = HKEY;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
     {
         STATIC_CONTRACT_WRAPPER;
-        if (m_value != NULL)
-            ::RegCloseKey(m_value);
+        if (h != NULL)
+            ::RegCloseKey(h);
     }
-
-    FORCEINLINE void operator=(HKEY p)
-    {
-        STATIC_CONTRACT_LEAF;
-        if (p != 0)
-            m_value = p;
-    }
-
-    FORCEINLINE operator HKEY()
-    {
-        STATIC_CONTRACT_LEAF;
-        return m_value;
-    }
-
-    FORCEINLINE operator HKEY*()
-    {
-        STATIC_CONTRACT_LEAF;
-        return &m_value;
-    }
-
-    FORCEINLINE HKEY* operator&()
-    {
-        STATIC_CONTRACT_LEAF;
-        return &m_value;
-    }
-
-private:
-    HKEY m_value;
 };
+
+using HKEYHolder = LifetimeHolder<HKEYTraits>;
 #endif // HOST_WINDOWS
+
+#ifdef FEATURE_COMINTEROP
+struct BSTRTraits final
+{
+    using Type = BSTR;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (h != NULL)
+            ::SysFreeString(h);
+    }
+};
+
+using BSTRHolder = LifetimeHolder<BSTRTraits>;
+#endif // FEATURE_COMINTEROP
 
 //----------------------------------------------------------------------------
 //

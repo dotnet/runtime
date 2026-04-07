@@ -20,7 +20,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 namespace System.Diagnostics.CodeAnalysis
 {
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
     public sealed class RequiresUnsafeAttribute : Attribute
     { }
 }";
@@ -391,6 +391,70 @@ namespace System.Diagnostics.CodeAnalysis
                 {
                     _ = M1();
                 }
+            }
+            """;
+
+            await VerifyRequiresUnsafeAnalyzer(source: src);
+        }
+
+        [Fact]
+        public async Task RequiresUnsafeInsideLambdaInUnsafeMethod()
+        {
+            var src = """
+            using System;
+            using System.Diagnostics.CodeAnalysis;
+
+            public class C
+            {
+                [RequiresUnsafe]
+                public int M1() => 0;
+
+                public unsafe void M2()
+                {
+                    Action a = () => M1();
+                    a();
+                }
+            }
+            """;
+
+            await VerifyRequiresUnsafeAnalyzer(source: src);
+        }
+
+        [Fact]
+        public async Task RequiresUnsafeInsideAnonymousDelegateInUnsafeMethod()
+        {
+            var src = """
+            using System;
+            using System.Diagnostics.CodeAnalysis;
+
+            public class C
+            {
+                [RequiresUnsafe]
+                public int M1() => 0;
+
+                public unsafe void M2()
+                {
+                    Action a = delegate { M1(); };
+                    a();
+                }
+            }
+            """;
+
+            await VerifyRequiresUnsafeAnalyzer(source: src);
+        }
+
+        [Fact]
+        public async Task RequiresUnsafeInsideUnsafeFieldInitializer()
+        {
+            var src = """
+            using System.Diagnostics.CodeAnalysis;
+
+            public class C
+            {
+                [RequiresUnsafe]
+                public static int M1() => 0;
+
+                private static unsafe int _field = M1();
             }
             """;
 
