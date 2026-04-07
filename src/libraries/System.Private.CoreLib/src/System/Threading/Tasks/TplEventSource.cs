@@ -41,12 +41,12 @@ namespace System.Threading.Tasks
                 AsyncInstrumentation.Flags.ResumeAsyncContext |
                 AsyncInstrumentation.Flags.SuspendAsyncContext |
                 AsyncInstrumentation.Flags.CompleteAsyncContext |
-                AsyncInstrumentation.Flags.UnwindAsyncException : 0;
+                AsyncInstrumentation.Flags.UnwindAsyncException : AsyncInstrumentation.Flags.Disabled;
 
             tplFlags |= IsEnabled(EventLevel.Informational, Keywords.AsyncCausalityOperation) ?
                 AsyncInstrumentation.Flags.CreateAsyncContext |
                 AsyncInstrumentation.Flags.CompleteAsyncContext |
-                AsyncInstrumentation.Flags.UnwindAsyncException : 0;
+                AsyncInstrumentation.Flags.UnwindAsyncException : AsyncInstrumentation.Flags.Disabled;
 
             AsyncInstrumentation.UpdateTplFlags(tplFlags);
         }
