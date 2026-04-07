@@ -15,6 +15,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
 {
     public static class Binaries
     {
+        public static OSPlatform CurrentOSPlatform { get; } =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX :
+            RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) ? OSPlatform.FreeBSD :
+            RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS")) ? OSPlatform.Create("ILLUMOS") : OSPlatform.Windows;
+
         public static string GetExeName(string exeName) =>
             exeName + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty);
 
