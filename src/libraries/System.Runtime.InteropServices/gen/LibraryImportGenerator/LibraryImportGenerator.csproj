@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" />
+    <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" SetConfiguration="Configuration=$(LibrariesConfiguration)" />
   </ItemGroup>
 
   <ItemGroup>
