@@ -294,10 +294,12 @@ internal class TestPlaceholderTarget : Target
         if (_dataWriter is null)
             throw new NotImplementedException();
         Span<byte> buffer = stackalloc byte[Unsafe.SizeOf<T>()];
-        if (IsLittleEndian)
-            value.TryWriteLittleEndian(buffer, out _);
-        else
-            value.TryWriteBigEndian(buffer, out _);
+        bool success = IsLittleEndian
+            ? value.TryWriteLittleEndian(buffer, out int bytesWritten)
+            : value.TryWriteBigEndian(buffer, out bytesWritten);
+
+        if (!success || bytesWritten != buffer.Length)
+            throw new InvalidOperationException($"Failed to write {typeof(T)} to buffer.");
         WriteBuffer(address, buffer);
     }
 

@@ -393,7 +393,8 @@ internal readonly struct Loader_1 : ILoader
         Target.TypeInfo type = _target.GetTypeInfo(DataType.Module);
         ulong flagsAddr = handle.Address + (ulong)type.Fields[nameof(Data.Module.Flags)].Offset;
         uint currentFlags = _target.Read<uint>(flagsAddr);
-        uint updated = (currentFlags & ~DebuggerInfoMask) | (newBits << DebuggerInfoShift);
+        uint debuggerInfoBitsMask = DebuggerInfoMask >> DebuggerInfoShift;
+        uint updated = (currentFlags & ~DebuggerInfoMask) | ((newBits & debuggerInfoBitsMask) << DebuggerInfoShift);
         _target.Write<uint>(flagsAddr, updated);
     }
 
