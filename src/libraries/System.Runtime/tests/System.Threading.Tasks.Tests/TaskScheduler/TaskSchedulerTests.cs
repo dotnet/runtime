@@ -299,7 +299,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(TaskScheduler.Default, foundSchedulers);
         }
 
-        [ConditionalFact(nameof(DebuggerIsAttached))]
+        [ConditionalFact(typeof(TaskSchedulerTests), nameof(DebuggerIsAttached))]
         public static void GetTaskSchedulersForDebugger_DebuggerAttached_ReturnsAllSchedulers()
         {
             MethodInfo getTaskSchedulersForDebuggerMethod = typeof(TaskScheduler).GetTypeInfo().GetDeclaredMethod("GetTaskSchedulersForDebugger");
@@ -314,7 +314,7 @@ namespace System.Threading.Tasks.Tests
             GC.KeepAlive(cesp);
         }
 
-        [ConditionalFact(nameof(DebuggerIsAttached))]
+        [ConditionalFact(typeof(TaskSchedulerTests), nameof(DebuggerIsAttached))]
         public static void GetScheduledTasksForDebugger_DebuggerAttached_ReturnsTasksFromCustomSchedulers()
         {
             var nonExecutingScheduler = new BuggyTaskScheduler(faultQueues: false);

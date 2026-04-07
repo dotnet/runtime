@@ -12,7 +12,7 @@ namespace System.IO.Ports.Tests
     {
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_CanWrite), nameof(HasOneSerialPort))]
         public void CanWrite_Open_Close()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -27,7 +27,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_CanWrite), nameof(HasOneSerialPort))]
         public void CanWrite_Open_BaseStreamClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -42,7 +42,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_CanWrite), nameof(HasOneSerialPort))]
         public void CanWrite_AfterOpen()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

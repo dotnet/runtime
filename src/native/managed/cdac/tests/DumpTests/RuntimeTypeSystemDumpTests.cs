@@ -253,4 +253,44 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
             Assert.Equal(0x06000000u, token & 0xFF000000u);
         }
     }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasLoadedModule(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ILoader loader = Target.Contracts.Loader;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        TargetPointer modulePointer = rts.GetModule(handle);
+        Assert.NotEqual(TargetPointer.Null, modulePointer);
+
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
+        bool isLoaded = loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _);
+        Assert.True(isLoaded, "System.Object's module should have loaded image contents");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringMethodTableHasLoadedModule(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ILoader loader = Target.Contracts.Loader;
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(stringMT);
+
+        TargetPointer modulePointer = rts.GetModule(handle);
+        Assert.NotEqual(TargetPointer.Null, modulePointer);
+
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
+        bool isLoaded = loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _);
+        Assert.True(isLoaded, "System.String's module should have loaded image contents");
+    }
 }

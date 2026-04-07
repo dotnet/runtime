@@ -115,7 +115,7 @@ namespace System.Net.Http.Functional.Tests
         public static bool IsSocketsHttpHandlerAndRemoteExecutorSupported => !HttpClientHandlerTestBase.IsWinHttpHandler && RemoteExecutor.IsSupported;
 
         [OuterLoop("Uses external servers")]
-        [ConditionalFact(nameof(IsSocketsHttpHandlerAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(HttpClientHandler_Proxy_Test), nameof(IsSocketsHttpHandlerAndRemoteExecutorSupported))]
         public async Task Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
             await RemoteExecutor.Invoke(async (useVersionString) =>
@@ -308,7 +308,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(HttpClientHandlerTestBase.IsWinHttpHandler))]
+        [ConditionalFact(typeof(HttpClientHandler_Proxy_Test), nameof(HttpClientHandlerTestBase.IsWinHttpHandler))]
         public async Task Proxy_SslProxyUnsupported_Throws()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())

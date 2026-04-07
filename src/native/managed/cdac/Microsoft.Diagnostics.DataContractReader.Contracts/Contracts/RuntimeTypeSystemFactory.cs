@@ -11,10 +11,12 @@ public sealed class RuntimeTypeSystemFactory : IContractFactory<IRuntimeTypeSyst
     {
         TargetPointer targetPointer = target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable);
         TargetPointer freeObjectMethodTable = target.ReadPointer(targetPointer);
+        TargetPointer continuationMethodTablePointer = target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable);
+        TargetPointer continuationMethodTable = target.ReadPointer(continuationMethodTablePointer);
         ulong methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
         return version switch
         {
-            1 => new RuntimeTypeSystem_1(target, new RuntimeTypeSystemHelpers.TypeValidation(target), new RuntimeTypeSystemHelpers.MethodValidation(target, methodDescAlignment), freeObjectMethodTable, methodDescAlignment),
+            1 => new RuntimeTypeSystem_1(target, new RuntimeTypeSystemHelpers.TypeValidation(target, continuationMethodTable), new RuntimeTypeSystemHelpers.MethodValidation(target, methodDescAlignment), freeObjectMethodTable, continuationMethodTable, methodDescAlignment),
             _ => default(RuntimeTypeSystem),
         };
     }

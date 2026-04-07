@@ -80,6 +80,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/per-module.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/polyfills.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/runtime-list.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/scheduling.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/strings.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/types.ts"
 

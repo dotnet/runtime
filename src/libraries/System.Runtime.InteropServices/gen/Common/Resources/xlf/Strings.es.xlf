@@ -507,11 +507,6 @@
         <target state="translated">Los atributos "[In]" y "[Out]" solo se admiten en parámetros de matriz. Considere la posibilidad de usar la palabra clave "ref" para hacer que el parámetro sea mutable.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">Atributos [In] y [Out]</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">Los objetos serializados a partir de VARIANTES como parámetros 'in' en llamadas no administradas a administradas no propagarán el resultado actualizado, incluso si VARIANTE es una variante VT_BYREF. Use un parámetro 'ref' en lugar de un parámetro 'in' para volver a propagar el valor actualizado al llamador.</target>

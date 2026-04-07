@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 /// </summary>
 internal static class Program
 {
+    public const string TestStringValue = "cDAC-ServerGC-test-string";
     private static void Main()
     {
         // Verify server GC is enabled
@@ -34,8 +35,25 @@ internal static class Program
             pinnedHandles[i] = GCHandle.Alloc(new byte[256], GCHandleType.Pinned);
         }
 
+        // Create weak and strong handles
+        var weakRef = new WeakReference(new object());
+        var strongHandle = GCHandle.Alloc(TestStringValue, GCHandleType.Normal);
+        var weakLongHandle = GCHandle.Alloc(new object(), GCHandleType.WeakTrackResurrection);
+
+        // Create dependent handle
+        object dependentTarget = new object();
+        object dependentValue = new byte[16];
+        DependentHandle dependentHandle = new(dependentTarget, dependentValue);
+
+
         GC.KeepAlive(roots);
         GC.KeepAlive(pinnedHandles);
+        GC.KeepAlive(weakRef);
+        GC.KeepAlive(strongHandle);
+        GC.KeepAlive(weakLongHandle);
+        GC.KeepAlive(dependentTarget);
+        GC.KeepAlive(dependentValue);
+        GC.KeepAlive(dependentHandle);
 
         Environment.FailFast("cDAC dump test: ServerGC debuggee intentional crash");
     }

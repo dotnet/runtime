@@ -209,7 +209,7 @@ namespace System.Threading.Threads.Tests
         private static bool IsWindowsNanoServerAndRemoteExecutorSupported => PlatformDetection.IsWindowsNanoServer && RemoteExecutor.IsSupported;
 
         // Thread is always initialized as MTA irrespective of the attribute present.
-        [ConditionalFact(nameof(IsWindowsNanoServerAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ThreadTests), nameof(IsWindowsNanoServerAndRemoteExecutorSupported))]
         public static void ApartmentState_NoAttributePresent_DefaultState_Nano()
         {
             RemoteExecutor.Invoke(() =>

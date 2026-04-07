@@ -54,6 +54,8 @@ namespace ILCompiler
             new("--composite") { Description = SR.CompositeBuildMode };
         public Option<string> CompositeKeyFile { get; } =
             new("--compositekeyfile") { Description = SR.CompositeKeyFile };
+        public Option<string> ReadyToRunHeaderSymbolName { get; } =
+            new("--rtr-header-symbol-name") { Description = SR.ReadyToRunHeaderSymbolName };
         public Option<bool> CompileNoMethods { get; } =
             new("--compile-no-methods") { Description = SR.CompileNoMethodsOption };
         public Option<bool> OutNearInput { get; } =
@@ -142,6 +144,10 @@ namespace ILCompiler
             new("--make-repro-path") { Description = "Path where to place a repro package" };
         public Option<bool> HotColdSplitting { get; } =
             new("--hot-cold-splitting") { Description = SR.HotColdSplittingOption };
+        public Option<bool> StripInliningInfo { get; } =
+            new("--strip-inlining-info") { Description = SR.StripInliningInfoOption };
+        public Option<bool> StripDebugInfo { get; } =
+            new("--strip-debug-info") { Description = SR.StripDebugInfoOption };
         public Option<bool> SynthesizeRandomMibc { get; } =
             new("--synthesize-random-mibc");
 
@@ -175,6 +181,7 @@ namespace ILCompiler
             Options.Add(InputBubbleReferenceFilePaths);
             Options.Add(Composite);
             Options.Add(CompositeKeyFile);
+            Options.Add(ReadyToRunHeaderSymbolName);
             Options.Add(CompileNoMethods);
             Options.Add(OutNearInput);
             Options.Add(SingleFileCompilation);
@@ -219,6 +226,8 @@ namespace ILCompiler
             Options.Add(CallChainProfileFile);
             Options.Add(MakeReproPath);
             Options.Add(HotColdSplitting);
+            Options.Add(StripInliningInfo);
+            Options.Add(StripDebugInfo);
             Options.Add(SynthesizeRandomMibc);
             Options.Add(DeterminismStress);
 

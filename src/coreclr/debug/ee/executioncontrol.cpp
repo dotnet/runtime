@@ -14,6 +14,7 @@
 
 #ifdef FEATURE_INTERPRETER
 #include "../../interpreter/intops.h"
+#include "../../vm/interpexec.h"
 #endif
 
 #if !defined(DACCESS_COMPILE)
@@ -23,13 +24,13 @@
 // InterpreterExecutionControl - Interpreter bytecode breakpoints
 //=============================================================================
 
-InterpreterExecutionControl InterpreterExecutionControl::s_instance;
-
 InterpreterExecutionControl* InterpreterExecutionControl::GetInstance()
 {
+    static InterpreterExecutionControl s_instance;
     return &s_instance;
 }
 
+// Assume controller lock is held by caller
 bool InterpreterExecutionControl::ApplyPatch(DebuggerControllerPatch* patch)
 {
     _ASSERTE(patch != NULL);
@@ -39,10 +40,19 @@ bool InterpreterExecutionControl::ApplyPatch(DebuggerControllerPatch* patch)
     LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::ApplyPatch %p at bytecode addr %p\n",
         patch, patch->address));
 
-    patch->opcode = *(int32_t*)patch->address;
-    *(uint32_t*)patch->address = INTOP_BREAKPOINT;
+    // Check if there is already a breakpoint patch at this address
+    uint32_t currentOpcode = *(uint32_t*)patch->address;
+    if (currentOpcode == INTOP_BREAKPOINT)
+    {
+        LOG((LF_CORDB, LL_INFO1000, "InterpreterEC::ApplyPatch Patch already applied at %p\n",
+            patch->address));
+        return false;
+    }
 
-    LOG((LF_CORDB, LL_EVERYTHING, "InterpreterEC::ApplyPatch Breakpoint inserted at %p, saved opcode %x\n",
+    patch->opcode = currentOpcode; // Save original opcode
+    patch->m_interpActivated = true; // Mark as activated (needed since opcode 0 is valid for interpreter)
+    *(uint32_t*)patch->address = INTOP_BREAKPOINT;
+    LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::ApplyPatch Breakpoint inserted at %p, saved opcode 0x%x\n",
         patch->address, patch->opcode));
 
     return true;
@@ -60,11 +70,26 @@ bool InterpreterExecutionControl::UnapplyPatch(DebuggerControllerPatch* patch)
     // Restore the original opcode
     *(uint32_t*)patch->address = (uint32_t)patch->opcode; // Opcodes are stored in uint32_t slots
     InitializePRD(&(patch->opcode));
+    patch->m_interpActivated = false; // Clear activation flag
 
     LOG((LF_CORDB, LL_EVERYTHING, "InterpreterEC::UnapplyPatch Restored opcode at %p\n",
         patch->address));
 
     return true;
+}
+
+void InterpreterExecutionControl::BypassPatch(DebuggerControllerPatch* patch, Thread* pThread)
+{
+    _ASSERTE(patch != NULL);
+    _ASSERTE(pThread != NULL);
+
+    InterpThreadContext *pThreadContext = pThread->GetInterpThreadContext();
+    _ASSERTE(pThreadContext != NULL);
+
+    pThreadContext->SetBypass((const int32_t*)patch->address, (int32_t)patch->opcode);
+
+    LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::BypassPatch at %p, opcode 0x%x\n",
+        patch->address, patch->opcode));
 }
 
 #endif // FEATURE_INTERPRETER

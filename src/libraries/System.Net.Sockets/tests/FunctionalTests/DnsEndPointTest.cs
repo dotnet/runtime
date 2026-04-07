@@ -311,7 +311,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
+        [ConditionalTheory(typeof(DnsEndPointTest), nameof(LocalhostIsBothIPv4AndIPv6))]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
         [Trait("IPv4", "true")]

@@ -111,4 +111,24 @@ public class ThreadDumpTests : DumpTestBase
         Assert.True(counts.PendingThreadCount >= 0, $"PendingThreadCount should be non-negative, got {counts.PendingThreadCount}");
         Assert.True(counts.DeadThreadCount >= 0, $"DeadThreadCount should be non-negative, got {counts.DeadThreadCount}");
     }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void GetThreadAllocContext_CanReadForAllThreads(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IThread threadContract = Target.Contracts.Thread;
+        ThreadStoreData storeData = threadContract.GetThreadStoreData();
+
+        TargetPointer currentThread = storeData.FirstThread;
+        while (currentThread != TargetPointer.Null)
+        {
+            threadContract.GetThreadAllocContext(currentThread, out long allocBytes, out long allocBytesLoh);
+            Assert.True(allocBytes >= 0, $"AllocBytes should be non-negative, got {allocBytes}");
+            Assert.True(allocBytesLoh >= 0, $"AllocBytesLoh should be non-negative, got {allocBytesLoh}");
+
+            ThreadData threadData = threadContract.GetThreadData(currentThread);
+            currentThread = threadData.NextThread;
+        }
+    }
 }

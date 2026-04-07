@@ -344,6 +344,27 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             Assert.Empty(generatedSourceDiagnostics);
         }
 
+        [Fact]
+        public async Task TestBaseline_TestWithGenericMethods_Success()
+        {
+            string testSourceCode = @"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{
+    internal static partial class TestWithGenericMethods
+    {
+        [LoggerMessage(EventId = 0, Level = LogLevel.Trace, Message = ""M0 {code}"")]
+        public static partial void M0<TCode>(ILogger logger, TCode code) where TCode : struct, System.Enum;
+
+        [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""M1 {value} {extra}"")]
+        public static partial void M1<T1, T2>(ILogger logger, T1 value, T2 extra) where T1 : class where T2 : new();
+
+        [LoggerMessage(EventId = 2, Level = LogLevel.Information, Message = ""M2 {value}"")]
+        public static partial void M2<T>(ILogger logger, T value);
+    }
+}";
+            await VerifyAgainstBaselineUsingFile("TestWithGenericMethods.generated.txt", testSourceCode);
+        }
+
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
         {
             string baseline = LineEndingsHelper.Normalize(File.ReadAllText(Path.Combine("Baselines", filename)));

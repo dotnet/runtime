@@ -9,7 +9,7 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
     {
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -51,7 +51,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -96,7 +96,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -140,7 +140,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -190,7 +190,7 @@ namespace System.Formats.Tar.Tests
             }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -240,7 +240,7 @@ namespace System.Formats.Tar.Tests
             }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]

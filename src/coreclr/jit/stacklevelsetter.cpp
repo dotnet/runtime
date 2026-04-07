@@ -290,6 +290,15 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             SetThrowHelperBlock(SCK_NULL_CHECK, block);
             break;
 
+        case GT_IND:
+        case GT_STORE_BLK:
+        case GT_STOREIND:
+            if ((node->gtFlags & GTF_IND_NONFAULTING) == 0)
+            {
+                SetThrowHelperBlock(SCK_NULL_CHECK, block);
+            }
+            break;
+
         case GT_CALL:
             if (node->AsCall()->NeedsNullCheck())
             {

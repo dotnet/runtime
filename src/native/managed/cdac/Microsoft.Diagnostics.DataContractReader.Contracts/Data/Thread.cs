@@ -35,11 +35,16 @@ internal sealed class Thread : IData<Thread>
 
         // Address of the exception tracker
         ExceptionTracker = address + (ulong)type.Fields[nameof(ExceptionTracker)].Offset;
-        // UEWatsonBucketTrackerBuckets does not exist on certain platforms
+        // UEWatsonBucketTrackerBuckets does not exist on non-Windows platforms
         UEWatsonBucketTrackerBuckets = type.Fields.TryGetValue(nameof(UEWatsonBucketTrackerBuckets), out Target.FieldInfo watsonFieldInfo)
             ? target.ReadPointer(address + (ulong)watsonFieldInfo.Offset)
             : TargetPointer.Null;
         ThreadLocalDataPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(ThreadLocalDataPtr)].Offset);
+
+        DebuggerFilterContext = target.ReadPointer(address + (ulong)type.Fields[nameof(DebuggerFilterContext)].Offset);
+        ProfilerFilterContext = type.Fields.TryGetValue(nameof(ProfilerFilterContext), out Target.FieldInfo profilerFilterContextInfo)
+            ? target.ReadPointer(address + (ulong)profilerFilterContextInfo.Offset)
+            : TargetPointer.Null;
     }
 
     public uint Id { get; init; }
@@ -56,4 +61,6 @@ internal sealed class Thread : IData<Thread>
     public TargetPointer ExceptionTracker { get; init; }
     public TargetPointer UEWatsonBucketTrackerBuckets { get; init; }
     public TargetPointer ThreadLocalDataPtr { get; init; }
+    public TargetPointer DebuggerFilterContext { get; init; }
+    public TargetPointer ProfilerFilterContext { get; init; }
 }

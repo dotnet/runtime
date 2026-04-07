@@ -53,12 +53,14 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
         lastScheduledFinalizationId?: number;
         cryptoWarnOnce?: boolean;
         isAborting?: boolean;
+        isAsyncMain?: boolean;
         gitHash?: string;
     }
     DOTNET_INTEROP: {
         gitHash?: string;
     };
     BROWSER_HOST: {};
+    BROWSER_UTILS: {};
 
     Module: EmscriptenModuleInternal;
     ENVIRONMENT_IS_NODE: boolean;
@@ -92,6 +94,8 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     writeI53ToI64(ptr: MemOffset, value: number): void;
     readI53FromI64(ptr: MemOffset): number;
     readI53FromU64(ptr: MemOffset): number;
+    UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
+    UTF8Decoder: TextDecoder | null;
 
     wasmMemory: WebAssembly.Memory;
     wasmTable: WebAssembly.Table;

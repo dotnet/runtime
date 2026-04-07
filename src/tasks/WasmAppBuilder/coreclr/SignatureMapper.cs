@@ -63,7 +63,7 @@ internal static class SignatureMapper
         }
         else if (t.IsPointer)
             c = 'i';
-        else if (t.IsFunctionPointer)
+        else if (PInvokeTableGenerator.IsFunctionPointer(t))
             c = 'i';
         else if (t.IsValueType)
         {

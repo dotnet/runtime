@@ -88,8 +88,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     if (updateFloats)
     {
         UpdateFloatingPointRegisters(pRD, GetSP());
-        _ASSERTE(pRD->pCurrentContext->Rip == GetReturnAddress());
-        _ASSERTE(pRD->pCurrentContext->Rsp == GetSP());
     }
 #endif // DACCESS_COMPILE
 
@@ -138,6 +136,28 @@ void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updat
 }
 #endif // FEATURE_RESOLVE_HELPER_DISPATCH
 
+#ifdef FEATURE_INTERPRETER
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef UNIX_AMD64_ABI
+    // The interpreter frame saves the floating point registers in the TransitionBlock, so we need to update them in the REGDISPLAY when we update the REGDISPLAY for an interpreter frame.
+    // Note: Unix AMD64 ABI has no callee-saved floating point registers, so this is Windows-only.
+    // FP callee-saved are at TransitionBlock - 232 (8 for stack alignment + 4 * 16 for FP argument registers + 10 * 16 for callee saved floating point registers).
+    TADDR pTransitionBlock = GetTransitionBlock();
+    M128A *pCalleeSavedFloats = (M128A*)((BYTE*)pTransitionBlock - 232);
+    for (int i = 0; i < 10; i++)
+    {
+        (&pRD->pCurrentContext->Xmm6)[i] = pCalleeSavedFloats[i];
+        (&pRD->pCurrentContextPointers->Xmm6)[i] = &pCalleeSavedFloats[i];
+    }
+#endif // !UNIX_AMD64_ABI
+}
+#endif // DACCESS_COMPILE
+#endif // FEATURE_INTERPRETER
+
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL
@@ -161,7 +181,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
+        UpdateFloatingPointRegisters(pRD, dac_cast<TADDR>(GetCallSiteSP()));
         // The float updating unwinds the stack so the pRD->pCurrentContext->Rip contains correct unwound Rip
         // This is used for exception handling and the Rip extracted from m_pCallerReturnAddress is slightly
         // off, which causes problem with searching for the return address on shadow stack on x64, so
@@ -415,42 +435,6 @@ void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
     pBuffer[21] = 0xE0;
 
     _ASSERTE(DbgIsExecutable(pBuffer, 22));
-}
-
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    // We need the target to be in a 64-bit aligned memory location and the call instruction
-    // to immediately precede the ComCallMethodDesc. We'll generate an indirect call to avoid
-    // consuming 3 qwords for this (mov rax, | target | nops & call rax).
-
-    // dq 123456789abcdef0h
-    // nop                              90
-    // nop                              90
-    // call [$ - 10]                    ff 15 f0 ff ff ff
-
-    SET_UNALIGNED_64(&pBufferRW[COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET], target);
-
-    pBufferRW[-2]  = 0x90;
-    pBufferRW[-1]  = 0x90;
-
-    pBufferRW[0] = 0xFF;
-    pBufferRW[1] = 0x15;
-    *((UINT32 UNALIGNED *)&pBufferRW[2]) = (UINT32)(COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET - COMMETHOD_CALL_PRESTUB_SIZE);
-
-    _ASSERTE(DbgIsExecutable(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE));
-
-    RETURN;
 }
 
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)

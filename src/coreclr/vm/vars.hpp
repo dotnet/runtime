@@ -33,7 +33,6 @@ class LoaderHeap;
 class IGCHeap;
 class Object;
 class StringObject;
-class ArrayClass;
 class MethodTable;
 class MethodDesc;
 class SyncBlockCache;
