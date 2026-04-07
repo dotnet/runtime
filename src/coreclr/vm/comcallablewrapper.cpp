@@ -296,7 +296,7 @@ extern PLATFORM_THREAD_LOCAL UMEntryThunkData * t_MostRecentUMEntryThunkData;
 //--------------------------------------------------------------------------
 extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
 {
-    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
