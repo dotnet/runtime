@@ -10392,6 +10392,34 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 }
 
 //------------------------------------------------------------------------
+// IsStoreCoalescingInvariantNode: check whether a node is simple enough to participate in
+//    lowering-time store coalescing.
+//
+// Arguments:
+//    compiler  - the compiler instance
+//    node      - the node to examine
+//    allowNull - true if a null node should be considered valid
+//
+// Return Value:
+//    true if the node is an allowed invariant input for store coalescing; otherwise false.
+//
+static bool IsStoreCoalescingInvariantNode(Compiler* compiler, GenTree* node, bool allowNull = false)
+{
+    if (node == nullptr)
+    {
+        return allowNull;
+    }
+
+    if (node->OperIsConst())
+    {
+        return true;
+    }
+
+    // We can allow bigger trees here, but it's not clear if it's worth it.
+    return node->OperIs(GT_LCL_VAR) && !compiler->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
+}
+
+//------------------------------------------------------------------------
 // GetLoadStoreCoalescingData: given a STOREIND/IND node, get the data needed to perform
 //    store/load coalescing including pointer to the previous node.
 //
@@ -10414,23 +10442,10 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
     const bool isStore = ind->OperIs(GT_STOREIND, GT_STORE_BLK);
     const bool isLoad  = ind->OperIs(GT_IND);
 
-    auto isNodeInvariant = [](Compiler* m_compiler, GenTree* node, bool allowNull) {
-        if (node == nullptr)
-        {
-            return allowNull;
-        }
-        if (node->OperIsConst())
-        {
-            return true;
-        }
-        // We can allow bigger trees here, but it's not clear if it's worth it.
-        return node->OperIs(GT_LCL_VAR) && !m_compiler->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
-    };
-
     if (isStore)
     {
         // For stores, Data() is expected to be an invariant node
-        if (!isNodeInvariant(m_compiler, ind->Data(), false))
+        if (!IsStoreCoalescingInvariantNode(m_compiler, ind->Data()))
         {
             return false;
         }
@@ -10447,14 +10462,14 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
     {
         GenTree* base  = ind->Addr()->AsAddrMode()->Base();
         GenTree* index = ind->Addr()->AsAddrMode()->Index();
-        if (!isNodeInvariant(m_compiler, base, false))
+        if (!IsStoreCoalescingInvariantNode(m_compiler, base))
         {
             // Base must be a local. It's possible for it to be nullptr when index is not null,
             // but let's ignore such cases.
             return false;
         }
 
-        if (!isNodeInvariant(m_compiler, index, true))
+        if (!IsStoreCoalescingInvariantNode(m_compiler, index, true))
         {
             // Index should be either nullptr or a local.
             return false;
@@ -10469,7 +10484,7 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
             data->lclNum = base->AsLclVar()->GetLclNum();
         }
     }
-    else if (isNodeInvariant(m_compiler, ind->Addr(), true))
+    else if (IsStoreCoalescingInvariantNode(m_compiler, ind->Addr(), true))
     {
         // Address is just a local, no offset, scale is 1
         data->baseAddr = ind->Addr();
@@ -10525,17 +10540,8 @@ bool Lowering::GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* d
         return false;
     }
 
-    auto isNodeInvariant = [](Compiler* compiler, GenTree* node) {
-        if (node->OperIsConst())
-        {
-            return true;
-        }
-
-        return node->OperIs(GT_LCL_VAR) && !compiler->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
-    };
-
     auto* lclStore = store->AsLclFld();
-    if (!isNodeInvariant(m_compiler, lclStore->Data()))
+    if (!IsStoreCoalescingInvariantNode(m_compiler, lclStore->Data()))
     {
         return false;
     }
@@ -10568,7 +10574,6 @@ bool Lowering::GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* d
 //
 // Arguments:
 //    currStore - the current store node
-//    prevStore - the previous store node
 //    currData  - coalescing data for the current store
 //    prevData  - coalescing data for the previous store
 //
@@ -10576,7 +10581,6 @@ bool Lowering::GetStoreCoalescingData(GenTree* store, LoadStoreCoalescingData* d
 //    true if it is safe to coalesce the two stores, false otherwise.
 //
 bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       currStore,
-                                                 GenTree*                       prevStore,
                                                  const LoadStoreCoalescingData& currData,
                                                  const LoadStoreCoalescingData& prevData)
 {
@@ -10612,8 +10616,8 @@ bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       
 #ifdef TARGET_ARM64
         if (currData.accessSize == TARGET_POINTER_SIZE)
         {
-            // Per Arm ARM, a 128-bit SIMD write that is 64-bit aligned is treated as a pair of
-            // single-copy atomic 64-bit writes.
+            // See the Arm Architecture Reference Manual for A-profile architecture, "Single-copy atomicity":
+            // a 128-bit SIMD write that is 64-bit aligned is treated as a pair of single-copy atomic 64-bit writes.
             isCombinedStoreAtomic = (homeAlignment >= TARGET_POINTER_SIZE) && ((minOffset % TARGET_POINTER_SIZE) == 0);
         }
 #endif
@@ -10643,15 +10647,13 @@ bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       
         if (combinedSize == 2 * TARGET_POINTER_SIZE)
         {
 #ifdef TARGET_ARM64
-            // Per Arm Architecture Reference Manual for A-profile architecture:
+            // See the Arm Architecture Reference Manual for A-profile architecture, "Single-copy atomicity":
+            // writes from SIMD and floating-point registers of a 128-bit value that is 64-bit aligned in memory are
+            // treated as a pair of single-copy atomic 64-bit writes.
             //
-            // * Writes from SIMD and floating-point registers of a 128-bit value that is 64-bit aligned in memory
-            //   are treated as a pair of single - copy atomic 64 - bit writes.
-            //
-            // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null)
-            //
-            // And we assume on ARM64 TYP_LONG/TYP_REF are always 64-bit aligned, otherwise
-            // we're already doing a load that has no atomicity guarantees.
+            // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null), and assume TYP_LONG/TYP_REF
+            // are already 64-bit aligned. Otherwise the existing load/store sequence would not have atomicity
+            // guarantees either.
             isCombinedIndirAtomic = true;
 #endif
         }
@@ -10678,6 +10680,9 @@ bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       
 //
 void Lowering::LowerStoreCoalescing(GenTree* node)
 {
+    // LA, RISC-V, ARM32, and WASM are more likely to receive a large performance hit from unaligned accesses,
+    // making this optimization questionable there.
+    // TODO-WASM-CQ: re-evaluate enabling this once we have better data for Wasm unaligned accesses.
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if (!m_compiler->opts.OptimizationEnabled())
     {
@@ -10737,16 +10742,23 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
 
         if ((currData.offset == prevData.offset) && (currData.targetType == prevData.targetType))
         {
-            if (m_compiler->gtTreeHasSideEffects(prevData.value, GTF_SIDE_EFFECT | GTF_GLOB_EFFECT | GTF_ASG) ||
-                m_compiler->gtTreeHasSideEffects(currData.value, GTF_SIDE_EFFECT | GTF_GLOB_EFFECT | GTF_ASG))
+            if (m_compiler->gtTreeHasSideEffects(prevData.value, GTF_GLOB_EFFECT) ||
+                m_compiler->gtTreeHasSideEffects(currData.value, GTF_GLOB_EFFECT))
             {
                 return;
             }
 
+            JITDUMP(
+                "Store coalescing: removing previous store [%06u] because store [%06u] rewrites the same location\n",
+                m_compiler->dspTreeID(prevTree), m_compiler->dspTreeID(node));
             BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
             continue;
         }
 
+        // TODO-ARM64-CQ: enable TYP_REF if we find a case where it's beneficial.
+        // The algorithm does support TYP_REF (with null value), but it seems to be not worth
+        // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
+        // items at once. Although, it may be profitable to do "stp q0, q0, [addr]".
         if (!varTypeIsIntegral(node) && !varTypeIsSIMD(node))
         {
             return;
@@ -10790,6 +10802,8 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
 
         if (allowOverlapOptimization && currContainsPrev)
         {
+            JITDUMP("Store coalescing: removing previous store [%06u] because store [%06u] fully overwrites it\n",
+                    m_compiler->dspTreeID(prevTree), m_compiler->dspTreeID(node));
             BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
             continue;
         }
@@ -10853,16 +10867,29 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
 #if defined(FEATURE_HW_INTRINSICS)
                 case TYP_LONG:
                 case TYP_REF:
+                    // TLDR: we should be here only if one of the conditions is true:
+                    // 1) Both stores have the GTF_IND_ALLOW_NON_ATOMIC flag
+                    // 2) ARM64: data is at least 8-byte aligned
+                    // 3) AMD64: data is at least 16-byte aligned on AMD/Intel with AVX+
                     newType = TYP_SIMD16;
                     if ((oldType == TYP_REF) &&
                         (!currData.value->IsIntegralConst(0) || !prevData.value->IsIntegralConst(0)))
                     {
+                        // For TYP_REF we only support null values. In theory, we can also support frozen handles, e.g.:
+                        //
+                        //   arr[1] = "hello";
+                        //   arr[0] = "world";
+                        //
+                        // but we don't want to load managed references into SIMD registers (we can only do so
+                        // when we can issue a nongc region for a block).
                         return;
                     }
                     break;
 
 #if defined(TARGET_AMD64)
                 case TYP_SIMD16:
+                    // Upgrading two SIMD stores to a wider SIMD store.
+                    // Only on x64 since ARM64 has no options above SIMD16.
                     if (m_compiler->getPreferredVectorByteLength() >= 32)
                     {
                         newType = TYP_SIMD32;
@@ -10879,19 +10906,19 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
                     }
                     tryReusingPrevValue = true;
                     break;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) // TARGET_AMD64
                 case TYP_SIMD16:
                     tryReusingPrevValue = true;
                     break;
-#endif
-#endif
-#endif
+#endif                      // TARGET_AMD64
+#endif                      // FEATURE_HW_INTRINSICS
+#endif                      // TARGET_64BIT
                 default:
                     return;
             }
         }
 
-        if (!LowerCheckCoalescedStoreAtomicity(node, prevTree, currData, prevData))
+        if (!LowerCheckCoalescedStoreAtomicity(node, currData, prevData))
         {
             return;
         }
@@ -10917,7 +10944,7 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
                     node->AsIndir()->Data() = prevValueTmp;
                 }
             }
-#endif
+#endif // FEATURE_HW_INTRINSICS
             return;
         }
 
@@ -10952,6 +10979,8 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         }
 
 #if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
+        // Upgrading two SIMD stores to a wider SIMD store.
+        // Only on x64 since ARM64 has no options above SIMD16.
         if (varTypeIsSIMD(oldType))
         {
             int8_t* lowerCns = prevData.value->AsVecCon()->gtSimdVal.i8;
@@ -10970,8 +10999,10 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             currData.value->AsVecCon()->gtSimdVal = newCns;
             continue;
         }
-#endif
+#endif // TARGET_AMD64 && FEATURE_HW_INTRINSICS
 
+        // The integer path below places each constant according to its byte offset, so it doesn't need to swap the
+        // values first. Only the SIMD packing paths above need to normalize lower/upper order explicitly.
         size_t lowerCns = static_cast<size_t>(prevData.value->AsIntCon()->IconValue());
         size_t upperCns = static_cast<size_t>(currData.value->AsIntCon()->IconValue());
 
@@ -11002,7 +11033,7 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
 
             continue;
         }
-#endif
+#endif // TARGET_64BIT && FEATURE_HW_INTRINSICS
 
         size_t prevMask = ~(size_t(0)) >> (sizeof(size_t) - prevData.accessSize) * BITS_PER_BYTE;
         size_t currMask = ~(size_t(0)) >> (sizeof(size_t) - currData.accessSize) * BITS_PER_BYTE;
@@ -11023,7 +11054,7 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             node->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
         }
     } while (true);
-#endif
+#endif // TARGET_XARCH || TARGET_ARM64
 }
 
 //------------------------------------------------------------------------

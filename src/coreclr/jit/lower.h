@@ -421,7 +421,6 @@ private:
     void     LowerStoreCoalescing(GenTree* node);
     void     LowerStoreIndirCoalescing(GenTreeIndir* node);
     bool     LowerCheckCoalescedStoreAtomicity(GenTree*                       currStore,
-                                               GenTree*                       prevStore,
                                                const LoadStoreCoalescingData& currData,
                                                const LoadStoreCoalescingData& prevData);
     GenTree* LowerAdd(GenTreeOp* node);
