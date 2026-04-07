@@ -382,7 +382,7 @@ namespace System.Diagnostics
                 {
                     if (ArgumentList[i] is null)
                     {
-                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
+                        throw new ArgumentNullException($"ArgumentList[{i}]");
                     }
                 }
             }
@@ -408,11 +408,11 @@ namespace System.Diagnostics
                     SafeHandle? handle = list[i];
                     if (handle is null)
                     {
-                        throw new ArgumentNullException($"InheritedHandles[{i}]");
+                        throw new ArgumentNullException(InheritedHandlesParamName(i));
                     }
                     if (handle.IsInvalid)
                     {
-                        throw new ArgumentException(SR.Arg_InvalidHandle, nameof(InheritedHandles));
+                        throw new ArgumentException(SR.Arg_InvalidHandle, InheritedHandlesParamName(i));
                     }
                     ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
 
@@ -424,7 +424,7 @@ namespace System.Diagnostics
                         // As of today, we don't support other handle types because they would work
                         // only on Windows (e.g. Process/Wait handles).
                         default:
-                            throw new ArgumentException(SR.InheritedHandles_OnlySelectedSafeHandlesAreSupported, nameof(InheritedHandles));
+                            throw new ArgumentException(SR.InheritedHandles_OnlySelectedSafeHandlesAreSupported, InheritedHandlesParamName(i));
                     }
 
                     nint rawValue = handle.DangerousGetHandle();
@@ -432,7 +432,7 @@ namespace System.Diagnostics
                     {
                         if (snapshot[j].DangerousGetHandle() == rawValue)
                         {
-                            throw new ArgumentException(SR.InheritedHandles_MustNotContainDuplicates, nameof(InheritedHandles));
+                            throw new ArgumentException(SR.InheritedHandles_MustNotContainDuplicates, InheritedHandlesParamName(i));
                         }
                     }
 
@@ -478,6 +478,8 @@ namespace System.Diagnostics
                     ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
                 }
             }
+
+            static string InheritedHandlesParamName(int i) => $"InheritedHandles[{i}]";
         }
 
         internal static void ValidateInheritedHandles(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,

@@ -216,9 +216,9 @@ namespace Microsoft.Win32.SafeHandles
                     }
                 }
 
-                if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != new IntPtr(-1))
+                if (!IsInvalidHandle(processInfo.hProcess))
                     Marshal.InitHandle(procSH, processInfo.hProcess);
-                if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != new IntPtr(-1))
+                if (!IsInvalidHandle(processInfo.hThread))
                     Interop.Kernel32.CloseHandle(processInfo.hThread);
 
                 if (!retVal)
@@ -242,17 +242,17 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (stdinRefAdded)
                     stdinHandle.DangerousRelease();
-                else if (startupInfoEx.StartupInfo.hStdInput > 0)
+                else if (!IsInvalidHandle(startupInfoEx.StartupInfo.hStdInput))
                     Interop.Kernel32.CloseHandle(startupInfoEx.StartupInfo.hStdInput);
 
                 if (stdoutRefAdded)
                     stdoutHandle.DangerousRelease();
-                else if (startupInfoEx.StartupInfo.hStdOutput > 0)
+                else if (!IsInvalidHandle(startupInfoEx.StartupInfo.hStdOutput))
                     Interop.Kernel32.CloseHandle(startupInfoEx.StartupInfo.hStdOutput);
 
                 if (stderrRefAdded)
                     stderrHandle.DangerousRelease();
-                else if (startupInfoEx.StartupInfo.hStdError > 0)
+                else if (!IsInvalidHandle(startupInfoEx.StartupInfo.hStdError))
                     Interop.Kernel32.CloseHandle(startupInfoEx.StartupInfo.hStdError);
 
                 NativeMemory.Free(handlesToInherit);
@@ -405,12 +405,14 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
+        private static bool IsInvalidHandle(nint handle) => handle == -1 || handle == 0;
+
         private static void AddToInheritListIfValid(nint handle, Span<nint> handlesToInherit, ref int handleCount)
         {
             // The user can't specify invalid handle via ProcessStartInfo.Standard*Handle APIs.
             // However, Console.OpenStandard*Handle() can return INVALID_HANDLE_VALUE for a process
             // that was started with INVALID_HANDLE_VALUE as given standard handle.
-            if (handle == -1 || handle == 0)
+            if (IsInvalidHandle(handle))
             {
                 return;
             }
