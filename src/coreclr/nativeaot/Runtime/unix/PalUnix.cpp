@@ -456,14 +456,33 @@ void InitializeCurrentProcessCpuCount()
     {
 #if HAVE_SCHED_GETAFFINITY
 
-        cpu_set_t cpuSet;
-        int st = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuSet);
-        if (st != 0)
+        int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+        if (configuredCpuCount == -1)
         {
-            _ASSERTE(!"sched_getaffinity failed");
+            // In the unlikely event that sysconf(_SC_NPROCESSORS_CONF) fails, just assume a reasonable default maximum number of CPUs to avoid failing.
+            configuredCpuCount = CPU_SETSIZE;
         }
 
-        count = CPU_COUNT(&cpuSet);
+        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        if (pCpuSet == nullptr)
+        {
+            _ASSERTE(!"CPU_ALLOC failed");
+            count = 1;
+        }
+        else
+        {
+            size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+            CPU_ZERO_S(cpuSetSize, pCpuSet);
+
+            int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
+            if (st != 0)
+            {
+                _ASSERTE(!"sched_getaffinity failed");
+            }
+
+            count = (uint32_t)CPU_COUNT_S(CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            CPU_FREE(pCpuSet);
+        }
 #else // HAVE_SCHED_GETAFFINITY
         count = GCToOSInterface::GetTotalProcessorCount();
 #endif // HAVE_SCHED_GETAFFINITY
