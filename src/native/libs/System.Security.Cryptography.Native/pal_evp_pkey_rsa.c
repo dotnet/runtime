@@ -10,7 +10,16 @@
 #if defined(NEED_OPENSSL_1_0) || defined(NEED_OPENSSL_1_1)
 static int HasNoPrivateKey(const RSA* rsa);
 static int CheckLegacyPrivateKeyAvailable(EVP_PKEY* pkey);
+
+// RSA_F_RSA_NULL_PRIVATE_DECRYPT is always defined but its value is 0 in OpenSSL 3.0+ since it is no longer used for error reporting.
+// So to simplify the portable build, we'll avoid RSA_F_RSA_NULL_PRIVATE_DECRYPT and instead define a new constant with the old value to use for older OpenSSL versions.
+#define LEGACY_RSA_F_RSA_NULL_PRIVATE_DECRYPT 132
+
+#ifdef RSA_F_RSA_NULL_PRIVATE_DECRYPT
+c_static_assert(RSA_F_RSA_NULL_PRIVATE_DECRYPT == (OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_RTM ? LEGACY_RSA_F_RSA_NULL_PRIVATE_DECRYPT : 0));
 #endif
+
+#endif // NEED_OPENSSL_1_0 || NEED_OPENSSL_1_1
 
 EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey)
 {
@@ -374,7 +383,7 @@ static int CheckLegacyPrivateKeyAvailable(EVP_PKEY* pkey)
     // than a crash in the unexpected case that it is somehow unavailable.
     if (!API_EXISTS(EVP_PKEY_get0_RSA))
     {
-        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        ERR_PUT_error(ERR_LIB_RSA, LEGACY_RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
         return 0;
     }
 
@@ -382,7 +391,7 @@ static int CheckLegacyPrivateKeyAvailable(EVP_PKEY* pkey)
 
     if (rsa == NULL || HasNoPrivateKey(rsa))
     {
-        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        ERR_PUT_error(ERR_LIB_RSA, LEGACY_RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
         return 0;
     }
 
