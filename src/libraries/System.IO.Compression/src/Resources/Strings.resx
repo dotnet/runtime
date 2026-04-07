@@ -386,4 +386,7 @@
   <data name="ZipStreamEntryNoDataToExtract" xml:space="preserve">
     <value>Cannot extract a directory entry or an entry with no data to a file. Check IsDirectory and DataStream before calling ExtractToFile.</value>
   </data>
+  <data name="ZipStreamInvalidLocalFileHeader" xml:space="preserve">
+    <value>The ZIP archive contains an invalid local file header signature.</value>
+  </data>
 </root>

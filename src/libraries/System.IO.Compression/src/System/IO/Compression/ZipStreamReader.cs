@@ -114,8 +114,13 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
 
         if (!headerBytes.AsSpan().StartsWith(ZipLocalFileHeader.SignatureConstantBytes))
         {
-            _reachedEnd = true;
-            return null;
+            if (IsKnownEndOfEntriesSignature(headerBytes))
+            {
+                _reachedEnd = true;
+                return null;
+            }
+
+            throw new InvalidDataException(SR.ZipStreamInvalidLocalFileHeader);
         }
 
         int dynamicLength = GetDynamicHeaderLength(headerBytes);
@@ -206,8 +211,13 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
 
         if (!headerBytes.AsSpan().StartsWith(ZipLocalFileHeader.SignatureConstantBytes))
         {
-            _reachedEnd = true;
-            return null;
+            if (IsKnownEndOfEntriesSignature(headerBytes))
+            {
+                _reachedEnd = true;
+                return null;
+            }
+
+            throw new InvalidDataException(SR.ZipStreamInvalidLocalFileHeader);
         }
 
         int dynamicLength = GetDynamicHeaderLength(headerBytes);
@@ -452,7 +462,7 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
 
     private void ReadDataDescriptor(ZipForwardReadEntry entry, CrcValidatingReadStream crcStream)
     {
-        byte[] buffer = new byte[24];
+        byte[] buffer = new byte[28]; // Max: sig(4) + crc(4) + sizes64(16) + peek(4)
 
         _archiveStream.ReadExactly(buffer.AsSpan(0, 4));
         int offset = 0;
@@ -465,9 +475,17 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
             totalRead = 8;
         }
 
-        bool isZip64 = entry.VersionNeeded >= (ushort)ZipVersionNeededValues.Zip64;
+        // Read 20 bytes: up to 16 for sizes (64-bit) + 4 to peek at the next signature.
+        _archiveStream.ReadExactly(buffer.AsSpan(totalRead, 20));
+
+        // Probe: if 4 bytes after 32-bit sizes form a known ZIP signature,
+        // the descriptor uses 32-bit sizes; otherwise assume 64-bit.
+        bool isZip64 = !IsKnownZipSignature(buffer.AsSpan(totalRead + 8, 4));
         int sizesBytes = isZip64 ? 16 : 8;
-        _archiveStream.ReadExactly(buffer.AsSpan(totalRead, sizesBytes));
+
+        // Seek back over the bytes we read past the actual sizes.
+        int overRead = 20 - sizesBytes;
+        _archiveStream.Seek(-overRead, SeekOrigin.Current);
 
         ParseDataDescriptor(buffer, offset, isZip64, entry, crcStream);
     }
@@ -475,7 +493,7 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
     private async ValueTask ReadDataDescriptorAsync(
         ZipForwardReadEntry entry, CrcValidatingReadStream crcStream, CancellationToken cancellationToken)
     {
-        byte[] buffer = new byte[24];
+        byte[] buffer = new byte[28]; // Max: sig(4) + crc(4) + sizes64(16) + peek(4)
 
         await _archiveStream.ReadExactlyAsync(buffer.AsMemory(0, 4), cancellationToken).ConfigureAwait(false);
         int offset = 0;
@@ -488,9 +506,17 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
             totalRead = 8;
         }
 
-        bool isZip64 = entry.VersionNeeded >= (ushort)ZipVersionNeededValues.Zip64;
+        // Read 20 bytes: up to 16 for sizes (64-bit) + 4 to peek at the next signature.
+        await _archiveStream.ReadExactlyAsync(buffer.AsMemory(totalRead, 20), cancellationToken).ConfigureAwait(false);
+
+        // Probe: if 4 bytes after 32-bit sizes form a known ZIP signature,
+        // the descriptor uses 32-bit sizes; otherwise assume 64-bit.
+        bool isZip64 = !IsKnownZipSignature(buffer.AsSpan(totalRead + 8, 4));
         int sizesBytes = isZip64 ? 16 : 8;
-        await _archiveStream.ReadExactlyAsync(buffer.AsMemory(totalRead, sizesBytes), cancellationToken).ConfigureAwait(false);
+
+        // Seek back over the bytes we read past the actual sizes.
+        int overRead = 20 - sizesBytes;
+        _archiveStream.Seek(-overRead, SeekOrigin.Current);
 
         ParseDataDescriptor(buffer, offset, isZip64, entry, crcStream);
     }
@@ -522,6 +548,32 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
                 length: BinaryPrimitives.ReadUInt32LittleEndian(buffer[(sizesOffset + 4)..]),
                 crcStream.RunningCrc, crcStream.TotalBytesRead);
         }
+    }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when the first four bytes of
+    /// <paramref name="headerBytes"/> match a known end-of-entries signature
+    /// (central directory header or end-of-central-directory).
+    /// </summary>
+    private static bool IsKnownEndOfEntriesSignature(ReadOnlySpan<byte> headerBytes)
+    {
+        ReadOnlySpan<byte> sig = headerBytes[..4];
+        return sig.SequenceEqual(ZipCentralDirectoryFileHeader.SignatureConstantBytes)
+            || sig.SequenceEqual(ZipEndOfCentralDirectoryBlock.SignatureConstantBytes)
+            || sig.SequenceEqual(Zip64EndOfCentralDirectoryRecord.SignatureConstantBytes);
+    }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="bytes"/> starts with any
+    /// recognized ZIP structure signature (local header, central directory, EOCD, or ZIP64 EOCD).
+    /// Used to probe the data descriptor format by peeking at the bytes that follow.
+    /// </summary>
+    private static bool IsKnownZipSignature(ReadOnlySpan<byte> bytes)
+    {
+        return bytes.StartsWith(ZipLocalFileHeader.SignatureConstantBytes)
+            || bytes.StartsWith(ZipCentralDirectoryFileHeader.SignatureConstantBytes)
+            || bytes.StartsWith(ZipEndOfCentralDirectoryBlock.SignatureConstantBytes)
+            || bytes.StartsWith(Zip64EndOfCentralDirectoryRecord.SignatureConstantBytes);
     }
 
     public void Dispose()

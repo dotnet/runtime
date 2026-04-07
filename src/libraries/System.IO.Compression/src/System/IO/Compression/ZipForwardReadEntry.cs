@@ -144,22 +144,23 @@ public sealed class ZipForwardReadEntry
     /// <param name="overwrite">
     /// <see langword="true"/> to overwrite an existing file; otherwise <see langword="false"/>.
     /// </param>
-    /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is null or empty.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="destinationFileName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is empty.</exception>
     /// <exception cref="InvalidOperationException">
-    /// The entry is a directory or has no data (<see cref="DataStream"/> is <see langword="null"/>).
+    /// The entry is a directory (<see cref="IsDirectory"/> is <see langword="true"/>).
     /// </exception>
     public void ExtractToFile(string destinationFileName, bool overwrite)
     {
         ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
 
-        if (DataStream is null)
+        if (IsDirectory)
         {
             throw new InvalidOperationException(SR.ZipStreamEntryNoDataToExtract);
         }
 
         FileMode mode = overwrite ? FileMode.Create : FileMode.CreateNew;
         using FileStream fs = new(destinationFileName, mode, FileAccess.Write, FileShare.None);
-        DataStream.CopyTo(fs);
+        DataStream?.CopyTo(fs);
 
         try
         {
@@ -180,16 +181,17 @@ public sealed class ZipForwardReadEntry
     /// <see langword="true"/> to overwrite an existing file; otherwise <see langword="false"/>.
     /// </param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is null or empty.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="destinationFileName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is empty.</exception>
     /// <exception cref="InvalidOperationException">
-    /// The entry is a directory or has no data (<see cref="DataStream"/> is <see langword="null"/>).
+    /// The entry is a directory (<see cref="IsDirectory"/> is <see langword="true"/>).
     /// </exception>
     public async Task ExtractToFileAsync(string destinationFileName, bool overwrite,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
 
-        if (DataStream is null)
+        if (IsDirectory)
         {
             throw new InvalidOperationException(SR.ZipStreamEntryNoDataToExtract);
         }
@@ -199,7 +201,10 @@ public sealed class ZipForwardReadEntry
             bufferSize: 0x1000, useAsync: true);
         await using (fs.ConfigureAwait(false))
         {
-            await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
+            if (DataStream is not null)
+            {
+                await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         try

@@ -485,7 +485,7 @@ namespace System.IO.Compression
         // parameters are initialPosition, currentPosition, checkSum, baseBaseStream, zipArchiveEntry and onClose handler
         private readonly Action<long, long, uint, Stream, ZipArchiveEntry, EventHandler?> _saveCrcAndSizes;
 
-        // parameters to saveCrcAndSize are
+        // parameters to saveCrcAndSizes are
         // initialPosition (initialPosition in baseBaseStream),
         // currentPosition (in this CheckSumAndSizeWriteStream),
         // checkSum (of data passed into this CheckSumAndSizeWriteStream),
@@ -1213,22 +1213,26 @@ namespace System.IO.Compression
             {
                 int rewindBytes = checked((int)(-offset));
 
-                // Merge any unread pushback bytes back into history before
-                // processing a new seek, so they are not silently lost.
-                if (_pushbackCount > 0)
-                {
-                    RestorePushbackToHistory();
-                }
-
                 if (rewindBytes > _historyCount)
                 {
                     throw new IOException(SR.IO_SeekBeforeBegin);
                 }
 
-                _pushback = new byte[rewindBytes];
-                Array.Copy(_history, _historyCount - rewindBytes, _pushback, 0, rewindBytes);
+                // Create new pushback by prepending rewound history bytes to any
+                // existing unread pushback. This preserves bytes that haven't been
+                // consumed yet (from a previous seek) so they are not lost.
+                int existingPushback = _pushbackCount;
+                byte[] newPushback = new byte[rewindBytes + existingPushback];
+                Array.Copy(_history, _historyCount - rewindBytes, newPushback, 0, rewindBytes);
+
+                if (existingPushback > 0)
+                {
+                    Array.Copy(_pushback!, _pushbackOffset, newPushback, rewindBytes, existingPushback);
+                }
+
+                _pushback = newPushback;
                 _pushbackOffset = 0;
-                _pushbackCount = rewindBytes;
+                _pushbackCount = newPushback.Length;
                 _historyCount -= rewindBytes;
                 _position -= rewindBytes;
 
@@ -1236,20 +1240,6 @@ namespace System.IO.Compression
             }
 
             throw new NotSupportedException();
-        }
-
-        /// <summary>
-        /// Merges any remaining unread pushback bytes back into history so they
-        /// are not lost when a new seek is requested.
-        /// </summary>
-        private void RestorePushbackToHistory()
-        {
-            if (_pushbackCount > 0)
-            {
-                RecordHistory(_pushback.AsSpan(_pushbackOffset, _pushbackCount));
-                _pushbackCount = 0;
-                _pushback = null;
-            }
         }
 
         private void RecordHistory(ReadOnlySpan<byte> data)
