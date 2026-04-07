@@ -1180,18 +1180,190 @@ namespace System.Text.Json.Tests
 
             Assert.Throws<ArgumentNullException>(() => writeToStream.Reset((Stream)null));
             Assert.Throws<ArgumentNullException>(() => writeToStream.Reset((IBufferWriter<byte>)null));
+            Assert.Throws<ArgumentNullException>(() => writeToStream.Reset((Stream)null, options));
+            Assert.Throws<ArgumentNullException>(() => writeToStream.Reset((IBufferWriter<byte>)null, options));
 
             stream.Dispose();
 
             Assert.Throws<ArgumentException>(() => writeToStream.Reset(stream));
+            Assert.Throws<ArgumentException>(() => writeToStream.Reset(stream, options));
 
             var output = new FixedSizedBufferWriter(256);
             using var writeToIBW = new Utf8JsonWriter(output, options);
 
             Assert.Throws<ArgumentNullException>(() => writeToIBW.Reset((Stream)null));
             Assert.Throws<ArgumentNullException>(() => writeToIBW.Reset((IBufferWriter<byte>)null));
+            Assert.Throws<ArgumentNullException>(() => writeToIBW.Reset((Stream)null, options));
+            Assert.Throws<ArgumentNullException>(() => writeToIBW.Reset((IBufferWriter<byte>)null, options));
 
             Assert.Throws<ArgumentException>(() => writeToIBW.Reset(stream));
+            Assert.Throws<ArgumentException>(() => writeToIBW.Reset(stream, options));
+        }
+
+        [Fact]
+        public static void JsonSerializerCacheNotPoisonedByDisposedWriter()
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new DisposingInt32Converter());
+
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(1, options));
+            Assert.Equal("2", JsonSerializer.Serialize(2));
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonOptions_TestData))]
+        public void ResetWithNewOptions(JsonWriterOptions options)
+        {
+            var newOptions = new JsonWriterOptions
+            {
+                Indented = !options.Indented,
+                SkipValidation = !options.SkipValidation,
+                MaxDepth = 500,
+                IndentCharacter = '\t',
+                IndentSize = 4,
+            };
+
+            var stream = new MemoryStream();
+            using var writeToStream = new Utf8JsonWriter(stream, options);
+            writeToStream.WriteNumberValue(1);
+            writeToStream.Flush();
+
+            Assert.True(writeToStream.BytesCommitted != 0);
+
+            writeToStream.Reset(stream, newOptions);
+            Assert.Equal(0, writeToStream.BytesCommitted);
+            Assert.Equal(0, writeToStream.BytesPending);
+            Assert.Equal(0, writeToStream.CurrentDepth);
+            Assert.Equal(newOptions.Indented, writeToStream.Options.Indented);
+            Assert.Equal(newOptions.SkipValidation, writeToStream.Options.SkipValidation);
+            Assert.Equal(500, writeToStream.Options.MaxDepth);
+            Assert.Equal('\t', writeToStream.Options.IndentCharacter);
+            Assert.Equal(4, writeToStream.Options.IndentSize);
+
+            long previousWritten = stream.Position;
+            writeToStream.Flush();
+            Assert.Equal(previousWritten, stream.Position);
+
+            writeToStream.WriteNumberValue(1);
+            writeToStream.Flush();
+
+            Assert.NotEqual(previousWritten, stream.Position);
+
+            var output = new FixedSizedBufferWriter(257);
+            using var writeToIBW = new Utf8JsonWriter(output, options);
+            writeToIBW.WriteNumberValue(1);
+            writeToIBW.Flush();
+
+            Assert.True(writeToIBW.BytesCommitted != 0);
+
+            writeToIBW.Reset(output, newOptions);
+            Assert.Equal(0, writeToIBW.BytesCommitted);
+            Assert.Equal(0, writeToIBW.BytesPending);
+            Assert.Equal(0, writeToIBW.CurrentDepth);
+            Assert.Equal(newOptions.Indented, writeToIBW.Options.Indented);
+            Assert.Equal(newOptions.SkipValidation, writeToIBW.Options.SkipValidation);
+            Assert.Equal(500, writeToIBW.Options.MaxDepth);
+            Assert.Equal('\t', writeToIBW.Options.IndentCharacter);
+            Assert.Equal(4, writeToIBW.Options.IndentSize);
+
+            previousWritten = output.FormattedCount;
+            writeToIBW.Flush();
+            Assert.Equal(previousWritten, output.FormattedCount);
+
+            writeToIBW.WriteNumberValue(1);
+            writeToIBW.Flush();
+
+            Assert.NotEqual(previousWritten, output.FormattedCount);
+        }
+
+        private sealed class DisposingInt32Converter : System.Text.Json.Serialization.JsonConverter<int>
+        {
+            public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                throw new NotSupportedException();
+
+            public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+            {
+                writer.Dispose();
+                throw new InvalidOperationException();
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonOptions_TestData))]
+        public void ResetChangeOutputModeWithNewOptions(JsonWriterOptions options)
+        {
+            var newOptions = new JsonWriterOptions
+            {
+                Indented = !options.Indented,
+                SkipValidation = !options.SkipValidation,
+            };
+
+            var stream = new MemoryStream();
+            using var writeToStream = new Utf8JsonWriter(stream, options);
+            writeToStream.WriteNumberValue(1);
+            writeToStream.Flush();
+
+            Assert.True(writeToStream.BytesCommitted != 0);
+
+            var output = new FixedSizedBufferWriter(256);
+            writeToStream.Reset(output, newOptions);
+            Assert.Equal(0, writeToStream.BytesCommitted);
+            Assert.Equal(0, writeToStream.BytesPending);
+            Assert.Equal(0, writeToStream.CurrentDepth);
+            Assert.Equal(newOptions.Indented, writeToStream.Options.Indented);
+            Assert.Equal(newOptions.SkipValidation, writeToStream.Options.SkipValidation);
+
+            writeToStream.WriteNumberValue(1);
+            writeToStream.Flush();
+            Assert.True(writeToStream.BytesCommitted != 0);
+            Assert.True(output.FormattedCount != 0);
+
+            output = new FixedSizedBufferWriter(256);
+            using var writeToIBW = new Utf8JsonWriter(output, options);
+            writeToIBW.WriteNumberValue(1);
+            writeToIBW.Flush();
+
+            Assert.True(writeToIBW.BytesCommitted != 0);
+
+            stream = new MemoryStream();
+            writeToIBW.Reset(stream, newOptions);
+            Assert.Equal(0, writeToIBW.BytesCommitted);
+            Assert.Equal(0, writeToIBW.BytesPending);
+            Assert.Equal(0, writeToIBW.CurrentDepth);
+            Assert.Equal(newOptions.Indented, writeToIBW.Options.Indented);
+            Assert.Equal(newOptions.SkipValidation, writeToIBW.Options.SkipValidation);
+
+            writeToIBW.WriteNumberValue(1);
+            writeToIBW.Flush();
+            Assert.True(writeToIBW.BytesCommitted != 0);
+            Assert.True(stream.Position != 0);
+        }
+
+        [Fact]
+        public void ResetWithNewOptions_ProducesExpectedOutput()
+        {
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, new JsonWriterOptions { Indented = false });
+
+            writer.WriteStartObject();
+            writer.WriteNumber("x", 1);
+            writer.WriteEndObject();
+            writer.Flush();
+
+            string compact = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Equal("""{"x":1}""", compact);
+
+            output.Clear();
+            writer.Reset(output, new JsonWriterOptions { Indented = true });
+
+            writer.WriteStartObject();
+            writer.WriteNumber("x", 1);
+            writer.WriteEndObject();
+            writer.Flush();
+
+            string indented = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("\n", indented);
+            Assert.Contains("\"x\": 1", indented);
         }
 
         [Theory]
@@ -1381,6 +1553,7 @@ namespace System.Text.Json.Tests
 
             var stream = new MemoryStream();
             Assert.Throws<ObjectDisposedException>(() => jsonUtf8.Reset(stream));
+            Assert.Throws<ObjectDisposedException>(() => jsonUtf8.Reset(stream, options));
 
             using var writeToStream = new Utf8JsonWriter(stream, options);
             writeToStream.WriteStartObject();
@@ -1398,6 +1571,7 @@ namespace System.Text.Json.Tests
             Assert.Throws<ObjectDisposedException>(() => writeToStream.Reset());
 
             Assert.Throws<ObjectDisposedException>(() => jsonUtf8.Reset(output));
+            Assert.Throws<ObjectDisposedException>(() => jsonUtf8.Reset(output, options));
         }
 
         [Theory]
@@ -1423,6 +1597,7 @@ namespace System.Text.Json.Tests
 
             var stream = new MemoryStream();
             Assert.Throws<ObjectDisposedException>(() => jsonUtf8.Reset(stream));
+            Assert.Throws<ObjectDisposedException>(() => jsonUtf8.Reset(stream, options));
 
             using var writeToStream = new Utf8JsonWriter(stream, options);
             writeToStream.WriteStartObject();
@@ -1440,6 +1615,7 @@ namespace System.Text.Json.Tests
             Assert.Throws<ObjectDisposedException>(() => writeToStream.Reset());
 
             Assert.Throws<ObjectDisposedException>(() => jsonUtf8.Reset(output));
+            Assert.Throws<ObjectDisposedException>(() => jsonUtf8.Reset(output, options));
         }
 
         [Theory]
