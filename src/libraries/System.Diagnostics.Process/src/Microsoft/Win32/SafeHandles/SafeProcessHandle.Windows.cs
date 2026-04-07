@@ -459,27 +459,28 @@ namespace Microsoft.Win32.SafeHandles
             ref SafeHandle?[]? handlesToRelease)
         {
             handlesToRelease = new SafeHandle[inheritedHandles.Length];
-            int handleIndex = 0;
             bool ignore = false;
 
-            foreach (SafeHandle handle in inheritedHandles)
+            for (int i = 0; i < inheritedHandles.Length; i++)
             {
-                Debug.Assert(handle is not null && !handle.IsInvalid);
+                SafeHandle safeHandle = inheritedHandles[i];
+                Debug.Assert(safeHandle is not null && !safeHandle.IsInvalid);
+
+                // Transfer ref ownership to handlesToRelease; DisableInheritanceAndRelease will release it.
+                safeHandle.DangerousAddRef(ref ignore);
+                handlesToRelease[i] = safeHandle;
 
                 // Enable inheritance on this handle so the child process can use it.
                 // It's defacto our validation that the handles passed in the allow list are actually inheritable handles.
                 if (!Interop.Kernel32.SetHandleInformation(
-                    handle,
+                    safeHandle.DangerousGetHandle(),
                     Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
                     Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT))
                 {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
 
-                // Transfer ref ownership to handlesToRelease; DisableInheritanceAndRelease will release it.
-                handle.DangerousAddRef(ref ignore);
-                handlesToInherit[handleCount++] = handle.DangerousGetHandle();
-                handlesToRelease[handleIndex++] = handle;
+                handlesToInherit[handleCount++] = safeHandle.DangerousGetHandle();
             }
         }
 
@@ -494,7 +495,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 // Remove the inheritance flag so they are not unintentionally inherited by other processes started after this point.
                 // Since we used DangerousAddRef before, the handle cannot be closed at this point, so it's safe to call SetHandleInformation.
-                bool success = Interop.Kernel32.SetHandleInformation(safeHandle, Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT, 0);
+                bool success = Interop.Kernel32.SetHandleInformation(safeHandle.DangerousGetHandle(), Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT, 0);
                 Debug.Assert(success);
                 safeHandle.DangerousRelease();
             }

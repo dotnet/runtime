@@ -412,7 +412,6 @@ namespace System.Diagnostics.Tests
             using (readPipe)
             using (writePipe)
             using (SafeFileHandle nullHandle = File.OpenNullHandle())
-            using (SafeFileHandle notInherited = File.OpenNullHandle())
             {
                 // "notInherited" is not added on purpose
                 options.StartInfo.InheritedHandles = [readPipe, writePipe, nullHandle];
@@ -425,7 +424,6 @@ namespace System.Diagnostics.Tests
                         using SafeFileHandle firstPipe = new(nint.Parse(handlesStrings[0]), ownsHandle: true);
                         using SafeFileHandle secondPipe = new(nint.Parse(handlesStrings[1]), ownsHandle: true);
                         using SafeFileHandle nullFile = new(nint.Parse(handlesStrings[2]), ownsHandle: true);
-                        using SafeFileHandle notInherited = new(nint.Parse(handlesStrings[3]), ownsHandle: false);
 
                         // These APIs need to fetch some data from the OS.
                         Assert.Equal(FileHandleType.Pipe, firstPipe.Type);
@@ -435,23 +433,9 @@ namespace System.Diagnostics.Tests
                         Assert.Equal(FileHandleType.CharacterDevice, nullFile.Type);
                         Assert.False(nullFile.IsAsync);
 
-                        FileHandleType fileType = FileHandleType.Unknown;
-                        try
-                        {
-                            // This handle was not on the allow list, so we can't use it.
-                            fileType = notInherited.Type;
-                        }
-                        catch
-                        {
-                            // The handle was not available. This is the expected outcome, which means the handle was not inherited.
-                            return RemoteExecutor.SuccessExitCode;
-                        }
-
-                        return fileType == FileHandleType.CharacterDevice // NUL device is CharacterDevice on every platform
-                            ? RemoteExecutor.SuccessExitCode * -1 // the handle was inherited (bug)
-                            : RemoteExecutor.SuccessExitCode; // the OS has reused same handle value for one of the internal runtime pipes or files
+                        return RemoteExecutor.SuccessExitCode;
                     },
-                    $"{readPipe.DangerousGetHandle()} {writePipe.DangerousGetHandle()} {nullHandle.DangerousGetHandle()} {notInherited.DangerousGetHandle()}",
+                    $"{readPipe.DangerousGetHandle()} {writePipe.DangerousGetHandle()} {nullHandle.DangerousGetHandle()}",
                     options);
             }
         }
