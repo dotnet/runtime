@@ -624,6 +624,30 @@ void DBG_PrintInterpreterStack()
 }
 #endif // _DEBUG
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#define PORTABLE_ENTRYPOINT_PARAM , 0
+#ifdef TARGET_WASM
+#define PORTABLE_ENTRYPOINT_STACK_ARG  emscripten_stack_get_current(), 
+typedef void* (*HELPER_FTN_P_P)(uintptr_t, void*, int32_t);
+typedef void* (*HELPER_FTN_BOX_UNBOX)(uintptr_t, MethodTable*, void*, int32_t);
+typedef Object* (*HELPER_FTN_NEWARR)(uintptr_t, MethodTable*, intptr_t, int32_t);
+typedef void* (*HELPER_FTN_P_PP)(uintptr_t, void*, void*, int32_t);
+typedef void (*HELPER_FTN_V_PPP)(uintptr_t, void*, void*, void*, int32_t);
+typedef void* (*HELPER_FTN_P_PPIP)(uintptr_t, void*, void*, int32_t, void*, int32_t);
+typedef void (*HELPER_FTN_V_PP)(uintptr_t, void*, void*, int32_t);
+#else // TARGET_WASM
+#define PORTABLE_ENTRYPOINT_STACK_ARG
+typedef void* (*HELPER_FTN_P_P)(void*, int32_t);
+typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*, int32_t);
+typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t, int32_t);
+typedef void* (*HELPER_FTN_P_PP)(void*, void*, int32_t);
+typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*, int32_t);
+typedef void* (*HELPER_FTN_P_PPIP)(void*, void*, int32_t, void*, int32_t);
+typedef void (*HELPER_FTN_V_PP)(void*, void*, int32_t);
+#endif // TARGET_WASM
+#else // FEATURE_PORTABLE_ENTRYPOINTS
+#define PORTABLE_ENTRYPOINT_STACK_ARG
+#define PORTABLE_ENTRYPOINT_PARAM
 typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
@@ -631,6 +655,7 @@ typedef void* (*HELPER_FTN_P_PP)(void*, void*);
 typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*);
 typedef void* (*HELPER_FTN_P_PPIP)(void*, void*, int32_t, void*);
 typedef void (*HELPER_FTN_V_PP)(void*, void*);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -745,7 +770,7 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(const Inter
     }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    if (!PortableEntryPoint::HasNativeEntryPoint((PCODE)addr))
+    if (PortableEntryPoint::PrefersInterpreterEntryPoint((PCODE)addr) || !PortableEntryPoint::HasNativeEntryPoint((PCODE)addr))
     {
         _ASSERTE(pILTargetMethod != NULL);
         *pILTargetMethod = PortableEntryPoint::GetMethodDesc((PCODE)addr);
@@ -2612,7 +2637,6 @@ SWITCH_OPCODE:
                     ip += 4;
                     break;
                 }
-
                 case INTOP_CALL_HELPER_P_P:
                 {
                     void* helperArg = pMethod->pDataItems[ip[3]];
@@ -2633,7 +2657,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg PORTABLE_ENTRYPOINT_PARAM);
                     ip += 4;
                     break;
                 }
@@ -2657,7 +2681,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg PORTABLE_ENTRYPOINT_PARAM);
                     ip += 4;
                     break;
                 }
@@ -2684,7 +2708,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
+                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
                     ip += 5;
                     break;
                 }
@@ -2711,7 +2735,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
+                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
                     ip += 5;
                     break;
                 }
@@ -2737,7 +2761,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
+                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg PORTABLE_ENTRYPOINT_PARAM);
                     ip += 5;
                     break;
                 }
@@ -2765,7 +2789,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
+                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
                     ip += 6;
                     break;
                 }
@@ -2793,7 +2817,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
+                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
                     ip += 6;
                     break;
                 }
@@ -2819,7 +2843,7 @@ SWITCH_OPCODE:
                         goto CALL_INTERP_METHOD;
                     }
 
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg1, helperArg2);
+                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
                     ip += 5;
                     break;
                 }
@@ -2849,7 +2873,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    helperFtn(helperArg1, helperArg2, helperArg3);
+                    helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2, helperArg3 PORTABLE_ENTRYPOINT_PARAM);
                     ip += 6;
                     break;
                 }
@@ -2878,7 +2902,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    helperFtn(helperArg1, helperArg2, helperArg3);
+                    helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2, helperArg3 PORTABLE_ENTRYPOINT_PARAM);
                     ip += 5;
                     break;
                 }
@@ -2905,7 +2929,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    helperFtn(helperArg1, helperArg2);
+                    helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
                     ip += 4;
                     break;
                 }
@@ -2930,7 +2954,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    helperFtn(helperArg1, helperArg2);
+                    helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
                     ip += 4;
                     break;
                 }
@@ -2958,7 +2982,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    helperFtn(helperArg1, helperArg2, helperArg3);
+                    helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2, helperArg3 PORTABLE_ENTRYPOINT_PARAM);
                     ip += 5;
                     break;
                 }
@@ -3064,7 +3088,7 @@ SWITCH_OPCODE:
                         // through CALL_INTERP_METHOD. It is a small optimization and also necessary
                         // for correctness for Newobj allocator helpers where the MethodDesc does not
                         // represent the actual entrypoint.
-                        if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
+                        if (PortableEntryPoint::PrefersInterpreterEntryPoint(calliFunctionPointer) || !PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
                             goto CALL_INTERP_METHOD;
 
                         MetaSig sig(targetMethod);
@@ -3496,7 +3520,7 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    LOCAL_VAR(dreg, void*) = helper(pMT, src);
+                    LOCAL_VAR(dreg, void*) = helper(PORTABLE_ENTRYPOINT_STACK_ARG pMT, src PORTABLE_ENTRYPOINT_PARAM);
 
                     ip += 5;
                     break;
@@ -3539,7 +3563,7 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    LOCAL_VAR(dreg, void*) = helper(pMTBoxedObj, src);
+                    LOCAL_VAR(dreg, void*) = helper(PORTABLE_ENTRYPOINT_STACK_ARG pMTBoxedObj, src PORTABLE_ENTRYPOINT_PARAM);
 
                     ip += 6;
                     break;
@@ -3563,7 +3587,7 @@ CALL_INTERP_METHOD:
                     MethodTable* arrayClsHnd = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
-                    Object* arr = helper(arrayClsHnd, (intptr_t)length);
+                    Object* arr = helper(PORTABLE_ENTRYPOINT_STACK_ARG arrayClsHnd, (intptr_t)length PORTABLE_ENTRYPOINT_PARAM);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 5;
@@ -3578,7 +3602,7 @@ CALL_INTERP_METHOD:
 
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
-                    Object* arr = helper(arrayClsHnd, (intptr_t)length);
+                    Object* arr = helper(PORTABLE_ENTRYPOINT_STACK_ARG arrayClsHnd, (intptr_t)length PORTABLE_ENTRYPOINT_PARAM);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 6;
@@ -4216,12 +4240,12 @@ do                                                                      \
                     {
                         uintptr_t context = LOCAL_VAR(ip[2], uintptr_t);
                         ip += ipAdjust;
-                        *pDest = ObjectToOBJECTREF((Object*)helperFtnGeneric(OBJECTREFToObject(chainedContinuation), pContinuationType, pAsyncSuspendData->keepAliveOffset, (void*)context));
+                        *pDest = ObjectToOBJECTREF((Object*)helperFtnGeneric(PORTABLE_ENTRYPOINT_STACK_ARG OBJECTREFToObject(chainedContinuation), pContinuationType, pAsyncSuspendData->keepAliveOffset, (void*)context PORTABLE_ENTRYPOINT_PARAM));
                     }
                     else
                     {
                         ip += ipAdjust;
-                        *pDest = ObjectToOBJECTREF((Object*)helperFtn(OBJECTREFToObject(chainedContinuation), pContinuationType));
+                        *pDest = ObjectToOBJECTREF((Object*)helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG OBJECTREFToObject(chainedContinuation), pContinuationType PORTABLE_ENTRYPOINT_PARAM));
                     }
                     break;
                 }

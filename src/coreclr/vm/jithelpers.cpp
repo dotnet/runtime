@@ -858,21 +858,21 @@ HCIMPLEND
 HCIMPL1(void, IL_Throw, Object* obj)
 {
     FCALL_CONTRACT;
-    IL_Throw_Impl(obj, NULL);
+    IL_Throw_Impl(0, obj, NULL, 0);
 }
 HCIMPLEND
 
 HCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
-    IL_Rethrow_Impl(NULL);
+    IL_Rethrow_Impl(0, NULL, 0);
 }
 HCIMPLEND
 
 HCIMPL1(void, IL_ThrowExact, Object* obj)
 {
     FCALL_CONTRACT;
-    IL_ThrowExact_Impl(obj, NULL);
+    IL_ThrowExact_Impl(0, obj, NULL, 0);
 }
 HCIMPLEND
 #endif // TARGET_WASM

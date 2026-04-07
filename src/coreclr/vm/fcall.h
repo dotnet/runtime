@@ -159,6 +159,38 @@
 
 #endif // !SWIZZLE_REGARG_ORDER
 
+#elif defined(TARGET_WASM)
+
+#define FCDECL0(rettype, funcname) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, int32_t portableEntryPointContext)
+#define FCDECL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, int32_t portableEntryPointContext)
+#define FCDECL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, int32_t portableEntryPointContext)
+#define FCDECL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext)
+#define FCDECL2VA(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext, ...)
+#define FCDECL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext)
+#define FCDECL2_VI(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext)
+#define FCDECL2_IV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext)
+#define FCDECL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext)
+#define FCDECL3_IIV(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext)
+#define FCDECL3_VII(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext)
+#define FCDECL3_IVV(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext)
+#define FCDECL3_IVI(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext)
+#define FCDECL3_VVI(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext)
+#define FCDECL3_VVV(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext)
+#define FCDECL4(rettype, funcname, a1, a2, a3, a4) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, int32_t portableEntryPointContext)
+#define FCDECL5(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, int32_t portableEntryPointContext)
+#define FCDECL6(rettype, funcname, a1, a2, a3, a4, a5, a6) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, int32_t portableEntryPointContext)
+#define FCDECL7(rettype, funcname, a1, a2, a3, a4, a5, a6, a7) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, int32_t portableEntryPointContext)
+#define FCDECL8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, int32_t portableEntryPointContext)
+#define FCDECL9(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, int32_t portableEntryPointContext)
+#define FCDECL10(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, int32_t portableEntryPointContext)
+#define FCDECL11(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, int32_t portableEntryPointContext)
+#define FCDECL12(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, int32_t portableEntryPointContext)
+#define FCDECL13(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, int32_t portableEntryPointContext)
+#define FCDECL14(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, int32_t portableEntryPointContext)
+
+#define FCDECL5_IVI(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, int32_t portableEntryPointContext)
+#define FCDECL5_VII(rettype, funcname, a1, a2, a3, a4, a5) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, int32_t portableEntryPointContext)
+
 #else // !SWIZZLE_STKARG_ORDER
 
 #define FCDECL0(rettype, funcname) rettype F_CALL_CONV funcname()
@@ -366,6 +398,37 @@ public:
 
 #endif // !SWIZZLE_REGARG_ORDER
 
+#elif defined(TARGET_WASM)
+#define FCIMPL0(rettype, funcname) rettype funcname(uintptr_t stack_pointer, int32_t portableEntryPointContext) { FCIMPL_PROLOG(funcname)
+#define FCIMPL1(rettype, funcname, a1) rettype funcname(uintptr_t stack_pointer, a1, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL1_V(rettype, funcname, a1) rettype funcname(uintptr_t stack_pointer, a1, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2(rettype, funcname, a1, a2) rettype funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2VA(rettype, funcname, a1, a2) rettype funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext, ...) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2_VV(rettype, funcname, a1, a2) rettype funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2_VI(rettype, funcname, a1, a2) rettype funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL2_IV(rettype, funcname, a1, a2) rettype funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3(rettype, funcname, a1, a2, a3) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_IIV(rettype, funcname, a1, a2, a3) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_IVV(rettype, funcname, a1, a2, a3) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_VII(rettype, funcname, a1, a2, a3) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_IVI(rettype, funcname, a1, a2, a3) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_VVI(rettype, funcname, a1, a2, a3) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL3_VVV(rettype, funcname, a1, a2, a3) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL4(rettype, funcname, a1, a2, a3, a4) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL5(rettype, funcname, a1, a2, a3, a4, a5) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL6(rettype, funcname, a1, a2, a3, a4, a5, a6) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL7(rettype, funcname, a1, a2, a3, a4, a5, a6, a7) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL8(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL9(rettype, funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL10(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL11(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL12(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL13(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+#define FCIMPL14(rettype,funcname, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, int32_t portableEntryPointContext) {  FCIMPL_PROLOG(funcname)
+
+#define FCIMPL5_IVI(rettype, funcname, a1, a2, a3, a4, a5) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, int32_t portableEntryPointContext) { FCIMPL_PROLOG(funcname)
+#define FCIMPL5_VII(rettype, funcname, a1, a2, a3, a4, a5) rettype funcname(uintptr_t stack_pointer, a1, a2, a3, a4, a5, int32_t portableEntryPointContext) { FCIMPL_PROLOG(funcname)
+
 #else // SWIZZLE_STKARG_ORDER
 
 #define FCIMPL0(rettype, funcname) rettype funcname() { FCIMPL_PROLOG(funcname)
@@ -435,6 +498,18 @@ public:
 #define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) { HCIMPL_PROLOG(funcname)
 #define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) {
 #endif // !SWIZZLE_REGARG_ORDER
+#elif defined(TARGET_WASM)
+
+#define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, int32_t portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL1(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, int32_t portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL1_RAW(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, int32_t portableEntryPointContext) {
+#define HCIMPL1_V(rettype, funcname, a1) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, int32_t portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL2(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL2_RAW(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext) {
+#define HCIMPL2_VV(rettype, funcname, a1, a2) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, int32_t portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext) { HCIMPL_PROLOG(funcname)
+#define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(uintptr_t stack_pointer, a1, a2, a3, int32_t portableEntryPointContext) {
+
 #else // SWIZZLE_STKARG_ORDER
 
 #define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname)
