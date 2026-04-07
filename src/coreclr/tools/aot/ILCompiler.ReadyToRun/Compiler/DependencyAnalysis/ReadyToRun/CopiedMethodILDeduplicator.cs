@@ -31,6 +31,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 foreach (CopiedMethodILNode node in sortedNodes)
                 {
+                    // No need to deduplicate unmarked nodes.
+                    // They won't be emitted anyway.
+                    if (!node.Marked)
+                    {
+                        continue;
+                    }
                     var key = new InternKey(node, factory);
                     if (hashSet.TryGetValue(key, out InternKey existing))
                     {
