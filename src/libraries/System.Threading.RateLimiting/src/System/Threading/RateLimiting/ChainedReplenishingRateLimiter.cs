@@ -87,7 +87,7 @@ namespace System.Threading.RateLimiting
         public override RateLimiterStatistics? GetStatistics()
         {
             ThrowIfDisposed();
-            return ChainedRateLimiter.GetStatisticsCore(_limiters);
+            return ChainedRateLimiterShared.GetStatisticsCore(_limiters);
         }
 
         public override TimeSpan? IdleDuration
@@ -95,20 +95,20 @@ namespace System.Threading.RateLimiting
             get
             {
                 ThrowIfDisposed();
-                return ChainedRateLimiter.GetIdleDurationCore(_limiters);
+                return ChainedRateLimiterShared.GetIdleDurationCore(_limiters);
             }
         }
 
         protected override RateLimitLease AttemptAcquireCore(int permitCount)
         {
             ThrowIfDisposed();
-            return ChainedRateLimiter.AttemptAcquireChained(_limiters, permitCount);
+            return ChainedRateLimiterShared.AttemptAcquireChained(_limiters, permitCount);
         }
 
         protected override async ValueTask<RateLimitLease> AcquireAsyncCore(int permitCount, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            return await ChainedRateLimiter.AcquireAsyncChained(_limiters, permitCount, cancellationToken).ConfigureAwait(false);
+            return await ChainedRateLimiterShared.AcquireAsyncChained(_limiters, permitCount, cancellationToken).ConfigureAwait(false);
         }
 
         protected override void Dispose(bool disposing)
