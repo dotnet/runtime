@@ -13,6 +13,8 @@ using TestLibrary;
 
 public class Test_GetTotalAllocatedBytes 
 {
+    public static bool IsNotHeapVerifyOnArmArchitecture => !(Utilities.IsArm && CoreClrConfigurationDetection.IsHeapVerify);
+
     struct Counts
     {
         public Counts(long precise, long imprecise)
@@ -178,9 +180,8 @@ public class Test_GetTotalAllocatedBytes
 
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/121482", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsArm))]
-    [SkipOnCoreClr("This test is not compatible with HeapVerify.", RuntimeTestModes.HeapVerify)]
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
-    [Fact]
+    [ConditionalFact(typeof(Test_GetTotalAllocatedBytes), nameof(IsNotHeapVerifyOnArmArchitecture))]
     public static void TestEntryPoint() 
     {
         TestSingleThreaded();

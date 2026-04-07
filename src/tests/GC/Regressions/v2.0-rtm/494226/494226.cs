@@ -9,11 +9,12 @@ using TestLibrary;
 
 public class Test_494226
 {
+    public static bool IsNotHeapVerifyOnNonX64Architecture => !((Utilities.IsX86 || Utilities.IsArm || Utilities.IsArm64) && CoreClrConfigurationDetection.IsHeapVerify);
+
     [System.Security.SecuritySafeCritical]
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
-    [SkipOnCoreClr("This test is not compatible with HeapVerify.", RuntimeTestModes.HeapVerify)]
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
-    [Fact]
+    [ConditionalFact(typeof(Test_494226), nameof(IsNotHeapVerifyOnNonX64Architecture))]
     public static void TestEntryPoint()
     {
         List<GCHandle> list = new List<GCHandle>();
