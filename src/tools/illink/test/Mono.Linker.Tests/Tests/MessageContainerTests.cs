@@ -1,14 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Mono.Linker.Tests
 {
-    [TestFixture]
+    [TestClass]
     public class MessageContainerTests
     {
-        [Test]
+        [TestMethod]
         public void MSBuildFormat()
         {
             LinkContext context = new LinkContext(new Pipeline(), new ConsoleLogger(), string.Empty);

@@ -351,7 +351,13 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    Assert.Equal(Program, px.ProcessName);
+                    // ProcessName may transiently reflect the parent's thread name immediately
+                    // after fork() if execve() hasn't completed yet in the child, so retry briefly.
+                    RetryHelper.Execute(() =>
+                    {
+                        px.Refresh();
+                        Assert.Equal(Program, px.ProcessName);
+                    });
                 }
                 finally
                 {
@@ -374,7 +380,13 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    Assert.Equal(Program, px.ProcessName);
+                    // ProcessName may transiently reflect the parent's thread name immediately
+                    // after fork() if execve() hasn't completed yet in the child, so retry briefly.
+                    RetryHelper.Execute(() =>
+                    {
+                        px.Refresh();
+                        Assert.Equal(Program, px.ProcessName);
+                    });
                 }
                 finally
                 {
@@ -507,7 +519,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, or MacCatalyst.")]
         public void TestStartOnUnixWithBadPermissions()
         {
             string path = GetTestFilePath();
@@ -599,7 +611,7 @@ namespace System.Diagnostics.Tests
         /// Tests when running as root and starting a new process as a normal user,
         /// the new process doesn't have elevated privileges.
         /// </summary>
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(ProcessTests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(true)]
         [InlineData(false)]
         public unsafe void TestCheckChildProcessUserAndGroupIdsElevated(bool useRootGroups)
@@ -800,7 +812,7 @@ namespace System.Diagnostics.Tests
         /// there is still an existing Process instance. Operations on the existing instance will
         /// throw since that process has exited.
         /// </summary>
-        [ConditionalFact(nameof(IsStressModeEnabledAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ProcessTests), nameof(IsStressModeEnabledAndRemoteExecutorSupported))]
         public void TestProcessRecycledPid()
         {
             const int LinuxPidMaxDefault = 32768;
@@ -897,18 +909,12 @@ namespace System.Diagnostics.Tests
             using (Process nonChildProcess = CreateNonChildProcess())
             {
                 // Kill the process.
-                int rv = kill(nonChildProcess.Id, SIGKILL);
-                Assert.Equal(0, rv);
+                Assert.True(nonChildProcess.SafeHandle.Signal(PosixSignal.SIGKILL));
 
                 // Wait until the process is reaped.
-                while (rv == 0)
+                while (!nonChildProcess.HasExited)
                 {
-                    rv = kill(nonChildProcess.Id, 0);
-                    if (rv == 0)
-                    {
-                        // process still exists, wait some time.
-                        await Task.Delay(100);
-                    }
+                    await Task.Delay(100);
 
                     DateTime now = DateTime.UtcNow;
                     if (start.Ticks + (Helpers.PassingTestTimeoutMilliseconds * 10_000) <= now.Ticks)
@@ -1012,11 +1018,6 @@ namespace System.Diagnostics.Tests
         [DllImport("libc")]
         private static extern unsafe int setgroups(int length, uint* groups);
 
-        private const int SIGKILL = 9;
-
-        [DllImport("libc", SetLastError = true)]
-        private static extern int kill(int pid, int sig);
-
         [DllImport("libc", SetLastError = true)]
         private static extern int open(string pathname, int flags);
 
@@ -1050,15 +1051,57 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        private static void SendSignal(PosixSignal signal, int processId)
-        {
-            int result = kill(processId, Interop.Sys.GetPlatformSignalNumber(signal));
-            if (result != 0)
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), $"Failed to send signal {signal} to process {processId}");
-            }
-        }
+        private static void SendSignal(PosixSignal signal, Process process) => Assert.True(process.SafeHandle.Signal(signal));
 
         private static unsafe void ReEnableCtrlCHandlerIfNeeded(PosixSignal signal) { }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.Windows, "SIGCONT is not supported on Windows.")]
+        public void ChildProcess_WithParentSignalHandler_CanReceiveSignals()
+        {
+            // This test verifies that a child process started from a parent that has
+            // registered signal handlers can still receive signals correctly.
+            // This exercises the posix_spawn path on macOS where the child must
+            // cooperate correctly with signal handling in both the parent and child.
+            const string SignalReceivedMessage = "Signal received";
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
+            {
+                // Register a signal handler in the parent process to modify signal state
+                using PosixSignalRegistration parentHandler = PosixSignalRegistration.Create(PosixSignal.SIGCONT, (ctx) =>
+                {
+                    ctx.Cancel = true;
+                });
+
+                // Now start a child process from this parent (which has signal handlers registered)
+                // and verify the child can receive signals properly
+                const string ChildReadyMessage = "Child ready";
+
+                var childOptions = new RemoteInvokeOptions { CheckExitCode = false };
+                childOptions.StartInfo.RedirectStandardOutput = true;
+
+                using RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(() =>
+                {
+                    using ManualResetEvent signalEvent = new ManualResetEvent(false);
+                    using PosixSignalRegistration childHandler = PosixSignalRegistration.Create(PosixSignal.SIGCONT, (ctx) =>
+                    {
+                        Console.WriteLine(SignalReceivedMessage);
+                        signalEvent.Set();
+                        ctx.Cancel = true;
+                    });
+
+                    Console.WriteLine(ChildReadyMessage);
+                    Assert.True(signalEvent.WaitOne(WaitInMS));
+                }, childOptions);
+
+                AssertRemoteProcessStandardOutputLine(childHandle, ChildReadyMessage, WaitInMS);
+
+                // Send SIGCONT to the child process
+                Assert.True(childHandle.Process.SafeHandle.Signal(PosixSignal.SIGCONT));
+
+                Assert.True(childHandle.Process.WaitForExit(WaitInMS));
+                Assert.Equal(RemotelyInvokable.SuccessExitCode, childHandle.Process.ExitCode);
+            });
+        }
     }
 }

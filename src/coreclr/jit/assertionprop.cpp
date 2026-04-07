@@ -1703,7 +1703,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         // Move the checked bound to the right side for simplicity
         relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, op1VN, 0);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, op1VN, 0);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1712,7 +1712,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // "X <relop> CheckedBnd"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op2VN))
     {
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, op2VN, 0);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, op2VN, 0);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1725,7 +1725,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         // Move the (CheckedBnd + CNS) part to the right side for simplicity
         relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, checkedBnd, checkedBndCns);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, checkedBnd, checkedBndCns);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1734,7 +1734,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // "X <relop> (CheckedBnd + CNS)"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBoundAddConst(op2VN, &checkedBnd, &checkedBndCns))
     {
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, checkedBnd, checkedBndCns);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, checkedBnd, checkedBndCns);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1748,7 +1748,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
         ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
 
-        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(idxVN, lenVN);
+        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
         AssertionIndex index = optAddAssertion(dsc);
         if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
         {
@@ -2006,6 +2006,21 @@ void Compiler::optAssertionGen(GenTree* tree)
             }
             break;
 
+        case GT_LCL_VAR:
+            if (!optLocalAssertionProp && tree->TypeIs(TYP_INT) &&
+                lvaGetDesc(tree->AsLclVarCommon())->IsNeverNegative())
+            {
+                // Create "LCL_VAR >= 0" assertion for int local variables that are never negative.
+                // Typically, it's Span.Length.
+                ValueNum opVN = optConservativeNormalVN(tree);
+                if (opVN != ValueNumStore::NoVN)
+                {
+                    assertionInfo = optAddAssertion(
+                        AssertionDsc::CreateConstantBound(this, VNF_GE, opVN, vnStore->VNZeroForType(TYP_INT)));
+                }
+            }
+            break;
+
         case GT_IND:
         case GT_XAND:
         case GT_XORR:
@@ -2036,8 +2051,9 @@ void Compiler::optAssertionGen(GenTree* tree)
         case GT_BOUNDS_CHECK:
             if (!optLocalAssertionProp)
             {
-                ValueNum idxVN = optConservativeNormalVN(tree->AsBoundsChk()->GetIndex());
-                ValueNum lenVN = optConservativeNormalVN(tree->AsBoundsChk()->GetArrayLength());
+                GenTree* arrLenNode = tree->AsBoundsChk()->GetArrayLength();
+                ValueNum idxVN      = optConservativeNormalVN(tree->AsBoundsChk()->GetIndex());
+                ValueNum lenVN      = optConservativeNormalVN(arrLenNode);
                 if ((idxVN == ValueNumStore::NoVN) || (lenVN == ValueNumStore::NoVN))
                 {
                     assertionInfo = NO_ASSERTION_INDEX;
@@ -2047,7 +2063,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                     // GT_BOUNDS_CHECK node provides the following contract:
                     // * idxVN < lenVN
                     // * lenVN is non-negative
-                    assertionInfo = optAddAssertion(AssertionDsc::CreateNoThrowArrBnd(idxVN, lenVN));
+                    assertionInfo = optAddAssertion(AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN));
                 }
             }
             break;
@@ -2070,8 +2086,78 @@ void Compiler::optAssertionGen(GenTree* tree)
                 assert(thisArg != nullptr);
                 assertionInfo = optCreateAssertion(thisArg, nullptr, /*equals*/ false);
             }
+            else if (!optLocalAssertionProp)
+            {
+                // Array allocation creates an assertion that the length argument is non-negative.
+                //
+                // var arr = new int[n]; - creates n >= 0 assertion
+                //
+                GenTree* lenArg = getArrayLengthFromAllocation(call);
+                if (lenArg != nullptr)
+                {
+                    ValueNum lenVN = vnStore->VNIgnoreIntToLongCast(optConservativeNormalVN(lenArg));
+                    if ((lenVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lenVN) &&
+                        (vnStore->TypeOfVN(lenVN) == TYP_INT))
+                    {
+                        ValueNum zeroVN = vnStore->VNZeroForType(TYP_INT);
+                        assertionInfo = optAddAssertion(AssertionDsc::CreateConstantBound(this, VNF_GE, lenVN, zeroVN));
+                        break;
+                    }
+                }
+
+                // CORINFO_HELP_ARRADDR_ST(arrRef, idx, value) creates an assertion that "idx" is within the bounds of
+                // "arrRef" array
+                //
+                // arr[idx] = value; - creates idx is within bounds of arr assertion
+                //
+                CorInfoHelpFunc helperId = eeGetHelperNum(call->gtCallMethHnd);
+                if ((helperId == CORINFO_HELP_ARRADDR_ST) || (helperId == CORINFO_HELP_LDELEMA_REF))
+                {
+                    assert(call->gtArgs.CountUserArgs() == 3);
+                    GenTree* arrRef = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+                    GenTree* idx    = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+                    ValueNum idxVN = vnStore->VNIgnoreIntToLongCast(optConservativeNormalVN(idx));
+                    if ((idxVN != ValueNumStore::NoVN) && (vnStore->TypeOfVN(idxVN) == TYP_INT))
+                    {
+                        ValueNum arrRefVN = optConservativeNormalVN(arrRef);
+                        if (arrRefVN != ValueNumStore::NoVN)
+                        {
+                            // Compose a VN_ARR_LENGTH VN for the array reference and use it
+                            // to create a bounds check assertion on the index.
+                            ValueNum lenVN = vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, arrRefVN);
+                            assertionInfo  = optAddAssertion(AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN));
+                            break;
+                        }
+                    }
+                }
+            }
         }
         break;
+
+        case GT_DIV:
+        case GT_UDIV:
+        case GT_MOD:
+        case GT_UMOD:
+            if (!optLocalAssertionProp)
+            {
+                // For division/modulo, we can create an assertion that the divisor is not zero
+                //
+                // c = a / b; - creates b != 0 assertion
+                //
+                ValueNum divisorVN = optConservativeNormalVN(tree->AsOp()->gtGetOp2());
+                if ((divisorVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(divisorVN))
+                {
+                    var_types divisorType = vnStore->TypeOfVN(divisorVN);
+                    if (varTypeIsIntegral(divisorType))
+                    {
+                        ValueNum zeroVN = vnStore->VNZeroForType(divisorType);
+                        assertionInfo =
+                            optAddAssertion(AssertionDsc::CreateConstantBound(this, VNF_NE, divisorVN, zeroVN));
+                    }
+                }
+            }
+            break;
 
         case GT_JTRUE:
             assertionInfo = optAssertionGenJtrue(tree);
@@ -2243,6 +2329,73 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Call_Memcmp: Folds NI_System_SpanHelpers_SequenceEqual for immutable data.
+//
+// Arguments:
+//    call - NI_System_SpanHelpers_SequenceEqual call to fold
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
+{
+    JITDUMP("See if we can optimize NI_System_SpanHelpers_SequenceEqual with help of VN...\n");
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual));
+
+    CallArg* arg1   = call->gtArgs.GetUserArgByIndex(0);
+    CallArg* arg2   = call->gtArgs.GetUserArgByIndex(1);
+    CallArg* lenArg = call->gtArgs.GetUserArgByIndex(2);
+
+    ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
+    if (!vnStore->IsVNConstant(lenVN))
+    {
+        // See if arguments are the same - in that case we can optimize to constant true
+        ValueNum arg1VN = optConservativeNormalVN(arg1->GetNode());
+        ValueNum arg2VN = optConservativeNormalVN(arg2->GetNode());
+        if ((arg1VN != ValueNumStore::NoVN) && (arg1VN == arg2VN))
+        {
+            JITDUMP("...both arguments have the same VN -> optimize to constant true.\n");
+            return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+        }
+
+        JITDUMP("...length is not a constant - bail out.\n");
+        return nullptr;
+    }
+
+    const size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
+
+    // SequenceEqual(..., len == 0) => true, and does not dereference pointers
+    if (len == 0)
+    {
+        JITDUMP("...length is 0 -> optimize to constant true.\n");
+        return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+    }
+
+    constexpr size_t maxLen = 65536; // Arbitrary threshold to avoid large buffer allocations
+    if (len > maxLen)
+    {
+        JITDUMP("...length is too big (%u bytes) - bail out.\n", (unsigned)len);
+        return nullptr;
+    }
+
+    uint8_t* buffer1 = nullptr;
+    uint8_t* buffer2 = nullptr;
+    if (GetImmutableDataFromAddress(arg1->GetNode(), (int)len, getAllocator(CMK_AssertionProp), &buffer1) &&
+        GetImmutableDataFromAddress(arg2->GetNode(), (int)len, getAllocator(CMK_AssertionProp), &buffer2))
+    {
+        assert(buffer1 != nullptr && buffer2 != nullptr);
+        // If both memory regions are known at compile time, we can fold to a constant.
+        bool areEqual = (memcmp(buffer1, buffer2, len) == 0);
+        JITDUMP("...both memory regions are known at compile time -> optimize to constant %s.\n",
+                areEqual ? "true" : "false");
+        return gtWrapWithSideEffects(gtNewIconNode(areEqual ? 1 : 0), call, GTF_ALL_EFFECT, true);
+    }
+
+    JITDUMP("...data is not known at compile time - bail out.\n");
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call_Memset: Unrolls NI_System_SpanHelpers_Fill for constant length.
 //
 // Arguments:
@@ -2253,6 +2406,7 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //
 GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
 {
+    JITDUMP("See if we can optimize NI_System_SpanHelpers_Fill with help of VN...\n");
     assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill));
 
     CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
@@ -2369,12 +2523,14 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 
     // if GetImmutableDataFromAddress returns true, it means that the src is a read-only constant.
     // Thus, dst and src do not overlap (if they do - it's an UB).
-    uint8_t* buffer = new (this, CMK_AssertionProp) uint8_t[len];
-    if (!GetImmutableDataFromAddress(srcArg->GetNode(), (int)len, buffer))
+    uint8_t* buffer = nullptr;
+    if (!GetImmutableDataFromAddress(srcArg->GetNode(), (int)len, getAllocator(CMK_AssertionProp), &buffer))
     {
         JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
         return nullptr;
     }
+
+    assert(buffer != nullptr);
 
     // if dstArg is not simple, we replace the arg directly with a temp assignment and
     // continue using that temp - it allows us reliably extract all side effects.
@@ -2489,6 +2645,11 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
     if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill))
     {
         return optVNBasedFoldExpr_Call_Memset(call);
+    }
+
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
+    {
+        return optVNBasedFoldExpr_Call_Memcmp(call);
     }
 
     return nullptr;
@@ -3073,7 +3234,7 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
+        printf("\nConstant Assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
         optPrintAssertion(curAssertion, index);
         gtDispTree(newTree, nullptr, nullptr, true);
     }
@@ -3132,7 +3293,7 @@ bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertion
     }
 
     const AssertionDsc& assertion = optGetAssertion(assertionIndex);
-    JITDUMP("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
+    JITDUMP("\nZEROOBJ Assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
     JITDUMPEXEC(optPrintAssertion(assertion, assertionIndex));
     DISPNODE(tree);
 
@@ -3280,6 +3441,12 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
 
     tree->SetLclNum(copyLclNum);
 
+    // The copied var also needs multi-reg, if set
+    if (lclVarDsc->lvIsMultiRegRet)
+    {
+        copyVarDsc->lvIsMultiRegRet = true;
+    }
+
     // Copy prop and last-use copy elision happens at the same time in morph.
     // This node may potentially not be a last use of the new local.
     //
@@ -3292,7 +3459,7 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
+        printf("\nCopy Assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
         optPrintAssertion(curAssertion, index);
         DISPNODE(tree);
     }
@@ -5497,15 +5664,36 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 //
 ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const BasicBlock* blockPred) const
 {
-    if ((blockPred->KindIs(BBJ_COND) && blockPred->TrueTargetIs(block)))
+    assert(block != nullptr);
+    if (blockPred->KindIs(BBJ_COND))
     {
-        if (bbJtrueAssertionOut != nullptr)
+        if (blockPred->TrueTargetIs(block))
         {
-            return bbJtrueAssertionOut[blockPred->bbNum];
+            if (bbJtrueAssertionOut != nullptr)
+            {
+                return bbJtrueAssertionOut[blockPred->bbNum];
+            }
+            return BitVecOps::MakeEmpty(apTraits);
         }
-        return BitVecOps::MakeEmpty(apTraits);
+
+        // If block is not the false target either, the edge doesn't exist
+        // (e.g. a stale PHI arg pred after edge redirection by RBO).
+        // Return empty to avoid using assertions from an unrelated edge.
+        if (!blockPred->FalseTargetIs(block))
+        {
+            return BitVecOps::MakeEmpty(apTraits);
+        }
+        return blockPred->bbAssertionOut;
     }
-    return blockPred->bbAssertionOut;
+
+    for (BasicBlock* const pred : block->PredBlocks())
+    {
+        if (pred == blockPred)
+        {
+            return blockPred->bbAssertionOut;
+        }
+    }
+    return BitVecOps::MakeEmpty(apTraits);
 }
 
 #include "dataflow.h"
@@ -6079,7 +6267,7 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
 {
     // TODO-Review: EH successor/predecessor iteration seems broken.
     // See: SELF_HOST_TESTS_ARM\jit\Directed\ExcepFilters\fault\fault.exe
-    if (block->bbCatchTyp == BBCT_FAULT)
+    if (block->CatchTypeIs(BBCT_FAULT))
     {
         return stmt;
     }
@@ -6182,9 +6370,9 @@ PhaseStatus Compiler::optAssertionPropMain()
         }
     }
 
-    for (int i = 0; i < switchBlocks.Height(); i++)
+    for (BasicBlock* const switchBlock : switchBlocks.BottomUpOrder())
     {
-        madeChanges |= optCreateJumpTableImpliedAssertions(switchBlocks.Bottom(i));
+        madeChanges |= optCreateJumpTableImpliedAssertions(switchBlock);
     }
 
     if (optAssertionCount == 0)
@@ -6243,7 +6431,7 @@ PhaseStatus Compiler::optAssertionPropMain()
 
         // TODO-Review: EH successor/predecessor iteration seems broken.
         // SELF_HOST_TESTS_ARM\jit\Directed\ExcepFilters\fault\fault.exe
-        if (block->bbCatchTyp == BBCT_FAULT)
+        if (block->CatchTypeIs(BBCT_FAULT))
         {
             continue;
         }
@@ -6304,9 +6492,57 @@ PhaseStatus Compiler::optAssertionPropMain()
                     printf("\n");
                 }
 #endif
+                // Record BBJ_COND state before morphing so we can fix up
+                // assertion out sets if morph changes the block's edges.
+                bool        wasCond = block->KindIs(BBJ_COND);
+                BasicBlock* trueBb  = wasCond ? block->GetTrueTarget() : nullptr;
+                BasicBlock* falseBb = wasCond ? block->GetFalseTarget() : nullptr;
+
                 // Re-morph the statement.
                 fgMorphBlockStmt(block, stmt DEBUGARG("optAssertionPropMain"));
                 madeChanges = true;
+
+                // Fix up assertion out sets if morphing changed the block's edges in a way
+                // that affects the semantics of the assertions.
+                //
+                if (wasCond && !optLocalAssertionProp)
+                {
+                    if (!block->KindIs(BBJ_COND))
+                    {
+                        // NOTE: if trueBb == falseBb then we don't know how assertions may change
+                        // so we take the conservative path in that case.
+                        //
+                        if ((block->GetUniqueSucc() == trueBb) && (trueBb != falseBb))
+                        {
+                            // BBJ_COND was folded (e.g. to BBJ_ALWAYS).
+                            // Fix up bbAssertionOut to match the retained edge.
+                            //
+                            BitVecOps::Assign(apTraits, block->bbAssertionOut, bbJtrueAssertionOut[block->bbNum]);
+                        }
+                        else if ((block->GetUniqueSucc() == falseBb) && (trueBb != falseBb))
+                        {
+                            // bbAssertionOut already has the false-edge assertions.
+                        }
+                        else
+                        {
+                            // Converted to something unexpected (e.g. BBJ_SWITCH) — conservatively
+                            // just propagate the IN assertions, which is better than losing all assertions.
+                            //
+                            BitVecOps::Assign(apTraits, block->bbAssertionOut, block->bbAssertionIn);
+                            // We can also quickly walk over the trees and accumulate more assertions if needed.
+                            // NOTE: this is not valid for LocalAP as assertions may die in the middle of the block
+                        }
+                    }
+                    else if ((block->GetTrueTarget() != trueBb) || (block->GetFalseTarget() != falseBb))
+                    {
+                        // Conservatively clear assertions if edges changed in any way that we don't expect.
+                        // We still can be smart here and handle e.g. edge flip.
+                        //
+                        BitVecOps::Assign(apTraits, block->bbAssertionOut, block->bbAssertionIn);
+                        BitVecOps::Assign(apTraits, bbJtrueAssertionOut[block->bbNum], block->bbAssertionIn);
+                        // NOTE: this is not valid for LocalAP as assertions may die in the middle of the block
+                    }
+                }
             }
 
             // Check if propagation removed statements starting from current stmt.

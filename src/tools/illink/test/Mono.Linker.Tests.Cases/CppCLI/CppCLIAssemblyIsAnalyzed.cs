@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.CppCLI
 {
     [IgnoreTestCase("Test relies on checked-in binaries: https://github.com/dotnet/runtime/issues/78344")]
     [ReferenceDependency("Dependencies/TestLibrary.dll")]
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
 
     [SetupCompileBefore("ManagedSide.dll", new[] { "Dependencies/CallCppCLIFromManagedRef.cs" })]
     [SetupCompileAfter("ManagedSide.dll", new[] { "Dependencies/CallCppCLIFromManaged.cs" }, references: new[] { "TestLibrary.dll" })]

@@ -1698,9 +1698,10 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
 void Debugger::CleanupTransportSocket(void)
 {
 #if defined(TARGET_UNIX) && defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    if (g_pDbgTransport != NULL)
+    void (*pfnCallback)(void) = VolatileLoad(&g_pfnAbortTransportCallback);
+    if (pfnCallback != NULL)
     {
-        g_pDbgTransport->AbortConnection();
+        pfnCallback();
     }
 #endif // TARGET_UNIX && FEATURE_DBGIPC_TRANSPORT_VM
 }
@@ -5587,6 +5588,17 @@ void Debugger::OnMethodEnter(void * pIP)
     FramePointer fp = LEAF_MOST_FRAME;
     DebuggerController::DispatchMethodEnter(pIP, fp);
 }
+/******************************************************************************
+ * IsMethodEnterEnabled
+ * Returns true if any stepper/controller has requested method-enter callbacks.
+ * Used by the interpreter to gate OnMethodEnter calls.
+ ******************************************************************************/
+bool Debugger::IsMethodEnterEnabled()
+{
+    LIMITED_METHOD_CONTRACT;
+    return DebuggerController::GetTotalMethodEnter() > 0;
+}
+
 /******************************************************************************
  * GetJMCFlagAddr
  * Provide an address of the flag that the JMC probes use to decide whether

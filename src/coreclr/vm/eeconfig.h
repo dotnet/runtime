@@ -43,6 +43,15 @@ enum { OPT_BLENDED,
     OPT_RANDOM,
     OPT_DEFAULT = OPT_BLENDED };
 
+enum ClrModifiableAssemblies {
+    /* modifiable assemblies are implicitly disabled */
+    MODIFIABLE_ASSM_UNSET = 0,
+    /* modifiable assemblies are explicitly disabled */
+    MODIFIABLE_ASSM_NONE = 1,
+    /* assemblies with the Debug flag are modifiable */
+    MODIFIABLE_ASSM_DEBUG = 2,
+};
+
 enum ParseCtl {
     parseAll,               // parse entire config file
     stopAfterRuntimeSection // stop after <runtime>...</runtime> section
@@ -87,6 +96,11 @@ public:
     bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
 #endif // FEATURE_TIERED_COMPILATION
+    DWORD TieredCompilation_DefaultTier() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return tieredCompilation_DefaultTier;
+    }
 
 #if defined(FEATURE_PGO)
     bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
@@ -356,6 +370,10 @@ public:
         GCSTRESS_INSTR_JIT          = 4,    // GC on every allowable JITed instr
         GCSTRESS_INSTR_NGEN         = 8,    // GC on every allowable NGEN instr
         GCSTRESS_UNIQUE             = 16,   // GC only on a unique stack trace
+        GCSTRESS_CDAC               = 32,   // Verify cDAC GC references at stress points
+
+        // Excludes cDAC stress as it is fundamentally different from the other stress modes
+        GCSTRESS_ALLSTRESS          = GCSTRESS_ALLOC | GCSTRESS_TRANSITION | GCSTRESS_INSTR_JIT | GCSTRESS_INSTR_NGEN,
     };
 
     GCStressFlags GetGCStressLevel()        const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GCStressFlags(iGCStress); }
@@ -404,9 +422,8 @@ public:
     // Loader
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
 
-    bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
-    bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
-    bool    DebugAssembliesModifiable()     const { LIMITED_METHOD_CONTRACT; return fDebugAssembliesModifiable; }
+    bool    StressLog()                            const { LIMITED_METHOD_CONTRACT; return fStressLog; }
+    ClrModifiableAssemblies ModifiableAssemblies() const { LIMITED_METHOD_CONTRACT; return modifiableAssemblies; }
 
     // Optimizations to improve working set
 
@@ -435,8 +452,6 @@ public:
     DWORD ShouldInjectFault(DWORD faultType) const {LIMITED_METHOD_CONTRACT; return fShouldInjectFault & faultType;}
 
 #endif
-
-    bool    RuntimeAsync()                 const { LIMITED_METHOD_CONTRACT; return runtimeAsync; }
 
 #ifdef FEATURE_INTERPRETER
     bool    EnableInterpreter()            const { LIMITED_METHOD_CONTRACT; return enableInterpreter; }
@@ -568,8 +583,7 @@ private: //----------------------------------------------------------------
     AssemblyNamesList * pReadyToRunExcludeList;
 
     bool fStressLog;
-    bool fForceEnc;
-    bool fDebugAssembliesModifiable;
+    ClrModifiableAssemblies modifiableAssemblies;
 
 #ifdef _DEBUG
     // interop logging
@@ -600,6 +614,7 @@ private: //----------------------------------------------------------------
     DWORD tieredCompilation_CallCountingDelayMs;
     DWORD tieredCompilation_DeleteCallCountingStubsAfter;
 #endif
+    DWORD tieredCompilation_DefaultTier;
 
 #if defined(FEATURE_PGO)
     bool fTieredPGO;
@@ -640,8 +655,6 @@ private: //----------------------------------------------------------------
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
     bool fUseCachedInterfaceDispatch;
 #endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
-
-    bool runtimeAsync; // True if the runtime supports async methods
 
 public:
 

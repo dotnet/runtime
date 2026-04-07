@@ -1,46 +1,90 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <Target Name="_ComputeIlcCompileInputs"
+          Condition="'$(BuildingFrameworkLibrary)' != 'true'"
           BeforeTargets="ComputeIlcCompileInputs"
-          DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
+          DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);_ComputeAssembliesToCompileToNative;_PrepareTrimConfiguration">
+
     <ItemGroup>
-      <IlcReference Include="@(_ManagedResolvedAssembliesToPublish)" />
+      <_IlcManagedInputAssemblies Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true'" />
+      <IlcReference Include="@(_IlcManagedInputAssemblies)" />
       <IlcSatelliteAssembly Include="@(_SatelliteAssembliesToPublish)" />
       <IlcSatelliteAssembly Include="@(IntermediateSatelliteAssembliesWithTargetPath)" />
     </ItemGroup>
   </Target>
 
   <!--
-    This target hooks into the dotnet CLI publish pipeline. That pipeline has
-    a target called ComputeFilesToPublish which produces the ItemGroup
-    ResolvedFileToPublish based on the inputs of @(IntermediateAssembly)
-    and @(ResolvedAssembliesToPublish). We modify those two item groups
-    to control what gets published after NativeAOT optimizes the application.
+    ============================================================
+                                        NativeCompile
+
+    Redefine the SDK's empty NativeCompile placeholder target to perform the full
+    NativeAOT compilation pipeline: ILC compilation, native linking, and updating
+    ResolvedFileToPublish to replace managed assemblies with the native binary.
+
+    The SDK typically sequences this target in the publish pipeline as:
+      ComputeResolvedFilesToPublishList -> ILLink (when RunILLink is true) -> NativeCompile -> ...
+
+    This gives us a clean, explicit position after trim configuration (_PrepareTrimConfiguration),
+    regardless of whether ILLink itself runs.
+    ============================================================
   -->
-  <Target Name="ComputeLinkedFilesToPublish"
-          BeforeTargets="ComputeResolvedFilesToPublishList"
+  <Target Name="NativeCompile"
           DependsOnTargets="_ComputeAssembliesToCompileToNative;LinkNative">
 
     <ItemGroup>
-      <_ResolvedCopyLocalPublishAssets Remove="@(_AssembliesToSkipPublish)" />
-      <_ResolvedCopyLocalPublishAssets Include="@(_LinkedResolvedAssemblies)" />
-      <_DebugSymbolsIntermediatePath Remove="@(_DebugSymbolsIntermediatePath)" />
+      <ResolvedFileToPublish Remove="@(_IlcManagedInputAssemblies)" />
+      <!-- dotnet CLI produces managed debug symbols, which we will replace with native symbols instead -->
+      <ResolvedFileToPublish Remove="@(_DebugSymbolsIntermediatePath)" />
+      <ResolvedFileToPublish Remove="@(IntermediateSatelliteAssembliesWithTargetPath)" />
+      <!-- replace apphost with binary we generated during native compilation -->
+      <ResolvedFileToPublish Include="$(NativeBinary)">
+        <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
     </ItemGroup>
 
-    <ItemGroup>
-      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
-      <IntermediateAssembly Include="$(NativeBinary)" />
+    <PropertyGroup Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
+      <_symbolExt Condition="'$(OS)' == 'Windows_NT'">$(NativeSymbolExt)</_symbolExt>
+      <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
+      <_symbolSourcePath>$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(_symbolExt)</_symbolSourcePath>
+      <_symbolTargetPath>$(PublishDir)\$(NativeBinaryPrefix)$(TargetName)$(_symbolExt)</_symbolTargetPath>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
+      <_symbolRecursivePath Include="$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(_symbolExt)/**/*" />
+
+      <!-- Add native symbol file if it exists. On Mac, the symbol path may be a folder-->
+      <ResolvedFileToPublish Include="$(_symbolSourcePath)"
+                             Condition="'$(NativeSymbolExt)' != '.dSYM' and Exists('$(_symbolSourcePath)')">
+        <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(_symbolExt)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+
+      <!-- Add folder otherwise. If the symbol is a dSYM bundle, it's a folder not a file. -->
+      <ResolvedFileToPublish Include="@(_symbolRecursivePath)"
+                             Condition="'$(NativeSymbolExt)' == '.dSYM' and Exists('$(_symbolSourcePath)')">
+        <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(_symbolExt)/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
     </ItemGroup>
   </Target>
 
+  <!-- Back-compat: keep ComputeLinkedFilesToPublish scheduled after NativeCompile so that
+       external targets using BeforeTargets/AfterTargets="ComputeLinkedFilesToPublish" still
+       fire at approximately the same point in the publish pipeline. -->
+  <Target Name="ComputeLinkedFilesToPublish"
+          AfterTargets="NativeCompile"
+          DependsOnTargets="NativeCompile" />
+
   <!--
-    Filter the input publish file list selecting managed assemblies for compilation.
-    Also produces _AssembliesToSkipPublish which chops out things from the publish
-    pipeline we don't want to see in the output (native images, CoreCLR artifacts)
-    until we get a proper AOT NetCore app package.
+    Classify ResolvedFileToPublish for NativeAOT, then replace CoreCLR runtime pack
+    files with DefaultFrameworkAssemblies (tagged PostprocessAssembly=true) so that
+    trim metadata and ILC input selection operate on the correct set of assemblies.
   -->
   <UsingTask TaskName="ComputeManagedAssembliesToCompileToNative" AssemblyFile="$(IlcBuildTasksPath)" />
-  <Target Name="_ComputeAssembliesToCompileToNative" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
+  <Target Name="_ComputeAssembliesToCompileToNative"
+          DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);_ComputeAssembliesToPostprocessOnPublish"
+          BeforeTargets="_PrepareTrimConfiguration">
 
     <Warning Condition="Exists($(UserRuntimeConfig))" Text="The published project has a runtimeconfig.template.json that is not supported by PublishAot. Move the configuration to the project file using RuntimeHostConfigurationOption." />
     <!-- Fail with descriptive error message for common mistake. -->
@@ -71,54 +115,28 @@
     <Error Condition="'@(FrameworkAssemblies)' == ''" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
 
     <ComputeManagedAssembliesToCompileToNative
-      Assemblies="@(_ResolvedCopyLocalPublishAssets)"
+      Assemblies="@(ResolvedFileToPublish)"
       DotNetAppHostExecutableName="$(_DotNetAppHostExecutableName)"
       DotNetHostFxrLibraryName="$(_DotNetHostFxrLibraryName)"
       DotNetHostPolicyLibraryName="$(_DotNetHostPolicyLibraryName)"
       SdkAssemblies="@(PrivateSdkAssemblies)"
       FrameworkAssemblies="@(FrameworkAssemblies)">
 
-      <Output TaskParameter="ManagedAssemblies" ItemName="_ManagedResolvedAssembliesToPublish" />
       <Output TaskParameter="SatelliteAssemblies" ItemName="_SatelliteAssembliesToPublish" />
-      <Output TaskParameter="AssembliesToSkipPublish" ItemName="_AssembliesToSkipPublish" />
+      <Output TaskParameter="RuntimePackFilesToSkipPublish" ItemName="_RuntimePackFilesToSkipPublish" />
     </ComputeManagedAssembliesToCompileToNative>
 
-  </Target>
-
-  <Target Name="CopyNativeBinary" AfterTargets="Publish">
-    <!-- replace apphost with binary we generated during native compilation -->
-    <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)" />
-    <Copy SourceFiles="$(NativeBinary)" DestinationFolder="$(PublishDir)" />
-  </Target>
-
-  <Target Name="_CopyAotSymbols" AfterTargets="Publish"
-          Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
-    <!-- dotnet CLI produces managed debug symbols, which we will delete and copy native symbols instead -->
-    <Delete Files="$(PublishDir)\$(TargetName).pdb" />
-
-    <PropertyGroup>
-      <_symbolExt Condition="'$(OS)' == 'Windows_NT'">$(NativeSymbolExt)</_symbolExt>
-      <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
-      <_symbolSourcePath>$(NativeOutputPath)$(TargetName)$(_symbolExt)</_symbolSourcePath>
-      <_symbolTargetPath>$(PublishDir)\$(TargetName)$(_symbolExt)</_symbolTargetPath>
-      <!-- If the symbol is a dSYM bundle, it's a folder not a file. -->
-      <_symbolIsFile Condition="'$(NativeSymbolExt)' == '.dSYM'">false</_symbolIsFile>
-      <_symbolIsFile Condition="'$(_symbolIsFile)' == ''">true</_symbolIsFile>
-    </PropertyGroup>
-
+    <!-- Replace CoreCLR runtime pack with NativeAOT equivalents, tagged PostprocessAssembly=true. -->
     <ItemGroup>
-      <_symbolRecursivePath Include="$(NativeOutputPath)$(TargetName)$(_symbolExt)/**/*" />
+      <ResolvedFileToPublish Remove="@(_RuntimePackFilesToSkipPublish)" />
+      <ResolvedFileToPublish Include="@(DefaultFrameworkAssemblies)">
+        <PostprocessAssembly>true</PostprocessAssembly>
+      </ResolvedFileToPublish>
     </ItemGroup>
 
-    <!-- replace native symbol file if it exists. On Mac, the symbol path may be a folder-->
-    <Delete Files="$(_symbolTargetPath)" Condition="'$(_symbolIsFile)' == 'true' and Exists('$(_symbolTargetPath)')" />
-    <Copy SourceFiles="$(_symbolSourcePath)" DestinationFolder="$(PublishDir)"
-      Condition="'$(_symbolIsFile)' == 'true' and Exists('$(_symbolSourcePath)')" />
-
-    <!-- Copy folder otherwise -->
-    <RemoveDir Directories="$(_symbolTargetPath)" Condition="'$(_symbolIsFile)' == 'false' and Exists('$(_symbolTargetPath)')" />
-    <Copy SourceFiles="@(_symbolRecursivePath)" DestinationFolder="$(_symbolTargetPath)/%(RecursiveDir)"
-      Condition="'$(_symbolIsFile)' == 'false' and Exists('$(_symbolSourcePath)')" />
   </Target>
+
+  <!-- Empty target to provide back-compat for other targets that run before/after CopyNativeBinary. -->
+  <Target Name="CopyNativeBinary" AfterTargets="Publish" />
 
 </Project>

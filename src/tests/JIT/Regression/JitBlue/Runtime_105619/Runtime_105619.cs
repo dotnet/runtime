@@ -15,6 +15,7 @@ namespace Runtime_105619;
 
 using System;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 using Xunit;
 
 public interface I1
@@ -114,6 +115,7 @@ public class Program
     public static S2[] s_90;
     
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
     public static void TestEntryPoint()
     {
         try

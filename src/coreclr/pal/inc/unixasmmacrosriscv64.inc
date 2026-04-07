@@ -260,14 +260,26 @@ C_FUNC(\Name):
 //            FPR_f8 / fs0
 // Extra:
 //
-.macro PROLOG_WITH_TRANSITION_BLOCK extraParameters = 0, extraLocals = 0, SaveFPRegs = 1
+// pushCalleeSavedFloatRegs - Optional parameter. If set to 1, the macro will also save
+//                            the callee-saved floating point registers (fs0-fs11) to the stack.
+//                            These registers are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+//
+.macro PROLOG_WITH_TRANSITION_BLOCK extraParameters = 0, extraLocals = 0, SaveFPRegs = 1, pushCalleeSavedFloatRegs = 0
     __PWTB_SaveFPArgs = \SaveFPRegs
+    __PWTB_PushCalleeSavedFloatRegs = \pushCalleeSavedFloatRegs
 
-    __PWTB_FloatArgumentRegisters = \extraLocals
+    __PWTB_FloatCalleeSavedRegisters = \extraLocals
 
     // Note, stack (see __PWTB_StackAlloc variable) must be 16 byte aligned.
-    .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
-        __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
+    .if ((__PWTB_FloatCalleeSavedRegisters % 16) != 0)
+        __PWTB_FloatCalleeSavedRegisters = __PWTB_FloatCalleeSavedRegisters + 8
+    .endif
+
+    // If pushCalleeSavedFloatRegs is specified, reserve space for fs0-fs11 (12 registers * 8 bytes = 96 bytes)
+    .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+        __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters + 96
+    .else
+        __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters
     .endif
 
     __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
@@ -294,6 +306,22 @@ C_FUNC(\Name):
     // saving is f10-17.
     .if (__PWTB_SaveFPArgs == 1)
         SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+    .endif
+
+    // Save callee-saved floating point registers if requested (fs0-fs11)
+    .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+        fsd     fs0, (__PWTB_FloatCalleeSavedRegisters)(sp)
+        fsd     fs1, (__PWTB_FloatCalleeSavedRegisters + 8)(sp)
+        fsd     fs2, (__PWTB_FloatCalleeSavedRegisters + 16)(sp)
+        fsd     fs3, (__PWTB_FloatCalleeSavedRegisters + 24)(sp)
+        fsd     fs4, (__PWTB_FloatCalleeSavedRegisters + 32)(sp)
+        fsd     fs5, (__PWTB_FloatCalleeSavedRegisters + 40)(sp)
+        fsd     fs6, (__PWTB_FloatCalleeSavedRegisters + 48)(sp)
+        fsd     fs7, (__PWTB_FloatCalleeSavedRegisters + 56)(sp)
+        fsd     fs8, (__PWTB_FloatCalleeSavedRegisters + 64)(sp)
+        fsd     fs9, (__PWTB_FloatCalleeSavedRegisters + 72)(sp)
+        fsd     fs10, (__PWTB_FloatCalleeSavedRegisters + 80)(sp)
+        fsd     fs11, (__PWTB_FloatCalleeSavedRegisters + 88)(sp)
     .endif
 
 .endm

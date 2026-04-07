@@ -41,6 +41,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 ToManaged(out double v);
                 value = v;
             }
+            else if (slot.Type == MarshalerType.Single)
+            {
+                ToManaged(out float v);
+                value = v;
+            }
             else if (slot.Type == MarshalerType.JSObject)
             {
                 ToManaged(out JSObject? val);
@@ -76,6 +81,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 else if (slot.ElementType == MarshalerType.Double)
                 {
                     ToManaged(out double[]? val);
+                    value = val;
+                }
+                else if (slot.ElementType == MarshalerType.Single)
+                {
+                    ToManaged(out float[]? val);
                     value = val;
                 }
                 else if (slot.ElementType == MarshalerType.Int32)
@@ -285,6 +295,11 @@ namespace System.Runtime.InteropServices.JavaScript
             else if (typeof(int[]) == type)
             {
                 int[] val = (int[])value;
+                ToJS(val);
+            }
+            else if (typeof(float[]) == type)
+            {
+                float[] val = (float[])value;
                 ToJS(val);
             }
             else if (typeof(double[]) == type)

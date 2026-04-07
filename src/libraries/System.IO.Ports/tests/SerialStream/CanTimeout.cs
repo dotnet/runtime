@@ -10,7 +10,7 @@ namespace System.IO.Ports.Tests
 {
     public class SerialStream_CanTimeout : PortsTest
     {
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_CanTimeout), nameof(HasOneSerialPort))]
         public void CanTimeout_Open()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -23,7 +23,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_CanTimeout), nameof(HasOneSerialPort))]
         public void CanTimeout_Open_Close()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -38,7 +38,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_CanTimeout), nameof(HasOneSerialPort))]
         public void CanTimeout_Open_Close_Open()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -54,7 +54,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_CanTimeout), nameof(HasOneSerialPort))]
         public void CanTimeout_Open_BaseStreamClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

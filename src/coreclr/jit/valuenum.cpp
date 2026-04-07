@@ -2045,6 +2045,44 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
     return result;
 }
 
+//------------------------------------------------------------------------
+// VNIgnoreIntToLongCast: Looks through a sign-extending int-to-long cast
+//    or convert long-typed integral constants to int.
+//
+// Arguments:
+//    vn - The value number to inspect.
+//
+// Return Value:
+//    The value number of the original TYP_INT operand if 'vn' is a VNF_Cast
+//    that sign-extends a TYP_INT to TYP_LONG; or the value number of a TYP_INT
+//    constant if 'vn' is a TYP_LONG constant that fits in an int; otherwise, 'vn' itself.
+//
+ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
+{
+    if (TypeOfVN(vn) == TYP_LONG)
+    {
+        VNFuncApp funcApp;
+        if (GetVNFunc(vn, &funcApp) && funcApp.FuncIs(VNF_Cast))
+        {
+            var_types castToType;
+            bool      srcIsUnsigned;
+            GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
+            if ((castToType == TYP_LONG) && !srcIsUnsigned && TypeOfVN(funcApp.m_args[0]) == TYP_INT)
+            {
+                return funcApp.m_args[0];
+            }
+        }
+
+        // Also look through any long-typed integral constant that fits in an int.
+        int intCns;
+        if (IsVNIntegralConstant(vn, &intCns))
+        {
+            return VNForIntCon(intCns);
+        }
+    }
+    return vn;
+}
+
 void ValueNumStore::GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool* pSrcIsUnsigned)
 {
     assert(pCastToType != nullptr);
@@ -2625,28 +2663,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             VNFuncApp newArrFuncApp;
             if (GetVNFunc(arg0VN, &newArrFuncApp) && (newArrFuncApp.m_func == VNF_JitNewArr))
             {
-                ValueNum  actualSizeVN     = newArrFuncApp.m_args[1];
-                var_types actualSizeVNType = TypeOfVN(actualSizeVN);
-
-                // JitNewArr's size argument (args[1]) is typically upcasted to TYP_LONG via VNF_Cast.
-                if (actualSizeVNType == TYP_LONG)
-                {
-                    VNFuncApp castFuncApp;
-                    if (GetVNFunc(actualSizeVN, &castFuncApp) && (castFuncApp.m_func == VNF_Cast))
-                    {
-                        var_types castToType;
-                        bool      srcIsUnsigned;
-                        GetCastOperFromVN(castFuncApp.m_args[1], &castToType, &srcIsUnsigned);
-
-                        // Make sure we have exactly (TYP_LONG)myInt32 cast:
-                        if (!srcIsUnsigned && (castToType == TYP_LONG) && TypeOfVN(castFuncApp.m_args[0]) == TYP_INT)
-                        {
-                            // If that is the case, return the original size argument
-                            *resultVN = castFuncApp.m_args[0];
-                        }
-                    }
-                }
-                else if (actualSizeVNType == TYP_INT)
+                ValueNum actualSizeVN = VNIgnoreIntToLongCast(newArrFuncApp.m_args[1]);
+                if (TypeOfVN(actualSizeVN) == TYP_INT)
                 {
                     *resultVN = actualSizeVN;
                 }
@@ -9239,6 +9257,41 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
             }
         }
 
+#if defined(TARGET_XARCH)
+        case NI_X86Base_BlendVariable:
+        case NI_AVX_BlendVariable:
+        case NI_AVX2_BlendVariable:
+        case NI_AVX512_BlendVariableMask:
+        {
+            if (IsVNConstant(arg2VN))
+            {
+                var_types maskType = tree->Op(3)->TypeGet();
+
+                // Handle `0 ? y : z`
+                ValueNum zeroVN = VNZeroForType(maskType);
+
+                if (arg2VN == zeroVN)
+                {
+                    return arg0VN;
+                }
+
+                // Handle `AllBitsSet ? y : z`
+                ValueNum allBitsVN = VNAllBitsForType(maskType, simdSize / genTypeSize(baseType));
+
+                if (arg2VN == allBitsVN)
+                {
+                    return arg1VN;
+                }
+            }
+            else if (arg0VN == arg1VN)
+            {
+                // Handle `x ? y : y`
+                return arg0VN;
+            }
+            break;
+        }
+#endif // TARGET_XARCH
+
         default:
         {
             break;
@@ -9253,7 +9306,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN)
 {
     assert(arg0VN == VNNormalValue(arg0VN));
-    assert(m_compiler->IsMathIntrinsic(gtMathFN) RISCV64_ONLY(|| m_compiler->IsBitCountingIntrinsic(gtMathFN)));
+
+#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
+    assert(m_compiler->IsMathIntrinsic(gtMathFN) || m_compiler->IsBitCountingIntrinsic(gtMathFN));
+#else
+    assert(m_compiler->IsMathIntrinsic(gtMathFN));
+#endif
 
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it during ReadyToRun. This minimizes precision loss.
@@ -12170,12 +12228,13 @@ bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
 // Arguments:
 //    address - tree node representing the address
 //    size    - size of the value to read
-//    pValue  - [out] resulting value
+//    alloc   - allocator to use
+//    ppValue - [out] resulting value
 //
 // Return Value:
 //    true if the value was successfully obtained, false otherwise
 //
-bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, uint8_t* pValue)
+bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, CompAllocator alloc, uint8_t** ppValue)
 {
     assert(vnStore != nullptr);
 
@@ -12187,15 +12246,24 @@ bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, uint8_t* 
     if (GetObjectHandleAndOffset(address, &byteOffset, &obj) && ((size_t)byteOffset <= INT32_MAX))
     {
         assert(obj != NO_OBJECT_HANDLE);
-        return info.compCompHnd->isObjectImmutable(obj) &&
-               info.compCompHnd->getObjectContent(obj, pValue, size, (int)byteOffset);
+        if (!info.compCompHnd->isObjectImmutable(obj))
+        {
+            return false;
+        }
+        *ppValue = new (alloc) uint8_t[(size_t)size];
+        return info.compCompHnd->getObjectContent(obj, *ppValue, size, (int)byteOffset);
     }
 
     // See if 'src' is some static read-only field (including RVA)
     if (fgGetStaticFieldSeqAndAddress(vnStore, address, &byteOffset, &fieldSeq) && ((size_t)byteOffset <= INT32_MAX))
     {
         CORINFO_FIELD_HANDLE fld = fieldSeq->GetFieldHandle();
-        return (fld != nullptr) && info.compCompHnd->getStaticFieldContent(fld, pValue, size, (int)byteOffset);
+        if (fld == nullptr)
+        {
+            return false;
+        }
+        *ppValue = new (alloc) uint8_t[(size_t)size];
+        return info.compCompHnd->getStaticFieldContent(fld, *ppValue, size, (int)byteOffset);
     }
 
     return false;
@@ -13684,8 +13752,6 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     {
         // Ignore the Wasm shadow stack pointer argument.
         //
-        // The Wasm shadow stack pointer is not counted in VNFuncArity
-        // so nArgs does not need adjusting.
         curArg = curArg->GetNext();
     }
 #endif // defined(TARGET_WASM)
@@ -13767,7 +13833,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
                 curArg = curArg->GetNext();
                 assert(nArgs == 3); // Our current maximum.
-                assert(curArg == nullptr);
+                assert((curArg == nullptr) || (curArg->GetWellKnownArg() == WellKnownArg::WasmPortableEntryPoint));
                 if (generateUniqueVN)
                 {
                     call->gtVNPair = vnStore->VNPairForFunc(call->TypeGet(), vnf, vnp0, vnp1, vnp2, vnpUniq);
@@ -13781,8 +13847,17 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         // Add the accumulated exceptions.
         call->gtVNPair = vnStore->VNPWithExc(call->gtVNPair, vnpExc);
     }
-    assert(curArg == nullptr || generateUniqueVN); // All arguments should be processed or we generate unique VN and do
-                                                   // not care.
+
+#if defined(TARGET_WASM)
+    if (!generateUniqueVN && (curArg != nullptr))
+    {
+        // We should have processed all arguments except for the PE arg, which we can ignore
+        assert(curArg->GetWellKnownArg() == WellKnownArg::WasmPortableEntryPoint);
+    }
+#else
+    // All arguments should be processed or we generate unique VN and do not care.
+    assert(curArg == nullptr || generateUniqueVN);
+#endif
 }
 
 //--------------------------------------------------------------------------------

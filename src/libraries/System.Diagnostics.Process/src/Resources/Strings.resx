@@ -210,6 +210,15 @@
   <data name="CantRedirectStreams" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to redirect IO streams.</value>
   </data>
+  <data name="Arg_InvalidHandle" xml:space="preserve">
+    <value>Invalid handle.</value>
+  </data>
+  <data name="CantSetHandleAndRedirect" xml:space="preserve">
+    <value>The StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties cannot be used together with the corresponding RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties.</value>
+  </data>
+  <data name="CantSetRedirectForSafeProcessHandleStart" xml:space="preserve">
+    <value>The RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties cannot be used by SafeProcessHandle.Start. Use the StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties.</value>
+  </data>
   <data name="DirectoryNotValidAsInput" xml:space="preserve">
     <value>The FileName property should not be a directory unless UseShellExecute is set.</value>
   </data>
@@ -335,5 +344,8 @@
   </data>
   <data name="InvalidPerfData" xml:space="preserve">
     <value>Invalid performance counter data with type '{0}'.</value>
+  </data>
+  <data name="InvalidProcessHandle" xml:space="preserve">
+    <value>Invalid process handle.</value>
   </data>
 </root>

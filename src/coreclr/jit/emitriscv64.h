@@ -60,6 +60,105 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
 /************************************************************************/
 
 private:
+
+//--------------------------------------------
+//
+// InstructionFormatter: holds methods used to print RISC-V instructions to
+// stdout for debugging. This formatter is used to print when no exact code
+// location (`pCode`) is available.
+//
+// Assumptions:
+//    Methods defined here should have matching counterparts in
+//    `InstructionEncoder`.
+//
+// Notes:
+//    Note that printed instructions may differ from the final encoded instructions,
+//    because address offsets are usually unknown at the time these methods are called.
+//    For example, jump instructions assume the worst case (farthest) displacement
+//    during `PHASE Generate code`, and many of them are later optimized out by
+//    `emitJumpDistBind`.
+//
+//    For example, in JitDump,
+//        (PHASE generate code)     |    (After end code gen, before unwindEmit())
+//        auipc          t6, ??     |    j              G_M19511_IG08
+//        jr             t6         |
+//
+class InstructionFormatter
+{
+public:
+    InstructionFormatter(emitter& emit, const instrDesc* id)
+        : emit(emit)
+        , id(id)
+    {
+    }
+
+    void EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);
+    void EmitIType(instruction ins, regNumber rd, regNumber rs1, unsigned imm12);
+    void EmitSType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm12);
+    void EmitUType(instruction ins, regNumber rd, unsigned imm20);
+    void EmitBType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13);
+    void EmitBTypeInverted(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13);
+    void EmitJType(instruction ins, regNumber rd, unsigned imm21);
+
+    void MarkGCRegDead(regNumber reg)
+    {
+        /* Intentionally left empty */
+    }
+
+    void EmitRelocation(const instrDesc* id, int offset, BYTE* targetAddr)
+    {
+        /* Intentionally left empty */
+    }
+
+    emitter&         emit;
+    const instrDesc* id;
+};
+
+//--------------------------------------------
+//
+// InstructionEncoder: holds methods used to generate actual RISC-V instruction
+// encodings for execution. This encoder is used to generate the binary to be
+// executed.
+//
+// Assumptions:
+//    Methods defined here should have their own counterparts in `InstructionFormatter`,
+//    respectively.
+//
+// Notes:
+//    To keep the interface compatible with `InstructionFormatter`, `EmitXType`
+//    methods do not return a value. Instead, the methods increment given `dst` implicitly.
+//
+class InstructionEncoder
+{
+public:
+    InstructionEncoder(emitter& emit, BYTE*& dst)
+        : emit(emit)
+        , dst(dst)
+    {
+    }
+
+    void EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);
+    void EmitIType(instruction ins, regNumber rd, regNumber rs1, unsigned imm12);
+    void EmitSType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm12);
+    void EmitUType(instruction ins, regNumber rd, unsigned imm20);
+    void EmitBType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13);
+    void EmitBTypeInverted(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13);
+    void EmitJType(instruction ins, regNumber rd, unsigned imm21);
+
+    void MarkGCRegDead(regNumber reg)
+    {
+        emit.emitGCregDeadUpd(reg, dst);
+    }
+
+    void EmitRelocation(const instrDesc* id, int offset, BYTE* targetAddr)
+    {
+        emit.emitRecordRelocation(dst - offset, targetAddr, CorInfoReloc::RISCV64_CALL_PLT);
+    }
+
+    emitter& emit;
+    BYTE*&   dst;
+};
+
 bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
@@ -77,15 +176,28 @@ unsigned    tryGetRvcRegisterNumber(regNumber reg);
 instruction getCompressedArithmeticIns(instruction ins);
 regNumber   getRegNumberFromRvcReg(unsigned rvcReg);
 
+void emitDispInsName(code_t code, const instrDesc* id);
 void emitDispInsName(
     code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);
 void emitDispInsInstrNum(const instrDesc* id) const;
-bool emitDispBranch(unsigned opcode2, unsigned rs1, unsigned rs2, const instrDesc* id, const insGroup* ig) const;
-void emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const;
+bool emitDispBranch(unsigned         opcode2,
+                    unsigned         rs1,
+                    unsigned         rs2,
+                    const instrDesc* id,
+                    const insGroup*  ig,
+                    bool             printOffsetPlaceholder) const;
+void emitDispBranchOffset(const instrDesc* id, const insGroup* ig, bool printOffsetPlaceholder) const;
 void emitDispBranchLabel(const instrDesc* id) const;
 bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const;
 void emitDispIllegalInstruction(code_t instructionCode);
 void emitDispImmediate(ssize_t imm, bool newLine = true, unsigned regBase = REG_ZERO);
+
+void emitDispIns_OptsReloc(const instrDesc* id);
+void emitDispIns_OptsRc(const instrDesc* id);
+void emitDispIns_OptsRl(const instrDesc* id);
+void emitDispIns_OptsJump(const instrDesc* id);
+void emitDispIns_OptsC(const instrDesc* id);
+void emitDispIns_OptsI(const instrDesc* id);
 
 static emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 
@@ -151,6 +263,21 @@ static unsigned TrimSignedToImm13(ssize_t imm13);
 static unsigned TrimSignedToImm20(ssize_t imm20);
 static unsigned TrimSignedToImm21(ssize_t imm21);
 
+static inline unsigned GetLoadImmediateNumberOfInstructions(const instrDescLoadImm* idli);
+
+template <typename TEmitPolicy>
+void EmitLogic_OptsReloc(TEmitPolicy& policy, const instrDesc* id);
+template <typename TEmitPolicy>
+void EmitLogic_OptsRc(TEmitPolicy& policy, const instrDesc* id, ssize_t immediate);
+template <typename TEmitPolicy>
+void EmitLogic_OptsRl(TEmitPolicy& policy, const instrDesc* id, ssize_t immediate);
+template <typename TEmitPolicy>
+void EmitLogic_OptsJump(TEmitPolicy& policy, const instrDescJmp* jmp, ssize_t immediate);
+template <typename TEmitPolicy>
+void EmitLogic_OptsC(TEmitPolicy& policy, const instrDesc* id);
+template <typename TEmitPolicy>
+void EmitLogic_OptsI(TEmitPolicy& policy, const instrDescLoadImm* idli);
+
 // Major opcode of 32-bit & 16-bit instructions as per "The RISC-V Instruction Set Manual", chapter "RV32/64G
 // Instruction Set Listings", table "RISC-V base opcode map" and chapter "RVC Instruction Set Listings", table "RVC
 // opcode map instructions"
@@ -170,7 +297,7 @@ enum class MajorOpcode
     /* inst[1:0] */
     /*        00 */ Addi4Spn, Fld,   Lw,   Ld,          Reserved2,   Fsd,   Sw,   Sd,
     /*        01 */ Addi,     Addiw, Li,   LuiAddi16Sp, MiscAlu,     J,     Beqz, Bnez,
-    /*        10 */ Slli,     FldSp, LwSp, Ldsp,        JrJalrMvAdd, FsdSp, SwSp, SdSp,
+    /*        10 */ Slli,     FldSp, LwSp, LdSp,        JrJalrMvAdd, FsdSp, SwSp, SdSp,
     // clang-format on
 };
 
@@ -380,12 +507,12 @@ inline static bool emitIsCmpJump(instruction ins)
 // Arguments:
 //    jmp - the instruction to check
 //
-inline static bool emitIsUncondJump(instrDesc* jmp)
+inline static bool emitIsUncondJump(const instrDesc* jmp)
 {
     return emitIsUncondJump(jmp->idIns());
 }
 
-inline static bool emitIsUncondJump(instruction ins)
+inline static bool emitIsUncondJump(const instruction ins)
 {
     return (ins == INS_j) || (ins == INS_jal);
 }

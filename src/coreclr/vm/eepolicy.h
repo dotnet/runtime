@@ -38,6 +38,10 @@ public:
 
     static void DECLSPEC_NORETURN HandleFatalStackOverflow(EXCEPTION_POINTERS *pException, BOOL fSkipDebugger = FALSE);
 
+#ifdef HOST_ANDROID
+    static void LogManagedCallstackForSignal(LPCWSTR signalName);
+#endif
+
 private:
     static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString=NULL);
 };

@@ -9,6 +9,7 @@
 #include "jithost.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
+#include "ebr.h"
 #include "dn-stdio.h"
 
 #ifdef FEATURE_COMINTEROP
@@ -57,8 +58,7 @@ extern "C" void SystemJS_ExecuteFinalizationCallback()
     INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
     {
         GCX_COOP();
-        // TODO-WASM https://github.com/dotnet/runtime/issues/123712
-        // ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
+        ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
     }
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 }
@@ -151,7 +151,8 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
         || Thread::CleanupNeededForFinalizedThread()
         || YieldProcessorNormalization::IsMeasurementScheduled()
         || HasDelayedDynamicMethod()
-        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
+        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads()
+        || g_EbrCollector.CleanUpRequested();
 
 #endif // TARGET_WASM
 }
@@ -200,6 +201,12 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
     {
         GCX_PREEMP();
         CleanupDelayedDynamicMethods();
+    }
+
+    if (g_EbrCollector.CleanUpRequested())
+    {
+        GCX_PREEMP();
+        g_EbrCollector.CleanUpPending();
     }
 }
 

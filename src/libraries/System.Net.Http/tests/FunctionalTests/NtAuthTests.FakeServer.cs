@@ -112,7 +112,7 @@ namespace System.Net.Http.Functional.Tests
             await connection.SendResponseAsync(HttpStatusCode.OK);
         }
 
-        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [ConditionalTheory(typeof(NtAuthTests), nameof(IsNtlmAvailable))]
         [InlineData(true)]
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]

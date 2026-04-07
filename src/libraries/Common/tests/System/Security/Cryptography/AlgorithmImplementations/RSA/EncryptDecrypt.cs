@@ -355,7 +355,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [ConditionalFact(nameof(PlatformSupportsEmptyRSAEncryption))]
+        [ConditionalFact(typeof(EncryptDecrypt), nameof(PlatformSupportsEmptyRSAEncryption))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RoundtripEmptyArray()
         {
@@ -473,7 +473,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsSha2Oaep))]
+        [ConditionalFact(typeof(EncryptDecrypt), nameof(SupportsSha2Oaep))]
         public void RsaDecryptOaepWrongAlgorithm()
         {
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
@@ -693,17 +693,22 @@ namespace System.Security.Cryptography.Rsa.Tests
         [MemberData(nameof(OaepPaddingModes))]
         public void NonPowerOfTwoKeySizeOaepRoundtrip(RSAEncryptionPadding oaepPaddingMode)
         {
-            byte[] crypt;
-            byte[] output;
-
-            using (RSA rsa = RSAFactory.Create(3072))
+            // Key generation can transiently fail on some platforms due to resource contention.
+            // Retry a few times before failing the test.
+            RetryHelper.Execute(() =>
             {
-                crypt = Encrypt(rsa, TestData.HelloBytes, oaepPaddingMode);
-                output = Decrypt(rsa, crypt, oaepPaddingMode);
-            }
+                byte[] crypt;
+                byte[] output;
 
-            Assert.NotEqual(crypt, output);
-            Assert.Equal(TestData.HelloBytes, output);
+                using (RSA rsa = RSAFactory.Create(3072))
+                {
+                    crypt = Encrypt(rsa, TestData.HelloBytes, oaepPaddingMode);
+                    output = Decrypt(rsa, crypt, oaepPaddingMode);
+                }
+
+                Assert.NotEqual(crypt, output);
+                Assert.Equal(TestData.HelloBytes, output);
+            }, retryWhen: e => e is CryptographicException);
         }
 
         [Fact]

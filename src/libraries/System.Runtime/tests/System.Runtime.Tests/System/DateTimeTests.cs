@@ -1277,7 +1277,7 @@ namespace System.Tests
 
         private static bool IsNotOSXOrBrowser => !PlatformDetection.IsApplePlatform && !PlatformDetection.IsBrowser;
 
-        [ConditionalTheory(nameof(IsNotOSXOrBrowser))]
+        [ConditionalTheory(typeof(DateTimeTests), nameof(IsNotOSXOrBrowser))]
         [InlineData("ar")]
         [InlineData("ar-EG")]
         [InlineData("ar-IQ")]
@@ -3122,6 +3122,98 @@ namespace System.Tests
 
             DateTime parsedDateTime = DateTime.ParseExact(formatted, "hh:mm tt", culture);
             Assert.Equal(dt.TimeOfDay, parsedDateTime.TimeOfDay);
+        }
+
+        // Tests for ISO 8601 24:00 support (end of day)
+        [Theory]
+        [InlineData("2007-04-05T24:00:00.0000000", 2007, 4, 6, 0, 0, 0)]  // Basic case
+        [InlineData("2023-12-31T24:00:00.0000000", 2024, 1, 1, 0, 0, 0)]  // Year boundary
+        [InlineData("2020-02-29T24:00:00.0000000", 2020, 3, 1, 0, 0, 0)]  // Leap year
+        [InlineData("2023-02-28T24:00:00.0000000", 2023, 3, 1, 0, 0, 0)]  // Non-leap year, Feb boundary
+        [InlineData("2023-01-31T24:00:00.0000000", 2023, 2, 1, 0, 0, 0)]  // Month boundary (31 days)
+        [InlineData("2023-04-30T24:00:00.0000000", 2023, 5, 1, 0, 0, 0)]  // Month boundary (30 days)
+        public void ParseExact_Hour24_Success(string input, int expectedYear, int expectedMonth, int expectedDay, int expectedHour, int expectedMinute, int expectedSecond)
+        {
+            DateTime result = DateTime.ParseExact(input, "o", null);
+            Assert.Equal(expectedYear, result.Year);
+            Assert.Equal(expectedMonth, result.Month);
+            Assert.Equal(expectedDay, result.Day);
+            Assert.Equal(expectedHour, result.Hour);
+            Assert.Equal(expectedMinute, result.Minute);
+            Assert.Equal(expectedSecond, result.Second);
+        }
+
+        [Fact]
+        public void ParseExact_Hour24_WithUTC_Success()
+        {
+            // Test with UTC timezone marker
+            DateTime result = DateTime.ParseExact("2007-04-05T24:00:00.0000000Z", "o", null);
+            // When Z is specified, the result should be Local time (converted from UTC)
+            // The date should have advanced to 2007-04-06 at midnight UTC
+            DateTime utcResult = result.ToUniversalTime();
+            Assert.Equal(2007, utcResult.Year);
+            Assert.Equal(4, utcResult.Month);
+            Assert.Equal(6, utcResult.Day);
+            Assert.Equal(0, utcResult.Hour);
+            Assert.Equal(0, utcResult.Minute);
+            Assert.Equal(0, utcResult.Second);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:01.0000000")]  // Non-zero seconds
+        [InlineData("2007-04-05T24:01:00.0000000")]  // Non-zero minutes
+        [InlineData("2007-04-05T24:00:00.0000001")]  // Non-zero fraction
+        [InlineData("2007-04-05T24:01:01.0000000")]  // Non-zero minutes and seconds
+        [InlineData("9999-12-31T24:00:00.0000000")]  // Would overflow (9999-12-31 + 1 day)
+        public void ParseExact_Hour24_Invalid_ThrowsFormatException(string input)
+        {
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(input, "o", null));
+        }
+
+        [Fact]
+        public void Parse_Hour24_BasicTest()
+        {
+            // Test basic Parse method (not just ParseExact) - this uses ParseISO8601
+            DateTime result = DateTime.Parse("2007-04-05T24:00:00.0000000", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            Assert.Equal(new DateTime(2007, 4, 6, 0, 0, 0), result);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:00")]  // No fraction
+        [InlineData("2023-12-31T24:00:00")]  // Year boundary
+        [InlineData("2020-02-29T24:00:00")]  // Leap year
+        public void Parse_Hour24_ISO8601Format_Success(string input)
+        {
+            // These use the ParseISO8601 code path
+            DateTime result = DateTime.Parse(input, CultureInfo.InvariantCulture);
+            // Verify the date advanced by one day
+            DateTime original = DateTime.Parse(input.Replace("24:00:00", "00:00:00"), CultureInfo.InvariantCulture);
+            Assert.Equal(original.AddDays(1), result);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:01")]  // Non-zero seconds
+        [InlineData("2007-04-05T24:01:00")]  // Non-zero minutes
+        [InlineData("2007-04-05T24:00:00.0000001")]  // Non-zero fraction
+        public void Parse_Hour24_ISO8601Format_Invalid_ThrowsFormatException(string input)
+        {
+            // These use the ParseISO8601 code path and should fail
+            Assert.Throws<FormatException>(() => DateTime.Parse(input, CultureInfo.InvariantCulture));
+        }
+
+        [Fact]
+        public void TryParse_Hour24_Success()
+        {
+            bool success = DateTime.TryParseExact("2007-04-05T24:00:00.0000000", "o", null, DateTimeStyles.None, out DateTime result);
+            Assert.True(success);
+            Assert.Equal(new DateTime(2007, 4, 6, 0, 0, 0), result);
+        }
+
+        [Fact]
+        public void TryParse_Hour24_Invalid_ReturnsFalse()
+        {
+            bool success = DateTime.TryParseExact("2007-04-05T24:00:01.0000000", "o", null, DateTimeStyles.None, out DateTime result);
+            Assert.False(success);
         }
     }
 }
