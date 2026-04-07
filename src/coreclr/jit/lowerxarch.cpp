@@ -2969,10 +2969,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         }
     }
 
-    // TODO-XARCH-AVX512: We should handle TYP_SIMD12 here under the EVEX path, but doing
-    // so will require us to account for the unused 4th element.
-
-    if ((simdType != TYP_SIMD12) && m_compiler->canUseEvexEncoding())
+    if (m_compiler->canUseEvexEncoding())
     {
         // The EVEX encoded versions of the comparison instructions all return a kmask
         //
@@ -3373,32 +3370,11 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         case TYP_USHORT:
         case TYP_INT:
         case TYP_UINT:
-        {
-            cmpType = simdBaseType;
-            mskType = TYP_UBYTE;
-
-            if (simdSize == 32)
-            {
-                cmpIntrinsic = NI_AVX2_CompareEqual;
-                mskIntrinsic = NI_AVX2_MoveMask;
-                mskConstant  = -1;
-            }
-            else
-            {
-                assert(simdSize == 16);
-
-                cmpIntrinsic = NI_X86Base_CompareEqual;
-                mskIntrinsic = NI_X86Base_MoveMask;
-                mskConstant  = 0xFFFF;
-            }
-            break;
-        }
-
         case TYP_LONG:
         case TYP_ULONG:
         {
-            mskType = TYP_UBYTE;
             cmpType = simdBaseType;
+            mskType = TYP_UBYTE;
 
             if (simdSize == 32)
             {
@@ -3430,22 +3406,11 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             }
             else
             {
+                assert(simdSize == 16);
+
                 cmpIntrinsic = NI_X86Base_CompareEqual;
                 mskIntrinsic = NI_X86Base_MoveMask;
-
-                if (simdSize == 16)
-                {
-                    mskConstant = 0xF;
-                }
-                else if (simdSize == 12)
-                {
-                    mskConstant = 0x7;
-                }
-                else
-                {
-                    assert(simdSize == 8);
-                    mskConstant = 0x3;
-                }
+                mskConstant  = 0xF;
             }
             break;
         }
@@ -3488,20 +3453,6 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
     GenTree* mskCns = m_compiler->gtNewIconNode(mskConstant, TYP_INT);
     BlockRange().InsertAfter(msk, mskCns);
-
-    if ((simdBaseType == TYP_FLOAT) && (simdSize < 16))
-    {
-        // For TYP_SIMD8 and TYP_SIMD12 we need to clear the upper bits and can't assume their value
-
-        GenTree* tmp = m_compiler->gtNewOperNode(GT_AND, TYP_INT, msk, mskCns);
-        BlockRange().InsertAfter(mskCns, tmp);
-        LowerNode(tmp);
-
-        msk = tmp;
-
-        mskCns = m_compiler->gtNewIconNode(mskConstant, TYP_INT);
-        BlockRange().InsertAfter(msk, mskCns);
-    }
 
     node->ChangeOper(cmpOp);
     node->ChangeType(TYP_INT);
@@ -4185,7 +4136,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     if (isConstant)
     {
-        assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == 32) || (simdSize == 64));
+        assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
         for (GenTree* arg : node->Operands())
         {
@@ -5959,19 +5910,9 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 //   var tmp3 = Avx.DotProduct(op1, op2, 0xFF);
                 //   return tmp3.ToScalar();
 
-                if (simdSize == 8)
-                {
-                    idx = m_compiler->gtNewIconNode(0x3F, TYP_INT);
-                }
-                else if (simdSize == 12)
-                {
-                    idx = m_compiler->gtNewIconNode(0x7F, TYP_INT);
-                }
-                else
-                {
-                    assert(simdSize == 16);
-                    idx = m_compiler->gtNewIconNode(0xFF, TYP_INT);
-                }
+                assert(simdSize == 16);
+
+                idx = m_compiler->gtNewIconNode(0xFF, TYP_INT);
                 BlockRange().InsertBefore(node, idx);
 
                 if (varTypeIsSIMD(node->gtType))
@@ -6042,91 +5983,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             {
                 unreached();
             }
-        }
-
-        if (simdSize == 8)
-        {
-            assert(simdBaseType == TYP_FLOAT);
-
-            // If simdSize == 8 then we have only two elements, not the 4 that we got from getSIMDVectorLength,
-            // which we gave a simdSize of 16. So, we set the simd16Count to 2 so that only 1 hadd will
-            // be emitted rather than 2, so that the upper two elements will be ignored.
-
-            simd16Count = 2;
-        }
-        else if (simdSize == 12)
-        {
-            assert(simdBaseType == TYP_FLOAT);
-
-            // We need to mask off the most significant element to avoid the shuffle + add
-            // from including it in the computed result. We need to do this for both op1 and
-            // op2 in case one of them is `NaN` (because Zero * NaN == NaN)
-
-            simd16_t simd16Val = {};
-
-            simd16Val.i32[0] = -1;
-            simd16Val.i32[1] = -1;
-            simd16Val.i32[2] = -1;
-            simd16Val.i32[3] = +0;
-
-            simdType = TYP_SIMD16;
-            simdSize = 16;
-
-            // We will be constructing the following parts:
-            //   ...
-            //          +--*  CNS_INT    int    -1
-            //          +--*  CNS_INT    int    -1
-            //          +--*  CNS_INT    int    -1
-            //          +--*  CNS_INT    int    0
-            //   tmp1 = *  HWINTRINSIC   simd16 T Create
-            //          /--*  op1 simd16
-            //          +--*  tmp1 simd16
-            //   op1  = *  HWINTRINSIC   simd16 T And
-            //   ...
-
-            // This is roughly the following managed code:
-            //   ...
-            //   tmp1 = Vector128.Create(-1, -1, -1, 0);
-            //   op1  = Sse.And(op1, tmp1);
-            //   ...
-
-            GenTreeVecCon* vecCon1 = m_compiler->gtNewVconNode(simdType);
-            memcpy(&vecCon1->gtSimdVal, &simd16Val, sizeof(simd16_t));
-            BlockRange().InsertAfter(op1, vecCon1);
-
-            op1 = m_compiler->gtNewSimdBinOpNode(GT_AND, simdType, op1, vecCon1, simdBaseType, simdSize);
-            BlockRange().InsertAfter(vecCon1, op1);
-
-            LowerNode(vecCon1);
-            LowerNode(op1);
-
-            // We will be constructing the following parts:
-            //   ...
-            //          +--*  CNS_INT    int    -1
-            //          +--*  CNS_INT    int    -1
-            //          +--*  CNS_INT    int    -1
-            //          +--*  CNS_INT    int    0
-            //   tmp2 = *  HWINTRINSIC   simd16 T Create
-            //          /--*  op2 simd16
-            //          +--*  tmp2 simd16
-            //   op2  = *  HWINTRINSIC   simd16 T And
-            //   ...
-
-            // This is roughly the following managed code:
-            //   ...
-            //   tmp2 = Vector128.Create(-1, -1, -1, 0);
-            //   op2  = Sse.And(op2, tmp2);
-            //   ...
-
-            GenTreeVecCon* vecCon2 = m_compiler->gtNewVconNode(simdType);
-            memcpy(&vecCon2->gtSimdVal, &simd16Val, sizeof(simd16_t));
-            BlockRange().InsertAfter(op2, vecCon2);
-
-            op2 = m_compiler->gtNewSimdBinOpNode(GT_AND, simdType, op2, vecCon2, simdBaseType, simdSize);
-            BlockRange().InsertAfter(vecCon2, op2);
-
-            LowerNode(vecCon2);
-            LowerNode(op2);
         }
     }
 
@@ -9409,17 +9265,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             MakeSrcContained(node, lastOp);
             isContainedImm = true;
-        }
-    }
-
-    if ((simdSize == 8) || (simdSize == 12))
-    {
-        // We want to handle GetElement/ToScalar still for Vector2/3
-        if (!HWIntrinsicInfo::IsVectorToScalar(intrinsicId) && !HWIntrinsicInfo::IsVectorGetElement(intrinsicId))
-        {
-            // TODO-XArch-CQ: Ideally we would key this off of the size the containing node
-            // expects vs the size node actually is or would be if spilled to the stack
-            return;
         }
     }
 
