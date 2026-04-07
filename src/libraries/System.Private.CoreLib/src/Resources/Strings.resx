@@ -2842,7 +2842,7 @@
   </data>
   <data name="IO_FileLoad_RequestedBy" xml:space="preserve">
     <value>Requested by: {0}</value>
-  <data/>
+  </data>
   <data name="IO_DirectoryName_Name" xml:space="preserve">
     <value>Directory path: '{0}'</value>
   </data>

@@ -3045,13 +3045,7 @@ BOOL AppDomain::IsCached(AssemblySpec *pSpec)
 
 void AppDomain::GetParentAssemblyChain(Assembly *pStartAssembly, SString &chain, int maxDepth)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // Hold the lock for the entire chain build so that all Assembly*
     // from the cache are safe from collectible ALC unload.
