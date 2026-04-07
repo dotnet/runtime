@@ -2082,7 +2082,6 @@ HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
         }
     }
 
-    _ASSERTE(SUCCEEDED(S_OK));
     return S_OK;
 }
 
@@ -2411,7 +2410,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         }
     }
 
-    _ASSERTE(!"This function should never return!");
+    UNREACHABLE();
     return;
 }
 

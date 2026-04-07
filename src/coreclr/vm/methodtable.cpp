@@ -5310,13 +5310,12 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
         if (pCurMT->FindDispatchEntryForCurrentType(
                 typeID, slotNumber, pEntry))
         {
-            _ASSERTE(!(TRUE) || pEntry->IsValid());
+            _ASSERTE(pEntry->IsValid());
             return (TRUE);
         }
         pCurMT = pCurMT->GetParentMethodTable();
         iCurInheritanceChainDelta++;
     }
-    _ASSERTE(!(FALSE) || pEntry->IsValid());
     return (FALSE);
 }
 
