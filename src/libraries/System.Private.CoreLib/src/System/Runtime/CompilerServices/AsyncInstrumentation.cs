@@ -12,7 +12,7 @@ namespace System.Runtime.CompilerServices
         public static bool IsSupported => Debugger.IsSupported || EventSource.IsSupported;
 
         [Flags]
-        public enum Flags
+        public enum Flags : uint
         {
             Disabled = 0x0,
             CreateAsyncContext = 0x1,
@@ -44,39 +44,39 @@ namespace System.Runtime.CompilerServices
 
         public static Flags ActiveFlags => s_activeFlags;
 
-        public static Flags UpdateAsyncProfilerFlags(Flags flags)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Flags SyncActiveFlags()
         {
-            if (flags != Flags.Disabled)
+            Flags flags = ActiveFlags;
+            if (IsUninitialized(flags))
             {
-                flags |= Flags.AsyncProfiler;
+                return InitializeFlags();
+            }
+            return flags;
+        }
+
+        public static void UpdateAsyncProfilerFlags(Flags asyncProfilerFlags)
+        {
+            if (asyncProfilerFlags != Flags.Disabled)
+            {
+                asyncProfilerFlags |= Flags.AsyncProfiler;
             }
 
             lock (s_lock)
             {
-                s_asyncProfilerActiveFlags = flags;
-                s_activeFlags = s_asyncProfilerActiveFlags | s_tplActiveFlags | s_debuggerActiveFlags;
-
-                return s_activeFlags;
+                s_asyncProfilerActiveFlags = asyncProfilerFlags;
+                if (IsInitialized(s_activeFlags))
+                {
+                    s_activeFlags = s_asyncProfilerActiveFlags | s_tplActiveFlags | s_debuggerActiveFlags;
+                }
             }
         }
 
-        public static Flags UpdateTplFlags(EventSource tplEventSource)
+        public static void UpdateTplFlags(Flags tplFlags)
         {
             // Until debugger sets its flags directly, piggy back on TPL instrumentation since debugger will enable/disable TPL events
             // when attaching/detaching to the runtime.
-            Flags tplFlags = Flags.Disabled;
             Flags debuggerFlags = Flags.Disabled;
-
-            tplFlags |= tplEventSource.IsEnabled(EventLevel.Informational, TplEventSource.Keywords.AsyncCausalitySynchronousWork) ?
-                Flags.ResumeAsyncContext |
-                Flags.SuspendAsyncContext |
-                Flags.CompleteAsyncContext |
-                Flags.UnwindAsyncException : 0;
-
-            tplFlags |= tplEventSource.IsEnabled(EventLevel.Informational, TplEventSource.Keywords.AsyncCausalityOperation) ?
-                Flags.CreateAsyncContext |
-                Flags.CompleteAsyncContext |
-                Flags.UnwindAsyncException : 0;
 
             if (tplFlags != Flags.Disabled)
             {
@@ -88,13 +88,34 @@ namespace System.Runtime.CompilerServices
             {
                 s_tplActiveFlags = tplFlags;
                 s_debuggerActiveFlags = debuggerFlags;
-                s_activeFlags = s_asyncProfilerActiveFlags | s_tplActiveFlags | s_debuggerActiveFlags;
+                if (IsInitialized(s_activeFlags))
+                {
+                    s_activeFlags = s_asyncProfilerActiveFlags | s_tplActiveFlags | s_debuggerActiveFlags;
+                }
+            }
+        }
+
+        private const uint UninitializedFlag = 0x80000000;
+
+        private static bool IsInitialized(Flags flags) => !IsUninitialized(flags);
+        private static bool IsUninitialized(Flags flags) => (flags & (Flags)UninitializedFlag) != 0;
+
+        private static Flags InitializeFlags()
+        {
+            _ = TplEventSource.Log; // Touch TplEventSource to trigger static constructor which will initialize TPL flags if EventSource is supported.
+
+            lock (s_lock)
+            {
+                if (IsUninitialized(s_activeFlags))
+                {
+                    s_activeFlags = s_asyncProfilerActiveFlags | s_tplActiveFlags | s_debuggerActiveFlags;
+                }
 
                 return s_activeFlags;
             }
         }
 
-        private static Flags s_activeFlags;
+        private static Flags s_activeFlags = (Flags)UninitializedFlag;
 
         private static Flags s_asyncProfilerActiveFlags;
 

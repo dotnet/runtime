@@ -674,8 +674,12 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentationHelper.InstrumentCheckPoint)
                 {
-                    InstrumentedDispatchContinuations();
-                    return;
+                    AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
+                    if (flags != AsyncInstrumentation.Flags.Disabled)
+                    {
+                        InstrumentedDispatchContinuations(flags);
+                        return;
+                    }
                 }
 
                 ExecutionAndSyncBlockStore contexts = default;
@@ -766,14 +770,14 @@ namespace System.Runtime.CompilerServices
                         contexts.Pop();
                         AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
 
-                        InstrumentedDispatchContinuations();
+                        InstrumentedDispatchContinuations(AsyncInstrumentation.ActiveFlags);
                         return;
                     }
                 }
             }
 
             [StackTraceHidden]
-            private unsafe void InstrumentedDispatchContinuations()
+            private unsafe void InstrumentedDispatchContinuations(AsyncInstrumentation.Flags flags)
             {
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
@@ -783,7 +787,6 @@ namespace System.Runtime.CompilerServices
                 asyncDispatcherInfo.NextContinuation = MoveContinuationState();
                 AsyncDispatcherInfo.t_current = &asyncDispatcherInfo;
 
-                AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
                 AsyncInstrumentationHelper.ResumeRuntimeAsyncContext(this, ref asyncDispatcherInfo, flags);
 
                 while (true)
@@ -979,10 +982,13 @@ namespace System.Runtime.CompilerServices
         {
             if (RuntimeAsyncTask<T>.AsyncInstrumentationHelper.InstrumentCheckPoint)
             {
-                AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
-                RuntimeAsyncTask<T>.AsyncInstrumentationHelper.CreateRuntimeAsyncContext(task, flags);
-                RuntimeAsyncTask<T>.AsyncInstrumentationHelper.HandleSuspended(task, flags);
-                return;
+                AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
+                if (flags != AsyncInstrumentation.Flags.Disabled)
+                {
+                    RuntimeAsyncTask<T>.AsyncInstrumentationHelper.CreateRuntimeAsyncContext(task, flags);
+                    RuntimeAsyncTask<T>.AsyncInstrumentationHelper.HandleSuspended(task, flags);
+                    return;
+                }
             }
 
             task.HandleSuspended();

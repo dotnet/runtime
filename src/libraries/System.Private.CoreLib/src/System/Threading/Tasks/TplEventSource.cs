@@ -35,7 +35,20 @@ namespace System.Threading.Tasks
             Debug = IsEnabled(EventLevel.Informational, Keywords.Debug);
             DebugActivityId = IsEnabled(EventLevel.Informational, Keywords.DebugActivityId);
 
-            AsyncInstrumentation.UpdateTplFlags(this);
+            AsyncInstrumentation.Flags tplFlags = AsyncInstrumentation.Flags.Disabled;
+
+            tplFlags |= IsEnabled(EventLevel.Informational, Keywords.AsyncCausalitySynchronousWork) ?
+                AsyncInstrumentation.Flags.ResumeAsyncContext |
+                AsyncInstrumentation.Flags.SuspendAsyncContext |
+                AsyncInstrumentation.Flags.CompleteAsyncContext |
+                AsyncInstrumentation.Flags.UnwindAsyncException : 0;
+
+            tplFlags |= IsEnabled(EventLevel.Informational, Keywords.AsyncCausalityOperation) ?
+                AsyncInstrumentation.Flags.CreateAsyncContext |
+                AsyncInstrumentation.Flags.CompleteAsyncContext |
+                AsyncInstrumentation.Flags.UnwindAsyncException : 0;
+
+            AsyncInstrumentation.UpdateTplFlags(tplFlags);
         }
 
         /// <summary>
