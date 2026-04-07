@@ -17,8 +17,6 @@ namespace System.Diagnostics.Tests
     [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "sh is not available in the mobile platform sandbox")]
     public partial class ProcessHandlesTests : ProcessTestBase
     {
-        private const int HandleNotInheritedExitCode = 111;
-
         [Theory]
         [InlineData(true, false)]
         [InlineData(true, true)]
@@ -331,94 +329,77 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true, true, false)]
-        [InlineData(false, true, false)]
-        [InlineData(true, false, false)]
-        [InlineData(false, false, false)]
-        [InlineData(true, false, true)]
-        [InlineData(false, false, true)]
-        public void InheritedHandles_CanRestrictHandleInheritance_SafePipeHandle(bool inheritable, bool addHandleToList, bool nullList)
+        [InlineData(HandleInheritability.Inheritable)]
+        [InlineData(HandleInheritability.None)]
+        public async Task InheritedHandles_CanInherit_SafePipeHandle(HandleInheritability inheritability)
         {
-            using AnonymousPipeServerStream pipeServer = new(PipeDirection.In, inheritable ? HandleInheritability.Inheritable : HandleInheritability.None);
+            using AnonymousPipeServerStream pipeServer = new(PipeDirection.In, inheritability);
 
-            RemoteInvokeOptions options = new RemoteInvokeOptions { CheckExitCode = false };
-            PrepareAllowList(options.StartInfo, pipeServer.ClientSafePipeHandle, addHandleToList, nullList);
+            RemoteInvokeOptions options = new() { CheckExitCode = false };
+            options.StartInfo.InheritedHandles = [pipeServer.ClientSafePipeHandle];
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
                 static (string handleStr) =>
                 {
-                    try
-                    {
-                        using SafeFileHandle handle = new(nint.Parse(handleStr), ownsHandle: false);
-                        Assert.Equal(FileHandleType.Pipe, handle.Type);
-                        return RemoteExecutor.SuccessExitCode;
-                    }
-                    catch
-                    {
-                        return HandleNotInheritedExitCode;
-                    }
+                    using AnonymousPipeClientStream client = new(PipeDirection.Out, handleStr);
+                    client.WriteByte(42);
+
+                    return RemoteExecutor.SuccessExitCode;
                 },
                 pipeServer.GetClientHandleAsString(),
                 options);
 
             pipeServer.DisposeLocalCopyOfClientHandle(); // close the parent copy of child handle
 
-            bool expectInherited = addHandleToList || (nullList && inheritable);
-            remoteHandle.Process.WaitForExit();
-            Assert.Equal(expectInherited ? RemoteExecutor.SuccessExitCode : HandleNotInheritedExitCode, remoteHandle.Process.ExitCode);
+            await VerifyExpectedOutcome(pipeServer, remoteHandle);
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true, false)]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        public void InheritedHandles_CanRestrictHandleInheritance_SafeFileHandle(bool addHandleToList, bool nullList)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task InheritedHandles_CanInherit_SafeFileHandle()
         {
-            // Create a non-inheritable pipe! It will work only when added to allow list.
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe);
 
-            RemoteInvokeOptions options = new RemoteInvokeOptions { CheckExitCode = false };
-            PrepareAllowList(options.StartInfo, writePipe, addHandleToList, nullList);
+            RemoteInvokeOptions options = new() { CheckExitCode = false };
+            options.StartInfo.InheritedHandles = [writePipe];
 
-            using (readPipe)
+            using (FileStream fileStream = new(readPipe, FileAccess.Read, bufferSize: 1))
             using (writePipe)
             {
                 using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
                     static (string handleStr) =>
                     {
-                        try
-                        {
-                            using SafeFileHandle handle = new(nint.Parse(handleStr), ownsHandle: false);
-                            Assert.Equal(FileHandleType.Pipe, handle.Type);
-                            return RemoteExecutor.SuccessExitCode;
-                        }
-                        catch
-                        {
-                            return HandleNotInheritedExitCode;
-                        }
+                        using SafeFileHandle safeFileHandle = new(nint.Parse(handleStr), ownsHandle: true);
+                        using FileStream client = new(safeFileHandle, FileAccess.Write, bufferSize: 1);
+                        client.WriteByte(42);
+
+                        return RemoteExecutor.SuccessExitCode;
                     },
                     writePipe.DangerousGetHandle().ToString(),
                     options);
 
-                bool expectInherited = addHandleToList; // we created a non-inheritable pipe
-                remoteHandle.Process.WaitForExit();
-                Assert.Equal(expectInherited ? RemoteExecutor.SuccessExitCode : HandleNotInheritedExitCode, remoteHandle.Process.ExitCode);
+                writePipe.Close(); // close the parent copy of child handle
+
+                await VerifyExpectedOutcome(fileStream, remoteHandle);
             }
         }
 
-        private static void PrepareAllowList(ProcessStartInfo startInfo, SafeHandle safeHandle, bool addHandleToList, bool nullList)
+        private static async Task VerifyExpectedOutcome(Stream parentReadStream, RemoteInvokeHandle remoteHandle)
         {
-            if (addHandleToList)
+            try
             {
-                // Explicitly list the pipe handle so the child can inherit it
-                startInfo.InheritedHandles = [safeHandle];
+                byte[] buffer = new byte[1];
+                int bytesRead = await parentReadStream.ReadAsync(buffer);
+
+                remoteHandle.Process.WaitForExit(WaitInMS);
+
+                Assert.Equal(1, bytesRead);
+                Assert.Equal(42, buffer[0]);
+                Assert.Equal(RemoteExecutor.SuccessExitCode, remoteHandle.Process.ExitCode);
             }
-            else if (!nullList)
+            finally
             {
-                // Empty list: restrict inheritance; the pipe handle will NOT be inherited
-                startInfo.InheritedHandles = [];
+                remoteHandle.Process.Kill();
             }
-            // else: null (default) - inheritable handles are inherited by default
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -454,17 +435,21 @@ namespace System.Diagnostics.Tests
                         Assert.Equal(FileHandleType.CharacterDevice, nullFile.Type);
                         Assert.False(nullFile.IsAsync);
 
+                        FileHandleType fileType = FileHandleType.Unknown;
                         try
                         {
                             // This handle was not on the allow list, so we can't use it.
-                            _ = notInherited.IsAsync;
+                            fileType = notInherited.Type;
                         }
                         catch
                         {
+                            // The handle was not available. This is the expected outcome, which means the handle was not inherited.
                             return RemoteExecutor.SuccessExitCode;
                         }
 
-                        return RemoteExecutor.SuccessExitCode * -1;
+                        return fileType == FileHandleType.CharacterDevice // NUL device is CharacterDevice on every platform
+                            ? RemoteExecutor.SuccessExitCode * -1 // the handle was inherited (bug)
+                            : RemoteExecutor.SuccessExitCode; // the OS has reused same handle value for one of the internal runtime pipes or files
                     },
                     $"{readPipe.DangerousGetHandle()} {writePipe.DangerousGetHandle()} {nullHandle.DangerousGetHandle()} {notInherited.DangerousGetHandle()}",
                     options);
