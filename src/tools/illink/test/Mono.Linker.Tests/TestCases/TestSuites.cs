@@ -53,16 +53,11 @@ namespace Mono.Linker.Tests.TestCases
 
         [ConditionalTheory]
         [MemberData(nameof(TestDatabase.CodegenAnnotationTests), MemberType = typeof(TestDatabase))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "These tests are not valid when trimming .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "These tests are not valid when trimming .NET Framework")]
         public void CodegenAnnotationTests(TestCase testCase)
         {
-            if (System.Environment.OSVersion.Platform == System.PlatformID.Win32NT)
-                throw new SkipTestException("These tests are not valid when trimming .NET Framework");
-
-#if NET
-            throw new SkipTestException("These tests are not valid when trimming .NET Core");
-#else
             Run(testCase);
-#endif
         }
 
         [ConditionalTheory]
