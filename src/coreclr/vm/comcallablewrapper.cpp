@@ -310,6 +310,9 @@ extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
         return pMarshalInfo->GetReturnStubForHResult(E_OUTOFMEMORY);
     }
 
+    // The below "INSTALL_" macros ensure exceptions don't escape,
+    // but the macros do not update the contract state for the thread, so
+    // we manually indicate that here.
     BEGIN_CONTRACT_VIOLATION(ThrowsViolation);
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
