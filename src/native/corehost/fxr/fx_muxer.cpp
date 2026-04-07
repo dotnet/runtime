@@ -84,10 +84,7 @@ namespace
 
         pal::dll_t aot_dll = nullptr;
         if (!pal::load_library(&sdk_aot_path, &aot_dll))
-        {
-            trace::info(_X("Failed to load AOT-ed SDK [%s]."), sdk_aot_path.c_str());
             return false;
-        }
 
         typedef int (*dotnet_execute_fn)(
             const pal::char_t* host_path,
@@ -115,6 +112,8 @@ namespace
         const pal::char_t* dotnet_root = sdk_root.empty()
             ? host_info.dotnet_root.c_str()
             : sdk_root.c_str();
+
+        trace::info(_X("Using AOT-ed SDK=[%s]"), sdk_aot_path.c_str());
 
         *exit_code = dotnet_execute(
             host_info.host_path.c_str(),
