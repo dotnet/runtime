@@ -57,7 +57,7 @@ namespace System
         {
             _fileName = info.GetString("BadImageFormat_FileName");
             _fusionLog = info.GetString("BadImageFormat_FusionLog");
-            _requestingAssemblyChain = info.GetString("BadImageFormat_RequestingAssemblyChain");
+            _requestingAssemblyChain = (string?)info.GetValueNoThrow("BadImageFormat_RequestingAssemblyChain", typeof(string));
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]

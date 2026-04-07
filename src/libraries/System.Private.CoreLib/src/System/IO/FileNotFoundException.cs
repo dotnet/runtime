@@ -102,7 +102,7 @@ namespace System.IO
         {
             FileName = info.GetString("FileNotFound_FileName");
             FusionLog = info.GetString("FileNotFound_FusionLog");
-            _requestingAssemblyChain = info.GetString("FileNotFound_RequestingAssemblyChain");
+            _requestingAssemblyChain = (string?)info.GetValueNoThrow("FileNotFound_RequestingAssemblyChain", typeof(string));
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]

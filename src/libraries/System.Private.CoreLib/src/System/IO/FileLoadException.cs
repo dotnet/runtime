@@ -80,7 +80,7 @@ namespace System.IO
         {
             FileName = info.GetString("FileLoad_FileName");
             FusionLog = info.GetString("FileLoad_FusionLog");
-            _requestingAssemblyChain = info.GetString("FileLoad_RequestingAssemblyChain");
+            _requestingAssemblyChain = (string?)info.GetValueNoThrow("FileLoad_RequestingAssemblyChain", typeof(string));
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
