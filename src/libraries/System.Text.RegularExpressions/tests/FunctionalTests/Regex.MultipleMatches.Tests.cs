@@ -434,31 +434,46 @@ namespace System.Text.RegularExpressions.Tests
                     }
                 }
 
-#if !NETFRAMEWORK // these tests currently fail on .NET Framework, and we need to check IsDynamicCodeCompiled but that doesn't exist on .NET Framework
-                yield return new object[]
+                if (!RegexHelpers.IsNonBacktracking(engine)) // balancing groups aren't supported
                 {
-                    engine, "@(a*)+?", "@", RegexOptions.None, new[]
-                    {
-                        new CaptureData("@", 0, 1)
-                    }
-                };
+                    // ExpressionConditional with balancing groups inside a loop, auto-numbered capture groups
 
-                if (!RegexHelpers.IsNonBacktracking(engine)) // atomic subexpressions aren't supported
-                {
+                    // Balancing group conditional with auto-numbered capture group and dot
                     yield return new object[]
                     {
-                        engine, @"()(?>\1+?).\b", "xxxx", RegexOptions.None, new[]
+                        engine, @"(?((?'-1'))|(.)+)+(?!(?'-1'))", "abc", RegexOptions.None, new[]
                         {
-                            new CaptureData("x", 3, 1),
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("b", 1, 1),
+                            new CaptureData("c", 2, 1),
                         }
                     };
 
-                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/111051
+                    // Balancing group conditional with auto-numbered capture group and literal
                     yield return new object[]
                     {
-                        engine, @"anyexpress1(?<=(.(any express|(any express)*)+?)anyexpress1)", "anystring anyexpress1", RegexOptions.None, new[]
+                        engine, @"(?((?'-1'))|(a)+)+(?!(?'-1'))", "aaa", RegexOptions.None, new[]
                         {
-                            new CaptureData("anyexpress1", 10, 11),
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("a", 1, 1),
+                            new CaptureData("a", 2, 1),
+                        }
+                    };
+
+                    // Alternation in no-branch with empty second branch, no match expected
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))|((?'1'.)+|()))+(?!(?'-1'))", "a", RegexOptions.None,
+                        Array.Empty<CaptureData>()
+                    };
+
+                    // Balancing group conditional with quantified pop {2}
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'){2})|((?'1'a)+))+(?!(?'-1'))", "aa", RegexOptions.None, new[]
+                        {
+                            new CaptureData("a", 0, 1),
+                            new CaptureData("a", 1, 1),
                         }
                     };
 
@@ -565,6 +580,35 @@ namespace System.Text.RegularExpressions.Tests
                             new CaptureData("r", 8, 1),
                             new CaptureData("l", 9, 1),
                             new CaptureData("d", 10, 1),
+                        }
+                    };
+                }
+
+#if !NETFRAMEWORK // these tests currently fail on .NET Framework
+                yield return new object[]
+                {
+                    engine, "@(a*)+?", "@", RegexOptions.None, new[]
+                    {
+                        new CaptureData("@", 0, 1)
+                    }
+                };
+
+                if (!RegexHelpers.IsNonBacktracking(engine)) // atomic subexpressions aren't supported
+                {
+                    yield return new object[]
+                    {
+                        engine, @"()(?>\1+?).\b", "xxxx", RegexOptions.None, new[]
+                        {
+                            new CaptureData("x", 3, 1),
+                        }
+                    };
+
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/111051
+                    yield return new object[]
+                    {
+                        engine, @"anyexpress1(?<=(.(any express|(any express)*)+?)anyexpress1)", "anystring anyexpress1", RegexOptions.None, new[]
+                        {
+                            new CaptureData("anyexpress1", 10, 11),
                         }
                     };
                 }
