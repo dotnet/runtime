@@ -1069,7 +1069,6 @@ HRESULT DebuggerController::Initialize()
 
     _ASSERTE(g_patches != NULL);
 
-    _ASSERTE((S_OK) == S_OK);
     return (S_OK);
 }
 

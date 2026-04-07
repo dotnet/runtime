@@ -2493,7 +2493,6 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
             // Always exercise the fallback path in the caller when forced relocs are turned on
             if (!pInfo->GetThrowOnOutOfMemoryWithinRange() && PEDecoder::GetForceRelocs())
                 {
-                _ASSERTE((NULL != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
                     return NULL;
                 }
 #endif
@@ -2504,7 +2503,6 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
                 // Conserve emergency jump stub reserve until when it is really needed
                 if (!pInfo->GetThrowOnOutOfMemoryWithinRange())
                     {
-                    _ASSERTE((NULL != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
                         return NULL;
                     }
 #ifdef TARGET_AMD64

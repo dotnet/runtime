@@ -896,7 +896,6 @@ CQuickArray<ConnectionPoint*> *SimpleComCallWrapper::CreateCPArray()
     }
     CONTRACTL_END;
 
-    _ASSERTE(CheckPointer((new CQuickArray<ConnectionPoint*>())));
     return (new CQuickArray<ConnectionPoint*>());
 }
 

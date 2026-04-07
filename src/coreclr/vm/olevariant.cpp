@@ -4150,12 +4150,10 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
 
     if (*pStringObj == NULL)
     {
-        _ASSERTE(NULL != NULL || *pStringObj == NULL);
         return NULL;
     }
 
     UnmanagedCallersOnlyCaller convertToNative(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE_UCO);
-    _ASSERTE((BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj) != NULL || *pStringObj == NULL);
     return (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj);
 }
 

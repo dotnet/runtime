@@ -328,7 +328,6 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     if (pHp == NULL)
     {
         _ASSERTE(!pInfo->GetThrowOnOutOfMemoryWithinRange());
-        _ASSERTE((NULL != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
         return NULL;
     }
 

@@ -1745,7 +1745,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         {
             // Case 3.  We don't have a module path or an in memory symbol stream,
             // so there is no-where to try and get symbols from.
-            _ASSERTE(CheckPointer((NULL), NULL_OK));
             return (NULL);
         }
 
@@ -1769,14 +1768,12 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         hr = GetClrModuleDirectory(symbolReaderPath);
         if (FAILED(hr))
         {
-            _ASSERTE(CheckPointer((NULL), NULL_OK));
             return (NULL);
         }
         symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
         hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
         if (FAILED(hr))
         {
-            _ASSERTE(CheckPointer((NULL), NULL_OK));
             return (NULL);
         }
 
@@ -1848,7 +1845,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     // If we previously failed to create the reader, return NULL
     if (m_pISymUnmanagedReader == k_pInvalidSymReader)
     {
-        _ASSERTE(CheckPointer((NULL), NULL_OK));
         return (NULL);
     }
 

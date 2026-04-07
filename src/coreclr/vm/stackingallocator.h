@@ -124,7 +124,6 @@ public:
         //special case, 0 size alloc, return non-null but invalid pointer
         if (Size == 0)
         {
-            _ASSERTE(CheckPointer((void*)-1, NULL_OK));
             return (void*)-1;
         }
 
