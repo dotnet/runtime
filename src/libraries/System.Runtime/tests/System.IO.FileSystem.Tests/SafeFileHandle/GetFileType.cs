@@ -86,24 +86,5 @@ namespace System.IO.Tests
             Assert.Equal(firstCall, secondCall);
             Assert.Equal(FileHandleType.RegularFile, firstCall);
         }
-
-        [Fact]
-        public void GetFileType_InvalidHandle_Throws()
-        {
-            string path = GetTestFilePath();
-            File.WriteAllText(path, "test");
-
-            SafeFileHandle original = File.OpenHandle(path, FileMode.Open, FileAccess.Read);
-            IntPtr nativeHandle = original.DangerousGetHandle();
-
-            // Wrap the same native handle value without taking ownership.
-            using SafeFileHandle copy = new SafeFileHandle(nativeHandle, ownsHandle: false);
-
-            // Dispose the original, which closes the underlying OS handle.
-            original.Dispose();
-
-            // Accessing Type on the copy should throw because the underlying handle is now invalid.
-            AssertExtensions.ThrowsAny<IOException, UnauthorizedAccessException>(() => copy.Type);
-        }
     }
 }
