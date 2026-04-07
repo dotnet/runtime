@@ -234,25 +234,21 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetExceptionCode();
 
-        internal sealed class LayoutTypeMarshalerMethods
+        internal sealed class LayoutTypeMarshalerMethods : RuntimeType.IGenericCacheEntry<LayoutTypeMarshalerMethods>
         {
             private static MemberInfo ConvertToUnmanagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToUnmanaged), BindingFlags.Public | BindingFlags.Static)!;
             private static MemberInfo ConvertToManagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToManaged), BindingFlags.Public | BindingFlags.Static)!;
             private static MemberInfo FreeMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.Free), BindingFlags.Public | BindingFlags.Static)!;
 
-            private unsafe delegate void ConvertToUnmanagedDelegate(object obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
-            private unsafe delegate void ConvertToManagedDelegate(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList);
-            private unsafe delegate void FreeDelegate(object? obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
+            private readonly unsafe delegate*<object, byte*, int, ref CleanupWorkListElement?, void> _convertToUnmanaged;
+            private readonly unsafe delegate*<object, byte*, ref CleanupWorkListElement?, void> _convertToManaged;
+            private readonly unsafe delegate*<object?, byte*, int, ref CleanupWorkListElement?, void> _free;
 
-            private readonly ConvertToUnmanagedDelegate _convertToUnmanaged;
-            private readonly ConvertToManagedDelegate _convertToManaged;
-            private readonly FreeDelegate _free;
-
-            internal LayoutTypeMarshalerMethods(Type instantiatedType)
+            internal unsafe LayoutTypeMarshalerMethods(Type instantiatedType)
             {
-                _convertToUnmanaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToUnmanagedMethod)).CreateDelegate<ConvertToUnmanagedDelegate>();
-                _convertToManaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToManagedMethod)).CreateDelegate<ConvertToManagedDelegate>();
-                _free = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(FreeMethod)).CreateDelegate<FreeDelegate>();
+                _convertToUnmanaged = (delegate*<object, byte*, int, ref CleanupWorkListElement?, void>)((RuntimeMethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToUnmanagedMethod)).MethodHandle.GetFunctionPointer();
+                _convertToManaged = (delegate*<object, byte*, ref CleanupWorkListElement?, void>)((RuntimeMethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToManagedMethod)).MethodHandle.GetFunctionPointer();
+                _free = (delegate*<object?, byte*, int, ref CleanupWorkListElement?, void>)((RuntimeMethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(FreeMethod)).MethodHandle.GetFunctionPointer();
             }
 
             public unsafe void ConvertToManaged(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList)
@@ -270,18 +266,26 @@ namespace System.Runtime.InteropServices
                 _free(obj, native, nativeSize, ref cleanupWorkList);
             }
 
-            private static readonly ConditionalWeakTable<Type, LayoutTypeMarshalerMethods> s_marshalerCache = [];
-
-            [RequiresDynamicCode("Marshalling code for the object might not be available.")]
             internal static LayoutTypeMarshalerMethods GetMarshalMethodsForType(Type t)
             {
-                return s_marshalerCache.GetOrAdd(t, CreateMarshalMethods);
+                return ((RuntimeType)t).GetOrCreateCacheEntry<LayoutTypeMarshalerMethods>();
+            }
 
-                static LayoutTypeMarshalerMethods CreateMarshalMethods(Type type)
-                {
-                    Type instantiatedMarshaler = typeof(BoxedLayoutTypeMarshaler<>).MakeGenericType([type]);
-                    return new LayoutTypeMarshalerMethods(instantiatedMarshaler);
-                }
+            [RequiresDynamicCode("Marshalling code for the object might not be available.")]
+            public static LayoutTypeMarshalerMethods Create(RuntimeType type)
+            {
+                Type instantiatedMarshaler = typeof(BoxedLayoutTypeMarshaler<>).MakeGenericType([type]);
+                return new LayoutTypeMarshalerMethods(instantiatedMarshaler);
+            }
+
+            public static ref LayoutTypeMarshalerMethods? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry)
+            {
+                return ref compositeEntry._marshalerMethods;
+            }
+
+            public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry)
+            {
+                compositeEntry._marshalerMethods = this;
             }
         }
 
