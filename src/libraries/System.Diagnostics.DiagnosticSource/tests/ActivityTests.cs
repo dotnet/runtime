@@ -1154,7 +1154,7 @@ namespace System.Diagnostics.Tests
             Assert.False(activity.HasRandomizedTraceId);
             activity.Stop();
 
-            // Set the 'RandomTraceId' bit by using SetParentId with a -02 flags.
+            // Set the 'RandomTraceId' bit by using SetParentId with the -02 flag.
             activity = new Activity("activity2");
             activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-02");
             activity.Start();
@@ -1168,7 +1168,7 @@ namespace System.Diagnostics.Tests
             Assert.True(activity.HasRandomizedTraceId);
             activity.Stop();
 
-            // Set the 'Recorded' and 'RandomTraceId' bits by using SetParentId with a -03 flags.
+            // Set the 'Recorded' and 'RandomTraceId' bits by using SetParentId with the -03 flag.
             activity = new Activity("activity3");
             activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-03");
             activity.Start();
@@ -2290,6 +2290,29 @@ namespace System.Diagnostics.Tests
                 Assert.NotEqual("00000000000000000000000000000000", a.TraceId.ToHexString());
 
                 a.Stop();
+
+                ActivityTraceId sampledTraceId = default;
+
+                using ActivitySource source = new ActivitySource(nameof(TraceIdDefaultGenerationSetsRandomFlag));
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = activitySource => activitySource.Name == source.Name,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) =>
+                    {
+                        sampledTraceId = options.TraceId;
+                        Assert.NotEqual("00000000000000000000000000000000", sampledTraceId.ToHexString());
+                        return ActivitySamplingResult.AllData;
+                    }
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                using Activity? sourceActivity = source.StartActivity("DefaultRandomTraceIdFromSource");
+
+                Assert.NotNull(sourceActivity);
+                Assert.Equal(sampledTraceId, sourceActivity.TraceId);
+                Assert.True(sourceActivity.HasRandomizedTraceId);
+                Assert.Equal(ActivityTraceFlags.RandomTraceId, sourceActivity.ActivityTraceFlags);
             }).Dispose();
         }
 

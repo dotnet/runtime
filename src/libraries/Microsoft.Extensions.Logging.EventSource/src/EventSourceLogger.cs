@@ -87,9 +87,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             {
                 activityTraceId = activity.TraceId.ToHexString();
                 activitySpanId = activity.SpanId.ToHexString();
-                activityTraceFlags = activity.ActivityTraceFlags == ActivityTraceFlags.None
-                    ? "0"
-                    : "1";
+                activityTraceFlags = activity.Recorded ? "1" : "0";
             }
             else
             {
