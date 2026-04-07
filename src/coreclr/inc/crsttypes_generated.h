@@ -235,7 +235,7 @@ int g_rgCrstLevelMap[] =
     2,          // CrstUnwindInfoTablePendingLock
     3,          // CrstUnwindInfoTablePublishLock
     3,          // CrstVSDIndirectionCellLock
-    2,          // CrstWrapperTemplate
+    3,          // CrstWrapperTemplate
 };
 
 // An array mapping CrstType to a stringized name.

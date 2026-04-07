@@ -92,7 +92,7 @@ public:
 
     //
     // jit interface api
-    virtual OBJECTHANDLE ConstructStringLiteral(mdToken metaTok) = 0;
+    virtual STRINGREF* ConstructStringLiteral(mdToken metaTok) = 0;
     virtual BOOL IsValidStringRef(mdToken metaTok) = 0;
     virtual STRINGREF GetStringLiteral(mdToken metaTok) = 0;
     virtual void ResolveToken(mdToken token, ResolvedToken* resolvedToken) = 0;
@@ -156,7 +156,7 @@ public:
     BYTE* GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned* pEHSize);
     SigPointer GetLocalSig();
 
-    OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
+    STRINGREF* ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
     void ResolveToken(mdToken token, ResolvedToken* resolvedToken);
     SigPointer ResolveSignature(mdToken token);
@@ -312,6 +312,8 @@ class HostCodeHeap final : public CodeHeap
 
     VPTR_VTABLE_CLASS(HostCodeHeap, CodeHeap)
 
+    friend struct ::cdac_data<HostCodeHeap>;
+
 private:
     // pointer back to jit manager info
     PTR_HeapList m_pHeapList;
@@ -372,6 +374,13 @@ public:
 
     PTR_EECodeGenManager GetJitManager() { return m_pJitManager; }
 }; // class HostCodeHeap
+
+template<>
+struct cdac_data<HostCodeHeap>
+{
+    static constexpr size_t BaseAddress    = offsetof(HostCodeHeap, m_pBaseAddr);
+    static constexpr size_t CurrentAddress = offsetof(HostCodeHeap, m_pLastAvailableCommittedAddr);
+};
 
 //---------------------------------------------------------------------------------------
 //
