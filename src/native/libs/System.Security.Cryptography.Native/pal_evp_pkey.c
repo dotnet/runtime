@@ -412,6 +412,7 @@ done:
     return ret;
 }
 
+#if defined(NEED_OPENSSL_1_0) || defined(NEED_OPENSSL_1_1)
 // Legacy RSA accessors: duplicate shared pointers into owned copies.
 static bool RsaLegacyGetKey(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d)
 {
@@ -521,6 +522,7 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
 {
     return QuickRsaCheckCore(rsa, isPublic, RsaLegacyGetKey, RsaLegacyGetFactors, RsaLegacyGetCrtParams, RsaLegacyIsMultiPrime);
 }
+#endif // NEED_OPENSSL_1_0 || NEED_OPENSSL_1_1
 
 #ifdef NEED_OPENSSL_3_0
 // EVP accessors for OpenSSL 3.0+: return owned copies (must be freed).
@@ -607,6 +609,7 @@ static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*chec
         }
         else
 #endif
+#if defined(NEED_OPENSSL_1_0) || defined(NEED_OPENSSL_1_1)
         if (API_EXISTS(EVP_PKEY_get0_RSA))
         {
             const RSA* rsa = EVP_PKEY_get0_RSA(key);
@@ -622,6 +625,7 @@ static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*chec
             }
         }
         else
+#endif
         {
             // Neither API available, fall through to EVP_PKEY_check.
             result = -1;

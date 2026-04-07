@@ -7,8 +7,10 @@
 #include "openssl.h"
 #include <assert.h>
 
+#if defined(NEED_OPENSSL_1_0) || defined(NEED_OPENSSL_1_1)
 static int HasNoPrivateKey(const RSA* rsa);
 static int CheckLegacyPrivateKeyAvailable(EVP_PKEY* pkey);
+#endif
 
 EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey)
 {
@@ -143,6 +145,7 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
     // ENGINE-s may or may not set it.
     // This is needed only on OpenSSL < 3.0,
     // see: https://github.com/dotnet/runtime/issues/53345
+#if defined(NEED_OPENSSL_1_0) || defined(NEED_OPENSSL_1_1)
     if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM)
     {
         if (!CheckLegacyPrivateKeyAvailable(pkey))
@@ -150,6 +153,7 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
             goto done;
         }
     }
+#endif
 
     written = Int32ToSizeT(destinationLen);
 
@@ -284,6 +288,7 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
     // ENGINE-s may or may not set it.
     // This is needed only on OpenSSL < 3.0,
     // see: https://github.com/dotnet/runtime/issues/53345
+#if defined(NEED_OPENSSL_1_0) || defined(NEED_OPENSSL_1_1)
     if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM)
     {
         if (!CheckLegacyPrivateKeyAvailable(pkey))
@@ -291,6 +296,7 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
             goto done;
         }
     }
+#endif
 
     written = Int32ToSizeT(destinationLen);
 
@@ -357,6 +363,7 @@ done:
     return ret;
 }
 
+#if defined(NEED_OPENSSL_1_0) || defined(NEED_OPENSSL_1_1)
 // On OpenSSL < 3.0, check that the legacy RSA key has a private key available.
 // Only call this for OpenSSL < 3.0.
 // Returns 1 if the check passes, 0 if no private key.
@@ -435,3 +442,4 @@ static int HasNoPrivateKey(const RSA* rsa)
 
     return 0;
 }
+#endif // NEED_OPENSSL_1_0 || NEED_OPENSSL_1_1
