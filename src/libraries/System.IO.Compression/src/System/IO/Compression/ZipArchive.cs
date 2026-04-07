@@ -806,6 +806,8 @@ namespace System.IO.Compression
             {
                 if (_entries[i].OriginallyInArchive)
                 {
+                    Debug.Assert(nextOriginalOffset >= _entries[i].OffsetOfLocalHeader,
+                        "Original entries are expected in ascending offset order");
                     _entries[i].EndOfLocalEntryData = nextOriginalOffset;
                     nextOriginalOffset = _entries[i].OffsetOfLocalHeader;
                 }
