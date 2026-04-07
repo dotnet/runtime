@@ -187,10 +187,6 @@ void Assembly::Init(AllocMemTracker *pamTracker)
 
     PrepareModuleForAssembly(m_pModule, pamTracker);
 
-    // We'll load the friend assembly information lazily.  For the ngen case we should avoid
-    //  loading it entirely.
-    //CacheFriendAssemblyInfo();
-
     if (IsCollectible() && !pPEAssembly->IsReflectionEmit())
     {
         COUNT_T size;

@@ -65,6 +65,7 @@ namespace ILCompiler.DependencyAnalysis
         public bool IsComponentModule;
         public bool StripInliningInfo;
         public bool StripDebugInfo;
+        public bool ForceAssemblyLoadContextCompatibility;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -886,6 +887,12 @@ namespace ILCompiler.DependencyAnalysis
                 ReadyToRunTypeMapManager typeMapManager = new(inputModule, metadata);
                 typeMapManager.AddToReadyToRunHeader(tableHeader, this, ImportReferenceProvider);
                 typeMapManager.AttachToDependencyGraph(graph);
+
+                if (OptimizationFlags.ForceAssemblyLoadContextCompatibility)
+                {
+                    Import assemblySimpleNameImport = new Import(EagerImports, new ReadyToRunAssemblyRefSimpleNameLoadSignature(inputModule));
+                    graph.AddRoot(assemblySimpleNameImport, "Assembly simple name load fixup");
+                }
             }
 
             if (!OptimizationFlags.StripInliningInfo)

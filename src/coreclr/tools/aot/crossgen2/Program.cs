@@ -646,6 +646,7 @@ namespace ILCompiler
                     nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
                     nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
                     nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
+                    nodeFactoryFlags.ForceAssemblyLoadContextCompatibility = Get(_command.ForceAssemblyLoadContextCompatibility);
 
                     builder
                         .UseMapFile(Get(_command.Map))

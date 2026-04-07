@@ -14684,6 +14684,42 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
             break;
         }
+    case READYTORUN_FIXUP_AssemblyRefSimpleNameLoad:
+        {
+            GCX_COOP();
+
+            OBJECTREF assemblyObject = currentModule->GetAssembly()->GetExposedObject();
+
+            GCPROTECT_BEGIN(assemblyObject);
+
+            SArray<LPCSTR> simpleNames;
+
+            HENUMInternal assemblyEnum;
+
+            IMDInternalImport* pMdImport = currentModule->GetMDImport();
+            HRESULT hr = pMdImport->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
+            mdAssemblyRef assemblyRef;
+            while (pMdImport->EnumNext(&assemblyEnum, &assemblyRef))
+            {
+                LPCSTR assemblyName;
+                hr = pMdImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL);
+                if (FAILED(hr))
+                {
+                    _ASSERTE(false);
+                    continue;
+                }
+                simpleNames.Append(assemblyName);
+            }
+
+            UnmanagedCallersOnlyCaller registerSimpleNameLoadHookForAssembly{METHOD__ASSEMBLYLOADCONTEXT__REGISTER_SIMPLE_NAME_LOAD_HOOK_FOR_ASSEMBLY};
+
+            registerSimpleNameLoadHookForAssembly.InvokeThrowing(&assemblyObject, &simpleNames[0], simpleNames.GetCount());
+
+            GCPROTECT_END();
+
+            result = 1;
+            break;
+        }
     default:
         STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown ReadyToRunFixupKind %d\n", kind);
         _ASSERTE(!"Unknown ReadyToRunFixupKind");

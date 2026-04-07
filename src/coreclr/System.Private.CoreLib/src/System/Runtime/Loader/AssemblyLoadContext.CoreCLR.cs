@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
@@ -141,6 +142,58 @@ namespace System.Runtime.Loader
             {
                 *pException = ex;
                 return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void RegisterSimpleNameLoadHookForAssembly(Assembly* pAssembly, sbyte** pAsmRefSimpleNames, int numAsmRefs, Exception* pException)
+        {
+            try
+            {
+                HashSet<string> simpleNames = [];
+                for (int i = 0; i < numAsmRefs; i++)
+                {
+                    simpleNames.Add(new string(pAsmRefSimpleNames[i]));
+                }
+
+                AssemblyLoadContext context = GetLoadContext(*pAssembly)!;
+
+                // First, load into the assembly's load context any already loaded assemblies that match the simple names of the assembly references.
+                foreach (Assembly loadedAssembly in GetLoadedAssemblies())
+                {
+                    string loadedSimpleName = loadedAssembly.GetName().Name!;
+                    if (simpleNames.Contains(loadedSimpleName))
+                    {
+                        context.LoadFromAssemblyName(loadedAssembly.GetName());
+                        simpleNames.Remove(loadedSimpleName);
+                    }
+                }
+
+                // For any names that remain, register a callback to the AppDomain.AssemblyLoad event to load into the provided Assembly's ALC as well.
+                if (simpleNames.Count > 0)
+                {
+                    AppDomain.CurrentDomain.AssemblyLoad += SimpleNameLoadHook;
+                }
+
+                void SimpleNameLoadHook(object? sender, AssemblyLoadEventArgs args)
+                {
+                    string loadedSimpleName = args.LoadedAssembly.GetName().Name!;
+                    if (simpleNames.Contains(loadedSimpleName))
+                    {
+                        context.LoadFromAssemblyName(args.LoadedAssembly.GetName());
+                        simpleNames.Remove(loadedSimpleName);
+
+                        if (simpleNames.Count == 0)
+                        {
+                            AppDomain.CurrentDomain.AssemblyLoad -= SimpleNameLoadHook;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 

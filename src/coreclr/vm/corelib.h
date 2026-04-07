@@ -1024,6 +1024,9 @@ DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_RESOLVE,        OnAssemblyResolv
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  START_ASSEMBLY_LOAD,        StartAssemblyLoad,          SM_PtrGuid_PtrGuid_PtrException_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  STOP_ASSEMBLY_LOAD,         StopAssemblyLoad,           SM_PtrGuid_PtrException_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  INITIALIZE_DEFAULT_CONTEXT, InitializeDefaultContext,   SM_PtrException_RetVoid)
+#ifdef FEATURE_READYTORUN
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  REGISTER_SIMPLE_NAME_LOAD_HOOK_FOR_ASSEMBLY, RegisterSimpleNameLoadHookForAssembly, SM_PtrAssembly_PtrException_RetVoid)
+#endif
 
 DEFINE_CLASS(VALUE_TYPE,            System,                 ValueType)
 DEFINE_METHOD(VALUE_TYPE,           GET_HASH_CODE,          GetHashCode,            IM_RetInt)

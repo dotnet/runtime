@@ -190,6 +190,8 @@ namespace Internal.ReadyToRunConstants
         ContinuationLayout = 0x37, /* Layout of an async method continuation type */
         ResumptionStubEntryPoint = 0x38, /* Entry point of an async method resumption stub */
 
+        AssemblyRefSimpleNameLoad  = 0x39, /* Request that all assembly references are always loaded in the corresponding ALC when an assembly with a matching simple name is loaded in any ALC. */
+
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
         // table of the MSIL metadata of the master context module for the signature or

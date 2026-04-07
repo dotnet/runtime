@@ -148,6 +148,8 @@ namespace ILCompiler
             new("--strip-inlining-info") { Description = SR.StripInliningInfoOption };
         public Option<bool> StripDebugInfo { get; } =
             new("--strip-debug-info") { Description = SR.StripDebugInfoOption };
+        public Option<bool> ForceAssemblyLoadContextCompatibility { get; } =
+            new("--force-alc-compatibility") { Description = SR.ForceAssemblyLoadContextCompatibility };
         public Option<bool> SynthesizeRandomMibc { get; } =
             new("--synthesize-random-mibc");
 

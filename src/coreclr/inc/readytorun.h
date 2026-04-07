@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0004
+#define READYTORUN_MINOR_VERSION 0x0005
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
@@ -55,6 +55,7 @@
 // R2R Version 18.2 adds InitClass and InitInstClass helpers
 // R2R Version 18.3 adds the ExternalTypeMaps, ProxyTypeMaps, TypeMapAssemblyTargets sections
 // R2R Version 18.4 adds ThrowArgument, ThrowArgumentOutOfRange, ThrowPlatformNotSupported, and ThrowNotImplemented helpers
+// R2R Version 18.5 adds the AssemblyRefSimpleNameLoad fixup
 
 struct READYTORUN_CORE_HEADER
 {
@@ -305,6 +306,8 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
     READYTORUN_FIXUP_Continuation_Layout        = 0x37, /* Layout of an async method continuation type */
     READYTORUN_FIXUP_ResumptionStubEntryPoint   = 0x38, /* Entry point of an async method resumption stub */
+
+    READYTORUN_FIXUP_AssemblyRefSimpleNameLoad  = 0x39, /* Request that all assembly references are always loaded in the corresponding ALC when an assembly with a matching simple name is loaded in any ALC. */
 
     READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
                                                         /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */

@@ -405,6 +405,7 @@ DEFINE_METASIG_T(SM(Str_AssemblyBase_Bool_UInt_RetIntPtr, s C(ASSEMBLYBASE) F K,
 DEFINE_METASIG_T(SM(PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrAssembly_PtrByte_PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(b) P(C(ASSEMBLY)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrAssembly_PtrChar_PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(u) P(C(ASSEMBLY)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrAssembly_PtrPtrSByte_Int_PtrException_RetVoid, P(C(ASSEMBLY)) P(P(B)) i P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid, I P(C(ASSEMBLY_NAME)) P(C(ASSEMBLYBASE)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrException_RetVoid, P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrObj_PtrException_RetVoid, P(j) P(C(EXCEPTION)), v))
