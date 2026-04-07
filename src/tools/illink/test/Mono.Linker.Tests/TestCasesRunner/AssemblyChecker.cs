@@ -7,11 +7,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
-using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
