@@ -868,7 +868,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         break;
 
                     case TargetArchitecture.Wasm32:
-                        _wasmOfsStack = numRegistersUsed * _transitionBlock.PointerSize;
+                        _wasmOfsStack = numRegistersUsed * 8;
                         break;
 
                     case TargetArchitecture.ARM:
@@ -1107,8 +1107,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             break;
                         case WasmValueType.I32:
                         case WasmValueType.F32:
-                            cbArg = 4;
-                            align = 4;
+                            cbArg = 8;
+                            align = 8;
                             break;
                         case WasmValueType.V128:
                             cbArg = 16;
