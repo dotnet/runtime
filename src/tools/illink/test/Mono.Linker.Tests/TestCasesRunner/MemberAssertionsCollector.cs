@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Mono.Cecil;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
-using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -27,14 +27,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return results;
         }
 
-        public static IEnumerable<TestCaseData> GetMemberAssertionsData(Type type)
+        public static IEnumerable<TestDataRow<(IMemberDefinition, CustomAttribute)>> GetMemberAssertionsData(Type type)
         {
             return GetMemberAssertions(type).Select(v =>
             {
-                var testCaseData = new TestCaseData(v.member, v.ca);
-                // Sanitize test names to work around https://github.com/nunit/nunit3-vs-adapter/issues/691.
-                testCaseData.SetName($"{{m}}({v.member.Name},{v.ca.AttributeType.Name})");
-                return testCaseData;
+                return new TestDataRow<(IMemberDefinition, CustomAttribute)>((v.member, v.ca));
             });
         }
 
