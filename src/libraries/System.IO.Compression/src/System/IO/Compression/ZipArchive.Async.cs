@@ -98,6 +98,9 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     // directory up-front
                     await zipArchive.EnsureCentralDirectoryReadAsync(cancellationToken).ConfigureAwait(false);
                     break;
+                case ZipArchiveMode.ForwardRead:
+                    zipArchive._readEntries = true;
+                    break;
                 case ZipArchiveMode.Update:
                 default:
                     Debug.Assert(mode == ZipArchiveMode.Update);
@@ -146,6 +149,8 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                 switch (_mode)
                 {
                     case ZipArchiveMode.Read:
+                        break;
+                    case ZipArchiveMode.ForwardRead:
                         break;
                     case ZipArchiveMode.Create:
                         await WriteFileAsync().ConfigureAwait(false);

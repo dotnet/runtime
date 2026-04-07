@@ -47,6 +47,8 @@ namespace System.IO.Compression
         private byte[]? _lhTrailingExtraFieldData;
         private byte[] _fileComment;
         private readonly CompressionLevel _compressionLevel;
+        private Stream? _forwardReadDataStream;
+        private bool _hasDataDescriptor;
 
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -160,6 +162,51 @@ namespace System.IO.Compression
             Changes = ZipArchive.ChangeState.Unchanged;
         }
 
+        // Initializes a ZipArchiveEntry instance for forward-read mode from local file header data.
+        internal ZipArchiveEntry(ZipArchive archive, string fullName, ZipCompressionMethod compressionMethod,
+            DateTimeOffset lastModified, uint crc32, long compressedSize, long uncompressedSize,
+            ushort generalPurposeBitFlags, ushort versionNeeded, bool hasDataDescriptor, Stream? dataStream)
+        {
+            _archive = archive;
+            _originallyInArchive = true;
+            _hasDataDescriptor = hasDataDescriptor;
+
+            _diskNumberStart = 0;
+            _versionMadeByPlatform = CurrentZipPlatform;
+            _versionMadeBySpecification = (ZipVersionNeededValues)versionNeeded;
+            _versionToExtract = (ZipVersionNeededValues)versionNeeded;
+            _generalPurposeBitFlag = (BitFlagValues)generalPurposeBitFlags;
+            _isEncrypted = (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
+            _storedCompressionMethod = compressionMethod;
+            _lastModified = lastModified;
+            _compressedSize = compressedSize;
+            _uncompressedSize = uncompressedSize;
+            _crc32 = crc32;
+            _offsetOfLocalHeader = 0;
+            _storedOffsetOfCompressedData = null;
+            _externalFileAttr = 0;
+
+            _compressedBytes = null;
+            _storedUncompressedData = null;
+            _currentlyOpenForWrite = false;
+            _everOpenedForWrite = false;
+            _outstandingWriteStream = null;
+
+            _storedEntryNameBytes = (_generalPurposeBitFlag & BitFlagValues.UnicodeFileNameAndComment) != 0
+                ? Encoding.UTF8.GetBytes(fullName)
+                : (archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetBytes(fullName);
+            _storedEntryName = fullName;
+
+            _cdUnknownExtraFields = null;
+            _lhUnknownExtraFields = null;
+
+            _fileComment = Array.Empty<byte>();
+            _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, compressionMethod);
+            _forwardReadDataStream = dataStream;
+
+            Changes = ZipArchive.ChangeState.Unchanged;
+        }
+
         /// <summary>
         /// The ZipArchive that this entry belongs to. If this entry has been deleted, this will return null.
         /// </summary>
@@ -172,6 +219,17 @@ namespace System.IO.Compression
         /// Gets a value that indicates whether the entry is encrypted.
         /// </summary>
         public bool IsEncrypted => _isEncrypted;
+
+        internal Stream? ForwardReadDataStream => _forwardReadDataStream;
+
+        internal bool HasDataDescriptor => _hasDataDescriptor;
+
+        internal void UpdateFromDataDescriptor(uint crc32, long compressedSize, long uncompressedSize)
+        {
+            _crc32 = crc32;
+            _compressedSize = compressedSize;
+            _uncompressedSize = uncompressedSize;
+        }
 
         /// <summary>
         /// Gets the compression method used to compress the entry.
@@ -212,6 +270,8 @@ namespace System.IO.Compression
             set
             {
                 ThrowIfInvalidArchive();
+                if (_archive.Mode == ZipArchiveMode.ForwardRead)
+                    throw new NotSupportedException(SR.ForwardReadOnly);
                 _externalFileAttr = (uint)value;
                 Changes |= ZipArchive.ChangeState.FixedLengthMetadata;
             }
@@ -230,6 +290,8 @@ namespace System.IO.Compression
             get => DecodeEntryString(_fileComment);
             set
             {
+                if (_archive.Mode == ZipArchiveMode.ForwardRead)
+                    throw new NotSupportedException(SR.ForwardReadOnly);
                 _fileComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, _archive.EntryNameAndCommentEncoding, ushort.MaxValue, out bool isUTF8);
 
                 if (isUTF8)
@@ -295,6 +357,8 @@ namespace System.IO.Compression
                 ThrowIfInvalidArchive();
                 if (_archive.Mode == ZipArchiveMode.Read)
                     throw new NotSupportedException(SR.ReadOnlyArchive);
+                if (_archive.Mode == ZipArchiveMode.ForwardRead)
+                    throw new NotSupportedException(SR.ForwardReadOnly);
                 if (_archive.Mode == ZipArchiveMode.Create && _everOpenedForWrite)
                     throw new IOException(SR.FrozenAfterWrite);
                 if (value.DateTime.Year < ZipHelper.ValidZipDate_YearMin || value.DateTime.Year > ZipHelper.ValidZipDate_YearMax)
@@ -371,6 +435,8 @@ namespace System.IO.Compression
                     return OpenInReadMode(checkOpenable: true);
                 case ZipArchiveMode.Create:
                     return OpenInWriteMode();
+                case ZipArchiveMode.ForwardRead:
+                    return OpenInForwardReadMode();
                 case ZipArchiveMode.Update:
                 default:
                     Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
@@ -415,6 +481,11 @@ namespace System.IO.Compression
                     if (access == FileAccess.Read)
                         throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
                     return OpenInWriteMode();
+
+                case ZipArchiveMode.ForwardRead:
+                    if (access != FileAccess.Read)
+                        throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+                    return OpenInForwardReadMode();
 
                 case ZipArchiveMode.Update:
                 default:
@@ -844,6 +915,16 @@ namespace System.IO.Compression
             Stream decompressedStream = GetDataDecompressor(compressedStream);
 
             return new CrcValidatingReadStream(decompressedStream, _crc32, _uncompressedSize);
+        }
+
+        private WrappedStream OpenInForwardReadMode()
+        {
+            if (_forwardReadDataStream == null)
+                throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+
+            // Wrap so user disposal does not close our internal data stream.
+            // DrainPreviousEntry will drain and dispose _forwardReadDataStream itself.
+            return new WrappedStream(_forwardReadDataStream, closeBaseStream: false);
         }
 
         private WrappedStream OpenInWriteMode()
