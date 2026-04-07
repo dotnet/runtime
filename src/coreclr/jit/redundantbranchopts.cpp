@@ -973,11 +973,11 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         if (!domMayHaveSideEffects)
         {
             domMayHaveSideEffects = domBlockProbe->hasSideEffects();
+        }
 
-            if (domMayHaveSideEffects)
-            {
-                break;
-            }
+        if (domMayHaveSideEffects)
+        {
+            break;
         }
 
         currentBlock  = domBlockProbe;
