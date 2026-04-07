@@ -2268,6 +2268,7 @@ LoaderCodeHeap::LoaderCodeHeap(bool fMakeExecutable)
     m_cbMinNextPad(0)
 {
     WRAPPER_NO_CONTRACT;
+    m_heapType = CodeHeapType::LoaderCodeHeap;
 }
 
 void ThrowOutOfMemoryWithinRange()
@@ -6480,7 +6481,7 @@ unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& Method
 
     ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(MethodToken);
 
-    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->FindSection(ReadyToRunSectionType::ExceptionInfo);
+    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->GetExceptionInfoSection();
     if (pExceptionInfoDir == NULL)
         return 0;
 

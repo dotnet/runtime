@@ -22,7 +22,6 @@
     <Compile Include="System\Diagnostics\Process.cs" />
     <Compile Include="System\Diagnostics\ProcessExitStatus.cs" />
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.cs" />
     <Compile Include="System\Diagnostics\ProcessModule.cs" />
     <Compile Include="System\Diagnostics\ProcessModuleCollection.cs" />
     <Compile Include="System\Diagnostics\ProcessPriorityClass.cs" />
@@ -120,6 +119,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetModuleBaseName.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleFileNameEx.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetModuleFileNameEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleInformation.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.HandleInformation.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetProcessWorkingSetSizeEx.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SetProcessWorkingSetSizeEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessWorkingSetSizeEx.cs"
@@ -191,7 +192,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ProcessOptions.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.ProcessOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleOptions.cs"
-             Link="Common\Interop\Windows\kernel32\Interop.ProcessOptions.cs" />
+             Link="Common\Interop\Windows\Kernel32\Interop.HandleOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
@@ -224,6 +225,8 @@
     <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
     <Compile Include="System\Diagnostics\ProcessUtils.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.ShellExecuteExW.cs"
+             Link="Common\Interop\Windows\Shell32\Interop.ShellExecuteExW.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
@@ -261,6 +264,8 @@
              Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Kill.cs"
              Link="Common\Interop\Unix\Interop.Kill.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs"
+             Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"
              Link="Common\Interop\Unix\Interop.ReadLink.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RegisterForSigChld.cs"
@@ -285,24 +290,28 @@
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsMemberOfGroup.cs"
              Link="Common\Interop\Unix\Interop.IsMemberOfGroup.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsAtomicNonInheritablePipeCreationSupported.cs"
+             Link="Common\Interop\Unix\Interop.IsAtomicNonInheritablePipeCreationSupported.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsATty.cs"
+             Link="Common\Interop\Unix\Interop.IsATty.cs" />
+    <Compile Include="$(CommonPath)System\NullableBool.cs"
+             Link="Common\System\NullableBool.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsiOSLike)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs"
              Link="Common\Interop\Unix\Interop.ConfigureTerminalForChildProcess.cs" />
-    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.Unix.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.ConfigureTerminalForChildProcesses.Unix.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsiOSLike)' == 'true'">
-    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.iOS.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.ConfigureTerminalForChildProcesses.iOS.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux'">
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
-    <Compile Include="$(CommonPath)System\NullableBool.cs"
-             Link="Common\System\NullableBool.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
              Link="Common\Interop\Linux\Interop.cgroups.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
@@ -339,14 +348,6 @@
              Link="Common\Interop\OSX\Interop.Interop.libSystem.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.ShellExecuteExW.cs"
-             Link="Common\Interop\Windows\Shell32\Interop.ShellExecuteExW.cs" />
-    <Compile Include="System\Diagnostics\Process.Win32.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.Win32.cs" />
-    <Compile Include="System\Diagnostics\ProcessStartInfo.Win32.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'tvos'">

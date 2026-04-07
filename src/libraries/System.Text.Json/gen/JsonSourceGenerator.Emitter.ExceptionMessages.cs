@@ -16,14 +16,8 @@ namespace System.Text.Json.SourceGeneration
             /// </summary>
             private static class ExceptionMessages
             {
-                public const string InaccessibleJsonIncludePropertiesNotSupported =
-                    "The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.";
-
                 public const string IncompatibleConverterType =
                     "The converter '{0}' is not compatible with the type '{1}'.";
-
-                public const string InitOnlyPropertySetterNotSupported =
-                    "Setting init-only properties is not supported in source generation mode.";
 
                 public const string InvalidJsonConverterFactoryOutput =
                     "The converter '{0}' cannot return null or a JsonConverterFactory instance.";

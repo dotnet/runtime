@@ -3,7 +3,13 @@ trigger: none
 pr:
   branches:
     include:
-    - "*"
+    - main
+    - release/*.0
+  paths:
+    include:
+    - src/libraries/System.Net.Security/tests/StressTests/SslStress/**
+    - src/libraries/Common/tests/System/Net/StressTests/**
+    - eng/pipelines/libraries/stress/**
 
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST
@@ -39,7 +45,7 @@ extends:
           DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
+          demands: ImageOverride -equals build.azurelinux.3.amd64.open
 
         steps:
         - checkout: self
@@ -60,7 +66,7 @@ extends:
             export STRESS_CLIENT_ARGS=$SSLSTRESS_CLIENT_ARGS
             export STRESS_SERVER_ARGS=$SSLSTRESS_SERVER_ARGS
             mkdir -p $DUMPS_SHARE
-            docker-compose up --abort-on-container-exit --no-color
+            docker compose up --abort-on-container-exit --no-color
           displayName: Run SslStress
 
         - publish: $(Build.ArtifactStagingDirectory)/dumps

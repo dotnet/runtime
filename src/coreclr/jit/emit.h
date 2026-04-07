@@ -2738,10 +2738,6 @@ public:
 
     bool emitHasFramePtr;
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    bool emitInInstrumentation;
-#endif // PSEUDORANDOM_NOP_INSERTION
-
 #ifdef DEBUG
     bool emitChkAlign; // perform some alignment checks
 #endif
@@ -3001,23 +2997,6 @@ private:
 
     unsigned emitNxtIGnum;
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-
-    // random nop insertion to break up nop sleds
-    unsigned emitNextNop;
-    bool     emitRandomNops;
-
-    void emitEnableRandomNops()
-    {
-        emitRandomNops = true;
-    }
-    void emitDisableRandomNops()
-    {
-        emitRandomNops = false;
-    }
-
-#endif // PSEUDORANDOM_NOP_INSERTION
-
     insGroup* emitAllocAndLinkIG();
     insGroup* emitAllocIG();
     void      emitInitIG(insGroup* ig);
@@ -3209,8 +3188,6 @@ private:
 #if defined(FEATURE_SIMD)
     void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider);
 #endif // FEATURE_SIMD
-
-    int emitNextRandomNop();
 
     //
     // Functions for allocating instrDescs.
