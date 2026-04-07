@@ -171,12 +171,6 @@ c_static_assert(EVP_PKEY_PUBLIC_KEY == 134);
 c_static_assert(RSA_FLAG_EXT_PKEY == 0x0020);
 #endif
 
-#ifndef RSA_F_RSA_NULL_PRIVATE_DECRYPT
-#define RSA_F_RSA_NULL_PRIVATE_DECRYPT 0
-#else
-c_static_assert(RSA_F_RSA_NULL_PRIVATE_DECRYPT == 0);
-#endif
-
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include "apibridge_30_rev.h"
 #endif
@@ -219,6 +213,7 @@ const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 // on the build OS. The shim will detect their presence at runtime.
 #undef HAVE_OPENSSL_RSA_PRIMITIVE
 #define HAVE_OPENSSL_RSA_PRIMITIVE 1
+
 typedef struct rsa_st RSA;
 typedef struct rsa_meth_st RSA_METHOD;
 

@@ -374,7 +374,7 @@ static int CheckLegacyPrivateKeyAvailable(EVP_PKEY* pkey)
     // than a crash in the unexpected case that it is somehow unavailable.
     if (!API_EXISTS(EVP_PKEY_get0_RSA))
     {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
         return 0;
     }
 
@@ -382,7 +382,7 @@ static int CheckLegacyPrivateKeyAvailable(EVP_PKEY* pkey)
 
     if (rsa == NULL || HasNoPrivateKey(rsa))
     {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
         return 0;
     }
 
