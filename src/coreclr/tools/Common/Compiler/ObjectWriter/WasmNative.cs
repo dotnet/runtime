@@ -95,6 +95,26 @@ namespace ILCompiler.ObjectWriter
         public override int EncodeRelocations(Span<Relocation> buffer) => 0;
     }
 
+    public class WasmTableImportType : WasmImportType
+    {
+        public WasmTableImportType() : base (WasmExternalKind.Table)
+        {
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = 0;
+            buffer[pos++] = (byte)0x70; // element type: funcref 
+            buffer[pos++] = (byte)0; // table limits: flags (0 = min-only, 1 = min+max)
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), 1); // Requires 1 table entry
+            return pos;
+        }
+
+        public override int EncodeSize() => 2 + (int)DwarfHelper.SizeOfULEB128(1); // The 2 is the element type and table limit flags
+        public override int EncodeRelocationCount() => 0;
+        public override int EncodeRelocations(Span<Relocation> buffer) => 0;
+    }
+
     public enum WasmLimitType : byte
     {
         HasMin = 0x00,
