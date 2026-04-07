@@ -1170,7 +1170,6 @@ HRESULT Debugger::CheckInitModuleTable()
 
         if (pModules == NULL)
         {
-            _ASSERTE(m_pModules != NULL);
             return (E_OUTOFMEMORY);
         }
 

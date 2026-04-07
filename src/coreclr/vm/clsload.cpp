@@ -422,7 +422,9 @@ TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoad
     }
     else
     {
-        _ASSERTE(!typeHnd.IsNull());
+#ifndef DACCESS_COMPILE
+        _ASSERTE(typeHnd.CheckLoadLevel(level));
+#endif
     }
 
     return(typeHnd);

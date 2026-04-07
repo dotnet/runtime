@@ -951,7 +951,7 @@ void __stdcall UpdateGenerationBounds()
 
         if (s_currentGenerationTable == nullptr)
         {
-#ifdef _DEBUG
+#ifdef ENABLE_CONTRACTS_IMPL
             LONG result = InterlockedDecrement(&s_generationTableWriterCount);
             _ASSERTE(result == 0);
 #endif
@@ -960,7 +960,7 @@ void __stdcall UpdateGenerationBounds()
         s_currentGenerationTable->Refresh();
     }
 #endif // PROFILING_SUPPORTED
-#ifdef _DEBUG
+#ifdef ENABLE_CONTRACTS_IMPL
     {
         LONG result = InterlockedDecrement(&s_generationTableWriterCount);
         _ASSERTE(result == 0);

@@ -755,7 +755,7 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
     }
 
     _ASSERTE(pImage->m_pLayouts[IMAGE_FLAT] != NULL);
-    _ASSERTE(dac_cast<PTR_PEImage>(pImage.Extract())->HasLoadedLayout());
+    _ASSERTE(pImage->HasLoadedLayout());
     return dac_cast<PTR_PEImage>(pImage.Extract());
 }
 #endif // !TARGET_UNIX
