@@ -109,7 +109,7 @@ T_CONTEXT * GetContextBufferFromHandle(StackWalkHandle pSFIHandle)
 
 
 // Create and return a stackwalker on the specified thread.
-HRESULT DacDbiInterfaceImpl::CreateStackWalk(VMPTR_Thread vmThread, DT_CONTEXT * pInternalContextBuffer, OUT StackWalkHandle * ppSFIHandle)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CreateStackWalk(VMPTR_Thread vmThread, DT_CONTEXT * pInternalContextBuffer, OUT StackWalkHandle * ppSFIHandle)
 {
     DD_ENTER_MAY_THROW;
 
@@ -144,7 +144,7 @@ HRESULT DacDbiInterfaceImpl::CreateStackWalk(VMPTR_Thread vmThread, DT_CONTEXT *
 }
 
 // Delete the stackwalk object allocated by code:AllocateStackwalk
-HRESULT DacDbiInterfaceImpl::DeleteStackWalk(StackWalkHandle ppSFIHandle)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::DeleteStackWalk(StackWalkHandle ppSFIHandle)
 {
     HRESULT hr = S_OK;
     EX_TRY
@@ -156,7 +156,7 @@ HRESULT DacDbiInterfaceImpl::DeleteStackWalk(StackWalkHandle ppSFIHandle)
 }
 
 // Get the CONTEXT of the current frame at which the stackwalker is stopped.
-HRESULT DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackWalkHandle pSFIHandle, DT_CONTEXT * pContext)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackWalkHandle pSFIHandle, DT_CONTEXT * pContext)
 {
     DD_ENTER_MAY_THROW;
 
@@ -189,7 +189,7 @@ void DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackFrameIterator * pIter,
 
 
 // Set the stackwalker to the specified CONTEXT.
-HRESULT DacDbiInterfaceImpl::SetStackWalkCurrentContext(VMPTR_Thread vmThread, StackWalkHandle pSFIHandle, CorDebugSetContextFlag flag, DT_CONTEXT * pContext)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetStackWalkCurrentContext(VMPTR_Thread vmThread, StackWalkHandle pSFIHandle, CorDebugSetContextFlag flag, DT_CONTEXT * pContext)
 {
     DD_ENTER_MAY_THROW;
 
@@ -229,7 +229,7 @@ HRESULT DacDbiInterfaceImpl::SetStackWalkCurrentContext(VMPTR_Thread vmThread, S
 
 
 // Unwind the stackwalker to the next frame.
-HRESULT DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle, OUT BOOL * pResult)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
 
@@ -301,7 +301,8 @@ HRESULT DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle, OU
                     MethodDesc *pMD = pIter->m_crawl.GetFunction();
 
                     // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
-                    if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
+                    // and System.Runtime.StackFrameIterator.*
+                    if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
                     {
                         continue;
                     }
@@ -347,7 +348,7 @@ bool g_fSkipStackCheckInit = false;
 
 // Check whether the specified CONTEXT is valid.  The only check we perform right now is whether the
 // SP in the specified CONTEXT is in the stack range of the thread.
-HRESULT DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       vmThread,
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       vmThread,
                                           const DT_CONTEXT * pContext)
 {
     DD_ENTER_MAY_THROW;
@@ -385,7 +386,7 @@ HRESULT DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       vmThread,
 }
 
 // Retrieve information about the current frame from the stackwalker.
-HRESULT DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL DebuggerIPCE_STRData * pFrameData, OUT FrameType * pRetVal)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHandle, OPTIONAL DebuggerIPCE_STRData * pFrameData, OUT FrameType * pRetVal)
 {
     DD_ENTER_MAY_THROW;
 
@@ -490,7 +491,7 @@ HRESULT DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(StackWalkHandle pSFIHa
 //    Internal frames are interesting if they are not of type STUBFRAME_NONE.
 //
 
-HRESULT DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread, OUT ULONG32 * pRetVal)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread, OUT ULONG32 * pRetVal)
 {
     DD_ENTER_MAY_THROW;
 
@@ -517,6 +518,16 @@ HRESULT DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread, OUT
                     continue;
                 }
             }
+
+#ifdef FEATURE_INTERPRETER
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                // Skip InterpreterFrame
+                pFrame = pFrame->Next();
+                continue;
+            }
+#endif // FEATURE_INTERPRETER
+
             CorDebugInternalFrameType ift = GetInternalFrameType(pFrame);
             if (ift != STUBFRAME_NONE)
             {
@@ -540,7 +551,7 @@ HRESULT DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread, OUT
 //    pUserData  - user-defined custom data to be passed to the callback
 //
 
-HRESULT DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread vmThread, FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread vmThread, FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW;
 
@@ -573,6 +584,16 @@ HRESULT DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread vmThread, FP_I
                     continue;
                 }
             }
+
+#ifdef FEATURE_INTERPRETER
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                // Skip InterpreterFrame
+                pFrame = pFrame->Next();
+                continue;
+            }
+#endif // FEATURE_INTERPRETER
+
             // check if the internal frame is interesting
             frameData.stubFrame.frameType = GetInternalFrameType(pFrame);
             if (frameData.stubFrame.frameType != STUBFRAME_NONE)
@@ -582,42 +603,6 @@ HRESULT DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread vmThread, FP_I
                 frameData.vmCurrentAppDomainToken.SetHostPtr(pAppDomain);
 
                 MethodDesc * pMD = pFrame->GetFunction();
-    #if defined(FEATURE_COMINTEROP)
-                if (frameData.stubFrame.frameType == STUBFRAME_U2M)
-                {
-                    _ASSERTE(pMD == NULL);
-
-                    // U2M transition frame generally don't store the target MD because we know what the target
-                    // is by looking at the callee stack frame.  However, for reverse COM interop, we can try
-                    // to get the MD for the interface.
-                    //
-                    // Note that some reverse COM interop cases don't have an intermediate interface MD, so
-                    // pMD may still be NULL.
-                    //
-                    // Even if there is an MD on the ComMethodFrame, it could be in a different appdomain than
-                    // the ComMethodFrame itself.  The only known scenario is a cross-appdomain reverse COM
-                    // interop call.  We need to check for this case.  The end result is that GetFunction() and
-                    // GetFunctionToken() on ICDInternalFrame will return NULL.
-
-                    // Minidumps without full memory don't guarantee to capture the CCW since we can do without
-                    // it.  In this case, pMD will remain NULL.
-                    EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
-                    {
-                        if (pFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame)
-                        {
-                            ComMethodFrame * pCOMFrame = dac_cast<PTR_ComMethodFrame>(pFrame);
-                            PTR_VOID pUnkStackSlot     = pCOMFrame->GetPointerToArguments();
-                            PTR_IUnknown pUnk          = dac_cast<PTR_IUnknown>(*dac_cast<PTR_TADDR>(pUnkStackSlot));
-                            ComCallWrapper * pCCW      = ComCallWrapper::GetWrapperFromIP(pUnk);
-
-                            ComCallMethodDesc * pCMD = NULL;
-                            pCMD = dac_cast<PTR_ComCallMethodDesc>(pCOMFrame->ComMethodFrame::GetDatum());
-                            pMD  = pCMD->GetInterfaceMethodDesc();
-                        }
-                    }
-                    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
-                }
-    #endif // FEATURE_COMINTEROP
 
                 Module *     pModule = (pMD ? pMD->GetModule() : NULL);
                 DomainAssembly * pDomainAssembly = (pModule ? pModule->GetDomainAssembly() : NULL);
@@ -653,7 +638,7 @@ HRESULT DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread vmThread, FP_I
 
 // Given the FramePointer of the parent frame and the FramePointer of the current frame,
 // check if the current frame is the parent frame.
-HRESULT DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePointer fpParent, OUT BOOL * pResult)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePointer fpParent, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
 
@@ -674,7 +659,7 @@ HRESULT DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, Frame
 }
 
 // Return the stack parameter size of the given method.
-HRESULT DacDbiInterfaceImpl::GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal)
 {
     DD_ENTER_MAY_THROW;
 
@@ -692,7 +677,7 @@ HRESULT DacDbiInterfaceImpl::GetStackParameterSize(CORDB_ADDRESS controlPC, OUT 
 }
 
 // Return the FramePointer of the current frame at which the stackwalker is stopped.
-HRESULT DacDbiInterfaceImpl::GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal)
 {
     DD_ENTER_MAY_THROW;
 
@@ -759,7 +744,7 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
 
 // Return TRUE if the specified CONTEXT is the CONTEXT of the leaf frame.
 // @dbgtodo  filter CONTEXT - Currently we check for the filter CONTEXT first.
-HRESULT DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread, const DT_CONTEXT * pContext, OUT BOOL * pResult)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread, const DT_CONTEXT * pContext, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
 
@@ -779,7 +764,7 @@ HRESULT DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread, const DT_CONTEXT
 
 // This is a simple helper function to convert a CONTEXT to a DebuggerREGDISPLAY.  We need to do this
 // inside DDI because the RS has no notion of REGDISPLAY.
-HRESULT DacDbiInterfaceImpl::ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive)
 {
     DD_ENTER_MAY_THROW;
 
@@ -881,7 +866,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         pFrameData->v.fVarArgs = pMD->IsVarArg();
 
         // Check if this is a NoMetadata method or if the method should be hidden.
-        // These methods should not be visible in the debugger both for convenience and 
+        // These methods should not be visible in the debugger both for convenience and
         // because they don't have backing metadata. For more information see comments in
         // MethodDesc::IsNoMetadata and MethodDesc::IsDiagnosticsHidden.
         pFrameData->v.fNoMetadata = pMD->IsNoMetadata() || pMD->IsDiagnosticsHidden();
@@ -1396,7 +1381,7 @@ BOOL DacDbiInterfaceImpl::UnwindRuntimeStackFrame(StackFrameIterator * pIter)
 //    Return true iff TS_SyncSuspended or TS_Hijacked is set on the specified thread.
 //
 
-HRESULT DacDbiInterfaceImpl::IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT bool * pResult)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
 
@@ -1408,17 +1393,17 @@ HRESULT DacDbiInterfaceImpl::IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, 
         Thread::ThreadState ts = pThread->GetSnapshotState();
         if ((ts & Thread::TS_SyncSuspended) != 0)
         {
-            *pResult = true;
+            *pResult = TRUE;
         }
     #ifdef FEATURE_HIJACK
         else if ((ts & Thread::TS_Hijacked) != 0)
         {
-            *pResult = true;
+            *pResult = TRUE;
         }
     #endif
         else
         {
-            *pResult = false;
+            *pResult = FALSE;
         }
     }
     EX_CATCH_HRESULT(hr);

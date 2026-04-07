@@ -42,6 +42,7 @@ public enum DataType
     Module,
     ModuleLookupMap,
     AppDomain,
+    Debugger,
     SystemDomain,
     Assembly,
     LoaderAllocator,
@@ -89,6 +90,7 @@ public enum DataType
     Array,
     SyncBlock,
     SyncTableEntry,
+    ObjectHeader,
     InteropSyncBlockInfo,
     SyncBlockCache,
     InstantiatedMethodDesc,
@@ -104,6 +106,9 @@ public enum DataType
     RangeSection,
     RealCodeHeader,
     CodeHeapListNode,
+    CodeHeap,
+    LoaderCodeHeap,
+    HostCodeHeap,
     MethodDescVersioningState,
     ILCodeVersioningState,
     NativeCodeVersionNode,
@@ -158,7 +163,9 @@ public enum DataType
     RCW,
     CtxEntry,
     InterfaceEntry,
-
+    ComInterfaceEntry,
+    InternalComInterfaceDispatch,
+    AuxiliarySymbolInfo,
 
     /* GC Data Types */
 
@@ -171,4 +178,6 @@ public enum DataType
     HandleTableBucket,
     HandleTable,
     TableSegment,
+    CardTableInfo,
+    RegionFreeList,
 }

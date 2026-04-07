@@ -23,10 +23,6 @@
 Commonly Used Types
 System.Speech.Synthesis.SpeechSynthesizer
 System.Speech.Recognition.SpeechRecognizer</PackageDescription>
-
-    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
-    <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -39,6 +35,7 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\StringPolyfills.cs" Link="Common\System\StringPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StreamPolyfills.cs" Link="Common\Polyfills\StreamPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

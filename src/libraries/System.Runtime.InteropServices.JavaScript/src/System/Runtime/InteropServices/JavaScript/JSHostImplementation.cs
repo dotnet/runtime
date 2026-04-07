@@ -109,25 +109,23 @@ namespace System.Runtime.InteropServices.JavaScript
         public static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types, string? functionName, string? moduleName)
         {
             int argsCount = types.Length - 1;
-            int size = JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + ((argsCount + 2) * sizeof(JSFunctionBinding.JSBindingType));
+            int size = checked(JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + ((argsCount + 2) * sizeof(JSFunctionBinding.JSBindingType)));
 
             int functionNameBytes = 0;
             int functionNameOffset = 0;
             if (functionName != null)
             {
                 functionNameOffset = size;
-                size += 4;
-                functionNameBytes = functionName.Length * 2;
-                size += functionNameBytes;
+                functionNameBytes = checked(functionName.Length * 2);
+                size = checked(size + 4 + functionNameBytes);
             }
             int moduleNameBytes = 0;
             int moduleNameOffset = 0;
             if (moduleName != null)
             {
                 moduleNameOffset = size;
-                size += 4;
-                moduleNameBytes = moduleName.Length * 2;
-                size += moduleNameBytes;
+                moduleNameBytes = checked(moduleName.Length * 2);
+                size = checked(size + 4 + moduleNameBytes);
             }
 
             // this is never unallocated

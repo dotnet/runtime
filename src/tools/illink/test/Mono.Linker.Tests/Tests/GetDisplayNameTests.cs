@@ -3,19 +3,20 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Cecil;
 using Mono.Linker;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.TestCasesRunner;
-using NUnit.Framework;
 
 namespace Mono.Linker.Tests
 {
-    [NonParallelizable]
-    [TestFixture]
+    [DoNotParallelize]
+    [TestClass]
     public class GetDisplayNameTests
     {
-        [TestCaseSource(nameof(GetMemberAssertions), new object[] { typeof(GetDisplayNameTests) })]
+        [TestMethod]
+        [DynamicData(nameof(GetMemberAssertions), new object[] { typeof(GetDisplayNameTests) })]
         public void TestGetDisplayName(IMemberDefinition member, CustomAttribute customAttribute)
         {
             // The only intention with these tests is to check that the language elements that could
@@ -42,7 +43,7 @@ namespace Mono.Linker.Tests
             }
         }
 
-        public static IEnumerable<TestCaseData> GetMemberAssertions(Type type) => MemberAssertionsCollector.GetMemberAssertionsData(type);
+        public static IEnumerable<TestDataRow<(IMemberDefinition, CustomAttribute)>> GetMemberAssertions(Type type) => MemberAssertionsCollector.GetMemberAssertionsData(type);
 
         [DisplayName("Mono.Linker.Tests.GetDisplayNameTests.Field")]
         public int Field;
@@ -216,17 +217,18 @@ namespace Mono.Linker.Tests
     }
 }
 
-[TestFixture]
+[TestClass]
 public class GetDisplayNameTestsGlobalScope
 {
-    [TestCaseSource(nameof(GetMemberAssertions), new object[] { typeof(global::GetDisplayNameTestsGlobalScope) })]
+    [TestMethod]
+    [DynamicData(nameof(GetMemberAssertions), new object[] { typeof(global::GetDisplayNameTestsGlobalScope) })]
     public void TestGetDisplayName(IMemberDefinition member, CustomAttribute customAttribute)
     {
         var expectedDisplayName = (string)customAttribute.ConstructorArguments[0].Value;
         Assert.AreEqual(expectedDisplayName, (member as MemberReference).GetDisplayName());
     }
 
-    public static IEnumerable<TestCaseData> GetMemberAssertions(Type type) => MemberAssertionsCollector.GetMemberAssertionsData(type);
+    public static IEnumerable<TestDataRow<(IMemberDefinition, CustomAttribute)>> GetMemberAssertions(Type type) => MemberAssertionsCollector.GetMemberAssertionsData(type);
 
     [DisplayName("GetDisplayNameTestsGlobalScope.TypeInGlobalScope")]
     public class TypeInGlobalScope

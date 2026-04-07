@@ -270,7 +270,7 @@ namespace System.Net
             StreamWriter writer = new StreamWriter(ms, encoding, 256);
             writer.Write("HTTP/1.1 {0} ", _statusCode); // "1.1" matches Windows implementation, which ignores the response version
             writer.Flush();
-            byte[] statusDescriptionBytes = WebHeaderEncoding.GetBytes(StatusDescription);
+            byte[] statusDescriptionBytes = Encoding.Latin1.GetBytes(StatusDescription);
             ms.Write(statusDescriptionBytes, 0, statusDescriptionBytes.Length);
             writer.Write("\r\n");
 

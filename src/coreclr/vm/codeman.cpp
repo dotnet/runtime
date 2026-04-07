@@ -95,8 +95,9 @@ static RtlAddGrowableFunctionTableFnPtr pRtlAddGrowableFunctionTable;
 static RtlGrowFunctionTableFnPtr pRtlGrowFunctionTable;
 static RtlDeleteGrowableFunctionTableFnPtr pRtlDeleteGrowableFunctionTable;
 
-static bool s_publishingActive;         // Publishing to ETW is turned on
-static Crst* s_pUnwindInfoTableLock;    // lock protects all public UnwindInfoTable functions
+static bool s_publishingActive;              // Publishing to ETW is turned on
+static Crst* s_pUnwindInfoTablePublishLock;  // Protects main table, OS registration, and lazy init
+static Crst* s_pUnwindInfoTablePendingLock;  // Protects pending buffer only
 
 /****************************************************************************/
 // initialize the entry points for new win8 unwind info publishing functions.
@@ -133,11 +134,19 @@ bool InitUnwindFtns()
 }
 
 /****************************************************************************/
-UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG size)
+UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(s_pUnwindInfoTableLock->OwnedByCurrentThread());
+    _ASSERTE(s_pUnwindInfoTablePublishLock->OwnedByCurrentThread());
     _ASSERTE((rangeEnd - rangeStart) <= 0x7FFFFFFF);
+
+    // We can choose the average method size estimate dynamically based on past experience
+    // 128 is the estimated size of an average method, so we can accurately predict
+    // how many RUNTIME_FUNCTION entries are in each chunk we allocate.
+    ULONG size = (ULONG) ((rangeEnd - rangeStart) / 128) + 1;
+
+    // To ensure we test the growing logic in debug builds, make the size much smaller.
+    INDEBUG(size = size / 4 + 1);
 
     cTableCurCount = 0;
     cTableMaxCount = size;
@@ -146,6 +155,7 @@ UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG
     iRangeEnd = rangeEnd;
     hHandle = NULL;
     pTable = new T_RUNTIME_FUNCTION[cTableMaxCount];
+    cPendingCount = 0;
 }
 
 /****************************************************************************/
@@ -166,30 +176,19 @@ UnwindInfoTable::~UnwindInfoTable()
 /*****************************************************************************/
 void UnwindInfoTable::Register()
 {
-    _ASSERTE(s_pUnwindInfoTableLock->OwnedByCurrentThread());
-    EX_TRY
+    _ASSERTE(s_pUnwindInfoTablePublishLock->OwnedByCurrentThread());
+
+    NTSTATUS ret = pRtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
+    if (ret != STATUS_SUCCESS)
     {
-        hHandle = NULL;
-        NTSTATUS ret = pRtlAddGrowableFunctionTable(&hHandle, pTable, cTableCurCount, cTableMaxCount, iRangeStart, iRangeEnd);
-        if (ret != STATUS_SUCCESS)
-        {
-            _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
-            hHandle = NULL;
-            STRESS_LOG3(LF_JIT, LL_ERROR, "UnwindInfoTable::Register ERROR %x creating table [%p, %p]\n", ret, iRangeStart, iRangeEnd);
-        }
-        else
-        {
-            STRESS_LOG3(LF_JIT, LL_INFO100, "UnwindInfoTable::Register Handle: %p [%p, %p]\n", hHandle, iRangeStart, iRangeEnd);
-        }
-    }
-    EX_CATCH
-    {
-        hHandle = NULL;
-        STRESS_LOG2(LF_JIT, LL_ERROR, "UnwindInfoTable::Register Exception while creating table [%p, %p]\n",
-            iRangeStart, iRangeEnd);
         _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
+        hHandle = NULL;
+        STRESS_LOG3(LF_JIT, LL_ERROR, "UnwindInfoTable::Register ERROR %x creating table [%p, %p]\n", ret, iRangeStart, iRangeEnd);
     }
-    EX_END_CATCH
+    else
+    {
+        STRESS_LOG3(LF_JIT, LL_INFO100, "UnwindInfoTable::Register Handle: %p [%p, %p]\n", hHandle, iRangeStart, iRangeEnd);
+    }
 }
 
 /*****************************************************************************/
@@ -205,11 +204,10 @@ void UnwindInfoTable::UnRegister()
 }
 
 /*****************************************************************************/
-// Add 'data' to the linked list whose head is pointed at by 'unwindInfoPtr'
+// Add 'data' entries to the pending buffer for later publication to the OS.
+// When the buffer is full, entries are flushed under s_pUnwindInfoTablePublishLock.
 //
-/* static */
-void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_RUNTIME_FUNCTION data,
-                                          TADDR rangeStart, TADDR rangeEnd)
+void UnwindInfoTable::AddToUnwindInfoTable(PT_RUNTIME_FUNCTION data, int count)
 {
     CONTRACTL
     {
@@ -217,111 +215,169 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-    _ASSERTE(data->BeginAddress <= RUNTIME_FUNCTION__EndAddress(data, rangeStart));
-    _ASSERTE(RUNTIME_FUNCTION__EndAddress(data, rangeStart) <=  (rangeEnd-rangeStart));
-    _ASSERTE(unwindInfoPtr != NULL);
 
-    if (!s_publishingActive)
-        return;
+    _ASSERTE(s_publishingActive);
 
-    CrstHolder ch(s_pUnwindInfoTableLock);
-
-    UnwindInfoTable* unwindInfo = *unwindInfoPtr;
-    // was the original list null, If so lazy initialize.
-    if (unwindInfo == NULL)
+    for (int i = 0; i < count; )
     {
-        // We can choose the average method size estimate dynamically based on past experience
-        // 128 is the estimated size of an average method, so we can accurately predict
-        // how many RUNTIME_FUNCTION entries are in each chunk we allocate.
-
-        ULONG size = (ULONG) ((rangeEnd - rangeStart) / 128) + 1;
-
-        // To ensure the test the growing logic in debug code make the size much smaller.
-        INDEBUG(size = size / 4 + 1);
-        unwindInfo = (PTR_UnwindInfoTable)new UnwindInfoTable(rangeStart, rangeEnd, size);
-        unwindInfo->Register();
-        *unwindInfoPtr = unwindInfo;
-    }
-    _ASSERTE(unwindInfo != NULL);        // If new had failed, we would have thrown OOM
-    _ASSERTE(unwindInfo->cTableCurCount <= unwindInfo->cTableMaxCount);
-    _ASSERTE(unwindInfo->iRangeStart == rangeStart);
-    _ASSERTE(unwindInfo->iRangeEnd == rangeEnd);
-
-    // Means we had a failure publishing to the OS, in this case we give up
-    if (unwindInfo->hHandle == NULL)
-        return;
-
-    // Check for the fast path: we are adding the end of an UnwindInfoTable with space
-    if (unwindInfo->cTableCurCount < unwindInfo->cTableMaxCount)
-    {
-        if (unwindInfo->cTableCurCount == 0 ||
-            unwindInfo->pTable[unwindInfo->cTableCurCount-1].BeginAddress < data->BeginAddress)
         {
-            // Yeah, we can simply add to the end of table and we are done!
-            unwindInfo->pTable[unwindInfo->cTableCurCount] = *data;
-            unwindInfo->cTableCurCount++;
+            CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
+            while (i < count && cPendingCount < cPendingMaxCount)
+            {
+                _ASSERTE(data[i].BeginAddress <= RUNTIME_FUNCTION__EndAddress(&data[i], iRangeStart));
+                _ASSERTE(RUNTIME_FUNCTION__EndAddress(&data[i], iRangeStart) <= (iRangeEnd - iRangeStart));
 
-            // Add to the function table
-            pRtlGrowFunctionTable(unwindInfo->hHandle, unwindInfo->cTableCurCount);
+                pendingTable[cPendingCount++] = data[i];
 
-            STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] ADDING 0x%p TO END, now 0x%x entries\n",
-                unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd,
-                data->BeginAddress, unwindInfo->cTableCurCount);
-            return;
+                STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] BUFFERED 0x%x, pending 0x%x\n",
+                    hHandle, iRangeStart, iRangeEnd,
+                    data[i].BeginAddress, cPendingCount);
+                i++;
+            }
+        }
+        // Flush any pending entries if we run out of space, or when we are at the end
+        // of the batch so the OS can unwind this method immediately.
+        FlushPendingEntries();
+    }
+}
+
+/*****************************************************************************/
+void UnwindInfoTable::FlushPendingEntries()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    // Free the old table outside the lock
+    NewArrayHolder<T_RUNTIME_FUNCTION> oldPTable;
+
+    CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
+
+    if (hHandle == NULL)
+    {
+        // If hHandle is null, it means Register() failed. Skip flushing to avoid calling
+        // RtlGrowFunctionTable with a null handle.
+        CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
+        cPendingCount = 0;
+        return;
+    }
+
+    // Grab the pending entries under the pending lock, then release it so
+    // other threads can keep accumulating new entries while we publish.
+    T_RUNTIME_FUNCTION localPending[cPendingMaxCount];
+    ULONG localPendingCount;
+    {
+        CrstHolder pendingLock(s_pUnwindInfoTablePendingLock);
+        localPendingCount = cPendingCount;
+        memcpy(localPending, pendingTable, cPendingCount * sizeof(T_RUNTIME_FUNCTION));
+        cPendingCount = 0;
+        INDEBUG( memset(pendingTable, 0xcc, sizeof(pendingTable)); )
+    }
+
+    if (localPendingCount == 0)
+        return;
+
+    // Sort the pending entries by BeginAddress.
+    // Use a simple insertion sort since cPendingMaxCount is small (32).
+    static_assert(cPendingMaxCount == 32,
+        "cPendingMaxCount was updated and might be too large for insertion sort, consider using a better algorithm");
+    for (ULONG i = 1; i < localPendingCount; i++)
+    {
+        T_RUNTIME_FUNCTION key = localPending[i];
+        ULONG j = i;
+        while (j > 0 && localPending[j - 1].BeginAddress > key.BeginAddress)
+        {
+            localPending[j] = localPending[j - 1];
+            j--;
+        }
+        localPending[j] = key;
+    }
+
+    // Fast path: if all pending entries can be appended in order with room to spare,
+    // we can just append and call RtlGrowFunctionTable.
+    if (cTableCurCount + localPendingCount <= cTableMaxCount
+        && (cTableCurCount == 0 || pTable[cTableCurCount - 1].BeginAddress < localPending[0].BeginAddress))
+    {
+        memcpy(&pTable[cTableCurCount], localPending, localPendingCount * sizeof(T_RUNTIME_FUNCTION));
+        cTableCurCount += localPendingCount;
+        pRtlGrowFunctionTable(hHandle, cTableCurCount);
+
+        STRESS_LOG5(LF_JIT, LL_INFO1000, "FlushPendingEntries Handle: %p [%p, %p] APPENDED 0x%x entries, now 0x%x\n",
+            hHandle, iRangeStart, iRangeEnd, localPendingCount, cTableCurCount);
+        return;
+    }
+
+    // Merge main table and pending entries.
+    // Calculate the new table size: live entries from main table + all pending entries
+    ULONG liveCount = cTableCurCount - cDeletedEntries;
+    ULONG newCount = liveCount + localPendingCount;
+    ULONG desiredSpace = newCount * 5 / 4 + 1;  // Increase by 20%
+
+    STRESS_LOG7(LF_JIT, LL_INFO100, "FlushPendingEntries Handle: %p [%p, %p] Merging 0x%x live + 0x%x pending into 0x%x max, from 0x%x\n",
+        hHandle, iRangeStart, iRangeEnd, liveCount, localPendingCount, desiredSpace, cTableMaxCount);
+
+    NewArrayHolder<T_RUNTIME_FUNCTION> newPTable(new T_RUNTIME_FUNCTION[desiredSpace]);
+
+    // Merge-sort the main table and pending buffer into newPTable.
+    ULONG mainIdx = 0;
+    ULONG pendIdx = 0;
+    ULONG toIdx = 0;
+
+    while (mainIdx < cTableCurCount && pendIdx < localPendingCount)
+    {
+        // Skip deleted entries in main table
+        if (pTable[mainIdx].UnwindData == 0)
+        {
+            mainIdx++;
+            continue;
+        }
+
+        if (localPending[pendIdx].BeginAddress < pTable[mainIdx].BeginAddress)
+        {
+            newPTable[toIdx++] = localPending[pendIdx++];
+        }
+        else
+        {
+            newPTable[toIdx++] = pTable[mainIdx++];
         }
     }
 
-    // OK we need to rellocate the table and reregister.  First figure out our 'desiredSpace'
-    // We could imagine being much more efficient for 'bulk' updates, but we don't try
-    // because we assume that this is rare and we want to keep the code simple
-
-    ULONG usedSpace = unwindInfo->cTableCurCount - unwindInfo->cDeletedEntries;
-    ULONG desiredSpace = usedSpace * 5 / 4 + 1;        // Increase by 20%
-    // Be more aggressive if we used all of our space;
-    if (usedSpace == unwindInfo->cTableMaxCount)
-        desiredSpace = usedSpace * 3 / 2 + 1;        // Increase by 50%
-
-    STRESS_LOG7(LF_JIT, LL_INFO100, "AddToUnwindTable Handle: %p [%p, %p] SLOW Realloc Cnt 0x%x Max 0x%x NewMax 0x%x, Adding %x\n",
-        unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd,
-        unwindInfo->cTableCurCount, unwindInfo->cTableMaxCount, desiredSpace, data->BeginAddress);
-
-    UnwindInfoTable* newTab = new UnwindInfoTable(unwindInfo->iRangeStart, unwindInfo->iRangeEnd, desiredSpace);
-
-    // Copy in the entries, removing deleted entries and adding the new entry wherever it belongs
-    int toIdx = 0;
-    bool inserted = false;    // Have we inserted 'data' into the table
-    for(ULONG fromIdx = 0; fromIdx < unwindInfo->cTableCurCount; fromIdx++)
+    while (mainIdx < cTableCurCount)
     {
-        if (!inserted && data->BeginAddress < unwindInfo->pTable[fromIdx].BeginAddress)
-        {
-            STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at MID position 0x%x\n", toIdx);
-            newTab->pTable[toIdx++] = *data;
-            inserted = true;
-        }
-        if (unwindInfo->pTable[fromIdx].UnwindData != 0)	// A 'non-deleted' entry
-            newTab->pTable[toIdx++] = unwindInfo->pTable[fromIdx];
+        if (pTable[mainIdx].UnwindData != 0)
+            newPTable[toIdx++] = pTable[mainIdx];
+        mainIdx++;
     }
-    if (!inserted)
+
+    while (pendIdx < localPendingCount)
     {
-        STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at END position 0x%x\n", toIdx);
-        newTab->pTable[toIdx++] = *data;
+        newPTable[toIdx++] = localPending[pendIdx++];
     }
-    newTab->cTableCurCount = toIdx;
-    STRESS_LOG2(LF_JIT, LL_INFO100, "AddToUnwindTable New size 0x%x max 0x%x\n",
-        newTab->cTableCurCount, newTab->cTableMaxCount);
-    _ASSERTE(newTab->cTableCurCount <= newTab->cTableMaxCount);
 
-    // Unregister the old table
-    *unwindInfoPtr = 0;
-    unwindInfo->UnRegister();
+    _ASSERTE(toIdx == newCount);
+    _ASSERTE(toIdx <= desiredSpace);
 
-    // Note that there is a short time when we are not publishing...
+    oldPTable = pTable;
 
-    // Register the new table
-    newTab->Register();
-    *unwindInfoPtr = newTab;
+    // The OS growable function table API (RtlGrowFunctionTable) only supports
+    // appending sorted entries, it cannot shrink, reorder, or remove entries.
+    // We have to tear down the old OS registration and create a new one
+    // combining the old and pending entries while skipping the deleted ones.
+    // We should keep the gap between UnRegister and Register as short as possible,
+    // as OS stack walks will have no unwind info for this range during that
+    // window. The new table is fully built before UnRegister to minimize this gap.
 
-    delete unwindInfo;
+    UnRegister();
+
+    pTable = newPTable.Extract();
+    cTableCurCount = toIdx;
+    cTableMaxCount = desiredSpace;
+    cDeletedEntries = 0;
+
+    Register();
 }
 
 /*****************************************************************************/
@@ -337,15 +393,21 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 
     if (!s_publishingActive)
         return;
-    CrstHolder ch(s_pUnwindInfoTableLock);
 
-    UnwindInfoTable* unwindInfo = *unwindInfoPtr;
-    if (unwindInfo != NULL)
+    UnwindInfoTable* unwindInfo = VolatileLoad(unwindInfoPtr);
+    if (unwindInfo == NULL)
+        return;
+
+    DWORD relativeEntryPoint = (DWORD)(entryPoint - baseAddress);
+    STRESS_LOG3(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removing %p BaseAddress %p rel %x\n",
+        entryPoint, baseAddress, relativeEntryPoint);
+
+    // Check the main (published) table under the publish lock.
+    // We don't need to check the pending buffer because the method should have already been published
+    // before it can be removed.
     {
-        DWORD relativeEntryPoint = (DWORD)(entryPoint - baseAddress);
-        STRESS_LOG3(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removing %p BaseAddress %p rel %x\n",
-            entryPoint, baseAddress, relativeEntryPoint);
-        for(ULONG i = 0; i < unwindInfo->cTableCurCount; i++)
+        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
+        for (ULONG i = 0; i < unwindInfo->cTableCurCount; i++)
         {
             if (unwindInfo->pTable[i].BeginAddress <= relativeEntryPoint &&
                 relativeEntryPoint < RUNTIME_FUNCTION__EndAddress(&unwindInfo->pTable[i], unwindInfo->iRangeStart))
@@ -358,6 +420,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
             }
         }
     }
+
     STRESS_LOG2(LF_JIT, LL_WARNING, "RemoveFromUnwindInfoTable COULD NOT FIND %p BaseAddress %p\n",
         entryPoint, baseAddress);
 }
@@ -366,20 +429,33 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 // Publish the stack unwind data 'data' which is relative 'baseAddress'
 // to the operating system in a way ETW stack tracing can use.
 
-/* static */ void UnwindInfoTable::PublishUnwindInfoForMethod(TADDR baseAddress, PT_RUNTIME_FUNCTION unwindInfo, int unwindInfoCount)
+/* static */ void UnwindInfoTable::PublishUnwindInfoForMethod(TADDR baseAddress, PT_RUNTIME_FUNCTION methodUnwindData, int methodUnwindDataCount)
 {
     STANDARD_VM_CONTRACT;
     if (!s_publishingActive)
         return;
 
-    TADDR entry = baseAddress + unwindInfo->BeginAddress;
+    TADDR entry = baseAddress + methodUnwindData->BeginAddress;
     RangeSection * pRS = ExecutionManager::FindCodeRange(entry, ExecutionManager::GetScanFlags());
     _ASSERTE(pRS != NULL);
-    if (pRS != NULL)
+
+    UnwindInfoTable* unwindInfo = VolatileLoad(&pRS->_pUnwindInfoTable);
+    if (unwindInfo == NULL)
     {
-        for(int i = 0; i < unwindInfoCount; i++)
-            AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, &unwindInfo[i], pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
+        CrstHolder publishLock(s_pUnwindInfoTablePublishLock);
+        if (pRS->_pUnwindInfoTable == NULL)
+        {
+            unwindInfo = new UnwindInfoTable(pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
+            unwindInfo->Register();
+            VolatileStore(&pRS->_pUnwindInfoTable, unwindInfo);
+        }
+        else
+        {
+            unwindInfo = pRS->_pUnwindInfoTable;
+        }
     }
+
+    unwindInfo->AddToUnwindInfoTable(methodUnwindData, methodUnwindDataCount);
 }
 
 /*****************************************************************************/
@@ -430,13 +506,14 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     if (!InitUnwindFtns())
         return;
 
-    // Create the lock
-    s_pUnwindInfoTableLock = new Crst(CrstUnwindInfoTableLock);
+    // Create the locks
+    s_pUnwindInfoTablePublishLock = new Crst(CrstUnwindInfoTablePublishLock);
+    s_pUnwindInfoTablePendingLock = new Crst(CrstUnwindInfoTablePendingLock);
     s_publishingActive = true;
 }
 
 #else
-/* static */ void UnwindInfoTable::PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* unwindInfo, int unwindInfoCount)
+/* static */ void UnwindInfoTable::PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* methodUnwindData, int methodUnwindDataCount)
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -2191,6 +2268,7 @@ LoaderCodeHeap::LoaderCodeHeap(bool fMakeExecutable)
     m_cbMinNextPad(0)
 {
     WRAPPER_NO_CONTRACT;
+    m_heapType = CodeHeapType::LoaderCodeHeap;
 }
 
 void ThrowOutOfMemoryWithinRange()
@@ -6403,7 +6481,7 @@ unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& Method
 
     ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(MethodToken);
 
-    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->FindSection(ReadyToRunSectionType::ExceptionInfo);
+    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->GetExceptionInfoSection();
     if (pExceptionInfoDir == NULL)
         return 0;
 

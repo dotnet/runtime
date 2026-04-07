@@ -168,6 +168,15 @@
   <data name="ErrorCompositeKeyFileNotPublicKey" xml:space="preserve">
     <value>--CompositeKeyFile does not specify a valid public key</value>
   </data>
+  <data name="ReadyToRunHeaderSymbolName" xml:space="preserve">
+    <value>For custom hosts only: the name to use for the exported ReadyToRun header symbol (default: RTR_HEADER). Requires --composite.</value>
+  </data>
+  <data name="ErrorReadyToRunHeaderSymbolNameRequiresComposite" xml:space="preserve">
+    <value>Error: --rtr-header-symbol-name requires --composite.</value>
+  </data>
+  <data name="ErrorReadyToRunHeaderSymbolNameEmpty" xml:space="preserve">
+    <value>Error: --rtr-header-symbol-name must not be empty or whitespace.</value>
+  </data>
   <data name="InputFilesToCompile" xml:space="preserve">
     <value>Input file(s) to compile</value>
   </data>
@@ -434,5 +443,11 @@
   </data>
   <data name="ErrorContainerFormatRequiresComposite" xml:space="preserve">
     <value>Error: Producing ReadyToRun output in the {0} format is only supported for Composite ReadyToRun images.</value>
+  </data>
+  <data name="StripInliningInfoOption" xml:space="preserve">
+    <value>Strip inlining info from the R2R image.</value>
+  </data>
+  <data name="StripDebugInfoOption" xml:space="preserve">
+    <value>Strip debug info from the R2R image.</value>
   </data>
 </root>

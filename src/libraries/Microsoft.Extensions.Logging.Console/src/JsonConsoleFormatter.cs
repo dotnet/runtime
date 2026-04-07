@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -106,19 +105,7 @@ namespace Microsoft.Extensions.Logging.Console
                 var logMessageBuffer = ArrayPool<char>.Shared.Rent(Encoding.UTF8.GetMaxCharCount(messageBytes.Length));
                 try
                 {
- #if NET
                     var charsWritten = Encoding.UTF8.GetChars(messageBytes, logMessageBuffer);
- #else
-                    int charsWritten;
-                    unsafe
-                    {
-                        fixed (byte* messageBytesPtr = messageBytes)
-                        fixed (char* logMessageBufferPtr = logMessageBuffer)
-                        {
-                            charsWritten = Encoding.UTF8.GetChars(messageBytesPtr, messageBytes.Length, logMessageBufferPtr, logMessageBuffer.Length);
-                        }
-                    }
- #endif
                     textWriter.Write(logMessageBuffer, 0, charsWritten);
                 }
                 finally
@@ -184,11 +171,7 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteNumber(key, sbyteValue);
                     break;
                 case char charValue:
-#if NET
-                    writer.WriteString(key, MemoryMarshal.CreateSpan(ref charValue, 1));
-#else
-                    writer.WriteString(key, charValue.ToString());
-#endif
+                    writer.WriteString(key, [charValue]);
                     break;
                 case decimal decimalValue:
                     writer.WriteNumber(key, decimalValue);
