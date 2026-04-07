@@ -282,7 +282,6 @@ void SString::SetPreallocated(const WCHAR *string, COUNT_T count)
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(string, NULL_OK));
         PRECONDITION(CheckCount(count));
-        SS_POSTCONDITION(IsEmpty());
         GC_NOTRIGGER;
         NOTHROW;
         SUPPORTS_DAC_HOST_ONLY;
@@ -588,7 +587,6 @@ void SString::Truncate(const Iterator &i)
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckIteratorRange(i));
-        SS_POSTCONDITION(GetRawCount() == i - Begin());
         THROWS;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
@@ -1646,7 +1644,6 @@ void SString::LowerCase()
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckPointer(RETVAL));
         if (IsRepresentation(REPRESENTATION_UNICODE)) NOTHROW; else THROWS;
         SUPPORTS_DAC;
     }
@@ -1696,7 +1693,6 @@ void SString::UpperCase()
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckPointer(RETVAL));
         if (IsRepresentation(REPRESENTATION_UNICODE)) NOTHROW; else THROWS;
         GC_NOTRIGGER;
         SUPPORTS_DAC;

@@ -19,12 +19,11 @@
 
 //#define SSTRING_EXTRA_CHECKS
 #ifdef SSTRING_EXTRA_CHECKS
-#define SS_CONTRACT CONTRACT
-#define SS_CONTRACT_VOID CONTRACT_VOID
-#define SS_CONTRACT_END CONTRACT_END
+#define SS_CONTRACT(x) CONTRACTL
+#define SS_CONTRACT_VOID CONTRACTL
+#define SS_CONTRACT_END CONTRACTL_END
 #define SS_CONSTRUCTOR_CHECK CONSTRUCTOR_CHECK
 #define SS_PRECONDITION PRECONDITION
-#define SS_POSTCONDITION POSTCONDITION
 
 #else //SSTRING_EXTRA_CHECKS
 
@@ -33,8 +32,6 @@
 #define SS_CONTRACT_END CONTRACTL_END
 #define SS_CONSTRUCTOR_CHECK
 #define SS_PRECONDITION(x)
-#define SS_POSTCONDITION(x)
-//Do I need this instance check at all?
 
 #endif
 
@@ -75,7 +72,6 @@ inline SString::SString(void *buffer, COUNT_T size)
         SS_CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(buffer));
         PRECONDITION(CheckSize(size));
-        SS_POSTCONDITION(IsEmpty());
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC_HOST_ONLY;
@@ -103,7 +99,6 @@ inline SString::SString(const SString &s)
     {
         SS_CONSTRUCTOR_CHECK;
         PRECONDITION(s.Check());
-        SS_POSTCONDITION(Equals(s));
         THROWS;
         GC_NOTRIGGER;
     }
@@ -179,8 +174,6 @@ inline SString::SString(const SString &s, const CIterator &i, COUNT_T count)
         PRECONDITION(s.Check());
         PRECONDITION(i.Check());
         PRECONDITION(CheckCount(count));
-        SS_POSTCONDITION(s.Match(i, *this));
-        SS_POSTCONDITION(GetRawCount() == count);
         THROWS;
         GC_NOTRIGGER;
     }
@@ -203,8 +196,6 @@ inline SString::SString(const SString &s, const CIterator &start, const CIterato
         PRECONDITION(end.Check());
         PRECONDITION(s.CheckIteratorRange(end));
         PRECONDITION(start <= end);
-        SS_POSTCONDITION(s.Match(start, *this));
-        SS_POSTCONDITION(GetRawCount() == (COUNT_T) (end - start));
         THROWS;
         GC_NOTRIGGER;
     }
@@ -429,7 +420,6 @@ inline void SString::Set(const SString &s)
     {
         INSTANCE_CHECK;
         PRECONDITION(s.Check());
-        SS_POSTCONDITION(Equals(s));
         THROWS;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
@@ -532,8 +522,6 @@ inline void SString::Set(const SString &s, const CIterator &i, COUNT_T count)
         PRECONDITION(s.Check());
         PRECONDITION(i.Check());
         PRECONDITION(CheckCount(count));
-        SS_POSTCONDITION(s.Match(i, *this));
-        SS_POSTCONDITION(GetRawCount() == count);
         THROWS;
         GC_NOTRIGGER;
     }
@@ -564,8 +552,6 @@ inline void SString::Set(const SString &s, const CIterator &start, const CIterat
         PRECONDITION(end.Check());
         PRECONDITION(s.CheckIteratorRange(end));
         PRECONDITION(end >= start);
-        SS_POSTCONDITION(s.Match(start, *this));
-        SS_POSTCONDITION(GetRawCount() == (COUNT_T) (end - start));
         THROWS;
         GC_NOTRIGGER;
     }
@@ -608,7 +594,6 @@ inline const WCHAR *SString::GetUnicode() const
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckPointer(RETVAL));
         if (IsRepresentation(REPRESENTATION_UNICODE)) NOTHROW; else THROWS;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
@@ -627,7 +612,6 @@ inline const UTF8 *SString::GetUTF8() const
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckPointer(RETVAL));
         if (IsRepresentation(REPRESENTATION_UTF8)) NOTHROW; else THROWS;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
@@ -645,7 +629,6 @@ inline void SString::Normalize()
     SS_CONTRACT_VOID
     {
         INSTANCE_CHECK;
-        SS_POSTCONDITION(IsNormalized());
         THROWS_UNLESS_NORMALIZED;
         GC_NOTRIGGER;
     }
@@ -915,7 +898,6 @@ inline BOOL SString::Find(CIterator &i, const WCHAR *string) const
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckIteratorRange(i));
         PRECONDITION(CheckPointer(string));
-        SS_POSTCONDITION(RETVAL == Match(i, SString(string)));
         THROWS;
     }
     SS_CONTRACT_END;
@@ -932,7 +914,6 @@ inline BOOL SString::FindASCII(CIterator &i, const CHAR *string) const
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckIteratorRange(i));
         PRECONDITION(CheckPointer(string));
-        SS_POSTCONDITION(RETVAL == Match(i, SString(SString::Ascii, string)));
         THROWS;
     }
     SS_CONTRACT_END;
@@ -949,7 +930,6 @@ inline BOOL SString::FindUTF8(CIterator &i, const CHAR *string) const
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckIteratorRange(i));
         PRECONDITION(CheckPointer(string));
-        SS_POSTCONDITION(RETVAL == Match(i, SString(SString::Ascii, string)));
         THROWS;
     }
     SS_CONTRACT_END;
@@ -966,7 +946,6 @@ inline BOOL SString::FindBack(CIterator &i, const WCHAR *string) const
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckIteratorRange(i));
         PRECONDITION(CheckPointer(string));
-        SS_POSTCONDITION(RETVAL == Match(i, SString(string)));
         THROWS;
     }
     SS_CONTRACT_END;
@@ -983,7 +962,6 @@ inline BOOL SString::FindBackASCII(CIterator &i, const CHAR *string) const
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckIteratorRange(i));
         PRECONDITION(CheckPointer(string));
-        SS_POSTCONDITION(RETVAL == Match(i, SString(SString::Ascii, string)));
         THROWS;
     }
     SS_CONTRACT_END;
@@ -1000,7 +978,6 @@ inline BOOL SString::FindBackUTF8(CIterator &i, const CHAR *string) const
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckIteratorRange(i));
         PRECONDITION(CheckPointer(string));
-        SS_POSTCONDITION(RETVAL == Match(i, SString(SString::Ascii, string)));
         THROWS;
     }
     SS_CONTRACT_END;
@@ -1161,7 +1138,6 @@ inline COUNT_T SString::GetCount() const
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckCount(RETVAL));
         THROWS_UNLESS_NORMALIZED;
         SUPPORTS_DAC;
     }
@@ -1442,7 +1418,6 @@ inline COUNT_T SString::CountToSize(COUNT_T count) const
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckCount(count));
-        SS_POSTCONDITION(SizeToCount(RETVAL) == count);
         NOTHROW;
         SUPPORTS_DAC;
     }
@@ -1463,7 +1438,6 @@ inline COUNT_T SString::SizeToCount(COUNT_T size) const
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckSize(size));
-        SS_POSTCONDITION(CountToSize(RETVAL) == size);
         NOTHROW;
         SUPPORTS_DAC;
     }
@@ -1615,11 +1589,7 @@ inline WCHAR *SString::OpenUnicodeBuffer(COUNT_T countChars)
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckCount(countChars));
 #if _DEBUG
-        SS_POSTCONDITION(IsBufferOpen());
 #endif
-        SS_POSTCONDITION(GetRawCount() == countChars);
-        SS_POSTCONDITION(GetRepresentation() == REPRESENTATION_UNICODE || countChars == 0);
-        SS_POSTCONDITION(CheckPointer(RETVAL));
         THROWS;
     }
     SS_CONTRACT_END;
@@ -1638,7 +1608,6 @@ inline WCHAR *SString::GetCopyOfUnicodeString()
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckPointer(buffer));
         THROWS;
     }
     SS_CONTRACT_END;
@@ -1660,7 +1629,6 @@ inline UTF8 *SString::GetCopyOfUTF8String()
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckPointer(buffer));
         THROWS;
     }
     SS_CONTRACT_END;
@@ -1684,11 +1652,7 @@ inline UTF8 *SString::OpenUTF8Buffer(COUNT_T countBytes)
         PRECONDITION(CheckPointer(this));
         PRECONDITION(CheckCount(countBytes));
 #if _DEBUG
-        SS_POSTCONDITION(IsBufferOpen());
 #endif
-        SS_POSTCONDITION(GetRawCount() == countBytes);
-        SS_POSTCONDITION(GetRepresentation() == REPRESENTATION_UTF8 || countBytes == 0);
-        SS_POSTCONDITION(CheckPointer(RETVAL));
         THROWS;
     }
     SS_CONTRACT_END;
@@ -1762,7 +1726,6 @@ inline void SString::CloseBuffer()
 #if _DEBUG
         PRECONDITION_MSG(IsBufferOpen(), "Can only CloseBuffer() after a call to OpenBuffer()");
 #endif
-        SS_POSTCONDITION(CheckPointer(this));
         THROWS;
     }
     SS_CONTRACT_END;
@@ -1788,8 +1751,6 @@ inline void SString::CloseBuffer(COUNT_T finalCount)
         PRECONDITION_MSG(IsBufferOpen(), "Can only CloseBuffer() after a call to OpenBuffer()");
 #endif
         PRECONDITION(CheckSize(finalCount));
-        SS_POSTCONDITION(CheckPointer(this));
-        SS_POSTCONDITION(GetRawCount() == finalCount);
         THROWS;
     }
     SS_CONTRACT_END;
@@ -1834,7 +1795,6 @@ inline void SString::ConvertToFixed() const
     {
         GC_NOTRIGGER;
         SS_PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(IsFixedSize());
         THROWS_UNLESS_NORMALIZED;
         SUPPORTS_DAC;
     }
@@ -1864,7 +1824,6 @@ inline void SString::ConvertToIteratable() const
     {
         GC_NOTRIGGER;
         SS_PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(IsIteratable());
         THROWS_UNLESS_NORMALIZED;
         SUPPORTS_DAC;
     }
@@ -1894,7 +1853,6 @@ FORCEINLINE SString::CIterator SString::Begin() const
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckValue(RETVAL));
         THROWS_UNLESS_NORMALIZED;
     }
     SS_CONTRACT_END;
@@ -1910,7 +1868,6 @@ FORCEINLINE SString::CIterator SString::End() const
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckValue(RETVAL));
         THROWS_UNLESS_NORMALIZED;
     }
     SS_CONTRACT_END;
@@ -1931,7 +1888,6 @@ FORCEINLINE SString::Iterator SString::Begin()
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckValue(RETVAL));
         THROWS; // EnsureMutable always throws
         SUPPORTS_DAC;
     }
@@ -1949,7 +1905,6 @@ FORCEINLINE SString::Iterator SString::End()
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        SS_POSTCONDITION(CheckValue(RETVAL));
         THROWS; // EnsureMutable always Throws
         SUPPORTS_DAC;
     }
@@ -1979,7 +1934,6 @@ inline SString::Index::Index(SString *string, SCOUNT_T index)
         PRECONDITION(CheckPointer(string));
         PRECONDITION(string->IsIteratable());
         PRECONDITION(DoCheck(0));
-        SS_POSTCONDITION(CheckPointer(this));
         // POSTCONDITION(Subtract(string->Begin()) == index); contract violation - fix later
         NOTHROW;
         CANNOT_TAKE_LOCK;
