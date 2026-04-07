@@ -1389,7 +1389,7 @@ namespace System.IO.Compression.Tests
                 zipBytes = backing.ToArray();
             }
 
-            // Reopen in Update mode and add a new entry
+            // Step 2: Reopen in Update mode and add a new entry
             byte[] updatedZipBytes;
             using (MemoryStream ms = new MemoryStream())
             {
@@ -1413,7 +1413,7 @@ namespace System.IO.Compression.Tests
                 updatedZipBytes = ms.ToArray();
             }
 
-            // Validate the updated archive structurally - original entries should still have
+            // Step 3:Validate the updated archive structurally - original entries should still have
             // data descriptors at the expected positions.
             ReadOnlySpan<byte> updatedSpan = updatedZipBytes.AsSpan();
 
@@ -1472,6 +1472,90 @@ namespace System.IO.Compression.Tests
             // The original 3 entries should still have data descriptors
             Assert.Equal(originalEntryCount, entriesWithDataDescriptorBit);
             Assert.Equal(originalEntryCount, dataDescriptorCount);
+        }
+
+        /// <summary>
+        /// Creates a zip archive via a non-seekable stream (which forces data descriptor / bit 3),
+        /// reopens in Update mode, deletes an entry from the middle, and verifies the remaining
+        /// entries are intact. This exercises offset recalculation in ComputeEntryEndOffsets when
+        /// entries with data descriptors are removed and subsequent entries must shift.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_DataDescriptorWithDeletedEntry_PreservesArchive(bool async)
+        {
+            byte[] entryData = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+            int originalEntryCount = 5;
+
+            byte[] zipBytes;
+            using (MemoryStream backing = new MemoryStream())
+            {
+                using (var nonSeekable = new WrappedStream(backing, canRead: false, canWrite: true, canSeek: false))
+                {
+                    ZipArchive createArchive = await CreateZipArchive(async, nonSeekable, ZipArchiveMode.Create);
+
+                    for (int i = 0; i < originalEntryCount; i++)
+                    {
+                        ZipArchiveEntry entry = createArchive.CreateEntry($"entry{i}.bin", CompressionLevel.NoCompression);
+                        Stream s = await OpenEntryStream(async, entry);
+                        if (async)
+                            await s.WriteAsync(entryData);
+                        else
+                            s.Write(entryData);
+                        s.WriteByte((byte)i);
+                        await DisposeStream(async, s);
+                    }
+
+                    await DisposeZipArchive(async, createArchive);
+                }
+
+                zipBytes = backing.ToArray();
+            }
+
+            byte[] updatedZipBytes;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(zipBytes);
+                ms.Position = 0;
+
+                ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+                Assert.Equal(originalEntryCount, updateArchive.Entries.Count);
+
+                ZipArchiveEntry toDelete = updateArchive.GetEntry("entry1.bin");
+                Assert.NotNull(toDelete);
+                toDelete.Delete();
+
+                await DisposeZipArchive(async, updateArchive);
+
+                updatedZipBytes = ms.ToArray();
+            }
+
+            using (MemoryStream ms = new MemoryStream(updatedZipBytes))
+            {
+                ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+                Assert.Equal(originalEntryCount - 1, readArchive.Entries.Count);
+                Assert.Null(readArchive.GetEntry("entry1.bin"));
+
+                for (int i = 0; i < originalEntryCount; i++)
+                {
+                    if (i == 1)
+                        continue;
+
+                    ZipArchiveEntry entry = readArchive.GetEntry($"entry{i}.bin");
+                    Assert.NotNull(entry);
+                    byte[] expected = [.. entryData, (byte)i];
+                    byte[] actual = new byte[expected.Length];
+                    Stream rs = await OpenEntryStream(async, entry);
+                    if (async)
+                        await rs.ReadExactlyAsync(actual);
+                    else
+                        rs.ReadExactly(actual);
+                    Assert.Equal(expected, actual);
+                    await DisposeStream(async, rs);
+                }
+
+                await DisposeZipArchive(async, readArchive);
+            }
         }
 
         /// <summary>
