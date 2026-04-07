@@ -186,9 +186,12 @@ namespace System.Tests
             Assert.Equal((char)0, BinaryIntegerHelper<char>.Log10((char)1));
             Assert.Equal((char)0, BinaryIntegerHelper<char>.Log10((char)9));
             Assert.Equal((char)1, BinaryIntegerHelper<char>.Log10((char)10));
+            Assert.Equal((char)1, BinaryIntegerHelper<char>.Log10((char)99));
             Assert.Equal((char)2, BinaryIntegerHelper<char>.Log10((char)100));
             Assert.Equal((char)2, BinaryIntegerHelper<char>.Log10((char)999));
+            Assert.Equal((char)3, BinaryIntegerHelper<char>.Log10((char)1000));
             Assert.Equal((char)3, BinaryIntegerHelper<char>.Log10((char)9999));
+            Assert.Equal((char)4, BinaryIntegerHelper<char>.Log10((char)10000));
             Assert.Equal((char)4, BinaryIntegerHelper<char>.Log10((char)32767));
             Assert.Equal((char)4, BinaryIntegerHelper<char>.Log10((char)32768));
             Assert.Equal((char)4, BinaryIntegerHelper<char>.Log10((char)65535));

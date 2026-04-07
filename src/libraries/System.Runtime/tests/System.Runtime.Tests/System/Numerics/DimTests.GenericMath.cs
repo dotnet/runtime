@@ -740,6 +740,12 @@ namespace System.Numerics.Tests
 
             static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertFromChecked<TOther>(TOther value, out BinaryIntegerWrapper<T> result)
             {
+                if (typeof(TOther) == typeof(T))
+                {
+                    result = (T)(object)value;
+                    return true;
+                }
+
                 bool succeeded = T.TryConvertFromChecked(value, out T actualResult);
 
                 if (!succeeded)
@@ -752,6 +758,12 @@ namespace System.Numerics.Tests
             }
             static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertFromSaturating<TOther>(TOther value, out BinaryIntegerWrapper<T> result)
             {
+                if (typeof(TOther) == typeof(T))
+                {
+                    result = (T)(object)value;
+                    return true;
+                }
+
                 bool succeeded = T.TryConvertFromSaturating(value, out T actualResult);
 
                 if (!succeeded)
@@ -764,6 +776,12 @@ namespace System.Numerics.Tests
             }
             static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertFromTruncating<TOther>(TOther value, out BinaryIntegerWrapper<T> result)
             {
+                if (typeof(TOther) == typeof(T))
+                {
+                    result = (T)(object)value;
+                    return true;
+                }
+
                 bool succeeded = T.TryConvertFromTruncating(value, out T actualResult);
 
                 if (!succeeded)

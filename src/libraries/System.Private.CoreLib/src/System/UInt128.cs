@@ -800,6 +800,11 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
         public static UInt128 Log10(UInt128 value)
         {
+            if (value._upper == 0)
+            {
+                return ulong.Log10(value._lower);
+            }
+
             // Approximate log10 via log2, then correct with a powers of 10 lookup table.
             // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10
             value |= 1U;

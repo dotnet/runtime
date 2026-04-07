@@ -234,7 +234,18 @@ namespace System.Tests
         {
             Assert.Equal(0, BinaryIntegerHelper<Int128>.Log10(Zero));
             Assert.Equal(0, BinaryIntegerHelper<Int128>.Log10(One));
-            Assert.Equal(0, BinaryIntegerHelper<Int128>.Log10((Int128)9));
+
+            Int128 power = 1;
+            for (int n = 0; n < 38; n++)
+            {
+                Assert.Equal((Int128)n, BinaryIntegerHelper<Int128>.Log10(power));
+                if (power > 1)
+                {
+                    Assert.Equal((Int128)(n - 1), BinaryIntegerHelper<Int128>.Log10(power - 1));
+                }
+                power *= 10;
+            }
+
             Assert.Equal(38, BinaryIntegerHelper<Int128>.Log10(MaxValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<Int128>.Log10(MinValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<Int128>.Log10(NegativeOne));

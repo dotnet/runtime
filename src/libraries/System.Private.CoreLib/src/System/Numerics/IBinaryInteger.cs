@@ -277,10 +277,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
 
-            // Use long literal to ensure CreateChecked resolves through
-            // a known conversion path (e.g., long → int) rather than
-            // self-to-self which lacks a TryConvertFromChecked case.
-            TSelf ten = TSelf.CreateChecked(10L);
+            TSelf ten = TSelf.CreateChecked(10);
             TSelf result = TSelf.Zero;
 
             while (value >= ten)

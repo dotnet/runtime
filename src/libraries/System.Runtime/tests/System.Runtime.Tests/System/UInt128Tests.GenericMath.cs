@@ -235,9 +235,18 @@ namespace System.Tests
         {
             Assert.Equal(0U, BinaryIntegerHelper<UInt128>.Log10(Zero));
             Assert.Equal(0U, BinaryIntegerHelper<UInt128>.Log10(One));
-            Assert.Equal(0U, BinaryIntegerHelper<UInt128>.Log10((UInt128)9));
-            Assert.Equal(38U, BinaryIntegerHelper<UInt128>.Log10(Int128MaxValue));
-            Assert.Equal(38U, BinaryIntegerHelper<UInt128>.Log10(Int128MaxValuePlusOne));
+
+            UInt128 power = 1;
+            for (uint n = 0; n < 38; n++)
+            {
+                Assert.Equal((UInt128)n, BinaryIntegerHelper<UInt128>.Log10(power));
+                if (power > 1)
+                {
+                    Assert.Equal((UInt128)(n - 1), BinaryIntegerHelper<UInt128>.Log10(power - 1));
+                }
+                power *= 10;
+            }
+
             Assert.Equal(38U, BinaryIntegerHelper<UInt128>.Log10(MaxValue));
         }
 
