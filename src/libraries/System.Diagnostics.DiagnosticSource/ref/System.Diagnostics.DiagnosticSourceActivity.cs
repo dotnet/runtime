@@ -36,7 +36,7 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity? Parent { get { throw null; } }
         public string? ParentId { get { throw null; } }
         public System.Diagnostics.ActivitySpanId ParentSpanId { get { throw null; } }
-        public bool RandomizedTraceId { get { throw null; } }
+        public bool HasRandomizedTraceId { get { throw null; } }
         public bool Recorded { get { throw null; } }
         public string? RootId { get { throw null; } }
         public System.Diagnostics.ActivitySpanId SpanId { get { throw null; } }

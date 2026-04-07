@@ -1151,7 +1151,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal($"00-0123456789abcdef0123456789abcdef-{activity.SpanId.ToHexString()}-01", activity.Id);
             Assert.Equal(ActivityTraceFlags.Recorded, activity.ActivityTraceFlags);
             Assert.True(activity.Recorded);
-            Assert.False(activity.RandomizedTraceId);
+            Assert.False(activity.HasRandomizedTraceId);
             activity.Stop();
 
             // Set the 'RandomTraceId' bit by using SetParentId with a -02 flags.
@@ -1165,7 +1165,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal($"00-0123456789abcdef0123456789abcdef-{activity.SpanId.ToHexString()}-02", activity.Id);
             Assert.Equal(ActivityTraceFlags.RandomTraceId, activity.ActivityTraceFlags);
             Assert.False(activity.Recorded);
-            Assert.True(activity.RandomizedTraceId);
+            Assert.True(activity.HasRandomizedTraceId);
             activity.Stop();
 
             // Set the 'Recorded' and 'RandomTraceId' bits by using SetParentId with a -03 flags.
@@ -1179,7 +1179,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal($"00-0123456789abcdef0123456789abcdef-{activity.SpanId.ToHexString()}-03", activity.Id);
             Assert.Equal(ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId, activity.ActivityTraceFlags);
             Assert.True(activity.Recorded);
-            Assert.True(activity.RandomizedTraceId);
+            Assert.True(activity.HasRandomizedTraceId);
             activity.Stop();
 
             // Set the 'Recorded' bit by using SetParentId by using the TraceId, SpanId, ActivityTraceFlags overload
@@ -1193,7 +1193,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal($"00-{activity.TraceId.ToHexString()}-{activity.SpanId.ToHexString()}-01", activity.Id);
             Assert.Equal(ActivityTraceFlags.Recorded, activity.ActivityTraceFlags);
             Assert.True(activity.Recorded);
-            Assert.False(activity.RandomizedTraceId);
+            Assert.False(activity.HasRandomizedTraceId);
             activity.Stop();
 
             // Set the 'RandomTraceId' bit by using SetParentId by using the TraceId, SpanId, ActivityTraceFlags overload
@@ -1207,7 +1207,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal($"00-{activity.TraceId.ToHexString()}-{activity.SpanId.ToHexString()}-02", activity.Id);
             Assert.Equal(ActivityTraceFlags.RandomTraceId, activity.ActivityTraceFlags);
             Assert.False(activity.Recorded);
-            Assert.True(activity.RandomizedTraceId);
+            Assert.True(activity.HasRandomizedTraceId);
             activity.Stop();
 
 
@@ -1222,7 +1222,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal($"00-{activity.TraceId.ToHexString()}-{activity.SpanId.ToHexString()}-03", activity.Id);
             Assert.Equal(ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId, activity.ActivityTraceFlags);
             Assert.True(activity.Recorded);
-            Assert.True(activity.RandomizedTraceId);
+            Assert.True(activity.HasRandomizedTraceId);
             activity.Stop();
 
             /****************************************************/
@@ -1237,22 +1237,22 @@ namespace System.Diagnostics.Tests
             Assert.Equal($"00-{activity.TraceId.ToHexString()}-{activity.SpanId.ToHexString()}-00", activity.Id);
             Assert.Equal(ActivityTraceFlags.None, activity.ActivityTraceFlags);
             Assert.False(activity.Recorded);
-            Assert.False(activity.RandomizedTraceId);
+            Assert.False(activity.HasRandomizedTraceId);
 
             activity.ActivityTraceFlags = ActivityTraceFlags.Recorded;
             Assert.Equal(ActivityTraceFlags.Recorded, activity.ActivityTraceFlags);
             Assert.True(activity.Recorded);
-            Assert.False(activity.RandomizedTraceId);
+            Assert.False(activity.HasRandomizedTraceId);
 
             activity.ActivityTraceFlags = ActivityTraceFlags.RandomTraceId;
             Assert.Equal(ActivityTraceFlags.RandomTraceId, activity.ActivityTraceFlags);
             Assert.False(activity.Recorded);
-            Assert.True(activity.RandomizedTraceId);
+            Assert.True(activity.HasRandomizedTraceId);
 
             activity.ActivityTraceFlags = ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId;
             Assert.Equal(ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId, activity.ActivityTraceFlags);
             Assert.True(activity.Recorded);
-            Assert.True(activity.RandomizedTraceId);
+            Assert.True(activity.HasRandomizedTraceId);
 
             activity.Stop();
 
@@ -1269,7 +1269,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal($"00-{activity.TraceId.ToHexString()}-{activity.SpanId.ToHexString()}-03", activity.Id);
             Assert.Equal(ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId, activity.ActivityTraceFlags);
             Assert.True(activity.Recorded);
-            Assert.True(activity.RandomizedTraceId);
+            Assert.True(activity.HasRandomizedTraceId);
 
             // create a child
             var childActivity = new Activity("activity8Child");
@@ -1282,7 +1282,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal($"00-{childActivity.TraceId.ToHexString()}-{childActivity.SpanId.ToHexString()}-03", childActivity.Id);
             Assert.Equal(ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId, childActivity.ActivityTraceFlags);
             Assert.True(childActivity.Recorded);
-            Assert.True(childActivity.RandomizedTraceId);
+            Assert.True(childActivity.HasRandomizedTraceId);
 
             childActivity.Stop();
             activity.Stop();
@@ -2264,7 +2264,7 @@ namespace System.Diagnostics.Tests
                     a.Start();
 
                     Assert.Equal(ActivityTraceId.CreateFromBytes(traceIdBytes), a.TraceId);
-                    Assert.False(a.RandomizedTraceId);
+                    Assert.False(a.HasRandomizedTraceId);
 
                     a.Stop();
                 }
@@ -2283,7 +2283,7 @@ namespace System.Diagnostics.Tests
                 a.Start();
 
                 // Default random generator should set RandomTraceId flag
-                Assert.True(a.RandomizedTraceId);
+                Assert.True(a.HasRandomizedTraceId);
                 Assert.Equal(ActivityTraceFlags.RandomTraceId, a.ActivityTraceFlags & ActivityTraceFlags.RandomTraceId);
 
                 // Verify TraceId is not all zeros

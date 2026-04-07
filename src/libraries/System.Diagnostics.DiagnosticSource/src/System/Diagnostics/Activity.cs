@@ -942,7 +942,7 @@ namespace System.Diagnostics
         /// <summary>
         /// True if the W3CIdFlags.RandomTraceId flag is set.
         /// </summary>
-        public bool RandomizedTraceId { get => (ActivityTraceFlags & ActivityTraceFlags.RandomTraceId) != 0; }
+        public bool HasRandomizedTraceId { get => (ActivityTraceFlags & ActivityTraceFlags.RandomTraceId) != 0; }
 
         /// <summary>
         /// True if the W3CIdFlags.Recorded flag is set.
