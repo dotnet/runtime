@@ -102,6 +102,7 @@ namespace System.IO
         {
             FileName = info.GetString("FileNotFound_FileName");
             FusionLog = info.GetString("FileNotFound_FusionLog");
+            _requestingAssemblyChain = info.GetString("FileNotFound_RequestingAssemblyChain");
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -111,6 +112,7 @@ namespace System.IO
             base.GetObjectData(info, context);
             info.AddValue("FileNotFound_FileName", FileName, typeof(string));
             info.AddValue("FileNotFound_FusionLog", FusionLog, typeof(string));
+            info.AddValue("FileNotFound_RequestingAssemblyChain", _requestingAssemblyChain, typeof(string));
         }
     }
 }
