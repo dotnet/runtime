@@ -3826,7 +3826,7 @@ void ComCallWrapperTemplate::CheckParentComVisibility()
     CONTRACTL_END;
 
     // Throw an exception to report the error.
-    if (!CheckParentComVisibilityNoThrow())
+    if (HasInvisibleParent())
     {
         ComCallWrapperTemplate *invisParent = FindInvisibleParent();
         _ASSERTE(invisParent != NULL);
@@ -3837,17 +3837,6 @@ void ComCallWrapperTemplate::CheckParentComVisibility()
         TypeString::AppendType(invisParentType, invisParent->m_thClass);
         COMPlusThrow(kInvalidOperationException, IDS_EE_COM_INVISIBLE_PARENT, thisType.GetUnicode(), invisParentType.GetUnicode());
     }
-}
-
-BOOL ComCallWrapperTemplate::CheckParentComVisibilityNoThrow()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // If the parent is visible to COM then everything is ok.
-    if (!HasInvisibleParent())
-        return TRUE;
-
-    return FALSE;
 }
 
 DefaultInterfaceType ComCallWrapperTemplate::GetDefaultInterface(MethodTable **ppDefaultItf)

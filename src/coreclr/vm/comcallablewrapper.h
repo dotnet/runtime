@@ -227,7 +227,6 @@ public:
     ULONG           GetNumInterfaces();
     SLOT*           GetVTableSlot(ULONG index);
     void            CheckParentComVisibility();
-    BOOL            CheckParentComVisibilityNoThrow();
 
     // Calls GetDefaultInterfaceForClassInternal and caches the result.
     DefaultInterfaceType GetDefaultInterface(MethodTable **ppDefaultItf);
@@ -677,13 +676,6 @@ struct ComMethodTable
         WRAPPER_NO_CONTRACT;
 
         ((ComCallWrapperTemplate*)m_pMT->GetComCallWrapperTemplate())->CheckParentComVisibility();
-    }
-
-    BOOL CheckParentComVisibilityNoThrow()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return ((ComCallWrapperTemplate*)m_pMT->GetComCallWrapperTemplate())->CheckParentComVisibilityNoThrow();
     }
 
 private:
