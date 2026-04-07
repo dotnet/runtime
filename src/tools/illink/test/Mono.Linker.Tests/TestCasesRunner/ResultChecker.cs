@@ -87,7 +87,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     case ModuleDefinition:
                     {
                         // There should be a Module row for this assembly
-                        Assert.True(linked.MainModule.Name == typeRef.Scope.Name, $"Type reference '{typeRef.FullName}' has a reference to module '{typeRef.Scope.Name}' which is not the module of '{linked.FullName}'");
+                        // Assert that the module name matches the scope name of the type reference
+                        Assert.Equal(linked.MainModule.Name, typeRef.Scope.Name);
                         continue;
                     }
                     default:
@@ -256,7 +257,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (TryGetCustomAttribute(original, nameof(ExpectNonZeroExitCodeAttribute), out var attr))
             {
                 var expectedExitCode = (int)attr.ConstructorArguments[0].Value;
-                Assert.True(expectedExitCode == linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput()}");
+                Assert.Equal(expectedExitCode, linkResult.ExitCode);
             }
             else
             {
