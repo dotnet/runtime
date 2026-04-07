@@ -61,14 +61,10 @@ BOOL ETW::GCLog::ShouldTrackMovementForEtw()
 BOOL ETW::GCLog::ShouldWalkStaticsAndCOMForEtw()
 {
     LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_COMINTEROP
     return s_forcedGCInProgress &&
         ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
                                      TRACE_LEVEL_INFORMATION,
                                      CLR_GCHEAPDUMP_KEYWORD);
-#else
-    return FALSE;
-#endif // FEATURE_COMINTEROP
 }
 
 // Batches the list of moved/surviving references for the GCBulkMovedObjectRanges /
@@ -510,7 +506,6 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 //---------------------------------------------------------------------------------------
 VOID ETW::GCLog::WalkStaticsAndCOMForETW()
 {
-#ifdef FEATURE_COMINTEROP
     CONTRACTL
     {
         NOTHROW;
@@ -522,9 +517,11 @@ VOID ETW::GCLog::WalkStaticsAndCOMForETW()
     {
         BulkTypeEventLogger typeLogger;
 
+#ifdef FEATURE_COMINTEROP
         // Walk RCWs/CCWs
         BulkComLogger comLogger(&typeLogger);
         comLogger.LogAllComObjects();
+#endif // FEATURE_COMINTEROP
 
         // Walk static variables
         BulkStaticsLogger staticLogger(&typeLogger);
@@ -532,7 +529,9 @@ VOID ETW::GCLog::WalkStaticsAndCOMForETW()
 
         // Ensure all loggers have written all events, fire type logger last to batch events
         // (FireBulkComEvent or FireBulkStaticsEvent may queue up additional types).
+#ifdef FEATURE_COMINTEROP
         comLogger.FireBulkComEvent();
+#endif // FEATURE_COMINTEROP
         staticLogger.FireBulkStaticsEvent();
         typeLogger.FireBulkTypeEvent();
     }
@@ -540,7 +539,6 @@ VOID ETW::GCLog::WalkStaticsAndCOMForETW()
     {
     }
     EX_END_CATCH
-#endif // FEATURE_COMINTEROP
 }
 
 
