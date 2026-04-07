@@ -22,7 +22,6 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 

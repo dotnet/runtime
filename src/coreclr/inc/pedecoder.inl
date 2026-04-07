@@ -25,7 +25,6 @@ inline PEDecoder::PEDecoder()
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         CANNOT_TAKE_LOCK;
         GC_NOTRIGGER;
@@ -99,7 +98,6 @@ inline PEDecoder::PEDecoder(PTR_VOID mappedBase, bool fixedUp /*= FALSE*/)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(mappedBase));
         PRECONDITION(PEDecoder(mappedBase,fixedUp).CheckNTHeaders());
         THROWS;
@@ -136,7 +134,6 @@ inline PEDecoder::PEDecoder(void *flatBase, COUNT_T size)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(flatBase));
         NOTHROW;
         GC_NOTRIGGER;

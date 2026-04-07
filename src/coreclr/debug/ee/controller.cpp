@@ -1107,7 +1107,6 @@ DebuggerController::DebuggerController(Thread * pThread, AppDomain * pAppDomain)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 

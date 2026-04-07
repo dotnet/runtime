@@ -282,7 +282,6 @@ void SyncBlockCache::Init()
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;

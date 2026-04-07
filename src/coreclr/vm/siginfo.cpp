@@ -623,7 +623,6 @@ void MetaSig::Init(
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         MODE_ANY;
         GC_NOTRIGGER;
@@ -798,7 +797,6 @@ MetaSig::MetaSig(BinderMethodID id)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         THROWS;
         MODE_ANY;
         GC_TRIGGERS;
@@ -818,7 +816,6 @@ MetaSig::MetaSig(LPHARDCODEDMETASIG pwzMetaSig)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         THROWS;
         MODE_ANY;
         GC_TRIGGERS;
@@ -839,7 +836,6 @@ MetaSig::MetaSig(FieldDesc *pFD, TypeHandle declaringType)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         MODE_ANY;
         GC_NOTRIGGER;
@@ -2086,7 +2082,6 @@ TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - 
     }
 #endif
 
-    _ASSSERTE(CheckPointer(RETVAL, ((fLoadTypes == ClassLoader::LoadTypes) ? NULL_NOT_OK : NULL_OK)));
     return(res);
 }
 

@@ -650,7 +650,6 @@ PEAssembly::PEAssembly(
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(pEmit, NULL_OK));
         PRECONDITION(pBindResultInfo == NULL || pPEImage == NULL);
         STANDARD_VM_CHECK;

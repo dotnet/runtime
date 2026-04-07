@@ -1401,7 +1401,6 @@ DebuggerMethodInfo::DebuggerMethodInfo(Module *module, mdMethodDef token) :
     {
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 
@@ -2113,7 +2112,6 @@ DebuggerMethodInfoTable::DebuggerMethodInfoTable() : CHashTableAndData<CNewZeroD
         WRAPPER(THROWS);
         GC_NOTRIGGER;
 
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 

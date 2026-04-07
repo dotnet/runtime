@@ -2544,6 +2544,8 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
         pAssembly->ThrowIfError(targetLevel);
 
         _ASSERTE(pAssembly->CheckNoError(targetLevel));
+        _ASSERTE(pAssembly->GetLoadLevel() >= GetCurrentFileLoadLevel()
+            || pAssembly->GetLoadLevel() >= targetLevel);
         return pAssembly;
     }
 
@@ -2635,8 +2637,8 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     // specify the minimum load level acceptable and throw if not reached.)
 
     pAssembly->RequireLoadLevel((FileLoadLevel)(immediateTargetLevel-1));
-    _ASSERTE(result->GetLoadLevel() >= GetCurrentFileLoadLevel()
-        || result->GetLoadLevel() >= targetLevel);
+    _ASSERTE(pAssembly->GetLoadLevel() >= GetCurrentFileLoadLevel()
+        || pAssembly->GetLoadLevel() >= targetLevel);
     _ASSERTE(pAssembly->CheckNoError(targetLevel));
     return pAssembly;
 }

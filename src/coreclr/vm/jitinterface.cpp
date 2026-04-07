@@ -405,7 +405,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
     if (clsRet)
         *clsRet = CORINFO_CLASS_HANDLE(typeHndUpdated.AsPtr());
 
-    RETURN res;
+    return res;
 }
 
 enum ConvToJitSigFlags : int

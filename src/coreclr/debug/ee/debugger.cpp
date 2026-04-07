@@ -940,7 +940,6 @@ Debugger::Debugger()
     {
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 

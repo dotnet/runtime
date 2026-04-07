@@ -348,10 +348,12 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
         _ASSERTE(!result.IsNull());
     }
 
+#ifndef DACCESS_COMPILE
     if (!result.IsNull())
     {
         _ASSERTE(result.CheckLoadLevel(level));
     }
+#endif
 
     return result;
 }
@@ -420,7 +422,7 @@ TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoad
     }
     else
     {
-        _ASSERTE(typeHnd.CheckLoadLevel(level));
+        _ASSERTE(!typeHnd.IsNull());
     }
 
     return(typeHnd);
@@ -1697,7 +1699,6 @@ ClassLoader::ClassLoader(Assembly *pAssembly)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;

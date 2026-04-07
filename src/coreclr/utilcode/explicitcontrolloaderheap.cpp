@@ -54,7 +54,6 @@ ExplicitControlLoaderHeap::ExplicitControlLoaderHeap(bool fMakeExecutable) :
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         FORBID_FAULT;
     }

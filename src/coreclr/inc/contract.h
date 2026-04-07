@@ -72,9 +72,6 @@
 //
 //      INSTANCE_CHECK -    equivalent of:
 //                          PRECONDITION(CheckPointer(this));
-//      INSTANCE_CHECK_NULL - equivalent of:
-//                          PRECONDITION(CheckPointer(this, NULL_OK));
-//      CONSTRUCTOR_CHECK - (no-op, reserved for future use)
 //      DESTRUCTOR_CHECK -  equivalent of:
 //                          PRECONDITION(CheckPointer(this));
 //
@@ -1089,14 +1086,6 @@ static UINT ___testmask;
         if ((___op&Contract::Preconditions) && !___disabled)                                \
             ASSERT_CHECK(CheckPointer(this), NULL, "Instance precheck failure");
 
-#define INSTANCE_CHECK_NULL                                                                 \
-        ___CheckMustBeInside_CONTRACT;                                                      \
-        if ((___op&Contract::Preconditions) && !___disabled)                                \
-            ASSERT_CHECK(CheckPointer(this, NULL_OK), NULL, "Instance precheck failure");
-
-#define CONSTRUCTOR_CHECK                                                                   \
-        ___CheckMustBeInside_CONTRACT;
-
 #define DESTRUCTOR_CHECK                                                                    \
         ___CheckMustBeInside_CONTRACT;                                                      \
         NOTHROW;                                                                            \
@@ -1108,8 +1097,6 @@ static UINT ___testmask;
 #define PRECONDITION_MSG(_expression, _message)     do { } while(0)
 #define PRECONDITION(_expression)                   do { } while(0)
 #define INSTANCE_CHECK
-#define INSTANCE_CHECK_NULL
-#define CONSTRUCTOR_CHECK
 #define DESTRUCTOR_CHECK
 
 #endif // __DISABLE_PREPOST_CONDITIONS__
@@ -1217,8 +1204,6 @@ static UINT ___testmask;
 #define PRECONDITION_MSG(_expression, _message)     do { } while(0)
 #define PRECONDITION(_expression)                   do { } while(0)
 #define INSTANCE_CHECK
-#define INSTANCE_CHECK_NULL
-#define CONSTRUCTOR_CHECK
 #define DESTRUCTOR_CHECK
 #define UNCHECKED(thecheck)
 #define DISABLED(thecheck)

@@ -22,7 +22,6 @@
 #define SS_CONTRACT(x) CONTRACTL
 #define SS_CONTRACT_VOID CONTRACTL
 #define SS_CONTRACT_END CONTRACTL_END
-#define SS_CONSTRUCTOR_CHECK CONSTRUCTOR_CHECK
 #define SS_PRECONDITION PRECONDITION
 
 #else //SSTRING_EXTRA_CHECKS
@@ -30,7 +29,6 @@
 #define SS_CONTRACT(x) CONTRACTL
 #define SS_CONTRACT_VOID CONTRACTL
 #define SS_CONTRACT_END CONTRACTL_END
-#define SS_CONSTRUCTOR_CHECK
 #define SS_PRECONDITION(x)
 
 #endif
@@ -49,14 +47,13 @@ inline SString::SString()
 #ifdef SSTRING_EXTRA_CHECKS
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
     _ASSERTE(IsEmpty());
-    return;
+    CONSISTENCY_CHECK(Check());
 #else
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -69,7 +66,6 @@ inline SString::SString(void *buffer, COUNT_T size)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(buffer));
         PRECONDITION(CheckSize(size));
         NOTHROW;
@@ -89,7 +85,7 @@ inline SString::SString(void *buffer, COUNT_T size)
         GetRawUnicode()[0] = 0;
     }
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(const SString &s)
@@ -97,7 +93,6 @@ inline SString::SString(const SString &s)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(s.Check());
         THROWS;
         GC_NOTRIGGER;
@@ -106,7 +101,7 @@ inline SString::SString(const SString &s)
 
     Set(s);
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(const SString &s1, const SString &s2)
@@ -114,7 +109,6 @@ inline SString::SString(const SString &s1, const SString &s2)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(s1.Check());
         PRECONDITION(s2.Check());
         THROWS;
@@ -124,7 +118,7 @@ inline SString::SString(const SString &s1, const SString &s2)
 
     Set(s1, s2);
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(const SString &s1, const SString &s2, const SString &s3)
@@ -132,7 +126,6 @@ inline SString::SString(const SString &s1, const SString &s2, const SString &s3)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(s1.Check());
         PRECONDITION(s2.Check());
         PRECONDITION(s3.Check());
@@ -143,7 +136,7 @@ inline SString::SString(const SString &s1, const SString &s2, const SString &s3)
 
     Set(s1, s2, s3);
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(const SString &s1, const SString &s2, const SString &s3, const SString &s4)
@@ -151,7 +144,6 @@ inline SString::SString(const SString &s1, const SString &s2, const SString &s3,
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(s1.Check());
         PRECONDITION(s2.Check());
         PRECONDITION(s3.Check());
@@ -162,7 +154,7 @@ inline SString::SString(const SString &s1, const SString &s2, const SString &s3,
 
     Set(s1, s2, s3, s4);
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(const SString &s, const CIterator &i, COUNT_T count)
@@ -170,7 +162,6 @@ inline SString::SString(const SString &s, const CIterator &i, COUNT_T count)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(s.Check());
         PRECONDITION(i.Check());
         PRECONDITION(CheckCount(count));
@@ -181,7 +172,7 @@ inline SString::SString(const SString &s, const CIterator &i, COUNT_T count)
 
     Set(s, i, count);
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(const SString &s, const CIterator &start, const CIterator &end)
@@ -189,7 +180,6 @@ inline SString::SString(const SString &s, const CIterator &start, const CIterato
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(s.Check());
         PRECONDITION(start.Check());
         PRECONDITION(s.CheckIteratorRange(start));
@@ -203,7 +193,7 @@ inline SString::SString(const SString &s, const CIterator &start, const CIterato
 
     Set(s, start, end);
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(const WCHAR *string)
@@ -211,7 +201,6 @@ inline SString::SString(const WCHAR *string)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(string, NULL_OK));
         THROWS;
         GC_NOTRIGGER;
@@ -223,7 +212,7 @@ inline SString::SString(const WCHAR *string)
     _ASSERTE(IsRepresentation(REPRESENTATION_UNICODE));
     SetNormalized();
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(const WCHAR *string, COUNT_T count)
@@ -231,7 +220,6 @@ inline SString::SString(const WCHAR *string, COUNT_T count)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(string, NULL_OK));
         PRECONDITION(CheckCount(count));
         THROWS;
@@ -244,7 +232,7 @@ inline SString::SString(const WCHAR *string, COUNT_T count)
     _ASSERTE(IsRepresentation(REPRESENTATION_UNICODE));
     SetNormalized();
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(enum tagASCII, const ASCII *string)
@@ -252,7 +240,6 @@ inline SString::SString(enum tagASCII, const ASCII *string)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(string, NULL_OK));
         PRECONDITION(CheckASCIIString(string));
         THROWS;
@@ -262,7 +249,7 @@ inline SString::SString(enum tagASCII, const ASCII *string)
 
     SetASCII(string);
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(enum tagASCII, const ASCII *string, COUNT_T count)
@@ -270,7 +257,6 @@ inline SString::SString(enum tagASCII, const ASCII *string, COUNT_T count)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(string, NULL_OK));
         PRECONDITION(CheckASCIIString(string, count));
         PRECONDITION(CheckCount(count));
@@ -281,7 +267,7 @@ inline SString::SString(enum tagASCII, const ASCII *string, COUNT_T count)
 
     SetASCII(string, count);
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(tagUTF8 dummytag, const UTF8 *string)
@@ -289,7 +275,6 @@ inline SString::SString(tagUTF8 dummytag, const UTF8 *string)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         // !!! Check for illegal UTF8 encoding?
         PRECONDITION(CheckPointer(string, NULL_OK));
         THROWS;
@@ -308,7 +293,6 @@ inline SString::SString(tagUTF8 dummytag, const UTF8 *string, COUNT_T count)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         // !!! Check for illegal UTF8 encoding?
         PRECONDITION(CheckPointer(string, NULL_OK));
         PRECONDITION(CheckCount(count));
@@ -327,7 +311,6 @@ inline SString::SString(WCHAR character)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         THROWS;
         GC_NOTRIGGER;
     }
@@ -335,7 +318,7 @@ inline SString::SString(WCHAR character)
 
     Set(character);
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(tagLiteral dummytag, const ASCII *literal)
@@ -343,7 +326,6 @@ inline SString::SString(tagLiteral dummytag, const ASCII *literal)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(literal));
         PRECONDITION(CheckASCIIString(literal));
         NOTHROW;
@@ -354,7 +336,7 @@ inline SString::SString(tagLiteral dummytag, const ASCII *literal)
 
     SetRepresentation(REPRESENTATION_ASCII);
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(tagUTF8Literal dummytag, const UTF8 *literal)
@@ -362,7 +344,6 @@ inline SString::SString(tagUTF8Literal dummytag, const UTF8 *literal)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(literal));
         NOTHROW;
         GC_NOTRIGGER;
@@ -371,7 +352,7 @@ inline SString::SString(tagUTF8Literal dummytag, const UTF8 *literal)
 
     SetRepresentation(REPRESENTATION_UTF8);
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SString::SString(tagLiteral dummytag, const WCHAR *literal)
@@ -379,7 +360,6 @@ inline SString::SString(tagLiteral dummytag, const WCHAR *literal)
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(literal));
         NOTHROW;
         GC_NOTRIGGER;
@@ -397,7 +377,6 @@ inline SString::SString(tagLiteral dummytag, const WCHAR *literal, COUNT_T count
 {
     SS_CONTRACT_VOID
     {
-        SS_CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(literal));
         NOTHROW;
         GC_NOTRIGGER;
@@ -407,7 +386,7 @@ inline SString::SString(tagLiteral dummytag, const WCHAR *literal, COUNT_T count
     SetRepresentation(REPRESENTATION_UNICODE);
     SetNormalized();
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 //-----------------------------------------------------------------------------

@@ -256,7 +256,6 @@ class AssemblySpecHash
     {
         CONTRACTL
         {
-            CONSTRUCTOR_CHECK;
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;

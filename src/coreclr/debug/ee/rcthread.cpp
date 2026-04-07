@@ -39,7 +39,6 @@ DebuggerRCThread::DebuggerRCThread(Debugger * pDebugger)
     {
         WRAPPER(THROWS);
         GC_NOTRIGGER;
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 

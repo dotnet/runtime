@@ -4152,7 +4152,7 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
     }
 
     UnmanagedCallersOnlyCaller convertToNative(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE_UCO);
-    BSTR result = convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj);
+    BSTR result = (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj);
 
     // A null BSTR should only be returned if the input string is null.
     _ASSERTE(result != NULL);

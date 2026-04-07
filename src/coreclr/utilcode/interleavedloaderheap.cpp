@@ -43,7 +43,6 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         FORBID_FAULT;
     }

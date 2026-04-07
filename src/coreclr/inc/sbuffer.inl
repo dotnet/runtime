@@ -25,7 +25,6 @@ inline SBuffer::SBuffer(PreallocFlag flag, void *buffer, COUNT_T size)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(buffer));
         PRECONDITION(CheckSize(size));
         NOTHROW;
@@ -41,7 +40,7 @@ inline SBuffer::SBuffer(PreallocFlag flag, void *buffer, COUNT_T size)
     m_revision = 0;
 #endif
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SBuffer::SBuffer()
@@ -52,7 +51,6 @@ inline SBuffer::SBuffer()
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
     }
@@ -62,7 +60,7 @@ inline SBuffer::SBuffer()
     m_revision = 0;
 #endif
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SBuffer::SBuffer(COUNT_T size)
@@ -73,7 +71,6 @@ inline SBuffer::SBuffer(COUNT_T size)
 {
     CONTRACTL
     {;
-        CONSTRUCTOR_CHECK;
         PRECONDITION(CheckSize(size));
         THROWS;
         GC_NOTRIGGER;
@@ -86,7 +83,7 @@ inline SBuffer::SBuffer(COUNT_T size)
     m_revision = 0;
 #endif
 
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SBuffer::SBuffer(const SBuffer &buffer)
@@ -97,7 +94,6 @@ inline SBuffer::SBuffer(const SBuffer &buffer)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         PRECONDITION(buffer.Check());
         THROWS;
         GC_NOTRIGGER;
@@ -111,14 +107,13 @@ inline SBuffer::SBuffer(const SBuffer &buffer)
 #endif
 
     _ASSERTE(Equals(buffer));
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SBuffer::SBuffer(SBuffer &&buffer)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         PRECONDITION(buffer.Check());
         THROWS;
         GC_NOTRIGGER;
@@ -137,7 +132,7 @@ inline SBuffer::SBuffer(SBuffer &&buffer)
     buffer.InitializeInstance();
 
     _ASSERTE(Check());
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SBuffer::SBuffer(const BYTE *buffer, COUNT_T size)
@@ -148,7 +143,6 @@ inline SBuffer::SBuffer(const BYTE *buffer, COUNT_T size)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(buffer));
         PRECONDITION(CheckSize(size));
         THROWS;
@@ -163,7 +157,7 @@ inline SBuffer::SBuffer(const BYTE *buffer, COUNT_T size)
 #endif
 
     _ASSERTE(Equals(buffer, size));
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 
@@ -175,7 +169,6 @@ inline SBuffer::SBuffer(ImmutableFlag immutable, const BYTE *buffer, COUNT_T siz
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(buffer));
         PRECONDITION(CheckSize(size));
         NOTHROW;
@@ -189,7 +182,7 @@ inline SBuffer::SBuffer(ImmutableFlag immutable, const BYTE *buffer, COUNT_T siz
 #endif
 
     _ASSERTE(Equals(buffer, size));
-    return;
+    CONSISTENCY_CHECK(Check());
 }
 
 inline SBuffer::~SBuffer()
