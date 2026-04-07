@@ -247,24 +247,6 @@ namespace System.Text.Json
 #endif
         }
 
-        public static bool IsFinite(double value)
-        {
-#if NET
-            return double.IsFinite(value);
-#else
-            return !(double.IsNaN(value) || double.IsInfinity(value));
-#endif
-        }
-
-        public static bool IsFinite(float value)
-        {
-#if NET
-            return float.IsFinite(value);
-#else
-            return !(float.IsNaN(value) || float.IsInfinity(value));
-#endif
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateInt32MaxArrayLength(uint length)
         {
@@ -273,21 +255,6 @@ namespace System.Text.Json
                 ThrowHelper.ThrowOutOfMemoryException(length);
             }
         }
-
-#if !NET
-        public static bool HasAllSet(this BitArray bitArray)
-        {
-            for (int i = 0; i < bitArray.Count; i++)
-            {
-                if (!bitArray[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-#endif
 
         /// <summary>
         /// Gets a Regex instance for recognizing integer representations of enums.

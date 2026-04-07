@@ -140,19 +140,6 @@ ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + siz
 
 //=========================================
 
-
-
-#ifdef FEATURE_COMINTEROP
-
-#define SIZEOF__ComMethodFrame 0x70
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame == sizeof(ComMethodFrame));
-
-#define UnmanagedToManagedFrame__m_pvDatum 0x10
-ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedToManagedFrame, m_pvDatum));
-
-#endif // FEATURE_COMINTEROP
-
-
 #define REDIRECTSTUB_SP_OFFSET_CONTEXT 0
 
 #define CONTEXT_Pc 0x108

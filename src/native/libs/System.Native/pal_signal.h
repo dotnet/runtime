@@ -64,6 +64,11 @@ PALEXPORT void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandl
 PALEXPORT int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal);
 
 /**
+ * Returns the platform-native signal number for SIGSTOP.
+ */
+PALEXPORT int32_t SystemNative_GetPlatformSIGSTOP(void);
+
+/**
  * Enables calling the PosixSignalHandler for the specified signal.
  */
 PALEXPORT int32_t SystemNative_EnablePosixSignalHandling(int signalCode);
