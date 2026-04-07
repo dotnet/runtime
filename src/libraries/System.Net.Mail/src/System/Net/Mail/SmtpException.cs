@@ -22,6 +22,7 @@ namespace System.Net.Mail
             switch (statusCode)
             {
                 default:
+                    return SR.SmtpUnknownStatusCode;
                 case SmtpStatusCode.CommandUnrecognized:
                     return SR.SmtpCommandUnrecognized;
                 case SmtpStatusCode.SyntaxError:
