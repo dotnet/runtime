@@ -5310,11 +5310,13 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
         if (pCurMT->FindDispatchEntryForCurrentType(
                 typeID, slotNumber, pEntry))
         {
+            _ASSERTE(!(TRUE) || pEntry->IsValid());
             return (TRUE);
         }
         pCurMT = pCurMT->GetParentMethodTable();
         iCurInheritanceChainDelta++;
     }
+    _ASSERTE(!(FALSE) || pEntry->IsValid());
     return (FALSE);
 }
 
@@ -5517,6 +5519,7 @@ MethodTable::FindDispatchImpl(
     *pImplSlot = GetRestoredSlot(slotNumber);
 
     // Successfully determined the target for the given target
+    _ASSERTE(!(TRUE) || !pImplSlot->IsNull() || IsComObjectType());
     return (TRUE);
 }
 

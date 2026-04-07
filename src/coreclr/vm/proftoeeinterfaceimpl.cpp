@@ -951,13 +951,21 @@ void __stdcall UpdateGenerationBounds()
 
         if (s_currentGenerationTable == nullptr)
         {
-            _ASSERTE(InterlockedDecrement(&s_generationTableWriterCount) == 0);
+#ifdef _DEBUG
+            LONG result = InterlockedDecrement(&s_generationTableWriterCount);
+            _ASSERTE(result == 0);
+#endif
             return;
         }
         s_currentGenerationTable->Refresh();
     }
 #endif // PROFILING_SUPPORTED
-    _ASSERTE(InterlockedDecrement(&s_generationTableWriterCount) == 0);
+#ifdef _DEBUG
+    {
+        LONG result = InterlockedDecrement(&s_generationTableWriterCount);
+        _ASSERTE(result == 0);
+    }
+#endif
     return;
 }
 

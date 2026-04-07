@@ -109,6 +109,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
         if (FAILED(hr))
             COMPlusThrowHR(hr);
 
+        _ASSERTE((*poref) != NULL ? CheckPointer(pvObj) : CheckPointer(pvObj, NULL_OK));
         return pvObj;
     }
 
@@ -210,6 +211,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         if (pFetchedIpType != NULL)
             *pFetchedIpType = FetchedIpType;
 
+        _ASSERTE((*poref) != NULL ? CheckPointer(pvObj) : CheckPointer(pvObj, NULL_OK));
         return pvObj;
     }
 
@@ -330,6 +332,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
         if (FAILED(hr))
             COMPlusThrowHR(hr);
 
+        _ASSERTE((*poref) != NULL ? CheckPointer(pvObj, throwIfNoComIP ? NULL_NOT_OK : NULL_OK) : CheckPointer(pvObj, NULL_OK));
         return pvObj;
     }
 
@@ -362,6 +365,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
     if (throwIfNoComIP && pUnk == NULL)
         COMPlusThrowHR(hr);
 
+    _ASSERTE((*poref) != NULL ? CheckPointer(pUnk, throwIfNoComIP ? NULL_NOT_OK : NULL_OK) : CheckPointer(pUnk, NULL_OK));
     return pUnk;
 }
 

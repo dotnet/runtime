@@ -69,19 +69,12 @@
 //      PRECONDITION(X) -   generic CHECK or BOOL expression which should be true
 //                          on function entry
 //
-//      POSTCONDITION(X) -  generic CHECK or BOOL expression which should be true
-//                          on function entry.  Note that variable RETVAL will be
-//                          available for use in the expression.
-//
 //
 //      INSTANCE_CHECK -    equivalent of:
 //                          PRECONDITION(CheckPointer(this));
-//                          POSTCONDITION(CheckInvariant(this));
 //      INSTANCE_CHECK_NULL - equivalent of:
 //                          PRECONDITION(CheckPointer(this, NULL_OK));
-//                          POSTCONDITION(CheckInvariant(this, NULL_OK));
-//      CONSTRUCTOR_CHECK - equivalent of:
-//                          POSTCONDITION(CheckPointer(this));
+//      CONSTRUCTOR_CHECK - (no-op, reserved for future use)
 //      DESTRUCTOR_CHECK -  equivalent of:
 //                          PRECONDITION(CheckPointer(this));
 //
@@ -91,17 +84,7 @@
 //   Contracts come in the following flavors:
 //
 //     Dynamic:
-//        CONTRACTL          the standard version used for all dynamic contracts
-//                           except those including postconditions.
-//
-//        CONTRACT(rettype)  an uglier version of CONTRACTL that's unfortunately
-//                           needed to support postconditions. You must specify
-//                           the correct return type and it cannot be "void."
-//                           (Use CONTRACT_VOID instead) You must use the
-//                           RETURN macro rather than the "return" keyword.
-//
-//        CONTRACT_VOID      you can't supply "void" to a CONTRACT - use this
-//                           instead.
+//        CONTRACTL          the standard version used for all dynamic contracts.
 //
 //     Static:
 //        LIMITED_METHOD_CONTRACT
@@ -995,9 +978,6 @@ static UINT ___testmask;
 
 #ifndef __FORCE_NORUNTIME_CONTRACTS__
 
-#define CONTRACT_SETUP(_contracttype, _returntype, _returnexp)          \
-    CONTRACTL_SETUP(_contracttype)
-
 #define CONTRACTL_SETUP(_contracttype)                                  \
     _contracttype ___contract;                                          \
     BOOL ___contract_enabled = Contract::EnforceContract();             \
@@ -1018,12 +998,6 @@ static UINT ___testmask;
 
 #else // #ifndef __FORCE_NORUNTIME_CONTRACTS__
 
-#define CONTRACT_SETUP(_contracttype, _returntype, _returnexp)              \
-    CONTRACTL_SETUP(_contracttype)
-
-
-
-
 #define CONTRACTL_SETUP(_contracttype)                                  \
     BOOL ___contract_enabled = Contract::EnforceContract();             \
     enum {___disabled = 0};                                             \
@@ -1036,22 +1010,16 @@ static UINT ___testmask;
           ___run_preconditions:                                         \
             ___op = Contract::Preconditions;                            \
         }                                                               \
-        if (0)                                                          \
-        {                                                               \
-        /* define for CONTRACT_END even though we can't get here */     \
-          ___run_return:                                                \
-            UNREACHABLE();                                              \
-        }                                                               \
         UINT ___testmask = 0;                                           \
 
 #endif // __FORCE_NORUNTIME_CONTRACTS__
 
 
 #define CUSTOM_CONTRACT(_contracttype, _returntype)                     \
-        CONTRACT_SETUP(_contracttype, _returntype, RETVAL)
+        CONTRACTL_SETUP(_contracttype)
 
 #define CUSTOM_CONTRACT_VOID(_contracttype)                             \
-        CONTRACT_SETUP(_contracttype, int, ;)
+        CONTRACTL_SETUP(_contracttype)
 
 #define CUSTOM_CONTRACTL(_contracttype)                                 \
         CONTRACTL_SETUP(_contracttype)
@@ -1115,16 +1083,6 @@ static UINT ___testmask;
 
 #define PRECONDITION(_expression)                                                           \
         PRECONDITION_MSG(_expression, NULL)
-
-#define POSTCONDITION_MSG(_expression, _message)                                            \
-        ++___ran;                                                                           \
-        if ((!(0 && __PostConditionOK::safe_to_use_postcondition())) &&                     \
-            (___op&Contract::Postconditions) &&                                             \
-            !___disabled)                                                                   \
-        {                                                                                   \
-            ASSERT_CHECK(_expression, _message, "Postcondition failure");                   \
-        }
-
 
 #define INSTANCE_CHECK                                                                      \
         ___CheckMustBeInside_CONTRACT;                                                      \

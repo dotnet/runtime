@@ -983,6 +983,7 @@ BOOL SString::Find(CIterator &i, const SString &s) const
                 if (u16_strncmp(start, source.GetRawUnicode(), count) == 0)
                 {
                     i.Resync(this, (BYTE*) start);
+                    _ASSERTE(Match(i, s));
                     return TRUE;
                 }
                 start++;
@@ -1000,6 +1001,7 @@ BOOL SString::Find(CIterator &i, const SString &s) const
                 if (strncmp(start, source.GetRawASCII(), count) == 0)
                 {
                     i.Resync(this, (BYTE*) start);
+                    _ASSERTE(Match(i, s));
                     return TRUE;
                 }
                 start++;
@@ -1011,6 +1013,7 @@ BOOL SString::Find(CIterator &i, const SString &s) const
         {
             if (source.GetRawCount() == 0)
                 {
+                _ASSERTE(Match(i, s));
                     return TRUE;
                 }
         }
@@ -1021,6 +1024,7 @@ BOOL SString::Find(CIterator &i, const SString &s) const
         UNREACHABLE();
     }
 
+    _ASSERTE(!Match(i, s));
     return FALSE;
 }
 
@@ -1053,6 +1057,7 @@ BOOL SString::Find(CIterator &i, WCHAR c) const
                 if (*start == c)
                 {
                     i.Resync(this, (BYTE*) start);
+                    _ASSERTE(Match(i, c));
                     return TRUE;
                 }
                 start++;
@@ -1069,6 +1074,7 @@ BOOL SString::Find(CIterator &i, WCHAR c) const
                 if (*start == c)
                 {
                     i.Resync(this, (BYTE*) start);
+                    _ASSERTE(Match(i, c));
                     return TRUE;
                 }
                 start++;
@@ -1084,6 +1090,7 @@ BOOL SString::Find(CIterator &i, WCHAR c) const
         UNREACHABLE();
     }
 
+    _ASSERTE(!Match(i, c));
     return FALSE;
 }
 
@@ -1122,6 +1129,7 @@ BOOL SString::FindBack(CIterator &i, const SString &s) const
                 if (u16_strncmp(start, source.GetRawUnicode(), count) == 0)
                 {
                     i.Resync(this, (BYTE*) start);
+                    _ASSERTE(Match(i, s));
                     return TRUE;
                 }
                 start--;
@@ -1142,6 +1150,7 @@ BOOL SString::FindBack(CIterator &i, const SString &s) const
                 if (strncmp(start, source.GetRawASCII(), count) == 0)
                 {
                     i.Resync(this, (BYTE*) start);
+                    _ASSERTE(Match(i, s));
                     return TRUE;
                 }
                 start--;
@@ -1153,6 +1162,7 @@ BOOL SString::FindBack(CIterator &i, const SString &s) const
         {
             if (source.GetRawCount() == 0)
                 {
+                _ASSERTE(Match(i, s));
                     return TRUE;
                 }
         }
@@ -1163,6 +1173,7 @@ BOOL SString::FindBack(CIterator &i, const SString &s) const
         UNREACHABLE();
     }
 
+    _ASSERTE(!Match(i, s));
     return FALSE;
 }
 
@@ -1199,6 +1210,7 @@ BOOL SString::FindBack(CIterator &i, WCHAR c) const
                 if (*start == c)
                 {
                     i.Resync(this, (BYTE*) start);
+                    _ASSERTE(Match(i, c));
                     return TRUE;
                 }
                 start--;
@@ -1218,6 +1230,7 @@ BOOL SString::FindBack(CIterator &i, WCHAR c) const
                 if (*start == c)
                 {
                     i.Resync(this, (BYTE*) start);
+                    _ASSERTE(Match(i, c));
                     return TRUE;
                 }
                 start--;
@@ -1233,6 +1246,7 @@ BOOL SString::FindBack(CIterator &i, WCHAR c) const
         UNREACHABLE();
     }
 
+    _ASSERTE(!Match(i, c));
     return FALSE;
 }
 

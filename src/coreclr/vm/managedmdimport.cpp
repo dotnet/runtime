@@ -482,8 +482,6 @@ public:
 
         _alloc = new INT32[length];
         _length = length;
-        _ASSERTE((length == _length));
-        _ASSERTE((_alloc != NULL));
         return _alloc;
     }
 

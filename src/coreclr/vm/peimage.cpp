@@ -36,10 +36,7 @@ void PEImage::Startup()
     CONTRACTL_END;
 
     if (CheckStartup())
-        {
-        _ASSERTE(CheckStartup());
-            return;
-        }
+        return;
 
     s_hashLock.Init(CrstPEImage, (CrstFlags)(CRST_REENTRANCY|CRST_TAKEN_DURING_SHUTDOWN));
     LockOwner lock = { &s_hashLock, IsOwnerOfCrst };
