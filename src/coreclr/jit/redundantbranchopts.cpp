@@ -719,7 +719,7 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
 //    dominating block.
 //
 // Arguments:
-//   block - conditional block to examine
+//   block - conditional block whose dominators will be probed for redundancy.
 //
 // Notes:
 //   This handles optimizing cases like
@@ -734,6 +734,23 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
 //     S;
 //
 //  by proving that pB ==> pA and that B is side effect free.
+//
+//  We trigger this starting from block B, looking up at the immediate
+//  dominator A. If A branches to B and the other successor
+//  S of A is also a successor of B, then we have the right
+//  control flow pattern for this optimization.
+//
+//  We then see if the predicate for B->S implies the predicate for A->B.
+//  If so, and B is side effect free, we can change A to unconditionally
+//  branch to B.
+//
+//  If this succeeds and A is side effect free, then we can look at the
+//  immediate dominator of A and repeat the process, potentially optimizing
+//  multiple dominating branches.
+//
+//  Note that these dominating compares do not all have to share the
+//  same successor of B, that is if B's successors are S and X, then
+//  some A's can target S and others can target X.
 //
 //  We may also want to make this be heuristic driven. If pA is
 //  likely false and B is expensive, this may not improve performance.
@@ -782,7 +799,6 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
     BasicBlock* const blockFalseSucc = block->GetFalseTarget();
     BasicBlock*       currentBlock   = block;
     BasicBlock*       domBlockProbe  = block->bbIDom;
-    BasicBlock*       sharedSucc     = nullptr;
     ValueNum          blockPathVN    = ValueNumStore::NoVN;
     bool              madeChanges    = false;
     unsigned          searchCount    = 0;
@@ -848,24 +864,17 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
 
         BasicBlock* const candidateSharedSucc = currentIsDomTrueSucc ? domFalseSucc : domTrueSucc;
 
-        if (sharedSucc == nullptr)
+        // Find the VN for the path from block to the non-shared successor.
+        //
+        if (candidateSharedSucc == blockFalseSucc)
         {
-            sharedSucc = candidateSharedSucc;
-
-            if (sharedSucc == blockFalseSucc)
-            {
-                blockPathVN = treeNormVN;
-            }
-            else if (sharedSucc == blockTrueSucc)
-            {
-                blockPathVN = vnStore->GetRelatedRelop(treeNormVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
-            }
-            else
-            {
-                break;
-            }
+            blockPathVN = treeNormVN;
         }
-        else if (candidateSharedSucc != sharedSucc)
+        else if (candidateSharedSucc == blockTrueSucc)
+        {
+            blockPathVN = vnStore->GetRelatedRelop(treeNormVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
+        }
+        else
         {
             break;
         }
@@ -875,6 +884,8 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             break;
         }
 
+        // Find the VN for the path from domBlockProbe to block.
+        //
         Statement* const domStmt = domBlockProbe->lastStmt();
         assert(domStmt != nullptr);
 
@@ -926,6 +937,8 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
 
         const int domRelopValue = currentIsDomTrueSucc ? 1 : 0;
 
+        bool domMayHaveSideEffects = false;
+
         // Always preserve side effects in the dominating relop.
         //
         if ((domTree->gtFlags & GTF_SIDE_EFFECT) != 0)
@@ -933,6 +946,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             JITDUMP("Dominating relop has side effects, keeping it, unused\n");
             GenTree* const relopComma    = gtNewOperNode(GT_COMMA, TYP_INT, domTree, gtNewIconNode(domRelopValue));
             domJumpTree->AsUnOp()->gtOp1 = relopComma;
+            domMayHaveSideEffects        = true;
         }
         else
         {
@@ -945,6 +959,18 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
                          /* invalidateDFSTreeOnFGChange */ false);
         Metrics.RedundantBranchesEliminated++;
         madeChanges = true;
+
+        // We can keep looking if we haven't seen any side effects yet along the path to block.
+        //
+        if (!domMayHaveSideEffects)
+        {
+            domMayHaveSideEffects = domBlockProbe->hasSideEffects();
+
+            if (domMayHaveSideEffects)
+            {
+                break;
+            }
+        }
 
         currentBlock  = domBlockProbe;
         domBlockProbe = domBlockProbe->bbIDom;
