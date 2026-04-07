@@ -296,7 +296,7 @@
     <value>Decimal constructor requires an array or span of four valid decimal bytes.</value>
   </data>
   <data name="Arg_DirectoryNotFoundException" xml:space="preserve">
-    <value>Attempted to access a path that is not on the disk.</value>
+    <value>Unable to find the specified directory.</value>
   </data>
   <data name="Arg_DivideByZero" xml:space="preserve">
     <value>Attempted to divide by zero.</value>
@@ -2839,6 +2839,12 @@
   </data>
   <data name="IO_FileLoad_FileName" xml:space="preserve">
     <value>Could not load the file '{0}'.</value>
+  </data>
+  <data name="IO_DirectoryName_Name" xml:space="preserve">
+    <value>Directory path: '{0}'</value>
+  </data>
+  <data name="IO_DirectoryNotFound_Path" xml:space="preserve">
+    <value>Could not find directory '{0}'.</value>
   </data>
   <data name="IO_FileName_Name" xml:space="preserve">
     <value>File name: '{0}'</value>

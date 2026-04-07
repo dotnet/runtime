@@ -40,4 +40,9 @@ internal class RISCV64GCInfoTraits : IGCInfoTraits
     public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => 1;
 
     public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => true;
+
+    // RISCV64 scratch registers: RA (1), T0-T2 (5-7), A0-A7 (10-17), T3-T6 (28-31)
+    // See gcinfodecoder.cpp IsScratchRegister for TARGET_RISCV64
+    public static bool IsScratchRegister(uint regNum)
+        => regNum == 1 || (regNum >= 5 && regNum <= 7) || (regNum >= 10 && regNum <= 17) || regNum >= 28;
 }

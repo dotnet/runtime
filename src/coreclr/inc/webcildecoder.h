@@ -48,7 +48,7 @@ struct WebcilHeader
     uint16_t VersionMajor;   // 0
     uint16_t VersionMinor;   // 0
     uint16_t CoffSections;
-    uint16_t Reserved0;
+    uint16_t Reserved0;      // 1-based index of the base relocations section, or 0 if none
     uint32_t PeCliHeaderRva;
     uint32_t PeCliHeaderSize;
     uint32_t PeDebugRva;
@@ -137,7 +137,8 @@ private:
 
     // Webcil is always flat, never mapped in the PE sense
     BOOL IsMapped() const { return FALSE; }
-    BOOL IsRelocated() const { return FALSE; }
+    BOOL IsRelocated() const { return m_relocated; }
+    void SetRelocated() { m_relocated = TRUE; }
     BOOL IsFlat() const { return HasContents(); }
 
     // ------------------------------------------------------------
@@ -151,7 +152,7 @@ private:
     BOOL HasNTHeaders() const { return FALSE; }
     CHECK CheckNTHeaders() const;
     BOOL Has32BitNTHeaders() const { return FALSE; }
-    BOOL HasBaseRelocations() const { return FALSE; }
+    BOOL HasBaseRelocations() const;
     BOOL HasWriteableSections() const { return FALSE; }
     BOOL HasTls() const { return FALSE; }
 
@@ -258,6 +259,7 @@ private:
     TADDR                m_base;
     COUNT_T              m_size;
     BOOL                 m_hasContents;
+    BOOL                 m_relocated = FALSE;
     const WebcilHeader  *m_pHeader;
     mutable IMAGE_COR20_HEADER *m_pCorHeader;
 };

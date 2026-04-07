@@ -49,10 +49,10 @@ namespace ILCompiler.ObjectWriter
 
         public static int SectionHeaderEncodeSize()
         {
-            return sizeof(uint) +    // VirtualSize: 4
-                    sizeof(uint) +   // VirtualAddress: 8
-                    sizeof(uint) +   // SizeOfRawData: 12
-                    sizeof(uint);    // PointerToRawData: 16
+            return sizeof(uint) +                // VirtualSize: 4
+                    sizeof(uint) +                // VirtualAddress: 8
+                    sizeof(uint) +                // SizeOfRawData: 12
+                    sizeof(uint);                 // PointerToRawData: 16
         }
 
         public static int EncodeSectionHeader(in WebcilSectionHeader sectionHeader, Stream outputStream)

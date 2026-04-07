@@ -351,7 +351,7 @@ namespace System.Diagnostics
                 bool exited;
                 // We won't be able to get an exit code, but we'll at least be able to determine if the process is
                 // still running.
-                int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.None); // None means don't send a signal
+                int killResult = Interop.Sys.Kill(_processId, 0); // 0 means don't send a signal, used to check if process is still alive
                 if (killResult == 0)
                 {
                     // Process is still running.  This could also be a defunct process that has completed

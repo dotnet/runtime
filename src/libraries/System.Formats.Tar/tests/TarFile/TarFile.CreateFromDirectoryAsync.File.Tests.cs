@@ -338,7 +338,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CreateFromDirectoryAsync_UsesWriterOptions(bool toggle)
