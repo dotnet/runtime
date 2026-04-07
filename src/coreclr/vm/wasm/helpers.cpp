@@ -6,6 +6,113 @@
 #include <interpexec.h>
 #include "callhelpers.hpp"
 #include "shash.h"
+#include "callingconvention.h"
+#include "cgensys.h"
+#include "readytorun.h"
+
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, int8_t* args, size_t argsSize, void* retBuff);
+// -------------------------------------------------
+// Logic that will eventually mostly be pregenerated for R2R to interpreter code
+// -------------------------------------------------
+namespace
+{
+    static void CallInterpreter_I32_RetVoid(uintptr_t stackArg, int32_t arg0, PCODE portableEntrypoint)
+    {
+        int64_t args[1] = { (int64_t)arg0 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return;
+    }
+    static int32_t CallInterpreter_RetI32(uintptr_t stackArg, PCODE portableEntrypoint)
+    {
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, nullptr, 0, (int8_t*)&result);
+        return (int32_t)result;
+    }
+    static int32_t CallInterpreter_I32_RetI32(uintptr_t stackArg, int32_t arg0, PCODE portableEntrypoint)
+    {
+        int64_t args[1] = { (int64_t)arg0 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    static int32_t CallInterpreter_I32_I32_RetI32(uintptr_t stackArg, int32_t arg0, int32_t arg1, PCODE portableEntrypoint)
+    {
+        int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    static int32_t CallInterpreter_I32_I32_I32_RetI32(uintptr_t stackArg, int32_t arg0, int32_t arg1, int32_t arg2, PCODE portableEntrypoint)
+    {
+        int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    static int32_t CallInterpreter_I32_I32_I32_I32_RetI32(uintptr_t stackArg, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3,PCODE portableEntrypoint)
+    {
+        int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    static int32_t CallInterpreter_I32_I32_I32_I32_I32_RetI32(uintptr_t stackArg, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, PCODE portableEntrypoint)
+    {
+        int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    static int32_t CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32(uintptr_t stackArg, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, PCODE portableEntrypoint)
+    {
+        int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    static int32_t CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32(uintptr_t stackArg, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, PCODE portableEntrypoint)
+    {
+        int64_t args[7] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5, (int64_t)arg6 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+    static int32_t CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32(uintptr_t stackArg, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, int32_t arg7, PCODE portableEntrypoint)
+    {
+        int64_t args[8] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5, (int64_t)arg6, (int64_t)arg7 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return (int32_t)result;
+    }
+}
+
+const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
+    { "vip", (void*)&CallInterpreter_I32_RetVoid },
+    { "ip", (void*)&CallInterpreter_RetI32 },
+    { "iip", (void*)&CallInterpreter_I32_RetI32 },
+    { "iiip", (void*)&CallInterpreter_I32_I32_RetI32 },
+    { "iiiip", (void*)&CallInterpreter_I32_I32_I32_RetI32 },
+    { "iiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetI32 },
+    { "iiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_RetI32 },
+    { "iiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32 },
+    { "iiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32 },
+    { "iiiiiiiiip", (void*)&CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
+};
+
+const size_t g_wasmPortableEntryPointThunksCount = sizeof(g_wasmPortableEntryPointThunks) / sizeof(g_wasmPortableEntryPointThunks[0]);
+// -------------------------------------------------
+// END Logic that will eventually mostly be pregenerated for R2R to interpreter code END
+// -------------------------------------------------
 
 extern "C" void STDCALL CallCountingStubCode()
 {
@@ -422,9 +529,8 @@ void InvokeCalliStub(CalliStubParam* pParam)
     _ASSERTE(pParam->ftn != (PCODE)NULL);
     _ASSERTE(pParam->cookie != NULL);
 
-    // WASM-TODO: Reconcile calling conventions for managed calli.
     PCODE actualFtn = (PCODE)PortableEntryPoint::GetActualCode(pParam->ftn);
-    ((void(*)(PCODE, int8_t*, int8_t*))pParam->cookie)(actualFtn, pParam->pArgs, pParam->pRet);
+    ((void(*)(PCODE, int8_t*, int8_t*, PCODE))pParam->cookie)(actualFtn, pParam->pArgs, pParam->pRet, pParam->ftn);
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
@@ -555,6 +661,15 @@ namespace
             keyBuffer[pos++] = GetTypeCode(ConvertibleTo(argType, sig, false /* isReturn */));
         }
 
+        // Add the portable entrypoint parameter
+        if (sig.GetCallingConvention() == IMAGE_CEE_CS_CALLCONV_DEFAULT)
+        {
+            if (pos >= maxSize)
+                return false;
+
+            keyBuffer[pos++] = 'p';
+        }
+
         if (pos >= maxSize)
             return false;
 
@@ -572,6 +687,7 @@ namespace
 
     typedef MapSHash<const char*, void*, NoRemoveSHashTraits<StringThunkSHashTraits>> StringToWasmSigThunkHash;
     static StringToWasmSigThunkHash* thunkCache = nullptr;
+    static StringToWasmSigThunkHash* portableEntrypointThunkCache = nullptr;
 
     void* LookupThunk(const char* key)
     {
@@ -598,13 +714,37 @@ namespace
         return success ? thunk : nullptr;
     }
 
+    void* LookupPortableEntryPointThunk(const char* key)
+    {
+        StringToWasmSigThunkHash* table = VolatileLoad(&portableEntrypointThunkCache);
+        if (table == nullptr)
+        {
+            StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
+            newTable->Reallocate(g_wasmPortableEntryPointThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
+            for (size_t i = 0; i < g_wasmPortableEntryPointThunksCount; i++)
+            {
+                newTable->Add(g_wasmPortableEntryPointThunks[i].key, g_wasmPortableEntryPointThunks[i].value);
+            }
+
+            if (InterlockedCompareExchangeT(&portableEntrypointThunkCache, newTable, nullptr) != nullptr)
+            {
+                // Another thread won the race, discard ours
+                delete newTable;
+            }
+            table = thunkCache;
+        }
+
+        void* thunk;
+        bool success = table->Lookup(key, &thunk);
+        return success ? thunk : nullptr;
+    }
+
     // This is a simple signature computation routine for signatures currently supported in the wasm environment.
     void* ComputeCalliSigThunk(MetaSig& sig)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(sizeof(int32_t) == sizeof(void*));
 
-        // Ensure an unmanaged calling convention.
         BYTE callConv = sig.GetCallingConvention();
         switch (callConv)
         {
@@ -618,7 +758,7 @@ namespace
                 return NULL;
         }
 
-        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2;
+        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2 + ((callConv == IMAGE_CEE_CS_CALLCONV_DEFAULT) ? 1 : 0);
         char* keyBuffer = (char*)alloca(keyBufferLen);
         if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
             return NULL;
@@ -627,6 +767,33 @@ namespace
 #ifdef _DEBUG
         if (thunk == NULL)
             printf("WASM calli missing for key: %s\n", keyBuffer);
+#endif
+        return thunk;
+    }
+
+    void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(sizeof(int32_t) == sizeof(void*));
+
+        BYTE callConv = sig.GetCallingConvention();
+        switch (callConv)
+        {
+            // Only allowed for default calling convention since that's the only one currently supported for portable entry points, but we may want to support more in the future.
+            case IMAGE_CEE_CS_CALLCONV_DEFAULT:
+                break;
+            default:
+                return NULL;
+        }
+        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2 + 1; // +1 for the 'p' suffix to indicate portable entry point
+        char* keyBuffer = (char*)alloca(keyBufferLen);
+        if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
+            return NULL;
+
+        void* thunk = LookupPortableEntryPointThunk(keyBuffer);
+#ifdef _DEBUG
+        if (thunk == NULL)
+            printf("WASM R2R to interpreter call missing for key: %s\n", keyBuffer);
 #endif
         return thunk;
     }
@@ -736,6 +903,21 @@ void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
     {
         PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
     }
+
+    return thunk;
+}
+
+void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (pMD->ContainsGenericVariables())
+    {
+        return NULL;
+    }
+
+    MetaSig sig(pMD);
+    void* thunk = ComputePortableEntryPointToInterpreterThunk(sig);
 
     return thunk;
 }

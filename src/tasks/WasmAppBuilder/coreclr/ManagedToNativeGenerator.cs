@@ -85,15 +85,30 @@ public class ManagedToNativeGenerator : Task
             icall.ScanAssembly(asm);
         }
 
+        // All Signatures required for FCalls should be in this list, but we may also want to include pregenerated signatures for commonly used shapes used by
+        // R2R code to reduce duplication in generated R2R binaries. The signatures should be in the form of a string where the first character represents the
+        // return type and the following characters represent the argument types. The type characters should match those used by the SignatureMapper.CharToNativeType method.
+        string [] pregeneratedInterpreterToNativeSignatures =
+        {
+            "ip",
+            "iip",
+            "iiip",
+            "iiiip",
+            "vip",
+            "viip",
+        };
+
         IEnumerable<string> cookies = Enumerable.Concat(
             pinvoke.Generate(PInvokeModules, PInvokeOutputPath, ReversePInvokeOutputPath),
             icall.Generate(IcallOutputPath));
+
+        cookies = Enumerable.Concat(cookies, pregeneratedInterpreterToNativeSignatures);
 
         var m2n = new InterpToNativeGenerator(log);
         m2n.Generate(cookies, InterpToNativeOutputPath);
 
         if (!string.IsNullOrEmpty(CacheFilePath))
-            File.WriteAllLines(CacheFilePath, PInvokeModules);
+            File.WriteAllLines(CacheFilePath, PInvokeModules, Encoding.UTF8);
 
         List<string> fileWritesList = new() { PInvokeOutputPath, InterpToNativeOutputPath };
         if (!string.IsNullOrEmpty(IcallOutputPath))

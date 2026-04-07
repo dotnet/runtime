@@ -2078,6 +2078,41 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
     (void)ExecuteInterpretedMethod(&block, (TADDR)targetIp, retBuff);
 }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+PCODE ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Worker(PCODE portableEntrypoint, int8_t* args, size_t argsSize)
+{
+    MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(portableEntrypoint);
+    InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
+    if (targetIp == NULL)
+    {
+        GCPROTECT_BEGINCONSERVATIVE_ARRAY(args, (UINT)(argsSize/sizeof(OBJECTREF)));
+        GCX_PREEMP();
+        (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+        targetIp = pMethod->GetInterpreterCode();
+        GCPROTECT_END();
+    }
+
+    _ASSERTE((PCODE)targetIp == (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint));
+
+    return (PCODE)targetIp;
+}
+
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, int8_t* args, size_t argsSize, void* retBuff)
+{
+    PCODE targetIp;
+
+    if (!PortableEntryPoint::HasInterpreterData(portableEntrypoint))
+    {
+        targetIp = ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Worker(portableEntrypoint, args, argsSize);
+    }
+    else
+    {
+        targetIp = (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint);
+    }
+    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)&ExecuteInterpretedMethodWithArgs_PortableEntryPoint);
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp)
 {
     _ASSERTE(pMD != NULL);

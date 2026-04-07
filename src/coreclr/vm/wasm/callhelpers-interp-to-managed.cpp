@@ -139,6 +139,12 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_IND(3), ARG_I32(4));
     }
 
+    static void CallFunc_I32_I32_I32_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    {
+        int32_t (*fptr)(uintptr_t, int32_t, int32_t, int32_t, PCODE) = (int32_t (*)(uintptr_t, int32_t, int32_t, int32_t, PCODE))pcode;
+        *((int32_t*)pRet) = (*fptr)(emscripten_stack_get_current(), ARG_I32(0), ARG_I32(1), ARG_I32(2), pPortableEntryPointContext);
+    }
+
     static void CallFunc_I32_I32_I64_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         int32_t (*fptr)(int32_t, int32_t, int64_t) = (int32_t (*)(int32_t, int32_t, int64_t))pcode;
@@ -155,6 +161,12 @@ namespace
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_IND(2), ARG_I32(3), ARG_I32(4), ARG_IND(5));
+    }
+
+    static void CallFunc_I32_I32_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    {
+        int32_t (*fptr)(uintptr_t, int32_t, int32_t, PCODE) = (int32_t (*)(uintptr_t, int32_t, int32_t, PCODE))pcode;
+        *((int32_t*)pRet) = (*fptr)(emscripten_stack_get_current(), ARG_I32(0), ARG_I32(1), pPortableEntryPointContext);
     }
 
     static void CallFunc_I32_I64_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -197,6 +209,12 @@ namespace
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2), ARG_I32(3), ARG_I32(4));
+    }
+
+    static void CallFunc_I32_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    {
+        int32_t (*fptr)(uintptr_t, int32_t, PCODE) = (int32_t (*)(uintptr_t, int32_t, PCODE))pcode;
+        *((int32_t*)pRet) = (*fptr)(emscripten_stack_get_current(), ARG_I32(0), pPortableEntryPointContext);
     }
 
     static void CallFunc_I64_I32_I64_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -275,6 +293,12 @@ namespace
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
         *((int32_t*)pRet) = (*fptr)(ARG_IND(0), ARG_IND(1), ARG_IND(2));
+    }
+
+    static void CallFunc_Void_RetI32_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    {
+        int32_t (*fptr)(uintptr_t, PCODE) = (int32_t (*)(uintptr_t, PCODE))pcode;
+        *((int32_t*)pRet) = (*fptr)(emscripten_stack_get_current(), pPortableEntryPointContext);
     }
 
     static void CallFunc_Void_RetI64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -403,10 +427,22 @@ namespace
         (*fptr)(ARG_I32(0), ARG_I32(1), ARG_IND(2), ARG_IND(3), ARG_I32(4), ARG_I32(5));
     }
 
+    static void CallFunc_I32_I32_RetVoid_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    {
+        void (*fptr)(uintptr_t, int32_t, int32_t, PCODE) = (void (*)(uintptr_t, int32_t, int32_t, PCODE))pcode;
+        (*fptr)(emscripten_stack_get_current(), ARG_I32(0), ARG_I32(1), pPortableEntryPointContext);
+    }
+
     static void CallFunc_I32_IND_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
         (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2));
+    }
+
+    static void CallFunc_I32_RetVoid_PE(PCODE pcode, int8_t* pArgs, int8_t* pRet, PCODE pPortableEntryPointContext)
+    {
+        void (*fptr)(uintptr_t, int32_t, PCODE) = (void (*)(uintptr_t, int32_t, PCODE))pcode;
+        (*fptr)(emscripten_stack_get_current(), ARG_I32(0), pPortableEntryPointContext);
     }
 
     static void CallFunc_I64_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -497,9 +533,11 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "iiiiiiiiiiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
     { "iiiil", (void*)&CallFunc_I32_I32_I32_I64_RetI32 },
     { "iiiini", (void*)&CallFunc_I32_I32_I32_IND_I32_RetI32 },
+    { "iiiip", (void*)&CallFunc_I32_I32_I32_RetI32_PE },
     { "iiil", (void*)&CallFunc_I32_I32_I64_RetI32 },
     { "iiinii", (void*)&CallFunc_I32_I32_IND_I32_I32_RetI32 },
     { "iiiniin", (void*)&CallFunc_I32_I32_IND_I32_I32_IND_RetI32 },
+    { "iiip", (void*)&CallFunc_I32_I32_RetI32_PE },
     { "iil", (void*)&CallFunc_I32_I64_RetI32 },
     { "iili", (void*)&CallFunc_I32_I64_I32_RetI32 },
     { "iiliiil", (void*)&CallFunc_I32_I64_I32_I32_I32_I64_RetI32 },
@@ -507,6 +545,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "iilli", (void*)&CallFunc_I32_I64_I64_I32_RetI32 },
     { "iini", (void*)&CallFunc_I32_IND_I32_RetI32 },
     { "iiniii", (void*)&CallFunc_I32_IND_I32_I32_I32_RetI32 },
+    { "iip", (void*)&CallFunc_I32_RetI32_PE },
     { "ilili", (void*)&CallFunc_I64_I32_I64_I32_RetI32 },
     { "in", (void*)&CallFunc_IND_RetI32 },
     { "ini", (void*)&CallFunc_IND_I32_RetI32 },
@@ -520,6 +559,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "innii", (void*)&CallFunc_IND_IND_I32_I32_RetI32 },
     { "innin", (void*)&CallFunc_IND_IND_I32_IND_RetI32 },
     { "innn", (void*)&CallFunc_IND_IND_IND_RetI32 },
+    { "ip", (void*)&CallFunc_Void_RetI32_PE },
     { "l", (void*)&CallFunc_Void_RetI64 },
     { "li", (void*)&CallFunc_I32_RetI64 },
     { "liii", (void*)&CallFunc_I32_I32_I32_RetI64 },
@@ -541,7 +581,9 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "viiinni", (void*)&CallFunc_I32_I32_I32_IND_IND_I32_RetVoid },
     { "viinni", (void*)&CallFunc_I32_I32_IND_IND_I32_RetVoid },
     { "viinnii", (void*)&CallFunc_I32_I32_IND_IND_I32_I32_RetVoid },
+    { "viip", (void*)&CallFunc_I32_I32_RetVoid_PE },
     { "vini", (void*)&CallFunc_I32_IND_I32_RetVoid },
+    { "vip", (void*)&CallFunc_I32_RetVoid_PE },
     { "vl", (void*)&CallFunc_I64_RetVoid },
     { "vn", (void*)&CallFunc_IND_RetVoid },
     { "vni", (void*)&CallFunc_IND_I32_RetVoid },

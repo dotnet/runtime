@@ -21,6 +21,7 @@ public: // static
     static MethodDesc* GetMethodDesc(PCODE addr);
     static void* GetInterpreterData(PCODE addr);
     static void SetInterpreterData(PCODE addr, PCODE interpreterData);
+    static bool PrefersInterpreterEntryPoint(PCODE addr);
 
 private:
     Volatile<void*> _pActualCode;
@@ -32,6 +33,7 @@ private:
         kNone = 0,
         kUnmanagedCallersOnly_Has = 0x1,
         kUnmanagedCallersOnly_Checked = 0x2,
+        kPrefersInterpreterEntryPoint = 0x4,
     };
     Volatile<int32_t> _flags;
 
@@ -77,6 +79,27 @@ public:
         // State when interpreted method was prepared to be called from R2R compiled code.
         // pActualCode is a managed calling convention -> interpreter executor call stub in this case.
         return _pInterpreterData != nullptr && _pActualCode != nullptr;
+    }
+
+    bool PrefersInterpreterEntryPoint() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return (_flags & kPrefersInterpreterEntryPoint) != 0;
+    }
+
+    void SetPrefersInterpreterEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        _flags = (_flags | kPrefersInterpreterEntryPoint); // TODO, use interlock operation here
+    }
+
+    void ClearPrefersInterpreterEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        _flags = (_flags & ~kPrefersInterpreterEntryPoint); // TODO, use interlock operation here
     }
     friend struct ::cdac_data<PortableEntryPoint>;
 };

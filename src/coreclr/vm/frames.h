@@ -1602,13 +1602,13 @@ public:
     //--------------------------------------------------------------------
     // This constructor pushes a new GCFrame on the GC frame chain.
     //--------------------------------------------------------------------
-    GCFrame(OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
-        : GCFrame(GetThread(), pObjRefs, numObjRefs, maybeInterior)
+    GCFrame(OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags)
+        : GCFrame(GetThread(), pObjRefs, numObjRefs, gcFlags)
     {
         WRAPPER_NO_CONTRACT;
     }
 
-    GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior);
+    GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags);
     ~GCFrame();
 
     // Push and pop this frame from the thread's stack.
@@ -1663,7 +1663,7 @@ private:
     PTR_Thread    m_pCurThread;
     PTR_OBJECTREF m_pObjRefs;
     UINT          m_numObjRefs;
-    BOOL          m_MaybeInterior;
+    UINT          m_gcFlags;
 #ifdef FEATURE_INTERPRETER
     PTR_VOID      m_osStackLocation;
 #endif
@@ -2383,7 +2383,7 @@ private:
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         sizeof(ObjRefStruct)/sizeof(OBJECTREF),         \
-                        FALSE);                                         \
+                        0);                                             \
                 {
 
 #define GCPROTECT_BEGIN_THREAD(pThread, ObjRefStruct)           do {    \
@@ -2391,14 +2391,14 @@ private:
                         pThread,                                        \
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         sizeof(ObjRefStruct)/sizeof(OBJECTREF),         \
-                        FALSE);                                         \
+                        0);                                             \
                 {
 
 #define GCPROTECT_ARRAY_BEGIN(ObjRefArray,cnt) do {                     \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefArray),                     \
                         cnt * sizeof(ObjRefArray) / sizeof(OBJECTREF),  \
-                        FALSE);                                         \
+                        0);                                             \
                 {
 
 #define GCPROTECT_BEGININTERIOR(ObjRefStruct)           do {            \
@@ -2408,16 +2408,26 @@ private:
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefStruct),                    \
                         subjectSize/sizeof(OBJECTREF),                  \
-                        TRUE);                                          \
+                        GC_CALL_INTERIOR);                              \
                 {
 
 #define GCPROTECT_BEGININTERIOR_ARRAY(ObjRefArray,cnt) do {             \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefArray),                     \
                         cnt,                                            \
-                        TRUE);                                          \
+                        GC_CALL_INTERIOR);                              \
                 {
 
+// If FEATURE_INTERPRETER is set, the GC side of conservative reporting is enabled, so it is possible to report GC pointers conservatively
+#ifdef FEATURE_INTERPRETER
+
+#define GCPROTECT_BEGINCONSERVATIVE_ARRAY(ObjRefArray,cnt) do {         \
+                GCFrame __gcframe(                                      \
+                        (OBJECTREF*)&(ObjRefArray),                     \
+                        cnt,                                            \
+                        GC_CALL_INTERIOR | GC_CALL_PINNED);             \
+                {
+#endif // FEATURE_INTERPRETER
 
 #define GCPROTECT_END()                                                 \
                 }                                                       \
