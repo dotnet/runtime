@@ -461,6 +461,51 @@ namespace System.Net.Http.Functional.Tests
                 httpOptions: CreateHttpAgnosticOptions());
         }
 
+        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
+        public async Task Http2_SessionAuthChallenge_AuthDisabledAfterRedirect_Returns401(bool useNtlm)
+        {
+            // When auth is disabled on a request (e.g., due to a redirect with non-CredentialCache credentials),
+            // the handler should NOT retry/downgrade, even if other conditions are met.
+            // Auth is disabled by the redirect handler when credentials are NetworkCredential (not CredentialCache).
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                    request.Version = HttpVersion.Version20;
+                    request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+
+                    // Use NetworkCredential (not CredentialCache) so auth gets disabled on redirect.
+                    using SocketsHttpHandler handler = CreateCredentialHandler();
+                    using var client = new HttpClient(handler);
+
+                    HttpResponseMessage response = await client.SendAsync(request);
+
+                    // Should get 401 because auth was disabled after the redirect.
+                    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                    Assert.Equal(HttpVersion.Version20, response.Version);
+                    Assert.True(response.Headers.WwwAuthenticate.Count > 0);
+                },
+                async server =>
+                {
+                    Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+
+                    // First request: respond with a redirect (to the same server).
+                    int streamId1 = await connection.ReadRequestHeaderAsync();
+                    await connection.SendResponseHeadersAsync(streamId1, endStream: true, HttpStatusCode.Redirect,
+                        headers: new[] { new HttpHeaderData("Location", server.Address.AbsoluteUri) });
+
+                    // Second request (after redirect): send session auth challenge.
+                    // Auth is now disabled on the request due to the redirect with NetworkCredential.
+                    int streamId2 = await connection.ReadRequestHeaderAsync();
+                    string authScheme = useNtlm ? "NTLM" : "Negotiate";
+                    await connection.SendResponseHeadersAsync(streamId2, endStream: true, HttpStatusCode.Unauthorized,
+                        headers: new[] { new HttpHeaderData("WWW-Authenticate", authScheme) });
+                });
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Windows, "DefaultCredentials are unsupported for NTLM on Unix / Managed implementation")]
         public async Task DefaultHandler_FakeServer_DefaultCredentials()
