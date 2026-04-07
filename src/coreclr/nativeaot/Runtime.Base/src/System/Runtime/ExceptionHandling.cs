@@ -666,9 +666,6 @@ namespace System.Runtime
         {
             object exceptionObj = *pExceptionObj;
             RhThrowEx(exceptionObj, ref *pExInfo);
-
-            Debug.Fail("unreachable");
-            FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 #endif
 
@@ -713,9 +710,6 @@ namespace System.Runtime
         internal static void RhRethrow(ExInfo* pActiveExInfo, ExInfo* pExInfo, Exception* _)
         {
             RhRethrow(ref *pActiveExInfo, ref *pExInfo);
-
-            Debug.Fail("unreachable");
-            FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 #endif
 
@@ -755,9 +749,6 @@ namespace System.Runtime
         internal static void RhThrowHwEx(uint exceptionCode, ExInfo* pExInfo, Exception* _)
         {
             RhThrowHwEx(exceptionCode, ref *pExInfo);
-
-            Debug.Fail("unreachable");
-            FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 #endif
 
