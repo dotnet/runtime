@@ -6409,6 +6409,10 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
                 cellAddr->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
 #endif
                 GenTree* indir = Ind(cellAddr);
+#ifdef TARGET_WASM
+                indir = Ind(indir);    // WebAssembly "function pointers" are actually PortableEntryPoint pointers, and
+                                       // actually dispatching to them requires an additional level of indirection.
+#endif
                 result         = indir;
             }
             break;
