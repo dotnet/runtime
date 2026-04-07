@@ -1,6 +1,6 @@
-# Experimental support of CoreCLR on Android
+# CoreCLR on Android
 
-This is the internal documentation which outlines experimental support of CoreCLR on Android.
+This documentation outlines developer workflows for CoreCLR on Android platforms.
 
 ## Table of Contents
 

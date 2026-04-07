@@ -210,6 +210,7 @@ private:
         {
             remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
             remainderBlock->SetFlags(BBF_INTERNAL);
+            remainderBlock->RemoveFlags(BBF_DONT_REMOVE);
 
             // We will be adding more blocks after currBlock, so remove edge to remainderBlock.
             //
@@ -237,6 +238,7 @@ private:
             {
                 block->CopyFlags(flagsSource, BBF_SPLIT_GAINED);
             }
+            block->RemoveFlags(BBF_DONT_REMOVE);
             return block;
         }
 

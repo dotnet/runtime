@@ -285,11 +285,11 @@ void EHblkDsc::DispEntry(unsigned XTnum)
     ////////////// Handler region
     //////////////
 
-    if (ebdHndBeg->bbCatchTyp == BBCT_FINALLY)
+    if (ebdHndBeg->CatchTypeIs(BBCT_FINALLY))
     {
         printf("Finally");
     }
-    else if (ebdHndBeg->bbCatchTyp == BBCT_FAULT)
+    else if (ebdHndBeg->CatchTypeIs(BBCT_FAULT))
     {
         printf("Fault  ");
     }
@@ -2298,8 +2298,8 @@ bool Compiler::fgNormalizeEHCase1()
                 newHndStart->setTryIndex(eh->ebdEnclosingTryIndex);
             }
             newHndStart->setHndIndex(XTnum);
-            newHndStart->bbCatchTyp    = handlerStart->bbCatchTyp;
-            handlerStart->bbCatchTyp   = BBCT_NONE; // Now handlerStart is no longer the start of a handler...
+            newHndStart->SetCatchType(handlerStart->GetCatchType());
+            handlerStart->SetCatchType(BBCT_NONE); // Now handlerStart is no longer the start of a handler...
             newHndStart->bbCodeOffs    = handlerStart->bbCodeOffs;
             newHndStart->bbCodeOffsEnd = newHndStart->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
             newHndStart->inheritWeight(handlerStart);
@@ -2464,7 +2464,7 @@ bool Compiler::fgNormalizeEHCase2()
 
                         newTryStart->copyEHRegion(tryStart);       // Copy the EH region info
                         newTryStart->setTryIndex(ehOuterTryIndex); // ... but overwrite the 'try' index
-                        newTryStart->bbCatchTyp = BBCT_NONE;
+                        newTryStart->SetCatchType(BBCT_NONE);
                         newTryStart->bbCodeOffs = tryStart->bbCodeOffs;
                         newTryStart->bbCodeOffsEnd =
                             newTryStart->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
@@ -2637,9 +2637,9 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             GenTree* runtimeLookup;
             if (embedInfo.lookup.runtimeLookup.indirections == CORINFO_USEHELPER)
             {
+                assert(IsAot());
                 GenTree* ctxTree = getRuntimeContextTree(embedInfo.lookup.lookupKind.runtimeLookupKind);
-                runtimeLookup    = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
-                                                             TYP_I_IMPL, &embedInfo.lookup.lookupKind, ctxTree);
+                runtimeLookup    = gtNewRuntimeLookupHelperCallNode(&embedInfo.lookup.runtimeLookup, ctxTree, nullptr);
             }
             else
             {
@@ -2654,16 +2654,16 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             filterBb->SetKindAndTargetEdge(BBJ_EHFILTERRET, newEdge);
             fgNewStmtAtEnd(filterBb, retFilt, handlerBb->firstStmt()->GetDebugInfo());
 
-            filterBb->bbCatchTyp = BBCT_FILTER;
+            filterBb->SetCatchType(BBCT_FILTER);
             filterBb->bbCodeOffs = handlerBb->bbCodeOffs;
             filterBb->bbHndIndex = handlerBb->bbHndIndex;
             filterBb->bbTryIndex = handlerBb->bbTryIndex;
             filterBb->inheritWeightPercentage(handlerBb, 0);
             filterBb->SetFlags(BBF_INTERNAL | BBF_DONT_REMOVE);
 
-            handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;
-            eh->ebdHandlerType    = EH_HANDLER_FILTER;
-            eh->ebdFilter         = filterBb;
+            handlerBb->SetCatchType(BBCT_FILTER_HANDLER);
+            eh->ebdHandlerType = EH_HANDLER_FILTER;
+            eh->ebdFilter      = filterBb;
 
 #ifdef DEBUG
             if (verbose)
@@ -2950,8 +2950,8 @@ bool Compiler::fgNormalizeEHCase3()
                         newLast->setHndIndex(ehOuterIndex);
                     }
 
-                    newLast->bbCatchTyp =
-                        BBCT_NONE; // bbCatchTyp is only set on the first block of a handler, which is this not
+                    newLast->SetCatchType(BBCT_NONE); // bbCatchType is only set on the first block of a handler, which
+                                                      // is this not
                     newLast->bbCodeOffs    = insertAfterBlk->bbCodeOffsEnd;
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
@@ -3309,12 +3309,12 @@ void Compiler::fgVerifyHandlerTab()
     }
 #endif
 
-    // To verify that bbCatchTyp is set properly on all blocks, and that some BBF_* flags are only set on the first
+    // To verify that bbCatchType is set properly on all blocks, and that some BBF_* flags are only set on the first
     // block of handlers, create a bool arrays indexed by block number for blocks that are the beginning of handlers
     // (including filters). Note that since this checking function runs before EH normalization, we have to handle
     // the case where blocks can be both the beginning of a 'try' as well as the beginning of a handler. After we've
     // iterated over the EH table, loop over all blocks and verify that only handler begin blocks have
-    // bbCatchTyp != BBCT_NONE, and some other things.
+    // bbCatchType != BBCT_NONE, and some other things.
 
     size_t blockBoolSetBytes = (bbNumMax + 1) * sizeof(bool);
     bool*  blockHndBegSet    = (bool*)_alloca(blockBoolSetBytes);
@@ -3460,29 +3460,39 @@ void Compiler::fgVerifyHandlerTab()
 
                 if (fgFuncletsCreated)
                 {
-                    // If both the 'try' region and the outer 'try' region are in the main function area, then we can
-                    // do the normal nesting check. Otherwise, it's harder to find a useful assert to make about their
-                    // relationship.
-                    if ((bbNumTryLast < bbNumFirstFunclet) && (bbNumOuterTryLast < bbNumFirstFunclet))
+                    if (fgTrysContiguous())
                     {
-                        if (multipleBegBlockNormalizationDone)
+                        // If both the 'try' region and the outer 'try' region are in the main function area, then we
+                        // can do the normal nesting check. Otherwise, it's harder to find a useful assert to make about
+                        // their relationship.
+                        if ((bbNumTryLast < bbNumFirstFunclet) && (bbNumOuterTryLast < bbNumFirstFunclet))
                         {
-                            assert(bbNumOuterTryBeg < bbNumTryBeg); // Two 'try' regions can't start at the same
-                                                                    // block (by EH normalization).
+                            if (multipleBegBlockNormalizationDone)
+                            {
+                                // Two 'try' regions can't start at the same
+                                // block (by EH normalization).
+                                assert(bbNumOuterTryBeg < bbNumTryBeg);
+                            }
+                            else
+                            {
+                                assert(bbNumOuterTryBeg <= bbNumTryBeg);
+                            }
+
+                            if (multipleLastBlockNormalizationDone)
+                            {
+                                // Two 'try' regions can't end at the same block
+                                // (by EH normalization).
+                                assert(bbNumTryLast < bbNumOuterTryLast);
+                            }
+                            else
+                            {
+                                assert(bbNumTryLast <= bbNumOuterTryLast);
+                            }
                         }
-                        else
-                        {
-                            assert(bbNumOuterTryBeg <= bbNumTryBeg);
-                        }
-                        if (multipleLastBlockNormalizationDone)
-                        {
-                            assert(bbNumTryLast < bbNumOuterTryLast); // Two 'try' regions can't end at the same block
-                                                                      //(by EH normalization).
-                        }
-                        else
-                        {
-                            assert(bbNumTryLast <= bbNumOuterTryLast);
-                        }
+                    }
+                    else
+                    {
+                        // We can't check much in this case.
                     }
 
                     // With funclets, all we can say about the handler blocks is that they are disjoint from the
@@ -3491,17 +3501,23 @@ void Compiler::fgVerifyHandlerTab()
                 }
                 else
                 {
+                    // If we haven't created funclets trys should still be contiguous.
+                    assert(fgTrysContiguous());
+
+                    // Two 'try' regions can't start at the same block
+                    // (by EH normalization).
                     if (multipleBegBlockNormalizationDone)
                     {
-                        assert(bbNumOuterTryBeg < bbNumTryBeg); // Two 'try' regions can't start at the same block
-                                                                // (by EH normalization).
+                        assert(bbNumOuterTryBeg < bbNumTryBeg);
                     }
                     else
                     {
                         assert(bbNumOuterTryBeg <= bbNumTryBeg);
                     }
-                    assert(bbNumOuterTryBeg < bbNumHndBeg); // An inner handler can never start at the same
-                                                            // block as an outer 'try' (by IL rules).
+
+                    // An inner handler can never start at the same
+                    // block as an outer 'try' (by IL rules).
+                    assert(bbNumOuterTryBeg < bbNumHndBeg);
                     if (multipleLastBlockNormalizationDone)
                     {
                         // An inner EH region can't share a 'last' block with the outer 'try' (by EH normalization).
@@ -3595,30 +3611,29 @@ void Compiler::fgVerifyHandlerTab()
 
         if (HBtab->HasFilter())
         {
-            assert(HBtab->ebdFilter->bbCatchTyp == BBCT_FILTER);
+            assert(HBtab->ebdFilter->CatchTypeIs(BBCT_FILTER));
             assert(!blockHndBegSet[HBtab->ebdFilter->bbNum]);
             blockHndBegSet[HBtab->ebdFilter->bbNum] = true;
         }
 
-        // Check the block bbCatchTyp for this EH region's filter and handler.
+        // Check the block bbCatchType for this EH region's filter and handler.
 
         if (HBtab->HasFilter())
         {
-            assert(HBtab->ebdHndBeg->bbCatchTyp == BBCT_FILTER_HANDLER);
+            assert(HBtab->ebdHndBeg->CatchTypeIs(BBCT_FILTER_HANDLER));
         }
         else if (HBtab->HasCatchHandler())
         {
-            assert((HBtab->ebdHndBeg->bbCatchTyp != BBCT_NONE) && (HBtab->ebdHndBeg->bbCatchTyp != BBCT_FAULT) &&
-                   (HBtab->ebdHndBeg->bbCatchTyp != BBCT_FINALLY) && (HBtab->ebdHndBeg->bbCatchTyp != BBCT_FILTER) &&
-                   (HBtab->ebdHndBeg->bbCatchTyp != BBCT_FILTER_HANDLER));
+            assert(
+                !HBtab->ebdHndBeg->CatchTypeIs(BBCT_NONE, BBCT_FAULT, BBCT_FINALLY, BBCT_FILTER, BBCT_FILTER_HANDLER));
         }
         else if (HBtab->HasFaultHandler())
         {
-            assert(HBtab->ebdHndBeg->bbCatchTyp == BBCT_FAULT);
+            assert(HBtab->ebdHndBeg->CatchTypeIs(BBCT_FAULT));
         }
         else if (HBtab->HasFinallyHandler())
         {
-            assert(HBtab->ebdHndBeg->bbCatchTyp == BBCT_FINALLY);
+            assert(HBtab->ebdHndBeg->CatchTypeIs(BBCT_FINALLY));
         }
     }
 
@@ -3695,14 +3710,14 @@ void Compiler::fgVerifyHandlerTab()
     // Make sure that all blocks have the right index, including those blocks that should have zero (no EH region).
     for (BasicBlock* const block : Blocks())
     {
-        assert(fgTrysNotContiguous() || block->bbTryIndex == blockTryIndex[block->bbNum]);
+        assert(!fgTrysContiguous() || block->bbTryIndex == blockTryIndex[block->bbNum]);
         assert(block->bbHndIndex == blockHndIndex[block->bbNum]);
 
         // Also, since we're walking the blocks, check that all blocks we didn't mark as EH handler 'begin' blocks
-        // already have bbCatchTyp set properly.
+        // already have bbCatchType set properly.
         if (!blockHndBegSet[block->bbNum])
         {
-            assert(block->bbCatchTyp == BBCT_NONE);
+            assert(block->CatchTypeIs(BBCT_NONE));
 
             // If this block wasn't marked as an EH handler 'begin' block,
             // it shouldn't be the beginning of a funclet.
@@ -4385,7 +4400,7 @@ bool Compiler::fgAnyIntraHandlerPreds(BasicBlock* block)
 // We've inserted a new block before 'block' that should be part of the same
 // EH region as 'block'. Update the EH table to make this so. Also, set the
 // new block to have the right EH region data (copy the bbTryIndex, bbHndIndex,
-// and bbCatchTyp from 'block' to the new predecessor, and clear 'bbCatchTyp'
+// and bbCatchType from 'block' to the new predecessor, and clear 'bbCatchType'
 // from 'block').
 //
 // Arguments:
@@ -4399,9 +4414,9 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 
     bPrev->copyEHRegion(block);
 
-    // The first block (and only the first block) of a handler has bbCatchTyp set
-    bPrev->bbCatchTyp = block->bbCatchTyp;
-    block->bbCatchTyp = BBCT_NONE;
+    // The first block (and only the first block) of a handler has bbCatchType set
+    bPrev->SetCatchType(block->GetCatchType());
+    block->SetCatchType(BBCT_NONE);
 
     for (EHblkDsc* const HBtab : EHClauses(this))
     {
@@ -4489,8 +4504,8 @@ void Compiler::fgExtendEHRegionAfter(BasicBlock* block)
     assert(newBlk != nullptr);
 
     newBlk->copyEHRegion(block);
-    newBlk->bbCatchTyp =
-        BBCT_NONE; // Only the first block of a catch has this set, and 'newBlk' can't be the first block of a catch.
+    newBlk->SetCatchType(BBCT_NONE); // Only the first block of a catch has this set, and 'newBlk' can't be the first
+                                     // block of a catch.
 
     // TODO-Throughput: if the block is not in an EH region, then we don't need to walk the EH table looking for 'last'
     // block pointers to update.

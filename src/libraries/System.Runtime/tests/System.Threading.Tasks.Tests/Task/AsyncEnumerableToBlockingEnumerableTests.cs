@@ -11,7 +11,7 @@ namespace System.Threading.Tasks.Tests
     public class AsyncEnumerableToBlockingEnumerableTests
     {
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void EmptyAsyncEnumerable()
         {
             var source = new InstrumentedAsyncEnumerable<int>(CreateSourceEnumerable());
@@ -34,7 +34,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void SimpleAsyncEnumerable()
         {
             var source = new InstrumentedAsyncEnumerable<int>(AsyncEnumerable.Range(0, 10));
@@ -59,7 +59,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(1, source.TotalDisposeAsyncCalls);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void AsyncEnumerableWithDelays()
         {
@@ -94,7 +94,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void AsyncEnumerableWithException()
         {
@@ -123,7 +123,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void AsyncEnumerableWithCancellation()
         {

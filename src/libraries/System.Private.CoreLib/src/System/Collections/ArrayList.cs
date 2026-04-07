@@ -768,10 +768,9 @@ namespace System.Collections
 
                 int lo = index;
                 int hi = index + count - 1;
-                int mid;
                 while (lo <= hi)
                 {
-                    mid = (lo + hi) / 2;
+                    int mid = lo + ((hi - lo) >> 1);
                     int r = comparer.Compare(value, _list[mid]);
                     if (r == 0)
                         return mid;

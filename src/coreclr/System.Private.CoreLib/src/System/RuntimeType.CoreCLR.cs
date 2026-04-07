@@ -150,6 +150,7 @@ namespace System
                 private readonly MdUtf8String m_name;
                 private readonly MemberListType m_listType;
 
+                [RequiresUnsafe]
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
                     m_name = new MdUtf8String(pUtf8Name, cUtf8Name);
@@ -3415,6 +3416,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
+        [RequiresUnsafe]
         private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result);
 
 #if FEATURE_COMINTEROP
@@ -3727,6 +3729,26 @@ namespace System
                 throw new IndexOutOfRangeException();
 
             return new RuntimeTypeHandle(this).MakeArray(rank);
+        }
+
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            if (this.IsGenericTypeDefinition)
+                throw new InvalidOperationException(SR.Format(SR.FunctionPointer_ReturnTypeInvalid, this));
+
+            parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
+            foreach (Type? paramType in parameterTypes)
+            {
+                ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
+
+                if (paramType is not RuntimeType)
+                    return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
+
+                if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
+                    throw new ArgumentException(SR.Format(SR.FunctionPointer_ParameterInvalid, paramType), nameof(parameterTypes));
+            }
+
+            return new RuntimeTypeHandle(this).MakeFunctionPointer(parameterTypes, isUnmanaged);
         }
 
         public override StructLayoutAttribute? StructLayoutAttribute => PseudoCustomAttribute.GetStructLayoutCustomAttribute(this);
@@ -4322,12 +4344,14 @@ namespace System
     internal readonly unsafe partial struct MdUtf8String
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
+        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;
 
+        [RequiresUnsafe]
         internal MdUtf8String(void* pStringHeap)
         {
             byte* pStringBytes = (byte*)pStringHeap;
@@ -4343,6 +4367,7 @@ namespace System
             m_pStringHeap = pStringBytes;
         }
 
+        [RequiresUnsafe]
         internal MdUtf8String(byte* pUtf8String, int cUtf8String)
         {
             m_pStringHeap = pUtf8String;

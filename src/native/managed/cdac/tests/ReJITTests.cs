@@ -35,6 +35,30 @@ public class ReJITTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void IsEnabled_RejitOnAttachEnabled_ReturnsTrue(MockTarget.Architecture arch)
+    {
+        MockReJIT mockRejit = new MockReJIT(arch, rejitOnAttachEnabled: true);
+        var target = CreateTarget(arch, mockRejit);
+
+        var rejit = target.Contracts.ReJIT;
+        Assert.NotNull(rejit);
+        Assert.True(rejit.IsEnabled());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsEnabled_RejitOnAttachDisabled_NoProfiler_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        MockReJIT mockRejit = new MockReJIT(arch, rejitOnAttachEnabled: false);
+        var target = CreateTarget(arch, mockRejit);
+
+        var rejit = target.Contracts.ReJIT;
+        Assert.NotNull(rejit);
+        Assert.False(rejit.IsEnabled());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetRejitId_SyntheticAndExplicit_Success(MockTarget.Architecture arch)
     {
         MockReJIT mockRejit = new MockReJIT(arch);
@@ -74,7 +98,6 @@ public class ReJITTests
             { ILCodeVersionHandle.CreateSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100), RejitState.Active },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(1), MockReJIT.RejitFlags.kStateActive), RejitState.Active },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(2), MockReJIT.RejitFlags.kStateRequested), RejitState.Requested },
-            { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(3), MockReJIT.RejitFlags.kSuppressParams | MockReJIT.RejitFlags.kStateRequested), RejitState.Requested }
         };
 
         var target = CreateTarget(arch, mockRejit);

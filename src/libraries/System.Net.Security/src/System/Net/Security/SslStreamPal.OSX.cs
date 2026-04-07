@@ -177,6 +177,9 @@ namespace System.Net.Security
                             case PAL_TlsIo.WouldBlock:
                                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
                                 break;
+                            case PAL_TlsIo.ClosedGracefully:
+                                token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.ContextExpired);
+                                break;
                             default:
                                 Debug.Fail($"Unknown status value: {status}");
                                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
@@ -356,7 +359,7 @@ namespace System.Net.Security
                 sslContext.ReadPendingWrites(ref token);
                 return token;
             }
-            catch (Exception exc)
+            catch (Exception exc) when (exc is not ArgumentException)
             {
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
                 return token;

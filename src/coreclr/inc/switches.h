@@ -166,13 +166,13 @@
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 // FEATURE_PORTABLE_SHUFFLE_THUNKS depends on CPUSTUBLINKER that is de-facto JIT
-#if defined(FEATURE_JIT) && !defined(TARGET_X86)
+#if defined(FEATURE_DYNAMIC_CODE_COMPILED) && !defined(TARGET_X86)
 #define FEATURE_PORTABLE_SHUFFLE_THUNKS
 #endif
 
 // Dispatch interface calls via resolve helper followed by an indirect call.
 // Slow functional implementation, only used for stress-testing of DOTNET_JitForceControlFlowGuard=1.
-#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if defined(FEATURE_VIRTUAL_STUB_DISPATCH) && defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 #define FEATURE_RESOLVE_HELPER_DISPATCH
 #endif
 

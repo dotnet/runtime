@@ -212,8 +212,8 @@ namespace System.Text.Json.Nodes.Tests
         [InlineData("{ }", " {    }")]
         [InlineData("""{ "x" : 1, "y" : 2 }""", """{ "x" : 1, "y" : 2 }""")]
         [InlineData("""{ "x" : 1, "y" : 2 }""", """{ "y" : 2, "x" : 1 }""")]
-        [InlineData("""[]""", """ [ ]""")]
-        [InlineData("""[1, 2, 3]""", """ [1,  2,  3  ]""")]
+        [InlineData("[]", " [ ]")]
+        [InlineData("[1, 2, 3]", " [1,  2,  3  ]")]
         [InlineData("""[null, false, 3.14, "ABC", { "x" : 1, "y" : 2 }, []]""",
             """[null, false, 314e-2, "\u0041\u0042\u0043", { "y" : 2, "x" : 1 }, [ ] ]""")]
         public static void DeepEquals_EqualValuesReturnTrue(string value1, string value2)

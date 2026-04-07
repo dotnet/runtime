@@ -33,7 +33,7 @@
     "fast-glob": "3.3.3",
     "git-commit-info": "2.0.2",
     "magic-string": "0.30.19",
-    "rollup": "4.52.2",
+    "rollup": "4.59.0",
     "rollup-plugin-dts": "6.2.3",
     "terser": "5.44.0",
     "tslib": "2.8.1",

@@ -4,7 +4,7 @@
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
-    if (_ems_.ABORT) {
+    if (_ems_.ABORT || _ems_.DOTNET.isAborting) {
         // runtime is shutting down
         return;
     }
@@ -30,7 +30,7 @@ export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
 }
 
 export function SystemJS_ScheduleBackgroundJob(): void {
-    if (_ems_.ABORT) {
+    if (_ems_.ABORT || _ems_.DOTNET.isAborting) {
         // runtime is shutting down
         return;
     }
@@ -56,7 +56,7 @@ export function SystemJS_ScheduleBackgroundJob(): void {
 }
 
 export function SystemJS_ScheduleFinalization(): void {
-    if (_ems_.ABORT) {
+    if (_ems_.ABORT || _ems_.DOTNET.isAborting) {
         // runtime is shutting down
         return;
     }

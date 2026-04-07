@@ -17,7 +17,7 @@ public class DeadThreads
     ///     set DOTNET_Thread_DeadThreadCountThresholdForGCTrigger=8
     ///     set DOTNET_Thread_DeadThreadGCTriggerPeriodMilliseconds=3e8 // 1000
     /// </summary>
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
     [Fact]
     public static void GCTriggerSanityTest()
     {

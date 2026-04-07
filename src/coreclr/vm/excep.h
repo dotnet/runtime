@@ -170,12 +170,6 @@ void CrashDumpAndTerminateProcess(UINT exitCode);
 
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 
-// Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
-// in the native code.
-struct CallOutFilterParam { BOOL OneShot; };
-LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv);
-
-
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
                                            BOOL useLastThrownObject = FALSE,
@@ -592,8 +586,6 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread,
 //==========================================================================
 // Handy helper functions
 //==========================================================================
-LONG FilterAccessViolation(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
-
 bool IsInterceptableException(Thread *pThread);
 
 #ifdef DEBUGGING_SUPPORTED
@@ -648,11 +640,6 @@ inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);
 
 // See implementation for detailed comments in excep.cpp
-LONG AppDomainTransitionExceptionFilter(
-    EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
-    PVOID               pParam);
-
-// See implementation for detailed comments in excep.cpp
 LONG ReflectionInvocationExceptionFilter(
     EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
     PVOID               pParam);
@@ -662,35 +649,11 @@ LONG ReflectionInvocationExceptionFilter(
 LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData);
 #endif // !DACCESS_COMPILE
 
-// Enum that defines the types of exception notification handlers
-// that we support.
-enum ExceptionNotificationHandlerType
-{
-    UnhandledExceptionHandler   = 0x1
-    ,
-    FirstChanceExceptionHandler = 0x2
-};
-
 // This class contains methods to support delivering the various exception notifications.
 class ExceptionNotifications
 {
-private:
-    void static GetEventArgsForNotification(ExceptionNotificationHandlerType notificationType,
-        OBJECTREF *pOutEventArgs, OBJECTREF *pThrowable);
-
-    void static DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
-        OBJECTREF *pThrowable);
-
 public:
-    void static DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs,
-        OBJECTREF *pAppDomain);
-
-    BOOL static CanDeliverNotificationToCurrentAppDomain(ExceptionNotificationHandlerType notificationType);
-
-    void static DeliverNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pThrowable);
-
-public:
-    void static DeliverFirstChanceNotification();
+    static void DeliverFirstChanceNotification();
 };
 
 #ifndef DACCESS_COMPILE

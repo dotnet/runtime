@@ -397,11 +397,14 @@ BEGIN
     IDS_EE_CANNOTCAST                       "Unable to cast object of type '%1' to type '%2'."
 
     IDS_EE_CANNOTCASTSAME                   "[A]%1 cannot be cast to [B]%2. %3. %4."
+    IDS_EE_CANNOTCASTSAME_DETAIL_BYTE_ARRAY "Type %1 originates from '%2' in the context '%3' in a byte array"
+    IDS_EE_CANNOTCASTSAME_DETAIL_LOCATION   "Type %1 originates from '%2' in the context '%3' at location '%4'"
+    IDS_EE_CANNOTCASTSAME_GENARG_BYTE_ARRAY "Type %1 has a generic argument '%2' that originates from '%3' in the context '%4' in a byte array"
+    IDS_EE_CANNOTCASTSAME_GENARG_LOCATION   "Type %1 has a generic argument '%2' that originates from '%3' in the context '%4' at location '%5'"
     IDS_EE_INVALID_VT_FOR_CUSTOM_MARHALER   "Type of the VARIANT specified for a parameter with a custom marshaler is not supported by the custom marshaler."
     IDS_EE_BAD_COMEXTENDS_CLASS             "Types extending from COM objects should override all methods of an interface implemented by the base COM class."
     IDS_EE_MARSHAL_UNMAPPABLE_CHAR          "Cannot marshal: Encountered unmappable character."
 
-    IDS_EE_NOCUSTOMMARSHALER                "A call to GetInstance() for custom marshaler '%1' returned null, which is not allowed."
     IDS_EE_SIZECONTROLOUTOFRANGE            "Array size control parameter index is out of range."
     IDS_EE_SIZECONTROLBADTYPE               "Array size control parameter type not supported."
     IDS_EE_SAFEARRAYSZARRAYMISMATCH         "SafeArray cannot be marshaled to this array type because it has either nonzero lower bounds or more than one dimension."
@@ -462,7 +465,6 @@ BEGIN
     IDS_EE_BAD_COMEVENTITF_CLASS            "Methods on COM event interfaces must take a single delegate derived class as a parameter and have a void return type."
 
     IDS_EE_ICUSTOMMARSHALERNOTIMPL          "Custom marshaler '%1' does not implement the ICustomMarshaler interface."
-    IDS_EE_GETINSTANCENOTIMPL               "Custom marshaler '%1' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler."
 
     IDS_CLASSLOAD_COMIMPCANNOTHAVELAYOUT    "COM import type '%1' from assembly '%2' cannot have layout information."
     IDS_EE_INVALIDCOMDEFITF                 "Type '%1' has an invalid default COM interface: '%2'."

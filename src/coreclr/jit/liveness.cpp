@@ -1457,12 +1457,13 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
         }
     } while (changed && dfsTree->HasCycle());
 
-    // If we had unremovable blocks that are not in the DFS tree then make
-    // the 'keepAlive' set live in them. This would normally not be
-    // necessary assuming those blocks are actually unreachable; however,
-    // throw helpers fall into this category because we do not model them
-    // correctly, and those will actually end up reachable. Fix that up
-    // here.
+    // Now that we create throw helper blocks after lower,
+    // we don't need to search for them and set up liveness
+    // during lower.
+    assert(!m_compiler->fgRngChkThrowAdded);
+
+#ifdef DEBUG
+    // Double-check that no unreachable throw helper blocks exist.
     if (m_compiler->fgBBcount != dfsTree->GetPostOrderCount())
     {
         for (BasicBlock* block : m_compiler->Blocks())
@@ -1472,26 +1473,10 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
                 continue;
             }
 
-            VarSetOps::ClearD(m_compiler, block->bbLiveOut);
-            if (keepAliveThis)
-            {
-                unsigned thisVarIndex = m_compiler->lvaGetDesc(m_compiler->info.compThisArg)->lvVarIndex;
-                VarSetOps::AddElemD(m_compiler, block->bbLiveOut, thisVarIndex);
-            }
-
-            if (block->HasPotentialEHSuccs(m_compiler))
-            {
-                block->VisitEHSuccs(m_compiler, [=](BasicBlock* succ) {
-                    VarSetOps::UnionD(m_compiler, block->bbLiveOut, succ->bbLiveIn);
-                    return BasicBlockVisit::Continue;
-                });
-            }
-
-            VarSetOps::Assign(m_compiler, block->bbLiveIn, block->bbLiveOut);
+            assert(!block->HasFlag(BBF_THROW_HELPER));
         }
     }
 
-#ifdef DEBUG
     if (m_compiler->verbose)
     {
         printf("\nBB liveness after DoLiveVarAnalysis():\n\n");
@@ -1613,6 +1598,34 @@ void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveV
         memoryLiveness |= succ->bbMemoryLiveIn;
         return BasicBlockVisit::Continue;
     });
+}
+
+//------------------------------------------------------------------------
+// fgSetThrowHelpBlockLiveness: set liveness for throw helper block
+//
+// Arguments:
+//  block -- potential throw helper block
+//
+void Compiler::fgSetThrowHelpBlockLiveness(BasicBlock* block)
+{
+    VarSetOps::ClearD(this, block->bbLiveOut);
+
+    const bool keepAliveThis = lvaKeepAliveAndReportThis() && lvaTable[info.compThisArg].lvTracked;
+    if (keepAliveThis)
+    {
+        unsigned thisVarIndex = lvaGetDesc(info.compThisArg)->lvVarIndex;
+        VarSetOps::AddElemD(this, block->bbLiveOut, thisVarIndex);
+    }
+
+    if (block->HasPotentialEHSuccs(this))
+    {
+        block->VisitEHSuccs(this, [=](BasicBlock* succ) {
+            VarSetOps::UnionD(this, block->bbLiveOut, succ->bbLiveIn);
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    VarSetOps::Assign(this, block->bbLiveIn, block->bbLiveOut);
 }
 
 #ifdef DEBUG
@@ -2201,7 +2214,7 @@ bool Liveness<TLiveness>::RemoveDeadStore(GenTree**           pTree,
         {
             JITDUMP("removing stmt with no side effects\n");
 
-            // No side effects - remove the whole statement from the block->bbStmtList.
+            // No side effects - remove the whole statement from the block's statement list.
             m_compiler->fgRemoveStmt(m_compiler->compCurBB, m_compiler->compCurStmt);
 
             // Since we removed it do not process the rest (i.e. "data") of the statement
@@ -2530,8 +2543,6 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_START_PREEMPTGC:
             case GT_PROF_HOOK:
             case GT_SWITCH_TABLE:
-            case GT_PINVOKE_PROLOG:
-            case GT_PINVOKE_EPILOG:
             case GT_RETURNTRAP:
             case GT_PUTARG_STK:
             case GT_IL_OFFSET:
@@ -2539,6 +2550,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_KEEPALIVE:
             case GT_SWIFT_ERROR_RET:
             case GT_GCPOLL:
+            case GT_WASM_JEXCEPT:
                 // Never remove these nodes, as they are always side-effecting.
                 //
                 // NOTE: the only side-effect of some of these nodes (GT_CMP, GT_SUB_HI) is a write to the flags

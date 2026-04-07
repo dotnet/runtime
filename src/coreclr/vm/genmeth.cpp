@@ -15,7 +15,9 @@
 #include "instmethhash.h"
 #include "typestring.h"
 #include "typedesc.h"
+#ifndef DACCESS_COMPILE
 #include "comdelegate.h"
+#endif // !DACCESS_COMPILE
 
 // Instantiated generic methods
 //
@@ -60,6 +62,8 @@
 // should be the normalized representative genericMethodArgs (see typehandle.h)
 //
 
+
+#ifndef DACCESS_COMPILE
 
 // Helper method that creates a method-desc off a template method desc
 static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
@@ -150,6 +154,8 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
     return pMD;
 }
 
+#endif // !DACCESS_COMPILE
+
 //
 // The following methods map between tightly bound boxing and unboxing MethodDesc.
 // We always layout boxing and unboxing MethodDescs next to each other in same
@@ -167,6 +173,7 @@ static MethodDesc * FindTightlyBoundWrappedMethodDesc(MethodDesc * pMD)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pMD));
+        SUPPORTS_DAC;
     }
     CONTRACTL_END
 
@@ -196,6 +203,7 @@ static MethodDesc * FindTightlyBoundUnboxingStub(MethodDesc * pMD)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pMD));
+        SUPPORTS_DAC;
     }
     CONTRACTL_END
 
@@ -227,7 +235,7 @@ static MethodDesc * FindTightlyBoundUnboxingStub(MethodDesc * pMD)
     return pCurMD->IsUnboxingStub() ? pCurMD : NULL;
 }
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 //
 // Alternative brute-force implementation of FindTightlyBoundWrappedMethodDesc for debug-only check.
 //
@@ -304,7 +312,9 @@ static MethodDesc * FindTightlyBoundUnboxingStub_DEBUG(MethodDesc * pMD)
     }
     return NULL;
 }
-#endif // _DEBUG
+#endif // _DEBUG && !DACCESS_COMPILE
+
+#ifndef DACCESS_COMPILE
 
 /* static */
 InstantiatedMethodDesc *
@@ -574,6 +584,8 @@ InstantiatedMethodDesc::FindOrCreateExactClassMethod(MethodTable *pExactMT,
     return pInstMD;
 }
 
+#endif // !DACCESS_COMPILE
+
 // N.B. it is not guarantee that the returned InstantiatedMethodDesc is restored.
 // It is the caller's responsibility to call CheckRestore on the returned value.
 /* static */
@@ -590,6 +602,7 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
         GC_NOTRIGGER;
         FORBID_FAULT;
         PRECONDITION(CheckPointer(pExactOrRepMT));
+        SUPPORTS_DAC;
 
         // All wrapped method descriptors (except BoxedEntryPointStubs, which don't use this path) are
         // canonical and exhibit some kind of code sharing.
@@ -744,6 +757,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     {
         THROWS;
         if (allowCreate) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
+        if (!allowCreate) { SUPPORTS_DAC; }
         INJECT_FAULT(COMPlusThrowOM(););
 
         PRECONDITION(CheckPointer(pDefMD));
@@ -868,8 +882,10 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             // that there is no associated unboxing stub, and FindTightlyBoundUnboxingStub takes
             // this into account but the _DEBUG version does not, so only use it if the method
             // returned is actually different.
+#ifndef DACCESS_COMPILE
             _ASSERTE(pResultMD == pMDescInCanonMT ||
                      pResultMD == FindTightlyBoundUnboxingStub_DEBUG(pMDescInCanonMT));
+#endif // !DACCESS_COMPILE
 
             if (pResultMD != NULL)
             {
@@ -901,6 +917,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     RETURN(NULL);
                 }
 
+#ifndef DACCESS_COMPILE
                 CrstHolder ch(&pLoaderModule->m_InstMethodHashTableCrst);
 
                 // Check whether another thread beat us to it!
@@ -939,6 +956,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                 }
 
                 // CrstHolder goes out of scope here
+#endif // !DACCESS_COMPILE
             }
 
         }
@@ -966,6 +984,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     RETURN(NULL);
                 }
 
+#ifndef DACCESS_COMPILE
                 // Recursively get the non-unboxing instantiating stub.  Thus we chain an unboxing
                 // stub with an instantiating stub.
                 MethodDesc* pNonUnboxingStub=
@@ -1023,6 +1042,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                 }
 
                 // CrstHolder goes out of scope here
+#endif // !DACCESS_COMPILE
             }
         }
         _ASSERTE(pResultMD);
@@ -1071,8 +1091,10 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             // that this is not an unboxing stub, and FindTightlyBoundWrappedMethodDesc takes
             // this into account but the _DEBUG version does not, so only use it if the method
             // returned is actually different.
+#ifndef DACCESS_COMPILE
             _ASSERTE(pResultMD == pMDescInCanonMT ||
                      pResultMD == FindTightlyBoundWrappedMethodDesc_DEBUG(pMDescInCanonMT));
+#endif // !DACCESS_COMPILE
 
             if (pResultMD != NULL)
             {
@@ -1143,11 +1165,13 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     RETURN(NULL);
                 }
 
+#ifndef DACCESS_COMPILE
                 pInstMD = InstantiatedMethodDesc::NewInstantiatedMethodDesc(pExactMT->GetCanonicalMethodTable(),
                                                                             pMDescInCanonMT,
                                                                             NULL,
                                                                             Instantiation(repInst, methodInst.GetNumArgs()),
                                                                             TRUE);
+#endif // !DACCESS_COMPILE
             }
         }
         else if (getWrappedThenStub)
@@ -1168,6 +1192,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     RETURN(NULL);
                 }
 
+#ifndef DACCESS_COMPILE
                 // This always returns the shared code.  Repeat the original call except with
                 // approximate params and allowInstParam=true
                 MethodDesc* pWrappedMD = FindOrCreateAssociatedMethodDesc(pDefMD,
@@ -1188,6 +1213,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                             pWrappedMD,
                                                                             methodInst,
                                                                             FALSE);
+#endif // !DACCESS_COMPILE
             }
         }
         else
@@ -1209,11 +1235,13 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     RETURN(NULL);
                 }
 
+#ifndef DACCESS_COMPILE
                 pInstMD = InstantiatedMethodDesc::NewInstantiatedMethodDesc(pExactMT,
                                                                             pMDescInCanonMT,
                                                                             NULL,
                                                                             methodInst,
                                                                             FALSE);
+#endif // !DACCESS_COMPILE
             }
         }
         _ASSERTE(pInstMD);
@@ -1228,6 +1256,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         RETURN(pInstMD);
     }
 }
+
+#ifndef DACCESS_COMPILE
 
 // Normalize the methoddesc for reflection
 /*static*/ MethodDesc* MethodDesc::FindOrCreateAssociatedMethodDescForReflection(
@@ -1588,8 +1618,6 @@ void MethodDesc::CheckConstraintMetadataValidity(BOOL *pfHasCircularMethodConstr
     return;
 }
 
-
-#ifndef DACCESS_COMPILE
 
 BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNotSatisfied/* = FALSE*/)
 {

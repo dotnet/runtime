@@ -281,6 +281,7 @@ private:
     bool AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTraits,
                                           BitVec&       escapingNodes,
                                           BitVec&       escapingNodesToProcess);
+    bool AnalyzePseudoForCloning(BitVecTraits* bitVecTraits, BitVec& escapingNodes, unsigned pseudoIndex);
     bool CanClone(CloneInfo* info);
     bool CheckCanClone(CloneInfo* info);
     bool CloneOverlaps(CloneInfo* info);

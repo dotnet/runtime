@@ -9,6 +9,7 @@ using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Reflection.Metadata;
 using System.Collections.Immutable;
+using System.Reflection;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -17,6 +18,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private const int TYPE_MASK_OFFSET = 27; // offset of type in field desc flags2
     private readonly Target _target;
     private readonly TargetPointer _freeObjectMethodTablePointer;
+    private readonly TargetPointer _continuationMethodTablePointer;
     private readonly ulong _methodDescAlignment;
     private readonly TypeValidation _typeValidation;
     private readonly MethodValidation _methodValidation;
@@ -26,6 +28,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Dictionary<TargetPointer, MethodTable> _methodTables = new();
     private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
     private readonly Dictionary<TypeKey, TypeHandle> _typeHandles = new();
+    private readonly Dictionary<TypeKeyByName, TypeHandle> _typeHandlesByName = new();
+
+    public void Flush()
+    {
+        _methodTables.Clear();
+        _methodDescs.Clear();
+        _typeHandles.Clear();
+        _typeHandlesByName.Clear();
+    }
 
     internal struct MethodTable
     {
@@ -97,6 +108,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
+    private readonly struct TypeKeyByName : IEquatable<TypeKeyByName>
+    {
+        public TypeKeyByName(string name, string namespaceName, TargetPointer module)
+        {
+            Name = name;
+            Namespace = namespaceName;
+            Module = module;
+        }
+        public string Name { get; }
+        public string Namespace { get; }
+        public TargetPointer Module { get; }
+        public bool Equals(TypeKeyByName other) => Name == other.Name && Namespace == other.Namespace && Module == other.Module;
+        public override bool Equals(object? obj) => obj is TypeKeyByName other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(Name, Namespace, Module);
+    }
+
     // Low order bits of TypeHandle address.
     // If the low bits contain a 2, then it is a TypeDesc
     [Flags]
@@ -158,6 +185,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         TokenMask = 0xffffff,
         IsStatic = 0x1000000,
         IsThreadStatic = 0x2000000,
+        IsRVA = 0x4000000,
     }
 
     internal enum FieldDescFlags2 : uint
@@ -208,17 +236,52 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         private static uint ComputeSize(Target target, Data.MethodDesc desc)
         {
-            // Size of the MethodDesc is variable, read it from the targets lookup table
-            // See MethodDesc::SizeOf in method.cpp for details
-            TargetPointer methodDescSizeTable = target.ReadGlobalPointer(Constants.Globals.MethodDescSizeTable);
+            // See s_ClassificationSizeTable in method.cpp in the runtime for how the size is determined based on the method classification and flags.
+            uint baseSize;
+            switch ((MethodClassification)(desc.Flags & (ushort)MethodDescFlags_1.MethodDescFlags.ClassificationMask))
+            {
+                case MethodClassification.IL:
+                    baseSize = target.GetTypeInfo(DataType.MethodDesc).Size ?? throw new InvalidOperationException("MethodDesc type size must be known");
+                    break;
+                case MethodClassification.FCall:
+                    baseSize = target.GetTypeInfo(DataType.FCallMethodDesc).Size ?? throw new InvalidOperationException("FCallMethodDesc type size must be known");
+                    break;
+                case MethodClassification.PInvoke:
+                    baseSize = target.GetTypeInfo(DataType.PInvokeMethodDesc).Size ?? throw new InvalidOperationException("PInvokeMethodDesc type size must be known");
+                    break;
+                case MethodClassification.EEImpl:
+                    baseSize = target.GetTypeInfo(DataType.EEImplMethodDesc).Size ?? throw new InvalidOperationException("EEImplMethodDesc type size must be known");
+                    break;
+                case MethodClassification.Array:
+                    baseSize = target.GetTypeInfo(DataType.ArrayMethodDesc).Size ?? throw new InvalidOperationException("ArrayMethodDesc type size must be known");
+                    break;
+                case MethodClassification.Instantiated:
+                    baseSize = target.GetTypeInfo(DataType.InstantiatedMethodDesc).Size ?? throw new InvalidOperationException("InstantiatedMethodDesc type size must be known");
+                    break;
+                case MethodClassification.ComInterop:
+                    baseSize = target.GetTypeInfo(DataType.CLRToCOMCallMethodDesc).Size ?? throw new InvalidOperationException("CLRToCOMCallMethodDesc type size must be known");
+                    break;
+                case MethodClassification.Dynamic:
+                    baseSize = target.GetTypeInfo(DataType.DynamicMethodDesc).Size ?? throw new InvalidOperationException("DynamicMethodDesc type size must be known");
+                    break;
+                default:
+                    throw new InvalidOperationException("Invalid method classification");
+            }
 
-            ushort arrayOffset = (ushort)(desc.Flags & (ushort)(
-                MethodDescFlags_1.MethodDescFlags.ClassificationMask |
-                MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot |
-                MethodDescFlags_1.MethodDescFlags.HasMethodImpl |
-                MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot |
-                MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData));
-            return target.Read<byte>(methodDescSizeTable + arrayOffset);
+            MethodDescFlags_1.MethodDescFlags flags = (MethodDescFlags_1.MethodDescFlags)desc.Flags;
+            if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot))
+                baseSize += target.GetTypeInfo(DataType.NonVtableSlot).Size ?? throw new InvalidOperationException("NonVtableSlot type size must be known");
+
+            if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasMethodImpl))
+                baseSize += target.GetTypeInfo(DataType.MethodImpl).Size ?? throw new InvalidOperationException("MethodImpl type size must be known");
+
+            if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot))
+                baseSize += target.GetTypeInfo(DataType.NativeCodeSlot).Size ?? throw new InvalidOperationException("NativeCodeSlot type size must be known");
+
+            if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData))
+                baseSize += target.GetTypeInfo(DataType.AsyncMethodData).Size ?? throw new InvalidOperationException("AsyncMethodData type size must be known");
+
+            return baseSize;
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);
@@ -260,6 +323,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             }
         }
 
+    }
+
+    private enum OptimizationTier_1 : uint
+    {
+        OptimizationTier0,
+        OptimizationTier1,
+        OptimizationTier1OSR,
+        OptimizationTierOptimized,
+        OptimizationTier0Instrumented,
+        OptimizationTier1Instrumented,
+        OptimizationTierUnknown = 0xFFFFFFFF
     }
 
     private sealed class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
@@ -343,10 +417,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
-    internal RuntimeTypeSystem_1(Target target, TypeValidation typeValidation, MethodValidation methodValidation, TargetPointer freeObjectMethodTablePointer, ulong methodDescAlignment)
+    internal RuntimeTypeSystem_1(Target target, TypeValidation typeValidation, MethodValidation methodValidation, TargetPointer freeObjectMethodTablePointer, TargetPointer continuationMethodTablePointer, ulong methodDescAlignment)
     {
         _target = target;
         _freeObjectMethodTablePointer = freeObjectMethodTablePointer;
+        _continuationMethodTablePointer = continuationMethodTablePointer;
         _methodDescAlignment = methodDescAlignment;
         _typeValidation = typeValidation;
         _methodValidation = methodValidation;
@@ -354,6 +429,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
+    internal TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
 
     internal ulong MethodDescAlignment => _methodDescAlignment;
 
@@ -473,6 +549,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsString(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsString;
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
+    public bool IsContinuation(TypeHandle typeHandle) => typeHandle.IsMethodTable()
+        && _continuationMethodTablePointer != TargetPointer.Null
+        && _methodTables[typeHandle.Address].ParentMethodTable == _continuationMethodTablePointer;
     public bool IsDynamicStatics(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsDynamicStatics;
     public ushort GetNumInterfaces(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : _methodTables[typeHandle.Address].NumInterfaces;
 
@@ -668,6 +747,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return default;
     }
 
+    public bool IsEnum(TypeHandle typeHandle)
+    {
+        // Enums have Category_PrimitiveValueType in their MethodTable flags and their
+        // InternalCorElementType is a primitive type (I1, U1, I2, U2, I4, U4, I8, U8),
+        // not ValueType. Regular primitive value types (IntPtr/UIntPtr) have Category_TruePrimitive.
+        if (!typeHandle.IsMethodTable())
+            return false;
+
+        CorElementType sigType = GetSignatureCorElementType(typeHandle);
+        if (sigType != CorElementType.ValueType)
+            return false;
+
+        CorElementType internalType = (CorElementType)GetClassData(typeHandle).InternalCorElementType;
+        return internalType != CorElementType.ValueType;
+    }
+
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     public bool IsArray(TypeHandle typeHandle, out uint rank)
     {
@@ -678,8 +773,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             switch (methodTable.Flags.GetFlag(MethodTableFlags_1.WFLAGS_HIGH.Category_Mask))
             {
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_Array:
-                    TargetPointer clsPtr = GetClassPointer(typeHandle);
-                    rank = _target.ProcessedData.GetOrAdd<Data.ArrayClass>(clsPtr).Rank;
+                    // Multidim array: BaseSize = ArrayBaseSize + Rank * sizeof(uint) * 2
+                    uint arrayBaseSize = _target.ReadGlobal<uint>(Constants.Globals.ArrayBaseSize);
+                    uint boundsSize = methodTable.Flags.BaseSize - arrayBaseSize;
+                    rank = boundsSize / (sizeof(uint) * 2);
                     return true;
 
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_Array | MethodTableFlags_1.WFLAGS_HIGH.Category_IfArrayThenSzArray:
@@ -799,6 +896,121 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         CoreLibBinder coreLibData = _target.ProcessedData.GetOrAdd<CoreLibBinder>(coreLib);
         TargetPointer typeHandlePtr = _target.ReadPointer(coreLibData.Classes + (ulong)typeCode * (ulong)_target.PointerSize);
         return GetTypeHandle(typeHandlePtr);
+    }
+
+    private static bool ModuleMatch(AssemblyReference assemblyRef, AssemblyDefinition assemblyDef)
+    {
+        AssemblyName assemblyRefName = assemblyRef.GetAssemblyName();
+        AssemblyName assemblyDefName = assemblyDef.GetAssemblyName();
+        if ((assemblyRefName.Name != assemblyDefName.Name) ||
+                (assemblyRefName.Version != assemblyDefName.Version) ||
+                (assemblyRefName.CultureName != assemblyDefName.CultureName))
+        {
+            return false;
+        }
+
+        ReadOnlySpan<byte> refToken = assemblyRefName.GetPublicKeyToken();
+        ReadOnlySpan<byte> defToken = assemblyDefName.GetPublicKeyToken();
+        return refToken.SequenceEqual(defToken);
+    }
+
+    private MetadataReader? LookForHandle(AssemblyReference exportedAssemblyRef)
+    {
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+        foreach (ModuleHandle mdhandle in _target.Contracts.Loader.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeLoaded))
+        {
+            MetadataReader? md2 = _target.Contracts.EcmaMetadata.GetMetadata(mdhandle);
+            if (md2 == null)
+                continue;
+            AssemblyDefinition assemblyDefinition = md2.GetAssemblyDefinition();
+            if (ModuleMatch(exportedAssemblyRef, assemblyDefinition))
+            {
+                return md2;
+            }
+        }
+        return null;
+    }
+
+    TypeHandle IRuntimeTypeSystem.GetTypeByNameAndModule(string name, string nameSpace, ModuleHandle moduleHandle)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        TargetPointer modulePtr = loader.GetModule(moduleHandle);
+        if (_typeHandlesByName.TryGetValue(new TypeKeyByName(name, nameSpace, modulePtr), out TypeHandle existing))
+            return existing;
+        string[] parts = name.Split('+');
+        string outerName = parts[0];
+        MetadataReader? md = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        TypeDefinitionHandle currentHandle = default;
+        // create a hash set of MDs and if we come across the same one more than once in a loop then we return null typehandle
+        HashSet<MetadataReader> seenMDs = new();
+        // 1. find the outer type
+        while (md != null && seenMDs.Add(md))
+        {
+            foreach (TypeDefinitionHandle typeDefHandle in md.TypeDefinitions)
+            {
+                TypeDefinition typedef = md.GetTypeDefinition(typeDefHandle);
+                if (md.GetString(typedef.Name) == outerName && md.GetString(typedef.Namespace) == nameSpace)
+                {
+                    // found our outermost type, remember it
+                    currentHandle = typeDefHandle;
+                    break;
+                }
+            }
+
+            if (currentHandle == default)
+            {
+                // look for forwarded types
+                foreach (ExportedTypeHandle exportedTypeHandle in md.ExportedTypes)
+                {
+                    ExportedType exportedType = md.GetExportedType(exportedTypeHandle);
+                    if (exportedType.Implementation.Kind != HandleKind.AssemblyReference || !exportedType.IsForwarder)
+                        continue;
+                    if (md.GetString(exportedType.Name) == outerName && md.GetString(exportedType.Namespace) == nameSpace)
+                    {
+                        // get the assembly ref for target
+                        AssemblyReferenceHandle arefHandle = (AssemblyReferenceHandle)exportedType.Implementation;
+                        AssemblyReference exportedAssemblyRef = md.GetAssemblyReference(arefHandle);
+                        md = LookForHandle(exportedAssemblyRef);
+                        break;
+                    }
+                }
+            }
+            else break; // if we found our typedef without forwarding break out of the while loop
+        }
+
+        if (currentHandle == default)
+            return new TypeHandle(TargetPointer.Null);
+
+        // 2. Walk down the nested types
+        for (int i = 1; i < parts.Length; i++)
+        {
+            string nestedName = parts[i];
+            bool found = false;
+            foreach (TypeDefinitionHandle nestedHandle in md!.GetTypeDefinition(currentHandle).GetNestedTypes())
+            {
+                TypeDefinition nestedDef = md.GetTypeDefinition(nestedHandle);
+                if (md.GetString(nestedDef.Name) == nestedName)
+                {
+                    currentHandle = nestedHandle;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                return new TypeHandle(TargetPointer.Null);
+        }
+
+        // 3. We have the handle, look up the type handle
+        int token = MetadataTokens.GetToken((EntityHandle)currentHandle);
+        TargetPointer typeDefToMethodTable = loader.GetLookupTables(moduleHandle).TypeDefToMethodTable;
+        TargetPointer typeHandlePtr = loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        if (typeHandlePtr == TargetPointer.Null)
+            return new TypeHandle(TargetPointer.Null);
+        TypeHandle foundTypeHandle = rts.GetTypeHandle(typeHandlePtr);
+        _ = _typeHandlesByName.TryAdd(new TypeKeyByName(name, nameSpace, modulePtr), foundTypeHandle);
+        return foundTypeHandle;
     }
 
     public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)
@@ -1444,6 +1656,37 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return TargetPointer.Null;
     }
 
+    internal static OptimizationTier GetOptimizationTier(uint? optimizationTier)
+    {
+        return (OptimizationTier_1?)optimizationTier switch
+        {
+            OptimizationTier_1.OptimizationTier0 => OptimizationTier.OptimizationTier0,
+            OptimizationTier_1.OptimizationTier1 => OptimizationTier.OptimizationTier1,
+            OptimizationTier_1.OptimizationTier1OSR => OptimizationTier.OptimizationTier1OSR,
+            OptimizationTier_1.OptimizationTierOptimized => OptimizationTier.OptimizationTierOptimized,
+            OptimizationTier_1.OptimizationTier0Instrumented => OptimizationTier.OptimizationTier0Instrumented,
+            OptimizationTier_1.OptimizationTier1Instrumented => OptimizationTier.OptimizationTier1Instrumented,
+            _ => OptimizationTier.OptimizationTierUnknown,
+        };
+    }
+
+    OptimizationTier IRuntimeTypeSystem.GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        TargetPointer codeDataAddress = methodDesc.CodeData;
+        if (codeDataAddress == TargetPointer.Null)
+            return OptimizationTier.OptimizationTierUnknown;
+
+        Data.MethodDescCodeData codeData = _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(codeDataAddress);
+        return GetOptimizationTier(codeData.OptimizationTier);
+    }
+
+    bool IRuntimeTypeSystem.IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.IsEligibleForTieredCompilation;
+    }
+
     private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries
     {
         private readonly RuntimeTypeSystem_1 _rts;
@@ -1495,6 +1738,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsThreadStatic) != 0;
     }
 
+    private bool IsFieldDescRVA(TargetPointer fieldDescPointer)
+    {
+        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
+        return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsRVA) != 0;
+    }
+
     bool IRuntimeTypeSystem.IsFieldDescStatic(TargetPointer fieldDescPointer)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
@@ -1516,5 +1765,109 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return (uint)fieldDef.GetRelativeVirtualAddress();
         }
         return fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
+    }
+
+    TargetPointer IRuntimeTypeSystem.GetFieldDescByName(TypeHandle typeHandle, string fieldName)
+    {
+        if (!typeHandle.IsMethodTable())
+            return TargetPointer.Null;
+
+        TargetPointer modulePtr = GetModule(typeHandle);
+        if (modulePtr == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        uint typeDefToken = GetTypeDefToken(typeHandle);
+        if (typeDefToken == 0)
+            return TargetPointer.Null;
+
+        EntityHandle entityHandle = MetadataTokens.EntityHandle((int)typeDefToken);
+        if (entityHandle.Kind != HandleKind.TypeDefinition)
+            return TargetPointer.Null;
+
+        TypeDefinitionHandle typeDefHandle = (TypeDefinitionHandle)entityHandle;
+
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? md = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (md is null)
+            return TargetPointer.Null;
+
+        TargetPointer fieldDefToDescMap = loader.GetLookupTables(moduleHandle).FieldDefToDesc;
+        foreach (FieldDefinitionHandle fieldDefHandle in md.GetTypeDefinition(typeDefHandle).GetFields())
+        {
+            FieldDefinition fieldDef = md.GetFieldDefinition(fieldDefHandle);
+            if (md.GetString(fieldDef.Name) == fieldName)
+            {
+                uint fieldDefToken = (uint)MetadataTokens.GetToken(fieldDefHandle);
+                TargetPointer fieldDescPtr = loader.GetModuleLookupMapElement(fieldDefToDescMap, fieldDefToken, out _);
+                return fieldDescPtr;
+            }
+        }
+
+        return TargetPointer.Null;
+    }
+
+    private TargetPointer GetStaticAddressHandle(TargetPointer @base, uint offset, bool isRVA, TargetPointer fieldDescPointer, ModuleHandle moduleHandle)
+    {
+        if (isRVA)
+        {
+            ILoader loader = _target.Contracts.Loader;
+            if (offset == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetDynamicRVA))
+            {
+                return loader.GetDynamicIL(moduleHandle, ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer));
+            }
+            TargetPointer peAssembly = loader.GetPEAssembly(moduleHandle);
+            return loader.GetFieldAddressFromRva(peAssembly, (int)offset);
+        }
+        return new TargetPointer(@base + offset);
+    }
+
+    TargetPointer IRuntimeTypeSystem.GetFieldDescStaticAddress(TargetPointer fieldDescPointer)
+    {
+        TargetPointer enclosingMT = ((IRuntimeTypeSystem)this).GetMTOfEnclosingClass(fieldDescPointer);
+        TypeHandle ctx = GetTypeHandle(enclosingMT);
+        TargetPointer modulePtr = GetModule(ctx);
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+        CorElementType type = ((IRuntimeTypeSystem)this).GetFieldDescType(fieldDescPointer);
+        TargetPointer @base;
+        if (type == CorElementType.Class || type == CorElementType.ValueType)
+        {
+            @base = GetGCStaticsBasePointer(ctx);
+        }
+        else
+        {
+            @base = GetNonGCStaticsBasePointer(ctx);
+        }
+
+        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+        uint token = ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer);
+        FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
+        FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
+
+        uint offset = ((IRuntimeTypeSystem)this).GetFieldDescOffset(fieldDescPointer, fieldDef);
+        bool isRVA = IsFieldDescRVA(fieldDescPointer);
+        TargetPointer handleAddr = GetStaticAddressHandle(@base, offset, isRVA, fieldDescPointer, moduleHandle);
+        if (type == CorElementType.ValueType && !isRVA)
+        {
+            Data.ObjectHandle objectHandle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(handleAddr);
+            Data.Object obj = _target.ProcessedData.GetOrAdd<Data.Object>(objectHandle.Object);
+            return obj.Data;
+        }
+        return handleAddr;
+    }
+
+    void IRuntimeTypeSystem.GetCoreLibFieldDescAndDef(string @namespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        TargetPointer systemAssembly = loader.GetSystemAssembly();
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
+        IRuntimeTypeSystem rts = (IRuntimeTypeSystem)this;
+        TypeHandle th = rts.GetTypeByNameAndModule(typeName, @namespace, moduleHandle);
+        fieldDescAddr = rts.GetFieldDescByName(th, fieldName);
+        uint token = rts.GetFieldDescMemberDef(fieldDescAddr);
+        FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
+        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+        fieldDef = mdReader.GetFieldDefinition(fieldHandle);
     }
 }

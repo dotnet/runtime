@@ -1,4 +1,4 @@
-# WebCIL assembly format
+# Webcil assembly format
 
 ## Version
 
@@ -12,7 +12,7 @@ customers that certain users are unable to use their apps because firewalls and 
 may prevent browsers from downloading or caching assemblies with a .DLL extension and PE contents.
 
 This document defines a new container format for ECMA-335 assemblies that uses the `.wasm` extension
-and uses a new WebCIL metadata payload format wrapped in a WebAssembly module.
+and uses a new Webcil metadata payload format wrapped in a WebAssembly module.
 
 
 ## Specification
@@ -111,23 +111,30 @@ The Webcil headers consist of a Webcil header followed by a sequence of section 
 
 ``` c
 struct WebcilHeader {
-	uint8_t id[4]; // 'W' 'b' 'I' 'L'
-	// 4 bytes
-	uint16_t version_major; // 0
-	uint16_t version_minor; // 0
-	// 8 bytes
-	uint16_t coff_sections;
-	uint16_t reserved0; // 0
-	// 12 bytes
+    uint8_t Id[4]; // 'W' 'b' 'I' 'L'
+    // 4 bytes
+    uint16_t VersionMajor; // 0
+    uint16_t VersionMinor; // 0
+    // 8 bytes
+    uint16_t CoffSections;
+    uint16_t Reserved0; // 0
+    // 12 bytes
 
-	uint32_t pe_cli_header_rva;
-	uint32_t pe_cli_header_size;
-	// 20 bytes
+    uint32_t PeCliHeaderRva;
+    uint32_t PeCliHeaderSize;
+    // 20 bytes
 
-    uint32_t pe_debug_rva;
-    uint32_t pe_debug_size;
+    uint32_t PeDebugRva;
+    uint32_t PeDebugSize;
     // 28 bytes
 };
+```
+
+#### Webcil Header (V1 Changes)
+For Webcil V1, the Reserved0 field may be used to store a 1-based index which corresponds to a
+base reloc section.
+```
+    uint16_t Reserved0; // 0, or 1-based index of .reloc webcil section
 ```
 
 The Webcil header starts with the magic characters 'W' 'b' 'I' 'L' followed by the version in major
@@ -139,7 +146,7 @@ of the CLI header, as well as the directory entry for the PE debug directory.
 
 #### Section header table
 
-Immediately following the Webcil header is a sequence (whose length is given by `coff_sections`
+Immediately following the Webcil header is a sequence (whose length is given by `CoffSections`
 above) of section headers giving their virtual address and virtual size, as well as the offset in
 the Webcil payload and the size in the file.  This is a subset of the PE section header that includes
 enough information to correctly interpret the RVAs from the webcil header and from the .NET
@@ -147,18 +154,29 @@ metadata. Other information (such as the section names) are not included.
 
 ``` c
 struct SectionHeader {
-    uint32_t st_virtual_size;
-    uint32_t st_virtual_address;
-    uint32_t st_raw_data_size;
-    uint32_t st_raw_data_ptr;
+    uint32_t VirtualSize;
+    uint32_t VirtualAddress;
+    uint32_t SizeOfRawData;
+    uint32_t PointerToRawData;
 };
 ```
 
-(**Note**: the `st_raw_data_ptr` member is an offset from the beginning of the Webcil payload, not from the beginning of the WebAssembly wrapper module.)
+(**Note**: the `PointerToRawData` member is an offset from the beginning of the Webcil payload, not from the beginning of the WebAssembly wrapper module.)
 
 #### Sections
 
-Immediately following the section table are the sections.  These are copied verbatim from the PE file.
+The section data starts at the first 16-byte-aligned offset after the end of the
+section header table. Any gap between the last section header and the first section's
+raw data is filled with zero-valued padding bytes. Each subsequent section likewise
+begins at a 16-byte-aligned offset. This alignment guarantees that RVA static fields
+(such as those backing `ReadOnlySpan<T>` over types up to `Vector128<T>`) retain
+their natural alignment when the payload is loaded into memory at a 16-byte-aligned
+base address.
+
+Because PE `SizeOfRawData` is normally a multiple of the PE `FileAlignment` (≥ 512),
+the inter-section padding is almost always zero bytes. In the worst case a single
+assembly may gain up to ~30 bytes of padding total (header-to-first-section plus
+one boundary per additional section).
 
 ### Rationale
 
@@ -173,3 +191,18 @@ Lossless conversion from Webcil back to PE is not intended to be supported.  The
 documented in order to support diagnostic tooling and utilities such as decompilers, disassemblers,
 file identification utilities, dependency analyzers, etc.
 
+
+### Webcil V1 (Base Relocations)
+It is possible to specify base relocations in the standard PE base relocation format in Webcil V1.
+Relocations are grouped by page (default 4kb), and each relocation entry is a `uint16_t` containing:
+
+- Relocation Type (upper 4 bits)
+  - IMAGE_REL_BASED_DIR64 (wasm64)
+  - IMAGE_REL_BASED_HIGHLOW (wasm32)
+  - IMAGE_REL_BASED_WASM32_TABLE (wasm32)
+  - IMAGE_REL_BASED_WASM64_TABLE (wasm64)
+- Offset (lower 12 bits)
+
+`IMAGE_REL_BASED_WASM{32, 64}_TABLE` relocations represent a "table base offset" fixup; They should be used to indicate places
+where function pointer table indices need to be offset after the Webcil payload has been loaded by the runtime. The offset will
+be dependent on the state of the table when an implementation's loader loads a Webcil module.

@@ -9,6 +9,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor;
 
+[TestCategory("native")]
 public class NativeTests : BlazorWasmTestBase
 {
     public NativeTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

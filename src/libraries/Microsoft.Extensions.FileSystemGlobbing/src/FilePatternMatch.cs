@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public string Stem { get; }
 
         /// <summary>
-        /// Initializes new instance of <see cref="FilePatternMatch" />
+        /// Initializes a new instance of the <see cref="FilePatternMatch" /> struct.
         /// </summary>
         /// <param name="path">The path to the file matched, relative to the beginning of the matching search pattern.</param>
         /// <param name="stem">The subpath to the file matched, relative to the first wildcard in the matching search pattern.</param>
@@ -64,9 +64,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing
             obj is FilePatternMatch match && Equals(match);
 
         /// <summary>
-        /// Gets a hash for the file pattern match.
+        /// Gets a hash code for the current <see cref="FilePatternMatch" />.
         /// </summary>
-        /// <returns>Some number</returns>
+        /// <returns>A hash code for the current object.</returns>
         public override int GetHashCode() =>
             HashHelpers.Combine(GetHashCode(Path), GetHashCode(Stem));
 

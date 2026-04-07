@@ -85,12 +85,14 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  MOVNTI m64, r64</para>
             ///   <para>This intrinsic is only available on 64-bit processes</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreNonTemporal(long* address, long value) { throw new PlatformNotSupportedException(); }
             /// <summary>
             ///   <para>void _mm_stream_si64(__int64 *p, __int64 a)</para>
             ///   <para>  MOVNTI m64, r64</para>
             ///   <para>This intrinsic is only available on 64-bit processes</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreNonTemporal(ulong* address, ulong value) { throw new PlatformNotSupportedException(); }
         }
 
@@ -793,6 +795,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   xmm1,         m128</para>
         ///   <para>  VMOVDQA32 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<sbyte> LoadAlignedVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_load_si128 (__m128i const* mem_address)</para>
@@ -800,11 +803,13 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   xmm1,         m128</para>
         ///   <para>  VMOVDQA32 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<byte> LoadAlignedVector128(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_load_si128 (__m128i const* mem_address)</para>
         ///   <para>  MOVDQA xmm, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<short> LoadAlignedVector128(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_load_si128 (__m128i const* mem_address)</para>
@@ -812,6 +817,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   xmm1,         m128</para>
         ///   <para>  VMOVDQA32 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ushort> LoadAlignedVector128(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_load_si128 (__m128i const* mem_address)</para>
@@ -819,6 +825,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   xmm1,         m128</para>
         ///   <para>  VMOVDQA32 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> LoadAlignedVector128(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_load_si128 (__m128i const* mem_address)</para>
@@ -826,6 +833,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   xmm1,         m128</para>
         ///   <para>  VMOVDQA32 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> LoadAlignedVector128(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_load_si128 (__m128i const* mem_address)</para>
@@ -833,6 +841,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   xmm1,         m128</para>
         ///   <para>  VMOVDQA64 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> LoadAlignedVector128(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_load_si128 (__m128i const* mem_address)</para>
@@ -840,6 +849,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   xmm1,         m128</para>
         ///   <para>  VMOVDQA64 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> LoadAlignedVector128(ulong* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128d _mm_load_pd (double const* mem_address)</para>
@@ -847,6 +857,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVAPD xmm1,         m128</para>
         ///   <para>  VMOVAPD xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> LoadAlignedVector128(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -859,12 +870,14 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVHPD xmm1,       m64</para>
         ///   <para>  VMOVHPD xmm1, xmm2, m64</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> LoadHigh(Vector128<double> lower, double* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128d _mm_loadl_pd (__m128d a, double const* mem_addr)</para>
         ///   <para>   MOVLPD xmm1,       m64</para>
         ///   <para>  VMOVLPD xmm1, xmm2, m64</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> LoadLow(Vector128<double> upper, double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -872,24 +885,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVD xmm1, m32</para>
         ///   <para>  VMOVD xmm1, m32</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> LoadScalarVector128(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_loadu_si32 (void const* mem_addr)</para>
         ///   <para>   MOVD xmm1, m32</para>
         ///   <para>  VMOVD xmm1, m32</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> LoadScalarVector128(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_loadl_epi64 (__m128i const* mem_addr)</para>
         ///   <para>   MOVQ xmm1, m64</para>
         ///   <para>  VMOVQ xmm1, m64</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> LoadScalarVector128(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_loadl_epi64 (__m128i const* mem_addr)</para>
         ///   <para>   MOVQ xmm1, m64</para>
         ///   <para>  VMOVQ xmm1, m64</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> LoadScalarVector128(ulong* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128d _mm_load_sd (double const* mem_address)</para>
@@ -897,6 +914,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVSD xmm1,      m64</para>
         ///   <para>  VMOVSD xmm1 {k1}, m64</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> LoadScalarVector128(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -905,6 +923,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU  xmm1,         m128</para>
         ///   <para>  VMOVDQU8 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<sbyte> LoadVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_loadu_si128 (__m128i const* mem_address)</para>
@@ -912,6 +931,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU  xmm1,         m128</para>
         ///   <para>  VMOVDQU8 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<byte> LoadVector128(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_loadu_si128 (__m128i const* mem_address)</para>
@@ -919,6 +939,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   xmm1,         m128</para>
         ///   <para>  VMOVDQU16 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<short> LoadVector128(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_loadu_si128 (__m128i const* mem_address)</para>
@@ -926,6 +947,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   xmm1,         m128</para>
         ///   <para>  VMOVDQU16 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ushort> LoadVector128(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_loadu_si128 (__m128i const* mem_address)</para>
@@ -933,6 +955,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   xmm1,         m128</para>
         ///   <para>  VMOVDQU32 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> LoadVector128(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_loadu_si128 (__m128i const* mem_address)</para>
@@ -940,6 +963,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   xmm1,         m128</para>
         ///   <para>  VMOVDQU32 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> LoadVector128(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_loadu_si128 (__m128i const* mem_address)</para>
@@ -947,6 +971,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   xmm1,         m128</para>
         ///   <para>  VMOVDQU64 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> LoadVector128(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_loadu_si128 (__m128i const* mem_address)</para>
@@ -954,6 +979,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   xmm1,         m128</para>
         ///   <para>  VMOVDQU64 xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> LoadVector128(ulong* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128d _mm_loadu_pd (double const* mem_address)</para>
@@ -961,6 +987,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVUPD xmm1,         m128</para>
         ///   <para>  VMOVUPD xmm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> LoadVector128(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -968,12 +995,14 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MASKMOVDQU xmm1, xmm2    ; Address: EDI/RDI</para>
         ///   <para>  VMASKMOVDQU xmm1, xmm2    ; Address: EDI/RDI</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskMove(Vector128<sbyte> source, Vector128<sbyte> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_maskmoveu_si128 (__m128i a,  __m128i mask, char* mem_address)</para>
         ///   <para>   MASKMOVDQU xmm1, xmm2    ; Address: EDI/RDI</para>
         ///   <para>  VMASKMOVDQU xmm1, xmm2    ; Address: EDI/RDI</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskMove(Vector128<byte> source, Vector128<byte> mask, byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1616,6 +1645,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU  m128,         xmm1</para>
         ///   <para>  VMOVDQU8 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(sbyte* address, Vector128<sbyte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1623,6 +1653,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU  m128,         xmm1</para>
         ///   <para>  VMOVDQU8 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(byte* address, Vector128<byte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1630,6 +1661,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   m128,         xmm1</para>
         ///   <para>  VMOVDQU16 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(short* address, Vector128<short> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1637,6 +1669,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   m128,         xmm1</para>
         ///   <para>  VMOVDQU16 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(ushort* address, Vector128<ushort> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1644,6 +1677,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   m128,         xmm1</para>
         ///   <para>  VMOVDQU32 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(int* address, Vector128<int> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1651,6 +1685,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   m128,         xmm1</para>
         ///   <para>  VMOVDQU32 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(uint* address, Vector128<uint> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1658,6 +1693,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   m128,         xmm1</para>
         ///   <para>  VMOVDQU64 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(long* address, Vector128<long> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1665,6 +1701,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU   m128,         xmm1</para>
         ///   <para>  VMOVDQU64 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(ulong* address, Vector128<ulong> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storeu_pd (double* mem_addr, __m128d a)</para>
@@ -1672,6 +1709,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVAPD m128,         xmm1</para>
         ///   <para>  VMOVAPD m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(double* address, Vector128<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1680,6 +1718,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   m128,         xmm1</para>
         ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(sbyte* address, Vector128<sbyte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_store_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1687,6 +1726,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   m128,         xmm1</para>
         ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(byte* address, Vector128<byte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_store_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1694,6 +1734,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   m128,         xmm1</para>
         ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(short* address, Vector128<short> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_store_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1701,6 +1742,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   m128,         xmm1</para>
         ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(ushort* address, Vector128<ushort> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_store_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1708,6 +1750,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   m128,         xmm1</para>
         ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(int* address, Vector128<int> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_store_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1715,6 +1758,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   m128,         xmm1</para>
         ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(uint* address, Vector128<uint> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_store_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1722,6 +1766,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   m128,         xmm1</para>
         ///   <para>  VMOVDQA64 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(long* address, Vector128<long> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_store_si128 (__m128i* mem_addr, __m128i a)</para>
@@ -1729,6 +1774,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   m128,         xmm1</para>
         ///   <para>  VMOVDQA64 m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(ulong* address, Vector128<ulong> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_store_pd (double* mem_addr, __m128d a)</para>
@@ -1736,6 +1782,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVAPD m128,         xmm1</para>
         ///   <para>  VMOVAPD m128 {k1}{z}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(double* address, Vector128<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1743,54 +1790,63 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVNTDQ m128, xmm1</para>
         ///   <para>  VMOVNTDQ m128, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(sbyte* address, Vector128<sbyte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_stream_si128 (__m128i* mem_addr, __m128i a)</para>
         ///   <para>   MOVNTDQ m128, xmm1</para>
         ///   <para>  VMOVNTDQ m128, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(byte* address, Vector128<byte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_stream_si128 (__m128i* mem_addr, __m128i a)</para>
         ///   <para>   MOVNTDQ m128, xmm1</para>
         ///   <para>  VMOVNTDQ m128, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(short* address, Vector128<short> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_stream_si128 (__m128i* mem_addr, __m128i a)</para>
         ///   <para>   MOVNTDQ m128, xmm1</para>
         ///   <para>  VMOVNTDQ m128, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(ushort* address, Vector128<ushort> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_stream_si128 (__m128i* mem_addr, __m128i a)</para>
         ///   <para>   MOVNTDQ m128, xmm1</para>
         ///   <para>  VMOVNTDQ m128, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(int* address, Vector128<int> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_stream_si128 (__m128i* mem_addr, __m128i a)</para>
         ///   <para>   MOVNTDQ m128, xmm1</para>
         ///   <para>  VMOVNTDQ m128, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(uint* address, Vector128<uint> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_stream_si128 (__m128i* mem_addr, __m128i a)</para>
         ///   <para>   MOVNTDQ m128, xmm1</para>
         ///   <para>  VMOVNTDQ m128, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(long* address, Vector128<long> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_stream_si128 (__m128i* mem_addr, __m128i a)</para>
         ///   <para>   MOVNTDQ m128, xmm1</para>
         ///   <para>  VMOVNTDQ m128, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(ulong* address, Vector128<ulong> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_stream_pd (double* mem_addr, __m128d a)</para>
         ///   <para>   MOVNTPD m128, xmm1</para>
         ///   <para>  VMOVNTPD m128, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(double* address, Vector128<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1798,23 +1854,27 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVHPD m64, xmm1</para>
         ///   <para>  VMOVHPD m64, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreHigh(double* address, Vector128<double> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storel_pd (double* mem_addr, __m128d a)</para>
         ///   <para>   MOVLPD m64, xmm1</para>
         ///   <para>  VMOVLPD m64, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreLow(double* address, Vector128<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>void _mm_stream_si32(int *p, int a)</para>
         ///   <para>  MOVNTI m32, r32</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreNonTemporal(int* address, int value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_stream_si32(int *p, int a)</para>
         ///   <para>  MOVNTI m32, r32</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreNonTemporal(uint* address, uint value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1822,24 +1882,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVD m32, xmm1</para>
         ///   <para>  VMOVD m32, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreScalar(int* address, Vector128<int> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storeu_si32 (void* mem_addr, __m128i a)</para>
         ///   <para>   MOVD m32, xmm1</para>
         ///   <para>  VMOVD m32, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreScalar(uint* address, Vector128<uint> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storel_epi64 (__m128i* mem_addr, __m128i a)</para>
         ///   <para>   MOVQ m64, xmm1</para>
         ///   <para>  VMOVQ m64, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreScalar(long* address, Vector128<long> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_storel_epi64 (__m128i* mem_addr, __m128i a)</para>
         ///   <para>   MOVQ m64, xmm1</para>
         ///   <para>  VMOVQ m64, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreScalar(ulong* address, Vector128<ulong> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_store_sd (double* mem_addr, __m128d a)</para>
@@ -1847,6 +1911,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVSD m64,      xmm1</para>
         ///   <para>  VMOVSD m64 {k1}, xmm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreScalar(double* address, Vector128<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>

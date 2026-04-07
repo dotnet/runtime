@@ -106,6 +106,7 @@ parser.add_argument("--large_version_bubble", dest="large_version_bubble", actio
 parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 parser.add_argument("--interpreter", dest="interpreter", action="store_true", default=False)
+parser.add_argument("--node", dest="node", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
@@ -113,6 +114,7 @@ parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="s
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
 parser.add_argument("--tiering_test", dest="tiering_test", action="store_true", default=False)
 parser.add_argument("--run_nativeaot_tests", dest="run_nativeaot_tests", action="store_true", default=False)
+parser.add_argument("--tree", dest="tree", default=None, help="Only run tests under the specified subtree (e.g. JIT/Regression).")
 
 ################################################################################
 # Globals
@@ -200,7 +202,7 @@ class DebugEnv:
 
         configurations = launch_json["configurations"]
 
-        dbg_type = "cppvsdbg" if self.host_os == "windows" else ""
+        dbg_type = "cppvsdbg" if sys.platform == "win32" else ""
 
         env = {
             "DOTNET_AssertOnNYI": "1",
@@ -226,7 +228,7 @@ class DebugEnv:
             environment.append(env)
 
         unique_name = "%s_%s_%s_%s" % (self.test_path, self.args.host_os, self.args.arch, self.args.build_type)
-        corerun_path = os.path.join(self.args.core_root, "corerun%s" % (".exe" if self.args.host_os == "windows" else ""))
+        corerun_path = os.path.join(self.args.core_root, "corerun%s" % (".exe" if sys.platform == "win32" else ""))
         configuration = defaultdict(lambda: None, {
             "name": unique_name,
             "type": dbg_type,
@@ -263,7 +265,7 @@ class DebugEnv:
         """ Create the repro wrapper
         """
 
-        if self.args.host_os == "windows":
+        if sys.platform == "win32":
             self.__create_batch_wrapper__()
         else:
             self.__create_bash_wrapper__()
@@ -399,12 +401,12 @@ def create_and_use_test_env(_os, env, func):
         #
         # errors.
 
-        tempfile_suffix = ".bat" if _os == "windows" else ""
+        tempfile_suffix = ".bat" if sys.platform == "win32" else ""
         test_env = tempfile.NamedTemporaryFile(mode="w", suffix=tempfile_suffix, delete=False)
         try:
             file_header = None
 
-            if _os == "windows":
+            if sys.platform == "win32":
                 file_header = """\
 @REM Temporary test env for test run.
 @echo on
@@ -420,7 +422,7 @@ def create_and_use_test_env(_os, env, func):
             for key in dotnet_vars:
                 value = dotnet_vars[key]
                 command = None
-                if _os == "windows":
+                if sys.platform == "win32":
                     command = "set"
                 else:
                     command = "export"
@@ -438,7 +440,7 @@ def create_and_use_test_env(_os, env, func):
 
                 contents += line
 
-            if _os == "windows":
+            if sys.platform == "win32":
                 file_suffix = """\
 @echo off
 """
@@ -573,6 +575,9 @@ def call_msbuild(args):
 
     if args.limited_core_dumps:
         command += ["/p:LimitedCoreDumps=true"]
+
+    if args.tree:
+        command += ["/p:TestSubtree=%s" % args.tree]
 
     print(" ".join(command))
 
@@ -859,6 +864,11 @@ def run_tests(args,
         print("Setting RunInterpreter=1")
         os.environ["RunInterpreter"] = "1"
 
+    if args.node:
+        print("Running tests with the NodeJS")
+        print("Setting RunWithNodeJS=1")
+        os.environ["RunWithNodeJS"] = "1"
+
     if gc_stress:
         per_test_timeout *= 8
         print("Running GCStress, extending test timeout to cater for slower runtime.")
@@ -1014,9 +1024,19 @@ def setup_args(args):
                               "Error setting run_nativeaot_tests")
 
     coreclr_setup_args.verify(args,
+                              "tree",
+                              lambda arg: True,
+                              "Error setting tree")
+
+    coreclr_setup_args.verify(args,
                               "interpreter",
                               lambda arg: True,
                               "Error setting interpreter")
+
+    coreclr_setup_args.verify(args,
+                              "node",
+                              lambda arg: True,
+                              "Error setting node")
 
     if coreclr_setup_args.sequential and coreclr_setup_args.parallel:
         print("Error: don't specify both --sequential and -parallel")
@@ -1049,11 +1069,12 @@ def setup_args(args):
     print("logs_dir                 : %s" % coreclr_setup_args.logs_dir)
 
     coreclr_setup_args.repro_location = os.path.join(coreclr_setup_args.logs_dir, "repro")
-    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
+    script_ext = ".cmd" if sys.platform == "win32" else ".sh"
+    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % script_ext)
     coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.runtime_repo_location, "src", "tests")
-    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
-    coreclr_setup_args.tieringtest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "tieringtest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
-    coreclr_setup_args.nativeaottest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "nativeaottest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
+    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % script_ext)
+    coreclr_setup_args.tieringtest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "tieringtest%s" % script_ext)
+    coreclr_setup_args.nativeaottest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "nativeaottest%s" % script_ext)
 
     return coreclr_setup_args
 
