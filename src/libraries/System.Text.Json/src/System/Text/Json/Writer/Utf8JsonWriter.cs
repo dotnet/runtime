@@ -289,6 +289,9 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// Thrown when the instance of <see cref="Stream" /> that is passed in is null.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the instance of <see cref="Stream" /> that is passed in does not support writing.
+        /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The instance of <see cref="Utf8JsonWriter"/> has been disposed.
         /// </exception>
@@ -328,6 +331,9 @@ namespace System.Text.Json
         /// <param name="options">Defines the customized behavior of the <see cref="Utf8JsonWriter"/>.</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when the instance of <see cref="Stream" /> that is passed in is null.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the instance of <see cref="Stream" /> that is passed in does not support writing.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The instance of <see cref="Utf8JsonWriter"/> has been disposed.
