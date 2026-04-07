@@ -510,7 +510,77 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst)
 {
-    abort();
+    insFormat fmt = IF_NONE;
+
+    if (dst != nullptr)
+    {
+        assert(dst->HasFlag(BBF_HAS_LABEL));
+    }
+
+    /* Figure out the encoding format of the instruction */
+    switch (ins)
+    {
+        case INS_b:
+            // Unconditional branch - I-form (24-bit signed offset)
+            fmt = IF_NONE; // Will be updated when instruction formats are fully defined
+            break;
+
+        case INS_beq:
+        case INS_bne:
+        case INS_blt:
+        case INS_bge:
+        case INS_bgt:
+        case INS_ble:
+            // Conditional branches - B-form (14-bit signed offset)
+            // For now, assume these may need to be long jumps
+            fmt = IF_NONE; // Will be updated when instruction formats are fully defined
+            break;
+
+        default:
+            unreached();
+            break;
+    }
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idjShort = false;
+
+    if (dst != nullptr)
+    {
+        id->idAddr()->iiaBBlabel = dst;
+
+        // The target needs to be relocated if in different regions
+        id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+
+#ifdef DEBUG
+        if (emitComp->opts.compLongAddress) // Force long branches
+        {
+            id->idjKeepLong = true;
+        }
+#endif // DEBUG
+    }
+    else
+    {
+        // This should not happen for PPC64LE - all jumps should have a destination
+        unreached();
+    }
+
+    /* Record the jump's IG and offset within it */
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this jump to this IG's jump list */
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    //dispIns(id);
+    appendToCurIG(id);
 }
 
 /*****************************************************************************
