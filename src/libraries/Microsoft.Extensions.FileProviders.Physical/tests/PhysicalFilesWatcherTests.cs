@@ -362,6 +362,10 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             File.Delete(missingDir);
             Directory.CreateDirectory(missingDir);
+            // On Linux, the recursive FSW needs time to add an inotify watch on
+            // the new subdirectory before it can detect file changes inside it,
+            // see e.g. https://github.com/dotnet/runtime/issues/116351.
+            await Task.Delay(WaitTimeForTokenToFire);
             File.WriteAllText(targetFile, string.Empty);
 
             await changed;
