@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     if (!_root.StartsWith(watcherFullPath, StringComparison.OrdinalIgnoreCase) &&
                         !watcherFullPath.StartsWith(_root, StringComparison.OrdinalIgnoreCase))
                     {
-                        throw new ArgumentException(SR.Format(SR.FileSystemWatcherPathError, fswPath, root), nameof(fileSystemWatcher));
+                        throw new ArgumentException(SR.Format(SR.FileSystemWatcherPathError, watcherFullPath, _root), nameof(fileSystemWatcher));
                     }
                 }
 
