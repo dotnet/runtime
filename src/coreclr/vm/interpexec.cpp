@@ -3016,6 +3016,7 @@ SWITCH_OPCODE:
 
                     if (flags & (int32_t)CalliFlags::PInvoke)
                     {
+                        frameNeedsTailcallUpdate = false;
                         if (flags & (int32_t)CalliFlags::SuppressGCTransition)
                         {
                             InvokeUnmanagedCalli(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress);
@@ -3051,6 +3052,7 @@ SWITCH_OPCODE:
                         MetaSig sig(targetMethod);
                         cookie = GetCookieForCalliSig(sig, NULL);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
+                        frameNeedsTailcallUpdate = false;
                         CalliStubParam param = { calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr() };
                         InvokeCalliStub(&param);
                     }
@@ -3228,6 +3230,7 @@ SWITCH_OPCODE:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
+                    frameNeedsTailcallUpdate = false;
                     DelegateInvokeMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, targetAddress, pInterpreterFrame->GetContinuationPtr() };
                     InvokeDelegateInvokeMethod(&param);
                     break;
@@ -3264,6 +3267,7 @@ CALL_INTERP_METHOD:
                     {
                         // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                         // Interpreter-FIXME: Implement tailcall via helpers, see https://github.com/dotnet/runtime/blob/main/docs/design/features/tailcalls-with-helpers.md
+                        frameNeedsTailcallUpdate = false;
                         ManagedMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL, pInterpreterFrame->GetContinuationPtr() };
                         InvokeManagedMethod(&param);
                         break;
