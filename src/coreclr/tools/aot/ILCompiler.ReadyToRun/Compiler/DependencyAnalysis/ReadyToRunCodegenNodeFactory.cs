@@ -644,11 +644,12 @@ namespace ILCompiler.DependencyAnalysis
         private struct ILBodyFixupSignatureFixupKey : IEquatable<ILBodyFixupSignatureFixupKey>
         {
             public readonly ReadyToRunFixupKind FixupKind;
-            public readonly EcmaMethod Method;
+            public readonly MethodDesc Method;
 
-            public ILBodyFixupSignatureFixupKey(ReadyToRunFixupKind fixupKind, EcmaMethod method)
+            public ILBodyFixupSignatureFixupKey(ReadyToRunFixupKind fixupKind, MethodDesc method)
             {
                 FixupKind = fixupKind;
+                Debug.Assert(method.IsTypicalMethodDefinition);
                 Method = method;
             }
             public bool Equals(ILBodyFixupSignatureFixupKey other) => FixupKind == other.FixupKind && Method.Equals(other.Method);
@@ -660,7 +661,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<ILBodyFixupSignatureFixupKey, ILBodyFixupSignature> _ilBodySignatures =
             new NodeCache<ILBodyFixupSignatureFixupKey, ILBodyFixupSignature>((key) => new ILBodyFixupSignature(key.FixupKind, key.Method));
 
-        public ILBodyFixupSignature ILBodyFixupSignature(ReadyToRunFixupKind fixupKind, EcmaMethod method)
+        public ILBodyFixupSignature ILBodyFixupSignature(ReadyToRunFixupKind fixupKind, MethodDesc method)
         {
             return _ilBodySignatures.GetOrAdd(new ILBodyFixupSignatureFixupKey(fixupKind, method));
         }
@@ -1179,7 +1180,8 @@ namespace ILCompiler.DependencyAnalysis
             isHidden = false;
             if (node == Header)
             {
-                return new Utf8String("RTR_HEADER"u8);
+                string symbolName = CompositeImageSettings?.ReadyToRunHeaderSymbolName;
+                return new Utf8String(string.IsNullOrEmpty(symbolName) ? "RTR_HEADER" : symbolName);
             }
             return default;
         }
