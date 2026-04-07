@@ -735,10 +735,12 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
 //
 //  by proving that pB ==> pA and that B is side effect free.
 //
-//  We trigger this starting from block B, looking up at the immediate
-//  dominator A. If A branches to B and the other successor
-//  S of A is also a successor of B, then we have the right
+//  We trigger this starting from block B with successors S and X,
+//  looking up at the immediate dominator A. If A branches to B and
+//  the other successor of A is either S or X, then we have the right
 //  control flow pattern for this optimization.
+//
+//  Suppose X is the shared successor of A and B.
 //
 //  We then see if the predicate for B->S implies the predicate for A->B.
 //  If so, and B is side effect free, we can change A to unconditionally
@@ -798,7 +800,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
     BasicBlock* const blockTrueSucc  = block->GetTrueTarget();
     BasicBlock* const blockFalseSucc = block->GetFalseTarget();
     BasicBlock*       currentBlock   = block;
-    BasicBlock*       domBlockProbe  = block->bbIDom;
+    BasicBlock*       domBlockProbe  = fgGetDomSpeculatively(block);
     ValueNum          blockPathVN    = ValueNumStore::NoVN;
     bool              madeChanges    = false;
     unsigned          searchCount    = 0;
@@ -839,7 +841,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             }
 
             currentBlock  = domBlockProbe;
-            domBlockProbe = domBlockProbe->bbIDom;
+            domBlockProbe = fgGetDomSpeculatively(domBlockProbe);
         }
 
         if ((domBlockProbe == nullptr) || !domBlockProbe->KindIs(BBJ_COND))
@@ -862,16 +864,22 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             break;
         }
 
-        BasicBlock* const candidateSharedSucc = currentIsDomTrueSucc ? domFalseSucc : domTrueSucc;
+        BasicBlock* const sharedSuccessor = currentIsDomTrueSucc ? domFalseSucc : domTrueSucc;
 
         // Find the VN for the path from block to the non-shared successor.
         //
-        if (candidateSharedSucc == blockFalseSucc)
+        if (sharedSuccessor == blockFalseSucc)
         {
+            // Shared successor is block's false successor, so unshared successor is block's true successor.
+            // Thus the path from block to the unshared successor corresponds to the relop being true.
+            //
             blockPathVN = treeNormVN;
         }
-        else if (candidateSharedSucc == blockTrueSucc)
+        else if (sharedSuccessor == blockTrueSucc)
         {
+            // Shared successor is block's true successor, so unshared successor is block's false successor.
+            // Thus the path from block to the unshared successor corresponds to the relop being false.
+            //
             blockPathVN = vnStore->GetRelatedRelop(treeNormVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
         }
         else
@@ -919,7 +927,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         }
 
         // We found a dominating compare with the right pattern of control flow.
-        // See if the block's relop implies the dominating block's relop.
+        // See if the block's path relop implies the dom's path relop.
         //
         RelopImplicationInfo rii;
         rii.treeNormVN   = domPathVN;
@@ -973,7 +981,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         }
 
         currentBlock  = domBlockProbe;
-        domBlockProbe = domBlockProbe->bbIDom;
+        domBlockProbe = fgGetDomSpeculatively(domBlockProbe);
     }
 
     return madeChanges;
