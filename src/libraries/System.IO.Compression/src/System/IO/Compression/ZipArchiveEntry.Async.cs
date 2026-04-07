@@ -401,23 +401,7 @@ public partial class ZipArchiveEntry
             if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
             {
                 _everOpenedForWrite = true;
-                // Capture data descriptor state before WriteLocalFileHeaderAsync clears bit 3 for seekable streams.
-                bool hadDataDescriptor = (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
                 await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, cancellationToken).ConfigureAwait(false);
-
-                // WriteLocalFileHeaderInitialize clears bit 3 for seekable streams, but in the metadata-only
-                // path the data descriptor bytes remain in the file. Restore bit 3 in memory so the central
-                // directory stays consistent, and patch the on-disk header only if it was actually rewritten.
-                if (hadDataDescriptor)
-                {
-                    _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
-
-                    bool headerWritten = !(_originallyInArchive && Changes == ZipArchive.ChangeState.Unchanged && !forceWrite);
-                    if (headerWritten)
-                    {
-                        await PatchLocalFileHeaderBitFlagsAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                }
 
                 // Advance the stream past the compressed data and any trailing data descriptor
                 // by seeking to the pre-computed end-of-entry boundary.
@@ -427,16 +411,6 @@ public partial class ZipArchiveEntry
                 }
             }
         }
-    }
-
-    private async ValueTask PatchLocalFileHeaderBitFlagsAsync(CancellationToken cancellationToken)
-    {
-        long savedPosition = _archive.ArchiveStream.Position;
-        _archive.ArchiveStream.Position = _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags;
-        byte[] flagBytes = new byte[sizeof(ushort)];
-        BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)_generalPurposeBitFlag);
-        await _archive.ArchiveStream.WriteAsync(flagBytes, cancellationToken).ConfigureAwait(false);
-        _archive.ArchiveStream.Position = savedPosition;
     }
 
     // Using _offsetOfLocalHeader, seeks back to where CRC and sizes should be in the header,

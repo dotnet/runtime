@@ -1078,7 +1078,6 @@ namespace System.IO.Compression
             if (isEmptyFile)
             {
                 CompressionMethod = ZipCompressionMethod.Stored;
-                _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
                 compressedSizeTruncated = 0;
                 uncompressedSizeTruncated = 0;
                 Debug.Assert(_uncompressedSize == 0);
@@ -1098,8 +1097,6 @@ namespace System.IO.Compression
                 }
                 else // if we are not in streaming mode, we have to decide if we want to write zip64 headers
                 {
-                    // We are in seekable mode so we will not need to write a data descriptor
-                    _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
                     if (ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
                         || (_archive._forceZip64 && _archive.Mode == ZipArchiveMode.Update)
@@ -1158,6 +1155,13 @@ namespace System.IO.Compression
                 _archive.ArchiveStream.Seek(currExtraFieldDataLength, SeekOrigin.Current);
 
                 return false;
+            }
+
+            // We are writing the header. For seekable/empty-file paths the sizes are written
+            // directly into the header, so a data descriptor is not needed.
+            if (isEmptyFile || _archive.ArchiveStream.CanSeek)
+            {
+                _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
             }
 
             return true;
@@ -1257,23 +1261,7 @@ namespace System.IO.Compression
                 if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
                 {
                     _everOpenedForWrite = true;
-                    // Capture data descriptor state before WriteLocalFileHeader clears bit 3 for seekable streams.
-                    bool hadDataDescriptor = (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
                     WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite);
-
-                    // WriteLocalFileHeaderInitialize clears bit 3 for seekable streams, but in the metadata-only
-                    // path the data descriptor bytes remain in the file. Restore bit 3 in memory so the central
-                    // directory stays consistent, and patch the on-disk header only if it was actually rewritten.
-                    if (hadDataDescriptor)
-                    {
-                        _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
-
-                        bool headerWritten = !(_originallyInArchive && Changes == ZipArchive.ChangeState.Unchanged && !forceWrite);
-                        if (headerWritten)
-                        {
-                            PatchLocalFileHeaderBitFlags();
-                        }
-                    }
 
                     // Advance the stream past the compressed data and any trailing data descriptor
                     // by seeking to the pre-computed end-of-entry boundary.
@@ -1283,20 +1271,6 @@ namespace System.IO.Compression
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Seeks back to the general purpose bit flags field in the just-written local file header
-        /// and overwrites it with the current value of <see cref="_generalPurposeBitFlag"/>.
-        /// </summary>
-        private void PatchLocalFileHeaderBitFlags()
-        {
-            long savedPosition = _archive.ArchiveStream.Position;
-            _archive.ArchiveStream.Position = _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags;
-            Span<byte> flagBytes = stackalloc byte[sizeof(ushort)];
-            BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)_generalPurposeBitFlag);
-            _archive.ArchiveStream.Write(flagBytes);
-            _archive.ArchiveStream.Position = savedPosition;
         }
 
         private const int MetadataBufferLength = ZipLocalFileHeader.FieldLengths.VersionNeededToExtract + ZipLocalFileHeader.FieldLengths.GeneralPurposeBitFlags;
