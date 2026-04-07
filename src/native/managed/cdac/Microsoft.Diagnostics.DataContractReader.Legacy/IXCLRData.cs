@@ -145,6 +145,21 @@ public unsafe partial interface IXCLRDataModule
     int GetVersionId(Guid* vid);
 }
 
+[Flags]
+public enum DebuggerAssemblyControlFlags : uint
+{
+    DACF_NONE = 0x00,
+    DACF_USER_OVERRIDE = 0x01,
+    DACF_ALLOW_JIT_OPTS = 0x02,
+    DACF_OBSOLETE_TRACK_JIT_INFO = 0x04, // obsolete in V2.0, we're always tracking.
+    DACF_ENC_ENABLED = 0x08,
+    DACF_IGNORE_PDBS = 0x20,
+    DACF_CONTROL_FLAGS_MASK = 0x2F,
+
+    DACF_PDBS_COPIED = 0x10,
+    DACF_MISC_FLAGS_MASK = 0x10,
+}
+
 [GeneratedComInterface]
 [Guid("34625881-7EB3-4524-817B-8DB9D064C760")]
 public unsafe partial interface IXCLRDataModule2

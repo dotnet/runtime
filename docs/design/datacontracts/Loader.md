@@ -90,6 +90,9 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
+
+uint GetDebuggerInfoBits(ModuleHandle handle);
+void SetDebuggerInfoBits(ModuleHandle handle, uint newBits);
 ```
 
 ## Version 1
@@ -194,6 +197,8 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
 | `DefaultDomainFriendlyName` | string | Friendly name returned when `AppDomain.FriendlyName` is null (matches native `DEFAULT_DOMAIN_FRIENDLY_NAME`) | `"DefaultDomain"` |
 | `MaxWebcilSections` | ushort | Maximum number of COFF sections supported in a Webcil image (must stay in sync with native `WEBCIL_MAX_SECTIONS`) | `16` |
+| `DebuggerInfoMask` | uint | Mask for the debugger info bits within the Module's transient flags | `0x0000Fc00` |
+| `DebuggerInfoShift` | int | Bit shift for the debugger info bits within the Module's transient flags | `10` |
 
 Contracts used:
 | Contract Name |
@@ -820,6 +825,19 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
     SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
     Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
     return /* blob entry IL address */
+}
+
+uint GetDebuggerInfoBits(ModuleHandle handle)
+{
+    uint flags = // read Module::Flags (uint32) at handle.Address + Flags offset
+    return (flags & DebuggerInfoMask) >> DebuggerInfoShift;
+}
+
+void SetDebuggerInfoBits(ModuleHandle handle, uint newBits)
+{
+    uint currentFlags = // read Module::Flags (uint32) at handle.Address + Flags offset
+    uint updated = (currentFlags & ~DebuggerInfoMask) | (newBits << DebuggerInfoShift);
+    // write updated uint32 back to handle.Address + Flags offset
 }
 ```
 

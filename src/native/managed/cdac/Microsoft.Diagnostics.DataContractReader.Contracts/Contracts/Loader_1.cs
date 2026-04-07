@@ -23,6 +23,9 @@ internal readonly struct Loader_1 : ILoader
         ReflectionEmit = 0x40,    // Reflection.Emit was used to create this module
     }
 
+    private const uint DebuggerInfoMask = 0x0000Fc00;
+    private const int DebuggerInfoShift = 10;
+
     private enum PEImageFlags : uint
     {
         FLAG_MAPPED = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
@@ -374,6 +377,24 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return GetFlags(module);
+    }
+
+    uint ILoader.GetDebuggerInfoBits(ModuleHandle handle)
+    {
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.Module);
+        ulong flagsAddr = handle.Address + (ulong)type.Fields[nameof(Data.Module.Flags)].Offset;
+        uint flags = _target.Read<uint>(flagsAddr);
+
+        return (flags & DebuggerInfoMask) >> DebuggerInfoShift;
+    }
+
+    void ILoader.SetDebuggerInfoBits(ModuleHandle handle, uint newBits)
+    {
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.Module);
+        ulong flagsAddr = handle.Address + (ulong)type.Fields[nameof(Data.Module.Flags)].Offset;
+        uint currentFlags = _target.Read<uint>(flagsAddr);
+        uint updated = (currentFlags & ~DebuggerInfoMask) | (newBits << DebuggerInfoShift);
+        _target.Write<uint>(flagsAddr, updated);
     }
 
     bool ILoader.IsReadyToRun(ModuleHandle handle)

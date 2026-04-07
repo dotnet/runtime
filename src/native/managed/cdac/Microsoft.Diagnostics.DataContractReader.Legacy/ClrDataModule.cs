@@ -42,6 +42,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         }
     }
 
+    private const uint CORDEBUG_JIT_DEFAULT = 0x1;
+    private const uint CORDEBUG_JIT_DISABLE_OPTIMIZATION = 0x3;
     private static readonly Guid IID_IMetaDataImport = Guid.Parse("7DAC8207-D3AE-4c75-9B67-92801A497D44");
 
     CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
@@ -476,5 +478,45 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         => _legacyModule is not null ? _legacyModule.GetVersionId(vid) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule2.SetJITCompilerFlags(uint flags)
-        => _legacyModule2 is not null ? _legacyModule2.SetJITCompilerFlags(flags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if ((flags != CORDEBUG_JIT_DEFAULT) && (flags != CORDEBUG_JIT_DISABLE_OPTIMIZATION))
+                throw new ArgumentException();
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(_address);
+
+            bool allowJitOpts = (flags & CORDEBUG_JIT_DISABLE_OPTIMIZATION) != CORDEBUG_JIT_DISABLE_OPTIMIZATION;
+            uint bits = loader.GetDebuggerInfoBits(handle)
+                & ~((uint)DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS
+                    | (uint)DebuggerAssemblyControlFlags.DACF_ENC_ENABLED);
+            bits &= (uint)DebuggerAssemblyControlFlags.DACF_CONTROL_FLAGS_MASK;
+
+            if (allowJitOpts)
+            {
+                bits |= (uint)DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS;
+            }
+
+            // Settings from the debugger take precedence over all other settings.
+            bits |= (uint)DebuggerAssemblyControlFlags.DACF_USER_OVERRIDE;
+
+            loader.SetDebuggerInfoBits(handle, bits);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule2 is not null)
+        {
+            int hrLocal = _legacyModule2.SetJITCompilerFlags(flags);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 }

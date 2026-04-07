@@ -52,6 +52,7 @@ enum DebuggerControlFlag
 //
 enum DebuggerAssemblyControlFlags
 {
+    // [cDAC] [IXCLRData]: Contract depends on these values.
     DACF_NONE                       = 0x00,
     DACF_USER_OVERRIDE              = 0x01,
     DACF_ALLOW_JIT_OPTS             = 0x02,

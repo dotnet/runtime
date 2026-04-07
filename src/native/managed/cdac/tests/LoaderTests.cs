@@ -479,4 +479,99 @@ public unsafe class LoaderTests
 
         Assert.Throws<InvalidOperationException>(() => contract.GetILAddr(peAssemblyAddr, 0x5000));
     }
+
+    public static IEnumerable<object[]> GetDebuggerInfoBitsData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [0x00000000u, 0x00u, arch[0]]; // No debugger bits
+            yield return [0x00000800u, 0x02u, arch[0]]; // DACF_ALLOW_JIT_OPTS
+            yield return [0x00002000u, 0x08u, arch[0]]; // DACF_ENC_ENABLED
+            yield return [0x00000C00u, 0x03u, arch[0]]; // DACF_ALLOW_JIT_OPTS | DACF_USER_OVERRIDE
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetDebuggerInfoBitsData))]
+    public void GetDebuggerInfoBits(uint rawFlags, uint expectedBits, MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+        TargetPointer moduleAddr = loader.AddModule(flags: rawFlags);
+
+        var memoryContext = builder.GetMemoryContext();
+        var target = new TestPlaceholderTarget(arch, memoryContext.ReadFromTarget, loader.Types, writer: memoryContext.WriteToTarget);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
+        ILoader contract = target.Contracts.Loader;
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+
+        uint actual = contract.GetDebuggerInfoBits(handle);
+        Assert.Equal(expectedBits, actual);
+    }
+
+    public static IEnumerable<object[]> SetDebuggerInfoBitsData()
+    {
+        foreach (var arch in new MockTarget.StdArch())
+        {
+            yield return [0x00u, 0x00000000u, arch[0]]; // Clear all debugger bits
+            yield return [0x02u, 0x00000800u, arch[0]]; // DACF_ALLOW_JIT_OPTS
+            yield return [0x08u, 0x00002000u, arch[0]]; // DACF_ENC_ENABLED
+            yield return [0x03u, 0x00000C00u, arch[0]]; // DACF_ALLOW_JIT_OPTS | DACF_USER_OVERRIDE
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SetDebuggerInfoBitsData))]
+    public void SetDebuggerInfoBits(uint newBits, uint expectedRawFlags, MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+        TargetPointer moduleAddr = loader.AddModule();
+
+        var memoryContext = builder.GetMemoryContext();
+        var target = new TestPlaceholderTarget(arch, memoryContext.ReadFromTarget, loader.Types, writer: memoryContext.WriteToTarget);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
+        ILoader contract = target.Contracts.Loader;
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+
+        contract.SetDebuggerInfoBits(handle, newBits);
+
+        // Verify the raw flags in memory have the correct shifted value.
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)loader.Types[DataType.Module].Fields[nameof(Data.Module.Flags)].Offset);
+        Assert.Equal(expectedRawFlags, rawFlags);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetDebuggerInfoBits_PreservesOtherFlags(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+
+        uint initialFlags = 0x41u; // DACF_TENURED | DACF_REFLECTION_EMIT
+        TargetPointer moduleAddr = loader.AddModule(flags: initialFlags);
+
+        var memoryContext = builder.GetMemoryContext();
+        var target = new TestPlaceholderTarget(arch, memoryContext.ReadFromTarget, loader.Types, writer: memoryContext.WriteToTarget);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
+        ILoader contract = target.Contracts.Loader;
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+
+        uint debuggerBits = 0x03u; // DACF_ALLOW_JIT_OPTS | DACF_USER_OVERRIDE
+        int debuggerInfoShift = 10;
+        contract.SetDebuggerInfoBits(handle, debuggerBits);
+
+        // Verify other flags (Tenured, ReflectionEmit) are preserved.
+        uint rawFlags = target.Read<uint>(moduleAddr + (ulong)loader.Types[DataType.Module].Fields[nameof(Data.Module.Flags)].Offset);
+        Assert.Equal(initialFlags | (debuggerBits << debuggerInfoShift), rawFlags);
+    }
 }
