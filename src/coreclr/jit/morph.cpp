@@ -1767,7 +1767,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
         GenTree* indirectCellAddress = comp->gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
         INDEBUG(indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd);
-
+#if defined(TARGET_WASM)
+        // On WASM, the address in the R2R table is actually the address of something that should
+        // be treated as a PortableEntryPoint. To actually dispatch, we need to indirect once more.
+        indirectCellAddress = comp->gtNewOperNode(GT_IND, TYP_I_IMPL, indirectCellAddress);
+#endif
 #ifdef TARGET_ARM
         // TODO-ARM: We currently do not properly kill this register in LSRA
         // (see getKillSetForCall which does so only for VSD calls).

@@ -2577,6 +2577,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
+        GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
     }
 
     if (params.callType == EC_INDIR_R)
@@ -2584,6 +2585,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // Push the call target onto the wasm evaluation stack by dereferencing the PEP.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
+        GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
         GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
     }
 
