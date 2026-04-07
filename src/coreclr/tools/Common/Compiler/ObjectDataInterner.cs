@@ -52,9 +52,26 @@ namespace ILCompiler
                 {
                     deduplicator.DeduplicatePass(factory, previousSymbolRemapping, symbolRemapping);
                 }
-            } while (previousSymbolRemapping == null || previousSymbolRemapping.Count < symbolRemapping.Count);
+            } while (!MappingsEqual(previousSymbolRemapping, symbolRemapping));
 
             _symbolRemapping = symbolRemapping;
+        }
+
+        private static bool MappingsEqual(Dictionary<ISymbolNode, ISymbolNode> a, Dictionary<ISymbolNode, ISymbolNode> b)
+        {
+            if (a is null)
+                return false;
+
+            if (a.Count != b.Count)
+                return false;
+
+            foreach (KeyValuePair<ISymbolNode, ISymbolNode> kvp in a)
+            {
+                if (!b.TryGetValue(kvp.Key, out ISymbolNode value) || value != kvp.Value)
+                    return false;
+            }
+
+            return true;
         }
 
         public ISymbolNode GetDeduplicatedSymbol(NodeFactory factory, ISymbolNode original)

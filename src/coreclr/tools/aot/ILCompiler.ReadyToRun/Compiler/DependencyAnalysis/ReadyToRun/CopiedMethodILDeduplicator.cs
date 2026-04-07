@@ -11,6 +11,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public sealed class CopiedMethodILDeduplicator : IObjectDataDeduplicator
     {
         private readonly Func<IEnumerable<CopiedMethodILNode>> _nodesProvider;
+        private Dictionary<ISymbolNode, ISymbolNode> _cachedMapping;
 
         public CopiedMethodILDeduplicator(Func<IEnumerable<CopiedMethodILNode>> nodesProvider)
         {
@@ -19,19 +20,32 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void DeduplicatePass(NodeFactory factory, Dictionary<ISymbolNode, ISymbolNode> previousSymbolRemapping, Dictionary<ISymbolNode, ISymbolNode> symbolRemapping)
         {
-            var hashSet = new HashSet<InternKey>(new InternComparer());
-
-            foreach (CopiedMethodILNode node in _nodesProvider())
+            if (_cachedMapping is null)
             {
-                var key = new InternKey(node, factory);
-                if (hashSet.TryGetValue(key, out InternKey existing))
+                _cachedMapping = new Dictionary<ISymbolNode, ISymbolNode>();
+
+                var sortedNodes = new List<CopiedMethodILNode>(_nodesProvider());
+                sortedNodes.Sort(CompilerComparer.Instance);
+
+                var hashSet = new HashSet<InternKey>(new InternComparer());
+
+                foreach (CopiedMethodILNode node in sortedNodes)
                 {
-                    symbolRemapping.TryAdd(node, existing.Node);
+                    var key = new InternKey(node, factory);
+                    if (hashSet.TryGetValue(key, out InternKey existing))
+                    {
+                        _cachedMapping[node] = existing.Node;
+                    }
+                    else
+                    {
+                        hashSet.Add(key);
+                    }
                 }
-                else
-                {
-                    hashSet.Add(key);
-                }
+            }
+
+            foreach (KeyValuePair<ISymbolNode, ISymbolNode> entry in _cachedMapping)
+            {
+                symbolRemapping.TryAdd(entry.Key, entry.Value);
             }
         }
 
