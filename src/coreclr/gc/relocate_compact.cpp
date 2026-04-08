@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 void memcopy (uint8_t* dmem, uint8_t* smem, size_t size)
 {
     const size_t sz4ptr = sizeof(PTR_PTR)*4;
@@ -51,6 +61,24 @@ bool gc_heap::should_check_brick_for_reloc (uint8_t* o)
 
     // return true if the region is not SIP and the generation is <= condemned generation
     return (map_region_to_generation_skewed[skewed_basic_region_index] & (RI_SIP|RI_GEN_MASK)) <= settings.condemned_generation;
+}
+
+inline
+void gc_heap::check_demotion_helper_sip (uint8_t** pval, int parent_gen_num, uint8_t* parent_loc)
+{
+    uint8_t* child_object = *pval;
+    if (!is_in_heap_range (child_object))
+        return;
+
+    assert (child_object != nullptr);
+    int child_object_plan_gen = get_region_plan_gen_num (child_object);
+
+    if (child_object_plan_gen < parent_gen_num)
+    {
+        set_card (card_of (parent_loc));
+    }
+
+    dprintf (3, ("SCS %d, %d", child_object_plan_gen, parent_gen_num));
 }
 
 #endif //USE_REGIONS
@@ -847,6 +875,18 @@ void gc_heap::verify_pins_with_post_plug_info (const char* msg)
     UNREFERENCED_PARAMETER(msg);
 #endif // _DEBUG && VERIFY_HEAP
 }
+
+#ifdef COLLECTIBLE_CLASS
+// We don't want to burn another ptr size space for pinned plugs to record this so just
+// set the card unconditionally for collectible objects if we are demoting.
+inline void gc_heap::unconditional_set_card_collectible (uint8_t* obj)
+{
+    if (settings.demotion)
+    {
+        set_card (card_of (obj));
+    }
+}
+#endif //COLLECTIBLE_CLASS
 
 void gc_heap::relocate_shortened_survivor_helper (uint8_t* plug, uint8_t* plug_end, mark* pinned_plug_entry)
 {
@@ -2259,3 +2299,5 @@ void gc_heap::relocate_in_uoh_objects (int gen_num)
         }
     }
 }
+
+} // namespace WKS/SVR

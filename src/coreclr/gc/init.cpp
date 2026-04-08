@@ -1,6 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR {
+#else // SERVER_GC
+namespace WKS {
+#endif // SERVER_GC
+
 #ifdef WRITE_WATCH
 void hardware_write_watch_api_supported()
 {
@@ -1552,3 +1560,5 @@ int gc_heap::refresh_memory_limit()
 
     return (int)status;
 }
+
+} // namespace WKS/SVR

@@ -1,6 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
 
 // static
 
@@ -4599,3 +4608,5 @@ size_t gc_heap::get_mark_array_size (heap_segment* seg)
 }
 
 #endif //USE_REGIONS
+
+} // namespace WKS/SVR
