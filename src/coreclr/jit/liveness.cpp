@@ -2332,8 +2332,8 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
     noway_assert(VarSetOps::IsSubset(m_compiler, keepAliveVars, life));
 
     GenTree*    mostRecentLocalVarOrField = nullptr;
-    LIR::Range& blockRange = LIR::AsRange(block);
-    GenTree*    firstNode  = blockRange.FirstNode();
+    LIR::Range& blockRange                = LIR::AsRange(block);
+    GenTree*    firstNode                 = blockRange.FirstNode();
     if (firstNode == nullptr)
     {
         return;
@@ -2467,12 +2467,13 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                                 }
                                 else if (data == mostRecentLocalVarOrField)
                                 {
-                                    // The unused lcl_var or lcl_field on the rhs of a removed block store may be a struct
-                                    // which cannot always be loaded onto the Wasm evaluation stack or into native registers,
-                                    // so we need to make sure to remove the node. In some cases the node is after us in the
-                                    // iteration order and will be automatically removed, but we may have already iterated
-                                    // over it without removing it, so it's necessary to clean up here.
-                                    // Removing the unused lcl_var/lcl_fld before iterating over it causes crashes in emit.
+                                    // The unused lcl_var or lcl_field on the rhs of a removed block store may be a
+                                    // struct which cannot always be loaded onto the Wasm evaluation stack or into
+                                    // native registers, so we need to make sure to remove the node. In some cases the
+                                    // node is after us in the iteration order and will be automatically removed, but we
+                                    // may have already iterated over it without removing it, so it's necessary to clean
+                                    // up here. Removing the unused lcl_var/lcl_fld before iterating over it causes
+                                    // crashes in emit.
                                     JITDUMP("Removing dead store data:\n");
                                     DISPNODE(data);
                                     blockRange.Remove(data);
