@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StartDetached_ThrowsOnUseShellExecute()
         {
-            ProcessStartInfo psi = new ProcessStartInfo("dummy")
+            ProcessStartInfo psi = new("dummy")
             {
                 UseShellExecute = true,
                 StartDetached = true
@@ -69,22 +69,24 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.Windows, "SIGHUP test is Unix-specific")]
-        public void StartDetached_GrandchildSurvivesSIGHUP()
+        [InlineData(true)]
+        [InlineData(false)]
+        public void StartDetached_GrandchildSurvivesSIGHUP(bool enable)
         {
             // Verify that the grandchild started with StartDetached=true survives SIGHUP sent to the child.
             // A detached process starts a new session (via setsid), so it won't receive SIGHUP when
             // the parent's session leader exits.
             int grandchildPid = -1;
 
-            using (RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(static () =>
+            using (RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(static (arg) =>
             {
                 using RemoteInvokeHandle grandchildHandle = RemoteExecutor.Invoke(
                     static () => { Thread.Sleep(Timeout.Infinite); return RemoteExecutor.SuccessExitCode; },
                     new RemoteInvokeOptions { Start = false, CheckExitCode = false });
 
-                grandchildHandle.Process.StartInfo.StartDetached = true;
+                grandchildHandle.Process.StartInfo.StartDetached = bool.Parse(arg);
                 grandchildHandle.Process.Start();
 
                 Console.WriteLine(grandchildHandle.Process.Id);
@@ -97,7 +99,9 @@ namespace System.Diagnostics.Tests
                 Thread.Sleep(Timeout.Infinite);
 
                 return RemoteExecutor.SuccessExitCode;
-            }, new RemoteInvokeOptions
+            },
+            enable.ToString(),
+            new RemoteInvokeOptions
             {
                 StartInfo = new ProcessStartInfo { RedirectStandardOutput = true },
                 CheckExitCode = false
@@ -110,14 +114,11 @@ namespace System.Diagnostics.Tests
                 childHandle.Process.SafeHandle.Signal(PosixSignal.SIGHUP);
 
                 // Wait for the child to exit (SIGHUP terminates the process by default).
-                childHandle.Process.WaitForExit(WaitInMS);
+                Assert.True(childHandle.Process.WaitForExit(WaitInMS));
             }
 
             try
             {
-                // Brief pause to allow any signal propagation.
-                Thread.Sleep(200);
-
                 // Verify the grandchild is still running after the child received SIGHUP.
                 bool grandchildAlive;
                 try
@@ -130,7 +131,7 @@ namespace System.Diagnostics.Tests
                     grandchildAlive = false;
                 }
 
-                Assert.True(grandchildAlive, "Grandchild should survive SIGHUP to parent when StartDetached=true.");
+                Assert.Equal(enable, grandchildAlive); // Grandchild should survive SIGHUP to parent when StartDetached=true
             }
             finally
             {
@@ -140,9 +141,6 @@ namespace System.Diagnostics.Tests
 
         private static void KillGrandchild(int pid)
         {
-            if (pid <= 0)
-                return;
-
             try
             {
                 using Process grandchild = Process.GetProcessById(pid);
