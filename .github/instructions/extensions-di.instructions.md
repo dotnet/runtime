@@ -15,7 +15,7 @@ applyTo: "src/libraries/Microsoft.Extensions.DependencyInjection*/**"
 
 ## Service Resolution
 
-- `ActivatorUtilities.CreateInstance` does not execute factory delegates registered in the container — it only uses the constructor
+- `ActivatorUtilities.CreateInstance` bypasses the container registration or factory for the type being created, but it still resolves constructor dependencies through the provided `IServiceProvider`, which can invoke factories for those dependencies
 - Singleton dependencies resolved lazily at first request must not cause response-time spikes — consider `ValidateOnStart`
 - Factory delegates (`Func<IServiceProvider, T>`) should follow established parameter ordering conventions
 
@@ -41,4 +41,4 @@ applyTo: "src/libraries/Microsoft.Extensions.DependencyInjection*/**"
 - Every bug fix includes a regression test; every new feature has happy-path and edge/error tests
 - Dispose behavior must be tested — verify resources are released and post-disposal operations throw `ObjectDisposedException`
 - Test captive dependency detection and resolution order across different registration patterns
-
+
