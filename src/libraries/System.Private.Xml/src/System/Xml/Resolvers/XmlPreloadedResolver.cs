@@ -103,7 +103,7 @@ namespace System.Xml.Resolvers
 
             internal override Stream AsStream()
             {
-                return Stream.FromText(_str, Encoding.Unicode);
+                return new StringStream(_str, Encoding.Unicode);
             }
 
             internal override TextReader AsTextReader()

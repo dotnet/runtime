@@ -106,6 +106,7 @@ public sealed class WritableMemoryStream : Stream
     public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
         ValidateBufferArguments(buffer, offset, count);
+        EnsureNotClosed();
 
         if (cancellationToken.IsCancellationRequested)
             return Task.FromCanceled<int>(cancellationToken);
@@ -116,6 +117,8 @@ public sealed class WritableMemoryStream : Stream
     /// <inheritdoc/>
     public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
+        EnsureNotClosed();
+
         if (cancellationToken.IsCancellationRequested)
             return ValueTask.FromCanceled<int>(cancellationToken);
 
@@ -227,6 +230,7 @@ public sealed class WritableMemoryStream : Stream
     protected override void Dispose(bool disposing)
     {
         _isOpen = false;
+        _buffer = default;
         base.Dispose(disposing);
     }
 
