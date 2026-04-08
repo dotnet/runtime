@@ -156,6 +156,14 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/SslStreamClientHelloFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send SslStreamClientHelloFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/TextEncodingFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send TextEncodingFuzzer to OneFuzz

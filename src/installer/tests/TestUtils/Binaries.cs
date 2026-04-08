@@ -15,6 +15,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
 {
     public static class Binaries
     {
+        public static OSPlatform CurrentOSPlatform { get; } =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX :
+            RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) ? OSPlatform.FreeBSD :
+            RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS")) ? OSPlatform.Create("ILLUMOS") : OSPlatform.Windows;
+
         public static string GetExeName(string exeName) =>
             exeName + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty);
 
@@ -80,6 +86,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             public static string FileName = GetSharedLibraryFileNameForCurrentPlatform("nethost");
             public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, FileName);
+        }
+
+        public static class NativeHostStatic
+        {
+            public static string FileName = GetExeName("nativehost_static");
+            public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, FileName);
         }
 
         public static class SingleFileHost

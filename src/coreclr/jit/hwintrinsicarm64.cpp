@@ -1344,7 +1344,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = impSIMDPopStack();
 
                 retNode = gtNewSimdDotProdNode(simdType, op1, op2, simdBaseType, simdSize);
-                retNode = gtNewSimdGetElementNode(retType, retNode, gtNewIconNode(0), simdBaseType, simdSize);
+                retNode = gtNewSimdToScalarNode(retType, retNode, simdBaseType, simdSize);
             }
             break;
         }

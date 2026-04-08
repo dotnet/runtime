@@ -23,18 +23,17 @@ PALEXPORT int32_t SystemNative_ForkAndExecProcess(
                    char* const argv[],     // argv argument to execve
                    char* const envp[],     // envp argument to execve
                    const char* cwd,        // path passed to chdir in child process
-                   int32_t redirectStdin,  // whether to redirect standard input from the parent
-                   int32_t redirectStdout, // whether to redirect standard output to the parent
-                   int32_t redirectStderr, // whether to redirect standard error to the parent
                    int32_t setCredentials, // whether to set the userId and groupId for the child process
                    uint32_t userId,        // the user id under which the child process should run
                    uint32_t groupId,       // the group id under which the child process should run
                    uint32_t* groups,       // the groups under which the child process should run
                    int32_t groupsLength,   // the length of groups
                    int32_t* childPid,      // [out] the child process' id
-                   int32_t* stdinFd,       // [out] if redirectStdin, the parent's fd for the child's stdin
-                   int32_t* stdoutFd,      // [out] if redirectStdout, the parent's fd for the child's stdout
-                   int32_t* stderrFd);     // [out] if redirectStderr, the parent's fd for the child's stderr
+                   int32_t stdinFd,        // the fd for the child's stdin
+                   int32_t stdoutFd,       // the fd for the child's stdout
+                   int32_t stderrFd,       // the fd for the child's stderr
+                   int32_t* inheritedFds,  // array of fds to explicitly inherit (-1 to disable restriction)
+                   int32_t inheritedFdCount); // count of fds in inheritedFds; -1 means no restriction
 
 /************
  * The values below in the header are fixed and correct for managed callers to use forever.
@@ -59,13 +58,6 @@ typedef enum
     PAL_RLIMIT_NPROC = 8,   // Number of processes
     PAL_RLIMIT_NOFILE = 9,  // Number of open files
 } RLimitResources;
-
-typedef enum
-{
-    PAL_NONE = 0,
-    PAL_SIGKILL = 9, /* kill the specified process */
-    PAL_SIGSTOP = 19,
-} Signals;
 
 /**
  * Constants for passing to the first parameter of syslog.

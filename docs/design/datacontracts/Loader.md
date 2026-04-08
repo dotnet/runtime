@@ -69,6 +69,8 @@ IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
+bool IsReadyToRun(ModuleHandle handle);
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
@@ -102,6 +104,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
+| `Module` | `SimpleName` | Simple name of the Module (UTF-8, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
 | `Module` | `AvailableTypeParams` | Pointer to an EETypeHashTable |
 | `Module` | `InstMethodHashTable` | Pointer to an InstMethodHashTable |
@@ -170,11 +173,6 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
 | `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
 | `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
-| `WebcilHeader` | `CoffSections` | Number of COFF sections in the Webcil image |
-| `WebcilSectionHeader` | `VirtualSize` | Virtual size of the section |
-| `WebcilSectionHeader` | `VirtualAddress` | RVA of the section |
-| `WebcilSectionHeader` | `SizeOfRawData` | Size of the section's raw data |
-| `WebcilSectionHeader` | `PointerToRawData` | File offset to the section's raw data |
 
 
 
@@ -478,9 +476,10 @@ uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
         throw new InvalidOperationException("Negative RVA in Webcil image.");
 
     TargetPointer headerBase = imageLayout.Base;
+    // The webcil specification is found at docs/design/mono/webcil.md
     Data.WebcilHeader webcilHeader = // read WebcilHeader at headerBase
-    uint webcilHeaderSize = /* sizeof(WebcilHeader) from type info */;
-    uint webcilSectionSize = /* sizeof(WebcilSectionHeader) from type info */;
+    uint webcilHeaderSize = /* sizeof(WebcilHeader) + 4 if the VersionMajor of the header is 1 or greater */; // Size is defined in webcil spec
+    uint webcilSectionSize = /* sizeof(WebcilSectionHeader) */; // Size is defined in webcil spec
 
     ushort numSections = webcilHeader.CoffSections;
     if (numSections == 0 || numSections > MaxWebcilSections)
@@ -573,6 +572,16 @@ private static ModuleFlags GetFlags(uint flags)
 ModuleFlags GetFlags(ModuleHandle handle)
 {
     return GetFlags(target.Read<uint>(handle.Address + /* Module::Flags offset */));
+}
+
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName)
+{
+    TargetPointer simpleNameStart = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
+    if (simpleNameStart == TargetPointer.Null)
+        return false;
+    byte[] simpleNameBytes = // Read<byte> from target starting at simpleNameStart until null terminator
+    simpleName = // convert to string, throw on invalid UTF-8
+    return true;
 }
 
 string GetPath(ModuleHandle handle)

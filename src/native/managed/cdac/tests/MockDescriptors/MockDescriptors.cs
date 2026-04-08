@@ -151,6 +151,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Module.Flags), DataType.uint32),
             new(nameof(Data.Module.LoaderAllocator), DataType.pointer),
             new(nameof(Data.Module.DynamicMetadata), DataType.pointer),
+            new(nameof(Data.Module.SimpleName), DataType.pointer),
             new(nameof(Data.Module.Path), DataType.pointer),
             new(nameof(Data.Module.FileName), DataType.pointer),
             new(nameof(Data.Module.ReadyToRunInfo), DataType.pointer),
@@ -189,7 +190,14 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.ExceptionInfo.PreviousNestedInfo), DataType.pointer),
             new(nameof(Data.ExceptionInfo.ThrownObjectHandle), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.ExceptionFlags), DataType.uint32),
+            new(nameof(Data.ExceptionInfo.StackLowBound), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.StackHighBound), DataType.pointer),
             new(nameof(Data.ExceptionInfo.ExceptionWatsonBucketTrackerBuckets), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.PassNumber), DataType.uint8),
+            new(nameof(Data.ExceptionInfo.CSFEHClause), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.CSFEnclosingClause), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.CallerOfActualHandlerFrame), DataType.pointer),
         ]
     };
 
@@ -212,6 +220,8 @@ internal partial class MockDescriptors
             new(nameof(Data.Thread.ExceptionTracker), DataType.pointer),
             new(nameof(Data.Thread.ThreadLocalDataPtr), DataType.pointer),
             new(nameof(Data.Thread.UEWatsonBucketTrackerBuckets), DataType.pointer),
+            new(nameof(Data.Thread.DebuggerFilterContext), DataType.pointer),
+            new(nameof(Data.Thread.ProfilerFilterContext), DataType.pointer),
         ]
     };
 

@@ -141,7 +141,8 @@ namespace Microsoft.Extensions.Hosting.Tests
                     {
                         options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
                     });
-                    services.AddHostedService<AsynchronousFailureService>();
+                    services.AddSingleton(new ServiceBarrier(count: 3));
+                    services.AddHostedService<FirstAsynchronousFailureService>();
                     services.AddHostedService<SecondAsynchronousFailureService>();
                     services.AddHostedService<ThirdAsynchronousFailureService>();
                 });
@@ -303,27 +304,66 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 // Await before throwing to make the exception asynchronous
                 // Ignore the cancellation token to ensure this service throws even if the host is trying to shut down
-                await Task.Delay(TimeSpan.FromMilliseconds(100));
+                await Task.Yield();
+
                 throw new InvalidOperationException("Asynchronous failure");
             }
         }
 
-        private class SecondAsynchronousFailureService : BackgroundService
+        private class ServiceBarrier(int count)
+        {
+            private int _remaining = count;
+            private readonly TaskCompletionSource<bool> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public async Task SignalAndWaitAsync()
+            {
+                if (Interlocked.Decrement(ref _remaining) == 0)
+                {
+                    _tcs.SetResult(true);
+                }
+
+                await _tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+        }
+
+        private class FirstAsynchronousFailureService(ServiceBarrier barrier) : BackgroundService
         {
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
-                // Ignore the cancellation token to ensure this service throws even if the host is trying to shut down
-                await Task.Delay(TimeSpan.FromMilliseconds(150));
+                // Wait until all services have started before throwing
+                await barrier.SignalAndWaitAsync();
+
+                // Await before throwing to make sure the exception is asynchronous
+                await Task.Yield();
+
+                throw new InvalidOperationException("Asynchronous failure");
+            }
+        }
+
+        private class SecondAsynchronousFailureService(ServiceBarrier barrier) : BackgroundService
+        {
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                // Wait until all services have started before throwing
+                await barrier.SignalAndWaitAsync();
+
+                // Await before throwing to make sure the exception is asynchronous
+                await Task.Yield();
+
                 throw new InvalidOperationException("Second asynchronous failure");
             }
         }
 
-        private class ThirdAsynchronousFailureService : BackgroundService
+        private class ThirdAsynchronousFailureService(ServiceBarrier barrier) : BackgroundService
         {
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
-                // Ignore the cancellation token to ensure this service throws even if the host is trying to shut down
-                await Task.Delay(TimeSpan.FromMilliseconds(200));
+                // Wait until all services have started before throwing
+                await barrier.SignalAndWaitAsync();
+
+                // Await before throwing to make sure the exception is asynchronous
+                await Task.Yield();
+
                 throw new InvalidOperationException("Third asynchronous failure");
             }
         }
