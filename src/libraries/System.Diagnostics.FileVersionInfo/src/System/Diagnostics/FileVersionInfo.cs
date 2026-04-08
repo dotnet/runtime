@@ -187,7 +187,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets all copyright notices that apply to the specified file.
         /// </summary>
-        /// <value>The copyright notices that apply to the specified file.</value>
+        /// <value>The copyright notices that apply to the specified file or <see langword="null"/> if the file did not contain version information.</value>
         public string? LegalCopyright
         {
             get { return _legalCopyright; }
@@ -286,7 +286,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns a <see cref="FileVersionInfo" /> representing the version information associated with the specified file.
         /// </summary>
-        /// <param name="fileName">The fully qualified path and name of the file to retrieve the version information for.</param>
+        /// <param name="fileName">The path and name of the file to retrieve version information for.</param>
         /// <returns>A <see cref="FileVersionInfo" /> containing information about the file. If the file did not contain version information, the <see cref="FileVersionInfo" /> contains only the name of the file requested.</returns>
         public static FileVersionInfo GetVersionInfo(string fileName)
         {
@@ -308,7 +308,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns a partial list of properties in the <see cref="FileVersionInfo" /> and their values.
         /// </summary>
-        /// <returns>A list of the following properties in this class and their values: <see cref="FileName" />, <see cref="InternalName" />, <see cref="OriginalFilename" />, <see cref="FileVersion" />, <see cref="FileDescription" />, <see cref="ProductName" />, <see cref="ProductVersion" />, <see cref="IsDebug" />, <see cref="IsPatched" />, <see cref="IsPreRelease" />, <see cref="IsPrivateBuild" />, <see cref="IsSpecialBuild" />, <see cref="Language" />. If the file did not contain version information, this list will contain only the name of the requested file. Boolean values will be <see langword="false" />, and all other entries will be <see langword="null" />.</returns>
+        /// <returns>A list of the following properties in this class and their values: <see cref="FileName" />, <see cref="InternalName" />, <see cref="OriginalFilename" />, <see cref="FileVersion" />, <see cref="FileDescription" />, <see cref="ProductName" />, <see cref="ProductVersion" />, <see cref="IsDebug" />, <see cref="IsPatched" />, <see cref="IsPreRelease" />, <see cref="IsPrivateBuild" />, <see cref="IsSpecialBuild" />, <see cref="Language" />. If the file did not contain version information, Boolean values will be <see langword="false" />, and other values will be empty.</returns>
         public override string ToString()
         {
             // An initial capacity of 512 was chosen because it is large enough to cover
