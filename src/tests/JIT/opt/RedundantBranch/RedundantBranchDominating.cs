@@ -12,6 +12,7 @@ using Xunit;
 public class RedundantBranchDominating
 {
     private static int s_effects;
+    private static readonly int[] s_values = { -10, -3, -2, -1, 0, 1, 2, 3, 10, 499, 500 };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int SideEffect(int value)
@@ -72,39 +73,72 @@ public class RedundantBranchDominating
         return 3;
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Dom_03(int count)
     {
-        Func<int, int>[] funcs = { Dom_00, Dom_01, Dom_02 };
-        int[] values = { -10, -3, -2, -1, 0, 1, 2, 3, 10, 499, 500 };
-        int[] expectedDom00 = { 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3 };
-        int[] expectedDom01 = { 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1 };
-        int[] expectedDom02 = { 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
-        int[][] expected = { expectedDom00, expectedDom01, expectedDom02 };
-
-        int cases = 0;
-        int errors = 0;
-
-        s_effects = 0;
-
-        for (int funcNum = 0; funcNum < funcs.Length; funcNum++)
+        if (count > 0)
         {
-            for (int valueNum = 0; valueNum < values.Length; valueNum++)
+            if (SideEffect(count) > 1)
             {
-                int before = s_effects;
-                int result = funcs[funcNum](values[valueNum]);
-
-                cases++;
-
-                if ((result != expected[funcNum][valueNum]) || (s_effects != (before + 1)))
+                if (count > 2)
                 {
-                    Console.WriteLine($"Dom_0{funcNum}({values[valueNum]}) = {result}, effects={s_effects - before}");
-                    errors++;
+                    return 1;
                 }
             }
         }
 
-        Console.WriteLine($"{cases} tests, {errors} errors");
-        return errors > 0 ? -1 : 100;
+        return 3;
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Dom_04(int count)
+    {
+        if ((count > 1) || (count > 0))
+        {
+            if (count > 0)
+            {
+                return 1;
+            }
+
+            return 2;
+        }
+
+        return 3;
+    }
+
+    private static void RunTest(string name, Func<int, int> func, int[] expectedResults, int[] expectedEffects)
+    {
+        s_effects = 0;
+
+        for (int i = 0; i < s_values.Length; i++)
+        {
+            int value = s_values[i];
+            int before = s_effects;
+            int result = func(value);
+            int effects = s_effects - before;
+
+            Assert.True(result == expectedResults[i], $"{name}({value}) = {result}, expected {expectedResults[i]}");
+            Assert.True(effects == expectedEffects[i], $"{name}({value}) effects={effects}, expected {expectedEffects[i]}");
+        }
+    }
+
+    [Fact]
+    public static void TestDom00() =>
+        RunTest(nameof(Dom_00), Dom_00, new[] { 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3 }, new[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
+
+    [Fact]
+    public static void TestDom01() =>
+        RunTest(nameof(Dom_01), Dom_01, new[] { 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1 }, new[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
+
+    [Fact]
+    public static void TestDom02() =>
+        RunTest(nameof(Dom_02), Dom_02, new[] { 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3 }, new[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
+
+    [Fact]
+    public static void TestDom03() =>
+        RunTest(nameof(Dom_03), Dom_03, new[] { 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1 }, new[] { 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1 });
+
+    [Fact]
+    public static void TestDom04() =>
+        RunTest(nameof(Dom_04), Dom_04, new[] { 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1 }, new[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
 }
