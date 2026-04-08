@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -459,6 +460,55 @@ namespace Microsoft.Win32.SafeHandles
                 }
 
                 return storageReadCapacity.DiskLength;
+            }
+        }
+
+        internal unsafe string GetName()
+        {
+            if (_path is not null)
+            {
+                return _path;
+            }
+
+            const int InitialBufferSize = 4096;
+            char[] buffer = ArrayPool<char>.Shared.Rent(InitialBufferSize);
+            try
+            {
+                uint result = GetFinalPathNameByHandleHelper(buffer);
+
+                // If the function fails because lpszFilePath is too small to hold the string plus the terminating null
+                // character, the return value is the required buffer size, in TCHARs, including the null character.
+                if (result > buffer.Length)
+                {
+                    char[] toReturn = buffer;
+                    buffer = ArrayPool<char>.Shared.Rent((int)result);
+                    ArrayPool<char>.Shared.Return(toReturn);
+
+                    result = GetFinalPathNameByHandleHelper(buffer);
+                }
+
+                // If the function fails for any other reason, the return value is zero.
+                if (result == 0)
+                {
+                    return SR.IO_UnknownFileName;
+                }
+
+                // GetFinalPathNameByHandle always returns with extended DOS prefix (\\?\).
+                // Trim the prefix to keep the result consistent with the path stored in _path.
+                int start = PathInternal.IsExtended(new string(buffer, 0, (int)result).AsSpan()) ? 4 : 0;
+                return new string(buffer, start, (int)result - start);
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(buffer);
+            }
+
+            uint GetFinalPathNameByHandleHelper(char[] buf)
+            {
+                fixed (char* bufPtr = buf)
+                {
+                    return Interop.Kernel32.GetFinalPathNameByHandle(this, bufPtr, (uint)buf.Length, Interop.Kernel32.FILE_NAME_NORMALIZED);
+                }
             }
         }
     }

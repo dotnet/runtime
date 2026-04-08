@@ -97,5 +97,20 @@ namespace System.IO.Tests
                 Assert.Equal(FileHandleType.SymbolicLink, handle.Type);
             }
         }
+
+        [Fact]
+        public unsafe void Name_WhenOpenedFromRawHandle_ReturnsResolvedPath()
+        {
+            string path = GetTestFilePath();
+            File.WriteAllText(path, "test");
+
+            using SafeFileHandle originalHandle = File.OpenHandle(path, FileMode.Open, FileAccess.Read);
+            using SafeFileHandle handle = new SafeFileHandle(originalHandle.DangerousGetHandle(), ownsHandle: false);
+
+            string name = handle.Name;
+
+            // GetFinalPathNameByHandle resolves the path; it should end with the file name.
+            Assert.EndsWith(Path.GetFileName(path), name, StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

@@ -590,5 +590,16 @@ namespace Microsoft.Win32.SafeHandles
             FileStreamHelpers.CheckFileCall(result, Path);
             return status.Size;
         }
+
+        internal string GetName()
+        {
+            if (_path is not null)
+            {
+                return _path;
+            }
+
+            string? path = Interop.Sys.GetFilePathFromHandle(handle);
+            return path ?? SR.IO_UnknownFileName;
+        }
     }
 }

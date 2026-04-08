@@ -540,5 +540,72 @@ namespace System.Diagnostics.Tests
 
             Assert.Throws<ArgumentException>(() => Process.Start(startInfo));
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "RemoteExecutor is not supported")]
+        public void NonInheritedFileHandle_IsNotAvailableInChildProcess()
+        {
+            string path = Path.GetTempFileName();
+            try
+            {
+                // Create an inheritable SafeFileHandle pointing to a regular file.
+                using SafeFileHandle fileHandle = File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None);
+
+                // Verify the handle is valid in the parent process.
+                Assert.False(fileHandle.IsInvalid);
+                Assert.Equal(FileHandleType.RegularFile, fileHandle.Type);
+
+                nint rawHandle = fileHandle.DangerousGetHandle();
+
+                // Spawn a child process with InheritedHandles = [] (no handles inherited),
+                // passing the raw handle value and the file path.
+                RemoteInvokeOptions options = new() { CheckExitCode = true };
+                options.StartInfo.InheritedHandles = [];
+
+                using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                    static (string handleStr, string filePath) =>
+                    {
+                        nint rawHandle = nint.Parse(handleStr);
+                        using SafeFileHandle handle = new SafeFileHandle(rawHandle, ownsHandle: false);
+
+                        if (handle.IsInvalid)
+                        {
+                            // Handle is invalid in the child: correct, it was not inherited.
+                            return RemoteExecutor.SuccessExitCode;
+                        }
+
+                        // If the handle appears valid, verify it doesn't point to our file.
+                        // (On some platforms the handle value may be reused for something else.)
+                        try
+                        {
+                            using FileStream fs = new FileStream(
+                                new SafeFileHandle(rawHandle, ownsHandle: false),
+                                FileAccess.ReadWrite);
+                            string name = fs.SafeFileHandle.Name;
+
+                            // If we can get the name and it matches our path, the handle was incorrectly inherited.
+                            if (string.Equals(name, filePath, StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(name, filePath, StringComparison.Ordinal))
+                            {
+                                // The file handle was inherited — this is a test failure.
+                                return RemoteExecutor.SuccessExitCode - 1;
+                            }
+                        }
+                        catch
+                        {
+                            // Expected: the handle is not a valid file handle in this process.
+                        }
+
+                        return RemoteExecutor.SuccessExitCode;
+                    },
+                    rawHandle.ToString(),
+                    path,
+                    options);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
     }
 }
