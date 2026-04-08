@@ -5372,19 +5372,6 @@ void CEEInfo::getCallInfo(
 #endif // STUB_DISPATCH_PORTABLE
     }
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // Resolve the .override here so that we call the overriding method directly,
-    // avoiding a DoPrestub failure when trying to set a non-overridden entry point in the slot.
-    if (directCall)
-    {
-        MethodDesc* pResolvedMD = MethodTable::MapMethodDeclToMethodImpl(pTargetMD);
-        if (pResolvedMD != pTargetMD)
-        {
-            pTargetMD = pResolvedMD;
-        }
-    }
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
-
     pResult->hMethod = CORINFO_METHOD_HANDLE(pTargetMD);
 
     pResult->accessAllowed = CORINFO_ACCESS_ALLOWED;
