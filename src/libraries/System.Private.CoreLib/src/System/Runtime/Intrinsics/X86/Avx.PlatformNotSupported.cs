@@ -107,6 +107,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTSS xmm1,         m32</para>
         ///   <para>  VBROADCASTSS xmm1 {k1}{z}, m32</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<float> BroadcastScalarToVector128(float* source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -114,12 +115,14 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTSS ymm1,         m32</para>
         ///   <para>  VBROADCASTSS ymm1 {k1}{z}, m32</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<float> BroadcastScalarToVector256(float* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256d _mm256_broadcast_sd (double const * mem_addr)</para>
         ///   <para>  VBROADCASTSD ymm1,         m64</para>
         ///   <para>  VBROADCASTSD ymm1 {k1}{z}, m64</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<double> BroadcastScalarToVector256(double* source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -127,12 +130,14 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTF128  ymm1,         m128</para>
         ///   <para>  VBROADCASTF32x4 ymm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<float> BroadcastVector128ToVector256(float* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256d _mm256_broadcast_pd (__m128d const * mem_addr)</para>
         ///   <para>  VBROADCASTF128  ymm1,         m128</para>
         ///   <para>  VBROADCASTF64x2 ymm1 {k1}{z}, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<double> BroadcastVector128ToVector256(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -573,101 +578,119 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   ymm1,         m256</para>
         ///   <para>  VMOVDQA32 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<sbyte> LoadAlignedVector256(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_load_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQA   ymm1,         m256</para>
         ///   <para>  VMOVDQA32 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<byte> LoadAlignedVector256(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_load_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQA   ymm1,         m256</para>
         ///   <para>  VMOVDQA32 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<short> LoadAlignedVector256(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_load_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQA   ymm1,         m256</para>
         ///   <para>  VMOVDQA32 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ushort> LoadAlignedVector256(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_load_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQA   ymm1,         m256</para>
         ///   <para>  VMOVDQA32 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> LoadAlignedVector256(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_load_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQA   ymm1,         m256</para>
         ///   <para>  VMOVDQA32 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<uint> LoadAlignedVector256(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_load_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQA   ymm1,         m256</para>
         ///   <para>  VMOVDQA64 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> LoadAlignedVector256(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_load_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQA   ymm1,         m256</para>
         ///   <para>  VMOVDQA64 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ulong> LoadAlignedVector256(ulong* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256 _mm256_load_ps (float const * mem_addr)</para>
         ///   <para>  VMOVAPS ymm1,         m256</para>
         ///   <para>  VMOVAPS ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<float> LoadAlignedVector256(float* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256d _mm256_load_pd (double const * mem_addr)</para>
         ///   <para>  VMOVAPD ymm1,         m256</para>
         ///   <para>  VMOVAPD ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<double> LoadAlignedVector256(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>__m256i _mm256_lddqu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VLDDQU ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<sbyte> LoadDquVector256(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_lddqu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VLDDQU ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<byte> LoadDquVector256(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_lddqu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VLDDQU ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<short> LoadDquVector256(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_lddqu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VLDDQU ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ushort> LoadDquVector256(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_lddqu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VLDDQU ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> LoadDquVector256(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_lddqu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VLDDQU ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<uint> LoadDquVector256(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_lddqu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VLDDQU ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> LoadDquVector256(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_lddqu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VLDDQU ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ulong> LoadDquVector256(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -675,102 +698,120 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU  ymm1,         m256</para>
         ///   <para>  VMOVDQU8 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<sbyte> LoadVector256(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_loadu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQU  ymm1,         m256</para>
         ///   <para>  VMOVDQU8 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<byte> LoadVector256(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_loadu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQU   ymm1,         m256</para>
         ///   <para>  VMOVDQU16 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<short> LoadVector256(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_loadu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQU   ymm1,         m256</para>
         ///   <para>  VMOVDQU16 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ushort> LoadVector256(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_loadu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQU   ymm1,         m256</para>
         ///   <para>  VMOVDQU32 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> LoadVector256(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_loadu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQU   ymm1,         m256</para>
         ///   <para>  VMOVDQU32 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<uint> LoadVector256(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_loadu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQU   ymm1,         m256</para>
         ///   <para>  VMOVDQU64 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> LoadVector256(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_loadu_si256 (__m256i const * mem_addr)</para>
         ///   <para>  VMOVDQU   ymm1,         m256</para>
         ///   <para>  VMOVDQU64 ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ulong> LoadVector256(ulong* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256 _mm256_loadu_ps (float const * mem_addr)</para>
         ///   <para>  VMOVUPS ymm1,         m256</para>
         ///   <para>  VMOVUPS ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<float> LoadVector256(float* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256d _mm256_loadu_pd (double const * mem_addr)</para>
         ///   <para>  VMOVUPD ymm1,         m256</para>
         ///   <para>  VMOVUPD ymm1 {k1}{z}, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<double> LoadVector256(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>__m128 _mm_maskload_ps (float const * mem_addr, __m128i mask)</para>
         ///   <para>  VMASKMOVPS xmm1, xmm2, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<float> MaskLoad(float* address, Vector128<float> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128d _mm_maskload_pd (double const * mem_addr, __m128i mask)</para>
         ///   <para>  VMASKMOVPD xmm1, xmm2, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> MaskLoad(double* address, Vector128<double> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256 _mm256_maskload_ps (float const * mem_addr, __m256i mask)</para>
         ///   <para>  VMASKMOVPS ymm1, ymm2, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<float> MaskLoad(float* address, Vector256<float> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256d _mm256_maskload_pd (double const * mem_addr, __m256i mask)</para>
         ///   <para>  VMASKMOVPD ymm1, ymm2, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<double> MaskLoad(double* address, Vector256<double> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)</para>
         ///   <para>  VMASKMOVPS m128, xmm1, xmm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(float* address, Vector128<float> mask, Vector128<float> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_maskstore_pd (double * mem_addr, __m128i mask, __m128d a)</para>
         ///   <para>  VMASKMOVPD m128, xmm1, xmm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(double* address, Vector128<double> mask, Vector128<double> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a)</para>
         ///   <para>  VMASKMOVPS m256, ymm1, ymm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(float* address, Vector256<float> mask, Vector256<float> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_maskstore_pd (double * mem_addr, __m256i mask, __m256d a)</para>
         ///   <para>  VMASKMOVPD m256, ymm1, ymm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(double* address, Vector256<double> mask, Vector256<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1046,60 +1087,70 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQU  m256,         ymm1</para>
         ///   <para>  VMOVDQU8 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(sbyte* address, Vector256<sbyte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQU  m256,         ymm1</para>
         ///   <para>  VMOVDQU8 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(byte* address, Vector256<byte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQU   m256,         ymm1</para>
         ///   <para>  VMOVDQU16 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(short* address, Vector256<short> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQU   m256,         ymm1</para>
         ///   <para>  VMOVDQU16 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(ushort* address, Vector256<ushort> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQU   m256,         ymm1</para>
         ///   <para>  VMOVDQU32 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(int* address, Vector256<int> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQU   m256,         ymm1</para>
         ///   <para>  VMOVDQU32 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(uint* address, Vector256<uint> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQU   m256,         ymm1</para>
         ///   <para>  VMOVDQU64 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(long* address, Vector256<long> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQU   m256,         ymm1</para>
         ///   <para>  VMOVDQU64 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(ulong* address, Vector256<ulong> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_storeu_ps (float * mem_addr, __m256 a)</para>
         ///   <para>  VMOVUPS m256,         ymm1</para>
         ///   <para>  VMOVUPS m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(float* address, Vector256<float> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_storeu_pd (double * mem_addr, __m256d a)</para>
         ///   <para>  VMOVUPD m256,         ymm1</para>
         ///   <para>  VMOVUPD m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(double* address, Vector256<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1107,111 +1158,131 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMOVDQA   m256,         ymm1</para>
         ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(sbyte* address, Vector256<sbyte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_store_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQA   m256,         ymm1</para>
         ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(byte* address, Vector256<byte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_store_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQA   m256,         ymm1</para>
         ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(short* address, Vector256<short> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_store_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQA   m256,         ymm1</para>
         ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(ushort* address, Vector256<ushort> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_store_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQA   m256,         ymm1</para>
         ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(int* address, Vector256<int> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_store_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQA   m256,         ymm1</para>
         ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(uint* address, Vector256<uint> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_store_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQA   m256,         ymm1</para>
         ///   <para>  VMOVDQA64 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(long* address, Vector256<long> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_store_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVDQA   m256,         ymm1</para>
         ///   <para>  VMOVDQA64 m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(ulong* address, Vector256<ulong> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_store_ps (float * mem_addr, __m256 a)</para>
         ///   <para>  VMOVAPS m256,         ymm1</para>
         ///   <para>  VMOVAPS m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(float* address, Vector256<float> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_store_pd (double * mem_addr, __m256d a)</para>
         ///   <para>  VMOVAPD m256,         ymm1</para>
         ///   <para>  VMOVAPD m256 {k1}{z}, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAligned(double* address, Vector256<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVNTDQ m256, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(sbyte* address, Vector256<sbyte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVNTDQ m256, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(byte* address, Vector256<byte> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVNTDQ m256, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(short* address, Vector256<short> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVNTDQ m256, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(ushort* address, Vector256<ushort> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVNTDQ m256, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(int* address, Vector256<int> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVNTDQ m256, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(uint* address, Vector256<uint> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVNTDQ m256, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(long* address, Vector256<long> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)</para>
         ///   <para>  VMOVNTDQ m256, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(ulong* address, Vector256<ulong> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_stream_ps (float * mem_addr, __m256 a)</para>
         ///   <para>  VMOVNTPS m256, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(float* address, Vector256<float> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_stream_pd (double * mem_addr, __m256d a)</para>
         ///   <para>  VMOVNTPD m256, ymm1</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal(double* address, Vector256<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>

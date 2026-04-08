@@ -2752,10 +2752,21 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     // Async resumptions are allowed to jump into try blocks at any point. They
     // are introduced late enough that the invariant of single entry is no
     // longer necessary.
+    // TODO: revoke for wasm after SCC
     if (blockPred->HasFlag(BBF_ASYNC_RESUMPTION))
     {
         return true;
     }
+
+#if defined(TARGET_WASM)
+    // Catch resumptions are allowed to jump into try blocks at any point.
+    // They are transients during Wasm control flow restructuring.
+    // TODO: revoke after SCC
+    if (m_compiler->fgWasmHasCatchResumptions && blockPred->HasFlag(BBF_CATCH_RESUMPTION))
+    {
+        return true;
+    }
+#endif // defined(TARGET_WASM)
 
     JITDUMP("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
@@ -2952,7 +2963,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
         // If try regions are no longer contiguous we lose this invariant.
 
-        if (m_compiler->fgTrysNotContiguous())
+        if (!m_compiler->fgTrysContiguous())
         {
             JITDUMP("Tolerating, since try regions are not contiguous\n");
             return true;

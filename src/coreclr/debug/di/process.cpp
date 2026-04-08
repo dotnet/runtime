@@ -416,8 +416,8 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
     IMDInternalImport * pMDII = NULL;
 
     // First, see if the debugger can locate the exact metadata we want.
-    bool _metaDataFileInfoResult;
-    IfFailThrow(this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, &filePath, &_metaDataFileInfoResult));
+    BOOL _metaDataFileInfoResult;
+    IfFailThrow(this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, &dwImageTimeStamp, &dwImageSize, &filePath, &_metaDataFileInfoResult));
     if (_metaDataFileInfoResult)
     {
         _ASSERTE(filePath.IsSet());
@@ -1626,7 +1626,7 @@ void CordbProcess::FreeDac()
 
     if (m_pDacPrimitives != NULL)
     {
-        m_pDacPrimitives->Destroy();
+        m_pDacPrimitives->Release();
         m_pDacPrimitives = NULL;
     }
 
@@ -2195,6 +2195,14 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess12*>(this);
     }
+    else if (id == IID_IDacDbiAllocator)
+    {
+        *pInterface = static_cast<IDacDbiInterface::IAllocator*>(this);
+    }
+    else if (id == IID_IDacDbiMetaDataLookup)
+    {
+        *pInterface = static_cast<IDacDbiInterface::IMetaDataLookup*>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugProcess*>(this));
@@ -2250,7 +2258,7 @@ HRESULT CordbProcess::EnumerateHeap(ICorDebugHeapEnum **ppObjects)
 
     EX_TRY
     {
-        bool gcValid;
+        BOOL gcValid;
         IfFailThrow(m_pDacPrimitives->AreGCStructuresValid(&gcValid));
         if (gcValid)
         {
@@ -2333,7 +2341,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
 
     EX_TRY
     {
-        bool validObj;
+        BOOL validObj;
         IfFailThrow(m_pDacPrimitives->IsValidObject(addr, &validObj));
         if (!validObj)
         {
@@ -2601,7 +2609,7 @@ COM_METHOD CordbProcess::GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDe
 
     EX_TRY
     {
-        bool validObj;
+        BOOL validObj;
         IfFailThrow(m_pDacPrimitives->IsValidObject(continuationAddress, &validObj));
         if (!validObj)
         {
@@ -2637,7 +2645,7 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, C
     VMPTR_DomainAssembly domainAssembly;
 
     HRESULT hr = E_FAIL;
-    bool _appDomainResult;
+    BOOL _appDomainResult;
     IfFailThrow(GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &domainAssembly, &_appDomainResult));
     if (_appDomainResult)
     {
@@ -14579,7 +14587,7 @@ void CordbWin32EventThread::AttachProcess()
     EX_TRY
     {
         // Don't allow attach if any metadata/IL updates have been applied
-        bool _metadataUpdatesApplied;
+        BOOL _metadataUpdatesApplied;
         IfFailThrow(pProcess->GetDAC()->MetadataUpdatesApplied(&_metadataUpdatesApplied));
         if (_metadataUpdatesApplied)
         {
@@ -15754,7 +15762,7 @@ bool CordbProcess::IsThreadSuspendedOrHijacked(ICorDebugThread * pICorDebugThrea
     PUBLIC_REENTRANT_API_ENTRY_FOR_SHIM(this);
 
     CordbThread * pCordbThread = static_cast<CordbThread *> (pICorDebugThread);
-    bool _isSuspendedOrHijacked;
+    BOOL _isSuspendedOrHijacked;
     IfFailThrow(GetDAC()->IsThreadSuspendedOrHijacked(pCordbThread->m_vmThreadToken, &_isSuspendedOrHijacked));
     return _isSuspendedOrHijacked;
 }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -109,8 +109,8 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
         {
             return (typeof(TChar) == typeof(Utf8Char))
-                 ? Rune.DecodeFromUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span), out result, out elemsConsumed)
-                 : Rune.DecodeFromUtf16(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span), out result, out elemsConsumed);
+                ? Rune.DecodeFromUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span), out result, out elemsConsumed)
+                : Rune.DecodeFromUtf16(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span), out result, out elemsConsumed);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

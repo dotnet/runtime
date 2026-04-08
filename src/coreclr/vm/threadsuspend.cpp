@@ -2648,7 +2648,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     if (Thread::UseRedirectForGcStress() && (reason == RedirectReason_GCStress))
     {
         _ASSERTE(pThread->PreemptiveGCDisabledOther());
-        DoGcStress(frame.GetContext(), NULL);
+        DoGcStress(frame.GetContext(), NativeCodeVersion());
     }
     else
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS

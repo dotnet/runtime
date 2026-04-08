@@ -5,17 +5,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.TestCasesRunner;
-using NUnit.Framework;
 
 namespace Mono.Linker.Tests
 {
-    [TestFixture]
+    [TestClass]
     public class DocumentationSignatureParserTests
     {
-        [TestCaseSource(nameof(GetMemberAssertions), new object[] { typeof(DocumentationSignatureParserTests) })]
+        [TestMethod]
+        [DynamicData(nameof(GetMemberAssertions), new object[] { typeof(DocumentationSignatureParserTests) })]
         public void TestSignatureParsing(IMemberDefinition member, CustomAttribute customAttribute)
         {
             var attributeString = (string)customAttribute.ConstructorArguments[0].Value;
@@ -38,12 +39,12 @@ namespace Mono.Linker.Tests
             }
         }
 
-        public static IEnumerable<TestCaseData> GetMemberAssertions(Type type) => MemberAssertionsCollector.GetMemberAssertionsData(type);
+        public static IEnumerable<TestDataRow<(IMemberDefinition, CustomAttribute)>> GetMemberAssertions(Type type) => MemberAssertionsCollector.GetMemberAssertionsData(type);
 
         public static void CheckUniqueParsedString(IMemberDefinition member, string input)
         {
             var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
-            Assert.NotNull(module);
+            Assert.IsNotNull(module);
             var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature(input, module, new TestResolver());
             Assert.AreEqual(1, parseResults.Count());
             Assert.AreEqual(member, parseResults.First());
@@ -59,17 +60,17 @@ namespace Mono.Linker.Tests
         public static void CheckParsedString(IMemberDefinition member, string input)
         {
             var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
-            Assert.NotNull(module);
+            Assert.IsNotNull(module);
             var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature(input, module, new TestResolver());
-            CollectionAssert.Contains(parseResults, member);
+            Assert.Contains(member, parseResults);
         }
 
         public static void CheckUnresolvedDocumentationSignature(IMemberDefinition member, string input)
         {
             var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
-            Assert.NotNull(module);
+            Assert.IsNotNull(module);
             var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature(input, module, new TestResolver());
-            CollectionAssert.DoesNotContain(parseResults, member);
+            Assert.DoesNotContain(member, parseResults);
         }
 
         // testcases

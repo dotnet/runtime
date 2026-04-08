@@ -366,6 +366,7 @@ HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
     m_pFreeList = NULL;
     m_pAllocator = NULL;
     m_pNextHeapToRelease = NULL;
+    m_heapType = CodeHeapType::HostCodeHeap;
 }
 
 HostCodeHeap::~HostCodeHeap()
@@ -1260,14 +1261,14 @@ LCGMethodResolver::GetLocalSig()
 
 //---------------------------------------------------------------------------------------
 //
-OBJECTHANDLE
+STRINGREF*
 LCGMethodResolver::ConstructStringLiteral(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
 
     GCX_COOP();
 
-    OBJECTHANDLE string = NULL;
+    STRINGREF* string = NULL;
     STRINGREF strRef = GetStringLiteral(metaTok);
 
     GCPROTECT_BEGIN(strRef);
@@ -1277,7 +1278,7 @@ LCGMethodResolver::ConstructStringLiteral(mdToken metaTok)
         // Instead of storing the string literal in the appdomain specific string literal map,
         // we store it in the dynamic method specific string liternal list
         // This way we can release it when the dynamic method is collected.
-        string = (OBJECTHANDLE)GetOrInternString(&strRef);
+        string = GetOrInternString(&strRef);
     }
 
     GCPROTECT_END();
