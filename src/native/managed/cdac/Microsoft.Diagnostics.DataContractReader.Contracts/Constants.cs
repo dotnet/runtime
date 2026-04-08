@@ -162,6 +162,9 @@ public static class Constants
         public const string GCHeapFreeableSohSegment = nameof(GCHeapFreeableSohSegment);
         public const string GCHeapFreeableUohSegment = nameof(GCHeapFreeableUohSegment);
         public const string GCHeapFreeRegions = nameof(GCHeapFreeRegions);
+        public const string AuxiliarySymbols = nameof(AuxiliarySymbols);
+        public const string AuxiliarySymbolCount = nameof(AuxiliarySymbolCount);
+
     }
     public static class FieldNames
     {

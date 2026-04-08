@@ -441,6 +441,8 @@ namespace System.Security
                     return;
                 }
 
+                Debug.Assert(bytesLength <= destination.ByteLength);
+
                 byte* srcPtr = null, dstPtr = null;
                 try
                 {
