@@ -13,7 +13,7 @@ Applies to all `System.Net.*` libraries, `System.Private.Uri`, and shared networ
 
 ### Review Delegation
 
-When **reviewing** a PR or code change that touches System.Net code, **invoke the `@system-net-review` agent as a sub-task**. The agent carries the full structured checklist (24 dimensions, severity-weighted routing, per-folder hotspot coverage). This skill provides the decision frameworks and coding patterns; the agent provides the line-by-line review checklist.
+When **reviewing** a PR or code change that touches System.Net code, **invoke the `@system-net-review` agent as a sub-task**. The agent carries the full structured checklist with severity-weighted routing and per-folder hotspot coverage. This skill provides the decision frameworks and coding patterns; the agent provides the line-by-line review checklist.
 
 > **Do not duplicate the agent's CHECK items here.** Use this skill for authoring guidance and the agent for review verdicts.
 
@@ -21,7 +21,7 @@ When **reviewing** a PR or code change that touches System.Net code, **invoke th
 
 ## Decision Frameworks
 
-### 1. Resource Lifecycle *(agent dimensions: D12, D18)*
+### 1. Resource Lifecycle
 
 ```
 New resource introduced?
@@ -36,7 +36,7 @@ New resource introduced?
 - `Dispose()` must be **idempotent** and **never throw**.
 - Error paths must dispose; use `try/finally`, not just `using` on the happy path.
 
-### 2. Connection Pooling *(agent dimensions: D3, D18, D12)*
+### 2. Connection Pooling
 
 ```
 Modifying connection pool logic?
@@ -52,7 +52,7 @@ Modifying connection pool logic?
 - Pool disposal must drain all waiters and close all connections.
 - Prefer `Interlocked` operations over `lock` for counters on hot paths.
 
-### 3. Cross-Platform Interop *(agent dimensions: D4, D9)*
+### 3. Cross-Platform Interop
 
 ```
 Adding or modifying P/Invoke?
@@ -68,7 +68,7 @@ Adding or modifying P/Invoke?
 - All `Interop.` declarations live under `Common/src/Interop/<platform>/`.
 - Test on all platforms via `ConditionalFact`/`ConditionalTheory` with `PlatformDetection`.
 
-### 4. Protocol Compliance *(agent dimensions: D8, D13)*
+### 4. Protocol Compliance
 
 ```
 Touching HTTP/QUIC framing or headers?
@@ -84,7 +84,7 @@ Touching HTTP/QUIC framing or headers?
 - Protocol violations from the peer must produce clear exceptions, not silent corruption.
 - Version-specific behavior must be gated on `HttpRequestMessage.Version` or negotiated ALPN.
 
-### 5. Async Patterns *(agent dimensions: D11, D16)*
+### 5. Async Patterns
 
 ```
 Writing async networking code?
@@ -98,9 +98,9 @@ Writing async networking code?
 **Key rules:**
 - Cancellation must interrupt I/O promptly, not just check at the next loop iteration.
 - `ValueTask` must not be awaited more than once or stored.
-- See agent D12 for full async CHECK items.
+- See the agent's async CHECK items for the full list.
 
-### 6. Security Posture *(agent dimensions: D10, D7)*
+### 6. Security Posture
 
 ```
 Changing TLS, auth, or credential handling?
@@ -114,13 +114,13 @@ Changing TLS, auth, or credential handling?
 **Key rules:**
 - Security settings must be **secure by default**; opt-out must be explicit and documented.
 - Validate all TLS configuration before handshake; fail early with clear `AuthenticationException`.
-- See agent D1 and D15 for full security and diagnostics CHECK items.
+- See the agent's security and diagnostics CHECK items for the full list.
 
 ---
 
 ## Code Patterns
 
-### NetEventSource Tracing *(agent dimension: D19)*
+### NetEventSource Tracing
 
 ```csharp
 // DO: guard with IsEnabled and pass 'this' for correlation
@@ -133,7 +133,7 @@ NetEventSource.Info(this, $"Header: {header}");  // allocates even when tracing 
 NetEventSource.Info(this, $"Auth token: {token}");  // NEVER
 ```
 
-### Socket Async Operations *(agent dimensions: D18, D11)*
+### Socket Async Operations
 
 ```csharp
 // DO: reuse SocketAsyncEventArgs; set callback once
@@ -153,7 +153,7 @@ if (!_socket.ReceiveAsync(_recvArgs))
 var args = new SocketAsyncEventArgs();  // hot-path allocation
 ```
 
-### Connection Pool Return *(agent dimensions: D12, D18)*
+### Connection Pool Return
 
 ```csharp
 // DO: validate state before returning to pool
@@ -170,7 +170,7 @@ else
 pool.ReturnConnection(connection);  // may reuse a broken connection
 ```
 
-### SslStream Configuration *(agent dimension: D10)*
+### SslStream Configuration
 
 ```csharp
 // DO: let the OS negotiate the best protocol
@@ -184,7 +184,7 @@ var options = new SslClientAuthenticationOptions
 EnabledSslProtocols = SslProtocols.Tls12,  // blocks future upgrades
 ```
 
-### Buffer Handling *(agent dimension: D3)*
+### Buffer Handling
 
 ```csharp
 // DO: rent from ArrayPool; return in finally
@@ -203,7 +203,7 @@ finally
 byte[] buffer = new byte[4096];  // GC pressure under load
 ```
 
-### HTTP/2 Flow Control *(agent dimension: D8)*
+### HTTP/2 Flow Control
 
 ```csharp
 // DO: respect the peer's flow-control window before sending
@@ -214,7 +214,7 @@ _peerWindowAvailable -= allowed;
 // DON'T: send data exceeding the window → protocol violation / FLOW_CONTROL_ERROR
 ```
 
-### Cancellation Plumbing *(agent dimension: D11)*
+### Cancellation Plumbing
 
 ```csharp
 // DO: link user token with internal timeout
