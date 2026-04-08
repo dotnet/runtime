@@ -591,15 +591,14 @@ namespace Microsoft.Win32.SafeHandles
             return status.Size;
         }
 
-        internal string GetName()
+        internal string? GetPath()
         {
             if (_path is not null)
             {
                 return _path;
             }
 
-            string? path = Interop.Sys.GetFilePathFromHandle(handle);
-            return path ?? SR.IO_UnknownFileName;
+            return Interop.Sys.GetFilePathFromHandle(this);
         }
     }
 }

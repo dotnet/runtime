@@ -578,14 +578,11 @@ namespace System.Diagnostics.Tests
                         // (On some platforms the handle value may be reused for something else.)
                         try
                         {
-                            using FileStream fs = new FileStream(
-                                new SafeFileHandle(rawHandle, ownsHandle: false),
-                                FileAccess.ReadWrite);
-                            string name = fs.SafeFileHandle.Name;
+                            using FileStream fs = new(handle, FileAccess.ReadWrite);
+                            string name = fs.Name;
 
                             // If we can get the name and it matches our path, the handle was incorrectly inherited.
-                            if (string.Equals(name, filePath, StringComparison.OrdinalIgnoreCase) ||
-                                string.Equals(name, filePath, StringComparison.Ordinal))
+                            if (string.Equals(name, filePath, StringComparison.OrdinalIgnoreCase))
                             {
                                 // The file handle was inherited — this is a test failure.
                                 return RemoteExecutor.SuccessExitCode - 1;

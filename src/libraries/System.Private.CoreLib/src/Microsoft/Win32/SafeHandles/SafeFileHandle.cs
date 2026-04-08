@@ -38,40 +38,7 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(preexistingHandle);
         }
 
-        internal string? Path => _path;
-
-        /// <summary>
-        /// Gets the path of the file that this handle represents.
-        /// </summary>
-        /// <value>
-        /// A string that represents the path of the file,
-        /// or <c>[Unknown]</c> if the path cannot be determined.
-        /// </value>
-        /// <exception cref="ObjectDisposedException">The handle is closed.</exception>
-        /// <remarks>
-        /// <para>
-        /// If the <see cref="SafeFileHandle"/> was created by opening a file via
-        /// <see cref="System.IO.File.OpenHandle"/> or <see cref="System.IO.FileStream"/>,
-        /// this property returns the path that was provided to those APIs.
-        /// </para>
-        /// <para>
-        /// If the handle was created from a raw OS handle (for example, via
-        /// <see cref="SafeFileHandle(IntPtr, bool)"/>), this property attempts to
-        /// retrieve the path from the operating system.
-        /// On Windows, <c>GetFinalPathNameByHandle</c> is used.
-        /// On Linux, the <c>/proc/self/fd</c> symlink is read.
-        /// On macOS and FreeBSD, <c>fcntl(F_GETPATH)</c> is used.
-        /// On other platforms, <c>[Unknown]</c> is returned.
-        /// </para>
-        /// </remarks>
-        public string Name
-        {
-            get
-            {
-                ObjectDisposedException.ThrowIf(IsClosed, this);
-                return GetName();
-            }
-        }
+        internal string? Path => GetPath();
 
         /// <summary>
         /// Gets the type of the file that this handle represents.

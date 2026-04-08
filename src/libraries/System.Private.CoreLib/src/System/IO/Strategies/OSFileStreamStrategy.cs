@@ -88,7 +88,7 @@ namespace System.IO.Strategies
             set => Seek(value, SeekOrigin.Begin);
         }
 
-        internal sealed override string Name => _fileHandle.Name;
+        internal sealed override string Name => _fileHandle.Path ?? SR.IO_UnknownFileName;
 
         internal sealed override bool IsClosed => _fileHandle.IsClosed;
 

@@ -104,8 +104,9 @@ namespace System.IO.Tests
 
             using SafeFileHandle originalHandle = File.OpenHandle(path, FileMode.Open, FileAccess.Read);
             using SafeFileHandle handle = new SafeFileHandle(originalHandle.DangerousGetHandle(), ownsHandle: false);
+            using FileStream fs = new(handle, FileAccess.Read);
 
-            string name = handle.Name;
+            string name = fs.Name;
 
             // On platforms that support path resolution from file descriptor (Linux, macOS, FreeBSD),
             // the resolved path should end with the file name portion of the original path.

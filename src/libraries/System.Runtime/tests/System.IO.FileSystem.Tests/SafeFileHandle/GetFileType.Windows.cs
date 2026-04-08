@@ -99,15 +99,16 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public unsafe void Name_WhenOpenedFromRawHandle_ReturnsResolvedPath()
+        public void Name_WhenOpenedFromRawHandle_ReturnsResolvedPath()
         {
             string path = GetTestFilePath();
             File.WriteAllText(path, "test");
 
             using SafeFileHandle originalHandle = File.OpenHandle(path, FileMode.Open, FileAccess.Read);
             using SafeFileHandle handle = new SafeFileHandle(originalHandle.DangerousGetHandle(), ownsHandle: false);
+            using FileStream fs = new(handle, FileAccess.Read);
 
-            string name = handle.Name;
+            string name = fs.Name;
 
             // GetFinalPathNameByHandle resolves the path; it should end with the file name.
             Assert.EndsWith(Path.GetFileName(path), name, StringComparison.OrdinalIgnoreCase);

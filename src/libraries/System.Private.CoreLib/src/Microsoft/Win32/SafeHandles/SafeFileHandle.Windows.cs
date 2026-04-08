@@ -463,14 +463,19 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        internal unsafe string GetName()
+        internal unsafe string? GetPath()
         {
             if (_path is not null)
             {
                 return _path;
             }
 
-            const int InitialBufferSize = 4096;
+            const int InitialBufferSize =
+#if DEBUG
+                26; // use a small size in debug builds to ensure the buffer-growing path is exercised
+#else
+                4096;
+#endif
             char[] buffer = ArrayPool<char>.Shared.Rent(InitialBufferSize);
             try
             {
@@ -490,13 +495,26 @@ namespace Microsoft.Win32.SafeHandles
                 // If the function fails for any other reason, the return value is zero.
                 if (result == 0)
                 {
-                    return SR.IO_UnknownFileName;
+                    return null;
                 }
 
-                // GetFinalPathNameByHandle always returns with extended DOS prefix (\\?\).
+                // GetFinalPathNameByHandle always returns with an extended DOS prefix.
                 // Trim the prefix to keep the result consistent with the path stored in _path.
-                int start = PathInternal.IsExtended(new string(buffer, 0, (int)result).AsSpan()) ? 4 : 0;
-                return new string(buffer, start, (int)result - start);
+                // \\?\UNC\server\share -> \\server\share
+                // \\?\C:\foo          -> C:\foo
+                ReadOnlySpan<char> resultSpan = buffer.AsSpan(0, (int)result);
+                if (PathInternal.IsDeviceUNC(resultSpan))
+                {
+                    // \\?\UNC\ (8 chars) -> \\ (2 chars)
+                    return string.Concat(PathInternal.UncPathPrefix, resultSpan.Slice(PathInternal.UncExtendedPrefixLength));
+                }
+                else if (PathInternal.IsExtended(resultSpan))
+                {
+                    // \\?\ (4 chars) -> (empty)
+                    return new string(buffer, PathInternal.DevicePrefixLength, (int)result - PathInternal.DevicePrefixLength);
+                }
+
+                return new string(buffer, 0, (int)result);
             }
             finally
             {

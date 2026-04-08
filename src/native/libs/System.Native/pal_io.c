@@ -1339,7 +1339,7 @@ int32_t SystemNative_GetFilePathFromHandle(intptr_t fd, char* buffer, int32_t bu
     }
 
 #if HAVE_F_GETPATH
-    // Apple platforms and FreeBSD support F_GETPATH
+    // Apple platforms, FreeBSD, and Solaris support F_GETPATH
     if (fcntl((int)fd, F_GETPATH, buffer) == -1)
     {
         return -1;
