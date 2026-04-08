@@ -1,5 +1,5 @@
 ---
-name: reviewing-system-net-code
+name: system-net-review
 description: "Reviews System.Net networking code changes in dotnet/runtime for protocol correctness, resource management, cross-platform consistency, security, and performance. Use when reviewing PRs that touch System.Net.Http, System.Net.Sockets, System.Net.Security, System.Net.Quic, or related networking code."
 ---
 
