@@ -14,7 +14,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFilePathFromHandle", SetLastError = true)]
         internal static unsafe partial int GetFilePathFromHandle(SafeFileHandle fd, byte* buffer, int bufferSize);
 
-        internal static unsafe string? GetFilePathFromHandle(SafeFileHandle fd)
+        internal static unsafe string GetFilePathFromHandle(SafeFileHandle fd)
         {
             // PATH_MAX on Linux is 4096; macOS/BSD MAXPATHLEN is 1024.
             // Using 4096 covers all Unix platforms without requiring buffer growing.
@@ -30,7 +30,7 @@ internal static partial class Interop
 
                 if (result != 0)
                 {
-                    return null;
+                    return SR.IO_UnknownFileName;
                 }
 
                 int length = buffer.AsSpan(0, PathMaxSize).IndexOf((byte)0);

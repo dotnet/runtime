@@ -465,11 +465,6 @@ namespace Microsoft.Win32.SafeHandles
 
         internal unsafe string? GetPath()
         {
-            if (_path is not null)
-            {
-                return _path;
-            }
-
             const int InitialBufferSize =
 #if DEBUG
                 26; // use a small size in debug builds to ensure the buffer-growing path is exercised
