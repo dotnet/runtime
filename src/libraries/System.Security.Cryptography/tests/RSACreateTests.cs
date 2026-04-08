@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<CryptographicException>(() => RSA.Create(parameters));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
         public static void CreateWithMismatchedPQ_ThrowsCryptographicException()
         {
             RSAParameters parameters = TestData.RSA1032Parameters;
@@ -89,10 +89,7 @@ namespace System.Security.Cryptography.Tests
             CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
                 () => RSA.Create(parameters));
 
-            if (PlatformDetection.IsOpenSslSupported)
-            {
-                Assert.Contains("n does not equal p q", ex.Message);
-            }
+            Assert.Contains("n does not equal p q", ex.Message);
         }
     }
 }
