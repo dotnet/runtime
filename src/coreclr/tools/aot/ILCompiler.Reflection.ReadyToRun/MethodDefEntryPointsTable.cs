@@ -28,7 +28,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         public static MethodDefEntryPointsTable Parse(ReadyToRunReader reader, ReadyToRunSection section)
         {
             int sectionOffset = reader.GetOffset(section.RelativeVirtualAddress);
-            NativeSparseArray methodEntryPoints = new NativeSparseArray(reader.ImageReader, (uint)sectionOffset);
+            NativeArray methodEntryPoints = new NativeArray(reader.ImageReader, (uint)sectionOffset);
             uint count = methodEntryPoints.GetCount();
 
             var entries = new List<MethodDefEntry>((int)count);
