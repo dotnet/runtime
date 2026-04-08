@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
@@ -43,7 +44,7 @@ namespace System.Diagnostics
         public static int StartAndForget(ProcessStartInfo startInfo)
         {
             ArgumentNullException.ThrowIfNull(startInfo);
-            startInfo.ThrowIfInvalid(out bool anyRedirection);
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
 
             if (anyRedirection)
             {
@@ -54,11 +55,22 @@ namespace System.Diagnostics
                 ? File.OpenNullHandle()
                 : null;
 
+            SafeFileHandle childInputHandle = startInfo.StandardInputHandle ?? nullFile!;
+            SafeFileHandle childOutputHandle = startInfo.StandardOutputHandle ?? nullFile!;
+            SafeFileHandle childErrorHandle = startInfo.StandardErrorHandle ?? nullFile!;
+
+            if (inheritedHandles is null && startInfo.SupportsHandleInheritanceRestriction)
+            {
+                // In case user has not provided their own allow list,
+                // the inheritance is restricted to standard handles only.
+                inheritedHandles = [];
+            }
+
+            ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
+
             // Use internal StartCore to avoid the need of modifying provided ProcessStartInfo
             using SafeProcessHandle processHandle = SafeProcessHandle.StartCore(startInfo,
-                startInfo.StandardInputHandle ?? nullFile,
-                startInfo.StandardOutputHandle ?? nullFile,
-                startInfo.StandardErrorHandle ?? nullFile);
+                childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
 
             return processHandle.ProcessId;
         }
@@ -100,6 +112,9 @@ namespace System.Diagnostics
                     startInfo.ArgumentList.Add(argument);
                 }
             }
+
+            // Limit the inheritance to standard handles only.
+            startInfo.InheritedHandles = [];
 
             return StartAndForget(startInfo);
         }

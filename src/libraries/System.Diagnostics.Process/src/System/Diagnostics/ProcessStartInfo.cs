@@ -306,6 +306,8 @@ namespace System.Diagnostics
             set => _verb = value;
         }
 
+        internal bool SupportsHandleInheritanceRestriction => !UseShellExecute && string.IsNullOrEmpty(UserName);
+
         [DefaultValueAttribute(System.Diagnostics.ProcessWindowStyle.Normal)]
         public ProcessWindowStyle WindowStyle
         {
@@ -394,7 +396,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
-            if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
+            if (InheritedHandles is not null && !SupportsHandleInheritanceRestriction)
             {
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
             }
