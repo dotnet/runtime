@@ -8,7 +8,7 @@ applyTo: "src/libraries/Microsoft.Extensions.Hosting*/**"
 
 - `Host.StopAsync` must not throw when the cancellation token is canceled — it must allow hosted services and host lifetime to complete their shutdown logic
 - Shutdown signal handlers (`UseConsoleLifetime`, SIGTERM) must correctly dispose registrations and propagate to all hosted services on all platforms
-- Services must not start listening or accepting work until health checks confirm the system is ready
+- If an app exposes readiness health checks, it should avoid listening for or accepting work until its own readiness conditions are met
 - `BackgroundService.ExecuteTask` may be null if the derived class did not call `base.StartAsync` — never assume it is set
 - `BackgroundService.ExecuteAsync` exceptions must be observed and logged — unobserved task exceptions silently crash the host
 - Graceful shutdown must handle `OperationCanceledException` from the stopping token without logging it as an error

@@ -1,5 +1,5 @@
 ---
-name: writing-extensions-code
+name: extensions-review
 description: "Guidance for writing and modifying Microsoft.Extensions.DependencyInjection, Microsoft.Extensions.Configuration, Microsoft.Extensions.Logging, Microsoft.Extensions.Hosting, Microsoft.Extensions.Caching, Microsoft.Extensions.Options, Microsoft.Extensions.Http, Microsoft.Extensions.FileProviders, Microsoft.Extensions.Primitives, and System.IO.Compression code in dotnet/runtime. Covers DI lifetime management, configuration binding, options validation, logging provider patterns, caching semantics, compression format compliance, and host lifecycle. For full code review, delegates to the @extensions-reviewer agent. Trigger words: IServiceCollection, IConfiguration, ILogger, IHost, IMemoryCache, IOptions, ZipArchive, HttpClientFactory, IFileProvider, IChangeToken."
 ---
 
