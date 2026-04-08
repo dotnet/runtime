@@ -283,6 +283,104 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void StartDetached_GrandchildSurvivesSignalingParent(bool enable)
+        {
+            // Verify that a grandchild started with StartDetached=true survives terminating signal sent to the child's
+            // process group, whereas a non-detached grandchild (which inherits the child's process group) is killed.
+            int grandchildPid = -1;
+
+            // Start the child in its own group/session (process group leader) so killing the group
+            // targets only the child's process group, not the test runner's process group.
+            ProcessStartInfo childStartInfo = new()
+            {
+                RedirectStandardOutput = true,
+            };
+
+            if (OperatingSystem.IsWindows())
+            {
+                // We need to be able to send the signal to the child process group.
+                childStartInfo.CreateNewProcessGroup = true;
+            }
+            else
+            {
+                childStartInfo.StartDetached = true;
+            }
+
+            using (RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(static (arg) =>
+            {
+                using RemoteInvokeHandle grandchildHandle = RemoteExecutor.Invoke(
+                    static () => { Thread.Sleep(Timeout.Infinite); return RemoteExecutor.SuccessExitCode; },
+                    new RemoteInvokeOptions { Start = false, CheckExitCode = false });
+
+                grandchildHandle.Process.StartInfo.StartDetached = bool.Parse(arg);
+                grandchildHandle.Process.Start();
+
+                Console.WriteLine(grandchildHandle.Process.Id);
+
+                // Transfer ownership.
+                grandchildHandle.Process = null;
+
+                // Keep the child alive so the test can kill the process group.
+                Thread.Sleep(Timeout.Infinite);
+
+                return RemoteExecutor.SuccessExitCode;
+            },
+            enable.ToString(),
+            new RemoteInvokeOptions { StartInfo = childStartInfo, CheckExitCode = false }))
+            {
+                string pidLine = childHandle.Process.StandardOutput.ReadLine();
+                Assert.True(int.TryParse(pidLine, out grandchildPid), $"Could not parse grandchild PID from: '{pidLine}'");
+
+                // Kill the child's entire process group
+                SendSignal(PosixSignal.SIGQUIT, childHandle.Process, entireProcessGroup: true);
+
+                Assert.True(childHandle.Process.WaitForExit(WaitInMS));
+            }
+
+            try
+            {
+                // Brief pause to allow signal propagation.
+                Thread.Sleep(200);
+
+                // Verify the grandchild is still running after the child's process group received SIGHUP.
+                bool grandchildAlive;
+                try
+                {
+                    using Process grandchild = Process.GetProcessById(grandchildPid);
+                    grandchildAlive = !grandchild.HasExited;
+                }
+                catch (ArgumentException)
+                {
+                    grandchildAlive = false;
+                }
+
+                // Detached grandchild (StartDetached=true):
+                // - On Unix: creates its own session/process group.
+                // - On Windows: uses DETACHED_PROCESS and hence does not inherit its parent's console
+                // In both cases, the signal is not delivered and the grandchild survives.
+                // Non-detached grandchild inherits the child's process group/console and is killed by the signal.
+                Assert.Equal(enable, grandchildAlive);
+            }
+            finally
+            {
+                KillGrandchild(grandchildPid);
+            }
+
+            static void KillGrandchild(int pid)
+            {
+                try
+                {
+                    using Process grandchild = Process.GetProcessById(pid);
+                    grandchild.Kill();
+                    grandchild.WaitForExit(WaitInMS);
+                }
+                catch (ArgumentException) { } // process may have already exited
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(-2)]
         [InlineData((long)int.MaxValue + 1)]
         public void TestWaitForExitValidation(long milliseconds)

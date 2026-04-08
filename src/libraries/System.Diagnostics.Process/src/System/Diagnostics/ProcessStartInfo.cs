@@ -124,8 +124,10 @@ namespace System.Diagnostics
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Starts a new detached process with standard input, output, and error redirected to NUL
-        /// unless specified otherwise by the user by using <see cref="StandardInputHandle" />, <see cref="StandardOutputHandle" />, or <see cref="StandardErrorHandle" />.
+        /// Starts a new detached process with standard input, output, and error redirected to the null device
+        /// (<c>NUL</c> on Windows, <c>/dev/null</c> on Unix) unless explicitly configured by the user with
+        /// <see cref="RedirectStandardInput"/>, <see cref="RedirectStandardOutput"/>, <see cref="RedirectStandardError"/>,
+        /// <see cref="StandardInputHandle"/>, <see cref="StandardOutputHandle"/>, or <see cref="StandardErrorHandle"/>.
         /// </para>
         /// <para>
         /// On Windows, the process is started with the <c>DETACHED_PROCESS</c> flag.
@@ -465,13 +467,6 @@ namespace System.Diagnostics
                 }
 
                 inheritedHandles = snapshot;
-            }
-            else if (StartDetached && string.IsNullOrEmpty(UserName))
-            {
-                // When StartDetached is set and the user has not restricted handle inheritance
-                // by providing an explicit allow list, use an empty list to prevent any handles
-                // from being inherited by the detached process.
-                inheritedHandles = Array.Empty<SafeHandle>();
             }
             else
             {

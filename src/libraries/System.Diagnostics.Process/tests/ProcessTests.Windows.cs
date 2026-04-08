@@ -80,7 +80,7 @@ namespace System.Diagnostics.Tests
             return filename;
         }
         
-        private static void SendSignal(PosixSignal signal, Process process)
+        private static void SendSignal(PosixSignal signal, Process process, bool entireProcessGroup = false)
         {
             uint dwCtrlEvent = signal switch
             {

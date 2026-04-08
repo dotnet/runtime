@@ -110,7 +110,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeFileHandle? childOutputHandle = startInfo.StandardOutputHandle;
             SafeFileHandle? childErrorHandle = startInfo.StandardErrorHandle;
 
-           using SafeFileHandle? nullDeviceHandle = startInfo.StartDetached
+            using SafeFileHandle? nullDeviceHandle = startInfo.StartDetached
                 && (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
                 ? File.OpenNullHandle()
                 : null;
