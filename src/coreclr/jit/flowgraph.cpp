@@ -2874,7 +2874,7 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 // Notes:
 //      This optimization could be done in morph, but it cannot because there are correctness
 //      problems with NOLs (normalized-on-load locals) and how they are handled in VN.
-//      Simple put, you cannot remove a CAST from CAST(LCL_VAR{nol}) in HIR.
+//      Simply put, you cannot remove a CAST from CAST(LCL_VAR{nol}) in HIR.
 //
 //      Because the optimization happens during rationalization, turning into LIR, it is safe to remove the CAST.
 //
