@@ -1141,11 +1141,12 @@ namespace System.IO.Compression
                 extraFieldLength = (ushort)bigExtraFieldLength;
             }
 
+            crc32ToWrite = _crc32;
+
             // If this is an existing, unchanged entry then silently skip forwards.
             // If it's new or changed, write the header.
             if (_originallyInArchive && Changes == ZipArchive.ChangeState.Unchanged && !forceWrite)
             {
-                crc32ToWrite = _crc32;
                 _archive.ArchiveStream.Seek(ZipLocalFileHeader.SizeOfLocalHeader + _storedEntryNameBytes.Length, SeekOrigin.Current);
 
                 if (zip64ExtraField != null)
@@ -1160,15 +1161,14 @@ namespace System.IO.Compression
 
             // We are writing the header. For seekable/empty-file paths the sizes are written
             // directly into the header, so a data descriptor is not needed.
-            // However, when preserving a data descriptor (metadata-only rewrite of an existing entry
-            // that originally had bit 3 set), keep it set and zero the CRC/sizes since the real
-            // values live in the trailing descriptor that remains on disk.
             if (isEmptyFile || _archive.ArchiveStream.CanSeek)
             {
                 if (preserveDataDescriptor && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0)
                 {
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
+
+                    // zero the CRC/sizes since the real values live in the trailing descriptor that remains on disk.
                     crc32ToWrite = 0;
 
                     if (zip64ExtraField is not null)
@@ -1179,12 +1179,7 @@ namespace System.IO.Compression
                 else
                 {
                     _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
-                    crc32ToWrite = _crc32;
                 }
-            }
-            else
-            {
-                crc32ToWrite = _crc32;
             }
 
             return true;
