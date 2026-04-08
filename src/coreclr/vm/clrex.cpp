@@ -1655,24 +1655,26 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
         Assembly *pParentAssembly = pSpec->GetParentAssembly();
         if (pParentAssembly != NULL)
         {
-            // Build the requesting assembly chain: start with the immediate parent,
-            // then walk up the binding cache to find transitive requesting assemblies.
             StackSString requestingChain;
-            pParentAssembly->GetDisplayName(requestingChain);
 
             EX_TRY
             {
+                // Build the requesting assembly chain: start with the immediate parent,
+                // then walk up the binding cache to find transitive requesting assemblies.
+                pParentAssembly->GetDisplayName(requestingChain);
+
                 const int MaxChainDepth = 10;
                 AppDomain::GetCurrentDomain()->GetParentAssemblyChain(
                     pParentAssembly, requestingChain, MaxChainDepth);
+
+                pException->SetRequestingAssemblyChain(requestingChain);
             }
             EX_CATCH
             {
-                // If the chain walk fails for any reason, just use what we have so far
+                // Ignore failures while building best-effort diagnostic data and preserve
+                // the primary file load exception.
             }
             EX_END_CATCH
-
-            pException->SetRequestingAssemblyChain(requestingChain);
         }
 
         STRESS_LOG3(LF_EH, LL_INFO100, "EX_THROW_WITH_INNER Type = 0x%x HR = 0x%x, "
