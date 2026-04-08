@@ -125,8 +125,12 @@ namespace System.Diagnostics
         /// <remarks>
         /// <para>
         /// Starts a new detached process with standard input, output, and error redirected to NUL
-        /// unless specified otherwise by the user.
+        /// unless specified otherwise by the user by using <see cref="StandardInputHandle" />, <see cref="StandardOutputHandle" />, or <see cref="StandardErrorHandle" />.
+        /// </para>
+        /// <para>
         /// On Windows, the process is started with the <c>DETACHED_PROCESS</c> flag.
+        /// </para>
+        /// <para>
         /// On Unix, the process is started as a leader of a new session.
         /// </para>
         /// <para>
@@ -462,7 +466,7 @@ namespace System.Diagnostics
 
                 inheritedHandles = snapshot;
             }
-            else if (StartDetached)
+            else if (StartDetached && string.IsNullOrEmpty(UserName))
             {
                 // When StartDetached is set and the user has not restricted handle inheritance
                 // by providing an explicit allow list, use an empty list to prevent any handles

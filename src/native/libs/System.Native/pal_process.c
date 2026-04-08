@@ -617,12 +617,9 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
         // Start the child in a new session when startDetached is set, making it independent
         // of the parent's process group and terminal.
-        if (startDetached)
+        if (startDetached && setsid() == -1)
         {
-            if (setsid() == -1)
-            {
-                ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
-            }
+            ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
         }
 
         if (setCredentials)

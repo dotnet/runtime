@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
@@ -11,8 +12,7 @@ namespace System.Diagnostics.Tests
 {
     public class StartDetachedTests : ProcessTestBase
     {
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS/tvOS")]
+        [Fact]
         public void StartDetached_ThrowsOnUseShellExecute()
         {
             ProcessStartInfo psi = new ProcessStartInfo("dummy")
@@ -25,7 +25,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS/tvOS")]
         public void StartDetached_GrandchildOutlivesChild()
         {
             // The child process creates a grandchild with StartDetached=true, reports its PID via stdout,
@@ -71,7 +70,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.Windows | TestPlatforms.iOS | TestPlatforms.tvOS, "SIGHUP test is Unix-specific")]
+        [SkipOnPlatform(TestPlatforms.Windows, "SIGHUP test is Unix-specific")]
         public void StartDetached_GrandchildSurvivesSIGHUP()
         {
             // Verify that the grandchild started with StartDetached=true survives SIGHUP sent to the child.

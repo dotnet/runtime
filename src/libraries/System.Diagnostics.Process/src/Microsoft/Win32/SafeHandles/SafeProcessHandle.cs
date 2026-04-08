@@ -110,16 +110,52 @@ namespace Microsoft.Win32.SafeHandles
             SafeFileHandle? childOutputHandle = startInfo.StandardOutputHandle;
             SafeFileHandle? childErrorHandle = startInfo.StandardErrorHandle;
 
-            if (!startInfo.UseShellExecute)
+            SafeFileHandle? nullDeviceHandle = null;
+            try
             {
-                childInputHandle ??= startInfo.StartDetached ? File.OpenNullHandle() : (ProcessUtils.PlatformSupportsConsole ? Console.OpenStandardInputHandle() : null);
-                childOutputHandle ??= startInfo.StartDetached ? File.OpenNullHandle() : (ProcessUtils.PlatformSupportsConsole ? Console.OpenStandardOutputHandle() : null);
-                childErrorHandle ??= startInfo.StartDetached ? File.OpenNullHandle() : (ProcessUtils.PlatformSupportsConsole ? Console.OpenStandardErrorHandle() : null);
+                if (!startInfo.UseShellExecute)
+                {
+                    if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
+                    {
+                        if (startInfo.StartDetached)
+                        {
+                            nullDeviceHandle = File.OpenNullHandle();
+                        }
+                    }
 
-                ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
+                    if (childInputHandle is null)
+                    {
+                        if (startInfo.StartDetached)
+                            childInputHandle = nullDeviceHandle;
+                        else if (ProcessUtils.PlatformSupportsConsole)
+                            childInputHandle = Console.OpenStandardInputHandle();
+                    }
+
+                    if (childOutputHandle is null)
+                    {
+                        if (startInfo.StartDetached)
+                            childOutputHandle = nullDeviceHandle;
+                        else if (ProcessUtils.PlatformSupportsConsole)
+                            childOutputHandle = Console.OpenStandardOutputHandle();
+                    }
+
+                    if (childErrorHandle is null)
+                    {
+                        if (startInfo.StartDetached)
+                            childErrorHandle = nullDeviceHandle;
+                        else if (ProcessUtils.PlatformSupportsConsole)
+                            childErrorHandle = Console.OpenStandardErrorHandle();
+                    }
+
+                    ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
+                }
+
+                return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
             }
-
-            return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
+            finally
+            {
+                nullDeviceHandle?.Dispose();
+            }
         }
 
         /// <summary>
