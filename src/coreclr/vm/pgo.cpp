@@ -1241,6 +1241,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pR
                                                               BYTE**pInstrumentationData)
 {
     *pAllocatedData = NULL;
+    *ppSchema = NULL;
     *pCountSchemaItems = 0;
     *pInstrumentationData = NULL;
     return E_NOTIMPL;
