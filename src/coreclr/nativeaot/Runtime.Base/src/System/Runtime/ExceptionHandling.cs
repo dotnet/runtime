@@ -667,15 +667,12 @@ namespace System.Runtime
 
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
-#if NATIVEAOT
-        [RuntimeExport("RhThrowEx")]
-#else
-        [UnmanagedCallersOnly]
-#endif
         [StackTraceHidden]
 #if NATIVEAOT
+        [RuntimeExport("RhThrowEx")]
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
 #else
+        [UnmanagedCallersOnly]
         internal static void RhThrowEx(object* pExceptionObj, ExInfo* pExInfo)
 #endif
         {
