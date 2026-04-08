@@ -341,7 +341,7 @@ struct RCW
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_Flags.m_MarshalingType == MarshalingType_FreeThreaded) ;
+        return m_Flags.m_MarshalingType == MarshalingType_FreeThreaded ;
     }
 
     //
@@ -350,7 +350,7 @@ struct RCW
     bool IsMarshalingInhibited()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_Flags.m_MarshalingType == MarshalingType_Inhibit) ;
+        return m_Flags.m_MarshalingType == MarshalingType_Inhibit ;
     }
 
     // Returns TRUE if this RCW has been detached. Detached RCWs are fully functional but have been found

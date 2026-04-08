@@ -49,7 +49,6 @@ void PEImage::Startup()
     s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
 
     _ASSERTE(CheckStartup());
-    return;
 }
 
 /* static */
@@ -117,7 +116,7 @@ BOOL PEImage::CompareIJWDataBase(UPTR base, UPTR mapping)
         MODE_ANY;
     } CONTRACTL_END;
 
-    return ((BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase());
+    return (BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase();
 }
 
 ULONG PEImage::Release()
@@ -439,7 +438,7 @@ PEImage::IJWFixupData *PEImage::GetIJWData(void *pBase)
     }
 
     // Return the new data
-    return (pData);
+    return pData;
 }
 
 #endif // #ifndef DACCESS_COMPILE

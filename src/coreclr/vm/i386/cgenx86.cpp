@@ -84,8 +84,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     UpdateRegDisplayHelper(pRD, pFunc->CbStackPop());
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    return;
 }
 
 void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStackPop)
@@ -114,8 +112,6 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     SyncRegDisplayToCurrentContext(pRD);
-
-    return;
 }
 
 void ExternalMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -132,8 +128,6 @@ void ExternalMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool upda
     UpdateRegDisplayHelper(pRD, CbStackPopUsingGCRefMap(GetGCRefMap()));
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ExternalMethodFrane::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    return;
 }
 
 
@@ -176,8 +170,6 @@ void StubDispatchFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
     }
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    StubDispatchFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    return;
 }
 
 PCODE StubDispatchFrame::GetReturnAddress_Impl()
@@ -241,8 +233,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->IsCallerSPValid = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    return;
 }
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -311,8 +301,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     SyncRegDisplayToCurrentContext(pRD);
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    return;
 }
 
 #ifdef FEATURE_HIJACK
@@ -354,8 +342,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    return;
 }
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
@@ -408,8 +394,6 @@ void PInvokeCalliFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
     UpdateRegDisplayHelper(pRD, pVASigCookie->sizeOfArgs);
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    PInvokeCalliFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    return;
 }
 
 #ifndef UNIX_X86_ABI
@@ -437,8 +421,6 @@ void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SyncRegDisplayToCurrentContext(pRD);
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    return;
 }
 #endif // !UNIX_X86_ABI
 

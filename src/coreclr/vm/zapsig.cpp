@@ -390,7 +390,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
             if (sigType != handleType)
                 return FALSE;
 
-            return (CompareSignatureToTypeHandle(pSig, pModule, handle.GetTypeParam(), pZapSigContext));
+            return CompareSignatureToTypeHandle(pSig, pModule, handle.GetTypeParam(), pZapSigContext);
         }
 
         case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
@@ -424,7 +424,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                     return FALSE;
             }
             _ASSERTE(TypeFromToken(tk) == mdtTypeDef);
-            return (sigType == handleType && !handle.HasInstantiation() && pModule == handle.GetModule() && handle.GetCl() == tk);
+            return sigType == handleType && !handle.HasInstantiation() && pModule == handle.GetModule() && handle.GetCl() == tk;
         }
 
         case ELEMENT_TYPE_FNPTR:

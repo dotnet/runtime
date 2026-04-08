@@ -52,7 +52,7 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     return thGenericArg;
 #else
     _ASSERTE(CheckPointer((thGenericArg)));
-    return (thGenericArg);
+    return thGenericArg;
 #endif // FEATURE_SHARE_GENERIC_CODE
 }
 

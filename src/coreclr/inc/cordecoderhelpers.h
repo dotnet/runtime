@@ -94,7 +94,7 @@ inline BOOL IsStrongNameSigned(const TDecoder& decoder)
     }
     CONTRACTL_END;
 
-    return ((decoder.GetCorHeader()->Flags & VAL32(COMIMAGE_FLAGS_STRONGNAMESIGNED)) != 0);
+    return (decoder.GetCorHeader()->Flags & VAL32(COMIMAGE_FLAGS_STRONGNAMESIGNED)) != 0;
 }
 
 template<typename TDecoder>
@@ -109,7 +109,7 @@ inline BOOL HasStrongNameSignature(const TDecoder& decoder)
     }
     CONTRACTL_END;
 
-    return (decoder.GetCorHeader()->StrongNameSignature.VirtualAddress != 0);
+    return decoder.GetCorHeader()->StrongNameSignature.VirtualAddress != 0;
 }
 
 // ------------------------------------------------------------

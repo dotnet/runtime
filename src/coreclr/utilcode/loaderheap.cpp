@@ -509,7 +509,6 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
     // define Backout(NULL) be a legal NOP.
     if (pMem == NULL)
     {
-        return;
     }
 
 #ifdef _DEBUG

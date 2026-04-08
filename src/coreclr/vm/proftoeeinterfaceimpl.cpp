@@ -787,7 +787,6 @@ void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd
         }
     }
     AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
-    return;
 }
 
 void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved)
@@ -828,7 +827,6 @@ void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* ra
     genDescTable[count].rangeEndReserved = rangeEndReserved;
 
     count = count + 1;
-    return;
 }
 
 HRESULT GenerationTable::GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges)
@@ -893,7 +891,6 @@ static void GenWalkFunc(void * context,
 
     GenerationTable *generationTable = (GenerationTable *)context;
     generationTable->AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
-    return;
 }
 
 void GenerationTable::Refresh()
@@ -966,7 +963,6 @@ void __stdcall UpdateGenerationBounds()
         _ASSERTE(result == 0);
     }
 #endif
-    return;
 }
 
 void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
@@ -986,7 +982,6 @@ void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t
         }
     }
 #endif // PROFILING_SUPPORTED
-    return;
 }
 
 #ifdef PROFILING_SUPPORTED
@@ -1615,7 +1610,7 @@ HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *ph
     else if (phThread)
         *phThread = hThread;
 
-    return (hr);
+    return hr;
 }
 
 HRESULT ProfToEEInterfaceImpl::GetObjectSize(ObjectID objectId, ULONG *pcSize)
@@ -1679,7 +1674,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectSize(ObjectID objectId, ULONG *pcSize)
     }
 
     // Indicate success
-    return (S_OK);
+    return S_OK;
 }
 
 HRESULT ProfToEEInterfaceImpl::GetObjectSize2(ObjectID objectId, SIZE_T *pcSize)
@@ -1738,7 +1733,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectSize2(ObjectID objectId, SIZE_T *pcSize)
     }
 
     // Indicate success
-    return (S_OK);
+    return S_OK;
 }
 
 
@@ -1905,7 +1900,7 @@ HRESULT ProfToEEInterfaceImpl::GetCurrentThreadID(ThreadID *pThreadId)
     else if (pThreadId)
         *pThreadId = (ThreadID) pThread;
 
-    return (hr);
+    return hr;
 }
 
 //---------------------------------------------------------------------------------------
@@ -4112,7 +4107,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
     }
     EX_CATCH_HRESULT(hr);
 
-    return (hr);
+    return hr;
 }
 
 
@@ -4198,7 +4193,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
     if (SUCCEEDED(hr) && ppOut)
         hr = pObj->QueryInterface(riid, (void **) ppOut);
 
-    return (hr);
+    return hr;
 }
 
 
@@ -4267,7 +4262,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
     if (!pPEAssembly->IsLoaded())
-        return (CORPROF_E_DATAINCOMPLETE);
+        return CORPROF_E_DATAINCOMPLETE;
 
     LPCBYTE pbMethod = NULL;
 
@@ -4283,7 +4278,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         // Check to see if the method has associated IL
         if ((RVA == 0 && !pPEAssembly->IsReflectionEmit()) || !(IsMiIL(dwImplFlags) || IsMiOPTIL(dwImplFlags) || IsMiInternalCall(dwImplFlags)))
         {
-            return (CORPROF_E_FUNCTION_NOT_IL);
+            return CORPROF_E_FUNCTION_NOT_IL;
         }
 
         EX_TRY
@@ -4312,7 +4307,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         }
         *pcbMethodSize = static_cast<ULONG>(PEDecoder::ComputeILMethodSize((TADDR)pbMethod));
     }
-    return (S_OK);
+    return S_OK;
 }
 
 //---------------------------------------------------------------------------------------
@@ -4378,7 +4373,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBodyAllocator(ModuleID         modul
     if (pModule->IsBeingUnloaded() ||
         !pModule->GetPEAssembly()->IsLoaded())
     {
-        return (CORPROF_E_DATAINCOMPLETE);
+        return CORPROF_E_DATAINCOMPLETE;
     }
 
     *ppMalloc = &ModuleILHeap::s_Heap;
@@ -4441,7 +4436,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
 
     // Cannot set the body for anything other than a method def
     if (TypeFromToken(methodId) != mdtMethodDef)
-        return (E_INVALIDARG);
+        return E_INVALIDARG;
 
     // Cast module to appropriate type
     pModule = (Module *) moduleId;
@@ -4459,7 +4454,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
     // the new ReJIT APIs.
     pModule->SetDynamicIL(methodId, (TADDR)pbNewILMethodHeader);
 
-    return (hr);
+    return hr;
 }
 
 /*
@@ -4665,13 +4660,13 @@ HRESULT ProfToEEInterfaceImpl::GetThreadContext(ThreadID threadId,
 
     // If there's no current context, return incomplete info
     if (!pContext)
-        return (CORPROF_E_DATAINCOMPLETE);
+        return CORPROF_E_DATAINCOMPLETE;
 
     // Set the result and return
     if (pContextId)
         *pContextId = reinterpret_cast<ContextID>(pContext);
 
-    return (S_OK);
+    return S_OK;
 }
 
 HRESULT ProfToEEInterfaceImpl::GetClassIDInfo(ClassID classId,
@@ -4757,7 +4752,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo(ClassID classId,
         }
     }
 
-    return (S_OK);
+    return S_OK;
 }
 
 
@@ -4821,7 +4816,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo(FunctionID functionId,
         *pToken = pMDesc->GetMemberDef();
     }
 
-    return (S_OK);
+    return S_OK;
 }
 
 /*
@@ -5333,7 +5328,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromToken(ModuleID moduleId,
         *pFunctionId = MethodDescToFunctionID(pDesc);
     }
 
-    return (hr);
+    return hr;
 }
 
 HRESULT ProfToEEInterfaceImpl::GetFunctionFromTokenAndTypeArgs(ModuleID moduleID,
@@ -5533,7 +5528,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     if (pProcessId)
         *pProcessId = (ProcessID) GetCurrentProcessId();
 
-    return (hr);
+    return hr;
 }
 
 
@@ -5621,7 +5616,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
             hr = CORPROF_E_DATAINCOMPLETE;
     }
 
-    return (hr);
+    return hr;
 }
 
 // Setting ELT hooks is only allowed from within Initialize().  However, test-only
@@ -5852,7 +5847,7 @@ HRESULT ProfToEEInterfaceImpl::SetFunctionIDMapper(FunctionIDMapper *pFunc)
 
     g_profControlBlock.mainProfilerInfo.pProfInterface->SetFunctionIDMapper(pFunc);
 
-    return (S_OK);
+    return S_OK;
 }
 
 HRESULT ProfToEEInterfaceImpl::SetFunctionIDMapper2(FunctionIDMapper2 *pFunc, void * clientData)
@@ -5890,7 +5885,7 @@ HRESULT ProfToEEInterfaceImpl::SetFunctionIDMapper2(FunctionIDMapper2 *pFunc, vo
 
     g_profControlBlock.mainProfilerInfo.pProfInterface->SetFunctionIDMapper2(pFunc, clientData);
 
-    return (S_OK);
+    return S_OK;
 }
 
 /*
@@ -6386,7 +6381,7 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
     }
     EX_CATCH_HRESULT(hr);
 
-    return (hr);
+    return hr;
 }
 
 /*
@@ -6557,7 +6552,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping3(UINT_PTR pNativeCodeStartAd
         return CORPROF_E_DEBUGGING_DISABLED;
     }
 
-    return (g_pDebugInterface->GetILToNativeMapping(pNativeCodeStartAddress, cMap, pcMap, map));
+    return g_pDebugInterface->GetILToNativeMapping(pNativeCodeStartAddress, cMap, pcMap, map);
 #else
     return E_NOTIMPL;
 #endif

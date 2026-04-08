@@ -1801,7 +1801,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
                 pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDefOrRefOrSpec, IDS_CLASSLOAD_BADFORMAT);
             }
 #endif //!DACCESS_COMPILE
-            return (TypeHandle());
+            return TypeHandle();
         }
         SigPointer sigptr(pSig, cSig);
         TypeHandle typeHnd = sigptr.GetTypeHandleThrowing(pModule, pTypeContext, fLoadTypes,
@@ -1812,7 +1812,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
                                                            IDS_CLASSLOAD_GENERAL);
 #endif
         _ASSERTE(CheckPointer((typeHnd), (fNotFoundAction == ThrowIfNotFound)? NULL_NOT_OK : NULL_OK));
-        return (typeHnd);
+        return typeHnd;
     }
     else
     {

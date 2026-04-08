@@ -1953,8 +1953,6 @@ void Assembly::EnsureLoadLevel(FileLoadLevel targetLevel)
     }
     else
         ThrowIfError(targetLevel);
-
-    return;
 }
 
 #include <optdefault.h>
@@ -2001,8 +1999,6 @@ void Assembly::RequireLoadLevel(FileLoadLevel targetLevel)
         ThrowIfError(targetLevel);
         ThrowHR(MSEE_E_ASSEMBLYLOADINPROGRESS); // @todo: better exception
     }
-
-    return;
 }
 
 void Assembly::SetError(Exception *ex)
@@ -2036,7 +2032,6 @@ void Assembly::SetError(Exception *ex)
     }
 
     _ASSERTE(IsError());
-    return;
 }
 
 void Assembly::ThrowIfError(FileLoadLevel targetLevel)
@@ -2054,8 +2049,6 @@ void Assembly::ThrowIfError(FileLoadLevel targetLevel)
     {
         PAL_CPP_THROW(Exception*, m_pError->DomainBoundClone());
     }
-
-    return;
 }
 
 CHECK Assembly::CheckNoError(FileLoadLevel targetLevel)
@@ -2271,8 +2264,6 @@ void Assembly::Activate()
         m_pModule->GetReadyToRunInfo()->RegisterUnrelatedR2RModule();
     }
 #endif
-
-    return;
 }
 
 void Assembly::Begin()

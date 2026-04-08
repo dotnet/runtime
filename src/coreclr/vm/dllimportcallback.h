@@ -57,7 +57,7 @@ public:
     BOOL IsCompletelyInited()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_pILStub != (PCODE)1);
+        return m_pILStub != (PCODE)1;
     }
 
     static UINT32 GetOffsetOfStub()

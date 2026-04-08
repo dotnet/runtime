@@ -547,7 +547,7 @@ RCWCache* RCWCache::GetRCWCache()
     CONTRACTL_END;
 
     AppDomain * pDomain = GetAppDomain();
-    return (pDomain ? pDomain->GetRCWCache() : NULL);
+    return pDomain ? pDomain->GetRCWCache() : NULL;
 }
 
 RCWCache* RCWCache::GetRCWCacheNoCreate()
@@ -561,7 +561,7 @@ RCWCache* RCWCache::GetRCWCacheNoCreate()
     CONTRACTL_END;
 
     AppDomain * pDomain = GetAppDomain();
-    return (pDomain ? pDomain->GetRCWCacheNoCreate() : NULL);
+    return pDomain ? pDomain->GetRCWCacheNoCreate() : NULL;
 }
 
 
@@ -627,8 +627,6 @@ void RCWCache::FindWrapperInCache_NoLock(IUnknown* pIdentity, RCWHolder* pRCW)
             pRCW->UnInit();
         }
     }
-
-    return;
 }
 
 BOOL RCWCache::FindOrInsertWrapper_NoLock(IUnknown* pIdentity, RCWHolder* pRCW, BOOL fAllowReinit)
@@ -1119,7 +1117,7 @@ VOID RCWCleanupList::CleanupWrappersInCurrentCtxThread(BOOL fWait, BOOL fManualC
 BOOL RCWCleanupList::IsEmpty()
 {
     LIMITED_METHOD_CONTRACT;
-    return (m_pFirstBucket == NULL);
+    return m_pFirstBucket == NULL;
 }
 
 // static
@@ -2411,7 +2409,6 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
     }
 
     UNREACHABLE();
-    return;
 }
 
 //--------------------------------------------------------------------------------

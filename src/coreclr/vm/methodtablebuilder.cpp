@@ -4894,8 +4894,6 @@ VOID MethodTableBuilder::TestOverRide(bmtMethodHandle hParentMethod,
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_REDUCEACCESS, hChildMethod.GetMethodSignature().GetToken());
     }
-
-    return;
 }
 
 //*******************************************************************************
@@ -5005,8 +5003,6 @@ VOID MethodTableBuilder::TestMethodImpl(
             BuildMethodTableThrowException(IDS_CLASSLOAD_MI_SEALED_DECL);
         }
     }
-
-    return;
 }
 
 
@@ -8899,7 +8895,7 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
 
     if (pFD->IsByValue())
         return (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass);
-    return (1 << (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass));
+    return 1 << (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass);
 }
 
 #ifdef UNIX_AMD64_ABI

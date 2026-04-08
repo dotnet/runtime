@@ -277,12 +277,12 @@ BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, ModuleBase* 
 
     case mdtTypeRef:
         if (SUCCEEDED(pImport->GetResolutionScopeOfTypeRef(mdType, pEnclosingToken)))
-            return ((TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil));
+            return (TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil);
         break;
 
     case mdtExportedType:
         if (SUCCEEDED(pImport->GetExportedTypeProps(mdType, NULL, NULL, pEnclosingToken, NULL, NULL)))
-            return ((TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil));
+            return (TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil);
         break;
     }
 
@@ -2363,7 +2363,7 @@ bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport
     {
         HENUMInternalHolder hEnumTyPars(pImport);
         hEnumTyPars.EnumInit(mdtGenericParam, input);
-        return (pImport->EnumGetCount(&hEnumTyPars) != 0);
+        return pImport->EnumGetCount(&hEnumTyPars) != 0;
     }
     return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
 }

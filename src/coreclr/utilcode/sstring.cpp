@@ -239,8 +239,6 @@ void SString::Set(const WCHAR *string)
         Resize((COUNT_T) u16_strlen(string), REPRESENTATION_UNICODE);
         wcscpy_s(GetRawUnicode(), GetBufferSizeInCharIncludeNullChar(), string);
     }
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -267,8 +265,6 @@ void SString::Set(const WCHAR *string, COUNT_T count)
         wcsncpy_s(GetRawUnicode(), GetBufferSizeInCharIncludeNullChar(), string, count);
         GetRawUnicode()[count] = 0;
     }
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -292,8 +288,6 @@ void SString::SetPreallocated(const WCHAR *string, COUNT_T count)
     SetImmutable((BYTE*) string, count*2);
     ClearAllocated();
     SetRepresentation(REPRESENTATION_UNICODE);
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -318,8 +312,6 @@ void SString::SetASCII(const ASCII *string)
         Resize((COUNT_T) strlen(string), REPRESENTATION_ASCII);
         strcpy_s(GetRawUTF8(), GetBufferSizeInCharIncludeNullChar(), string);
     }
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -347,8 +339,6 @@ void SString::SetASCII(const ASCII *string, COUNT_T count)
         strncpy_s(GetRawASCII(), GetBufferSizeInCharIncludeNullChar(), string, count);
         GetRawASCII()[count] = 0;
     }
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -374,8 +364,6 @@ void SString::SetUTF8(const UTF8 *string)
         Resize((COUNT_T) strlen(string), REPRESENTATION_UTF8);
         strcpy_s(GetRawUTF8(), GetBufferSizeInCharIncludeNullChar(), string);
     }
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -403,8 +391,6 @@ void SString::SetUTF8(const UTF8 *string, COUNT_T count)
         strncpy_s(GetRawUTF8(), GetBufferSizeInCharIncludeNullChar(), string, count);
         GetRawUTF8()[count] = 0;
     }
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -426,8 +412,6 @@ void SString::SetAndConvertToUTF8(const WCHAR *string)
     SString utf16Str(Literal, string);
 
     utf16Str.ConvertToUTF8(*this);
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -452,8 +436,6 @@ void SString::Set(WCHAR character)
         GetRawUnicode()[0] = character;
         GetRawUnicode()[1] = 0;
     }
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -477,8 +459,6 @@ void SString::SetUTF8(CHAR character)
         GetRawUTF8()[0] = character;
         GetRawUTF8()[1] = 0;
     }
-
-    return;
 }
 
 
@@ -500,8 +480,6 @@ void SString::SetLiteral(const ASCII *literal)
 
     SString s(Literal, literal);
     Set(s);
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -521,8 +499,6 @@ void SString::SetLiteral(const WCHAR *literal)
 
     SString s(Literal, literal);
     Set(s);
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -600,8 +576,6 @@ void SString::Truncate(const Iterator &i)
     Resize(size, GetRepresentation(), PRESERVE);
 
     i.Resync(this, (BYTE *) (GetRawUnicode() + size));
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -654,7 +628,6 @@ void SString::ConvertASCIIToUnicode(SString &dest) const
     }
 
     _ASSERTE(dest.IsRepresentation(REPRESENTATION_UNICODE));
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -686,7 +659,6 @@ void SString::ConvertToUnicode() const
     }
 
     _ASSERTE(IsRepresentation(REPRESENTATION_UNICODE));
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -735,7 +707,6 @@ void SString::ConvertToUnicode(const CIterator &i) const
     }
 
     _ASSERTE(IsRepresentation(REPRESENTATION_UNICODE));
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -768,7 +739,6 @@ void SString::ConvertToUTF8() const
     }
 
     _ASSERTE(IsRepresentation(REPRESENTATION_UTF8));
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -823,7 +793,6 @@ void SString::ConvertToUnicode(SString &s) const
         ThrowLastError();
 
     _ASSERTE(s.IsRepresentation(REPRESENTATION_UNICODE));
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -909,7 +878,6 @@ void SString::Replace(const Iterator &i, WCHAR c)
     }
 
     _ASSERTE(Match(i, c));
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -949,7 +917,6 @@ void SString::Replace(const Iterator &i, COUNT_T length, const SString &s)
     }
 
     _ASSERTE(Match(i, s));
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -1458,10 +1425,10 @@ BOOL SString::Equals(const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-        return (u16_strncmp(GetRawUnicode(), source.GetRawUnicode(), count) == 0);
+        return u16_strncmp(GetRawUnicode(), source.GetRawUnicode(), count) == 0;
 
     case REPRESENTATION_ASCII:
-        return (strncmp(GetRawASCII(), source.GetRawASCII(), count) == 0);
+        return strncmp(GetRawASCII(), source.GetRawASCII(), count) == 0;
 
     case REPRESENTATION_EMPTY:
         return TRUE;
@@ -1501,10 +1468,10 @@ BOOL SString::EqualsCaseInsensitive(const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-        return (CaseCompareHelper(GetRawUnicode(), source.GetRawUnicode(), count, FALSE, TRUE) == 0);
+        return CaseCompareHelper(GetRawUnicode(), source.GetRawUnicode(), count, FALSE, TRUE) == 0;
 
     case REPRESENTATION_ASCII:
-        return (CaseCompareHelperA(GetRawASCII(), source.GetRawASCII(), count, FALSE, TRUE) == 0);
+        return CaseCompareHelperA(GetRawASCII(), source.GetRawASCII(), count, FALSE, TRUE) == 0;
 
     case REPRESENTATION_EMPTY:
         return TRUE;
@@ -1546,10 +1513,10 @@ BOOL SString::Match(const CIterator &i, const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-        return (u16_strncmp(i.GetUnicode(), source.GetRawUnicode(), count) == 0);
+        return u16_strncmp(i.GetUnicode(), source.GetRawUnicode(), count) == 0;
 
     case REPRESENTATION_ASCII:
-        return (strncmp(i.GetASCII(), source.GetRawASCII(), count) == 0);
+        return strncmp(i.GetASCII(), source.GetRawASCII(), count) == 0;
 
     case REPRESENTATION_EMPTY:
         return TRUE;
@@ -1590,10 +1557,10 @@ BOOL SString::MatchCaseInsensitive(const CIterator &i, const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-        return (CaseCompareHelper(i.GetUnicode(), source.GetRawUnicode(), count, FALSE, TRUE) == 0);
+        return CaseCompareHelper(i.GetUnicode(), source.GetRawUnicode(), count, FALSE, TRUE) == 0;
 
     case REPRESENTATION_ASCII:
-        return (CaseCompareHelperA(i.GetASCII(), source.GetRawASCII(), count, FALSE, TRUE) == 0);
+        return CaseCompareHelperA(i.GetASCII(), source.GetRawASCII(), count, FALSE, TRUE) == 0;
 
     case REPRESENTATION_EMPTY:
         return TRUE;
@@ -1798,7 +1765,6 @@ void SString::VPrintf(const CHAR *format, va_list args)
             ThrowHR(HRESULT_FROM_WIN32(ERROR_NO_UNICODE_TRANSLATION));
         }
     }
-    return;
 }
 
 void SString::AppendPrintf(const CHAR *format, ...)
@@ -1925,8 +1891,6 @@ void SString::MakeFullNamespacePath(const SString &nameSpace, const SString &nam
         if (count > 0)
             ns::MakePath(GetRawUnicode(), count+1, ns, n);
     }
-
-    return;
 }
 #endif
 
@@ -2160,7 +2124,6 @@ void SString::Resize(COUNT_T count, SString::Representation representation, Pres
 
     _ASSERTE(IsRepresentation(representation));
     _ASSERTE(GetRawCount() == count);
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -2192,7 +2155,6 @@ void SString::Clear()
     }
 
     _ASSERTE(IsEmpty());
-    return;
 }
 
 

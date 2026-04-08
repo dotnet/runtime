@@ -332,13 +332,13 @@ ILStubResolver::ILStubResolver() :
 bool ILStubResolver::IsCompiled()
 {
     LIMITED_METHOD_CONTRACT;
-    return (dac_cast<TADDR>(m_pCompileTimeState) == ILGeneratedAndFreed);
+    return dac_cast<TADDR>(m_pCompileTimeState) == ILGeneratedAndFreed;
 }
 
 bool ILStubResolver::IsILGenerated()
 {
     LIMITED_METHOD_CONTRACT;
-    return (dac_cast<TADDR>(m_pCompileTimeState) != ILNotYetGenerated);
+    return dac_cast<TADDR>(m_pCompileTimeState) != ILNotYetGenerated;
 }
 
 MethodDesc* ILStubResolver::GetStubMethodDesc()

@@ -94,7 +94,6 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
 
     amt.SuppressRelease();
     LOG((LF_BCL, LL_INFO10, "Level1 - DynamicMethodTable created {0x%p}...\n", pDynMT));
-    return;
 }
 
 void DynamicMethodTable::MakeMethodTable(AllocMemTracker *pamTracker)

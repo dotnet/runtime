@@ -204,8 +204,6 @@ inline SBuffer::~SBuffer()
 #ifdef _DEBUG
     m_revision = 0;
 #endif
-
-    return;
 }
 
 inline void SBuffer::InitializeInstance()
@@ -266,7 +264,6 @@ inline void SBuffer::Set(const SBuffer &buffer)
     }
 
     _ASSERTE(Equals(buffer));
-    return;
 }
 
 inline void SBuffer::Set(const BYTE *buffer, COUNT_T size)
@@ -292,7 +289,6 @@ inline void SBuffer::Set(const BYTE *buffer, COUNT_T size)
         MoveMemory(m_buffer, buffer, size);
 
     _ASSERTE(Equals(buffer, size));
-    return;
 }
 
 inline void SBuffer::SetImmutable(const BYTE *buffer, COUNT_T size)
@@ -318,7 +314,6 @@ inline void SBuffer::SetImmutable(const BYTE *buffer, COUNT_T size)
     }
 
     _ASSERTE(Equals(buffer, size));
-    return;
 }
 
 inline COUNT_T SBuffer::GetSize() const
@@ -341,8 +336,6 @@ inline void SBuffer::SetSize(COUNT_T size)
     CONTRACTL_END;
 
     Resize(size);
-
-    return;
 }
 
 inline void SBuffer::MaximizeSize()
@@ -357,8 +350,6 @@ inline void SBuffer::MaximizeSize()
 
     if (!IsImmutable())
         Resize(m_allocation);
-
-    return;
 }
 
 inline COUNT_T SBuffer::GetAllocation() const
@@ -390,8 +381,6 @@ inline void SBuffer::Preallocate(COUNT_T allocation)
 
     if (allocation > m_allocation)
         ReallocateBuffer(allocation, PRESERVE);
-
-    return;
 }
 
 inline void SBuffer::Trim()
@@ -406,8 +395,6 @@ inline void SBuffer::Trim()
 
     if (!IsImmutable())
         ReallocateBuffer(m_size, PRESERVE);
-
-    return;
 }
 
 inline void SBuffer::Zero()
@@ -421,8 +408,6 @@ inline void SBuffer::Zero()
     CONTRACTL_END;
 
     ZeroMemory(m_buffer, m_size);
-
-    return;
 }
 
 inline void SBuffer::Fill(BYTE value)
@@ -436,8 +421,6 @@ inline void SBuffer::Fill(BYTE value)
     CONTRACTL_END;
 
     memset(m_buffer, value, m_size);
-
-    return;
 }
 
 inline void SBuffer::Fill(const Iterator &i, BYTE value, COUNT_T size)
@@ -452,8 +435,6 @@ inline void SBuffer::Fill(const Iterator &i, BYTE value, COUNT_T size)
     CONTRACTL_END;
 
     memset(i.m_ptr, value, size);
-
-    return;
 }
 
 inline void SBuffer::Copy(const Iterator &to, const CIterator &from, COUNT_T size)
@@ -471,8 +452,6 @@ inline void SBuffer::Copy(const Iterator &to, const CIterator &from, COUNT_T siz
     DebugDestructBuffer(to.m_ptr, size);
 
     DebugCopyConstructBuffer(to.m_ptr, from.m_ptr, size);
-
-    return;
 }
 
 inline void SBuffer::Move(const Iterator &to, const CIterator &from, COUNT_T size)
@@ -492,8 +471,6 @@ inline void SBuffer::Move(const Iterator &to, const CIterator &from, COUNT_T siz
     DebugMoveBuffer(to.m_ptr, from.m_ptr, size);
 
     DebugConstructBuffer(from.m_ptr, size);
-
-    return;
 }
 
 inline void SBuffer::Copy(const Iterator &i, const SBuffer &source)
@@ -511,8 +488,6 @@ inline void SBuffer::Copy(const Iterator &i, const SBuffer &source)
     DebugDestructBuffer(i.m_ptr, source.m_size);
 
     DebugCopyConstructBuffer(i.m_ptr, source.m_buffer, source.m_size);
-
-    return;
 }
 
 inline void SBuffer::Copy(const Iterator &i, const void *source, COUNT_T size)
@@ -532,8 +507,6 @@ inline void SBuffer::Copy(const Iterator &i, const void *source, COUNT_T size)
     DebugDestructBuffer(i.m_ptr, size);
 
     DebugCopyConstructBuffer(i.m_ptr, (const BYTE *) source, size);
-
-    return;
 }
 
 inline void SBuffer::Copy(void *dest, const CIterator &i, COUNT_T size)
@@ -550,8 +523,6 @@ inline void SBuffer::Copy(void *dest, const CIterator &i, COUNT_T size)
     CONTRACTL_END;
 
     memcpy(dest, i.m_ptr, size);
-
-    return;
 }
 
 inline void SBuffer::Insert(const Iterator &i, const SBuffer &source)
@@ -567,8 +538,6 @@ inline void SBuffer::Insert(const Iterator &i, const SBuffer &source)
 
     Replace(i, 0, source.GetSize());
     Copy(i, source, source.GetSize());
-
-    return;
 }
 
 inline void SBuffer::Insert(const Iterator &i, COUNT_T size)
@@ -583,8 +552,6 @@ inline void SBuffer::Insert(const Iterator &i, COUNT_T size)
     CONTRACTL_END;
 
     Replace(i, 0, size);
-
-    return;
 }
 
 inline void SBuffer::Clear()
@@ -598,8 +565,6 @@ inline void SBuffer::Clear()
     CONTRACTL_END;
 
     Delete(Begin(), GetSize());
-
-    return;
 }
 
 inline void SBuffer::Delete(const Iterator &i, COUNT_T size)
@@ -614,8 +579,6 @@ inline void SBuffer::Delete(const Iterator &i, COUNT_T size)
     CONTRACTL_END;
 
     Replace(i, size, 0);
-
-    return;
 }
 
 inline void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, const SBuffer &insert)
@@ -631,8 +594,6 @@ inline void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, const SBuffe
 
     Replace(i, deleteSize, insert.GetSize());
     Copy(i, insert, insert.GetSize());
-
-    return;
 }
 
 inline int SBuffer::Compare(const SBuffer &compare) const
@@ -724,7 +685,7 @@ inline BOOL SBuffer::Equals(const BYTE *compare, COUNT_T size) const
     if (m_size != size)
         return FALSE;
     else
-        return (memcmp(m_buffer, compare, size) == 0);
+        return memcmp(m_buffer, compare, size) == 0;
 }
 
 inline BOOL SBuffer::Match(const CIterator &i, const SBuffer &match) const
@@ -760,7 +721,7 @@ inline BOOL SBuffer::Match(const CIterator &i, const BYTE *match, COUNT_T size) 
     if (remaining < size)
         return FALSE;
 
-    return (memcmp(i.m_ptr, match, size) == 0);
+    return memcmp(i.m_ptr, match, size) == 0;
 }
 
 //----------------------------------------------------------------------------
@@ -781,8 +742,6 @@ inline void SBuffer::EnsureMutable() const
 
     if (IsImmutable())
         const_cast<SBuffer *>(this)->ReallocateBuffer(m_allocation, PRESERVE);
-
-    return;
 }
 
 //----------------------------------------------------------------------------
@@ -823,7 +782,6 @@ FORCEINLINE void SBuffer::Resize(COUNT_T size, Preserve preserve)
     _ASSERTE(GetSize() == size);
     _ASSERTE(m_allocation >= GetSize());
     _ASSERTE(CheckInvariant(*this));
-    return;
 }
 
 //----------------------------------------------------------------------------
@@ -869,7 +827,6 @@ inline void SBuffer::ResizePadded(COUNT_T size, Preserve preserve)
     _ASSERTE(GetSize() == size);
     _ASSERTE(m_allocation >= GetSize());
     _ASSERTE(CheckInvariant(*this));
-    return;
 }
 
 //----------------------------------------------------------------------------
@@ -906,7 +863,6 @@ inline void SBuffer::TweakSize(COUNT_T size)
 
     _ASSERTE(GetSize() == size);
     _ASSERTE(CheckInvariant(*this));
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -1059,8 +1015,6 @@ inline void SBuffer::DeleteBuffer(BYTE *buffer, COUNT_T allocation)
     delete [] buffer;
 
 #endif
-
-    return;
 }
 
 //----------------------------------------------------------------------------
@@ -1138,8 +1092,6 @@ inline void SBuffer::CloseRawBuffer()
     CONTRACTL_END;
 
     CloseRawBuffer(m_size);
-
-    return;
 }
 
 //----------------------------------------------------------------------------
@@ -1169,8 +1121,6 @@ inline void SBuffer::CloseRawBuffer(COUNT_T finalSize)
     TweakSize(finalSize);
 
     CONSISTENCY_CHECK(CheckBuffer(m_buffer, m_allocation));
-
-    return;
 }
 
 inline SBuffer::operator const void *() const
@@ -1376,7 +1326,7 @@ inline int SBuffer::GetRepresentationField() const
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    return (m_flags & REPRESENTATION_MASK);
+    return m_flags & REPRESENTATION_MASK;
 }
 
 inline void SBuffer::SetRepresentationField(int value)
@@ -1392,8 +1342,6 @@ inline void SBuffer::SetRepresentationField(int value)
 
     m_flags &= ~REPRESENTATION_MASK;
     m_flags |= value;
-
-    return;
 }
 
 #if _DEBUG
@@ -1453,8 +1401,6 @@ inline void SBuffer::DebugMoveBuffer(_Out_writes_bytes_(size) BYTE *to, BYTE *fr
         DebugStompUnusedBuffer(to + size, (COUNT_T) (from - to));
     else
         DebugStompUnusedBuffer(from, size);
-
-    return;
 }
 
 inline void SBuffer::DebugCopyConstructBuffer(_Out_writes_bytes_(size) BYTE *to, const BYTE *from, COUNT_T size)
@@ -1475,8 +1421,6 @@ inline void SBuffer::DebugCopyConstructBuffer(_Out_writes_bytes_(size) BYTE *to,
         CONSISTENCY_CHECK(CheckUnusedBuffer(to, size));
         memmove(to, from, size);
     }
-
-    return;
 }
 
 inline void SBuffer::DebugConstructBuffer(BYTE *buffer, COUNT_T size)
@@ -1496,8 +1440,6 @@ inline void SBuffer::DebugConstructBuffer(BYTE *buffer, COUNT_T size)
     if (size != 0) {
       CONSISTENCY_CHECK(CheckUnusedBuffer(buffer, size));
     }
-
-    return;
 }
 
 inline void SBuffer::DebugDestructBuffer(BYTE *buffer, COUNT_T size)
@@ -1518,8 +1460,6 @@ inline void SBuffer::DebugDestructBuffer(BYTE *buffer, COUNT_T size)
     {
         DebugStompUnusedBuffer(buffer, size);
     }
-
-    return;
 }
 
 static const BYTE GARBAGE_FILL_CHARACTER = '$';
@@ -1550,8 +1490,6 @@ inline void SBuffer::DebugStompUnusedBuffer(BYTE *buffer, COUNT_T size)
         memset(buffer, GARBAGE_FILL_CHARACTER, size);
     }
 #endif
-
-    return;
 }
 
 #if _DEBUG
@@ -1722,8 +1660,6 @@ inline void SBuffer::Index::Resync(const SBuffer *buffer, BYTE *value) const
 
     const_cast<Index*>(this)->CheckedIteratorBase<SBuffer>::Resync(const_cast<SBuffer*>(buffer));
     const_cast<Index*>(this)->m_ptr = value;
-
-    return;
 }
 
 #ifdef _MSC_VER

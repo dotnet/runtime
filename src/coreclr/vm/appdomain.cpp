@@ -1230,7 +1230,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         // Even if a user-created DynamicMethod uses the same naming convention, it will likely not
         // get here since since DynamicMethods by default are created in a special (non-system) module.
         // If this is not sufficient for conflict prevention, we can create a new private module.
-        return (strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0);
+        return strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0;
     }
 
     /* List of types that should be skipped to identify true caller */
@@ -1614,7 +1614,7 @@ HRESULT SystemDomain::NotifyProfilerShutdown()
         (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) AppDomain::GetCurrentDomain(), S_OK);
         END_PROFILER_CALLBACK();
     }
-    return (S_OK);
+    return S_OK;
 }
 #endif // PROFILING_SUPPORTED
 
@@ -3833,8 +3833,6 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
     {
         m_pPinnedHeapHandleTable->EnumStaticGCRefs(fn, sc);
     }
-
-    return;
 }
 
 #endif // !DACCESS_COMPILE

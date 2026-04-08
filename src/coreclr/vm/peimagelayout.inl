@@ -20,8 +20,6 @@ inline void PEImageLayout::AddRef()
     CONTRACTL_END;
 
     InterlockedIncrement(&m_refCount);
-
-    return;
 }
 
 inline ULONG PEImageLayout::Release()

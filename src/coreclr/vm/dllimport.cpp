@@ -2121,7 +2121,7 @@ BOOL PInvokeStubLinker::IsCleanupNeeded()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (m_fHasCleanupCode || IsCleanupWorkListSetup());
+    return m_fHasCleanupCode || IsCleanupWorkListSetup();
 }
 
 BOOL PInvokeStubLinker::IsExceptionCleanupNeeded()

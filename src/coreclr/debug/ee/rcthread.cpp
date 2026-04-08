@@ -129,7 +129,6 @@ HANDLE CreateWin32EventOrThrow(
     if (h == NULL)
         ThrowLastError();
 
-    _ASSERTE(h != NULL);
     return h;
 }
 

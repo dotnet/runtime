@@ -2207,7 +2207,7 @@ void *PEDecoder::GetNativeEntryPoint() const
         PRECONDITION(HasNativeEntryPoint());
     } CONTRACTL_END;
 
-    return ((void *) GetRvaData((RVA)VAL32(IMAGE_COR20_HEADER_FIELD(*GetCorHeader(), EntryPointToken))));
+    return (void *) GetRvaData((RVA)VAL32(IMAGE_COR20_HEADER_FIELD(*GetCorHeader(), EntryPointToken)));
 }
 
 #ifdef DACCESS_COMPILE
@@ -2251,7 +2251,7 @@ BOOL PEDecoder::GetForceRelocs()
     WRAPPER_NO_CONTRACT;
 
     static ConfigDWORD forceRelocs;
-    return (forceRelocs.val(CLRConfig::INTERNAL_ForceRelocs) != 0);
+    return forceRelocs.val(CLRConfig::INTERNAL_ForceRelocs) != 0;
 }
 
 BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)

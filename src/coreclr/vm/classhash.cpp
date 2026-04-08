@@ -166,7 +166,7 @@ bool EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data, Loader::LoadF
     }
 
     _ASSERTE(*ppModule != nullptr || loadFlag != Loader::Load);
-    return (*ppModule != nullptr);
+    return *ppModule != nullptr;
 }
 
 /* static */
@@ -685,7 +685,7 @@ BOOL EEClassHashTable::IsNested(ModuleBase *pModule, mdToken token, mdToken *mdE
 
     switch(TypeFromToken(token)) {
         case mdtTypeDef:
-            return (SUCCEEDED(pModule->GetMDImport()->GetNestedClassProps(token, mdEncloser)));
+            return SUCCEEDED(pModule->GetMDImport()->GetNestedClassProps(token, mdEncloser));
 
         case mdtTypeRef:
             IfFailThrow(pModule->GetMDImport()->GetResolutionScopeOfTypeRef(token, mdEncloser));

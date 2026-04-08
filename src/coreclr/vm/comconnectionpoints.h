@@ -66,7 +66,7 @@ struct ConnectionCookie
         }
         CONTRACTL_END;
 
-        return (new ConnectionCookie(hndEventProvObj));
+        return new ConnectionCookie(hndEventProvObj);
     }
 
     SLink           m_Link;

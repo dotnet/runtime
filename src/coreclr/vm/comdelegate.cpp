@@ -1105,7 +1105,7 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d
 
     END_QCALL;
 
-    return (pMatchingMethod != NULL);
+    return pMatchingMethod != NULL;
 }
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
@@ -2544,7 +2544,7 @@ BOOL COMDelegate::IsDelegateInvokeMethod(MethodDesc *pMD)
     MethodTable *pMT = pMD->GetMethodTable();
     _ASSERTE(pMT->IsDelegate());
 
-    return (pMD == ((DelegateEEClass *)pMT->GetClass())->GetInvokeMethod());
+    return pMD == ((DelegateEEClass *)pMT->GetClass())->GetInvokeMethod();
 }
 
 bool COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,

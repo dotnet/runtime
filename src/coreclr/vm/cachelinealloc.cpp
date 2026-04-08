@@ -155,8 +155,6 @@ void CCacheLineAllocator::VFree(void* pv)
     // helper to call virtual free to release memory
 
     bRes = ClrVirtualFree (pv, 0, MEM_RELEASE);
-
-    return;
 }
 
 ///////////////////////////////////////////////////////

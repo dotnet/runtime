@@ -19,7 +19,7 @@ inline BOOL ComInterfaceSlotIs(IUnknown* pUnk, int slot, LPVOID pvFunction)
 
     LPVOID pvRetVal = (*((LPVOID**)pUnk))[slot];
 
-    return (pvRetVal == (LPVOID)GetEEFuncEntryPoint(pvFunction));
+    return pvRetVal == (LPVOID)GetEEFuncEntryPoint(pvFunction);
 }
 
 //Helpers

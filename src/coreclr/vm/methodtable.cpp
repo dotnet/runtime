@@ -446,7 +446,7 @@ BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
     if (rid == 0)
         return FALSE;
 
-    return (GetModule() == pMT->GetModule());
+    return GetModule() == pMT->GetModule();
 }
 
 #ifndef DACCESS_COMPILE
@@ -529,7 +529,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
     }
 
     // Handle pure CLR types.
-    return (pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
+    return pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */);
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -1035,7 +1035,7 @@ BOOL MethodTable::IsEquivalentTo_Worker(MethodTable *pOtherMT COMMA_INDEBUG(Type
         }
 
         // arrays of structures have their own unshared MTs and will take this path
-        return (GetArrayElementTypeHandle().IsEquivalentTo(pOtherMT->GetArrayElementTypeHandle() COMMA_INDEBUG(&newVisited)));
+        return GetArrayElementTypeHandle().IsEquivalentTo(pOtherMT->GetArrayElementTypeHandle() COMMA_INDEBUG(&newVisited));
     }
 
     return IsEquivalentTo_WorkerInner(pOtherMT COMMA_INDEBUG(&newVisited));
@@ -5311,12 +5311,12 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
                 typeID, slotNumber, pEntry))
         {
             _ASSERTE(pEntry->IsValid());
-            return (TRUE);
+            return TRUE;
         }
         pCurMT = pCurMT->GetParentMethodTable();
         iCurInheritanceChainDelta++;
     }
-    return (FALSE);
+    return FALSE;
 }
 
 #ifndef DACCESS_COMPILE
@@ -5519,7 +5519,7 @@ MethodTable::FindDispatchImpl(
 
     // Successfully determined the target for the given target
     _ASSERTE(!(TRUE) || !pImplSlot->IsNull() || IsComObjectType());
-    return (TRUE);
+    return TRUE;
 }
 
 #ifndef DACCESS_COMPILE
@@ -6391,7 +6391,7 @@ BOOL MethodTable::SanityCheck()
         return FALSE;
 
     if (GetNumGenericArgs() != 0)
-        return (pCanonMT->GetClass() == pClass);
+        return pCanonMT->GetClass() == pClass;
     else
         return (pCanonMT == this) || IsArray() || IsContinuation();
 }
@@ -6584,7 +6584,7 @@ InteropMethodTableData *MethodTable::CreateComInteropData(AllocMemTracker *pamTr
 
     InteropMethodTableData *pData = builder.BuildInteropVTable(pamTracker);
     _ASSERTE(pData);
-    return (pData);
+    return pData;
 }
 
 //==========================================================================================
@@ -6622,7 +6622,7 @@ InteropMethodTableData *MethodTable::GetComInteropData()
     }
 
     _ASSERTE(pData);
-    return (pData);
+    return pData;
 }
 
 #endif // FEATURE_COMINTEROP
@@ -6638,7 +6638,7 @@ ULONG MethodTable::MethodData::Release()
     if (cRef == 0) {
         delete this;
     }
-    return (cRef);
+    return cRef;
 }
 
 //==========================================================================================
@@ -6931,7 +6931,6 @@ void MethodTable::MethodDataInterface::InvalidateCachedVirtualSlot(UINT32 slotNu
     LIMITED_METHOD_CONTRACT;
 
     // MethodDataInterface does not store any cached MethodDesc values
-    return;
 }
 
 //==========================================================================================
@@ -7097,7 +7096,7 @@ bool MethodTable::MethodDataInterfaceImpl::IsImplSlotNull(UINT32 slotNumber)
 {
     WRAPPER_NO_CONTRACT;
     UINT32 implSlotNumber = MapToImplSlotNumber(slotNumber);
-    return (implSlotNumber == INVALID_SLOT_NUMBER);
+    return implSlotNumber == INVALID_SLOT_NUMBER;
 }
 
 //==========================================================================================
@@ -8829,7 +8828,7 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
             SetInterface(pResult);
     }
     _ASSERTE(CheckPointer((pResult)));
-    return (pResult);
+    return pResult;
 }
 #endif // DACCESS_COMPILE
 

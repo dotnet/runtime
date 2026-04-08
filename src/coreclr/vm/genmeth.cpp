@@ -1618,8 +1618,6 @@ void MethodDesc::CheckConstraintMetadataValidity(BOOL *pfHasCircularMethodConstr
             *pfHasCircularMethodConstraints = TRUE;
         }
     }
-
-    return;
 }
 
 

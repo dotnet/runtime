@@ -311,8 +311,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-
-    return;
 }
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread

@@ -75,7 +75,6 @@ void DacDbiArrayList<T>::Dealloc()
         m_pList = NULL;
     }
     m_nEntries = 0;
-    return;
 }
 
 // Alloc and Init are very similar.  Both preallocate the array; but Alloc leaves the
@@ -236,7 +235,7 @@ void TargetBuffer::Init(CORDB_ADDRESS address, ULONG size)
 inline
 bool TargetBuffer::IsEmpty() const
 {
-    return (this->cbSize == 0);
+    return this->cbSize == 0;
 }
 
 //-----------------------------------------------------------------------------

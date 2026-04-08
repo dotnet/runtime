@@ -566,7 +566,7 @@ TADDR WebcilDecoder::GetRvaData(RVA rva, IsNullOK ok) const
 
     // Webcil is always flat — translate RVA via section table to file offset
     COUNT_T offset = RvaToOffset(rva);
-    return (m_base + offset);
+    return m_base + offset;
 }
 
 RVA WebcilDecoder::GetDataRva(const TADDR data) const

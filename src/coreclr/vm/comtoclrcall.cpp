@@ -355,7 +355,6 @@ Done:
         m_flags |= enum_NativeInfoInitialized;
     }
     EX_SWALLOW_NONTRANSIENT
-    return;
 }
 
 namespace

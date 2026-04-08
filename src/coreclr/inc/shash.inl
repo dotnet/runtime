@@ -81,7 +81,7 @@ typename SHash<TRAITS>::element_t SHash<TRAITS>::Lookup(key_t key) const
     CONTRACTL_END;
 
     const element_t *pRet = Lookup(m_table, m_tableSize, key);
-    return ((pRet != NULL) ? (*pRet) : TRAITS::Null());
+    return (pRet != NULL) ? (*pRet) : TRAITS::Null();
 }
 
 template <typename TRAITS>
@@ -122,7 +122,6 @@ void SHash<TRAITS>::ReplacePtr(const element_t *elementPtr, const element_t &new
     }
 
     *const_cast<element_t *>(elementPtr) = newElement;
-    return;
 }
 
 template <typename TRAITS>
@@ -139,8 +138,6 @@ void SHash<TRAITS>::Add(const element_t & element)
     CheckGrowth();
 
     Add_GrowthChecked(element);
-
-    return;
 }
 
 template <typename TRAITS>
@@ -177,8 +174,6 @@ void SHash<TRAITS>::Add_GrowthChecked(const element_t & element)
     if (Add(m_table, m_tableSize, element))
         m_tableOccupied++;
     m_tableCount++;
-
-    return;
 }
 
 template <typename TRAITS>
@@ -196,8 +191,6 @@ void SHash<TRAITS>::AddOrReplace(const element_t &element)
     CheckGrowth();
 
     AddOrReplace(m_table, m_tableSize, element);
-
-    return;
 }
 
 template <typename TRAITS>
@@ -235,8 +228,6 @@ void SHash<TRAITS>::Remove(key_t key)
     CONTRACTL_END;
 
     Remove(m_table, m_tableSize, key);
-
-    return;
 }
 
 template <typename TRAITS>
@@ -254,8 +245,6 @@ void SHash<TRAITS>::Remove(Iterator& i)
     CONTRACTL_END;
 
     RemoveElement(m_table, m_tableSize, (element_t*)&(*i));
-
-    return;
 }
 
 template <typename TRAITS>
@@ -273,8 +262,6 @@ void SHash<TRAITS>::Remove(KeyIterator& i)
     CONTRACTL_END;
 
     RemoveElement(m_table, m_tableSize, (element_t*)&(*i));
-
-    return;
 }
 
 template <typename TRAITS>
@@ -292,8 +279,6 @@ void SHash<TRAITS>::RemovePtr(element_t * p)
     CONTRACTL_END;
 
     RemoveElement(m_table, m_tableSize, p);
-
-    return;
 }
 
 template <typename TRAITS>
@@ -322,8 +307,6 @@ void SHash<TRAITS>::RemoveAll()
     m_tableCount = 0;
     m_tableOccupied = 0;
     m_tableMax = 0;
-
-    return;
 }
 
 template <typename TRAITS>
@@ -419,8 +402,6 @@ void SHash<TRAITS>::Grow()
     element_t * newTable = Grow_OnlyAllocateNewTable(&newSize);
     element_t * oldTable = ReplaceTable(newTable, newSize);
     DeleteOldTable(oldTable);
-
-    return;
 }
 
 template <typename TRAITS>
@@ -443,7 +424,7 @@ BOOL SHash<TRAITS>::GrowNoThrow()
         DeleteOldTable(oldTable);
     }
 
-    return (newTable != NULL);
+    return newTable != NULL;
 }
 
 template <typename TRAITS>
@@ -512,8 +493,6 @@ void SHash<TRAITS>::Reallocate(count_t requestedSize)
     element_t * newTable = AllocateNewTable(requestedSize, &newTableSize);
     element_t * oldTable = ReplaceTable(newTable, newTableSize);
     DeleteOldTable(oldTable);
-
-    return;
 }
 
 template <typename TRAITS>
@@ -653,8 +632,6 @@ SHash<TRAITS>::DeleteOldTable(element_t * oldTable)
     // We might want to try to delay this cleanup to allow asynchronous readers
     if (oldTable != NULL)
         delete [] oldTable;
-
-    return;
 }
 
 template <typename TRAITS>
@@ -778,7 +755,6 @@ void SHash<TRAITS>::AddOrReplace(element_t *table, count_t tableSize, const elem
             table[index] = element;
             m_tableCount++;
             m_tableOccupied++;
-            return;
         }
         else if (TRAITS::Equals(key, TRAITS::GetKey(current)))
         {
@@ -788,7 +764,6 @@ void SHash<TRAITS>::AddOrReplace(element_t *table, count_t tableSize, const elem
             }
 
             table[index] = element;
-            return;
         }
 
         if (increment == 0)
@@ -861,7 +836,6 @@ void SHash<TRAITS>::RemoveElement(element_t *table, count_t tableSize, element_t
 
     *element = TRAITS::Deleted();
     m_tableCount--;
-    return;
 }
 
 template <typename TRAITS>

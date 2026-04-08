@@ -94,7 +94,6 @@ void PEAssembly::EnsureLoaded()
 #endif
 
     _ASSERTE(IsLoaded());
-    return;
 }
 
 // ------------------------------------------------------------
@@ -622,7 +621,6 @@ void PEAssembly::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
     }
 
     GetPEImage()->GetPEKindAndMachine(pdwKind, pdwMachine);
-    return;
 }
 
 ULONG PEAssembly::GetPEImageTimeDateStamp()
@@ -960,8 +958,6 @@ void PEAssembly::UrlToPath(SString &string)
         string.Replace(i, W('\\'));
     }
 #endif
-
-    return;
 }
 
 BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)

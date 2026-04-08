@@ -236,7 +236,7 @@ inline BOOL PEDecoder::Has32BitNTHeaders() const
     }
     CONTRACTL_END;
 
-    return (FindNTHeaders()->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR32_MAGIC));
+    return FindNTHeaders()->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR32_MAGIC);
 }
 
 inline const void *PEDecoder::GetHeaders(COUNT_T *pSize) const
@@ -270,7 +270,7 @@ inline BOOL PEDecoder::IsDll() const
     }
     CONTRACTL_END;
 
-    return ((FindNTHeaders()->FileHeader.Characteristics & VAL16(IMAGE_FILE_DLL)) != 0);
+    return (FindNTHeaders()->FileHeader.Characteristics & VAL16(IMAGE_FILE_DLL)) != 0;
 }
 
 inline BOOL PEDecoder::HasBaseRelocations() const
@@ -284,7 +284,7 @@ inline BOOL PEDecoder::HasBaseRelocations() const
     }
     CONTRACTL_END;
 
-    return ((FindNTHeaders()->FileHeader.Characteristics & VAL16(IMAGE_FILE_RELOCS_STRIPPED)) == 0);
+    return (FindNTHeaders()->FileHeader.Characteristics & VAL16(IMAGE_FILE_RELOCS_STRIPPED)) == 0;
 }
 
 inline const void *PEDecoder::GetPreferredBase() const
@@ -507,9 +507,9 @@ inline BOOL PEDecoder::HasDirectoryEntry(int entry) const
     CONTRACTL_END;
 
     if (Has32BitNTHeaders())
-        return (GetNTHeaders32()->OptionalHeader.DataDirectory[entry].VirtualAddress != 0);
+        return GetNTHeaders32()->OptionalHeader.DataDirectory[entry].VirtualAddress != 0;
     else
-        return (GetNTHeaders64()->OptionalHeader.DataDirectory[entry].VirtualAddress != 0);
+        return GetNTHeaders64()->OptionalHeader.DataDirectory[entry].VirtualAddress != 0;
 }
 
 inline IMAGE_DATA_DIRECTORY *PEDecoder::GetDirectoryEntry(int entry) const
@@ -922,7 +922,7 @@ inline IMAGE_COR20_HEADER *PEDecoder::FindCorHeader() const
 
     const IMAGE_COR20_HEADER * pCor=PTR_IMAGE_COR20_HEADER(GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_COMHEADER));
     _ASSERTE(CheckPointer(((IMAGE_COR20_HEADER*)pCor)));
-    return ((IMAGE_COR20_HEADER*)pCor);
+    return (IMAGE_COR20_HEADER*)pCor;
 }
 
 inline CHECK PEDecoder::CheckBounds(RVA rangeBase, COUNT_T rangeSize, RVA rva)

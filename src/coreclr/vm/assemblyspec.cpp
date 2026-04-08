@@ -651,7 +651,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 BOOL AssemblySpecBindingCache::Contains(AssemblySpec *pSpec)
 {
     WRAPPER_NO_CONTRACT;
-    return (LookupInternal(pSpec, TRUE) != (AssemblyBinding *) INVALIDENTRY);
+    return LookupInternal(pSpec, TRUE) != (AssemblyBinding *) INVALIDENTRY;
 }
 
 Assembly *AssemblySpecBindingCache::LookupAssembly(AssemblySpec *pSpec,

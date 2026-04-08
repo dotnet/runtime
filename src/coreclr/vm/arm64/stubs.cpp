@@ -81,11 +81,11 @@ class BranchInstructionFormat : public InstructionFormat
             if (fExternal)
             {
                 // Note that the parameter 'offset' is not an offset but the target address itself (when fExternal is true)
-                return (refSize == InstructionFormat::k64);
+                return refSize == InstructionFormat::k64;
             }
             else
             {
-                return ((offset >= -134217728 && offset <= 134217724) || (refSize == InstructionFormat::k64));
+                return (offset >= -134217728 && offset <= 134217724) || (refSize == InstructionFormat::k64);
             }
         }
 
@@ -414,8 +414,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #endif // FEATURE_INTERPRETER
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    return;
 }
 
 #ifdef FEATURE_HIJACK
@@ -463,8 +461,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    return;
 }
 
 void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)

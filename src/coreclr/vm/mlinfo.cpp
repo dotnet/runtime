@@ -2522,8 +2522,6 @@ void MarshalInfo::GenerateFieldIL(PInvokeStubLinker* psl,
     {
         pcsUnmarshal->EmitNOP("// } field");
     }
-
-    return;
 }
 
 void MarshalInfo::SetupArgumentSizes()
@@ -3560,7 +3558,6 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
 LExit:;
 
     _ASSERTE(!IsValid() || !m_thElement.IsNull());
-    return;
 }
 
 bool IsUnsupportedTypedrefReturn(MetaSig& msig)

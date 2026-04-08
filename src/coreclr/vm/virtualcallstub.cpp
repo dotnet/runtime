@@ -975,7 +975,7 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
     Object *pObj = StubManagerHelpers::GetThisPtr(pContext);
 
     // Call common trace code.
-    return (TraceResolver(pObj, token, trace));
+    return TraceResolver(pObj, token, trace);
 }
 
 #ifndef DACCESS_COMPILE
@@ -1051,7 +1051,7 @@ PCODE VirtualCallStubManager::GetCallStub(DispatchToken token)
     stats.site_counter++;
 
     _ASSERTE((stub) != NULL);
-    return (stub);
+    return stub;
 }
 
 PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
@@ -2443,7 +2443,7 @@ BOOL VirtualCallStubManager::IsClassToken(DispatchToken token)
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    return (token.IsThisToken());
+    return token.IsThisToken();
 }
 
 //----------------------------------------------------------------------------
@@ -2458,7 +2458,7 @@ BOOL VirtualCallStubManager::IsInterfaceToken(DispatchToken token)
     // For now, only interfaces have typed dispatch tokens.
     CONSISTENCY_CHECK(!ret || CheckPointer(AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())));
     CONSISTENCY_CHECK(!ret || AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())->IsInterface());
-    return (ret);
+    return ret;
 }
 
 #ifndef DACCESS_COMPILE
@@ -2487,7 +2487,7 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
         token = DispatchToken::CreateDispatchToken(token.GetSlotNumber());
     }
     CONSISTENCY_CHECK(token.IsThisToken());
-    return (pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber()));
+    return pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
 }
 
 //----------------------------------------------------------------------------
@@ -2856,7 +2856,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
 #endif
 
     _ASSERTE(CheckPointer((holder)));
-    return (holder);
+    return holder;
 }
 
 #ifdef TARGET_AMD64
@@ -2917,7 +2917,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
 #endif
 
     _ASSERTE(CheckPointer((holder)));
-    return (holder);
+    return holder;
 }
 #endif
 
@@ -3015,7 +3015,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 #endif
 
     _ASSERTE(CheckPointer((holder)));
-    return (holder);
+    return holder;
 }
 
 //----------------------------------------------------------------------------
@@ -3048,7 +3048,7 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
 #endif
 
     _ASSERTE(CheckPointer((holder)));
-    return (holder);
+    return holder;
 }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
@@ -4068,7 +4068,7 @@ BOOL VirtualCallStubManagerIterator::Next()
         m_pCurMgr = m_pCurMgr->m_pNext;
     }
 
-    return (m_pCurMgr != NULL);
+    return m_pCurMgr != NULL;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////

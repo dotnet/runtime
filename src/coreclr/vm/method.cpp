@@ -1538,7 +1538,7 @@ BOOL MethodDesc::IsWrapperStub()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    return (IsUnboxingStub() || IsInstantiatingStub());
+    return IsUnboxingStub() || IsInstantiatingStub();
 }
 
 #ifndef DACCESS_COMPILE
@@ -1675,7 +1675,7 @@ BOOL MethodDesc::IsRuntimeMethodHandle()
     WRAPPER_NO_CONTRACT;
 
     // <TODO> Refine this check further for BoxedEntryPointStubs </TODO>
-    return (!HasMethodInstantiation() || !IsSharedByGenericMethodInstantiations());
+    return !HasMethodInstantiation() || !IsSharedByGenericMethodInstantiations();
 }
 
 //*******************************************************************************
@@ -1714,7 +1714,7 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
         resultMD->CheckRestore();
         _ASSERTE(CheckPointer((resultMD)));
         _ASSERTE((resultMD)->IsTypicalMethodDefinition());
-        return (resultMD);
+        return resultMD;
     }
     else
 #endif // !DACCESS_COMPILE
@@ -3099,7 +3099,7 @@ bool MethodDesc::IsJitOptimizationDisabled()
 
 bool MethodDesc::IsJitOptimizationDisabledForSpecificMethod()
 {
-    return (!IsNoMetadata() && IsMiNoOptimization(GetImplAttrs()));
+    return !IsNoMetadata() && IsMiNoOptimization(GetImplAttrs());
 }
 
 bool MethodDesc::IsJitOptimizationLevelRequested()

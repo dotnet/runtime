@@ -1111,7 +1111,7 @@ bool IUnkEntry::TryUpdateEntry()
     if (((DWORD_PTR)pOldEntry & 1) == 0)
     {
         CtxEntry *pNewEntry = (CtxEntry *)((DWORD_PTR)pOldEntry | 1);
-        return (InterlockedExchangeT(&m_pCtxEntry, pNewEntry) == pOldEntry);
+        return InterlockedExchangeT(&m_pCtxEntry, pNewEntry) == pOldEntry;
     }
     return false;
 }

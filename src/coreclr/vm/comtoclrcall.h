@@ -56,7 +56,7 @@ public:
     BOOL IsFieldCall()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_IsFieldCall);
+        return m_flags & enum_IsFieldCall;
     }
 
     BOOL IsMethodCall()
@@ -77,7 +77,7 @@ public:
         }
         CONTRACTL_END;
 
-        return (m_flags & enum_IsGetter);
+        return m_flags & enum_IsGetter;
     }
 
     BOOL IsNativeR4RetVal()

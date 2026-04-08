@@ -981,7 +981,7 @@ BOOL MemberLoader::FM_PossibleToSkipMethod(FM_Flags flags)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return ((flags & FM_SpecialVirtualMask) || (flags & FM_SpecialAccessMask));
+    return (flags & FM_SpecialVirtualMask) || (flags & FM_SpecialAccessMask);
 }
 
 //*******************************************************************************

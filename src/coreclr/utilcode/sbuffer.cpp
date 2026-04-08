@@ -69,7 +69,6 @@ void SBuffer::ReallocateBuffer(COUNT_T allocation, Preserve preserve)
     ClearImmutable();
 
     _ASSERTE(m_allocation == allocation);
-    return;
 }
 
 void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, COUNT_T insertSize)
@@ -138,6 +137,4 @@ void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, COUNT_T insertSize)
     }
 
     DebugConstructBuffer(i.m_ptr, insertSize);
-
-    return;
 }

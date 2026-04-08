@@ -129,7 +129,7 @@ public:
         }
         CONTRACTL_END;
 
-        return (Aware == m_CultureAwareState);
+        return Aware == m_CultureAwareState;
     }
 
     EnumMemberTypes GetMemberType()

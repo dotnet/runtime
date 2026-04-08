@@ -734,7 +734,7 @@ BOOL SimpleComCallWrapper::CustomQIRespondsToIMarshal()
         InterlockedOr((LONG*)&m_flags, newFlags);
     }
 
-    return (m_flags & enum_CustomQIRespondsToIMarshal);
+    return m_flags & enum_CustomQIRespondsToIMarshal;
 }
 
 //--------------------------------------------------------------------------
@@ -882,7 +882,7 @@ ConnectionPoint *SimpleComCallWrapper::CreateConnectionPoint(ComCallWrapper *pWr
     }
     CONTRACTL_END;
 
-    return (new ConnectionPoint(pWrap, pEventMT));
+    return new ConnectionPoint(pWrap, pEventMT);
 }
 
 CQuickArray<ConnectionPoint*> *SimpleComCallWrapper::CreateCPArray()
@@ -896,7 +896,7 @@ CQuickArray<ConnectionPoint*> *SimpleComCallWrapper::CreateCPArray()
     }
     CONTRACTL_END;
 
-    return (new CQuickArray<ConnectionPoint*>());
+    return new CQuickArray<ConnectionPoint*>();
 }
 
 //--------------------------------------------------------------------------
@@ -2052,7 +2052,7 @@ IUnknown* ComCallWrapper::GetIClassXIP(bool inspectionOnly)
 
     // 0xbadF00d implies the AddRef didn't go through
     _ASSERTE(CheckPointer(((cbRef != 0xbadf00d) ? pIntf : NULL), NULL_OK));
-    return ((cbRef != 0xbadf00d) ? pIntf : NULL);
+    return (cbRef != 0xbadf00d) ? pIntf : NULL;
 }
 
 IUnknown* ComCallWrapper::GetBasicIP(bool inspectionOnly)
@@ -2107,7 +2107,7 @@ IUnknown* ComCallWrapper::GetBasicIP(bool inspectionOnly)
 
     // 0xbadF00d implies the AddRef didn't go through
     _ASSERTE(CheckPointer(((cbRef != 0xbadf00d) ? pIntf : NULL), NULL_OK));
-    return ((cbRef != 0xbadf00d) ? pIntf : NULL);
+    return (cbRef != 0xbadf00d) ? pIntf : NULL;
 }
 
 //--------------------------------------------------------------------------

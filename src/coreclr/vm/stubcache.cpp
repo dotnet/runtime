@@ -171,7 +171,6 @@ void StubCacheBase::AddStub(const BYTE* pRawStub, Stub* pNewStub)
     LIMITED_METHOD_CONTRACT;
 
     // By default, don't do anything.
-    return;
 }
 
 

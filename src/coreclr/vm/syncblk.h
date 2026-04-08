@@ -203,7 +203,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (m_pRCW != NULL);
+        return m_pRCW != NULL;
     }
 #else // !DACCESS_COMPILE
     TADDR DacGetRawRCW()
@@ -934,7 +934,7 @@ class ObjHeader
     BOOL HasSyncBlockIndex()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (GetHeaderSyncBlockIndex() != 0);
+        return GetHeaderSyncBlockIndex() != 0;
     }
 
     // retrieve or allocate a sync block for this object

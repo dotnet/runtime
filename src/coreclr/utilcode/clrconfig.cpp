@@ -110,19 +110,19 @@ namespace
     bool CheckLookupOption(const ConfigDWORDInfo & info, LookupOptions option)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((info.options & option) == option);
+        return (info.options & option) == option;
     }
 
     bool CheckLookupOption(const ConfigStringInfo & info, LookupOptions option)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((info.options & option) == option);
+        return (info.options & option) == option;
     }
 
     bool CheckLookupOption(LookupOptions infoOptions, LookupOptions optionToCheck)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((infoOptions & optionToCheck) == optionToCheck);
+        return (infoOptions & optionToCheck) == optionToCheck;
     }
 
     //*****************************************************************************
@@ -261,12 +261,12 @@ namespace
             if (fSuccess)
             {
                 *result = configMaybe;
-                return (S_OK);
+                return S_OK;
             }
         }
 
         *result = defValue;
-        return (E_FAIL);
+        return E_FAIL;
     }
 
     LPWSTR GetConfigString(

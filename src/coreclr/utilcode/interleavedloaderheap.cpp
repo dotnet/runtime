@@ -409,7 +409,6 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
     // define Backout(NULL) be a legal NOP.
     if (pMem == NULL)
     {
-        return;
     }
 
     size_t dwSize = m_dwGranularity;

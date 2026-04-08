@@ -2534,8 +2534,6 @@ void OleVariant::ExtractContentsFromByrefVariant(VARIANT *pByrefVar, VARIANT *pD
             break;
         }
     }
-
-    return;
 }
 
 void OleVariant::InsertContentsIntoByRefVariant(VARIANT *pSrcVar, VARIANT *pByrefVar)
@@ -2593,7 +2591,6 @@ void OleVariant::InsertContentsIntoByRefVariant(VARIANT *pSrcVar, VARIANT *pByre
             break;
         }
     }
-    return;
 }
 
 void OleVariant::CreateByrefVariantForVariant(VARIANT *pSrcVar, VARIANT *pByrefVar)
@@ -2656,8 +2653,6 @@ void OleVariant::CreateByrefVariantForVariant(VARIANT *pSrcVar, VARIANT *pByrefV
 
         V_VT(pByrefVar) = vt | VT_BYREF;
     }
-
-    return;
 }
 
 /* ------------------------------------------------------------------------- *

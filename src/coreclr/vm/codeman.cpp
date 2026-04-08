@@ -130,7 +130,7 @@ bool InitUnwindFtns()
         // Don't call FreeLibrary(hNtdll) because GetModuleHandle did *NOT* increment the reference count!
     }
 
-    return (pRtlAddGrowableFunctionTable != NULL);
+    return pRtlAddGrowableFunctionTable != NULL;
 }
 
 /****************************************************************************/
@@ -887,7 +887,7 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
 
     _ASSERTE((pFunctionEntry->BeginAddress & THUMB_CODE) == THUMB_CODE);   // Sanity check: it's a thumb address
     DWORD Fbit = (unwindHeader >> 22) & 0x1;    // F "fragment" bit
-    return (Fbit == 1);
+    return Fbit == 1;
 #elif defined(TARGET_ARM64)
 
     // ARM64 is a little bit more flexible, in the sense that it supports partial prologs. However only one of the
@@ -922,7 +922,7 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
         pUnwindCodes += EpilogCount;
     }
 
-    return ((*pUnwindCodes & 0xFF) == 0xE5);
+    return (*pUnwindCodes & 0xFF) == 0xE5;
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     // LOONGARCH64 is a little bit more flexible, in the sense that it supports partial prologs. However only one of the
@@ -957,7 +957,7 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
         pUnwindCodes += EpilogCount;
     }
 
-    return ((*pUnwindCodes & 0xFF) == 0xE5);
+    return (*pUnwindCodes & 0xFF) == 0xE5;
 #else
     PORTABILITY_ASSERT("IsFunctionFragnent - NYI on this platform");
 #endif
@@ -1188,7 +1188,7 @@ BOOL IJitManager::LazyIsFunclet(EECodeInfo * pCodeInfo)
     TADDR funcletStartAddress = GetFuncletStartAddress(pCodeInfo);
     TADDR methodStartAddress = pCodeInfo->GetStartAddress();
 
-    return (funcletStartAddress != methodStartAddress);
+    return funcletStartAddress != methodStartAddress;
 }
 
 BOOL IJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
@@ -6955,7 +6955,7 @@ BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
 #ifdef TARGET_AMD64
         // Chained unwind info is used only for cold part of the main code
         const UCHAR chainedUnwindFlag = (((PTR_UNWIND_INFO)pUnwindData)->Flags & UNW_FLAG_CHAININFO);
-        return (chainedUnwindFlag == 0);
+        return chainedUnwindFlag == 0;
 #else
         // TODO: We need a solution for arm64 here
         return false;
@@ -6967,7 +6967,7 @@ BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
     TADDR funcletStartAddress = GetFuncletStartAddress(pCodeInfo);
     TADDR methodStartAddress = pCodeInfo->GetStartAddress();
 
-    return (funcletStartAddress != methodStartAddress);
+    return funcletStartAddress != methodStartAddress;
 }
 
 BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)

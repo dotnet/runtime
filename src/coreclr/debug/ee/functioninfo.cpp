@@ -166,7 +166,7 @@ DWORD DebuggerJitInfo::GetFuncletOffsetByIndex(int index)
 
     if (index < 0 || index >= m_funcletCount)
     {
-        return (-1);
+        return -1;
     }
 
     return m_rgFunclet[index];
@@ -450,7 +450,7 @@ bool DebuggerJitInfo::ILToNativeOffsetIterator::IsAtEnd()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (m_currentILOffset.m_ilOffset == INVALID_IL_OFFSET);
+    return m_currentILOffset.m_ilOffset == INVALID_IL_OFFSET;
 }
 
 SIZE_T DebuggerJitInfo::ILToNativeOffsetIterator::Current(BOOL* pfExact)
@@ -1853,7 +1853,7 @@ bool DebuggerMethodInfo::HasJitInfos()
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
-    return (m_latestJitInfo != NULL);
+    return m_latestJitInfo != NULL;
 }
 
 /******************************************************************************

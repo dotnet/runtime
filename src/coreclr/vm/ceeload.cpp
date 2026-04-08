@@ -1108,7 +1108,7 @@ BOOL Module::IsRuntimeWrapExceptionsStatusComputed()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS);
+    return m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS;
 }
 
 BOOL Module::IsRuntimeWrapExceptionsDuringEH()
@@ -1682,7 +1682,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
     EX_SWALLOW_NONTERMINAL
     // We swallow any exception and say that we simply couldn't get a reader by returning NULL.
     // The only type of error that should be possible here is OOM.
-    return (ret);
+    return ret;
 }
 
 #if defined(HOST_AMD64)
@@ -1746,7 +1746,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         {
             // Case 3.  We don't have a module path or an in memory symbol stream,
             // so there is no-where to try and get symbols from.
-            return (NULL);
+            return NULL;
         }
 
         // Create a binder to find the reader.
@@ -1769,13 +1769,13 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         hr = GetClrModuleDirectory(symbolReaderPath);
         if (FAILED(hr))
         {
-            return (NULL);
+            return NULL;
         }
         symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
         hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
         if (FAILED(hr))
         {
-            return (NULL);
+            return NULL;
         }
 
         LOG((LF_CORDB, LL_INFO10, "M::GISUR: Created binder\n"));
@@ -1846,13 +1846,13 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     // If we previously failed to create the reader, return NULL
     if (m_pISymUnmanagedReader == k_pInvalidSymReader)
     {
-        return (NULL);
+        return NULL;
     }
 
     // Success - return an AddRef'd copy of the reader
     m_pISymUnmanagedReader->AddRef();
     _ASSERTE(CheckPointer((m_pISymUnmanagedReader), NULL_OK));
-    return (m_pISymUnmanagedReader);
+    return m_pISymUnmanagedReader;
 }
 #endif // FEATURE_ISYM_READER
 
@@ -2892,7 +2892,7 @@ bool Module::HasAnyJMCFunctions()
     // Since we don't get the jit-completes for ngen modules, we also check the module's
     // "default" status. This means we may err on the side of believing we have
     // JMC methods.
-    return ((m_debuggerSpecificData.m_cTotalJMCFuncs > 0) || m_debuggerSpecificData.m_fDefaultJMCStatus);
+    return (m_debuggerSpecificData.m_cTotalJMCFuncs > 0) || m_debuggerSpecificData.m_fDefaultJMCStatus;
 }
 
 // Alter our module's count of JMC functions.

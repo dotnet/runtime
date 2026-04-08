@@ -2314,7 +2314,7 @@ VARIANT *DispatchInfo::RetrieveSrcVariant(VARIANT *pDispParamsVariant)
     if (V_VT(pDispParamsVariant) == (VT_VARIANT | VT_BYREF) &&
         (V_VT(V_VARIANTREF(pDispParamsVariant)) & (VT_TYPEMASK | VT_BYREF)) == (VT_VARIANT | VT_BYREF))
     {
-        return (V_VARIANTREF(pDispParamsVariant));
+        return V_VARIANTREF(pDispParamsVariant);
     }
     else
     {

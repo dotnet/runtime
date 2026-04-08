@@ -1069,7 +1069,7 @@ HRESULT DebuggerController::Initialize()
 
     _ASSERTE(g_patches != NULL);
 
-    return (S_OK);
+    return S_OK;
 }
 
 
@@ -2226,7 +2226,6 @@ void DebuggerController::AddPatchToStartOfLatestMethod(MethodDesc * fd)
     mdToken defToken = fd->GetMemberDef();
     DebuggerMethodInfo* pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, defToken);
     DebuggerController::AddILPatch(GetAppDomain(), pModule, defToken, fd, pDMI->GetCurrentEnCVersion(), 0, FALSE);
-    return;
 }
 
 
@@ -3142,7 +3141,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 
         LOG((LF_CORDB|LF_ENC, LL_INFO1000, "DC::DPOSS returning, no patch table.\n"));
         _ASSERTE(!HasLock());
-        return (used);
+        return used;
     }
     _ASSERTE(g_patches != NULL);
 
@@ -3612,7 +3611,7 @@ BOOL DebuggerController::DispatchExceptionHook(Thread *thread,
     if (!g_patchTableValid)
     {
         LOG((LF_CORDB, LL_INFO1000, "DC::DEH: returning, no patch table.\n"));
-        return (TRUE);
+        return TRUE;
     }
 
 
@@ -3648,7 +3647,7 @@ BOOL DebuggerController::DispatchExceptionHook(Thread *thread,
 
     LOG((LF_CORDB, LL_INFO1000, "DC::DEH: returning 0x%x!\n", tpr));
 
-    return (tpr != TPR_IGNORE_AND_STOP);
+    return tpr != TPR_IGNORE_AND_STOP;
 }
 
 //
@@ -4993,7 +4992,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
     if (!IsSingleStep(exception->ExceptionCode))
     {
         LOG((LF_CORDB, LL_INFO10000, "Exception in patched Bypass instruction .\n"));
-        return (TPR_IGNORE_AND_STOP);
+        return TPR_IGNORE_AND_STOP;
     }
 
     _ASSERTE(m_pSharedPatchBypassBuffer);
@@ -5082,7 +5081,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
                 else
                 {
                     LOG((LF_CORDB, LL_INFO10000, "Bypass instruction not redirected because we're not in managed or stub code.\n"));
-                    return (TPR_IGNORE_AND_STOP);
+                    return TPR_IGNORE_AND_STOP;
                 }
             }
         }
@@ -6181,7 +6180,7 @@ static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunct
 
     if (type == TailCallFunctionType::StoreTailCallArgs)
     {
-        return (pTargetMD && pTargetMD->IsDynamicMethod() && pTargetMD->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubTailCallStoreArgs);
+        return pTargetMD && pTargetMD->IsDynamicMethod() && pTargetMD->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubTailCallStoreArgs;
     }
 
     if (pTargetMD != pTailCallDispatcherMD)
@@ -8392,7 +8391,7 @@ void DebuggerStepper::ResetRange()
 //-----------------------------------------------------------------------------
 bool DebuggerStepper::IsFrozen()
 {
-    return (m_cFuncEvalNesting > 0);
+    return m_cFuncEvalNesting > 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -8401,7 +8400,7 @@ bool DebuggerStepper::IsFrozen()
 //-----------------------------------------------------------------------------
 bool DebuggerStepper::IsDead()
 {
-    return (m_cFuncEvalNesting < 0);
+    return m_cFuncEvalNesting < 0;
 }
 
 // * ------------------------------------------------------------------------

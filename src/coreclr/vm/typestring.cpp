@@ -509,8 +509,6 @@ void TypeString::AppendTypeDef(SString& ss, IMDInternalImport *pImport, mdTypeDe
         TypeNameBuilder tnb(&ss, TypeNameBuilder::ParseStateNAME);
         AppendTypeDef(tnb, pImport, td, format);
     }
-
-    return;
 }
 
 
@@ -542,8 +540,6 @@ void TypeString::AppendTypeDef(TypeNameBuilder& tnb, IMDInternalImport *pImport,
     }
 
     tnb.AddName(ssName.GetUnicode(), wszNameSpace);
-
-    return;
 }
 
 void TypeString::AppendNestedTypeDef(TypeNameBuilder& tnb, IMDInternalImport *pImport, mdTypeDef td, DWORD format)
@@ -571,8 +567,6 @@ void TypeString::AppendNestedTypeDef(TypeNameBuilder& tnb, IMDInternalImport *pI
 
     for(SCOUNT_T i = arNames.GetCount() - 1; i >= 0; i --)
         AppendTypeDef(tnb, pImport, arNames[i], format);
-
-    return;
 }
 
 // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
@@ -594,8 +588,6 @@ void TypeString::AppendInst(SString& ss, Instantiation inst, DWORD format)
             tnb.SetUseAngleBracketsForGenerics(TRUE);
         AppendInst(tnb, inst, format);
     }
-
-    return;
 }
 
 void TypeString::AppendInst(TypeNameBuilder& tnb, Instantiation inst, DWORD format)
@@ -634,8 +626,6 @@ void TypeString::AppendInst(TypeNameBuilder& tnb, Instantiation inst, DWORD form
     }
 
     tnb.CloseGenericArguments();
-
-    return;
 }
 
 void TypeString::AppendParamTypeQualifier(TypeNameBuilder& tnb, CorElementType kind, DWORD rank)
@@ -681,8 +671,6 @@ void TypeString::AppendType(SString& ss, TypeHandle ty, DWORD format)
     CONTRACTL_END
 
     AppendType(ss, ty, Instantiation(), format);
-
-    return;
 }
 
 void TypeString::AppendType(SString& ss, TypeHandle ty, Instantiation typeInstantiation, DWORD format)
@@ -701,8 +689,6 @@ void TypeString::AppendType(SString& ss, TypeHandle ty, Instantiation typeInstan
             tnb.SetUseAngleBracketsForGenerics(TRUE);
         AppendType(tnb, ty, typeInstantiation, format);
     }
-
-    return;
 }
 
 void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation typeInstantiation, DWORD format)
@@ -891,8 +877,6 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         tnb.AddAssemblySpec(pAssemblyName.GetUnicode());
 
     }
-
-    return;
 }
 
 void TypeString::AppendMethod(SString& s, MethodDesc *pMD, Instantiation typeInstantiation, const DWORD format)
@@ -1196,8 +1180,6 @@ void TypeString::AppendTypeKey(TypeNameBuilder& tnb, const TypeKey *pTypeKey, DW
 #endif
         tnb.AddAssemblySpec(pAssemblyName.GetUnicode());
     }
-
-    return;
 }
 
 void TypeString::AppendTypeKey(SString& ss, const TypeKey *pTypeKey, DWORD format)
@@ -1215,8 +1197,6 @@ void TypeString::AppendTypeKey(SString& ss, const TypeKey *pTypeKey, DWORD forma
         TypeNameBuilder tnb(&ss);
         AppendTypeKey(tnb, pTypeKey, format);
     }
-
-    return;
 }
 
 /*static*/

@@ -1057,7 +1057,7 @@ BOOL Thread::IsRudeAbort()
     }
     CONTRACTL_END;
 
-    return (IsAbortRequested() && (m_AbortType == EEPolicy::TA_Rude));
+    return IsAbortRequested() && (m_AbortType == EEPolicy::TA_Rude);
 }
 
 //
@@ -2551,7 +2551,7 @@ int RedirectedHandledJITCaseExceptionFilter(
     SetLastError(dwLastError);
 
     // Resume execution at point where thread was originally redirected
-    return (EXCEPTION_CONTINUE_EXECUTION);
+    return EXCEPTION_CONTINUE_EXECUTION;
 }
 #endif // TARGET_X86
 
@@ -2834,7 +2834,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     // that we would need while allocating.
     // Other ways and attempts at suspending may yet succeed, but this redirection cannot continue.
     if (!pCtx)
-        return (FALSE);
+        return FALSE;
 
     //////////////////////////////////////
     // Get and save the thread's context
@@ -2863,10 +2863,10 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     _ASSERTE(bRes && "Failed to GetThreadContext in RedirectThreadAtHandledJITCase - aborting redirect.");
 
     if (!bRes)
-        return (FALSE);
+        return FALSE;
 
     if (!IsContextSafeToRedirect(pCtx))
-        return (FALSE);
+        return FALSE;
 
     ////////////////////////////////////////////////////
     // Now redirect the thread to the helper function
@@ -2899,7 +2899,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
         void* stackPointer = (void*)GetSP(pCtx);
         if ((stackPointer < pTeb->StackLimit) || (stackPointer > pTeb->StackBase))
         {
-            return (FALSE);
+            return FALSE;
         }
 
         _ASSERTE(!"Failed to SetThreadContext in RedirectThreadAtHandledJITCase - aborting redirect.");
@@ -2919,7 +2919,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     //////////////////////////////////////////////////
     // Indicate whether or not the redirect succeeded
 
-    return (bRes);
+    return bRes;
 }
 
 BOOL Thread::CheckForAndDoRedirect(PFN_REDIRECTTARGET pRedirectTarget)
@@ -2940,7 +2940,7 @@ BOOL Thread::CheckForAndDoRedirect(PFN_REDIRECTTARGET pRedirectTarget)
     fRes = RedirectThreadAtHandledJITCase(pRedirectTarget);
     LOG((LF_GC, LL_INFO1000, "RedirectThreadAtHandledJITCase %s.\n", fRes ? "SUCCEEDED" : "FAILED"));
 
-    return (fRes);
+    return fRes;
 }
 
 BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONTEXT *pCurrentThreadCtx)
@@ -3647,7 +3647,7 @@ int RedirectedThrowControlExceptionFilter(
     SetCurrentSEHRecord(pCurSEH);
 
     // Resume execution at point where thread was originally redirected
-    return (EXCEPTION_CONTINUE_EXECUTION);
+    return EXCEPTION_CONTINUE_EXECUTION;
 }
 
 void RedirectedThrowControl()

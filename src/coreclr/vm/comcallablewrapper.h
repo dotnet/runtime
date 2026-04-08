@@ -180,7 +180,7 @@ public:
         BOOL Next()
         {
             LIMITED_METHOD_CONTRACT;
-            return (++m_Index < GetCount());
+            return ++m_Index < GetCount();
         }
 
         MethodTable *GetInterface() const
@@ -236,31 +236,31 @@ public:
     BOOL HasInvisibleParent()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_InvisibleParent);
+        return m_flags & enum_InvisibleParent;
     }
 
     BOOL SupportsICustomQueryInterface()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_ImplementsICustomQueryInterface);
+        return m_flags & enum_ImplementsICustomQueryInterface;
     }
 
     BOOL RepresentsVariantInterface()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_RepresentsVariantInterface);
+        return m_flags & enum_RepresentsVariantInterface;
     }
 
     BOOL ImplementsIMarshal()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_ImplementsIMarshal);
+        return m_flags & enum_ImplementsIMarshal;
     }
 
     BOOL SupportsIClassX()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_SupportsIClassX);
+        return m_flags & enum_SupportsIClassX;
     }
 
     TypeHandle GetClassType()
@@ -449,7 +449,7 @@ struct ComMethodTable
     BOOL IsIClassX()
     {
         LIMITED_METHOD_CONTRACT;
-        return (IsIClassXOrBasicItf() && !IsBasic());
+        return IsIClassXOrBasicItf() && !IsBasic();
     }
 
     BOOL IsIClassXOrBasicItf()
@@ -603,7 +603,7 @@ struct ComMethodTable
             // m_cbSlots is the total number of methods in addition to the ones from the
             // default interfaces.  cbNewSlots is the total number of methods introduced
             // by this class (== m_cbSlots - <slots from parent MT>).
-            return (slotIndex >= (cbExtraSlots + m_cbSlots - cbNewSlots));
+            return slotIndex >= (cbExtraSlots + m_cbSlots - cbNewSlots);
         }
 
         return FALSE;
@@ -797,7 +797,7 @@ protected:
         }
         CONTRACTL_END;
 
-        return (LinkedWrapperTerminator == pWrap->m_pNext ? NULL : pWrap->m_pNext);
+        return LinkedWrapperTerminator == pWrap->m_pNext ? NULL : pWrap->m_pNext;
     }
 
     // Helper to create a wrapper
@@ -1223,7 +1223,7 @@ public:
         }
         CONTRACTL_END;
 
-        return (GetMainWrapper()->GetObjectRef());
+        return GetMainWrapper()->GetObjectRef();
     }
 
     ComCallWrapperCache* GetWrapperCache()
@@ -1783,7 +1783,7 @@ inline PTR_ComCallWrapper ComCallWrapper::GetStartWrapper(PTR_ComCallWrapper pWr
     CONTRACTL_END;
 
     PTR_SimpleComCallWrapper pSimpleWrap = pWrap->GetSimpleWrapper();
-    return (pSimpleWrap->GetMainWrapper());
+    return pSimpleWrap->GetMainWrapper();
 }
 
 //--------------------------------------------------------------------------

@@ -284,8 +284,6 @@ inline SString::SString(tagUTF8 dummytag, const UTF8 *string)
     SS_CONTRACT_END;
 
     SetUTF8(string);
-
-    return;
 }
 
 inline SString::SString(tagUTF8 dummytag, const UTF8 *string, COUNT_T count)
@@ -302,8 +300,6 @@ inline SString::SString(tagUTF8 dummytag, const UTF8 *string, COUNT_T count)
     SS_CONTRACT_END;
 
     SetUTF8(string, count);
-
-    return;
 }
 
 inline SString::SString(WCHAR character)
@@ -368,8 +364,6 @@ inline SString::SString(tagLiteral dummytag, const WCHAR *literal)
 
     SetRepresentation(REPRESENTATION_UNICODE);
     SetNormalized();
-
-    return;
 }
 
 inline SString::SString(tagLiteral dummytag, const WCHAR *literal, COUNT_T count)
@@ -408,8 +402,6 @@ inline void SString::Set(const SString &s)
     SBuffer::Set(s);
     SetRepresentation(s.GetRepresentation());
     ClearNormalized();
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -431,8 +423,6 @@ inline void SString::Set(const SString &s1, const SString &s2)
 
     Set(s1);
     Append(s2);
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -456,8 +446,6 @@ inline void SString::Set(const SString &s1, const SString &s2, const SString &s3
     Set(s1);
     Append(s2);
     Append(s3);
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -483,8 +471,6 @@ inline void SString::Set(const SString &s1, const SString &s2, const SString &s3
     Append(s2);
     Append(s3);
     Append(s4);
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -510,8 +496,6 @@ inline void SString::Set(const SString &s, const CIterator &i, COUNT_T count)
     Resize(count, s.GetRepresentation());
     SBuffer::Copy(SBuffer::Begin(), i.m_ptr, count<<i.m_characterSizeShift);
     NullTerminate();
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -537,8 +521,6 @@ inline void SString::Set(const SString &s, const CIterator &start, const CIterat
     SS_CONTRACT_END;
 
     Set(s, start, end - start);
-
-    return;
 }
 
 // Return a global empty string
@@ -615,8 +597,6 @@ inline void SString::Normalize()
 
     ConvertToUnicode();
     SetNormalized();
-
-    return;
 }
 
 // Get a const pointer to the internal buffer as a unicode string.
@@ -652,8 +632,6 @@ inline void SString::Append(const SString &s)
     SS_CONTRACT_END;
 
     Insert(End(), s);
-
-    return;
 }
 
 inline void SString::Append(const WCHAR *string)
@@ -672,8 +650,6 @@ inline void SString::Append(const WCHAR *string)
     SString s(SString::Literal, string);
     s.ClearImmutable();
     Append(s);
-
-    return;
 }
 
 inline void SString::AppendASCII(const CHAR *string)
@@ -689,8 +665,6 @@ inline void SString::AppendASCII(const CHAR *string)
 
     StackSString s(SString::Ascii, string);
     Append(s);
-
-    return;
 }
 
 inline void SString::AppendUTF8(const CHAR *string)
@@ -706,8 +680,6 @@ inline void SString::AppendUTF8(const CHAR *string)
 
     StackSString s(SString::Utf8, string);
     Append(s);
-
-    return;
 }
 
 inline void SString::Append(const WCHAR c)
@@ -722,8 +694,6 @@ inline void SString::Append(const WCHAR c)
 
     InlineSString<2 * sizeof(c)> s(c);
     Append(s);
-
-    return;
 }
 
 inline void SString::AppendUTF8(const CHAR c)
@@ -739,8 +709,6 @@ inline void SString::AppendUTF8(const CHAR c)
 
     InlineSString<2 * sizeof(c)> s(SString::Utf8, c);
     Append(s);
-
-    return;
 }
 
 // Turn this on to test that these if you are testing common scenarios dealing with
@@ -824,7 +792,7 @@ inline BOOL SString::Match(const CIterator &i, WCHAR c) const
 
     // End() will not throw here
     CONTRACT_VIOLATION(ThrowsViolation);
-    return (i < End() && i[0] == c);
+    return i < End() && i[0] == c;
 }
 
 inline BOOL SString::Skip(CIterator &i, const SString &s) const
@@ -980,8 +948,6 @@ inline void SString::Insert(const Iterator &i, const SString &s)
     SS_CONTRACT_END;
 
     Replace(i, 0, s);
-
-    return;
 }
 
 inline void SString::Insert(const Iterator &i, const WCHAR *string)
@@ -998,8 +964,6 @@ inline void SString::Insert(const Iterator &i, const WCHAR *string)
 
     StackSString s(string);
     Replace(i, 0, s);
-
-    return;
 }
 
 inline void SString::InsertASCII(const Iterator &i, const CHAR *string)
@@ -1016,8 +980,6 @@ inline void SString::InsertASCII(const Iterator &i, const CHAR *string)
 
     StackSString s(SString::Ascii, string);
     Replace(i, 0, s);
-
-    return;
 }
 
 inline void SString::InsertUTF8(const Iterator &i, const CHAR *string)
@@ -1034,8 +996,6 @@ inline void SString::InsertUTF8(const Iterator &i, const CHAR *string)
 
     StackSString s(SString::Utf8, string);
     Replace(i, 0, s);
-
-    return;
 }
 
 // Delete string at iterator position
@@ -1052,8 +1012,6 @@ inline void SString::Delete(const Iterator &i, COUNT_T length)
     SS_CONTRACT_END;
 
     Replace(i, length, Empty());
-
-    return;
 }
 
 // Preallocate some space for the string buffer
@@ -1093,7 +1051,7 @@ inline BOOL SString::IsEmpty() const
     }
     SS_CONTRACT_END;
 
-    return (GetRawCount() == 0);
+    return GetRawCount() == 0;
 }
 
 // RETURN true if the string rep is ASCII.
@@ -1197,8 +1155,6 @@ inline void SString::SetRepresentation(SString::Representation representation)
 #endif //SSTRING_EXTRA_CHECKS
 
     SBuffer::SetRepresentationField((int) representation);
-
-    return;
 }
 
 // Private helper:
@@ -1242,8 +1198,6 @@ FORCEINLINE void SString::NullTerminate()
     {
         ((WCHAR *)end)[-1] = 0;
     }
-
-    return;
 }
 
 //----------------------------------------------------------------------------
@@ -1347,7 +1301,7 @@ inline BOOL SString::IsSingleByte() const
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    return ((GetRepresentation()&REPRESENTATION_SINGLE_MASK) != 0);
+    return (GetRepresentation()&REPRESENTATION_SINGLE_MASK) != 0;
 }
 
 //----------------------------------------------------------------------------
@@ -1382,7 +1336,7 @@ inline BOOL SString::IsIteratable() const
     // go to unicode) .  We may want to adjust this going forward to
     // depending on perf in the non-ASCII but fixed width ANSI case.
 
-    return ((GetRepresentation()&REPRESENTATION_VARIABLE_MASK) == 0);
+    return (GetRepresentation()&REPRESENTATION_VARIABLE_MASK) == 0;
 }
 
 //----------------------------------------------------------------------------
@@ -1436,7 +1390,7 @@ inline COUNT_T SString::GetBufferSizeInCharIncludeNullChar() const
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
-    return (GetSize() >> GetCharacterSizeShift());
+    return GetSize() >> GetCharacterSizeShift();
 }
 
 
@@ -1670,8 +1624,6 @@ inline void SString::OpenBuffer(SString::Representation representation, COUNT_T 
     Resize(countChars, representation);
 
     SBuffer::OpenRawBuffer(CountToSize(countChars));
-
-    return;
 }
 
 //----------------------------------------------------------------------------
@@ -1711,8 +1663,6 @@ inline void SString::CloseBuffer()
 
     SBuffer::CloseRawBuffer();
     NullTerminate();
-
-    return;
 }
 
 //----------------------------------------------------------------------------
@@ -1736,8 +1686,6 @@ inline void SString::CloseBuffer(COUNT_T finalCount)
 
     SBuffer::CloseRawBuffer(CountToSize(finalCount));
     NullTerminate();
-
-    return;
 }
 
 //----------------------------------------------------------------------------
@@ -1761,8 +1709,6 @@ inline void SString::EnsureWritable() const
 
     if (IsLiteral())
         const_cast<SString *>(this)->Resize(GetRawCount(), GetRepresentation(), PRESERVE);
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -1789,8 +1735,6 @@ inline void SString::ConvertToFixed() const
 
     // Convert to unicode then.
     ConvertToUnicode();
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -1818,8 +1762,6 @@ inline void SString::ConvertToIteratable() const
 
     // Convert to unicode then.
     ConvertToUnicode();
-
-    return;
 }
 
 //-----------------------------------------------------------------------------
@@ -1921,8 +1863,6 @@ inline SString::Index::Index(SString *string, SCOUNT_T index)
     SS_CONTRACT_END;
 
     m_characterSizeShift = string->GetCharacterSizeShift();
-
-    return;
 }
 
 inline BYTE &SString::Index::GetAt(SCOUNT_T delta) const

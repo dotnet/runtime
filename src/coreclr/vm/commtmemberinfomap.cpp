@@ -43,7 +43,7 @@ public:
         }
         CONTRACTL_END;
 
-        return (pItem->szName != NULL);
+        return pItem->szName != NULL;
     }
 
     virtual void SetFree(WSTRHASH *pItem)
@@ -72,7 +72,7 @@ public:
         CONTRACTL_END;
 
         // Do case-insensitive hash
-        return (HashiString(reinterpret_cast<LPCWSTR>(pData)));
+        return HashiString(reinterpret_cast<LPCWSTR>(pData));
     }
 
     virtual int Cmp(const void *pData, void *pItem)

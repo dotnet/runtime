@@ -301,8 +301,6 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     // We set this when we first created the FieldDesc, but initializing the FieldDesc
     // may have overwritten it so we need to set it again.
     pFD->SetEnCNew();
-
-    return;
 }
 
 //---------------------------------------------------------------------------------------
@@ -832,7 +830,7 @@ EEClass::CheckVarianceInSig(
                 return TRUE;
 
             // Covariant and contravariant parameters can *only* appear in resp. covariant and contravariant positions
-            return ((CorGenericParamAttr) (pVarianceInfo[index]) == position);
+            return (CorGenericParamAttr) (pVarianceInfo[index]) == position;
         }
 
         case ELEMENT_TYPE_GENERICINST:
@@ -1177,7 +1175,6 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
     pMT->SetHasExactParent();
 
     _ASSERTE(pMT->CheckLoadLevel(CLASS_LOAD_EXACTPARENTS));
-    return;
 }
 
 // Get CorElementType of the reduced type of a type.
@@ -1982,7 +1979,7 @@ bool MethodTable::NativeRequiresAlign8()
 
     if (HasLayout() && !IsBlittable())
     {
-        return (GetNativeLayoutInfo()->GetLargestAlignmentRequirement() >= 8);
+        return GetNativeLayoutInfo()->GetLargestAlignmentRequirement() >= 8;
     }
     return RequiresAlign8();
 }

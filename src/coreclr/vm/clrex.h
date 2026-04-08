@@ -303,7 +303,7 @@ class EEMessageException : public EEException
 
     static BOOL IsEEMessageException(Exception *pException)
     {
-        return (*(PVOID*)pException == GetEEMessageExceptionVPtr());
+        return *(PVOID*)pException == GetEEMessageExceptionVPtr();
     }
 
  protected:

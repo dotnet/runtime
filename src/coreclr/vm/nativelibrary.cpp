@@ -803,6 +803,5 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(PInvokeMethodDesc
         errorTracker.Throw(ssLibName);
     }
 
-    _ASSERTE(hmod != NULL);
     return hmod;
 }

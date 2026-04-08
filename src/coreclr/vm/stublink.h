@@ -324,7 +324,7 @@ class Stub
         {
             LIMITED_METHOD_CONTRACT;
             _ASSERTE(m_signature == kUsedStub);
-            return (m_refcount == 1);
+            return m_refcount == 1;
         }
 
         //-------------------------------------------------------------------
@@ -404,7 +404,7 @@ class Stub
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
 
-            return (m_numCodeBytesAndFlags & CODEBYTES_MASK);
+            return m_numCodeBytesAndFlags & CODEBYTES_MASK;
         }
 
         //-------------------------------------------------------------------

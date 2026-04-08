@@ -494,7 +494,7 @@ BOOL Signature::IsEmpty() const
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
-    return (m_pSig == NULL);
+    return m_pSig == NULL;
 }
 
 //---------------------------------------------------------------------------------------
@@ -956,7 +956,6 @@ MetaSig::Reset()
 
     m_pWalk = m_pStart;
     m_iCurArg  = 0;
-    return;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1035,7 +1034,7 @@ BOOL IsTypeRefOrDef(
     DefineFullyQualifiedNameForClassOnStack();
     LPCUTF8 fullyQualifiedName = GetFullyQualifiedNameForClass(resolved.TypeHandle.GetMethodTable());
 
-    return (strcmp(szClassName, fullyQualifiedName) == 0);
+    return strcmp(szClassName, fullyQualifiedName) == 0;
 }
 
 TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
@@ -2244,7 +2243,7 @@ BOOL SigPointer::IsStringTypeHelper(Module* pModule, const SigTypeContext* pType
             if (pszNamespace == NULL)
                 return FALSE;
 
-            return (strcmp(pszNamespace, g_SystemNS) == 0);
+            return strcmp(pszNamespace, g_SystemNS) == 0;
         }
 
         case ELEMENT_TYPE_VAR :
@@ -2262,7 +2261,7 @@ BOOL SigPointer::IsStringTypeHelper(Module* pModule, const SigTypeContext* pType
             }
 
             TypeHandle th(g_pStringClass);
-            return (ty == th);
+            return ty == th;
         }
 
         default:
@@ -3929,11 +3928,11 @@ MetaSig::CompareElementType(
             {
                 case ELEMENT_TYPE_OBJECT:
                 {
-                    return (hInternal.AsMethodTable() == g_pObjectClass);
+                    return hInternal.AsMethodTable() == g_pObjectClass;
                 }
                 case ELEMENT_TYPE_STRING:
                 {
-                    return (hInternal.AsMethodTable() == g_pStringClass);
+                    return hInternal.AsMethodTable() == g_pStringClass;
                 }
                 case ELEMENT_TYPE_VALUETYPE:
                 case ELEMENT_TYPE_CLASS:
@@ -3954,7 +3953,7 @@ MetaSig::CompareElementType(
                         ClassLoader::ReturnNullIfNotFound,
                         ClassLoader::PermitUninstDefOrRef);
 
-                    return (hInternal == hOtherType);
+                    return hInternal == hOtherType;
                 }
                 default:
                 {
@@ -4069,7 +4068,7 @@ MetaSig::CompareElementType(
             DWORD varNum2;
             IfFailThrow(CorSigUncompressData_EndPtr(pSig2, pEndSig2, &varNum2));
 
-            return (varNum1 == varNum2);
+            return varNum1 == varNum2;
         }
 
         case ELEMENT_TYPE_CMOD_REQD:
@@ -4342,7 +4341,7 @@ MetaSig::CompareElementType(
             IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void **)&hType1));
             IfFailThrow(CorSigUncompressPointer_EndPtr(pSig2, pEndSig2, (void **)&hType2));
 
-            return (hType1 == hType2);
+            return hType1 == hType2;
         }
         case ELEMENT_TYPE_CMOD_INTERNAL:
         {
@@ -4637,7 +4636,7 @@ MetaSig::CompareMethodSigs(
 
             // If we matched all the way on the caller, is the callee now complete?
             if (*pSig1 == ELEMENT_TYPE_SENTINEL)
-                return (i > ArgCount2);
+                return i > ArgCount2;
 
             // if we have more to compare on the caller side, but the callee side is
             // exhausted, this isn't our match
@@ -5502,7 +5501,7 @@ CorElementType MetaSig::GetReturnType() const
 BOOL MetaSig::IsReturnTypeVoid() const
 {
     WRAPPER_NO_CONTRACT;
-    return (GetReturnType() == ELEMENT_TYPE_VOID);
+    return GetReturnType() == ELEMENT_TYPE_VOID;
 }
 
 #ifndef DACCESS_COMPILE

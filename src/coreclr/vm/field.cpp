@@ -785,7 +785,7 @@ TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
         SigTypeContext sigTypeContext(GetExactClassInstantiation(owner), Instantiation());
 
         // Load the exact type
-        return (sig.GetTypeHandleThrowing(GetModule(), &sigTypeContext));
+        return sig.GetTypeHandleThrowing(GetModule(), &sigTypeContext);
     }
 }
 

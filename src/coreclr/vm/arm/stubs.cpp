@@ -225,14 +225,14 @@ class ThumbNearJump : public InstructionFormat
                 {
                 case InstructionFormat::k16:
                     if(variationCode == 0xe)
-                        return  (offset >= -2048 && offset <= 2046 && (offset & 0x1) == 0);
+                        return  offset >= -2048 && offset <= 2046 && (offset & 0x1) == 0;
                     else
-                        return (offset >= -256 && offset <= 254 && (offset & 0x1) == 0);
+                        return offset >= -256 && offset <= 254 && (offset & 0x1) == 0;
                 case InstructionFormat::k32:
                     if(variationCode == 0xe)
-                        return  ((offset >= -16777216) && (offset <= 16777214) && ((offset & 0x1) == 0));
+                        return  (offset >= -16777216) && (offset <= 16777214) && ((offset & 0x1) == 0);
                     else
-                        return  ((offset >= -1048576) && (offset <= 1048574) && ((offset & 0x1) == 0));
+                        return  (offset >= -1048576) && (offset <= 1048574) && ((offset & 0x1) == 0);
                 default:
                     _ASSERTE(!"Unknown refsize");
                     return FALSE;
@@ -1385,8 +1385,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     // in sync with definition of REG_SAVED_LOCALLOC_SP in the JIT.
     pRD->pCurrentContext->R9 = (DWORD) dac_cast<TADDR>(m_pSPAfterProlog);
     pRD->pCurrentContextPointers->R9 = (DWORD *)&m_pSPAfterProlog;
-
-    return;
 }
 
 #ifdef FEATURE_HIJACK

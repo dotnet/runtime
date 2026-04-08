@@ -273,7 +273,7 @@ bool EEDbgInterfaceImpl::IsThreadExceptionNull(Thread *pThread)
 
     void *pThrowable = *((void**)h);
 
-    return (pThrowable == NULL);
+    return pThrowable == NULL;
 }
 
 void EEDbgInterfaceImpl::ClearThreadException(Thread *pThread)
@@ -810,7 +810,7 @@ MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
         }
     }
     _ASSERTE(CheckPointer((pRes)));
-    return (pRes);
+    return pRes;
 
 }
 
@@ -1471,7 +1471,7 @@ unsigned EEDbgInterfaceImpl::GetSizeForCorElementType(CorElementType etyp)
 {
     WRAPPER_NO_CONTRACT;
 
-    return (::GetSizeForCorElementType(etyp));
+    return ::GetSizeForCorElementType(etyp);
 }
 
 
@@ -1487,7 +1487,7 @@ BOOL EEDbgInterfaceImpl::ObjIsInstanceOf(Object *pElement, TypeHandle toTypeHnd)
 {
     WRAPPER_NO_CONTRACT;
 
-    return (::ObjIsInstanceOf(pElement, toTypeHnd));
+    return ::ObjIsInstanceOf(pElement, toTypeHnd);
 }
 #endif
 
