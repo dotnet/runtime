@@ -240,9 +240,9 @@ namespace System.Runtime.InteropServices
             private static MemberInfo ConvertToManagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToManaged), BindingFlags.Public | BindingFlags.Static)!;
             private static MemberInfo FreeMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.Free), BindingFlags.Public | BindingFlags.Static)!;
 
-            private unsafe delegate void ConvertToUnmanagedDelegate(object obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
+            private unsafe delegate void ConvertToUnmanagedDelegate(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList);
             private unsafe delegate void ConvertToManagedDelegate(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList);
-            private unsafe delegate void FreeDelegate(object? obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
+            private unsafe delegate void FreeDelegate(object? obj, byte* native, ref CleanupWorkListElement? cleanupWorkList);
 
             private readonly ConvertToUnmanagedDelegate _convertToUnmanaged;
             private readonly ConvertToManagedDelegate _convertToManaged;
@@ -260,14 +260,14 @@ namespace System.Runtime.InteropServices
                 _convertToManaged(obj, native, ref cleanupWorkList);
             }
 
-            public unsafe void ConvertToUnmanaged(object obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+            public unsafe void ConvertToUnmanaged(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList)
             {
-                _convertToUnmanaged(obj, native, nativeSize, ref cleanupWorkList);
+                _convertToUnmanaged(obj, native, ref cleanupWorkList);
             }
 
-            public unsafe void Free(object? obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+            public unsafe void Free(object? obj, byte* native, ref CleanupWorkListElement? cleanupWorkList)
             {
-                _free(obj, native, nativeSize, ref cleanupWorkList);
+                _free(obj, native, ref cleanupWorkList);
             }
 
             private static readonly ConditionalWeakTable<Type, LayoutTypeMarshalerMethods> s_marshalerCache = [];
@@ -319,10 +319,10 @@ namespace System.Runtime.InteropServices
 
             if (fDeleteOld)
             {
-                methods.Free(structure, (byte*)ptr, size, ref Unsafe.NullRef<CleanupWorkListElement?>());
+                methods.Free(structure, (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
 
-            methods.ConvertToUnmanaged(structure, (byte*)ptr, size, ref Unsafe.NullRef<CleanupWorkListElement?>());
+            methods.ConvertToUnmanaged(structure, (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
 
         /// <summary>
@@ -366,14 +366,14 @@ namespace System.Runtime.InteropServices
             if (rt.IsGenericType)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
 
-            if (!HasLayout(new QCallTypeHandle(ref rt), out bool isBlittable, out int size))
+            if (!HasLayout(new QCallTypeHandle(ref rt), out bool isBlittable, out _))
                 throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structuretype));
 
             if (!isBlittable)
             {
                 LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(structuretype);
 
-                methods.Free(null, (byte*)ptr, size, ref Unsafe.NullRef<CleanupWorkListElement?>());
+                methods.Free(null, (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
         }
 

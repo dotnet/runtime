@@ -1402,13 +1402,21 @@ namespace System.StubHelpers
 
     internal static unsafe class StructureMarshaler<T>  where T : notnull
     {
+        private static readonly int s_nativeSize;
+
+        static StructureMarshaler()
+        {
+            Debug.Assert(typeof(T).IsValueType, "StructureMarshaler can only be used for value types");
+            RuntimeTypeHandle th = typeof(T).TypeHandle;
+            bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref th), out bool isBlittable, out int _nativeSize);
+            Debug.Assert(hasLayout, "Non-layout classes should not use the layout class marshaler.");
+        }
+
         [Conditional("DEBUG")]
         private static void Validate()
         {
-            Debug.Assert(typeof(T).IsValueType, "StructureMarshaler can only be used for value types");
             RuntimeType type = (RuntimeType)typeof(T);
-            bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out int _);
-            Debug.Assert(hasLayout, "Non-layout structs should not be marshalable");
+            _ = Marshal.HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out int _);
             Debug.Assert(isBlittable, "Non-blittable structs should have a custom IL body generated with the marshaling logic.");
         }
 
@@ -1420,18 +1428,18 @@ namespace System.StubHelpers
             SpanHelpers.Memmove(ref *unmanaged, ref Unsafe.As<T, byte>(ref managed), (nuint)sizeof(T));
         }
 
-        public static void ConvertToUnmanaged(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void ConvertToUnmanaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             try
             {
-                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+                NativeMemory.Clear(unmanaged, (nuint)s_nativeSize);
                 ConvertToUnmanagedCore(ref managed, unmanaged, ref cleanupWorkList);
             }
             catch (Exception)
             {
                 // If Free throws an exception (which it shouldn't as it can leak)
                 // let that exception supercede the exception from ConvertToUnmanagedCore.
-                Free(ref managed, unmanaged, nativeSize, ref cleanupWorkList);
+                Free(ref managed, unmanaged, ref cleanupWorkList);
                 throw;
             }
         }
@@ -1455,10 +1463,10 @@ namespace System.StubHelpers
             _ = ref cleanupWorkList;
         }
 
-        public static void Free(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void Free(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             FreeCore(ref managed, unmanaged, ref cleanupWorkList);
-            NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+            NativeMemory.Clear(unmanaged, (nuint)s_nativeSize);
         }
     }
 
@@ -1473,7 +1481,7 @@ namespace System.StubHelpers
             private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _convertToManaged;
             private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _free;
 
-            private static readonly nuint s_nativeSizeForBlittableTypes;
+            private static readonly nuint s_nativeSize;
 
 #pragma warning disable CA1810 // Static constructor is required to initialize with the out parameters
             static Methods()
@@ -1481,16 +1489,15 @@ namespace System.StubHelpers
                 RuntimeTypeHandle th = typeof(T).TypeHandle;
                 bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref th), out bool isBlittable, out int nativeSize);
                 Debug.Assert(hasLayout, "Non-layout classes should not use the layout class marshaler.");
+                s_nativeSize = (nuint)nativeSize;
                 if (isBlittable)
                 {
-                    s_nativeSizeForBlittableTypes = (nuint)nativeSize;
                     _convertToUnmanaged = &BlittableConvertToUnmanaged;
                     _convertToManaged = &BlittableConvertToManaged;
                     _free = &BlittableFree;
                 }
                 else
                 {
-                    s_nativeSizeForBlittableTypes = 0;
                     StubHelpers.CreateLayoutClassMarshalStubs(new QCallTypeHandle(ref th), out _convertToUnmanaged, out _convertToManaged, out _free);
                 }
             }
@@ -1498,12 +1505,12 @@ namespace System.StubHelpers
 
             private static void BlittableConvertToUnmanaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
             {
-                SpanHelpers.Memmove(ref *unmanaged, ref managed, s_nativeSizeForBlittableTypes);
+                SpanHelpers.Memmove(ref *unmanaged, ref managed, s_nativeSize);
             }
 
             private static void BlittableConvertToManaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
             {
-                SpanHelpers.Memmove(ref managed, ref *unmanaged, s_nativeSizeForBlittableTypes);
+                SpanHelpers.Memmove(ref managed, ref *unmanaged, s_nativeSize);
             }
 
             private static void BlittableFree(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
@@ -1516,6 +1523,8 @@ namespace System.StubHelpers
             internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToManaged => _convertToManaged;
 
             internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> Free => _free;
+
+            internal static nuint NativeSize => s_nativeSize;
         }
 
         private static void ConvertToUnmanagedCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
@@ -1536,18 +1545,18 @@ namespace System.StubHelpers
             }
         }
 
-        public static void ConvertToUnmanaged(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void ConvertToUnmanaged(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             try
             {
-                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+                NativeMemory.Clear(unmanaged, NativeSize);
                 ConvertToUnmanagedCore(managed, unmanaged, ref cleanupWorkList);
             }
             catch (Exception)
             {
                 // If Free throws an exception (which it shouldn't as it can leak)
                 // let that exception supercede the exception from ConvertToUnmanagedCore.
-                Free(managed, unmanaged, nativeSize, ref cleanupWorkList);
+                Free(managed, unmanaged, ref cleanupWorkList);
                 throw;
             }
         }
@@ -1595,25 +1604,31 @@ namespace System.StubHelpers
             }
         }
 
-        public static void Free(T? managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void Free(T? managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             FreeCore(managed, unmanaged, ref cleanupWorkList);
-            NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+            NativeMemory.Clear(unmanaged, NativeSize);
+        }
+
+        private static nuint NativeSize
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            get => Methods.NativeSize;
         }
     }
 
     // Marshaller for layout classes and boxed structs.
     internal static unsafe class BoxedLayoutTypeMarshaler<T> where T : notnull
     {
-        public static void ConvertToUnmanaged(object managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void ConvertToUnmanaged(object managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             if (typeof(T).IsValueType)
             {
-                StructureMarshaler<T>.ConvertToUnmanaged(ref Unsafe.As<byte, T>(ref managed.GetRawData()), unmanaged, nativeSize, ref cleanupWorkList);
+                StructureMarshaler<T>.ConvertToUnmanaged(ref Unsafe.As<byte, T>(ref managed.GetRawData()), unmanaged, ref cleanupWorkList);
             }
             else
             {
-                LayoutClassMarshaler<T>.ConvertToUnmanaged(Unsafe.As<object, T>(ref managed), unmanaged, nativeSize, ref cleanupWorkList);
+                LayoutClassMarshaler<T>.ConvertToUnmanaged(Unsafe.As<object, T>(ref managed), unmanaged, ref cleanupWorkList);
             }
         }
 
@@ -1629,7 +1644,7 @@ namespace System.StubHelpers
             }
         }
 
-        public static void Free(object? managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        public static void Free(object? managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             if (typeof(T).IsValueType)
             {
@@ -1640,11 +1655,11 @@ namespace System.StubHelpers
                     managedRef = ref managed.GetRawData();
                 }
 
-                StructureMarshaler<T>.Free(ref Unsafe.As<byte, T>(ref managedRef), unmanaged, nativeSize, ref cleanupWorkList);
+                StructureMarshaler<T>.Free(ref Unsafe.As<byte, T>(ref managedRef), unmanaged, ref cleanupWorkList);
             }
             else
             {
-                LayoutClassMarshaler<T>.Free(Unsafe.As<object?, T?>(ref managed), unmanaged, nativeSize, ref cleanupWorkList);
+                LayoutClassMarshaler<T>.Free(Unsafe.As<object?, T?>(ref managed), unmanaged, ref cleanupWorkList);
             }
         }
     }
@@ -1958,7 +1973,7 @@ namespace System.StubHelpers
 
             Marshal.LayoutTypeMarshalerMethods methods = Marshal.LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
 
-            methods.ConvertToUnmanaged(obj, pNative, size, ref pCleanupWorkList);
+            methods.ConvertToUnmanaged(obj, pNative, ref pCleanupWorkList);
         }
 
         [UnmanagedCallersOnly]
