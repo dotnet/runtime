@@ -10660,12 +10660,11 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 
     // Copy floating point argument registers (fa0-fa7)
     // F[] array in CONTEXT is 4*32 elements for LSX/LASX support.
-    // Each FP register takes 4 slots (for 256-bit LASX vectors).
     // For 64-bit doubles, we only use the first slot of each register.
     FloatArgumentRegisters *pFloatArgs = (FloatArgumentRegisters*)((BYTE*)pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters());
     for (int i = 0; i < 8; i++)
     {
-        memcpy(&m_Context.F[i * 4], &pFloatArgs->f[i], sizeof(double));
+        memcpy(&m_Context.F[i], &pFloatArgs->f[i], sizeof(double));
     }
 
     // Read FP callee-saved registers (f24-f31) from the stack
@@ -10675,17 +10674,18 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     UINT64 *pFpCalleeSaved = (UINT64*)((BYTE*)pTransitionBlock - 128);
     for (int i = 0; i < 8; i++)
     {
-        // f24-f31 map to indices 24-31 in the F array, each taking 4 slots
-        memcpy(&m_Context.F[(24 + i) * 4], &pFpCalleeSaved[i], sizeof(double));
+        // f24-f31 map to indices 24-31 in the F array
+        memcpy(&m_Context.F[24 + i], &pFpCalleeSaved[i], sizeof(double));
     }
 
     // Initialize remaining F registers (f8-f23) to zero
     for (int i = 8; i < 24; i++)
     {
-        memset(&m_Context.F[i * 4], 0, sizeof(double) * 4);
+        memset(&m_Context.F[i], 0, sizeof(double));
     }
-    // Initialize FP control/status register
+    // Initialize FP control/status and condition flag registers
     m_Context.Fcsr = 0;
+    m_Context.Fcc  = 0;
 
     // Set up context pointers for callee-saved registers
     m_ContextPointers.S0 = &m_Context.S0;
