@@ -225,18 +225,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
 
-    // TODO-WASM-CQ: Identify the specific cases where we can skip doing this and still generate valid code
-    // in codegen, i.e. non-faulting destination combined with native opcode. Right now this adds some code
-    // bloat due to creating a temporary for a destination that may only get used once.
-    // We know trivially that we won't nullcheck a destination that is a local variable's address, so we can
-    // skip generating the temporary for that case. If we don't do this, we get an error during regalloc caused
-    // by RewriteLocalStackStore creating and lowering a block store too 'late' to mark the dstAddr as multiply
-    // used successfully.
-    if (!dstAddr->OperIs(GT_LCL_ADDR))
-    {
-        SetMultiplyUsed(dstAddr DEBUGARG("LowerBlockStore destination address"));
-    }
-
     if (blkNode->OperIsInitBlkOp())
     {
         if (src->OperIs(GT_INIT_VAL))
@@ -299,9 +287,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (src->OperIs(GT_IND))
         {
             GenTree* srcAddr = src->gtGetOp1();
-            // TODO-WASM-CQ: Skip doing this if the indirection is nonfaulting and the src is only used once.
-            SetMultiplyUsed(srcAddr DEBUGARG("LowerBlockStore source address (indirection)"));
+            if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
+                ((src->gtFlags & GTF_IND_NONFAULTING) == 0))
+            {
+                SetMultiplyUsed(srcAddr DEBUGARG("LowerBlockStore source address (indirection)"));
+            }
         }
+    }
+
+    if (((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
+         ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0)))
+    {
+        SetMultiplyUsed(dstAddr DEBUGARG("LowerBlockStore destination address"));
     }
 }
 

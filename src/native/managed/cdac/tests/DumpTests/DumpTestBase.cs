@@ -154,6 +154,12 @@ public abstract class DumpTestBase : IDisposable
                         throw new SkipTestException($"[{_dumpInfo.Os}] {attr.Reason}");
                 }
             }
+
+            foreach (SkipOnArchAttribute attr in method.GetCustomAttributes<SkipOnArchAttribute>())
+            {
+                if (string.Equals(attr.Arch, _dumpInfo.Arch, StringComparison.OrdinalIgnoreCase))
+                    throw new SkipTestException($"[{_dumpInfo.Arch}] {attr.Reason}");
+            }
         }
     }
 
