@@ -238,6 +238,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    genCodeForJcc(treeNode->AsCC());
             break;
 
+	case GT_CALL:
+	    genCall(treeNode->AsCall());
+            break;
+
         default:
 	    abort();
     }
