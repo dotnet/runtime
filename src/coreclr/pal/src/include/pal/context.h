@@ -38,6 +38,9 @@ extern "C"
 #endif // HAVE_UCONTEXT_H
 
 typedef ucontext_t native_context_t;
+#elif defined(TARGET_WASI)
+// WASI has no ucontext — provide a minimal stub
+typedef int native_context_t;
 #else   // HAVE_UCONTEXT_T
 #error Native context type is not known on this platform!
 #endif  // HAVE_UCONTEXT_T

@@ -285,7 +285,9 @@ int coreclr_initialize(
 
     ReleaseHolder<ICLRRuntimeHost4> host;
 
+    fprintf(stderr, "CLR: CreateObject\n");
     hr = CorHost2::CreateObject(IID_ICLRRuntimeHost4, (void**)&host);
+    fprintf(stderr, "CLR: CreateObject hr=0x%08x\n", hr);
     IfFailRet(hr);
 
     if (bundleProbe != nullptr)
@@ -294,7 +296,6 @@ int coreclr_initialize(
         Bundle::AppBundle = &bundle;
     }
 
-    // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
     Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
 
 #ifdef TARGET_UNIX
@@ -310,7 +311,9 @@ int coreclr_initialize(
     hr = host->SetStartupFlags(startupFlags);
     IfFailRet(hr);
 
+    fprintf(stderr, "CLR: Start\n");
     hr = host->Start();
+    fprintf(stderr, "CLR: Start hr=0x%08x\n", hr);
     IfFailRet(hr);
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);

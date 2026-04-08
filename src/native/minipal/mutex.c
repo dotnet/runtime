@@ -12,6 +12,11 @@ bool minipal_mutex_init(minipal_mutex* mtx)
     InitializeCriticalSection(&mtx->_impl);
     return true;
 #else
+#ifdef TARGET_WASI
+    // WASI single-threaded: simple mutex init without recursive attribute
+    int st = pthread_mutex_init(&mtx->_impl, NULL);
+    return (st == 0);
+#else
     pthread_mutexattr_t mutexAttributes;
     int st = pthread_mutexattr_init(&mutexAttributes);
     if (st != 0)
@@ -24,6 +29,7 @@ bool minipal_mutex_init(minipal_mutex* mtx)
     pthread_mutexattr_destroy(&mutexAttributes);
 
     return (st == 0);
+#endif // TARGET_WASI
 #endif // HOST_WINDOWS
 }
 

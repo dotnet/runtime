@@ -3,7 +3,9 @@
 
 #include "pal/dbgmsg.h"
 #include "pal/signal.hpp"
+#ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
+#endif
 
 SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do this first
 
@@ -18,6 +20,7 @@ DBG_DebugBreak()
 {
 #ifdef _DEBUG
     DBG_PrintInterpreterStack();
+#ifdef __EMSCRIPTEN__
     double start = emscripten_get_now();
     emscripten_debugger();
     double end = emscripten_get_now();
@@ -28,10 +31,122 @@ DBG_DebugBreak()
         // to match other platforms and fail fast
         emscripten_throw_string("Debugger not attached");
     }
+#else
+    abort();
+#endif // __EMSCRIPTEN__
 #else // _DEBUG
+#ifdef __EMSCRIPTEN__
     emscripten_throw_string("Debug break called in release build.");
+#else
+    abort();
+#endif // __EMSCRIPTEN__
 #endif // _DEBUG
 }
+
+#ifdef TARGET_WASI
+extern "C" void DebugBreak()
+{
+    DBG_DebugBreak();
+}
+
+extern "C" void PALAPI OutputDebugStringA(LPCSTR lpOutputString)
+{
+    (void)lpOutputString;
+}
+
+extern "C" void PALAPI OutputDebugStringW(LPCWSTR lpOutputString)
+{
+    (void)lpOutputString;
+}
+
+extern "C" int __cxa_thread_atexit(void (*dtor)(void *), void *obj, void *dso_symbol)
+{
+    (void)dtor; (void)obj; (void)dso_symbol;
+    return 0;
+}
+
+extern "C" void *__cxa_allocate_exception(size_t thrown_size)
+{
+    // WASI doesn't support C++ exceptions; allocate a dummy buffer
+    return malloc(thrown_size);
+}
+
+extern "C" void __cxa_throw(void *thrown_exception, void *tinfo, void (*dest)(void *))
+{
+    (void)thrown_exception; (void)tinfo; (void)dest;
+    abort();
+}
+
+BOOL PAL_ProbeMemory(PVOID pBuffer, DWORD cbBuffer, BOOL fWriteAccess)
+{
+    (void)pBuffer; (void)cbBuffer; (void)fWriteAccess;
+    return TRUE;
+}
+
+void SEHCleanupSignals(bool isChildProcess)
+{
+    (void)isChildProcess;
+}
+
+void UnmaskActivationSignal()
+{
+}
+
+BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
+{
+    (void)pthrCurrent; (void)flags;
+    return TRUE;
+}
+
+extern "C" int shm_open(const char *name, int oflag, int mode)
+{
+    (void)name; (void)oflag; (void)mode;
+    return -1;
+}
+
+extern "C" int shm_unlink(const char *name)
+{
+    (void)name;
+    return -1;
+}
+
+BOOL PALAPI FlushInstructionCache(HANDLE hProcess, LPCVOID lpBaseAddress, SIZE_T dwSize)
+{
+    (void)hProcess; (void)lpBaseAddress; (void)dwSize;
+    return TRUE;
+}
+
+BOOL PALAPI GetThreadContext(HANDLE hThread, LPCONTEXT lpContext)
+{
+    (void)hThread; (void)lpContext;
+    return FALSE;
+}
+
+void PALAPI PAL_EnableCrashReportBeforeSignalChaining()
+{
+}
+
+void PALAPI PAL_FreeExceptionRecords(IN EXCEPTION_RECORD *exceptionRecord, IN CONTEXT *contextRecord)
+{
+    (void)exceptionRecord; (void)contextRecord;
+}
+
+BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context)
+{
+    (void)context;
+    return FALSE;
+}
+
+VOID PALAPI RaiseException(DWORD dwExceptionCode, DWORD dwExceptionFlags, DWORD nNumberOfArguments, CONST ULONG_PTR *lpArguments)
+{
+    (void)dwExceptionCode; (void)dwExceptionFlags; (void)nNumberOfArguments; (void)lpArguments;
+    abort();
+}
+
+extern "C" void SystemJS_GetLocaleInfo(void)
+{
+}
+#endif
 
 /* context */
 
@@ -91,3 +206,11 @@ extern "C" int pthread_setschedparam(pthread_t, int, const struct sched_param *)
     _ASSERT(!"pthread_setschedparam not implemented on wasm");
     return 0;
 }
+
+#ifdef TARGET_WASI
+extern "C" int pthread_getschedparam(pthread_t, int *policy, struct sched_param *param)
+{
+    if (policy) *policy = 0;
+    return 0;
+}
+#endif // TARGET_WASI

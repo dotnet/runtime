@@ -75,7 +75,8 @@ void FinalizerThread::EnableFinalization()
 #ifdef TARGET_BROWSER
     SystemJS_ScheduleFinalization();
 #else
-    // WASI is not implemented yet
+    // WASI: run finalization synchronously (no separate thread, no JS event loop)
+    FinalizerThreadWorkerIteration(nullptr);
 #endif // TARGET_BROWSER
 #endif // !TARGET_WASM
 }

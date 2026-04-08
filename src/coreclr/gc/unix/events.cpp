@@ -14,7 +14,7 @@
 namespace
 {
 
-#if HAVE_PTHREAD_CONDATTR_SETCLOCK
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK || defined(_WASI_EMULATED_PROCESS_CLOCKS)
 void TimeSpecAdd(timespec* time, uint32_t milliseconds)
 {
     uint64_t nsec = time->tv_nsec + (uint64_t)milliseconds * tccMilliSecondsToNanoSeconds;
@@ -26,7 +26,7 @@ void TimeSpecAdd(timespec* time, uint32_t milliseconds)
 
     time->tv_nsec = nsec;
 }
-#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK
+#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK || _WASI_EMULATED_PROCESS_CLOCKS
 
 #if HAVE_CLOCK_GETTIME_NSEC_NP
 // Convert nanoseconds to the timespec structure
@@ -129,7 +129,7 @@ public:
             NanosecondsToTimeSpec(nanoseconds, &endTime);
             endMachTime = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) + nanoseconds;
         }
-#elif HAVE_PTHREAD_CONDATTR_SETCLOCK
+#elif HAVE_PTHREAD_CONDATTR_SETCLOCK || defined(_WASI_EMULATED_PROCESS_CLOCKS)
         if (milliseconds != INFINITE)
         {
             clock_gettime(CLOCK_MONOTONIC, &endTime);

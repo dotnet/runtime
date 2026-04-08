@@ -7,7 +7,9 @@
 
 #include "stublink.h"
 #include "utilcode.h"
+#ifdef __EMSCRIPTEN__
 #include <emscripten/stack.h>
+#endif
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
@@ -34,7 +36,11 @@ struct HijackArgs
 inline void* GetCurrentSP()
 {
     WRAPPER_NO_CONTRACT;
+#ifdef __EMSCRIPTEN__
     return (void*)emscripten_stack_get_current();
+#else
+    return __builtin_frame_address(0);
+#endif
 }
 
 extern PCODE GetPreStubEntryPoint();

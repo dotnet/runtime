@@ -41,7 +41,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include <fcntl.h>
 #endif
 
-#if defined(TARGET_BROWSER)
+#if defined(TARGET_BROWSER) && defined(__EMSCRIPTEN__)
 #include <emscripten/stack.h>
 #endif
 
@@ -1269,9 +1269,15 @@ CorUnix::GetThreadTimesInternal(
 
     ts = status.pr_utime;
 #else // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
+#ifdef TARGET_WASI
+    pTargetThread->Unlock(pThread);
+    goto SetTimesToZero;
+#else
 #error "Don't know how to obtain user cpu time on this platform."
+#endif
 #endif // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
 
+#ifndef TARGET_WASI
     pTargetThread->Unlock(pThread);
 
     /* Calculate time in nanoseconds and assign to user time */
@@ -1286,6 +1292,7 @@ CorUnix::GetThreadTimesInternal(
 
     retval = TRUE;
     goto GetThreadTimesInternalExit;
+#endif
 
 #endif //HAVE_MACH_THREADS
 
@@ -2314,7 +2321,7 @@ CPalThread::GetStackBase()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
-#ifndef TARGET_BROWSER
+#ifndef TARGET_WASM
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2331,9 +2338,11 @@ CPalThread::GetStackBase()
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
 
     stackBase = (void*)((size_t)stackAddr + stackSize);
-#else // TARGET_BROWSER
+#elif defined(__EMSCRIPTEN__)
     stackBase = (void*)emscripten_stack_get_base();
-#endif // TARGET_BROWSER
+#else // WASI
+    stackBase = __builtin_frame_address(0);
+#endif // TARGET_WASM
 #endif // !TARGET_APPLE
 
     return stackBase;
@@ -2358,7 +2367,7 @@ CPalThread::GetStackLimit()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
-#ifndef TARGET_BROWSER
+#ifndef TARGET_WASM
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2373,7 +2382,7 @@ CPalThread::GetStackLimit()
 
     status = pthread_attr_destroy(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
-#else // TARGET_BROWSER
+#elif defined(__EMSCRIPTEN__)
     uintptr_t stackLimitMaybe = emscripten_stack_get_end();
     if (stackLimitMaybe == 0) // emscripten_stack_get_end can return 0.
     {
@@ -2384,7 +2393,9 @@ CPalThread::GetStackLimit()
         emscripten_stack_set_limits(GetStackBase(), (void*)stackLimitMaybe);
     }
     stackLimit = (void*)stackLimitMaybe;
-#endif // TARGET_BROWSER
+#else // WASI
+    stackLimit = (void*)sizeof(size_t);
+#endif // TARGET_WASM
 #endif // !TARGET_APPLE
 
     return stackLimit;

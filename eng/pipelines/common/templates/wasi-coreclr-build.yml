@@ -1,0 +1,23 @@
+parameters:
+  extraBuildArgs: ''
+  isExtraPlatformsBuild: false
+  platforms: []
+
+jobs:
+
+#
+# Build CoreCLR native for WASI
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    platforms: ${{ parameters.platforms }}
+
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: _WasiCoreCLR_BuildOnly
+      buildArgs: -s clr.native -c $(_BuildConfig) ${{ parameters.extraBuildArgs }}
+      timeoutInMinutes: 120

@@ -44,7 +44,7 @@
  #error "sys/time.h required by GC PAL for the time being"
 #endif
 
-#if HAVE_SYS_MMAN_H
+#if HAVE_SYS_MMAN_H || defined(_WASI_EMULATED_MMAN)
  #include <sys/mman.h>
 #else
  #error "sys/mman.h required by GC PAL"
@@ -823,7 +823,7 @@ static uint64_t GetMemorySizeMultiplier(char units)
     return 1;
 }
 
-#if !defined(__APPLE__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
+#if !defined(__APPLE__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__) && !defined(__wasi__)
 // Try to read the MemAvailable entry from /proc/meminfo.
 // Return true if the /proc/meminfo existed, the entry was present and we were able to parse it.
 static bool ReadMemAvailable(uint64_t* memAvailable)
@@ -1093,6 +1093,8 @@ uint64_t GetAvailablePhysicalMemory()
     }
 #elif defined(__EMSCRIPTEN__)
     available = emscripten_get_heap_max() - emscripten_get_heap_size();
+#elif defined(__wasi__)
+    available = (uint64_t)__builtin_wasm_memory_size(0) * 65536;
 #else // Linux
     static volatile bool tryReadMemInfo = true;
 

@@ -625,6 +625,8 @@ CorUnix::InternalCreateFile(
             palError = ERROR_INTERNAL_ERROR;
             goto done;
         }
+#elif defined(TARGET_WASI)
+        // WASI: no uncached I/O support; silently ignore
 #else
 #error Insufficient support for uncached I/O on this platform
 #endif
@@ -2419,7 +2421,12 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
 
     /* duplicate the FILE *, so that we can fclose() in FILECloseHandle without
        closing the original */
+#ifdef TARGET_WASI
+    // WASI: fcntl F_DUPFD_CLOEXEC not supported; reuse fd directly (single-threaded, no exec)
+    new_fd = fileno(stream);
+#else
     new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
+#endif
     if(-1 == new_fd)
     {
         ERROR("dup() failed; errno is %d (%s)\n", errno, strerror(errno));

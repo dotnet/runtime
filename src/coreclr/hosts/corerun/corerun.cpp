@@ -833,7 +833,11 @@ int MAIN(const int argc, const char_t* argv[])
         return EXIT_FAILURE;
 
     if (config.self_test)
+#ifdef TARGET_WASI
+        return EXIT_FAILURE; // self_test uses C++ exceptions not available on WASI
+#else
         return self_test();
+#endif
 
     int exit_code = run(config);
     return exit_code;
@@ -850,6 +854,8 @@ extern "C" DLL_EXPORT HRESULT CDECL GetCurrentClrDetails(void** clrInstance, uns
 //
 // Self testing for corerun.
 //
+
+#ifndef TARGET_WASI
 
 #define THROW_IF_FALSE(stmt) if (!(stmt)) throw W(#stmt);
 #define THROW_IF_TRUE(stmt) if (stmt) throw W(#stmt);
@@ -946,3 +952,4 @@ static int self_test()
     pal::fprintf(stdout, W("Self-test passed.\n"));
     return EXIT_SUCCESS;
 }
+#endif // !TARGET_WASI

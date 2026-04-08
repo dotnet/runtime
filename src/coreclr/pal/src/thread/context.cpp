@@ -483,6 +483,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
     }
     else
     {
+#ifndef TARGET_WASI
         ucontext_t registers;
 #if HAVE_PT_REGS
         struct pt_regs ptrace_registers;
@@ -509,6 +510,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
 #undef ASSIGN_REG
 
         CONTEXTFromNativeContext(&registers, lpContext, lpContext->ContextFlags);
+#endif // !TARGET_WASI
     }
 
     bRet = TRUE;

@@ -979,6 +979,12 @@ extends:
             - WasmTestOnFirefox
             - WasmTestOnV8
 
+      # WASI CoreCLR native build
+      - template: /eng/pipelines/common/templates/wasi-coreclr-build.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:

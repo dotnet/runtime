@@ -332,6 +332,7 @@ void dotenv::load_into_current_process() const
     }
 }
 
+#ifndef TARGET_WASI
 #define THROW_IF_FALSE(stmt) if (!(stmt)) throw W(#stmt);
 
 void dotenv::self_test()
@@ -546,3 +547,4 @@ void dotenv::self_test()
         THROW_IF_FALSE(pal::getenv(W("CORERUN_DOTENV_SELF_TEST_LOAD2")) == W("A"));
     }
 }
+#endif // !TARGET_WASI
