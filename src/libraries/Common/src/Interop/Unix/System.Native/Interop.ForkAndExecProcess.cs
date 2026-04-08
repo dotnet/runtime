@@ -72,7 +72,7 @@ internal static partial class Interop
                 fixed (uint* pGroups = groups)
                 fixed (int* pInheritedFds = inheritedFds)
                 {
-                result = ForkAndExecProcess(
+                    result = ForkAndExecProcess(
                         filename, argvPtr, envpPtr, cwd,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
                         out lpChildPid, stdinRawFd, stdoutRawFd, stderrRawFd,

@@ -75,9 +75,13 @@ namespace System.Diagnostics.Tests
         [InlineData(false)]
         public void StartDetached_GrandchildSurvivesSIGHUP(bool enable)
         {
-            // Verify that the grandchild started with StartDetached=true survives SIGHUP sent to the child.
-            // A detached process starts a new session (via setsid), so it won't receive SIGHUP when
-            // the parent's session leader exits.
+            // Verify that a grandchild started with StartDetached=true survives SIGHUP sent to the child's
+            // process group, whereas a non-detached grandchild (which inherits the child's process group) is killed.
+            //
+            // The outer child is started with StartDetached=true so it becomes the leader of its own
+            // process group. When we send SIGHUP to -childPid (the process group), the non-detached
+            // grandchild (enable=false) is in the same group and is killed; the detached grandchild
+            // (enable=true) is in its own group and survives.
             int grandchildPid = -1;
 
             using (RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(static (arg) =>
@@ -95,7 +99,7 @@ namespace System.Diagnostics.Tests
                 // Transfer ownership.
                 grandchildHandle.Process = null;
 
-                // Sleep so the test can send SIGHUP.
+                // Keep the child alive so the test can kill the process group.
                 Thread.Sleep(Timeout.Infinite);
 
                 return RemoteExecutor.SuccessExitCode;
@@ -103,15 +107,19 @@ namespace System.Diagnostics.Tests
             enable.ToString(),
             new RemoteInvokeOptions
             {
-                StartInfo = new ProcessStartInfo { RedirectStandardOutput = true },
+                // Start the child in its own session (process group leader) so killing -childPid
+                // targets only the child's process group, not the test runner's process group.
+                StartInfo = new ProcessStartInfo { RedirectStandardOutput = true, StartDetached = true },
                 CheckExitCode = false
             }))
             {
                 string pidLine = childHandle.Process.StandardOutput.ReadLine();
                 Assert.True(int.TryParse(pidLine, out grandchildPid), $"Could not parse grandchild PID from: '{pidLine}'");
 
-                // Send SIGHUP to the child process - this simulates terminal disconnect.
-                childHandle.Process.SafeHandle.Signal(PosixSignal.SIGHUP);
+                // Kill the child's entire process group with SIGHUP.
+                // Passing a negative PID sends the signal to all processes in the process group.
+                int sighup = Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGHUP);
+                Interop.kill(-childHandle.Process.Id, sighup);
 
                 // Wait for the child to exit (SIGHUP terminates the process by default).
                 Assert.True(childHandle.Process.WaitForExit(WaitInMS));
@@ -119,7 +127,10 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                // Verify the grandchild is still running after the child received SIGHUP.
+                // Brief pause to allow signal propagation.
+                Thread.Sleep(200);
+
+                // Verify the grandchild is still running after the child's process group received SIGHUP.
                 bool grandchildAlive;
                 try
                 {
@@ -131,7 +142,9 @@ namespace System.Diagnostics.Tests
                     grandchildAlive = false;
                 }
 
-                Assert.Equal(enable, grandchildAlive); // Grandchild should survive SIGHUP to parent when StartDetached=true
+                // Detached grandchild (StartDetached=true) creates its own session/process group and survives.
+                // Non-detached grandchild inherits the child's process group and is killed by SIGHUP.
+                Assert.Equal(enable, grandchildAlive);
             }
             finally
             {

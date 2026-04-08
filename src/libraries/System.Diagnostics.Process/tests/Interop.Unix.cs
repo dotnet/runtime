@@ -7,4 +7,7 @@ internal static partial class Interop
 {
     [DllImport("libc")]
     internal static extern int getsid(int pid);
+
+    [DllImport("libc", SetLastError = true)]
+    internal static extern int kill(int pid, int sig);
 }

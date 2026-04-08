@@ -471,7 +471,7 @@ namespace System.Diagnostics
                 // When StartDetached is set and the user has not restricted handle inheritance
                 // by providing an explicit allow list, use an empty list to prevent any handles
                 // from being inherited by the detached process.
-                inheritedHandles = [];
+                inheritedHandles = Array.Empty<SafeHandle>();
             }
             else
             {
