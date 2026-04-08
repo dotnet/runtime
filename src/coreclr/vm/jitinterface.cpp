@@ -5373,9 +5373,8 @@ void CEEInfo::getCallInfo(
     }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // On portable entry points, getFunctionEntryPoint is not available to resolve MethodImpl
-    // overrides. Do the resolution here so the interpreter compiler gets the right target
-    // method for non-virtual calls to MethodImpl-overridden methods.
+    // Resolve the MethodImpl override here so that we call the overriding method directly,
+    // avoiding a DoPrestub failure when trying to set a non-overridden entry point in the slot.
     if (directCall)
     {
         MethodDesc* pResolvedMD = MethodTable::MapMethodDeclToMethodImpl(pTargetMD);
