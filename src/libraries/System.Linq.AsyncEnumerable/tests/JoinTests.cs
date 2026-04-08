@@ -219,11 +219,11 @@ namespace System.Linq.Tests
                 foreach (IAsyncEnumerable<string> source in CreateSources(values))
                 {
                     await AssertEqual(
-                        values.Join(values, s => s.Length > 0 ? s[0] : ' ', s => s.Length > 1 ? s[1] : ' ').Select(t => t.Outer + t.Inner),
+                        values.Join(values, s => s.Length > 0 ? s[0] : ' ', s => s.Length > 1 ? s[1] : ' ', resultSelector: (inner, outer) => (Inner: inner, Outer: outer)).Select(t => t.Outer + t.Inner),
                         source.Join(source, s => s.Length > 0 ? s[0] : ' ', s => s.Length > 1 ? s[1] : ' ').Select(t => t.Outer + t.Inner));
 
                     await AssertEqual(
-                        values.Join(values, s => s.Length > 0 ? s[0] : ' ', s => s.Length > 1 ? s[1] : ' ').Select(t => t.Outer + t.Inner),
+                        values.Join(values, s => s.Length > 0 ? s[0] : ' ', s => s.Length > 1 ? s[1] : ' ', resultSelector: (inner, outer) => (Inner: inner, Outer: outer)).Select(t => t.Outer + t.Inner),
                         source.Join(source, async (s, ct) => s.Length > 0 ? s[0] : ' ', async (s, ct) => s.Length > 1 ? s[1] : ' ').Select(t => t.Outer + t.Inner));
                 }
             }
