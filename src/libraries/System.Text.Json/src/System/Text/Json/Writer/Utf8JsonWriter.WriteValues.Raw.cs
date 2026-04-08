@@ -197,32 +197,54 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentException_ValueTooLarge(json.Length);
             }
 
-            byte[]? tempArray = null;
-
-            // For performance, avoid obtaining actual byte count unless memory usage is higher than the threshold.
-            Span<byte> utf8Json =
-                // Use stack memory
-                json.Length <= (JsonConstants.StackallocByteThreshold / JsonConstants.MaxExpansionFactorWhileTranscoding) ? stackalloc byte[JsonConstants.StackallocByteThreshold] :
-                // Use a pooled array
-                json.Length <= (JsonConstants.ArrayPoolMaxSizeBeforeUsingNormalAlloc / JsonConstants.MaxExpansionFactorWhileTranscoding) ? tempArray = ArrayPool<byte>.Shared.Rent(json.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) :
-                // Use a normal alloc since the pool would create a normal alloc anyway based on the threshold (per current implementation)
-                // and by using a normal alloc we can avoid the Clear().
-                new byte[JsonReaderHelper.GetUtf8ByteCount(json)];
-
-            try
+            if (json.Length == 0)
             {
-                int actualByteCount = JsonReaderHelper.GetUtf8FromText(json, utf8Json);
-                utf8Json = utf8Json.Slice(0, actualByteCount);
-                WriteRawValueCore(utf8Json, skipInputValidation);
+                ThrowHelper.ThrowArgumentException(SR.ExpectedJsonTokens);
             }
-            finally
+
+            // Reserve space up front so that no mid-operation reallocation is needed.
+            // For typical inputs use worst-case sizing (3 bytes per char) to avoid an extra byte-counting scan.
+            // For very large inputs compute the exact byte count to avoid over-requesting buffer space.
+            int maxRequired = json.Length <= (JsonConstants.ArrayPoolMaxSizeBeforeUsingNormalAlloc / JsonConstants.MaxExpansionFactorWhileTranscoding)
+                ? json.Length * JsonConstants.MaxExpansionFactorWhileTranscoding + 1
+                : JsonReaderHelper.GetUtf8ByteCount(json) + 1;
+
+            if (_memory.Length - BytesPending < maxRequired)
             {
-                if (tempArray != null)
-                {
-                    utf8Json.Clear();
-                    ArrayPool<byte>.Shared.Return(tempArray);
-                }
+                Grow(maxRequired);
             }
+
+            Span<byte> output = _memory.Span;
+
+            // Use a speculative offset so that no writer state is mutated until validation succeeds.
+            int offset = BytesPending;
+
+            if (_currentDepth < 0)
+            {
+                output[offset++] = JsonConstants.ListSeparator;
+            }
+
+            // Transcode UTF-16 directly into the output buffer, avoiding a temporary buffer allocation and copy.
+            int actualByteCount = JsonReaderHelper.GetUtf8FromText(json, output.Slice(offset));
+
+            JsonTokenType tokenType;
+            if (skipInputValidation)
+            {
+                tokenType = JsonTokenType.String;
+            }
+            else
+            {
+                // Validate the transcoded JSON in-place.
+                // If this throws, no writer state (BytesPending, _tokenType, separator flag) has been changed.
+                Utf8JsonReader reader = new(output.Slice(offset, actualByteCount));
+                while (reader.Read());
+                tokenType = reader.TokenType;
+            }
+
+            // Validation passed (or was skipped) — commit all state atomically.
+            BytesPending = offset + actualByteCount;
+            _tokenType = tokenType;
+            SetFlagToAddListSeparatorBeforeNextItem();
         }
 
         private void WriteRawValueCore(ReadOnlySpan<byte> utf8Json, bool skipInputValidation)
