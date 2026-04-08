@@ -1024,7 +1024,15 @@ void WasmRegAlloc::ResolveReferences()
         }
 
         // Do likewise for the enregistered locals.
+        //
         // Note we do not update the LclVarDsc here.
+        //
+        // We will update the LclVarDsc at the end of this method to be the assignments
+        // for the main method.
+        //
+        // Then when codegen calls back to the allocator via recordVarLocationsAtStartOfBB
+        // we will either verify the assignments are correct for the block, or update them
+        // using the per-funclet mappings kept in the per-funclet m_physicalRegAssignments.
         //
         for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
         {
