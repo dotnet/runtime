@@ -85,11 +85,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-  </PropertyGroup>
-
-  <!-- RISC-V: https://github.com/dotnet/runtime/issues/124934 -->
-  <!-- LoongArch: https://github.com/dotnet/runtime/issues/124935 -->
-  <PropertyGroup Condition="'$(TargetArchitecture)' != 'riscv64' and '$(TargetArchitecture)' != 'loongarch64'">
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
