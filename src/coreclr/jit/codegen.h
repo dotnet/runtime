@@ -217,6 +217,8 @@ protected:
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
     void                       genEmitNullCheck(regNumber reg);
+    unsigned                   GetStackPointerRegIndex() const;
+    unsigned                   GetFramePointerRegIndex() const;
 #endif
 
     void        genEmitStartBlock(BasicBlock* block);
@@ -773,6 +775,7 @@ protected:
 
 #if defined(TARGET_WASM)
     void genCodeForConstant(GenTree* treeNode);
+    void genCatchArg(GenTree* treeNode);
 #endif
 
 #if defined(TARGET_X86)
