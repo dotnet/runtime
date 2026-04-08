@@ -581,7 +581,7 @@ namespace System.Runtime
 #if NATIVEAOT
         [RuntimeExport("RhThrowHwEx")]
 #else
-    [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly]
 #endif
         [StackTraceHidden]
 #if NATIVEAOT
@@ -716,7 +716,7 @@ namespace System.Runtime
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
 #else
-    [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly]
 #endif
         [StackTraceHidden]
 #if NATIVEAOT
