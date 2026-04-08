@@ -542,7 +542,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "RemoteExecutor is not supported")]
         public void NonInheritedFileHandle_IsNotAvailableInChildProcess()
         {
             string path = Path.GetTempFileName();
@@ -554,12 +553,13 @@ namespace System.Diagnostics.Tests
                 // Verify the handle is valid in the parent process.
                 Assert.False(fileHandle.IsInvalid);
                 Assert.Equal(FileHandleType.RegularFile, fileHandle.Type);
-                using (FileStream parentFs = new(fileHandle, FileAccess.ReadWrite, leaveOpen: true))
+                nint rawHandle = fileHandle.DangerousGetHandle();
+
+                // Verify FileStream.Name returns the correct path when opened from a handle with a cached path.
+                using (FileStream parentFs = new(fileHandle, FileAccess.ReadWrite))
                 {
                     Assert.Equal(path, parentFs.Name);
                 }
-
-                nint rawHandle = fileHandle.DangerousGetHandle();
 
                 // Spawn a child process with InheritedHandles = [] (no handles inherited),
                 // passing the raw handle value and the file path.
