@@ -87,6 +87,8 @@ namespace R2RDump
                     int assemblyIndex = 0;
                     foreach (string assemblyName in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
                     {
+                        if (assemblyIndex >= _r2r.ReadyToRunAssemblyHeaders.Count)
+                            break;
                         Guid mvid = _r2r.GetAssemblyMvid(assemblyIndex);
                         WriteDivider($@"Component Assembly [{assemblyIndex}]: {assemblyName} - MVID {mvid:b}");
                         ReadyToRunCoreHeader assemblyHeader = _r2r.ReadyToRunAssemblyHeaders[assemblyIndex];

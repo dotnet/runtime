@@ -1358,7 +1358,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
         if (!pUMEntryThunk)
         {
-
             UMThunkMarshInfo *pUMThunkMarshInfo = pClass->m_pUMThunkMarshInfo;
             MethodDesc *pInvokeMeth = FindDelegateInvokeMethod(pMT);
 
@@ -1366,14 +1365,14 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             {
                 GCX_PREEMP();
 
-                pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMThunkMarshInfo)));
-                pUMThunkMarshInfo->LoadTimeInit(pInvokeMeth);
+                pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DelegateUMThunkMarshInfo)));
+                new (pUMThunkMarshInfo) DelegateUMThunkMarshInfo(pInvokeMeth);
 
                 if (InterlockedCompareExchangeT(&(pClass->m_pUMThunkMarshInfo),
                                                         pUMThunkMarshInfo,
                                                         NULL ) != NULL)
                 {
-                    pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->BackoutMem(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
+                    pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->BackoutMem(pUMThunkMarshInfo, sizeof(DelegateUMThunkMarshInfo));
                     pUMThunkMarshInfo = pClass->m_pUMThunkMarshInfo;
                 }
             }
