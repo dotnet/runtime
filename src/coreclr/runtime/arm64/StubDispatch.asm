@@ -11,17 +11,26 @@
 
     ;; Macro that generates code to check a single cache entry.
     MACRO
-        CHECK_CACHE_ENTRY $entry
+        CHECK_CACHE_ENTRY $entry, $adj
         ;; Check a single entry in the cache.
-        ;;  x9   : Cache data structure. Also used for target address jump.
+        ;;  x9   : Cache data structure (possibly adjusted for far entries)
         ;;  x10  : Instance MethodTable*
         ;;  x11  : Indirection cell address, preserved
-        ;;  x12  : Trashed
-        ldr     x12, [x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 16))]
+        ;;  x12, x13  : Trashed
+        ;;  $adj : Base adjustment already applied to x9
+        ;;
+        ;; Use ldp to load both m_pInstanceType and m_pTargetCode in a single instruction.
+        ;; On ARM64 two separate ldr instructions can be reordered across a control dependency,
+        ;; which means a concurrent atomic cache entry update (via stlxp) could be observed as a
+        ;; torn read (new type, old target). ldp is single-copy atomic for the pair on FEAT_LSE2
+        ;; hardware (ARMv8.4+). The cbz guard ensures correctness on pre-LSE2 hardware too:
+        ;; a torn read can only produce a zero target (entries go from 0,0 to type,target),
+        ;; so we treat it as a cache miss.
+        ldp     x12, x13, [x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 16) - $adj)]
         cmp     x10, x12
         bne     %ft0
-        ldr     x9, [x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 16) + 8)]
-        br      x9
+        cbz     x13, %ft0
+        br      x13
 0
     MEND
 
@@ -42,10 +51,18 @@
         ldr     x10, [x0]
 
     GBLA CurrentEntry
+    GBLA BaseAdj
 CurrentEntry SETA 0
+BaseAdj SETA 0
 
     WHILE CurrentEntry < $entries
-        CHECK_CACHE_ENTRY CurrentEntry
+        ;; ldp's signed offset must be in [-512,504] for 64-bit register pairs.
+        ;; When the offset would exceed that, re-base x9 once so subsequent entries stay in range.
+        IF (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (CurrentEntry * 16) - BaseAdj) > 504
+        add     x9, x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + (CurrentEntry * 16) - BaseAdj)
+BaseAdj SETA (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (CurrentEntry * 16))
+        ENDIF
+        CHECK_CACHE_ENTRY CurrentEntry, BaseAdj
 CurrentEntry SETA CurrentEntry + 1
     WEND
 

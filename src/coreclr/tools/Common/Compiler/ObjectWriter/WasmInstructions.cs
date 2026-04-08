@@ -111,6 +111,8 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
     public enum WasmExprKind
     {
+        If = 0x04,
+        End = 0x0B,
         CallIndirect = 0x11,
         LocalGet = 0x20,
         LocalSet = 0x21,
@@ -119,6 +121,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         GlobalSet = 0x24,
         I32Const = 0x41,
         I64Const = 0x42,
+        I32Ge_s = 0x4E,
         I32Add = 0x6A,
         I32Sub = 0x6B,
         I32Load = 0x28,
@@ -129,8 +132,11 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         I64Store = 0x37,
         F32Store = 0x38,
         F64Store = 0x39,
+        RefNull = 0xD0,
         // Variable length instructions — not directly cast to a byte, instead the prefix byte is set in the upper 8 bits of the enum, and the lower 24 bits are the extended variable length opcode
         MemoryInit = unchecked((int)0xFC000008),
+        TableInit = unchecked((int)0xFC00000C),
+        TableGrow = unchecked((int)0xFC00000F),
         V128Load = unchecked((int)0xFD00000A),
         V128Store = unchecked((int)0xFD000000),
     }
@@ -148,6 +154,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             {
                 case WasmExprKind.I32Add:
                 case WasmExprKind.I32Sub:
+                case WasmExprKind.I32Ge_s:
                     return true;
 
                 default:
@@ -495,6 +502,14 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         // base class defaults are sufficient as the base class encodes just the opcode
     }
 
+    class WasmUnaryExpr : WasmExpr
+    {
+        public WasmUnaryExpr(WasmExprKind kind) : base(kind)
+        {
+        }
+        // base class defaults are sufficient as the base class encodes just the opcode
+    }
+
     // Represents a memory.init expression.
     // Binary encoding: 0xFC prefix + u32(8) sub-opcode + u32(dataSegmentIndex) + u32(memoryIndex)
     class WasmMemoryInitExpr : WasmExpr
@@ -524,6 +539,113 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             return base.EncodeSize()
                 + (int)DwarfHelper.SizeOfULEB128((uint)DataSegmentIndex)
                 + (int)DwarfHelper.SizeOfULEB128((uint)MemoryIndex);
+        }
+    }
+
+    // Represents a table.init expression.
+    // Binary encoding: 0xFC prefix + u32(12) sub-opcode + u32(elemidx) + u32(tableidx)
+    class WasmTableInitExpr : WasmExpr
+    {
+        public readonly int ElemIndex;
+        public readonly int TableIndex;
+
+        public WasmTableInitExpr(int elemIndex, int tableIndex) : base(WasmExprKind.TableInit)
+        {
+            Debug.Assert(tableIndex >= 0);
+            Debug.Assert(elemIndex >= 0);
+            ElemIndex = elemIndex;
+            TableIndex = tableIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)ElemIndex);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)TableIndex);
+
+            return pos;
+        }
+
+        public override int EncodeSize()
+        {
+            return base.EncodeSize()
+                + (int)DwarfHelper.SizeOfULEB128((uint)TableIndex)
+                + (int)DwarfHelper.SizeOfULEB128((uint)ElemIndex);
+        }
+    }
+
+    class WasmTableGrowExpr : WasmExpr
+    {
+        public readonly uint TableIndex;
+
+        public WasmTableGrowExpr(uint tableIndex) : base(WasmExprKind.TableGrow)
+        {
+            TableIndex = tableIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), TableIndex);
+            return pos;
+        }
+        public override int EncodeSize()
+        {
+            return base.EncodeSize() + (int)DwarfHelper.SizeOfULEB128(TableIndex);
+        }
+    }
+
+    enum WasmAbsHeapType : byte
+    {
+        Func = 0x70,
+    }
+
+    class WasmRefNullExpr : WasmExpr
+    {
+        WasmAbsHeapType absheaptype;
+
+        public WasmRefNullExpr(WasmAbsHeapType heapType) : base(WasmExprKind.RefNull)
+        {
+            absheaptype = heapType;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            buffer[pos++] = (byte)absheaptype;
+            return pos;
+        }
+        public override int EncodeSize()
+        {
+            return base.EncodeSize() + 1;
+        }
+    }
+
+    enum WasmBlockType : byte
+    {
+        Empty = 0x40,
+        I32 = 0x7F,
+        I64 = 0x7E,
+        F32 = 0x7D,
+        F64 = 0x7C,
+        V128 = 0x7B,
+    }
+    class WasmBlockStartExpr : WasmExpr
+    {
+        WasmBlockType BlockType;
+        public WasmBlockStartExpr(WasmExprKind kind, WasmBlockType blockType) : base(kind)
+        {
+            BlockType = blockType;
+        }
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            buffer[pos++] = (byte)BlockType;
+            return pos;
+        }
+        public override int EncodeSize()
+        {
+            return base.EncodeSize() + 1;
         }
     }
 
@@ -571,6 +693,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
         public static WasmExpr Add => new WasmBinaryExpr(WasmExprKind.I32Add);
         public static WasmExpr Sub => new WasmBinaryExpr(WasmExprKind.I32Sub);
+        public static WasmExpr Ge_s => new WasmBinaryExpr(WasmExprKind.I32Ge_s);
         public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.I32Load, 4, offset);
         public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.I32Store, 4, offset);
     }
@@ -609,5 +732,19 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     static class ControlFlow
     {
         public static WasmExpr CallIndirect(ISymbolNode funcType, uint tableIndex) => new WasmIndirectCallInstruction(WasmExprKind.CallIndirect, funcType, tableIndex);
+    }
+    static class Table
+    {
+        public static WasmExpr Grow(uint tableIndex) => new WasmTableGrowExpr(tableIndex);
+        public static WasmExpr Init(int elemSegmentIndex, int tableIndex = 0) => new WasmTableInitExpr(elemSegmentIndex, tableIndex);
+    }
+    static class Ref
+    {
+        public static WasmExpr NullFuncRef => new WasmRefNullExpr(WasmAbsHeapType.Func);
+    }
+    static class Block
+    {
+        public static WasmExpr If(WasmBlockType blockType) => new WasmBlockStartExpr(WasmExprKind.If, blockType);
+        public static WasmExpr End => new WasmUnaryExpr(WasmExprKind.End);
     }
 }

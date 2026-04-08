@@ -1273,21 +1273,6 @@ CDAC_TYPE_FIELD(SyncBlockCache, T_UINT32, FreeSyncTableIndex, cdac_data<SyncBloc
 CDAC_TYPE_FIELD(SyncBlockCache, T_POINTER, CleanupBlockList, cdac_data<SyncBlockCache>::CleanupBlockList)
 CDAC_TYPE_END(SyncBlockCache)
 
-#ifdef FEATURE_WEBCIL
-CDAC_TYPE_BEGIN(WebcilHeader)
-CDAC_TYPE_SIZE(sizeof(WebcilHeader))
-CDAC_TYPE_FIELD(WebcilHeader, T_UINT16, CoffSections, offsetof(WebcilHeader, CoffSections))
-CDAC_TYPE_END(WebcilHeader)
-
-CDAC_TYPE_BEGIN(WebcilSectionHeader)
-CDAC_TYPE_SIZE(sizeof(WebcilSectionHeader))
-CDAC_TYPE_FIELD(WebcilSectionHeader, T_UINT32, VirtualSize, offsetof(WebcilSectionHeader, VirtualSize))
-CDAC_TYPE_FIELD(WebcilSectionHeader, T_UINT32, VirtualAddress, offsetof(WebcilSectionHeader, VirtualAddress))
-CDAC_TYPE_FIELD(WebcilSectionHeader, T_UINT32, SizeOfRawData, offsetof(WebcilSectionHeader, SizeOfRawData))
-CDAC_TYPE_FIELD(WebcilSectionHeader, T_UINT32, PointerToRawData, offsetof(WebcilSectionHeader, PointerToRawData))
-CDAC_TYPE_END(WebcilSectionHeader)
-#endif
-
 CDAC_TYPE_BEGIN(AuxiliarySymbolInfo)
 CDAC_TYPE_SIZE(sizeof(VMAUXILIARYSYMBOLDEF))
 CDAC_TYPE_FIELD(AuxiliarySymbolInfo, T_POINTER, Address, offsetof(VMAUXILIARYSYMBOLDEF, pfnAuxiliarySymbol))
