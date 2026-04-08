@@ -288,6 +288,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The path and name of the file to retrieve version information for.</param>
         /// <returns>A <see cref="FileVersionInfo" /> containing information about the file. If the file did not contain version information, the <see cref="FileVersionInfo" /> contains only the name of the file requested.</returns>
+        /// <exception cref="FileNotFoundException"><paramref name="fileName"/> does not exist.</exception>
         public static FileVersionInfo GetVersionInfo(string fileName)
         {
             // Check if fileName is a full path. Relative paths can cause confusion if the local file has the .dll extension,
