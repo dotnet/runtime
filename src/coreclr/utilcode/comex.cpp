@@ -44,7 +44,7 @@ void COMException::GetMessage(SString &string)
 
     if (m_pErrorInfo != NULL)
     {
-        BSTRHolder message(NULL);
+        BSTRHolder message;
         if (SUCCEEDED(m_pErrorInfo->GetDescription(&message)))
             string.Set(message, SysStringLen(message));
     }

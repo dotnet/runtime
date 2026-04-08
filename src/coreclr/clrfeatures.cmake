@@ -1,3 +1,12 @@
+# riscv64 and loongarch64 do not have a separate CID-only asm stub layer yet.
+# Forcing FEATURE_DYNAMIC_CODE_COMPILED on keeps the feature matrix consistent with
+# the top-level build and avoids unresolved CID/VSD stub symbols at link time.
+if (NOT DEFINED FEATURE_DYNAMIC_CODE_COMPILED)
+  if (CLR_CMAKE_TARGET_ARCH_RISCV64 OR CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+    set(FEATURE_DYNAMIC_CODE_COMPILED 1)
+  endif()
+endif()
+
 if (FEATURE_DYNAMIC_CODE_COMPILED)
   set(FEATURE_TIERED_COMPILATION 1)
   set(FEATURE_REJIT 1)
@@ -36,6 +45,17 @@ if(NOT DEFINED FEATURE_DBGIPC)
     set(FEATURE_DBGIPC 1)
   endif()
 endif(NOT DEFINED FEATURE_DBGIPC)
+
+if(NOT DEFINED FEATURE_CORPROFILER)
+  # ICorProfiler isn't supported on non-desktop targets or WASM scenarios
+  if(NOT CLR_CMAKE_TARGET_ARCH_WASM
+    # AND NOT CLR_CMAKE_TARGET_ANDROID
+    # AND NOT CLR_CMAKE_TARGET_MACCATALYST
+    # AND NOT CLR_CMAKE_TARGET_IOS
+    AND NOT CLR_CMAKE_TARGET_TVOS)
+    set(FEATURE_CORPROFILER 1)
+  endif()
+endif()
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
   # FEATURE_INTERPRETER is already enabled by default

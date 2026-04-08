@@ -34,7 +34,7 @@ native envelope. Moving forward we [plan to gradually add support for platform-n
 executable formats](./readytorun-platform-native-envelope.md) (ELF on Linux, MachO on OSX) as the native envelopes. There is a
 global CLI / COR header in the file, but it only exists to facilitate pdb generation, and does
 not participate in any usages by the CoreCLR runtime. The ReadyToRun header structure is pointed to
-by the well-known export symbol `RTR_HEADER` and has the `READYTORUN_FLAG_COMPOSITE` flag set.
+by the well-known export symbol `RTR_HEADER` (customizable via the `--rtr-header-symbol-name` crossgen2 option — see below) and has the `READYTORUN_FLAG_COMPOSITE` flag set.
 
 Input MSIL metadata and IL streams can be either embedded in the composite R2R file or left
 as separate files on disk. In case of embedded MSIL, the "actual" metadata for the individual
@@ -71,8 +71,11 @@ The structures and accompanying constants are defined in the
 [readytorun.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h)
 header file.
 Basically the entire R2R executable image is addressed through the READYTORUN_HEADER singleton
-pointed to by the well-known export RTR_HEADER in the export section of the native executable
-envelope.
+pointed to by the well-known export `RTR_HEADER` in the export section of the native executable
+envelope. For composite images, this export symbol name can be customized using the
+`--rtr-header-symbol-name` option in `crossgen2`, which is useful for custom hosts that
+directly link against multiple R2R images (instead of loading them dynamically via `dlopen` or
+equivalent) and therefore need distinct symbol names to avoid collisions.
 
 For single-file R2R executables, there's just one header representing all image sections.
 For composite and single exe, the global `READYTORUN_HEADER` includes a section of the type

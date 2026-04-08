@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Speech.AudioFormat;
@@ -12,7 +13,7 @@ namespace System.Speech.Internal.SapiInterop
     {
         #region Constructors
 
-        internal SpAudioStreamWrapper(Stream stream, SpeechAudioFormatInfo audioFormat) : base(stream)
+        internal SpAudioStreamWrapper(Stream stream, SpeechAudioFormatInfo? audioFormat) : base(stream)
         {
             // Assume PCM to start with
             _formatType = SAPIGuids.SPDFID_WaveFormatEx;
@@ -74,6 +75,7 @@ namespace System.Speech.Internal.SapiInterop
         /// <summary>
         /// Builds the
         /// </summary>
+        [MemberNotNull(nameof(_wfx))]
         internal void GetStreamOffsets(Stream stream)
         {
             BinaryReader br = new(stream);

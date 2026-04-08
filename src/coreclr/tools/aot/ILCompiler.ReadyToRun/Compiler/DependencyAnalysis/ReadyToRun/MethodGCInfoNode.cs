@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -99,6 +100,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             public GCInfoComponent(byte[] bytes)
             {
+                Debug.Assert(bytes != null);
                 Bytes = bytes;
                 Symbol = null;
                 SymbolDelta = 0;
@@ -106,6 +108,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public GCInfoComponent(ISymbolNode symbol, int symbolDelta)
             {
+                Debug.Assert(symbol != null);
                 Bytes = null;
                 Symbol = symbol;
                 SymbolDelta = symbolDelta;
@@ -205,7 +208,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     yield return new GCInfoComponent(unwindInfo);
 
-                    if (targetArch != TargetArchitecture.X86)
+                    if ((targetArch != TargetArchitecture.X86) && (targetArch != TargetArchitecture.Wasm32))
                     {
                         bool isFilterFunclet = (frameInfo.Flags & FrameInfoFlags.Filter) != 0;
                         ISymbolNode personalityRoutine = (isFilterFunclet ? factory.FilterFuncletPersonalityRoutine : factory.PersonalityRoutine);

@@ -56,8 +56,13 @@ namespace
 
     int WriteToTargetCallback(uint64_t addr, const uint8_t* buff, uint32_t count, void* context)
     {
-        ICorDebugMutableDataTarget* target = static_cast<ICorDebugMutableDataTarget*>(context);
-        HRESULT hr = target->WriteVirtual((CORDB_ADDRESS)addr, buff, count);
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        ICorDebugMutableDataTarget* mutableTarget = nullptr;
+        HRESULT hr = target->QueryInterface(__uuidof(ICorDebugMutableDataTarget), (void**)&mutableTarget);
+        if (FAILED(hr))
+            return hr;
+        hr = mutableTarget->WriteVirtual((CORDB_ADDRESS)addr, buff, count);
+        mutableTarget->Release();
         if (FAILED(hr))
             return hr;
 
@@ -75,7 +80,7 @@ namespace
     }
 }
 
-CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget* target, IUnknown* legacyImpl)
+CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown* legacyImpl)
 {
     HMODULE cdacLib;
     if (!TryLoadCDACLibrary(&cdacLib))
@@ -123,5 +128,13 @@ void CDAC::CreateSosInterface(IUnknown** sos)
     decltype(&cdac_reader_create_sos_interface) createSosInterface = reinterpret_cast<decltype(&cdac_reader_create_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_create_sos_interface"));
     _ASSERTE(createSosInterface != nullptr);
     int ret = createSosInterface(m_cdac_handle, m_legacyImpl, sos);
+    _ASSERTE(ret == 0);
+}
+
+void CDAC::CreateDacDbiInterface(IUnknown** dbi)
+{
+    decltype(&cdac_reader_create_dacdbi_interface) createDacDbiInterface = reinterpret_cast<decltype(&cdac_reader_create_dacdbi_interface)>(::GetProcAddress(m_module, "cdac_reader_create_dacdbi_interface"));
+    _ASSERTE(createDacDbiInterface != nullptr);
+    int ret = createDacDbiInterface(m_cdac_handle, m_legacyImpl, dbi);
     _ASSERTE(ret == 0);
 }

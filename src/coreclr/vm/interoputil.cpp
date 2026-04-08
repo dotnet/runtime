@@ -2695,6 +2695,30 @@ DISPID ExtractStandardDispId(_In_z_ LPWSTR strStdDispIdMemberName)
     return _wtoi(strDispId);
 }
 
+// Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
+// in the native code.
+struct CallOutFilterParam { BOOL OneShot; };
+LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
+{
+    CallOutFilterParam *pParam = static_cast<CallOutFilterParam *>(pv);
+
+    _ASSERTE(pParam && (pParam->OneShot == TRUE || pParam->OneShot == FALSE));
+
+    if (pParam->OneShot == TRUE)
+    {
+        pParam->OneShot = FALSE;
+
+        // Replace whatever SEH exception is in flight, with an SEHException derived from
+        // CLRException.  But if the exception already looks like one of ours, let it
+        // go past since LastThrownObject should already represent it.
+        if ((!IsComPlusException(pExceptionInfo->ExceptionRecord)) &&
+            (pExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_MSVC))
+            PAL_CPP_THROW(SEHException *, new SEHException(pExceptionInfo->ExceptionRecord,
+                                                           pExceptionInfo->ContextRecord));
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
 static HRESULT InvokeExHelper(
     IDispatchEx *       pDispEx,
     DISPID              MemberID,
@@ -2984,12 +3008,11 @@ static OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT* pNativeEnum)
     }
     CONTRACTL_END;
 
-    OBJECTREF retObjRef;
-
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENUMERATORTOENUMVARIANTMARSHALER__INTERNALMARSHALNATIVETOMANAGED);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0]  = PTR_TO_ARGHOLDER(pNativeEnum);
-    CALL_MANAGED_METHOD_RETREF(retObjRef, OBJECTREF, args);
+    OBJECTREF retObjRef = NULL;
+    GCPROTECT_BEGIN(retObjRef);
+    UnmanagedCallersOnlyCaller internalMarshalNativeToManaged(METHOD__ENUMERATORTOENUMVARIANTMARSHALER__INTERNALMARSHALNATIVETOMANAGED);
+    internalMarshalNativeToManaged.InvokeThrowing((INT_PTR)pNativeEnum, &retObjRef);
+    GCPROTECT_END();
 
     return retObjRef;
 }
@@ -3300,7 +3323,7 @@ void IUInvokeDispMethod(
 
                         // We managed to retrieve an IDispatchEx IP so we will use it to
                         // retrieve the DISPID.
-                        BSTRHolder bstrTmpName = SysAllocString(aNamesToConvert[0]);
+                        BSTRHolder bstrTmpName{ SysAllocString(aNamesToConvert[0]) };
                         if (!bstrTmpName)
                             COMPlusThrowOM();
 
@@ -3696,7 +3719,6 @@ void InitializeComInterop()
     }
     CONTRACTL_END;
 
-    ComCall::Init();
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG
