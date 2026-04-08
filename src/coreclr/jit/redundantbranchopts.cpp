@@ -797,8 +797,28 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         return false;
     }
 
-    BasicBlock* const blockTrueSucc  = block->GetTrueTarget();
-    BasicBlock* const blockFalseSucc = block->GetFalseTarget();
+    // Skip through chains of empty or side effect free blocks.
+    // Watch for cycles.
+    //
+    auto skipSideEffectFreeBlocks = [=](BasicBlock* b) {
+        BitVecTraits traits(fgBBNumMax + 1, this);
+        BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+        while (!b->hasSideEffects() && b->KindIs(BBJ_ALWAYS))
+        {
+            b = b->GetUniqueSucc();
+
+            if (!BitVecOps::TryAddElemD(&traits, visitedBlocks, b->bbNum))
+            {
+                // Block is already visited, we have a cycle. Bail out.
+                break;
+            }
+        }
+
+        return b;
+    };
+
+    BasicBlock* const blockTrueSucc  = skipSideEffectFreeBlocks(block->GetTrueTarget());
+    BasicBlock* const blockFalseSucc = skipSideEffectFreeBlocks(block->GetFalseTarget());
     BasicBlock*       currentBlock   = block;
     BasicBlock*       domBlockProbe  = fgGetDomSpeculatively(block);
     ValueNum          blockPathVN    = ValueNumStore::NoVN;
@@ -807,6 +827,11 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
     const unsigned    searchLimit    = 8;
 
     JITDUMP("Checking " FMT_BB " for redundant dominating branches\n", block->bbNum);
+
+    if (domBlockProbe == nullptr)
+    {
+        JITDUMP("failed -- no dominator\n")
+    }
 
     // Walk up the dominator tree.
     // We may be able to optimize multiple dominating branches.
@@ -819,6 +844,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
 
         if (searchCount > searchLimit)
         {
+            JITDUMP("stopping, hit search limit\n");
             break;
         }
 
@@ -844,22 +870,30 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             domBlockProbe = fgGetDomSpeculatively(domBlockProbe);
         }
 
-        if ((domBlockProbe == nullptr) || !domBlockProbe->KindIs(BBJ_COND))
+        if (domBlockProbe == nullptr)
         {
+            JITDUMP("failed -- no dominator\n");
+            break;
+        }
+
+        if (!domBlockProbe->KindIs(BBJ_COND))
+        {
+            JITDUMP("failed -- dominator " FMT_BB " is not BBJ_COND\n", domBlockProbe->bbNum);
             break;
         }
 
         // Make sure this conditional dominator branches to the same
         // shared block as the original block.
         //
-        BasicBlock* const domTrueSucc  = domBlockProbe->GetTrueTarget();
-        BasicBlock* const domFalseSucc = domBlockProbe->GetFalseTarget();
+        BasicBlock* const domTrueSucc  = skipSideEffectFreeBlocks(domBlockProbe->GetTrueTarget());
+        BasicBlock* const domFalseSucc = skipSideEffectFreeBlocks(domBlockProbe->GetFalseTarget());
 
         const bool currentIsDomTrueSucc  = (domTrueSucc == currentBlock);
         const bool currentIsDomFalseSucc = (domFalseSucc == currentBlock);
 
         if (currentIsDomTrueSucc == currentIsDomFalseSucc)
         {
+            JITDUMP("failed -- " FMT_BB " is degnerate\n", domBlockProbe->bbNum);
             // degenerate BBJ_COND
             break;
         }
@@ -884,13 +918,19 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         }
         else
         {
+            JITDUMP("failed -- " FMT_BB " does not share a successor with " FMT_BB "\n", domBlockProbe->bbNum,
+                    block->bbNum);
             break;
         }
 
         if (blockPathVN == ValueNumStore::NoVN)
         {
+            JITDUMP("failed -- " FMT_BB " does not have a usable VN\n", block->bbNum);
             break;
         }
+
+        JITDUMP(FMT_BB " and " FMT_BB " have shared successor " FMT_BB "\n", domBlockProbe->bbNum, block->bbNum,
+                sharedSuccessor->bbNum);
 
         // Find the VN for the path from domBlockProbe to block.
         //
@@ -937,6 +977,8 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
 
         if (!(rii.canInfer && rii.canInferFromTrue && !rii.reverseSense))
         {
+            JITDUMP("failed -- Dominated VN " FMT_VN " does not imply dominating VN " FMT_VN "\n", blockPathVN,
+                    domPathVN);
             break;
         }
 
@@ -977,11 +1019,14 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
 
         if (domMayHaveSideEffects)
         {
+            JITDUMP("stopping -- side effects seen along path to block\n");
             break;
         }
 
         currentBlock  = domBlockProbe;
         domBlockProbe = fgGetDomSpeculatively(domBlockProbe);
+
+        JITDUMP("continuing to the next immediate dominator\n");
     }
 
     return madeChanges;
