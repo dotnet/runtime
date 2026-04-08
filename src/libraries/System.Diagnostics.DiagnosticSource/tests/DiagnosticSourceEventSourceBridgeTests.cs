@@ -131,7 +131,7 @@ namespace System.Diagnostics.Tests
         [InlineData("Record", true, ActivityTraceFlags.RandomTraceId)]
         [InlineData("recorD", true, ActivityTraceFlags.RandomTraceId)]
         [InlineData("", true, ActivityTraceFlags.Recorded | ActivityTraceFlags.RandomTraceId)]
-        public void TestEnableAllActivitySourcesWithSpeciifcSamplingResult(string samplingResult, bool alldataRequested, ActivityTraceFlags activityTraceFlags)
+        public void TestEnableAllActivitySourcesWithSpecificSamplingResult(string samplingResult, bool alldataRequested, ActivityTraceFlags activityTraceFlags)
         {
             RemoteExecutor.Invoke((result, dataRequested, traceFlags) =>
             {
