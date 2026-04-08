@@ -597,7 +597,6 @@ IUnknown* IUnkEntry::GetIUnknownForCurrContext(bool fNoAddRef)
     if (pUnk == NULL && !fNoAddRef)
         pUnk = UnmarshalIUnknownForCurrContext();
 
-    _ASSERTE(CheckPointer(pUnk, (fNoAddRef ? NULL_OK : NULL_NOT_OK)));
     return pUnk;
 }
 

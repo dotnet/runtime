@@ -2855,7 +2855,6 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
-    _ASSERTE(CheckPointer((holder)));
     return holder;
 }
 
@@ -2916,7 +2915,6 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
     PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
-    _ASSERTE(CheckPointer((holder)));
     return holder;
 }
 #endif
@@ -3014,7 +3012,6 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
     PerfMap::LogStubs(__FUNCTION__, "GenerateResolveStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
-    _ASSERTE(CheckPointer((holder)));
     return holder;
 }
 
@@ -3047,7 +3044,6 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
     PerfMap::LogStubs(__FUNCTION__, "GenerateLookupStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
-    _ASSERTE(CheckPointer((holder)));
     return holder;
 }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH

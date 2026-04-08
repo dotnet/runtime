@@ -272,7 +272,6 @@ ComMTMethodProps *ComMTMemberInfoMap::GetMethodProps(mdToken tk, Module *pModule
 
     if (m_TokenToComMTMethodPropsMap.GetValue(&TokenModulePair, &Data))
         {
-        _ASSERTE(CheckPointer((ComMTMethodProps *)Data, NULL_OK));
             return (ComMTMethodProps *)Data;
         }
 

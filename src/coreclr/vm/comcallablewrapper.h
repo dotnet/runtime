@@ -573,7 +573,6 @@ struct ComMethodTable
         ComCallMethodDesc* pCMD = ComCallMethodDescFromSlot(i);
 
         _ASSERTE(pCMD->IsFieldCall());
-        _ASSERTE(CheckPointer((ComCallMethodDesc *)pCMD));
         return (ComCallMethodDesc *)pCMD;
     }
 

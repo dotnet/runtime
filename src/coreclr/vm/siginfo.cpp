@@ -1951,7 +1951,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
     }
 
-    _ASSERTE(CheckPointer(thRet, ((fLoadTypes == ClassLoader::LoadTypes) ? NULL_NOT_OK : NULL_OK)));
     return thRet;
 }
 

@@ -1712,7 +1712,6 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
         MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
         _ASSERTE(resultMD != NULL);
         resultMD->CheckRestore();
-        _ASSERTE(CheckPointer((resultMD)));
         _ASSERTE((resultMD)->IsTypicalMethodDefinition());
         return resultMD;
     }

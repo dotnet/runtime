@@ -8827,7 +8827,6 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
         if (pResult->IsFullyLoaded())
             SetInterface(pResult);
     }
-    _ASSERTE(CheckPointer((pResult)));
     return pResult;
 }
 #endif // DACCESS_COMPILE

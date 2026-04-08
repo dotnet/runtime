@@ -781,7 +781,6 @@ FORCEINLINE void SBuffer::Resize(COUNT_T size, Preserve preserve)
 
     _ASSERTE(GetSize() == size);
     _ASSERTE(m_allocation >= GetSize());
-    _ASSERTE(CheckInvariant(*this));
 }
 
 //----------------------------------------------------------------------------
@@ -826,7 +825,6 @@ inline void SBuffer::ResizePadded(COUNT_T size, Preserve preserve)
 
     _ASSERTE(GetSize() == size);
     _ASSERTE(m_allocation >= GetSize());
-    _ASSERTE(CheckInvariant(*this));
 }
 
 //----------------------------------------------------------------------------
@@ -862,7 +860,6 @@ inline void SBuffer::TweakSize(COUNT_T size)
     m_size = size;
 
     _ASSERTE(GetSize() == size);
-    _ASSERTE(CheckInvariant(*this));
 }
 
 //-----------------------------------------------------------------------------

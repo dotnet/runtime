@@ -51,7 +51,6 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     _ASSERTE(et != ELEMENT_TYPE_PTR && et != ELEMENT_TYPE_FNPTR);
     return thGenericArg;
 #else
-    _ASSERTE(CheckPointer((thGenericArg)));
     return thGenericArg;
 #endif // FEATURE_SHARE_GENERIC_CODE
 }

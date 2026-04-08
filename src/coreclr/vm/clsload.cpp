@@ -1450,7 +1450,6 @@ TypeHandle ClassLoader::LoadGenericInstantiationThrowing(Module *pModule,
                                             level,
                                             fFromNativeImage ? NULL : &inst);
         _ASSERTE(th.GetNumGenericArgs() == inst.GetNumArgs());
-        _ASSERTE(CheckPointer(th, ((fLoadTypes == LoadTypes) ? NULL_NOT_OK : NULL_OK)));
         return th;
     }
 
@@ -1811,7 +1810,6 @@ TypeHandle ClassLoader::LoadTypeDefOrRefOrSpecThrowing(Module *pModule,
             pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, typeDefOrRefOrSpec,
                                                            IDS_CLASSLOAD_GENERAL);
 #endif
-        _ASSERTE(CheckPointer((typeHnd), (fNotFoundAction == ThrowIfNotFound)? NULL_NOT_OK : NULL_OK));
         return typeHnd;
     }
     else

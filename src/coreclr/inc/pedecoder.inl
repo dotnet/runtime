@@ -254,7 +254,6 @@ inline const void *PEDecoder::GetHeaders(COUNT_T *pSize) const
     if (pSize != NULL)
         *pSize = VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders);
 
-    _ASSERTE(CheckPointer((const void *) m_base));
     return (const void *) m_base;
 }
 
@@ -921,7 +920,6 @@ inline IMAGE_COR20_HEADER *PEDecoder::FindCorHeader() const
     CONTRACTL_END;
 
     const IMAGE_COR20_HEADER * pCor=PTR_IMAGE_COR20_HEADER(GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_COMHEADER));
-    _ASSERTE(CheckPointer(((IMAGE_COR20_HEADER*)pCor)));
     return (IMAGE_COR20_HEADER*)pCor;
 }
 

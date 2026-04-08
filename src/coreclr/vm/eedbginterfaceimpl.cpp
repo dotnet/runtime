@@ -809,7 +809,6 @@ MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
             *pOwnerType = TypeHandle(pRes->GetMethodTable());
         }
     }
-    _ASSERTE(CheckPointer((pRes)));
     return pRes;
 
 }

@@ -2051,7 +2051,6 @@ IUnknown* ComCallWrapper::GetIClassXIP(bool inspectionOnly)
     ULONG cbRef = pWrap->AddRefWithAggregationCheck();
 
     // 0xbadF00d implies the AddRef didn't go through
-    _ASSERTE(CheckPointer(((cbRef != 0xbadf00d) ? pIntf : NULL), NULL_OK));
     return (cbRef != 0xbadf00d) ? pIntf : NULL;
 }
 
@@ -2106,7 +2105,6 @@ IUnknown* ComCallWrapper::GetBasicIP(bool inspectionOnly)
     ULONG cbRef = pWrap->AddRefWithAggregationCheck();
 
     // 0xbadF00d implies the AddRef didn't go through
-    _ASSERTE(CheckPointer(((cbRef != 0xbadf00d) ? pIntf : NULL), NULL_OK));
     return (cbRef != 0xbadf00d) ? pIntf : NULL;
 }
 

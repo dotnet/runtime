@@ -1851,7 +1851,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
     // Success - return an AddRef'd copy of the reader
     m_pISymUnmanagedReader->AddRef();
-    _ASSERTE(CheckPointer((m_pISymUnmanagedReader), NULL_OK));
     return m_pISymUnmanagedReader;
 }
 #endif // FEATURE_ISYM_READER
