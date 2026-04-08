@@ -48,6 +48,7 @@ namespace System.IO.Compression
         private byte[] _fileComment;
         private readonly CompressionLevel _compressionLevel;
         private Stream? _forwardReadDataStream;
+        private bool _forwardReadStreamOpened;
         private bool _hasDataDescriptor;
 
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
@@ -355,10 +356,8 @@ namespace System.IO.Compression
             set
             {
                 ThrowIfInvalidArchive();
-                if (_archive.Mode == ZipArchiveMode.Read)
+                if (_archive.Mode is ZipArchiveMode.Read or ZipArchiveMode.ForwardRead)
                     throw new NotSupportedException(SR.ReadOnlyArchive);
-                if (_archive.Mode == ZipArchiveMode.ForwardRead)
-                    throw new NotSupportedException(SR.ForwardReadOnly);
                 if (_archive.Mode == ZipArchiveMode.Create && _everOpenedForWrite)
                     throw new IOException(SR.FrozenAfterWrite);
                 if (value.DateTime.Year < ZipHelper.ValidZipDate_YearMin || value.DateTime.Year > ZipHelper.ValidZipDate_YearMax)
@@ -919,8 +918,12 @@ namespace System.IO.Compression
 
         private WrappedStream OpenInForwardReadMode()
         {
-            if (_forwardReadDataStream == null)
+            if (_forwardReadDataStream is null)
                 throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+            if (_forwardReadStreamOpened)
+                throw new IOException(SR.ForwardReadOnly);
+
+            _forwardReadStreamOpened = true;
 
             // Wrap so user disposal does not close our internal data stream.
             // DrainPreviousEntry will drain and dispose _forwardReadDataStream itself.

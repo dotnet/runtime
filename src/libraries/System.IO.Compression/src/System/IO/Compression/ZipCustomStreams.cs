@@ -993,8 +993,7 @@ namespace System.IO.Compression
 
         private void ThrowIfDisposed()
         {
-            if (_isDisposed)
-                throw new ObjectDisposedException(GetType().ToString(), SR.HiddenStreamName);
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -1049,6 +1048,8 @@ namespace System.IO.Compression
         public override void SetLength(long value) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
+        // Does not dispose the base stream — BoundedReadOnlyStream is a window
+        // into the shared archive stream, which outlives individual entries.
         protected override void Dispose(bool disposing)
         {
             _isDisposed = true;
@@ -1081,6 +1082,8 @@ namespace System.IO.Compression
         }
 
         public override bool CanRead => !_isDisposed && _baseStream.CanRead;
+        // Must report true: DeflateStream checks CanSeek to rewind unconsumed bytes
+        // after decompression finishes, which is critical for data descriptor entries.
         public override bool CanSeek => !_isDisposed;
         public override bool CanWrite => false;
 
