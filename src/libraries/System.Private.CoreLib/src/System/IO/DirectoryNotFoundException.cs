@@ -72,7 +72,7 @@ namespace System.IO
         protected DirectoryNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            DirectoryPath = (string?)info.GetValueNoThrow("DirectoryNotFound_DirectoryPath", typeof(string)); // Do not rename (binary serialization)
+            DirectoryPath = (string?)info.GetValueNoThrow("DirectoryNotFound_DirectoryPath", typeof(string));
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
