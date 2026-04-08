@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Microsoft.Extensions.FileProviders.Physical.Tests
 {
@@ -46,20 +47,26 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             return watcher;
         }
 
-        private static Task WhenChanged(IChangeToken token, bool withTimeout = true)
+        private static async Task WhenChanged(IChangeToken token, bool withTimeout = true)
         {
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            using var registration = token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
+            try
+            {
             if (withTimeout)
             {
-                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                cts.Token.Register(() => tcs.TrySetException(
-                    new TimeoutException("Change token did not fire within 30 seconds.")));
-                token.RegisterChangeCallback(_ => cts.Dispose(), null);
+                    await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                }
+                else
+                {
+                    await tcs.Task;
+                }
             }
-
-            return tcs.Task;
+            catch (TimeoutException ex)
+            {
+                throw new XunitException("Change token did not fire within 30 seconds.", ex);
+            }
         }
 
         [Fact]
