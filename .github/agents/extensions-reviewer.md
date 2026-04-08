@@ -219,11 +219,15 @@ Map changed files to primary and secondary review dimensions:
 3. Read full source files for all changed files (not just diff hunks).
 4. Note which principles are most at risk for this change.
 
-### Wave 1 — Dimension Scan
-For each relevant dimension (primary first, then secondary):
-1. Walk through every CHECK item.
-2. For each CHECK that applies to the diff, verify conformance.
-3. Record findings with severity (critical > major > minor).
+### Wave 1 — Dimension Scan (Parallelized)
+
+Launch one **sub-agent** (model: `claude-opus-4.6`) per relevant dimension, running all dimensions in parallel. Each sub-agent receives:
+
+1. **Briefing pack** — the full diff, list of affected files, identified feature areas, and the principles most at risk (all from Wave 0).
+2. **Its assigned dimension** — the dimension name, description, and every CHECK item for that dimension.
+3. **Instruction** — walk through every CHECK item against the diff and full file context. For each CHECK that applies, verify conformance. Record findings with severity (critical > major > minor), the specific CHECK that was violated, file and line, and a concrete description.
+
+Wait for all sub-agents to complete, then collect and merge their findings before proceeding to Wave 2.
 
 ### Wave 2 — Cross-Cutting Validation
 1. Check whether sibling types or related code has the same issue.
