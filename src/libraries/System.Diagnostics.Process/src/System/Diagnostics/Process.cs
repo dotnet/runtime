@@ -1209,6 +1209,10 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out childInputHandle, out parentInputPipeHandle);
                         }
+                        else if (startInfo.StartDetached)
+                        {
+                            childInputHandle = File.OpenNullHandle();
+                        }
                         else if (ProcessUtils.PlatformSupportsConsole)
                         {
                             childInputHandle = Console.OpenStandardInputHandle();
@@ -1222,6 +1226,10 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputHandle, asyncRead: OperatingSystem.IsWindows());
                         }
+                        else if (startInfo.StartDetached)
+                        {
+                            childOutputHandle = File.OpenNullHandle();
+                        }
                         else if (ProcessUtils.PlatformSupportsConsole)
                         {
                             childOutputHandle = Console.OpenStandardOutputHandle();
@@ -1234,6 +1242,10 @@ namespace System.Diagnostics
                         else if (startInfo.RedirectStandardError)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorHandle, asyncRead: OperatingSystem.IsWindows());
+                        }
+                        else if (startInfo.StartDetached)
+                        {
+                            childErrorHandle = File.OpenNullHandle();
                         }
                         else if (ProcessUtils.PlatformSupportsConsole)
                         {

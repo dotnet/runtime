@@ -120,6 +120,22 @@ namespace System.Diagnostics
         public bool RedirectStandardError { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the process should be started in a detached manner.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Starts a new detached process with standard input, output, and error redirected to NUL
+        /// unless specified otherwise by the user.
+        /// On Windows, the process is started with the <c>DETACHED_PROCESS</c> flag.
+        /// On Unix, the process is started as a leader of a new session.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="UseShellExecute"/> set to <see langword="true"/>.
+        /// </para>
+        /// </remarks>
+        public bool StartDetached { get; set; }
+
+        /// <summary>
         /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard input of the child process.
         /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardInput"/> must be <see langword="false"/>.
         /// </summary>
@@ -394,6 +410,11 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
+            if (StartDetached && UseShellExecute)
+            {
+                throw new InvalidOperationException(SR.StartDetachedNotCompatibleWithUseShellExecute);
+            }
+
             if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
             {
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
@@ -440,6 +461,13 @@ namespace System.Diagnostics
                 }
 
                 inheritedHandles = snapshot;
+            }
+            else if (StartDetached)
+            {
+                // When StartDetached is set and the user has not restricted handle inheritance
+                // by providing an explicit allow list, use an empty list to prevent any handles
+                // from being inherited by the detached process.
+                inheritedHandles = [];
             }
             else
             {

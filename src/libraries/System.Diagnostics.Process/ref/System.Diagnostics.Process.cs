@@ -264,6 +264,7 @@ namespace System.Diagnostics
         public bool RedirectStandardError { get { throw null; } set { } }
         public bool RedirectStandardInput { get { throw null; } set { } }
         public bool RedirectStandardOutput { get { throw null; } set { } }
+        public bool StartDetached { get { throw null; } set { } }
         public System.Text.Encoding? StandardErrorEncoding { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardErrorHandle { get { throw null; } set { } }
         public System.Text.Encoding? StandardInputEncoding { get { throw null; } set { } }
