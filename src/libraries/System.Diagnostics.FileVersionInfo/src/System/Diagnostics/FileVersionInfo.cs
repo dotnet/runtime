@@ -288,7 +288,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The path and name of the file to retrieve version information for.</param>
         /// <returns>A <see cref="FileVersionInfo" /> containing information about the file. If the file did not contain version information, the <see cref="FileVersionInfo" /> contains only the name of the file requested.</returns>
-        /// <exception cref="FileNotFoundException"><paramref name="fileName"/> does not exist.</exception>
+        /// <exception cref="FileNotFoundException"><paramref name="fileName"/> does not exist or cannot be accessed.</exception>
         public static FileVersionInfo GetVersionInfo(string fileName)
         {
             // Check if fileName is a full path. Relative paths can cause confusion if the local file has the .dll extension,
@@ -309,7 +309,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns a partial list of properties in the <see cref="FileVersionInfo" /> and their values.
         /// </summary>
-        /// <returns>A list of the following properties in this class and their values: <see cref="FileName" />, <see cref="InternalName" />, <see cref="OriginalFilename" />, <see cref="FileVersion" />, <see cref="FileDescription" />, <see cref="ProductName" />, <see cref="ProductVersion" />, <see cref="IsDebug" />, <see cref="IsPatched" />, <see cref="IsPreRelease" />, <see cref="IsPrivateBuild" />, <see cref="IsSpecialBuild" />, <see cref="Language" />. If the file did not contain version information, Boolean values will be <see langword="false" />, and other values will be empty.</returns>
+        /// <returns>A list of the following properties in this class and their values: <see cref="FileName" />, <see cref="InternalName" />, <see cref="OriginalFilename" />, <see cref="FileVersion" />, <see cref="FileDescription" />, <see cref="ProductName" />, <see cref="ProductVersion" />, <see cref="IsDebug" />, <see cref="IsPatched" />, <see cref="IsPreRelease" />, <see cref="IsPrivateBuild" />, <see cref="IsSpecialBuild" />, <see cref="Language" />. If the file did not contain version information, <see cref="FileName" /> will still contain the name of the file requested, Boolean values will be <see langword="false" />, and the other version-related values will be empty.</returns>
         public override string ToString()
         {
             // An initial capacity of 512 was chosen because it is large enough to cover
