@@ -7,6 +7,10 @@
 #include <string.h>
 #include <minipal/utils.h>
 #include <minipal/mutex.h>
+#if defined(_WIN32)
+#include <locale.h>
+#include <share.h>
+#endif
 
 #define TRACE_VERBOSITY_WARN 2
 #define TRACE_VERBOSITY_INFO 3
@@ -18,16 +22,30 @@ static FILE* g_trace_file = NULL;
 static PAL_THREAD_LOCAL trace_error_writer_fn g_error_writer = NULL;
 
 static minipal_mutex g_trace_lock;
-static bool g_trace_lock_initialized = false;
 
+#if defined(_WIN32)
+static INIT_ONCE g_trace_lock_once = INIT_ONCE_STATIC_INIT;
+static BOOL CALLBACK trace_init_lock_callback(PINIT_ONCE InitOnce, PVOID Parameter, PVOID* Context)
+{
+    (void)InitOnce; (void)Parameter; (void)Context;
+    minipal_mutex_init(&g_trace_lock);
+    return TRUE;
+}
 static void trace_ensure_lock_initialized(void)
 {
-    if (!g_trace_lock_initialized)
-    {
-        minipal_mutex_init(&g_trace_lock);
-        g_trace_lock_initialized = true;
-    }
+    InitOnceExecuteOnce(&g_trace_lock_once, trace_init_lock_callback, NULL, NULL);
 }
+#else
+static pthread_once_t g_trace_lock_once = PTHREAD_ONCE_INIT;
+static void trace_init_lock(void)
+{
+    minipal_mutex_init(&g_trace_lock);
+}
+static void trace_ensure_lock_initialized(void)
+{
+    pthread_once(&g_trace_lock_once, trace_init_lock);
+}
+#endif // _WIN32
 
 static void trace_lock_acquire(void)
 {

@@ -44,9 +44,8 @@ pal_char_t* utils_get_directory_alloc(const pal_char_t* path)
     while (pos > buf && *(pos - 1) == DIR_SEPARATOR)
         pos--;
 
-    size_t dir_len = (size_t)(pos - buf) + 1; // +1 for the trailing separator
-    buf[dir_len] = DIR_SEPARATOR;
-    buf[dir_len + 1] = _X('\0');
+    size_t dir_len = (size_t)(pos - buf) + 1; // +1 to include the trailing separator
+    buf[dir_len] = _X('\0');
     return buf;
 }
 
@@ -88,8 +87,8 @@ void utils_get_directory(const pal_char_t* path, pal_char_t* out_dir, size_t out
     while (pos > buf && *(pos - 1) == DIR_SEPARATOR)
         pos--;
 
-    size_t dir_len = (size_t)(pos - buf) + 1; // +1 for the trailing separator
-    if (dir_len >= out_dir_len)
+    size_t dir_len = (size_t)(pos - buf) + 1; // +1 to include the trailing separator
+    if (dir_len + 1 > out_dir_len) // need dir_len chars + NUL
     {
         if (out_dir_len > 0)
             out_dir[0] = _X('\0');
@@ -97,8 +96,7 @@ void utils_get_directory(const pal_char_t* path, pal_char_t* out_dir, size_t out
     }
 
     memcpy(out_dir, buf, dir_len * sizeof(pal_char_t));
-    out_dir[dir_len] = DIR_SEPARATOR;
-    out_dir[dir_len + 1] = _X('\0');
+    out_dir[dir_len] = _X('\0');
 }
 
 void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len)

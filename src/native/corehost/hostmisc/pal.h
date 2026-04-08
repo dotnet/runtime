@@ -24,7 +24,8 @@
 typedef wchar_t pal_char_t;
 #endif
 #ifndef _X
-#define _X(s) L ## s
+#define _X_HELPER(s) L ## s
+#define _X(s) _X_HELPER(s)
 #endif
 #else
 #ifndef PAL_CHAR_T_DEFINED

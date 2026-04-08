@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-typedef void (__cdecl *trace_error_writer_fn)(const pal_char_t* message);
+typedef void (*trace_error_writer_fn)(const pal_char_t* message);
 
 void trace_setup(void);
 bool trace_enable(void);

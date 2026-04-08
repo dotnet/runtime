@@ -79,7 +79,14 @@ static bool get_latest_fxr(const pal_char_t* fxr_root, pal_char_t** out_fxr_path
         if (c_fx_ver_parse(ver_name, &fx_ver, false))
         {
             if (c_fx_ver_is_empty(&max_ver) || c_fx_ver_compare(&fx_ver, &max_ver) > 0)
+            {
+                c_fx_ver_cleanup(&max_ver);
                 max_ver = fx_ver;
+            }
+            else
+            {
+                c_fx_ver_cleanup(&fx_ver);
+            }
         }
     }
 
@@ -99,6 +106,7 @@ static bool get_latest_fxr(const pal_char_t* fxr_root, pal_char_t** out_fxr_path
 
     pal_char_t max_ver_str[128];
     c_fx_ver_as_str(&max_ver, max_ver_str, ARRAY_SIZE(max_ver_str));
+    c_fx_ver_cleanup(&max_ver);
 
     size_t root_len = pal_strlen(fxr_root);
     size_t ver_len = pal_strlen(max_ver_str);
@@ -216,7 +224,8 @@ bool fxr_resolver_try_get_path(
             trace_info(_X("Using environment variable %s=[%s] as runtime location."), dotnet_root_env_var_name, dotnet_root);
         }
     }
-    else if (search_global)
+
+    if (dotnet_root == NULL && search_global)
     {
         pal_char_t global_install_location[APPHOST_PATH_MAX];
         if (pal_get_dotnet_self_registered_dir(global_install_location, ARRAY_SIZE(global_install_location))

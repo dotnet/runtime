@@ -87,7 +87,7 @@ static bool is_exe_enabled_for_execution(pal_char_t* app_dll, size_t app_dll_len
         && compare_memory_nooptimization(&embed[0], hi_part, hi_len)
         && compare_memory_nooptimization(&embed[hi_len], lo_part, lo_len))
     {
-        trace_error(_X("This executable is not bound to a managed DLL to execute. The binding value is: '%s'"), app_dll);
+        trace_error(_X("This executable is not bound to a managed DLL to execute."));
         return false;
     }
 
