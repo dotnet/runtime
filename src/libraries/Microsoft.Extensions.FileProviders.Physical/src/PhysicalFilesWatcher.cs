@@ -877,6 +877,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
             [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
             private void OnError(object sender, ErrorEventArgs e)
             {
+                FileSystemWatcher? watcher;
+
                 lock (_lock)
                 {
                     if (sender != _watcher || _cts.IsCancellationRequested)
@@ -884,9 +886,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         return;
                     }
 
-                    _watcher?.Dispose();
+                    watcher = _watcher;
                     _watcher = null;
                 }
+
+                watcher?.Dispose();
 
                 TryCancelCts();
             }
