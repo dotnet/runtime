@@ -389,13 +389,15 @@ Execute the review in five sequential waves. Each wave builds on the previous on
 4. **Check related platform files**: if a Windows code path is changed, check whether the corresponding Linux/macOS path needs the same change (and vice versa). Look for `*.Windows.cs`, `*.Unix.cs`, `*.OSX.cs` variants.
 5. **Read recent git history** for the changed files to identify active churn, recent regressions, or related prior fixes.
 
-### Wave 1 — Find Issues Per Dimension
+### Wave 1 — Find Issues Per Dimension (Parallelized)
 
-For each in-scope dimension (as determined by the routing table):
+Launch one **sub-agent** (model: `claude-opus-4.6`) per in-scope dimension (as determined by the routing table), running all dimensions in parallel. Each sub-agent receives:
 
-1. Walk through every CHECK item for that dimension against the diff and full file context.
-2. Record any findings with the specific CHECK that was violated, the file and line, and a concrete description of the issue.
-3. Note findings that span multiple dimensions (e.g., a resource leak on an error path touches both D5: Resource Lifecycle and D9: Error Handling).
+1. **Briefing pack** — the full diff, list of affected files, protocol context, platform variants, and recent git history (all from Wave 0).
+2. **Its assigned dimension** — the dimension name, description, and every CHECK item for that dimension.
+3. **Instruction** — walk through every CHECK item against the diff and full file context. Record any findings with the specific CHECK that was violated, the file and line, and a concrete description. Note findings that span multiple dimensions (e.g., a resource leak on an error path touches both D5: Resource Lifecycle and D9: Error Handling).
+
+Wait for all sub-agents to complete, then collect and merge their findings before proceeding to Wave 2.
 
 ### Wave 2 — Validate Findings
 
