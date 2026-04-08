@@ -13,7 +13,7 @@ public class Test_GetAllocatedBytesForCurrentThread
 {
     static Random Rand = new Random();
 
-    public static bool IsNotHeapVerifyOnArmArchitecture => !(Utilities.IsArm && CoreClrConfigurationDetection.IsHeapVerify);
+    public static bool IsNotHeapVerifyOnArmArchitecture => !(Utilities.IsArm && TestLibrary.CoreClrConfigurationDetection.IsHeapVerify);
 
     public static bool GetAllocatedBytesForCurrentThread(int size)
     {

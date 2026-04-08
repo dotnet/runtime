@@ -13,7 +13,7 @@ using TestLibrary;
 
 public class Test_GetTotalAllocatedBytes 
 {
-    public static bool IsNotHeapVerifyOnArmArchitecture => !(Utilities.IsArm && CoreClrConfigurationDetection.IsHeapVerify);
+    public static bool IsNotHeapVerifyOnArmArchitecture => !(Utilities.IsArm && TestLibrary.CoreClrConfigurationDetection.IsHeapVerify);
 
     struct Counts
     {

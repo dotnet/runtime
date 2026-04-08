@@ -9,7 +9,7 @@ using TestLibrary;
 
 public class Test_494226
 {
-    public static bool IsNotHeapVerifyOnNonX64Architecture => !((Utilities.IsX86 || Utilities.IsArm || Utilities.IsArm64) && CoreClrConfigurationDetection.IsHeapVerify);
+    public static bool IsNotHeapVerifyOnNonX64Architecture => !((Utilities.IsX86 || Utilities.IsArm || Utilities.IsArm64) && TestLibrary.CoreClrConfigurationDetection.IsHeapVerify);
 
     [System.Security.SecuritySafeCritical]
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
