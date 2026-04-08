@@ -41,6 +41,9 @@ namespace System.Diagnostics
         /// <see cref="ProcessStartInfo.StandardOutputHandle"/>, or <see cref="ProcessStartInfo.StandardErrorHandle"/>)
         /// is not provided, it is redirected to the null file by default.
         /// </para>
+        /// <para>
+        /// When possible, handle inheritance in the new process is limited to the standard handles only.
+        /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -105,6 +108,9 @@ namespace System.Diagnostics
         /// </para>
         /// <para>
         /// Standard handles are redirected to the null file by default.
+        /// </para>
+        /// <para>
+        /// No handles are inherited by the new process.
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]
