@@ -5768,6 +5768,7 @@ public:
     PhaseStatus fgExpandQmarkNodes(bool early);
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
+    GenTree* fgSimpleLowerSmpOpCasts(LIR::Range& range, GenTreeOp* op);
     bool fgSimpleLowerBswap16(LIR::Range& range, GenTree* op);
 
 #if FEATURE_LOOP_ALIGN

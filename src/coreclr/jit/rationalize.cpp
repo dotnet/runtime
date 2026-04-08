@@ -1804,6 +1804,19 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
             break;
 
+        case GT_AND:
+        case GT_OR:
+        case GT_XOR:
+        {
+            GenTree* replacement = m_compiler->fgSimpleLowerSmpOpCasts(BlockRange(), node->AsOp());
+            if (replacement != nullptr)
+            {
+                use.ReplaceWith(replacement);
+                node = replacement;
+            }
+        }
+        break;
+
         case GT_BSWAP16:
             if (node->gtGetOp1()->OperIs(GT_CAST))
             {

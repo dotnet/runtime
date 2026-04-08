@@ -2854,6 +2854,87 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 }
 
 //------------------------------------------------------------------------
+// fgSimpleLowerSmpOpCasts: Optimization to reduce two CAST nodes to one for bitwise operations.
+// When range assertions remove an outer cast from CAST(OP(CAST(x), CAST(y))), we're left with
+// OP(CAST(x), CAST(y)) which has two casts. For bitwise ops (AND, OR, XOR), we can transform
+// this to CAST(OP(x, y)) since these operations are bit-independent: the lower bits of the result
+// depend only on the lower bits of the inputs, and sign/zero extension commutes with bitwise ops.
+//
+// Example:
+//      AND(CAST(x), CAST(y)) transforms to CAST(AND(x, y))
+//
+// Arguments:
+//      range - The LIR range containing the node.
+//      op    - The binary bitwise operation node (GT_AND, GT_OR, or GT_XOR).
+//
+// Returns:
+//      The new root GenTree node (the outer CAST) if the optimization was applied, nullptr otherwise.
+//      When non-null is returned, the caller must replace the use of 'op' with the returned node.
+//
+// Notes:
+//      This optimization could be done in morph, but it cannot because there are correctness
+//      problems with NOLs (normalized-on-load locals) and how they are handled in VN.
+//      Simple put, you cannot remove a CAST from CAST(LCL_VAR{nol}) in HIR.
+//
+//      Because the optimization happens during rationalization, turning into LIR, it is safe to remove the CAST.
+//
+GenTree* Compiler::fgSimpleLowerSmpOpCasts(LIR::Range& range, GenTreeOp* op)
+{
+    assert(op->OperIs(GT_AND, GT_OR, GT_XOR));
+
+    if (opts.OptimizationDisabled())
+        return nullptr;
+
+    GenTree* op1 = op->gtGetOp1();
+    GenTree* op2 = op->gtGetOp2();
+
+    if (!op1->OperIs(GT_CAST) || !op2->OperIs(GT_CAST))
+        return nullptr;
+
+    GenTreeCast* cast1 = op1->AsCast();
+    GenTreeCast* cast2 = op2->AsCast();
+
+    if (cast1->gtOverflow() || cast2->gtOverflow())
+        return nullptr;
+
+    var_types castToType = cast1->CastToType();
+
+    // Both casts must target the same small integer type.
+    if (!varTypeIsSmall(castToType) || castToType != cast2->CastToType())
+        return nullptr;
+
+    var_types opType = op->TypeGet();
+
+    // Only optimize if the op type is integral.
+    if (!varTypeIsIntegral(opType))
+        return nullptr;
+
+    // Both cast sources must have the same actual type as the op.
+    if (genActualType(cast1->CastOp()) != genActualType(opType) ||
+        genActualType(cast2->CastOp()) != genActualType(opType))
+        return nullptr;
+
+    // Remove both inner casts from the op's operands.
+    op->gtOp1 = cast1->CastOp();
+    op->gtOp2 = cast2->CastOp();
+
+    // Remove cast2 entirely.
+    range.Remove(cast2);
+
+    // Repurpose cast1 as the outer cast: CAST_T(OP(x, y)).
+    range.Remove(cast1);
+    cast1->CastOp() = op;
+    range.InsertAfter(op, cast1);
+
+#ifdef DEBUG
+    JITDUMP("Lower - Simple Op Casts %s:\n", GenTree::OpName(op->OperGet()));
+    DISPTREE(cast1);
+#endif // DEBUG
+
+    return cast1;
+}
+
+//------------------------------------------------------------------------
 // fgSimpleLowerBswap16 : Optimization to remove CAST nodes from operands of small ops that depend on
 // lower bits only (currently only BSWAP16).
 // Example:
