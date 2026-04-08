@@ -7,7 +7,7 @@ namespace Microsoft.NET.WebAssembly.Webcil;
 
 internal static class WebcilConstants
 {
-    public const int WC_VERSION_MAJOR = 0;
+    public const int WC_VERSION_MAJOR = 1;
     public const int WC_VERSION_MINOR = 0;
 
     /// <summary>

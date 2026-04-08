@@ -9,12 +9,17 @@ using Microsoft.NET.WebAssembly.Webcil;
 
 namespace ILCompiler.ObjectWriter
 {
+    internal enum WebcilVersion
+    {
+        Version0 = 0,
+        Version1 = 1
+    }
     /// <summary>
     /// Provides encoding helpers for writing Webcil headers to a stream.
     /// </summary>
     internal static class WebcilEncoder
     {
-        public static int HeaderEncodeSize()
+        public static int HeaderEncodeSize(WebcilVersion version)
         {
             int size = sizeof(uint) +    // Id: 4
                     sizeof(ushort) +     // VersionMajor: 6
@@ -26,12 +31,18 @@ namespace ILCompiler.ObjectWriter
                     sizeof(uint) +       // PeDebugRva: 24
                     sizeof(uint);        // PeDebugSize: 28
             Debug.Assert(size == 28);
+            if (version >= WebcilVersion.Version1)
+            {
+                size += sizeof(uint); // TableBase: 32
+            }
             return size;
         }
 
+        public static int TableBaseOffset => 28;
+
         public static int EmitHeader(in WebcilHeader header, Stream outputStream)
         {
-            int encodeSize = HeaderEncodeSize();
+            int encodeSize = HeaderEncodeSize((WebcilVersion)header.VersionMajor);
             Span<byte> headerBuffer = stackalloc byte[encodeSize];
             BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(0, 4), header.Id);
             BinaryPrimitives.WriteUInt16LittleEndian(headerBuffer.Slice(4, 2), header.VersionMajor);
@@ -42,6 +53,13 @@ namespace ILCompiler.ObjectWriter
             BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(16, 4), header.PeCliHeaderSize);
             BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(20, 4), header.PeDebugRva);
             BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(24, 4), header.PeDebugSize);
+    
+            if ((WebcilVersion)header.VersionMajor >= WebcilVersion.Version1)
+            {
+                // TableBase is always written as 0 in the file, as the spec requires it to be filled
+                // in by the getWebcilPayload function at runtime.
+                BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(28, 4), 0); 
+            }
 
             outputStream.Write(headerBuffer);
             return encodeSize;
