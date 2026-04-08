@@ -3719,7 +3719,6 @@ void InitializeComInterop()
     }
     CONTRACTL_END;
 
-    ComCall::Init();
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG
