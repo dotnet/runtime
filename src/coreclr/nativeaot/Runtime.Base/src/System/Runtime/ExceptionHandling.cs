@@ -578,20 +578,17 @@ namespace System.Runtime
         //
         // Called by RhpThrowHwEx
         //
-#if NATIVEAOT
-        [RuntimeExport("RhThrowHwEx")]
-#else
-        [UnmanagedCallersOnly]
-#endif
         [StackTraceHidden]
 #if NATIVEAOT
-    public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
+        [RuntimeExport("RhThrowHwEx")]
+        public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
 #else
-    internal static void RhThrowHwEx(uint exceptionCode, ExInfo* pExInfo)
+        [UnmanagedCallersOnly]
+        internal static void RhThrowHwEx(uint exceptionCode, ExInfo* pExInfo)
 #endif
         {
 #if !NATIVEAOT
-        ref ExInfo exInfo = ref *pExInfo;
+            ref ExInfo exInfo = ref *pExInfo;
 #endif
 #if NATIVEAOT
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
@@ -713,21 +710,18 @@ namespace System.Runtime
 #endif
         }
 
-#if NATIVEAOT
-        [RuntimeExport("RhRethrow")]
-#else
-        [UnmanagedCallersOnly]
-#endif
         [StackTraceHidden]
 #if NATIVEAOT
+        [RuntimeExport("RhRethrow")]
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
 #else
-    internal static void RhRethrow(ExInfo* pActiveExInfo, ExInfo* pExInfo)
+        [UnmanagedCallersOnly]
+        internal static void RhRethrow(ExInfo* pActiveExInfo, ExInfo* pExInfo)
 #endif
         {
 #if !NATIVEAOT
-        ref ExInfo activeExInfo = ref *pActiveExInfo;
-        ref ExInfo exInfo = ref *pExInfo;
+            ref ExInfo activeExInfo = ref *pActiveExInfo;
+            ref ExInfo exInfo = ref *pExInfo;
 #endif
 #if NATIVEAOT
 
