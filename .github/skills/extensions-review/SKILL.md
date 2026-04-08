@@ -145,8 +145,8 @@ public async Task<MyData> GetDataAsync(string key, CancellationToken ct)
 {
     return await hybridCache.GetOrCreateAsync(
         key,
-        static async (state, ct) => await state.source.FetchAsync(state.key, ct),
         (source: _dataSource, key),
+        static async (state, ct) => await state.source.FetchAsync(state.key, ct),
         cancellationToken: ct);
 }
 ```
