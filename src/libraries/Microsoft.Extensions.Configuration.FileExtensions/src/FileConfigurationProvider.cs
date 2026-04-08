@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 if (Source.Optional || reload) // Always optional on reload
                 {
-                    Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                    ClearData();
                     updated = true;
                 }
                 else
@@ -95,31 +95,42 @@ namespace Microsoft.Extensions.Configuration
                     return fileInfo.CreateReadStream();
                 }
 
+                Stream stream;
                 try
                 {
-                    using Stream stream = OpenRead(file);
+                    stream = OpenRead(file);
+                }
+                catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
+                    // We checked for existen above, assuming file was deleted in meantime
+                    ClearData();
+                    OnReload();
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    // IO error on file open, preserve existing Data
+                    HandleException(ExceptionDispatchInfo.Capture(ex));
+                    return;
+                }
+
+                using (stream)
+                {
                     try
                     {
                         Load(stream);
                         updated = true;
                     }
-                    catch (Exception ex) when (ex is not IOException)
+                    catch (Exception ex)
                     {
                         if (reload)
                         {
-                            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                            ClearData();
                             updated = true;
                         }
                         string filePath = file.PhysicalPath ?? Source.Path ?? file.Name;
-                        throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, filePath), ex);
+                        var wrapped = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, filePath), ex);
+                        HandleException(ExceptionDispatchInfo.Capture(wrapped));
                     }
-                }
-                catch (Exception ex)
-                {
-                    // We do not reset Data here. We reset Data only for exceptions from Load (inner try
-                    // block above) such as parse errors. For (possibly transient) IO Exceptions mainly
-                    // from OpenRead, we preserve the original configuration.
-                    HandleException(ExceptionDispatchInfo.Capture(ex));
                 }
             }
             if (updated)
@@ -170,6 +181,10 @@ namespace Microsoft.Extensions.Configuration
             {
                 info.Throw();
             }
+        }
+
+        private void ClearData() {
+            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <inheritdoc />
