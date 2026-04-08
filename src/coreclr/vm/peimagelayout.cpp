@@ -277,11 +277,25 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     const SIZE_T cbPageSize = 4096;
 
     COUNT_T dirPos = 0;
+#ifdef TARGET_WASM
+    // WASM will padd out the reloc size to the next 16 byte boundary, so we need to validate we can safely read the IMAGE_BASE_RELOCATION struct before processing each entry.
+    while (dirPos < (dirSize - sizeof(IMAGE_BASE_RELOCATION)))
+#else
     while (dirPos < dirSize)
+#endif
     {
         PIMAGE_BASE_RELOCATION r = (PIMAGE_BASE_RELOCATION)(dir + dirPos);
 
         COUNT_T fixupsSize = VAL32(r->SizeOfBlock);
+
+#ifdef TARGET_WASM
+        if (fixupsSize == 0)
+        {
+            // Since WASM will pad the reloc block to the next 16 byte boundary with 0's we need to allow for a SizeOfBlock being zero.
+            // This can only happen for the last block in the relocation list, so we can break here instead of continue.
+            break;
+        }
+#endif
 
         USHORT *fixups = (USHORT *) (r + 1);
 

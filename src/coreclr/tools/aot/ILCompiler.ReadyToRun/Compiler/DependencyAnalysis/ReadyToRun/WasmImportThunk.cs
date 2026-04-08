@@ -116,6 +116,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Debug.Assert(_thunkKind == ImportThunkKind.DelayLoadHelper);
             Debug.Assert(!instructionEncoder.Is64Bit); // We currently only support 32-bit, and the thunk logic is currently tied to that assumption
+            int firstNonParamLocalIndex = _typeNode.Type.Params.Types.Length;
 
             // WASM-TODO! This is NOT an efficient way to implement this thunk. Currently it writes all the arguments to the stack, not just the ones which need to be saved for GC purposes.
             // At some point we'll want to only write the arguments which need GC tracking, and skip the save/restore for other arguments. This will require changes to code
@@ -155,6 +156,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Sub);
             // local.tee 0
             expressions.Add(Local.Tee(0));
+
+            expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex)); // Get the current value of the stack pointer global
+            expressions.Add(Local.Set(firstNonParamLocalIndex));
 
             // global.set {stack pointer global}  // This is a callout from managed to native, we need to set the global stack pointer so that C++ code will work
             expressions.Add(Global.Set(0));
@@ -227,6 +231,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Const(sizeOfStoredLocals));
             // i32.add
             expressions.Add(I32.Add);
+
+            expressions.Add(Local.Get(firstNonParamLocalIndex));
+            expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex)); // Set the current value of the stack pointer global
             //
             // ; Setup normal args
             // for (int i = 0; i < N; i++)
@@ -276,7 +283,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(ControlFlow.CallIndirect(_typeNode, 0));
 
             // Encode as a complete function body
-            instructionEncoder.FunctionBody = new WasmFunctionBody(_typeNode.Type, expressions.ToArray());
+            instructionEncoder.FunctionBody = new WasmFunctionBody(_typeNode.Type, new WasmValueType[]{WasmValueType.I32}, expressions.ToArray());
         }
 
         protected override void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly) { throw new NotSupportedException(); }

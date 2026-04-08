@@ -16,9 +16,39 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoin
 // -------------------------------------------------
 namespace
 {
+    static void CallInterpreter_RetVoid(uintptr_t stackArg, PCODE portableEntrypoint)
+    {
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, nullptr, 0, (int8_t*)&result);
+        return;
+    }
     static void CallInterpreter_I32_RetVoid(uintptr_t stackArg, int32_t arg0, PCODE portableEntrypoint)
     {
         int64_t args[1] = { (int64_t)arg0 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return;
+    }
+    static void CallInterpreter_I32_I32_RetVoid(uintptr_t stackArg, int32_t arg0, int32_t arg1, PCODE portableEntrypoint)
+    {
+        int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return;
+    }
+    static void CallInterpreter_I32_I32_I32_RetVoid(uintptr_t stackArg, int32_t arg0, int32_t arg1, int32_t arg2, PCODE portableEntrypoint)
+    {
+        int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
+        void * result = NULL;
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
+        return;
+    }
+    static void CallInterpreter_I32_I32_I32_I32_RetVoid(uintptr_t stackArg, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, PCODE portableEntrypoint)
+    {
+        int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
 
         void * result = NULL;
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, (int8_t*)args, sizeof(args), (int8_t*)&result);
@@ -97,7 +127,11 @@ namespace
 }
 
 const StringToWasmSigThunk g_wasmPortableEntryPointThunks[] = {
+    { "vp", (void*)&CallInterpreter_RetVoid },
     { "vip", (void*)&CallInterpreter_I32_RetVoid },
+    { "viip", (void*)&CallInterpreter_I32_I32_RetVoid },
+    { "viiip", (void*)&CallInterpreter_I32_I32_I32_RetVoid },
+    { "viiiip", (void*)&CallInterpreter_I32_I32_I32_I32_RetVoid },
     { "ip", (void*)&CallInterpreter_RetI32 },
     { "iip", (void*)&CallInterpreter_I32_RetI32 },
     { "iiip", (void*)&CallInterpreter_I32_I32_RetI32 },
@@ -732,7 +766,7 @@ namespace
                 // Another thread won the race, discard ours
                 delete newTable;
             }
-            table = thunkCache;
+            table = portableEntrypointThunkCache;
         }
 
         void* thunk;

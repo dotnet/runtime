@@ -17,7 +17,7 @@ bool PortableEntryPoint::HasNativeEntryPoint(PCODE addr)
 {
     LIMITED_METHOD_CONTRACT;
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    return portableEntryPoint->HasNativeCode();
+    return portableEntryPoint->HasNativeCode() && !portableEntryPoint->PrefersInterpreterEntryPoint();
 }
 
 bool PortableEntryPoint::HasInterpreterData(PCODE addr)
