@@ -274,6 +274,10 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         {
             pMD->SetILStubType(DynamicMethodDesc::StubCOMToCLRInterop);
         }
+        else if (SF_IsCOMEventCallStub(dwStubFlags))
+        {
+            pMD->SetILStubType(DynamicMethodDesc::StubCLRToCOMEvent);
+        }
         else
         {
             pMD->SetILStubType(DynamicMethodDesc::StubCLRToCOMInterop);

@@ -867,8 +867,89 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.GetCodeHeapList(ClrDataAddress jitManager, uint count, void* codeHeaps, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetCodeHeapList(jitManager, count, codeHeaps, pNeeded) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetCodeHeapList(ClrDataAddress jitManager, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpJitCodeHeapInfo[]? codeHeaps, uint* pNeeded)
+    {
+        // returns the code heap list from the single global EEJitManager.
+        int hr = HResults.S_OK;
+        try
+        {
+            if (jitManager == 0 || (codeHeaps == null && pNeeded == null))
+                throw new ArgumentException();
+
+            IExecutionManager em = _target.Contracts.ExecutionManager;
+#if DEBUG
+            Contracts.JitManagerInfo jitManagerInfo = em.GetEEJitManagerInfo();
+            Debug.Assert(jitManager.ToTargetPointer(_target) == jitManagerInfo.ManagerAddress);
+#endif
+
+            List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+            int i = 0;
+            if (codeHeaps is not null)
+            {
+                for (; i < heapInfos.Count && i < count; i++)
+                {
+                    codeHeaps[i] = default;
+                    switch (heapInfos[i])
+                    {
+                        case Contracts.LoaderCodeHeapInfo loader:
+                            codeHeaps[i].codeHeapType = DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_LOADER;
+                            codeHeaps[i].LoaderHeap = loader.LoaderHeapAddress.ToClrDataAddress(_target);
+                            break;
+                        case Contracts.HostCodeHeapInfo host:
+                            codeHeaps[i].codeHeapType = DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_HOST;
+                            codeHeaps[i].baseAddr    = host.BaseAddress.ToClrDataAddress(_target);
+                            codeHeaps[i].currentAddr = host.CurrentAddress.ToClrDataAddress(_target);
+                            break;
+                        default:
+                            codeHeaps[i].codeHeapType = DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_UNKNOWN;
+                            break;
+                    }
+                }
+            }
+
+            if (pNeeded is not null)
+                *pNeeded = codeHeaps is not null ? (uint)i : (uint)heapInfos.Count;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint neededLocal = 0;
+            DacpJitCodeHeapInfo[]? legacyHeaps = codeHeaps is not null ? new DacpJitCodeHeapInfo[(int)count] : null;
+            int hrLocal = _legacyImpl.GetCodeHeapList(jitManager, count, legacyHeaps, codeHeaps is null && pNeeded is null ? null : &neededLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                if (pNeeded != null)
+                {
+                    Debug.Assert(*pNeeded == neededLocal, $"cDAC count: {(*pNeeded):x}, DAC count: {neededLocal:x}");
+                }
+                if (codeHeaps != null && legacyHeaps != null)
+                {
+                    for (uint i = 0; i < neededLocal && i < count; i++)
+                    {
+                        Debug.Assert(codeHeaps[i].codeHeapType == legacyHeaps![i].codeHeapType,
+                            $"cDAC heap[{i}] type: {codeHeaps[i].codeHeapType}, DAC: {legacyHeaps[i].codeHeapType}");
+                        if (codeHeaps[i].codeHeapType == DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_LOADER)
+                            Debug.Assert(codeHeaps[i].LoaderHeap == legacyHeaps[i].LoaderHeap,
+                                $"cDAC heap[{i}] LoaderHeap: {codeHeaps[i].LoaderHeap:x}, DAC: {legacyHeaps[i].LoaderHeap:x}");
+                        else if (codeHeaps[i].codeHeapType == DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_HOST)
+                        {
+                            Debug.Assert(codeHeaps[i].baseAddr == legacyHeaps[i].baseAddr,
+                                $"cDAC heap[{i}] baseAddr: {codeHeaps[i].baseAddr:x}, DAC: {legacyHeaps[i].baseAddr:x}");
+                            Debug.Assert(codeHeaps[i].currentAddr == legacyHeaps[i].currentAddr,
+                                $"cDAC heap[{i}] currentAddr: {codeHeaps[i].currentAddr:x}, DAC: {legacyHeaps[i].currentAddr:x}");
+                        }
+                    }
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetDacModuleHandle(void* phModule)
         => _legacyImpl is not null ? _legacyImpl.GetDacModuleHandle(phModule) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetDomainFromContext(ClrDataAddress context, ClrDataAddress* domain)
@@ -5020,8 +5101,140 @@ public sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface4
 
     #region ISOSDacInterface5
-    int ISOSDacInterface5.GetTieredVersions(ClrDataAddress methodDesc, int rejitId, /*struct DacpTieredVersionData*/ void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs)
-        => _legacyImpl5 is not null ? _legacyImpl5.GetTieredVersions(methodDesc, rejitId, nativeCodeAddrs, cNativeCodeAddrs, pcNativeCodeAddrs) : HResults.E_NOTIMPL;
+    int ISOSDacInterface5.GetTieredVersions(
+        ClrDataAddress methodDesc,
+        int rejitId,
+        [In, MarshalUsing(CountElementName = nameof(cNativeCodeAddrs)), Out] DacpTieredVersionData[]? nativeCodeAddrs,
+        int cNativeCodeAddrs,
+        int* pcNativeCodeAddrs)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (methodDesc == 0 || cNativeCodeAddrs == 0 || pcNativeCodeAddrs == null || nativeCodeAddrs is null)
+            {
+                throw new ArgumentException();
+            }
+
+            *pcNativeCodeAddrs = 0;
+
+            ILoader loader = _target.Contracts.Loader;
+            ICodeVersions codeVersions = _target.Contracts.CodeVersions;
+            IReJIT rejitContract = _target.Contracts.ReJIT;
+            TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
+            ILCodeVersionHandle ilCodeVersionHandle = codeVersions.GetILCodeVersions(methodDescPtr)
+                .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode).Value == (ulong)rejitId, ILCodeVersionHandle.Invalid);
+
+            if (!ilCodeVersionHandle.IsValid)
+                throw new ArgumentException();
+
+            IRuntimeTypeSystem runtimeTypeSystemContract = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle methodDescHandle = runtimeTypeSystemContract.GetMethodDescHandle(methodDescPtr);
+            TargetPointer modulePtr = runtimeTypeSystemContract.GetModule(runtimeTypeSystemContract.GetTypeHandle(runtimeTypeSystemContract.GetMethodTable(methodDescHandle)));
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+
+            TargetPointer r2rImageBase = TargetPointer.Null;
+            TargetPointer r2rImageEnd = TargetPointer.Null;
+            if (loader.IsReadyToRun(moduleHandle)
+                && loader.TryGetLoadedImageContents(moduleHandle, out r2rImageBase, out uint r2rSize, out _))
+            {
+                r2rImageEnd = r2rImageBase + r2rSize;
+            }
+            ClrDataAddress r2rImageBaseAddr = r2rImageBase.ToClrDataAddress(_target);
+            ClrDataAddress r2rImageEndAddr = r2rImageEnd.ToClrDataAddress(_target);
+
+            bool isEligibleForTieredCompilation = runtimeTypeSystemContract.IsEligibleForTieredCompilation(methodDescHandle);
+
+            int count = 0;
+            foreach (NativeCodeVersionHandle nativeCodeVersionHandle in codeVersions.GetNativeCodeVersions(methodDescPtr, ilCodeVersionHandle))
+            {
+                ClrDataAddress nativeCodeAddr = codeVersions.GetNativeCode(nativeCodeVersionHandle).Value;
+                nativeCodeAddrs[count].nativeCodeAddr = nativeCodeAddr;
+                nativeCodeAddrs[count].nativeCodeVersionNodePtr = nativeCodeVersionHandle.CodeVersionNodeAddress.ToClrDataAddress(_target);
+
+                if (r2rImageBaseAddr <= nativeCodeAddr && nativeCodeAddr < r2rImageEndAddr)
+                {
+                    nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.ReadyToRun;
+                }
+                else if (isEligibleForTieredCompilation)
+                {
+                    switch (codeVersions.GetOptimizationTier(nativeCodeVersionHandle))
+                    {
+                        default:
+                            nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.Unknown;
+                            break;
+                        case OptimizationTier.OptimizationTier0:
+                            nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.QuickJitted;
+                            break;
+                        case OptimizationTier.OptimizationTier1:
+                            nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.OptimizedTier1;
+                            break;
+                        case OptimizationTier.OptimizationTier1OSR:
+                            nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.OptimizedTier1OSR;
+                            break;
+                        case OptimizationTier.OptimizationTierOptimized:
+                            nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.Optimized;
+                            break;
+                        case OptimizationTier.OptimizationTier0Instrumented:
+                            nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.QuickJittedInstrumented;
+                            break;
+                        case OptimizationTier.OptimizationTier1Instrumented:
+                            nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.OptimizedTier1Instrumented;
+                            break;
+                    }
+                }
+                else
+                {
+                    nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.Unknown;
+                }
+
+                count++;
+
+                if (count >= cNativeCodeAddrs)
+                {
+                    hr = HResults.S_FALSE;
+                    break;
+                }
+            }
+
+            *pcNativeCodeAddrs = count;
+        }
+        catch (NotImplementedException)
+        {
+            // ReJIT contract not available — feature not active in the target runtime
+            return HResults.S_OK;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl5 is not null)
+        {
+            var legacyBuffer = new DacpTieredVersionData[cNativeCodeAddrs];
+            int legacyCount;
+            int hrLocal = _legacyImpl5.GetTieredVersions(methodDesc, rejitId, legacyBuffer, cNativeCodeAddrs, &legacyCount);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(*pcNativeCodeAddrs == legacyCount, $"cDAC count: {*pcNativeCodeAddrs}, DAC count: {legacyCount}");
+                if (nativeCodeAddrs is not null)
+                {
+                    for (int i = 0; i < *pcNativeCodeAddrs; i++)
+                    {
+                        Debug.Assert(nativeCodeAddrs[i].nativeCodeAddr == legacyBuffer[i].nativeCodeAddr,
+                            $"[{i}] cDAC nativeCodeAddr: 0x{(ulong)nativeCodeAddrs[i].nativeCodeAddr:x}, DAC: 0x{(ulong)legacyBuffer[i].nativeCodeAddr:x}");
+                        Debug.Assert(nativeCodeAddrs[i].nativeCodeVersionNodePtr == legacyBuffer[i].nativeCodeVersionNodePtr,
+                            $"[{i}] cDAC nodePtr: 0x{(ulong)nativeCodeAddrs[i].nativeCodeVersionNodePtr:x}, DAC: 0x{(ulong)legacyBuffer[i].nativeCodeVersionNodePtr:x}");
+                        Debug.Assert(nativeCodeAddrs[i].optimizationTier == legacyBuffer[i].optimizationTier,
+                            $"[{i}] cDAC tier: {nativeCodeAddrs[i].optimizationTier}, DAC: {legacyBuffer[i].optimizationTier}");
+                    }
+                }
+            }
+        }
+#endif // DEBUG
+        return hr;
+    }
     #endregion ISOSDacInterface5
 
     #region ISOSDacInterface6
