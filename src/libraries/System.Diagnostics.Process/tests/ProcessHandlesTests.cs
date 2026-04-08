@@ -554,6 +554,10 @@ namespace System.Diagnostics.Tests
                 // Verify the handle is valid in the parent process.
                 Assert.False(fileHandle.IsInvalid);
                 Assert.Equal(FileHandleType.RegularFile, fileHandle.Type);
+                using (FileStream parentFs = new(fileHandle, FileAccess.ReadWrite, leaveOpen: true))
+                {
+                    Assert.Equal(path, parentFs.Name);
+                }
 
                 nint rawHandle = fileHandle.DangerousGetHandle();
 
@@ -575,7 +579,7 @@ namespace System.Diagnostics.Tests
                         }
 
                         // If the handle appears valid, verify it doesn't point to our file.
-                        // (On some platforms the handle value may be reused for something else.)
+                        // (the Operating System could reuse same value for a different file)
                         try
                         {
                             using FileStream fs = new(handle, FileAccess.ReadWrite);

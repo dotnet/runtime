@@ -33,7 +33,7 @@ internal static partial class Interop
                     return null;
                 }
 
-                int length = ((ReadOnlySpan<byte>)buffer).Slice(0, PathMaxSize).IndexOf((byte)0);
+                int length = buffer.AsSpan(0, PathMaxSize).IndexOf((byte)0);
                 return Encoding.UTF8.GetString(buffer, 0, length < 0 ? PathMaxSize : length);
             }
             finally

@@ -591,14 +591,6 @@ namespace Microsoft.Win32.SafeHandles
             return status.Size;
         }
 
-        internal string? GetPath()
-        {
-            if (_path is not null)
-            {
-                return _path;
-            }
-
-            return Interop.Sys.GetFilePathFromHandle(this);
-        }
+        internal string? GetPath() => _path ??= Interop.Sys.GetFilePathFromHandle(this);
     }
 }

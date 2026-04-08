@@ -1329,14 +1329,7 @@ int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize
 
 int32_t SystemNative_GetFilePathFromHandle(intptr_t fd, char* buffer, int32_t bufferSize)
 {
-    assert(buffer != NULL || bufferSize == 0);
-    assert(bufferSize >= 0);
-
-    if (bufferSize <= 0)
-    {
-        errno = EINVAL;
-        return -1;
-    }
+    assert(buffer != NULL && bufferSize > 0);
 
 #if HAVE_F_GETPATH
     // Apple platforms, FreeBSD, and Solaris support F_GETPATH

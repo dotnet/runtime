@@ -94,27 +94,5 @@ namespace System.IO.Tests
                 throw new SkipTestException("Insufficient privileges to open block device");
             }
         }
-
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "File path resolution not supported")]
-        public void Name_WhenOpenedFromRawHandle_ReturnsResolvedPath()
-        {
-            string path = GetTestFilePath();
-            File.WriteAllText(path, "test");
-
-            using SafeFileHandle originalHandle = File.OpenHandle(path, FileMode.Open, FileAccess.Read);
-            using SafeFileHandle handle = new SafeFileHandle(originalHandle.DangerousGetHandle(), ownsHandle: false);
-            using FileStream fs = new(handle, FileAccess.Read);
-
-            string name = fs.Name;
-
-            // On platforms that support path resolution from file descriptor (Linux, macOS, FreeBSD),
-            // the resolved path should end with the file name portion of the original path.
-            // On other platforms, [Unknown] is returned.
-            if (name != "[Unknown]")
-            {
-                Assert.EndsWith(Path.GetFileName(path), name, StringComparison.Ordinal);
-            }
-        }
     }
 }

@@ -101,19 +101,16 @@ namespace System.IO.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "File path resolution not supported")]
-        public void Name_WhenOpenedFromHandle_ReturnsPathOrUnknown()
+        public void Name_WhenOpenedFromHandle_ReturnsPath()
         {
             string path = GetTestFilePath();
             File.WriteAllText(path, "test");
 
             using SafeFileHandle originalHandle = File.OpenHandle(path, FileMode.Open, FileAccess.Read);
-            using SafeFileHandle handle = new SafeFileHandle(originalHandle.DangerousGetHandle(), ownsHandle: false);
+            using SafeFileHandle handle = new(originalHandle.DangerousGetHandle(), ownsHandle: false);
             using FileStream fs = new(handle, FileAccess.Read);
 
-            // The name should either be a resolved path or [Unknown], depending on platform support.
-            string name = fs.Name;
-            Assert.NotNull(name);
-            Assert.NotEmpty(name);
+            Assert.Equal(path, fs.Name);
         }
     }
 }
