@@ -7,7 +7,7 @@
     <NoDefaultSlnGenSolutionFolder>true</NoDefaultSlnGenSolutionFolder>
     <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
     <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
-    <ExplicitlyImportCustomILLinkTargets>true</ExplicitlyImportCustomILLinkTargets>
+    <ImportCustomILLinkTargets>true</ImportCustomILLinkTargets>
 
     <PackageOverridesInputPath>$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\PackageOverrides.txt</PackageOverridesInputPath>
     <PackageOverridesOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)PackageOverrides.txt</PackageOverridesOutputPath>

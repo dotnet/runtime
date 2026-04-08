@@ -1,7 +1,7 @@
 <Project>
   <!-- we don't trim cdac-build-tool; we don't need the live trimmer -->
   <PropertyGroup>
-    <_RequiresLiveILLink>false</_RequiresLiveILLink>
+    <UseLiveILLink>false</UseLiveILLink>
   </PropertyGroup>
   <Import Project="..\Directory.Build.props" />
 </Project>
