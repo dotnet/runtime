@@ -39,7 +39,8 @@ namespace Internal.TypeSystem.Ecma
                 if (!_mutableModule._moduleToModuleRefString.TryGetValue(module, out moduleRefString))
                 {
                     Debug.Assert(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences != null &&
-                        _mutableModule._compilationGroup.CrossModuleInlineableModule(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences));
+                        (_mutableModule._compilationGroup.CrossModuleInlineableModule(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences)
+                        || _mutableModule.CreatingTokensForAsyncMethod));
 
                     if (module == _typeSystemContext.SystemModule)
                     {
@@ -352,6 +353,8 @@ namespace Internal.TypeSystem.Ecma
         public byte[] MetadataBlob => _cache.MetadataBlob;
 
         public int ModuleTypeSort => 1;
+
+        public bool CreatingTokensForAsyncMethod { get; set; }
 
         public int CompareTo(IEcmaModule other)
         {
