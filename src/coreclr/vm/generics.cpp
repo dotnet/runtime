@@ -39,17 +39,17 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     // Note that generic variables do not share
 
     if (CorTypeInfo::IsObjRef_NoThrow(et))
-        return(TypeHandle(g_pCanonMethodTableClass));
+        return TypeHandle(g_pCanonMethodTableClass);
 
     if (et == ELEMENT_TYPE_VALUETYPE)
     {
         // Don't share structs. But sharability must be propagated through
         // them (i.e. struct<object> * shares with struct<string> *)
-        return(TypeHandle(thGenericArg.GetCanonicalMethodTable()));
+        return TypeHandle(thGenericArg.GetCanonicalMethodTable());
     }
 
     _ASSERTE(et != ELEMENT_TYPE_PTR && et != ELEMENT_TYPE_FNPTR);
-    return(thGenericArg);
+    return thGenericArg;
 #else
     _ASSERTE(CheckPointer((thGenericArg)));
     return (thGenericArg);
@@ -146,7 +146,7 @@ TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(const TypeKey *pTypeKe
     TypeKey canonKey(pTypeKey->GetModule(), pTypeKey->GetTypeToken(), Instantiation(repInst, ntypars));
     ret = ClassLoader::LoadConstructedTypeThrowing(&canonKey, fLoadTypes, level);
 
-    return(ret);
+    return ret;
 }
 
 // Create a non-canonical instantiation of a generic type, by
@@ -489,7 +489,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     _ASSERTE(TypeHandle(pMT).CheckMatchesKey(pTypeKey));
 
-    return(TypeHandle(pMT));
+    return TypeHandle(pMT);
 } // ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation
 
 #endif // !DACCESS_COMPILE
@@ -944,4 +944,3 @@ BOOL GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
 }
 
 } // namespace Generics;
-

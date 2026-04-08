@@ -2761,7 +2761,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
     if (pHp == NULL)
     {
         _ASSERTE(!pInfo->GetThrowOnOutOfMemoryWithinRange());
-        return(NULL);
+        return NULL;
     }
 
     _ASSERTE (pHp != NULL);
@@ -2816,7 +2816,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
     HeapList **ppHeapList = pADHeapList->m_CodeHeapList.AppendThrowing();
     *ppHeapList = pHp;
 
-    return(pHp);
+    return pHp;
 }
 
 void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
@@ -2907,7 +2907,7 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
             if (pCodeHeap == NULL)
             {
                 _ASSERTE(!pInfo->GetThrowOnOutOfMemoryWithinRange());
-                return(NULL);
+                return NULL;
             }
 
             mem = (pCodeHeap->pHeap)->AllocMemForCode_NoThrow(header, blockSize, align, pInfo->GetReserveForJumpStubs());
@@ -2955,7 +2955,7 @@ void* EECodeGenManager::AllocCodeWorker(CodeHeapRequestInfo *pInfo,
         pCodeHeap->endAddress = (TADDR)mem+blockSize;
     }
 
-    return(mem);
+    return mem;
 }
 
 template<typename TCodeHeader>
@@ -3318,7 +3318,7 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
         if (mem == (TADDR)0)
         {
             _ASSERTE(!throwOnOutOfMemoryWithinRange);
-            return(NULL);
+            return NULL;
         }
 
         // CodeHeader comes immediately before the block
@@ -3346,7 +3346,7 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
     LOG((LF_JIT, LL_INFO1000, "Allocated new JumpStubBlockHeader for %d stubs at" FMT_ADDR " in loader allocator " FMT_ADDR "\n",
          numJumps, DBG_ADDR(mem) , DBG_ADDR(pLoaderAllocator) ));
 
-    return((JumpStubBlockHeader*)mem);
+    return (JumpStubBlockHeader*)mem;
 }
 
 void * EEJitManager::AllocCodeFragmentBlock(size_t blockSize, unsigned alignment, LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind)
@@ -3387,7 +3387,7 @@ void * EEJitManager::AllocCodeFragmentBlock(size_t blockSize, unsigned alignment
         pCodeHeap->reserveForJumpStubs += requestInfo.GetReserveForJumpStubs();
     }
 
-    return((void *)mem);
+    return (void *)mem;
 }
 
 BYTE* EECodeGenManager::AllocFromJitMetaHeap(MethodDesc* pMD, size_t blockSize)
@@ -5903,7 +5903,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
         // Is the matching entry with the requested range?
         if (((TADDR)loAddr <= jumpStub) && (jumpStub <= (TADDR)hiAddr))
         {
-            return(jumpStub);
+            return jumpStub;
         }
     }
 
@@ -5913,7 +5913,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
     if (jumpStub == (PCODE)NULL)
     {
         _ASSERTE(!throwOnOutOfMemoryWithinRange);
-        return((PCODE)NULL);
+        return (PCODE)NULL;
     }
 
     _ASSERTE(((TADDR)loAddr <= jumpStub) && (jumpStub <= (TADDR)hiAddr));
@@ -5921,7 +5921,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
     LOG((LF_JIT, LL_INFO10000, "Add JumpStub to" FMT_ADDR "at" FMT_ADDR "\n",
             DBG_ADDR(target), DBG_ADDR(jumpStub) ));
 
-    return(jumpStub);
+    return jumpStub;
 }
 
 PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
@@ -6012,7 +6012,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
     if (curBlock == NULL)
     {
         _ASSERTE(!throwOnOutOfMemoryWithinRange);
-        return((PCODE)NULL);
+        return (PCODE)NULL;
     }
 
     curBlockWriterHolder.AssignExecutableWriterHolder(curBlock, sizeof(JumpStubBlockHeader) + ((size_t) (curBlock->m_used + 1) * BACK_TO_BACK_JUMP_ALLOCATE_SIZE));
@@ -6099,7 +6099,7 @@ DONE:
         }
     }
 
-    return((PCODE)jumpStub);
+    return (PCODE)jumpStub;
 }
 #endif // HOST_64BIT
 #endif // !DACCESS_COMPILE

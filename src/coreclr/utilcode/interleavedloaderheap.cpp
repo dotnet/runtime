@@ -556,4 +556,3 @@ void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stu
 }
 
 #endif // #ifndef DACCESS_COMPILE
-

@@ -1854,4 +1854,3 @@ void ObjHeader::IllegalAlignPad()
     _ASSERTE(m_alignpad == 0);
 }
 #endif // HOST_64BIT && _DEBUG
-

@@ -141,5 +141,3 @@ void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, COUNT_T insertSize)
 
     return;
 }
-
-

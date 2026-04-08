@@ -383,7 +383,7 @@ LPCUTF8 MethodDesc::GetName()
             result = NULL;
         }
 
-        return(result);
+        return result;
     }
 }
 
@@ -1719,7 +1719,7 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
     else
 #endif // !DACCESS_COMPILE
     {
-        return(this);
+        return this;
     }
 }
 
@@ -1811,12 +1811,12 @@ MethodDesc* MethodDesc::StripMethodInstantiation()
     CONTRACTL_END
 
     if (!HasClassOrMethodInstantiation())
-        return(this);
+        return this;
 
     MethodTable *pMT = GetMethodTable()->GetCanonicalMethodTable();
     MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
     _ASSERTE(resultMD->IsGenericMethodDefinition() || !resultMD->HasMethodInstantiation());
-    return(resultMD);
+    return resultMD;
 }
 
 //*******************************************************************************
@@ -1964,7 +1964,7 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
     // same as the static, i.e. the virtual method has not been overridden.
     if (!pTargetMT->IsSharedByGenericInstantiations() && !pTargetMT->IsValueType() &&
         pTargetMDBeforeGenericMethodArgs == pStaticMDWithoutGenericMethodArgs)
-        return(pStaticMD);
+        return pStaticMD;
 
     if (pTargetMT->IsSharedByGenericInstantiations())
     {
@@ -2066,15 +2066,15 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHa
     if (pStaticMD->HasMethodInstantiation())
     {
         CheckRestore();
-        return(ResolveGenericVirtualMethod(orThis));
+        return ResolveGenericVirtualMethod(orThis);
     }
 
     if (pStaticMD->IsInterface())
     {
-        return(MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, pStaticMD, orThis));
+        return MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, pStaticMD, orThis);
     }
 
-    return(pObjMT->GetMethodDescForSlot(pStaticMD->GetSlot()));
+    return pObjMT->GetMethodDescForSlot(pStaticMD->GetSlot());
 }
 
 //*******************************************************************************
@@ -2091,7 +2091,7 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
     CONTRACTL_END;
 
     MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, staticTH);
-    return(pTargetMD->GetMultiCallableAddrOfCode());
+    return pTargetMD->GetMultiCallableAddrOfCode();
 }
 
 //*******************************************************************************
@@ -2748,7 +2748,7 @@ MethodDesc* MethodDesc::GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative /
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-    return(pMD);
+    return pMD;
 }
 
 //*******************************************************************************
@@ -3990,7 +3990,7 @@ MethodDesc *MethodDesc::GetInterfaceMD()
         PRECONDITION(!IsInterface());
     } CONTRACTL_END;
     MethodTable *pMT = GetMethodTable();
-    return(pMT->ReverseInterfaceMDLookup(GetSlot()));
+    return pMT->ReverseInterfaceMDLookup(GetSlot());
 }
 #endif // !DACCESS_COMPILE
 

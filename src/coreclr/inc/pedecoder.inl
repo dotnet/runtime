@@ -640,7 +640,7 @@ inline BOOL PEDecoder::IsILOnly() const
     CONTRACTL_END;
 
     // Pretend that ready-to-run images are IL-only
-    return((GetCorHeader()->Flags & VAL32(COMIMAGE_FLAGS_ILONLY)) != 0) || HasReadyToRunHeader();
+    return ((GetCorHeader()->Flags & VAL32(COMIMAGE_FLAGS_ILONLY)) != 0) || HasReadyToRunHeader();
 }
 
 inline COUNT_T PEDecoder::RvaToOffset(RVA rva) const

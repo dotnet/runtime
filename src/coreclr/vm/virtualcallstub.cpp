@@ -1079,7 +1079,7 @@ PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
     }
 
     _ASSERTE(stub != CALL_STUB_EMPTY_ENTRY);
-    return(stub);
+    return stub;
 }
 
 VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
@@ -1109,7 +1109,7 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
     PerfMap::LogStubs(__FUNCTION__, "GenerateVTableCallStub", (PCODE)pHolder->stub(), pHolder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
-    return(pHolder);
+    return pHolder;
 }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 

@@ -3621,4 +3621,3 @@ extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdT
 
     END_QCALL;
 }
-

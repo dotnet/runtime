@@ -764,7 +764,7 @@ TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
     if (GetApproxEnclosingMethodTable() == owner.AsMethodTable())
     {
         //Yes, this is exactly the type I was looking for.
-        return(GetFieldTypeHandleThrowing());
+        return GetFieldTypeHandleThrowing();
     }
     else
     {

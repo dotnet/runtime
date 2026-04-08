@@ -151,7 +151,7 @@ inline WORD MethodTable::GetNumThreadStaticFields()
 inline DWORD MethodTable::GetNumInstanceFieldBytes()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return(GetBaseSize() - GetClass()->GetBaseSizePadding());
+    return GetBaseSize() - GetClass()->GetBaseSizePadding();
 }
 
 //==========================================================================================
@@ -173,7 +173,7 @@ inline WORD MethodTable::GetNumIntroducedInstanceFields()
         wNumFields -= wNumParentFields;
     }
 
-    return(wNumFields);
+    return wNumFields;
 }
 
 //==========================================================================================

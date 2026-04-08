@@ -40,30 +40,30 @@ HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR s
     // Get the interfaces
     HRESULT hr = pUnk->QueryInterface(IID_IMetaDataEmit2, (void**)&m_emitter);
     if (FAILED(hr))
-        return(hr);
+        return hr;
 
     hr = pUnk->QueryInterface(IID_IMetaDataImport, (void**)&m_importer);
     if (FAILED(hr))
-        return(hr);
+        return hr;
 
     hr = pUnk->QueryInterface(IID_IMetaDataEmitHelper, (void**)&m_pEmitHelper);
     if (FAILED(hr))
-        return(hr);
+        return hr;
 
     hr = GetMDInternalInterfaceFromPublic(pUnk, IID_IMDInternalImport, (void**)&m_internalimport);
     if (FAILED(hr))
-        return(hr);
+        return hr;
 
     // <TODO> We will need to set this at some point.</TODO>
     hr = m_emitter->SetModuleProps(szName);
     if (FAILED(hr))
-        return(hr);
+        return hr;
 
     _ASSERTE(m_emitter != nullptr);
     _ASSERTE(m_importer != nullptr);
     _ASSERTE(m_pEmitHelper != nullptr);
     _ASSERTE(m_internalimport != nullptr);
-    return(S_OK);
+    return S_OK;
 }
 
 

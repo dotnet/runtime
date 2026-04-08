@@ -857,7 +857,7 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
         offset = RvaToOffset(rva);
     }
 
-    return( m_base + offset );
+    return m_base + offset;
 }
 
 RVA PEDecoder::GetDataRva(const TADDR data) const

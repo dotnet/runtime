@@ -773,7 +773,7 @@ Module * Assembly::FindModuleByTypeRef(
                     // The ModuleBase scenarios should never need this
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
                 }
-                return(static_cast<Module*>(pModule));
+                return static_cast<Module*>(pModule);
             }
             iter++;
         }
@@ -802,7 +802,7 @@ Module * Assembly::FindModuleByTypeRef(
             // Type is in the referencing module.
             GCX_NOTRIGGER();
             CANNOTTHROWCOMPLUSEXCEPTION();
-            return( static_cast<Module*>(pModule) );
+            return static_cast<Module*>(pModule);
         }
 
         case mdtModuleRef:
@@ -812,14 +812,14 @@ Module * Assembly::FindModuleByTypeRef(
                 // Either we're not supposed to load, or we're doing a GC or stackwalk
                 // in which case we shouldn't need to load.  So just look up the module
                 // and return what we find.
-                return(pModule->LookupModule(tkType));
+                return pModule->LookupModule(tkType);
             }
 
 #ifndef DACCESS_COMPILE
             if (loadFlag == Loader::Load)
             {
                 Module* pActualModule = pModule->LoadModule(tkType);
-                return(pActualModule);
+                return pActualModule;
             }
             else
             {

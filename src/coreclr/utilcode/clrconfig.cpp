@@ -291,7 +291,7 @@ namespace
             if (*ret != W('\0'))
             {
                 ret.SuppressRelease();
-                return(ret);
+                return ret;
             }
             ret.Clear();
         }

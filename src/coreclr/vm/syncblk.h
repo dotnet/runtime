@@ -987,5 +987,3 @@ typedef DPTR(class ObjHeader) PTR_ObjHeader;
 #endif // TARGET_X86
 
 #endif // _SYNCBLK_H_
-
-

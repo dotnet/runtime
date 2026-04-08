@@ -427,7 +427,7 @@ TypeHandle ClassLoader::LoadTypeHandleThrowIfFailed(NameHandle* pName, ClassLoad
 #endif
     }
 
-    return(typeHnd);
+    return typeHnd;
 }
 
 #ifndef DACCESS_COMPILE
@@ -819,7 +819,7 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(const TypeKey *pKey,
     return typeHnd;
 #else
     DacNotImpl();
-    return(typeHnd);
+    return typeHnd;
 #endif
 }
 
@@ -1360,7 +1360,7 @@ TypeHandle ClassLoader::LoadPointerOrByrefTypeThrowing(CorElementType typ,
     CONTRACTL_END
 
     TypeKey key(typ, baseType);
-    return(LoadConstructedTypeThrowing(&key, fLoadTypes, level));
+    return LoadConstructedTypeThrowing(&key, fLoadTypes, level);
 }
 
 /* static */
@@ -1381,7 +1381,7 @@ TypeHandle ClassLoader::LoadNativeValueTypeThrowing(TypeHandle baseType,
     CONTRACTL_END
 
     TypeKey key(ELEMENT_TYPE_VALUETYPE, baseType);
-    return(LoadConstructedTypeThrowing(&key, fLoadTypes, level));
+    return LoadConstructedTypeThrowing(&key, fLoadTypes, level);
 }
 
 /* static */
@@ -1404,7 +1404,7 @@ TypeHandle ClassLoader::LoadFnptrTypeThrowing(BYTE callConv,
     CONTRACTL_END
 
     TypeKey key(callConv, ntypars, inst);
-    return(LoadConstructedTypeThrowing(&key, fLoadTypes, level));
+    return LoadConstructedTypeThrowing(&key, fLoadTypes, level);
 }
 
 // Find an instantiation of a generic type if it has already been created.
@@ -1474,11 +1474,11 @@ TypeHandle ClassLoader::LoadGenericInstantiationThrowing(Module *pModule,
     // for DACCESS_COMPILE.
     if (TypeHandle::IsCanonicalSubtypeInstantiation(inst) && !IsCanonicalGenericInstantiation(inst))
     {
-        return(ClassLoader::LoadCanonicalGenericInstantiation(&key, fLoadTypes, level));
+        return ClassLoader::LoadCanonicalGenericInstantiation(&key, fLoadTypes, level);
     }
 #endif
 
-    return(LoadConstructedTypeThrowing(&key, fLoadTypes, level, pInstContext));
+    return LoadConstructedTypeThrowing(&key, fLoadTypes, level, pInstContext);
 }
 
 //   For non-nested classes, gets the ExportedType name and finds the corresponding
@@ -1608,7 +1608,7 @@ TypeHandle ClassLoader::LookupTypeDefOrRefInModule(ModuleBase *pModule, mdToken 
         }
     }
 
-    return(typeHandle);
+    return typeHandle;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1868,7 +1868,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
 #endif
 
         if (existingLoadLevel >= level)
-            return(typeHnd);
+            return typeHnd;
     }
 
     IMDInternalImport *pInternalImport = pModule->GetMDImport();
@@ -2003,7 +2003,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
 #endif
     ;
 
-    return(typeHnd);
+    return typeHnd;
 }
 
 // Given a token specifying a typeDef or typeRef, and a module in
@@ -2064,7 +2064,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
         // being used inappropriately.
         if (!((fUninstantiated == FailIfUninstDefOrRef) && !typeHnd.IsNull() && typeHnd.IsGenericTypeDefinition()))
         {
-            return(typeHnd);
+            return typeHnd;
         }
     }
     else
@@ -2125,7 +2125,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                         if(typeHnd.IsNull() && bReturnNullOkWhenNoResolutionScope)
                         {
                             fNotFoundAction = ReturnNullIfNotFound;
-                            return(typeHnd);
+                            return typeHnd;
                         }
                     }
                     else
@@ -2174,7 +2174,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
 #endif
     }
 
-    return(thRes);
+    return thRes;
 }
 
 /*static*/
@@ -3421,7 +3421,7 @@ ClassLoader::LoadArrayTypeThrowing(
         if (predefinedElementType <= ELEMENT_TYPE_R8) {
             TypeHandle th = g_pPredefinedArrayTypes[predefinedElementType];
             if (th != 0)
-                return(th);
+                return th;
         }
         // This call to AsPtr is somewhat bogus and only used
         // as an optimization.  If the TypeHandle is really a TypeDesc
@@ -3431,14 +3431,14 @@ ClassLoader::LoadArrayTypeThrowing(
             // Code duplicated because Object[]'s SigCorElementType is E_T_CLASS, not OBJECT
             TypeHandle th = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
             if (th != 0)
-                return(th);
+                return th;
             predefinedElementType = ELEMENT_TYPE_OBJECT;
         }
         else if (elemType.AsPtr() == PTR_VOID(g_pStringClass)) {
             // Code duplicated because String[]'s SigCorElementType is E_T_CLASS, not STRING
             TypeHandle th = g_pPredefinedArrayTypes[ELEMENT_TYPE_STRING];
             if (th != 0)
-                return(th);
+                return th;
             predefinedElementType = ELEMENT_TYPE_STRING;
         }
         else {
@@ -3466,7 +3466,7 @@ ClassLoader::LoadArrayTypeThrowing(
         g_pPredefinedArrayTypes[predefinedElementType] = th;
     }
 
-    return(th);
+    return th;
 } // ClassLoader::LoadArrayTypeThrowing
 
 #ifndef DACCESS_COMPILE
@@ -4384,11 +4384,11 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
         if (!canAccess)
         {
             BOOL fail = accessCheckOptions.FailOrThrow(pContext);
-            return(fail);
+            return fail;
         }
     }
 
-    return(TRUE);
+    return TRUE;
 } // BOOL ClassLoader::CanAccess()
 
 //******************************************************************************

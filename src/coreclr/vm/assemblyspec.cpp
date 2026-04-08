@@ -874,10 +874,10 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, Assembly *pAss
             {
                 // OK if this is a duplicate
                 if (entry->GetAssembly() == pAssembly)
-                    {
-                        _ASSERTE(UnsafeContains(this, pSpec) && UnsafeVerifyLookupAssembly(this, pSpec, pAssembly));
-                        return TRUE;
-                    }
+                {
+                    _ASSERTE(UnsafeContains(this, pSpec) && UnsafeVerifyLookupAssembly(this, pSpec, pAssembly));
+                    return TRUE;
+                }
             }
             else
             {

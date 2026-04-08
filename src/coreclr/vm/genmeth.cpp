@@ -637,7 +637,7 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
         return pInstMD;
     }
 
-    return(NULL);
+    return NULL;
 }
 
 
@@ -830,7 +830,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         if (!allowCreate && !pMDescInCanonMT->GetMethodTable()->IsFullyLoaded())
         {
-            return(NULL);
+            return NULL;
         }
 
         pMDescInCanonMT->CheckRestore(level);
@@ -847,7 +847,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         && (!forceRemotableMethod || !pMDescInCanonMT->IsInterface()
                 || !pMDescInCanonMT->GetMethodTable()->IsSharedByGenericInstantiations()) )
     {
-        return(pMDescInCanonMT);
+        return pMDescInCanonMT;
     }
 
     // Unboxing stubs
@@ -889,7 +889,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             if (pResultMD != NULL)
             {
                 _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
-                return(pResultMD);
+                return pResultMD;
             }
 
             MethodTable *pRepMT = pMDescInCanonMT->GetMethodTable();
@@ -913,7 +913,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                 // !allowCreate ==> GC_NOTRIGGER ==> no entering Crst
                 if (!allowCreate)
                 {
-                    return(NULL);
+                    return NULL;
                 }
 
 #ifndef DACCESS_COMPILE
@@ -980,7 +980,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                 // !allowCreate ==> GC_NOTRIGGER ==> no entering Crst
                 if (!allowCreate)
                 {
-                    return(NULL);
+                    return NULL;
                 }
 
 #ifndef DACCESS_COMPILE
@@ -1048,13 +1048,13 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         if (!allowCreate && !pResultMD->GetMethodTable()->IsFullyLoaded())
         {
-            return(NULL);
+            return NULL;
         }
 
         pResultMD->CheckRestore(level);
         _ASSERTE(pResultMD->IsUnboxingStub());
         _ASSERTE(!pResultMD->IsInstantiatingStub());
-        return(pResultMD);
+        return pResultMD;
     }
 
 
@@ -1100,7 +1100,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                 _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
                 if (allowInstParam || !pResultMD->RequiresInstArg())
                 {
-                    return(pResultMD);
+                    return pResultMD;
                 }
             }
         }
@@ -1116,7 +1116,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             ClassLoader::IsTypicalInstantiation(pModule, methodDef, methodInst))
         {
             _ASSERTE(!pMDescInCanonMT->IsUnboxingStub());
-            return(pMDescInCanonMT);
+            return pMDescInCanonMT;
         }
 
         // OK, so we now know the thing we're looking for can only be found in the MethodDesc table.
@@ -1161,7 +1161,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             {
                 if (!allowCreate)
                 {
-                    return(NULL);
+                    return NULL;
                 }
 
 #ifndef DACCESS_COMPILE
@@ -1188,7 +1188,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             {
                 if (!allowCreate)
                 {
-                    return(NULL);
+                    return NULL;
                 }
 
 #ifndef DACCESS_COMPILE
@@ -1231,7 +1231,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             {
                 if (!allowCreate)
                 {
-                    return(NULL);
+                    return NULL;
                 }
 
 #ifndef DACCESS_COMPILE
@@ -1247,14 +1247,14 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         if (!allowCreate && !pInstMD->GetMethodTable()->IsFullyLoaded())
         {
-            return(NULL);
+            return NULL;
         }
 
         pInstMD->CheckRestore(level);
 
         _ASSERTE(allowInstParam || !pInstMD->RequiresInstArg());
 
-        return(pInstMD);
+        return pInstMD;
     }
 }
 

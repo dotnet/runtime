@@ -504,7 +504,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
             FALSE,              // allowInstParam
             TRUE);              // forceRemotableMethod
 
-        return(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD));
+        return pServerMT->GetMethodDescForComInterfaceMethod(pItfMD);
     }
 #endif // !FEATURE_COMINTEROP
 
@@ -525,7 +525,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         implTypeHandle = implTypeObj->GetType();
         GCPROTECT_END();
 
-        return(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
+        return implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */);
     }
 
     // Handle pure CLR types.
@@ -554,7 +554,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
         // We now handle __ComObject class that doesn't have Dynamic Interface Map
     if (!HasDynamicInterfaceMap())
     {
-        return(pItfMD);
+        return pItfMD;
     }
     else
     {
@@ -569,7 +569,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
 
         if (tgt != NULL)
         {
-            return(NonVirtualEntry2MethodDesc(tgt));
+            return NonVirtualEntry2MethodDesc(tgt);
         }
 
         // The interface is not in the static class definition so we need to look at the
@@ -579,7 +579,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
         // This interface was added to the class dynamically so it is implemented
         // by the COM object. We treat this dynamically added interface the same
         // way we treat COM objects. That is by using the interface vtable.
-        return(pItfMD);
+        return pItfMD;
     }
 }
 #endif // FEATURE_COMINTEROP
@@ -4098,7 +4098,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
         CheckRestore();
         TypeHandle(this).AllocateManagedClassObject(&GetAuxiliaryDataForWrite()->m_hExposedClassObject);
     }
-    return(GetManagedClassObjectIfExists());
+    return GetManagedClassObjectIfExists();
 }
 
 #endif //!DACCESS_COMPILE
@@ -5418,7 +5418,7 @@ MethodTable::FindDispatchImpl(
                 if (!(pIfcMT->HasInstantiation()))
                 {
                     _ASSERTE(!"Should not have gotten here. If you did, it's probably because multiple interface instantiation hasn't been checked in yet. This code only works on top of that.");
-                    return(FALSE);
+                    return FALSE;
                 }
 
                 // Get the type of T (as in IList<T>)
@@ -5437,7 +5437,7 @@ MethodTable::FindDispatchImpl(
                    *pImplSlot = ds;
                 }
 
-                return(TRUE);
+                return TRUE;
 
             }
             else
@@ -5494,13 +5494,13 @@ MethodTable::FindDispatchImpl(
                             *pImplSlot = ds;
                         }
 
-                        return(TRUE);
+                        return TRUE;
                     }
                 }
             }
 
             // This contract is not implemented by this class or any parent class.
-            return(FALSE);
+            return FALSE;
         }
 
 
@@ -5900,20 +5900,20 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                 ThrowAmbiguousResolutionException(this, pInterfaceMT, pInterfaceMD);
 
             *ppDefaultMethod = pBestCandidateMD;
-            return(FALSE);
+            return FALSE;
         }
     }
 
     if (pBestCandidateMD != NULL)
     {
         *ppDefaultMethod = pBestCandidateMD;
-        return(TRUE);
+        return TRUE;
     }
 #else
     *ppDefaultMethod = NULL;
 #endif // FEATURE_DEFAULT_INTERFACES
 
-    return(FALSE);
+    return FALSE;
 }
 #endif // DACCESS_COMPILE
 

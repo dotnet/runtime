@@ -282,7 +282,7 @@ VARTYPE OleVariant::GetElementVarTypeForArrayRef(BASEARRAYREF pArrayRef)
     CONTRACTL_END;
 
     TypeHandle elemTypeHnd = pArrayRef->GetArrayElementTypeHandle();
-    return(GetVarTypeForTypeHandle(elemTypeHnd));
+    return GetVarTypeForTypeHandle(elemTypeHnd);
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -4175,4 +4175,3 @@ extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOn
     END_QCALL;
 }
 #endif // FEATURE_COMINTEROP
-

@@ -2486,5 +2486,3 @@ IUnknown *ComObject::GetComIPFromRCWThrowing(OBJECTREF *pObj, MethodTable* pIntf
     return pIUnk;
 }
 #endif // #ifndef DACCESS_COMPILE
-
-

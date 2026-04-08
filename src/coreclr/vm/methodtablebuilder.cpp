@@ -11061,7 +11061,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     pMT->m_pAuxiliaryData->m_dwLastVerifedGCCnt = (DWORD)-1;
 #endif // _DEBUG
 
-    return(pMT);
+    return pMT;
 }
 
 
@@ -13109,5 +13109,5 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         parentInst,
         (WORD)cInterfaces);
 
-    return(TypeHandle(pMT));
+    return TypeHandle(pMT);
 } // ClassLoader::CreateTypeHandleForTypeDefThrowing

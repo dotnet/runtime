@@ -156,4 +156,3 @@ HRESULT GetCurrentApartmentTypeNT5(IObjectContext *pObjCurrCtx, APTTYPE* pType)
 }
 
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-

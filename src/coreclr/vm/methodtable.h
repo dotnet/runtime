@@ -1849,7 +1849,7 @@ public:
     DWORD           GetBaseSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return(m_BaseSize);
+        return m_BaseSize;
     }
 
     void            SetBaseSize(DWORD baseSize)

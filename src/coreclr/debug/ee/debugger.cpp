@@ -1201,7 +1201,7 @@ HRESULT Debugger::CheckInitPendingFuncEvalTable()
 
         if (pPendingEvals == NULL)
         {
-            return(E_OUTOFMEMORY);
+            return E_OUTOFMEMORY;
         }
 
         // Since we're setting, we need an LValue and not just an accessor.

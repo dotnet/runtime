@@ -472,5 +472,3 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
     }
 }
 #endif // FEATURE_COMINTEROP
-
-
