@@ -344,7 +344,7 @@ namespace System.Diagnostics.Tests
                 // Brief pause to allow signal propagation.
                 Thread.Sleep(200);
 
-                // Verify the grandchild is still running after the child's process group received SIGHUP.
+                // Verify the grandchild is still running after the child's process group was killed.
                 bool grandchildAlive;
                 try
                 {

@@ -416,9 +416,9 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
-            if (StartDetached && UseShellExecute)
+            if (StartDetached && (UseShellExecute || CreateNoWindow))
             {
-                throw new InvalidOperationException(SR.StartDetachedNotCompatibleWithUseShellExecute);
+                throw new InvalidOperationException(SR.StartDetachedNotCompatible);
             }
 
             if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))

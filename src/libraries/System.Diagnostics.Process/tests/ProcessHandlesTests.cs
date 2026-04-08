@@ -315,6 +315,18 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void StartDetached_ThrowsOnCreateNoWindow()
+        {
+            ProcessStartInfo psi = new("dummy")
+            {
+                CreateNoWindow = true,
+                StartDetached = true
+            };
+
+            Assert.Throws<InvalidOperationException>(() => SafeProcessHandle.Start(psi));
+        }
+
+        [Fact]
         public void StandardHandles_DefaultIsNull()
         {
             ProcessStartInfo startInfo = new("cmd");
