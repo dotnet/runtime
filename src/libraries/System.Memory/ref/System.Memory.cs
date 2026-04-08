@@ -160,6 +160,24 @@ namespace System.Buffers
         public bool TryReadExact(int count, out System.Buffers.ReadOnlySequence<T> sequence) { throw null; }
     }
 }
+namespace System.Buffers
+{
+    public sealed partial class ReadOnlySequenceStream : System.IO.Stream
+    {
+        public ReadOnlySequenceStream(System.Buffers.ReadOnlySequence<byte> sequence) { }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        public override long Length { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
+        public override void Flush() { }
+        public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> buffer) { throw null; }
+        public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
+        public override void SetLength(long value) { }
+        public override void Write(byte[] buffer, int offset, int count) { }
+    }
+}
 namespace System.Runtime.InteropServices
 {
     public static partial class SequenceMarshal

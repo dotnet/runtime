@@ -3068,6 +3068,9 @@
   <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
     <value>This operation is invalid on overlapping buffers.</value>
   </data>
+  <data name="InvalidOperation_StreamResyncExceededMaxIterations" xml:space="preserve">
+    <value>Stream resynchronization exceeded maximum iterations.</value>
+  </data>
   <data name="InvalidOperation_TimeProviderNullLocalTimeZone" xml:space="preserve">
     <value>The operation cannot be performed when TimeProvider.LocalTimeZone is null.</value>
   </data>
