@@ -2012,6 +2012,16 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
         JITDUMPEXEC(JitR2RUnsupportedRange.Dump());
         implReadyToRunUnsupported();
     }
+
+    // Also fail at this point for any method with funclets, since the Wasm we produce
+    // for such methods requires post-processing by the host before it can be validated.
+    // Remove this once the host can do the processing.
+    //
+    if ((JitConfig.JitWasmFunclets() == 0) && (m_compiler->compFuncCount() > 1))
+    {
+        JITDUMP("Failing R2R codegen because method has funclets.\n", m_compiler->compFuncCount());
+        implReadyToRunUnsupported();
+    }
 #endif // defined(TARGET_WASM)
 #endif // DEBUG
 }
