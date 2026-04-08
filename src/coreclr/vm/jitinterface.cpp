@@ -5373,7 +5373,7 @@ void CEEInfo::getCallInfo(
     }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // Resolve the MethodImpl override here so that we call the overriding method directly,
+    // Resolve the .override here so that we call the overriding method directly,
     // avoiding a DoPrestub failure when trying to set a non-overridden entry point in the slot.
     if (directCall)
     {
