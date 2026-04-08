@@ -84,22 +84,10 @@ else()
 endif()
 
 add_library(hostmisc_c OBJECT ${HOSTMISC_C_SOURCES})
-target_include_directories(hostmisc_c PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}
-    ${CMAKE_CURRENT_LIST_DIR}/..
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/..
-    ${CLR_SRC_NATIVE_DIR}
-    ${CLR_ARTIFACTS_OBJ_DIR})
+target_link_libraries(hostmisc_c PUBLIC hostmisc_interface minipal)
+
 if(CLR_CMAKE_TARGET_WIN32)
-    target_link_libraries(hostmisc_c PUBLIC hostmisc minipal_objects)
+    target_link_libraries(hostmisc_c PUBLIC hostmisc)
 else()
-    target_link_libraries(hostmisc_c PUBLIC dn-containers minipal_objects)
-    target_link_libraries(hostmisc_c PUBLIC
-        ${CMAKE_DL_LIBS}
-        $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)
-    if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
-        target_link_libraries(hostmisc_c PUBLIC
-            $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>)
-    endif()
+    target_link_libraries(hostmisc_c PUBLIC dn-containers)
 endif()
