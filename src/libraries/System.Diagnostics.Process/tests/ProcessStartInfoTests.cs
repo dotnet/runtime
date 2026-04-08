@@ -448,6 +448,17 @@ namespace System.Diagnostics.Tests
             Assert.Equal("-arg3 -arg4", psi.Arguments);
         }
 
+        [Fact]
+        public void TestArgumentsNullProperty()
+        {
+            string? args = null;
+            ProcessStartInfo psi = new ProcessStartInfo("filename", args);
+            Assert.Equal(string.Empty, psi.Arguments);
+
+            psi.Arguments = null;
+            Assert.Equal(string.Empty, psi.Arguments);
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), InlineData(true), InlineData(false)]
         public void TestCreateNoWindowProperty(bool value)
         {
@@ -1432,6 +1443,16 @@ namespace System.Diagnostics.Tests
                     Assert.False(process != null, $"Process started despite incompatible options {nameof(info.LoadUserProfile)} and {nameof(info.UseCredentialsForNetworkingOnly)} were enabled");
                 }
             });
+        }
+
+        [Fact]
+        public void UserNameCantBeCombinedWithInheritedHandles()
+        {
+            using Process longRunning = CreateProcessLong();
+            longRunning.StartInfo.UserName = nameof(ProcessStartInfo.UserName);
+            longRunning.StartInfo.InheritedHandles = [];
+
+            Assert.Throws<InvalidOperationException>(() => longRunning.Start());
         }
 
         private static TestProcessState CreateUserAndExecute(
