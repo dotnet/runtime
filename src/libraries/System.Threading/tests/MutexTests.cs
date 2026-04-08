@@ -1067,7 +1067,6 @@ namespace System.Threading.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/96191", TestPlatforms.Browser)]
         public void NamedMutex_ConcurrentCreation_NoException()
         {
-            // Regression test for https://github.com/dotnet/runtime/issues/TBD
             // Simulates the ENOENT -> EEXIST race in CreateOrOpenFile: multiple threads concurrently
             // create the same named mutex. Without the fix, a thread that sees ENOENT on the initial
             // open but EEXIST on the exclusive-create attempt would throw IOException.
