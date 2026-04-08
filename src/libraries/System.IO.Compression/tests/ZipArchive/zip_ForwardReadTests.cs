@@ -411,6 +411,22 @@ namespace System.IO.Compression.Tests
             Assert.True(archiveStream.CanRead);
         }
 
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Open_CalledTwice_Throws(bool async)
+        {
+            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipArchive archive = new(archiveStream, ZipArchiveMode.ForwardRead);
+
+            ZipArchiveEntry? entry = await GetNextEntry(archive, async);
+            Assert.NotNull(entry);
+
+            using Stream first = entry.Open();
+            Assert.Throws<IOException>(() => entry.Open());
+        }
+
         // ── Sync/async dispatch helpers ──────────────────────────────────────
 
         private static async ValueTask<ZipArchiveEntry?> GetNextEntry(
@@ -458,22 +474,13 @@ namespace System.IO.Compression.Tests
         private static async Task<byte[]> ReadStreamFully(Stream stream, bool async)
         {
             using MemoryStream result = new();
-            byte[] buffer = new byte[4096];
-
-            int bytesRead;
             if (async)
             {
-                while ((bytesRead = await stream.ReadAsync(buffer)) > 0)
-                {
-                    result.Write(buffer, 0, bytesRead);
-                }
+                await stream.CopyToAsync(result);
             }
             else
             {
-                while ((bytesRead = stream.Read(buffer)) > 0)
-                {
-                    result.Write(buffer, 0, bytesRead);
-                }
+                stream.CopyTo(result);
             }
 
             return result.ToArray();

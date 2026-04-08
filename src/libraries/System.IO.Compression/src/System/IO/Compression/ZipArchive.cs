@@ -451,7 +451,7 @@ namespace System.IO.Compression
 
             if (prev.HasDataDescriptor)
             {
-                ReadDataDescriptor(prev);
+                await ReadDataDescriptorAsync(prev, cancellationToken).ConfigureAwait(false);
             }
 
             _forwardReadPreviousEntry = null;
@@ -459,95 +459,79 @@ namespace System.IO.Compression
 
         private void ReadDataDescriptor(ZipArchiveEntry entry)
         {
-            // Data descriptor can be:
-            // Without signature: CRC32(4) + CompressedSize(4) + UncompressedSize(4) = 12 bytes
-            // With signature: Sig(4) + CRC32(4) + CompressedSize(4) + UncompressedSize(4) = 16 bytes
-            // Or Zip64: Sig(4) + CRC32(4) + CompressedSize(8) + UncompressedSize(8) = 24 bytes
+            // Data descriptor formats (all start after entry data):
+            //   32-bit with sig:  sig(4) + crc(4) + comp(4) + uncomp(4) = 16 bytes
+            //   32-bit no sig:    crc(4) + comp(4) + uncomp(4)          = 12 bytes
+            //   64-bit with sig:  sig(4) + crc(4) + comp(8) + uncomp(8) = 24 bytes
+            //   64-bit no sig:    crc(4) + comp(8) + uncomp(8)          = 20 bytes
+            // Read the maximum (24 bytes), determine format, seek back the unused portion.
+            //
+            // Note: When the archive stream is a ReadAheadStream (non-seekable ForwardRead),
+            // Seek(negative, Current) uses a limited history buffer (default 8KB).
+            // The small rewinds here (at most 12 bytes) are well within that limit.
 
-            // Read first 4 bytes to check for signature
-            Span<byte> sigBuf = stackalloc byte[4];
-            _archiveStream.ReadExactly(sigBuf);
+            Span<byte> buf = stackalloc byte[24];
+            _archiveStream.ReadExactly(buf);
 
-            uint possibleSig = BinaryPrimitives.ReadUInt32LittleEndian(sigBuf);
-            bool hasSignature = possibleSig == 0x08074B50;
+            int pos = 0;
+            uint firstWord = BinaryPrimitives.ReadUInt32LittleEndian(buf);
+            if (firstWord == 0x08074B50)
+                pos = 4; // skip signature
 
-            if (hasSignature)
+            uint crc32 = BinaryPrimitives.ReadUInt32LittleEndian(buf.Slice(pos));
+            pos += 4;
+
+            // Probe 32-bit: if the 4 bytes after comp(4)+uncomp(4) are a known signature, it's 32-bit.
+            uint afterThirtyTwo = BinaryPrimitives.ReadUInt32LittleEndian(buf.Slice(pos + 8));
+            if (IsKnownZipSignature(afterThirtyTwo))
             {
-                // Probe whether this is a 32-bit or 64-bit descriptor.
-                // Read CRC32(4) + field1(4) + field2(4) + field3(4) = 16 more bytes
-                Span<byte> probe = stackalloc byte[20];
-                _archiveStream.ReadExactly(probe);
-
-                uint crc32 = BinaryPrimitives.ReadUInt32LittleEndian(probe);
-
-                // Try 32-bit interpretation first: sizes are 4 bytes each
-                // After 32-bit descriptor, next 4 bytes would be at probe[12..16]
-                uint nextSig32 = BinaryPrimitives.ReadUInt32LittleEndian(probe.Slice(12));
-
-                if (IsKnownZipSignature(nextSig32))
-                {
-                    // 32-bit descriptor
-                    uint compressedSize32 = BinaryPrimitives.ReadUInt32LittleEndian(probe.Slice(4));
-                    uint uncompressedSize32 = BinaryPrimitives.ReadUInt32LittleEndian(probe.Slice(8));
-                    entry.UpdateFromDataDescriptor(crc32, compressedSize32, uncompressedSize32);
-                    // Seek back the 8 over-read bytes (nextSig32 + 4 more bytes)
-                    _archiveStream.Seek(-8, SeekOrigin.Current);
-                }
-                else
-                {
-                    // 64-bit descriptor: read 4 more bytes to complete it
-                    Span<byte> extra = stackalloc byte[4];
-                    _archiveStream.ReadExactly(extra);
-
-                    long compressedSize64 = BinaryPrimitives.ReadInt64LittleEndian(probe.Slice(4));
-                    long uncompressedSize64 = BinaryPrimitives.ReadInt64LittleEndian(probe.Slice(12));
-                    // extra contains the 4 bytes we read that aren't part of sizes
-                    // Actually: with signature, zip64 is: sig(4) + crc(4) + compsize(8) + uncompsize(8) = 24
-                    // We read sig(4) already, then probe(20) = crc(4) + comp(8) + uncomp first 4
-                    // Then extra(4) = uncomp last 4
-                    // Reconstruct uncompressedSize64 from probe[12..16] and extra[0..4]
-                    Span<byte> uncomp64Buf = stackalloc byte[8];
-                    probe.Slice(12, 4).CopyTo(uncomp64Buf);
-                    extra.CopyTo(uncomp64Buf.Slice(4));
-                    uncompressedSize64 = BinaryPrimitives.ReadInt64LittleEndian(uncomp64Buf);
-
-                    entry.UpdateFromDataDescriptor(crc32, compressedSize64, uncompressedSize64);
-                }
+                uint compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(buf.Slice(pos));
+                uint uncompressedSize = BinaryPrimitives.ReadUInt32LittleEndian(buf.Slice(pos + 4));
+                entry.UpdateFromDataDescriptor(crc32, compressedSize, uncompressedSize);
+                int consumed = pos + 8;
+                _archiveStream.Seek(consumed - 24, SeekOrigin.Current);
             }
             else
             {
-                // No signature - first 4 bytes are CRC32
-                // Read the remaining 8 bytes (compressedSize + uncompressedSize as 32-bit)
-                // But could be 64-bit: try 32-bit first, probe next 4 bytes
-                Span<byte> rest = stackalloc byte[12];
-                _archiveStream.ReadExactly(rest);
+                long compressedSize = BinaryPrimitives.ReadInt64LittleEndian(buf.Slice(pos));
+                long uncompressedSize = BinaryPrimitives.ReadInt64LittleEndian(buf.Slice(pos + 8));
+                entry.UpdateFromDataDescriptor(crc32, compressedSize, uncompressedSize);
+                int consumed = pos + 16;
+                if (consumed < 24)
+                    _archiveStream.Seek(consumed - 24, SeekOrigin.Current);
+            }
+        }
 
-                uint crc32 = possibleSig;
-                uint nextSig = BinaryPrimitives.ReadUInt32LittleEndian(rest.Slice(8));
+        private async ValueTask ReadDataDescriptorAsync(ZipArchiveEntry entry, CancellationToken cancellationToken)
+        {
+            byte[] buf = new byte[24];
+            await _archiveStream.ReadExactlyAsync(buf, cancellationToken).ConfigureAwait(false);
 
-                if (IsKnownZipSignature(nextSig))
-                {
-                    // 32-bit, no signature
-                    uint compressedSize32 = BinaryPrimitives.ReadUInt32LittleEndian(rest);
-                    uint uncompressedSize32 = BinaryPrimitives.ReadUInt32LittleEndian(rest.Slice(4));
-                    entry.UpdateFromDataDescriptor(crc32, compressedSize32, uncompressedSize32);
-                    // Seek back the 4 over-read bytes
-                    _archiveStream.Seek(-4, SeekOrigin.Current);
-                }
-                else
-                {
-                    // 64-bit, no signature
-                    Span<byte> extra = stackalloc byte[4];
-                    _archiveStream.ReadExactly(extra);
+            int pos = 0;
+            uint firstWord = BinaryPrimitives.ReadUInt32LittleEndian(buf);
+            if (firstWord == 0x08074B50)
+                pos = 4;
 
-                    long compressedSize64 = BinaryPrimitives.ReadInt64LittleEndian(rest);
-                    Span<byte> uncomp64Buf = stackalloc byte[8];
-                    rest.Slice(8, 4).CopyTo(uncomp64Buf);
-                    extra.CopyTo(uncomp64Buf.Slice(4));
-                    long uncompressedSize64 = BinaryPrimitives.ReadInt64LittleEndian(uncomp64Buf);
+            uint crc32 = BinaryPrimitives.ReadUInt32LittleEndian(buf.AsSpan(pos));
+            pos += 4;
 
-                    entry.UpdateFromDataDescriptor(crc32, compressedSize64, uncompressedSize64);
-                }
+            uint afterThirtyTwo = BinaryPrimitives.ReadUInt32LittleEndian(buf.AsSpan(pos + 8));
+            if (IsKnownZipSignature(afterThirtyTwo))
+            {
+                uint compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(buf.AsSpan(pos));
+                uint uncompressedSize = BinaryPrimitives.ReadUInt32LittleEndian(buf.AsSpan(pos + 4));
+                entry.UpdateFromDataDescriptor(crc32, compressedSize, uncompressedSize);
+                int consumed = pos + 8;
+                _archiveStream.Seek(consumed - 24, SeekOrigin.Current);
+            }
+            else
+            {
+                long compressedSize = BinaryPrimitives.ReadInt64LittleEndian(buf.AsSpan(pos));
+                long uncompressedSize = BinaryPrimitives.ReadInt64LittleEndian(buf.AsSpan(pos + 8));
+                entry.UpdateFromDataDescriptor(crc32, compressedSize, uncompressedSize);
+                int consumed = pos + 16;
+                if (consumed < 24)
+                    _archiveStream.Seek(consumed - 24, SeekOrigin.Current);
             }
         }
 
@@ -557,6 +541,17 @@ namespace System.IO.Compression
                 || sig == 0x02014B50  // Central directory
                 || sig == 0x06054B50  // EOCD
                 || sig == 0x06064B50; // Zip64 EOCD
+        }
+
+        private static Stream CreateForwardReadDecompressor(Stream source, ZipCompressionMethod compressionMethod, long uncompressedSize, bool leaveOpen)
+        {
+            return compressionMethod switch
+            {
+                ZipCompressionMethod.Deflate when leaveOpen => new DeflateStream(source, CompressionMode.Decompress, leaveOpen: true),
+                ZipCompressionMethod.Deflate => new DeflateStream(source, CompressionMode.Decompress, uncompressedSize),
+                ZipCompressionMethod.Deflate64 => new DeflateManagedStream(source, ZipCompressionMethod.Deflate64, uncompressedSize),
+                _ => source,
+            };
         }
 
         private ZipArchiveEntry? ReadNextLocalFileHeader()
@@ -591,16 +586,8 @@ namespace System.IO.Compression
             const int HeaderSize = ZipLocalFileHeader.SizeOfLocalHeader;
             byte[] header = new byte[HeaderSize];
 
-            int totalRead = 0;
-            while (totalRead < HeaderSize)
-            {
-                int read = await _archiveStream.ReadAsync(header.AsMemory(totalRead, HeaderSize - totalRead), cancellationToken).ConfigureAwait(false);
-                if (read == 0)
-                    break;
-                totalRead += read;
-            }
-
-            if (totalRead < HeaderSize)
+            int bytesRead = await _archiveStream.ReadAtLeastAsync(header, HeaderSize, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+            if (bytesRead < HeaderSize)
             {
                 _forwardReadReachedEnd = true;
                 return null;
@@ -691,21 +678,11 @@ namespace System.IO.Compression
             {
                 if (hasDataDescriptor)
                 {
-                    // Data descriptor: unknown size, let DeflateStream detect end
-                    Stream decompressor;
-                    if (compressionMethod == ZipCompressionMethod.Deflate)
-                    {
-                        decompressor = new DeflateStream(_archiveStream, CompressionMode.Decompress, leaveOpen: true);
-                    }
-                    else if (compressionMethod == ZipCompressionMethod.Deflate64)
-                    {
-                        decompressor = new DeflateManagedStream(_archiveStream, ZipCompressionMethod.Deflate64, -1);
-                    }
-                    else
-                    {
-                        // Should not reach here (stored with DD is thrown above)
-                        decompressor = _archiveStream;
-                    }
+                    // Data descriptor: unknown size, let DeflateStream detect end.
+                    // Because ReadAheadStream.CanSeek returns true, DeflateStream will
+                    // automatically rewind unconsumed bytes after decompression finishes,
+                    // leaving the archive stream positioned right after the compressed data.
+                    Stream decompressor = CreateForwardReadDecompressor(_archiveStream, compressionMethod, -1, leaveOpen: true);
                     dataStream = new CrcValidatingReadStream(decompressor, expectedCrc: 0, expectedLength: long.MaxValue);
                 }
                 else if (isEncrypted)
@@ -717,20 +694,7 @@ namespace System.IO.Compression
                 {
                     // Known size, not encrypted
                     Stream bounded = new BoundedReadOnlyStream(_archiveStream, compressedSize);
-                    Stream decompressor;
-                    if (compressionMethod == ZipCompressionMethod.Deflate)
-                    {
-                        decompressor = new DeflateStream(bounded, CompressionMode.Decompress, uncompressedSize);
-                    }
-                    else if (compressionMethod == ZipCompressionMethod.Deflate64)
-                    {
-                        decompressor = new DeflateManagedStream(bounded, ZipCompressionMethod.Deflate64, uncompressedSize);
-                    }
-                    else
-                    {
-                        // Stored
-                        decompressor = bounded;
-                    }
+                    Stream decompressor = CreateForwardReadDecompressor(bounded, compressionMethod, uncompressedSize, leaveOpen: false);
                     dataStream = new CrcValidatingReadStream(decompressor, crc32, uncompressedSize);
                 }
             }
