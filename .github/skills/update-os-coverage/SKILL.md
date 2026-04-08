@@ -89,14 +89,15 @@ Use the repo tools that fit the environment. The shell snippets below are refere
 
 ### 1. Verify container image availability
 
-Before making any changes, confirm the target container image exists. One convenient way is to check the [image-info JSON](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json) for published images:
+Before making any changes, confirm the **exact target container tag** exists in the [image-info JSON](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json). This file is more authoritative than probing the registry directly and should be the primary source of truth for published `dotnet-buildtools/prereqs` tags:
 
 ```bash
+TARGET_TAG="<exact-image-tag>"
 curl -sL https://github.com/dotnet/versions/raw/refs/heads/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json \
-  | jq '[.repos[].images[].platforms[].simpleTags[]] | map(select(startswith("<distro>-<distro-version>"))) | sort | .[]'
+  | jq -r --arg tag "$TARGET_TAG" '[.repos[].images[].platforms[].simpleTags[]] | unique | map(select(. == $tag)) | .[]'
 ```
 
-If the image is **not found**, stop and inform the user. The image must be created first at [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). Check if an open issue or PR already exists, for example:
+If the exact tag is **not found in `image-info`**, stop and inform the user. Treat that as authoritative even if a registry lookup appears to work. The image must be created first at [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). Check if an open issue or PR already exists, for example:
 
 ```bash
 gh search issues "<distro> <distro-version>" --repo dotnet/dotnet-buildtools-prereqs-docker --state open
@@ -169,6 +170,14 @@ For each reference found in step 3:
 
    Architecture suffixes vary: `Amd64`, `Arm64`, `ArmArch`, `Arm32` for queue names; `amd64`, `arm64v8`, `arm32v7` for image tags.
 
+   When both generic and processor-specific aliases exist in `image-info` (for example, `ubuntu-26.04-helix-webassembly` and `ubuntu-26.04-helix-webassembly-amd64`), **prefer the processor-specific tag** when the queue/environment is processor-specific:
+
+   - `...Amd64...` queue → prefer `*-amd64`
+   - `...Arm64...` / `...ArmArch...` queue → prefer `*-arm64v8`
+   - `...Arm32...` queue → prefer `*-arm32v7`
+
+   Use the generic alias only when the surrounding environment is intentionally architecture-agnostic or when no processor-specific tag exists in `image-info`.
+
    For ARM-based queues, host queues are often `Ubuntu.2204.ArmArch.Open`, but some queues (for example `helix_linux_arm64_oldest`) use AzureLinux-based host queues such as `AzureLinux.3.Arm64.Open`. Follow the existing pattern for the specific queue in `eng/pipelines/helix-platforms.yml` when updating versions.
 
 ### 5. Validate changes
@@ -179,7 +188,9 @@ After editing, verify:
 
 2. **All new references are syntactically consistent** — compare with adjacent entries in the same file to verify formatting.
 
-3. **Variable names are unchanged** — only the `value` fields change, never the `name` fields.
+3. **Updated image tags are present in `image-info`** — verify that each new tag you used appears in `image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json`.
+
+4. **Variable names are unchanged** — only the `value` fields change, never the `name` fields.
 
 ### 6. CI pipeline coverage
 
@@ -251,7 +262,7 @@ Check if the relevant `supported-os.json` in dotnet/core needs corresponding upd
 The PR description should include:
    - Table of changes (old version → new version, which slots)
    - EOL dates for old and new versions
-   - Confirmation that container images are available
+   - Confirmation that the exact container image tags are available in `image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json`
    - Which CI pipeline(s) need to run (see [step 6](#6-ci-pipeline-coverage))
    - Link to the [os-onboarding guide](https://github.com/dotnet/runtime/blob/main/docs/project/os-onboarding.md)
    - Link to tracking issue if applicable (e.g. [dotnet/core#9638](https://github.com/dotnet/core/issues/9638))

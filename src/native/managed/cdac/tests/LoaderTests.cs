@@ -333,7 +333,8 @@ public unsafe class LoaderTests
     private static (TestPlaceholderTarget Target, TargetPointer PEAssemblyAddr, TargetPointer ImageBase) CreateWebcilTarget(
         MockTarget.Architecture arch,
         ushort coffSections,
-        SectionDef[] sections)
+        SectionDef[] sections,
+        ushort versionMajor = 0)
     {
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
@@ -356,9 +357,27 @@ public unsafe class LoaderTests
             new(nameof(Data.PEImageLayout.Flags), DataType.uint32),
             new(nameof(Data.PEImageLayout.Format), DataType.uint32),
         ]);
-        var webcilHeaderLayout = helpers.LayoutFields([
+
+        List<TargetTestHelpers.Field> webcilHeaderFields =
+        [
+            new("Id_0", DataType.uint8),
+            new("Id_1", DataType.uint8),
+            new("Id_2", DataType.uint8),
+            new("Id_3", DataType.uint8),
+            new("VersionMajor", DataType.uint16),
+            new("VersionMinor", DataType.uint16),
             new(nameof(Data.WebcilHeader.CoffSections), DataType.uint16),
-        ]);
+            new("Reserved0", DataType.uint16),
+            new("PeCliHeaderRva", DataType.uint32),
+            new("PeCliHeaderSize", DataType.uint32),
+            new("PeDebugRva", DataType.uint32),
+            new("PeDebugSize", DataType.uint32),
+        ];
+        if (versionMajor >= 1)
+        {
+            webcilHeaderFields.Add(new("TableBase", DataType.uint32));
+        }
+        var webcilHeaderLayout = helpers.LayoutFields(webcilHeaderFields.ToArray());
         var webcilSectionLayout = helpers.LayoutFields([
             new(nameof(Data.WebcilSectionHeader.VirtualSize), DataType.uint32),
             new(nameof(Data.WebcilSectionHeader.VirtualAddress), DataType.uint32),
@@ -381,6 +400,9 @@ public unsafe class LoaderTests
         uint webcilImageSize = headerStride + sectionStride * (uint)sections.Length;
         var webcilImage = allocator.Allocate(webcilImageSize, "WebcilImage");
 
+        helpers.Write(
+            webcilImage.Data.AsSpan().Slice(webcilHeaderLayout.Fields["VersionMajor"].Offset, sizeof(ushort)),
+            versionMajor);
         helpers.Write(
             webcilImage.Data.AsSpan().Slice(webcilHeaderLayout.Fields[nameof(Data.WebcilHeader.CoffSections)].Offset, sizeof(ushort)),
             coffSections);
@@ -478,5 +500,27 @@ public unsafe class LoaderTests
         ILoader contract = target.Contracts.Loader;
 
         Assert.Throws<InvalidOperationException>(() => contract.GetILAddr(peAssemblyAddr, 0x5000));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetILAddr_WebcilV1RvaToOffset(MockTarget.Architecture arch)
+    {
+        SectionDef[] sections =
+        [
+            new(VirtualSize: 0x2000, VirtualAddress: 0x1000, SizeOfRawData: 0x2000, PointerToRawData: 0x200),
+            new(VirtualSize: 0x1000, VirtualAddress: 0x4000, SizeOfRawData: 0x1000, PointerToRawData: 0x2200),
+        ];
+        var (target, peAssemblyAddr, imageBase) = CreateWebcilTarget(arch, (ushort)sections.Length, sections, versionMajor: 1);
+        ILoader contract = target.Contracts.Loader;
+
+        // RVA in first section: offset = (0x1100 - 0x1000) + 0x200 = 0x300
+        Assert.Equal((TargetPointer)(imageBase + 0x300u), contract.GetILAddr(peAssemblyAddr, 0x1100));
+
+        // RVA at start of first section: offset = (0x1000 - 0x1000) + 0x200 = 0x200
+        Assert.Equal((TargetPointer)(imageBase + 0x200u), contract.GetILAddr(peAssemblyAddr, 0x1000));
+
+        // RVA in second section: offset = (0x4500 - 0x4000) + 0x2200 = 0x2700
+        Assert.Equal((TargetPointer)(imageBase + 0x2700u), contract.GetILAddr(peAssemblyAddr, 0x4500));
     }
 }
