@@ -582,6 +582,34 @@ namespace System.Text.RegularExpressions.Tests
                             new CaptureData("d", 10, 1),
                         }
                     };
+
+                    // ExpressionConditional with only a yes-branch (no no-branch) inside a loop (resumeAt = 2 pass-through path)
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))(?'1'.)+)+(?!(?'-1'))", "abc", RegexOptions.None, new[]
+                        {
+                            new CaptureData("", 0, 0),
+                            new CaptureData("", 1, 0),
+                            new CaptureData("", 2, 0),
+                            new CaptureData("", 3, 0),
+                        }
+                    };
+
+                    // Yes-only expression conditional with prefix capture feeding the condition, inside a loop
+                    yield return new object[]
+                    {
+                        engine, @"((?'1'.)(?((?'-1'))(?'1'.)))+", "abcd", RegexOptions.None, new[]
+                        {
+                            new CaptureData("abcd", 0, 4),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine, @"((?'1'.)(?((?'-1'))(?'1'.)))+", "abc", RegexOptions.None, new[]
+                        {
+                            new CaptureData("ab", 0, 2),
+                        }
+                    };
                 }
 
 #if !NETFRAMEWORK // these tests currently fail on .NET Framework
