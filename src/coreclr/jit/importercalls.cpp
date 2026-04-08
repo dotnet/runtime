@@ -4515,8 +4515,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     if (sig->numArgs == 1)
                     {
-                        // todo-xarch-half: We only optimize `Round(Half)` for now, we can optimize other overloads
-                        // later.
+                        // todo-xarch-half: We only optimize `Round(Half)` for now, and leave the other `Round` overload signatures
+                        // for later.
                         GenTree* op1 = impPopStack().val;
                         assert(op1->TypeGet() == TYP_HALF);
 
@@ -4663,7 +4663,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #ifdef TARGET_XARCH
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                 {
-
                     NamedIntrinsic opId = lookupHalfConversionIntrinsic(TYP_INT, TYP_HALF);
                     if (opId == NI_Illegal)
                     {
@@ -7802,7 +7801,6 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
         CORINFO_CLASS_HANDLE classHnd = NO_CLASS_HANDLE;
         CorInfoType          corType  = strip(info.compCompHnd->getArgType(&sig, sigParam, &classHnd));
 
-        // todo-half: hacking for half
         var_types sigType = JITtype2varType(corType);
 #if defined(TARGET_XARCH)
         if (sigType == TYP_STRUCT)

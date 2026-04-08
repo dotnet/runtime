@@ -587,12 +587,12 @@ bool Compiler::isNativeHalfStructType(CORINFO_CLASS_HANDLE clsHnd)
     const char* namespaceName = nullptr;
     const char* typeName      = getClassNameFromMetadata(clsHnd, &namespaceName);
 
-    if (strcmp(namespaceName, "System") != 0)
+    if (strcmp(typeName, "Half") != 0)
     {
         return false;
     }
 
-    if (strcmp(typeName, "Half") != 0)
+    if (strcmp(namespaceName, "System") != 0)
     {
         return false;
     }
