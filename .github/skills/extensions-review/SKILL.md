@@ -1,6 +1,6 @@
 ---
 name: extensions-review
-description: "Guidance for writing and modifying Microsoft.Extensions.DependencyInjection, Microsoft.Extensions.Configuration, Microsoft.Extensions.Logging, Microsoft.Extensions.Hosting, Microsoft.Extensions.Caching, Microsoft.Extensions.Options, Microsoft.Extensions.Http, Microsoft.Extensions.FileProviders, Microsoft.Extensions.Primitives, and System.IO.Compression code in dotnet/runtime. Covers DI lifetime management, configuration binding, options validation, logging provider patterns, caching semantics, compression format compliance, and host lifecycle. For full code review, delegates to the @extensions-reviewer agent. Trigger words: IServiceCollection, IConfiguration, ILogger, IHost, IMemoryCache, IOptions, ZipArchive, HttpClientFactory, IFileProvider, IChangeToken."
+description: "Guidance for writing and modifying Microsoft.Extensions.* and System.IO.Compression code in dotnet/runtime. Covers DI lifetime management, configuration binding, options validation, logging provider patterns, caching semantics, compression format compliance, and host lifecycle. For full code review, delegates to the @extensions-reviewer agent. Trigger words: Microsoft.Extensions, IServiceCollection, IConfiguration, ILogger, IHost, IMemoryCache, IOptions, ZipArchive, HttpClientFactory, IFileProvider, IChangeToken."
 ---
 
 # Writing Extensions & Compression Code
@@ -10,8 +10,6 @@ This skill provides implementation guidance for `Microsoft.Extensions.*` and `Sy
 ---
 
 ## DI Lifetime Decision Tree
-
-*(D7, D6)*
 
 When registering a service, choose the lifetime based on these criteria:
 
@@ -63,8 +61,6 @@ public class MySingleton(IServiceScopeFactory scopeFactory)
 
 ## Configuration Binding Patterns
 
-*(D8, D13)*
-
 ### Decision tree: Binding approach
 
 ```
@@ -98,8 +94,6 @@ if (string.Equals(key, "ConnectionString", StringComparison.OrdinalIgnoreCase)) 
 
 ## Options Validation Patterns
 
-*(D8, D13)*
-
 ### Example: Custom validator
 
 ```csharp
@@ -118,8 +112,6 @@ public class MyOptionsValidator : IValidateOptions<MyOptions>
 ---
 
 ## Logging Provider Patterns
-
-*(D16, D13, D9)*
 
 ### Decision tree: Logging API choice
 
@@ -146,8 +138,6 @@ public static partial class Log
 
 ## Caching Implementation Guidance
 
-*(D20, D5, D6)*
-
 ### Example: Stampede-safe caching with HybridCache (available in .NET 9+)
 
 ```csharp
@@ -164,8 +154,6 @@ public async Task<MyData> GetDataAsync(string key, CancellationToken ct)
 ---
 
 ## Compression Implementation Guidance
-
-*(D12, D5, D19)*
 
 ### Example: Proper async compression
 
@@ -203,8 +191,6 @@ if (!OperatingSystem.IsWindows() && entry.ExternalAttributes != 0)
 
 ## Host & Service Lifecycle
 
-*(D15, D6)*
-
 ### Example: Safe BackgroundService
 
 ```csharp
@@ -234,8 +220,6 @@ protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 
 ## Trim & AOT Safety
 
-*(dimensions: D14, D13)*
-
 - Annotate reflection-using APIs with `[DynamicallyAccessedMembers]`.
 - Provide feature switches so the linker can trim optional functionality.
 - Verify with `PublishAot=true` that no new IL2xxx warnings are introduced.
@@ -244,8 +228,6 @@ protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 ---
 
 ## Testing Guidance
-
-*(dimensions: D10, D11)*
 
 - Every bug fix needs a regression test; every feature needs happy-path and edge-case tests.
 - **Interop tests for compression** must use files created by external tools — not just round-trip with the same implementation.
@@ -266,4 +248,4 @@ protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 - **Case-insensitive keys**: All configuration key comparisons use `OrdinalIgnoreCase`.
 - **Backward compatibility**: Behavioral changes are breaking changes even when signatures are unchanged.
 
-For comprehensive code review, invoke `@extensions-reviewer` which applies all 20 review dimensions with full CHECK coverage.
+For comprehensive code review, invoke `@extensions-reviewer` which applies the full review checklist with complete CHECK coverage.
