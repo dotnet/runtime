@@ -138,8 +138,11 @@ NetEventSource.Info(this, $"Auth token: {token}");  // NEVER
 ```csharp
 // DO: reuse SocketAsyncEventArgs; set callback once
 private readonly SocketAsyncEventArgs _recvArgs = new();
-_recvArgs.Completed += OnReceiveCompleted;
 
+public MySocketHandler()
+{
+    _recvArgs.Completed += OnReceiveCompleted;
+}
 // DO: check synchronous completion
 if (!_socket.ReceiveAsync(_recvArgs))
 {
@@ -219,7 +222,7 @@ using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
     cancellationToken, _connectionTimeoutCts.Token);
 
 // DO: register cancellation to abort underlying I/O
-await using var reg = linkedCts.Token.UnsafeRegister(
+using var reg = linkedCts.Token.UnsafeRegister(
     static s => ((Socket)s!).Dispose(), _socket);
 
 // DON'T: ignore the token
