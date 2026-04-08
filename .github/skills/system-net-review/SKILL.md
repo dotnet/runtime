@@ -1,5 +1,5 @@
 ---
-name: writing-system-net-code
+name: system-net-review
 description: "Guidance for writing and modifying System.Net networking code in dotnet/runtime. Covers resource lifecycle, connection pooling, cross-platform interop, protocol compliance, async patterns, and security posture. For full code review, delegates to the @system-net-review agent. Trigger words: system.net, networking, http client, sockets, ssl, tls, quic, http2, http3, socketshttphandler, sslstream, connection pool."
 ---
 
