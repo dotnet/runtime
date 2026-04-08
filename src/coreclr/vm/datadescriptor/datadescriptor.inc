@@ -45,7 +45,9 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackBase, cdac_data<Thread>::CachedSta
 CDAC_TYPE_FIELD(Thread, T_POINTER, CachedStackLimit, cdac_data<Thread>::CachedStackLimit)
 CDAC_TYPE_FIELD(Thread, T_POINTER, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, T_POINTER, DebuggerFilterContext, cdac_data<Thread>::DebuggerFilterContext)
+#ifdef PROFILING_SUPPORTED
 CDAC_TYPE_FIELD(Thread, T_POINTER, ProfilerFilterContext, cdac_data<Thread>::ProfilerFilterContext)
+#endif // PROFILING_SUPPORTED
 CDAC_TYPE_FIELD(Thread, TYPE(GCHandle), GCHandle, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, TYPE(GCHandle), LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, T_POINTER, LinkNext, cdac_data<Thread>::Link)
@@ -900,10 +902,12 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, ILAddress, cdac_data<ILCodeVersion
 CDAC_TYPE_END(ILCodeVersionNode)
 #endif // FEATURE_CODE_VERSIONING
 
+#ifdef PROFILING_SUPPORTED
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, T_UINT64, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
 CDAC_TYPE_FIELD(ProfControlBlock, T_BOOL, RejitOnAttachEnabled, offsetof(ProfControlBlock, fRejitOnAttachEnabled))
 CDAC_TYPE_END(ProfControlBlock)
+#endif // PROFILING_SUPPORTED
 
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_BEGIN(GCCoverageInfo)
@@ -1269,21 +1273,6 @@ CDAC_TYPE_FIELD(SyncBlockCache, T_UINT32, FreeSyncTableIndex, cdac_data<SyncBloc
 CDAC_TYPE_FIELD(SyncBlockCache, T_POINTER, CleanupBlockList, cdac_data<SyncBlockCache>::CleanupBlockList)
 CDAC_TYPE_END(SyncBlockCache)
 
-#ifdef FEATURE_WEBCIL
-CDAC_TYPE_BEGIN(WebcilHeader)
-CDAC_TYPE_SIZE(sizeof(WebcilHeader))
-CDAC_TYPE_FIELD(WebcilHeader, T_UINT16, CoffSections, offsetof(WebcilHeader, CoffSections))
-CDAC_TYPE_END(WebcilHeader)
-
-CDAC_TYPE_BEGIN(WebcilSectionHeader)
-CDAC_TYPE_SIZE(sizeof(WebcilSectionHeader))
-CDAC_TYPE_FIELD(WebcilSectionHeader, T_UINT32, VirtualSize, offsetof(WebcilSectionHeader, VirtualSize))
-CDAC_TYPE_FIELD(WebcilSectionHeader, T_UINT32, VirtualAddress, offsetof(WebcilSectionHeader, VirtualAddress))
-CDAC_TYPE_FIELD(WebcilSectionHeader, T_UINT32, SizeOfRawData, offsetof(WebcilSectionHeader, SizeOfRawData))
-CDAC_TYPE_FIELD(WebcilSectionHeader, T_UINT32, PointerToRawData, offsetof(WebcilSectionHeader, PointerToRawData))
-CDAC_TYPE_END(WebcilSectionHeader)
-#endif
-
 CDAC_TYPE_BEGIN(AuxiliarySymbolInfo)
 CDAC_TYPE_SIZE(sizeof(VMAUXILIARYSYMBOLDEF))
 CDAC_TYPE_FIELD(AuxiliarySymbolInfo, T_POINTER, Address, offsetof(VMAUXILIARYSYMBOLDEF, pfnAuxiliarySymbol))
@@ -1454,7 +1443,9 @@ CDAC_GLOBAL(StressLogEnabled, T_UINT8, 0)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
+#ifdef PROFILING_SUPPORTED
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
+#endif // PROFILING_SUPPORTED
 CDAC_GLOBAL_POINTER(SyncBlockCache, &SyncBlockCache::s_pSyncBlockCache)
 CDAC_GLOBAL(SyncBlockMaskLockThreadId, T_UINT32, SBLK_MASK_LOCK_THREADID)
 CDAC_GLOBAL(SyncBlockMaskLockRecursionLevel, T_UINT32, SBLK_MASK_LOCK_RECLEVEL)
@@ -1508,7 +1499,9 @@ CDAC_GLOBAL_CONTRACT(Notifications, 1)
 CDAC_GLOBAL_CONTRACT(Object, 1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, 1)
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, 3)
+#ifdef PROFILING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(ReJIT, 1)
+#endif // PROFILING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
 CDAC_GLOBAL_CONTRACT(SHash, 1)

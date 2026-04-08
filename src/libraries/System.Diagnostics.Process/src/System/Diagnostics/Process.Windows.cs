@@ -25,29 +25,6 @@ namespace System.Diagnostics
 
         private bool _signaled;
 
-        /// <summary>
-        /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
-        /// remote computer. These process resources share the specified process name.
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public static Process[] GetProcessesByName(string? processName, string machineName)
-        {
-            bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
-
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName, machineName);
-            Process[] processes = new Process[processInfos.Length];
-
-            for (int i = 0; i < processInfos.Length; i++)
-            {
-                ProcessInfo processInfo = processInfos[i];
-                processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
-            }
-
-            return processes;
-        }
-
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public static Process? Start(string fileName, string userName, SecureString password, string domain)
@@ -531,9 +508,9 @@ namespace System.Diagnostics
 
         private static ConsoleEncoding GetStandardOutputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
 
-        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)
         {
-            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle);
+            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles);
 
             if (startedProcess.IsInvalid)
             {
