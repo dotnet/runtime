@@ -12717,7 +12717,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     } CONTRACTL_END;
 
     HRESULT hr = E_FAIL;
-    *ppSchema = NULL;
+    *pSchema = NULL;
     *pCountSchemaItems = 0;
     *pInstrumentationData = NULL;
     *pPgoSource = PgoSource::Unknown;
