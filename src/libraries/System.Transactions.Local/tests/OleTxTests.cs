@@ -302,6 +302,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     }
 
     [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano))]
+    [SkipOnCoreClr("OleTx Recovery times out under JIT stress, not relevant for libraries tests", ~RuntimeTestModes.RegularRun)]
     public void Recovery()
     {
         Test(() =>
