@@ -2164,7 +2164,7 @@ free_signature_pointer_pair (SignaturePointerPair *pair)
 }
 
 MonoMethod *
-mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, gboolean closed_over_null, MonoMethod *target_method)
+mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method)
 {
 	MonoMethodSignature *sig, *invoke_sig, *target_method_sig = NULL;
 	MonoMethodBuilder *mb;
@@ -2172,6 +2172,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	GHashTable *cache;
 	gpointer cache_key = NULL;
 	char *name;
+	gboolean closed_over_null = FALSE;
 	MonoGenericContext *ctx = NULL;
 	MonoGenericContainer *container = NULL;
 	MonoMethod *orig_method = method;
@@ -2222,34 +2223,18 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 
 	if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL) {
 		/*
-		 * Determine closed_over_null if not already set by the caller.
-		 * When called from AOT, closed_over_null is set explicitly.
-		 * When called at runtime with a target_method, compute from param counts:
-		 * when closed over null, both have the same count; when not closed over
-		 * null, the invoke sig has one extra param that becomes 'this'.
+		 * We don't want to use target_method's signature because it can be freed early
 		 */
-		if (!closed_over_null && target_method) {
-			MonoMethodSignature *actual_target_sig = mono_method_signature_internal (target_method);
-			closed_over_null = sig->param_count == actual_target_sig->param_count;
-		}
+		target_method_sig = mono_metadata_signature_dup_delegate_invoke_to_target (invoke_sig);
 
-		if (closed_over_null) {
-			subtype = WRAPPER_SUBTYPE_DELEGATE_INVOKE_CLOSED_OVER_NULL;
-		} else {
-			/*
-			 * We don't want to use target_method's signature because it can be freed early
-			 */
-			target_method_sig = mono_metadata_signature_dup_delegate_invoke_to_target (invoke_sig);
-		}
+		closed_over_null = sig->param_count == target_method_sig->param_count;
 	}
 
 	/*
 	 * Check cache
 	 */
 	if (ctx) {
-		if (callvirt && closed_over_null)
-			cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_closed_over_null_cache, mono_aligned_addr_hash, NULL);
-		else if (callvirt)
+		if (callvirt)
 			cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_invoke_virtual_cache, mono_aligned_addr_hash, NULL);
 		else
 			cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_invoke_cache, mono_aligned_addr_hash, NULL);
@@ -2275,10 +2260,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	} else if (callvirt) {
 		GHashTable **cache_ptr;
 
-		if (closed_over_null)
-			cache_ptr = &mono_method_get_wrapper_cache (method)->delegate_closed_over_null_cache;
-		else
-			cache_ptr = &mono_method_get_wrapper_cache (method)->delegate_abstract_invoke_cache;
+		cache_ptr = &mono_method_get_wrapper_cache (method)->delegate_abstract_invoke_cache;
 
 		/* We need to cache the signature */
 		mono_marshal_lock ();
@@ -2363,10 +2345,15 @@ mono_marshal_get_delegate_invoke_subtype (MonoMethod *method, MonoDelegate *del)
 		return WRAPPER_SUBTYPE_NONE;
 
 	if (!del->target && mono_method_signature_internal (del->method)->hasthis) {
-		if (!(del->method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !m_class_is_valuetype (del->method->klass) && sig->param_count ==  mono_method_signature_internal (del->method)->param_count + 1)
-			return WRAPPER_SUBTYPE_NONE;
-		else
-			return WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL;
+		if (!(del->method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !m_class_is_valuetype (del->method->klass)) {
+			if (sig->param_count == mono_method_signature_internal (del->method)->param_count + 1)
+				/* Open instance delegate: first delegate arg becomes 'this' */
+				return WRAPPER_SUBTYPE_NONE;
+			if (sig->param_count == mono_method_signature_internal (del->method)->param_count)
+				/* Closed over null: target (null) is passed as 'this' via the bound path */
+				return WRAPPER_SUBTYPE_NONE;
+		}
+		return WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL;
 	}
 
 	if (mono_method_signature_internal (del->method)->param_count == sig->param_count + 1 && (del->method->flags & METHOD_ATTRIBUTE_STATIC))
@@ -2390,8 +2377,10 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	sig = mono_signature_no_pinvoke (method);
 
 	if (del && !del->target && del->method && mono_method_signature_internal (del->method)->hasthis) {
-		if (!(del->method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !m_class_is_valuetype (del->method->klass) && sig->param_count ==  mono_method_signature_internal (del->method)->param_count + 1) {
-			/* The first argument of the delegate is passed as this, the normal invoke code can handle this */
+		if (!(del->method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !m_class_is_valuetype (del->method->klass) &&
+		    (sig->param_count == mono_method_signature_internal (del->method)->param_count + 1 ||
+		     sig->param_count == mono_method_signature_internal (del->method)->param_count)) {
+			/* Open instance delegate or closed over null: the normal invoke code can handle this */
 		} else {
 			callvirt = TRUE;
 		}
@@ -2403,7 +2392,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 		target_method = del->method;
 	}
 
-	return mono_marshal_get_delegate_invoke_internal (method, callvirt, static_method_with_first_arg_bound, FALSE, target_method);
+	return mono_marshal_get_delegate_invoke_internal (method, callvirt, static_method_with_first_arg_bound, target_method);
 }
 
 typedef struct {

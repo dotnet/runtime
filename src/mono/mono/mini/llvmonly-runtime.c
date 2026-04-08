@@ -817,6 +817,12 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 	if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND)
 		del->bound = TRUE;
 
+	/* Closed over null: instance method bound with null target.
+	 * Set bound so the wrapper passes target (null) as 'this'. */
+	if (!del->target && del->method && mono_method_signature_internal (del->method)->hasthis &&
+	    mono_method_signature_internal (info->invoke)->param_count == mono_method_signature_internal (del->method)->param_count)
+		del->bound = TRUE;
+
 	ftndesc = info->invoke_impl;
 	if (G_UNLIKELY (!ftndesc) || subtype != WRAPPER_SUBTYPE_NONE) {
 		MonoMethod *invoke_impl = mono_marshal_get_delegate_invoke (info->invoke, del);

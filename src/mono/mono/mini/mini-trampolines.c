@@ -1076,6 +1076,15 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		if (m_method_is_static (method) && sig->param_count == tramp_info->invoke_sig->param_count + 1)
 			closed_static = TRUE;
 
+		if (callvirt && closed_over_null) {
+			if (!m_method_is_virtual (method) && !m_class_is_valuetype (method->klass)) {
+				/* Closed over null with non-virtual instance method: use the bound path */
+				callvirt = FALSE;
+				delegate->bound = TRUE;
+				enable_caching = FALSE;
+			}
+		}
+
 		if (callvirt && !closed_over_null) {
 			/*
 			 * The delegate needs to make a virtual call to the target method using its
@@ -1136,7 +1145,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 
 	multicast = ((MonoMulticastDelegate*)delegate)->delegates != NULL;
 	if (!multicast && !callvirt) {
-		if (closed_static)
+		if (closed_static || closed_over_null)
 			invoke_impl = impl_this;
 		else
 			invoke_impl = delegate->target ? impl_this : impl_nothis;
