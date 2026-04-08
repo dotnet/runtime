@@ -822,7 +822,9 @@ void GCProfileWalkHeap(bool etwOnly)
 
 void WalkFReachableObjects(bool isCritical, void* objectID)
 {
-	(&g_profControlBlock)->FinalizeableObjectQueued(isCritical, (ObjectID)objectID);
+#if defined(PROFILING_SUPPORTED)
+    (&g_profControlBlock)->FinalizeableObjectQueued(isCritical, (ObjectID)objectID);
+#endif // PROFILING_SUPPORTED
 }
 
 static fq_walk_fn g_FQWalkFn = &WalkFReachableObjects;
