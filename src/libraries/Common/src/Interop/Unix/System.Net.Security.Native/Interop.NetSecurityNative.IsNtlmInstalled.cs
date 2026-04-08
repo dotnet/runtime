@@ -15,19 +15,24 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_EnsureGssInitialized")]
         private static partial int EnsureGssInitialized();
 
+        private static readonly int s_GssInitResult;
+        private const string GssApiLibraryName = "libgssapi_krb5.so.2";
+
         static NetSecurityNative()
         {
             GssInitializer.Initialize();
+
+            if (s_GssInitResult != 0)
+            {
+                throw new DllNotFoundException(GssApiLibraryName);
+            }
         }
 
         internal static class GssInitializer
         {
             static GssInitializer()
             {
-                if (EnsureGssInitialized() != 0)
-                {
-                    throw new InvalidOperationException();
-                }
+                s_GssInitResult = EnsureGssInitialized();
             }
 
             internal static void Initialize()

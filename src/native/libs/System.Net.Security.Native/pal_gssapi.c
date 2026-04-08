@@ -135,7 +135,7 @@ static int32_t ensure_gss_shim_initialized(void)
     //   if (gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gss_lib_name, dlerror()); return -1; }
 #define PER_FUNCTION_BLOCK(fn) \
     fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); abort(); }
 
     FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
