@@ -196,18 +196,14 @@ namespace ILCompiler.ObjectWriter
             WriteExport(name, WasmExportKind.Global, globalIndex);
 
         private int _numElements;
-        private void WriteFunctionElement(WasmInstructionGroup e0, ReadOnlySpan<int> functionIndices)
+        private void WriteRefFuncFunctionElement(ReadOnlySpan<int> functionIndices)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.ElementSection);
             // e0:expr y*:list(funcidx)
-            //  elem (ref func) (ref.func y)* (active 0 e0)
-            writer.WriteULEB128(0);
+            //  elem (ref func) (ref.func y)* (passive 0 e0)
+            writer.WriteByte(1); // Passive element segment
+            writer.WriteByte(0); // element type: ref func
 
-            // FIXME: Add a way to encode directly into the writer without a scratch buffer
-            int encodeSize = e0.EncodeSize();
-            int bytesWritten = e0.Encode(writer.Buffer.GetSpan(encodeSize));
-            Debug.Assert(bytesWritten == encodeSize);
-            writer.Buffer.Advance((int)bytesWritten);
 
             writer.WriteULEB128((ulong)functionIndices.Length);
 
@@ -262,7 +258,7 @@ namespace ILCompiler.ObjectWriter
         WasmInstructionGroup GetImageFunctionPointerBaseOffset(int offset)
         {
             return new WasmInstructionGroup([
-                Global.Get(ImageFunctionPointerBaseGlobalIndex),
+                Global.Get(TableBaseGlobalIndex),
                 I32.Const(offset),
                 I32.Add,
             ]);
@@ -282,7 +278,7 @@ namespace ILCompiler.ObjectWriter
             public int GetFlatMappedSize()
             {
                 int size = 0;
-                size += WebcilEncoder.HeaderEncodeSize(); // include header
+                size += WebcilEncoder.HeaderEncodeSize(WebcilVersion.Version1); // include header
                 size += Sections.Length * WebcilEncoder.SectionHeaderEncodeSize(); // include size of all section headers
                 size = AlignmentHelper.AlignUp(size, WebcilSectionAlignment); // account for padding before first section
 
@@ -306,13 +302,31 @@ namespace ILCompiler.ObjectWriter
                 ]
         );
 
-        static WasmFunctionBody GetWebcilPayload = new WasmFunctionBody(
+        WasmFunctionBody FillWebcilTable(int tableSize) => new WasmFunctionBody(
+            new WasmFuncType(new([]), new([])), // (func)
+                [
+                    Global.Get(WasmObjectWriter.TableBaseGlobalIndex),
+                    I32.Const(0),
+                    I32.Const(tableSize),
+                    Table.Init(0, 0)
+                ]
+        );
+
+        WasmFunctionBody GetWebcilPayload => new WasmFunctionBody(
             new WasmFuncType(new([WasmValueType.I32, WasmValueType.I32]), new([])), // (func ($d i32) ($n i32))
                 [
                     Local.Get(0), // (local.get $d)
                     I32.Const(0),
                     Local.Get(1), // (local.get $n)
-                    Memory.Init(1)
+                    Memory.Init(1),
+                    Local.Get(1),
+                    I32.Const(32),
+                    I32.Ge_s,
+                    Block.If(WasmBlockType.Empty),
+                    Local.Get(0), // (local.get $d)
+                    Global.Get(WasmObjectWriter.TableBaseGlobalIndex), // (global.get $tableBase)
+                    I32.Store((ulong)WebcilEncoder.TableBaseOffset), // i32.store offset=TableBaseOffset
+                    Block.End
                 ]
         );
 
@@ -374,11 +388,11 @@ namespace ILCompiler.ObjectWriter
         /// Assigns VirtualAddresses and related header fields to each webcil section based on the
         /// total section count and each section's stream length. This can be called before all
         /// sections have their final content as long as the section count is finalized, though
-        /// sections whose size changes later must come last they don't invalidate earlier VAs.
+        /// sections whose size changes later must come last so they don't invalidate earlier VAs.
         /// </summary>
         private static void AssignWebcilSectionVirtualAddresses(WebcilSection[] webcilSections)
         {
-            uint sizeOfHeaders = (uint)WebcilEncoder.HeaderEncodeSize() + (uint)(webcilSections.Length * WebcilEncoder.SectionHeaderEncodeSize());
+            uint sizeOfHeaders = (uint)WebcilEncoder.HeaderEncodeSize(WebcilVersion.Version1) + (uint)(webcilSections.Length * WebcilEncoder.SectionHeaderEncodeSize());
             uint pointerToRawData = (uint)AlignmentHelper.AlignUp((int)sizeOfHeaders, (int)WebcilSectionAlignment);
             uint virtualAddress = pointerToRawData;
 
@@ -515,23 +529,15 @@ namespace ILCompiler.ObjectWriter
         private WebcilSegment _webcilSegment = null;
         private protected override void EmitSectionsAndLayout()
         {
+            int totalMethodCount = _methodCount + 3;
             InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
             InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
+            InsertWasmStub(new Utf8String("fillWebcilTable"), FillWebcilTable(totalMethodCount));
+            Debug.Assert(_methodCount == totalMethodCount);
 
             WriteDataCountSection();
-            WriteTableSection();
 
             PrependCount(SectionByName(ObjectNodeSection.WasmCodeSection.Name), _methodCount);
-        }
-
-        private void WriteTableSection()
-        {
-            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.TableSection);
-            writer.WriteByte(0x01); // number of tables
-            writer.WriteByte(0x70); // element type: funcref
-            writer.WriteByte(0x01); // table limits: flags (1 = has maximum)
-            writer.WriteULEB128((ulong)_methodCount); // minimum
-            writer.WriteULEB128((ulong)_methodCount); // maximum
         }
 
         private int _numDefinedGlobals = 0;
@@ -591,7 +597,6 @@ namespace ILCompiler.ObjectWriter
             ObjectNodeSection.WasmTypeSection.Name,
             WasmObjectNodeSection.ImportSection.Name,
             WasmObjectNodeSection.FunctionSection.Name,
-            WasmObjectNodeSection.TableSection.Name,
             WasmObjectNodeSection.GlobalSection.Name,
             WasmObjectNodeSection.ExportSection.Name,
             WasmObjectNodeSection.ElementSection.Name,
@@ -747,8 +752,9 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(webcilStream.Position == _webcilSegment.GetFlatMappedSize(), $"Total Size Mismatch: {webcilStream.Position} != {_webcilSegment.GetFlatMappedSize()}");
 
             // Create passive data segment for encoding the size of the webcil payload (size must fit in 32-bit uint)
-            byte[] lengthBuffer = new byte[sizeof(uint)];
+            byte[] lengthBuffer = new byte[sizeof(uint) * 2];
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)_webcilSegment.GetFlatMappedSize());
+            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)_uniqueSymbols.Count);
             MemoryStream webcilSizeSegmentStream = new MemoryStream(lengthBuffer);
             WasmDataSegment webcilSizeSegment = new WasmDataSegment(webcilSizeSegmentStream, new Utf8String("webcilCount"),
                 WasmDataSectionType.Passive, null);
@@ -1003,20 +1009,20 @@ namespace ILCompiler.ObjectWriter
         }
 #nullable disable
 
-        const int StackPointerGlobalIndex = 0;
-        const int ImageBaseGlobalIndex = 1;
-        const int ImageFunctionPointerBaseGlobalIndex = 2;
+        public const int StackPointerGlobalIndex = 0;
+        public const int ImageBaseGlobalIndex = 1;
+        public const int TableBaseGlobalIndex = 2;
 
         private WasmImport[] _defaultGlobalImports = new[]
         {
-            new WasmImport("webcil", "__stack_pointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
-            new WasmImport("webcil", "__image_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
-            new WasmImport("webcil", "__image_function_pointer_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageFunctionPointerBaseGlobalIndex),
+            new WasmImport("webcil", "stackPointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
+            new WasmImport("webcil", "imageBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
+            new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
+            new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
         };
 
         private void WriteImports()
         {
-
             int[] assignedImportIndices = new int[(int)WasmExternalKind.Count];
             foreach (WasmImport import in _defaultGlobalImports)
             {
@@ -1071,7 +1077,7 @@ namespace ILCompiler.ObjectWriter
                 Debug.Assert(functionIndices[i] == i);
             }
 #endif
-            WriteFunctionElement(GetImageFunctionPointerBaseOffset(0), functionIndices);
+            WriteRefFuncFunctionElement(functionIndices);
         }
 
         // For now, this function just prepares the function, exports, and type sections for emission by prepending the counts.

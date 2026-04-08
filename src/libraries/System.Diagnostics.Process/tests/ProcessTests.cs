@@ -2488,7 +2488,7 @@ namespace System.Diagnostics.Tests
             Process testProcess = CreateProcess();
             testProcess.StartInfo = psi;
 
-            AssertExtensions.Throws<ArgumentNullException>("item", () => testProcess.Start());
+            AssertExtensions.Throws<ArgumentNullException>("ArgumentList[0]", () => testProcess.Start());
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
