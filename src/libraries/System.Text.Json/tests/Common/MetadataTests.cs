@@ -170,12 +170,10 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Empty(parameters);
         }
 
-        [Theory]
-        [InlineData(typeof(ClassWithRequiredMember))]
-        [InlineData(typeof(ClassWithInitOnlyProperty))]
-        public void TypeWithRequiredOrInitMember_SourceGen_HasAssociatedParameterInfo(Type type)
+        [Fact]
+        public void TypeWithRequiredMember_SourceGen_HasAssociatedParameterInfo()
         {
-            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type);
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(ClassWithRequiredMember));
             JsonPropertyInfo propertyInfo = typeInfo.Properties.Single();
 
             JsonParameterInfo? jsonParameter = propertyInfo.AssociatedParameter;
@@ -184,7 +182,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 Assert.NotNull(jsonParameter);
 
-                Assert.Equal(type, jsonParameter.DeclaringType);
+                Assert.Equal(typeof(ClassWithRequiredMember), jsonParameter.DeclaringType);
                 Assert.Equal(0, jsonParameter.Position);
                 Assert.Equal(propertyInfo.PropertyType, jsonParameter.ParameterType);
                 Assert.Equal(propertyInfo.Name, jsonParameter.Name);
@@ -198,6 +196,41 @@ namespace System.Text.Json.Serialization.Tests
             else
             {
                 Assert.Null(jsonParameter);
+            }
+        }
+
+        [Fact]
+        public void TypeWithInitOnlyMember_SourceGen_HasNoAssociatedParameterInfo()
+        {
+            // Non-required init-only properties are no longer part of the constructor delegate
+            // in source gen. They are set post-construction via UnsafeAccessor or reflection.
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(ClassWithInitOnlyProperty));
+            JsonPropertyInfo propertyInfo = typeInfo.Properties.Single();
+
+            JsonParameterInfo? jsonParameter = propertyInfo.AssociatedParameter;
+            Assert.Null(jsonParameter);
+        }
+
+        [Fact]
+        public void TypeWithInitOnlyAndRequiredMembers_OnlyRequiredHasAssociatedParameterInfo()
+        {
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(ClassWithInitOnlyAndRequiredMembers));
+            Assert.Equal(2, typeInfo.Properties.Count);
+
+            JsonPropertyInfo initOnlyProp = typeInfo.Properties.Single(p => p.Name == nameof(ClassWithInitOnlyAndRequiredMembers.InitOnlyValue));
+            JsonPropertyInfo requiredProp = typeInfo.Properties.Single(p => p.Name == nameof(ClassWithInitOnlyAndRequiredMembers.RequiredValue));
+
+            Assert.Null(initOnlyProp.AssociatedParameter);
+
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                Assert.NotNull(requiredProp.AssociatedParameter);
+                Assert.True(requiredProp.AssociatedParameter.IsMemberInitializer);
+                Assert.Equal(typeof(ClassWithInitOnlyAndRequiredMembers), requiredProp.AssociatedParameter.DeclaringType);
+            }
+            else
+            {
+                Assert.Null(requiredProp.AssociatedParameter);
             }
         }
 
@@ -517,6 +550,12 @@ namespace System.Text.Json.Serialization.Tests
         internal class ClassWithInitOnlyProperty
         {
             public int Value { get; init; }
+        }
+
+        internal class ClassWithInitOnlyAndRequiredMembers
+        {
+            public int InitOnlyValue { get; init; }
+            public required string RequiredValue { get; set; }
         }
 
         internal class ClassWithMultipleConstructors

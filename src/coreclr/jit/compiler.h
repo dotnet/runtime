@@ -100,6 +100,7 @@ class Lowering; // defined in lower.h
 // The following are defined in this file, Compiler.h
 
 class Compiler;
+class FuncInfoRange;
 
 /*****************************************************************************
  *                  Unwind info
@@ -1704,6 +1705,11 @@ struct FuncInfoDsc
     unsigned short funEHIndex; // index, into the ebd table, of innermost EH clause corresponding to this
                                // funclet. It is only valid if funKind field indicates this is a
                                // EH-related funclet: FUNC_HANDLER or FUNC_FILTER
+
+    EHblkDsc*            GetEHDesc(Compiler* comp) const;
+    BasicBlock*          GetStartBlock(Compiler* comp) const;
+    BasicBlock*          GetLastBlock(Compiler* comp) const;
+    BasicBlockRangeList  Blocks(Compiler* comp) const;
 
 #if defined(TARGET_AMD64)
 
@@ -5784,6 +5790,15 @@ public:
     {
         return BasicBlockRangeList(startBlock, endBlock);
     }
+
+    // Funcs/Funclets: convenience methods for enabling range-based `for` iteration over the
+    // method's root function and its EH funclets, e.g.:
+    // 1.   for (FuncInfoDsc* const func : Funcs()) ...
+    // 2.   for (FuncInfoDsc* const funclet : Funclets()) ...
+    // 3.   for (FuncInfoDsc* const funclet : Funclets().Reverse()) ...
+    //
+    FuncInfoRange Funcs() const;
+    FuncInfoRange Funclets() const;
 
     // This array, managed by the SSA numbering infrastructure, keeps "outlined composite SSA numbers".
     // See "SsaNumInfo::GetNum" for more details on when this is needed.
@@ -12824,6 +12839,186 @@ public:
         return iterator(m_end);
     }
 };
+
+inline EHblkDsc* FuncInfoDsc::GetEHDesc(Compiler* comp) const
+{
+    assert(funKind != FUNC_ROOT);
+
+    EHblkDsc* const ehDsc = comp->ehGetDsc(funEHIndex);
+    assert(ehDsc != nullptr);
+
+    return ehDsc;
+}
+
+inline BasicBlock* FuncInfoDsc::GetStartBlock(Compiler* comp) const
+{
+    if (funKind == FUNC_ROOT)
+    {
+        assert(comp->fgFirstBB != nullptr);
+        return comp->fgFirstBB;
+    }
+
+    EHblkDsc* const ehDsc = GetEHDesc(comp);
+
+    if (funKind == FUNC_FILTER)
+    {
+        assert(ehDsc->HasFilter());
+        return ehDsc->ebdFilter;
+    }
+
+    assert(funKind == FUNC_HANDLER);
+    return ehDsc->ebdHndBeg;
+}
+
+inline BasicBlock* FuncInfoDsc::GetLastBlock(Compiler* comp) const
+{
+    if (funKind == FUNC_ROOT)
+    {
+        return comp->fgLastBBInMainFunction();
+    }
+
+    EHblkDsc* const ehDsc = GetEHDesc(comp);
+
+    if (funKind == FUNC_FILTER)
+    {
+        assert(ehDsc->HasFilter());
+        return ehDsc->BBFilterLast();
+    }
+
+    assert(funKind == FUNC_HANDLER);
+    return ehDsc->ebdHndLast;
+}
+
+inline BasicBlockRangeList FuncInfoDsc::Blocks(Compiler* comp) const
+{
+    return BasicBlockRangeList(GetStartBlock(comp), GetLastBlock(comp));
+}
+
+// FuncInfoRange: adapter class for forward or reverse iteration of a contiguous range of function/funclet
+// descriptors using range-based `for`, e.g.:
+//    for (FuncInfoDsc* const func : compiler->Funcs())
+//    for (FuncInfoDsc* const funclet : compiler->Funclets().Reverse())
+//
+class FuncInfoRange
+{
+    FuncInfoDsc* m_begin;
+    FuncInfoDsc* m_end;
+
+public:
+    class iterator
+    {
+        FuncInfoDsc* m_funcInfo;
+
+    public:
+        iterator(FuncInfoDsc* funcInfo)
+            : m_funcInfo(funcInfo)
+        {
+        }
+
+        FuncInfoDsc* operator*() const
+        {
+            return m_funcInfo;
+        }
+
+        iterator& operator++()
+        {
+            ++m_funcInfo;
+            return *this;
+        }
+
+        bool operator!=(const iterator& other) const
+        {
+            return m_funcInfo != other.m_funcInfo;
+        }
+    };
+
+    class ReverseIterator
+    {
+        FuncInfoDsc* m_funcInfo;
+
+    public:
+        ReverseIterator(FuncInfoDsc* funcInfo)
+            : m_funcInfo(funcInfo)
+        {
+        }
+
+        FuncInfoDsc* operator*() const
+        {
+            return m_funcInfo - 1;
+        }
+
+        ReverseIterator& operator++()
+        {
+            --m_funcInfo;
+            return *this;
+        }
+
+        bool operator!=(const ReverseIterator& other) const
+        {
+            return m_funcInfo != other.m_funcInfo;
+        }
+    };
+
+    class ReverseView
+    {
+        FuncInfoDsc* m_begin;
+        FuncInfoDsc* m_end;
+
+    public:
+        ReverseView(FuncInfoDsc* begin, FuncInfoDsc* end)
+            : m_begin(begin)
+            , m_end(end)
+        {
+        }
+
+        ReverseIterator begin() const
+        {
+            return ReverseIterator(m_begin);
+        }
+
+        ReverseIterator end() const
+        {
+            return ReverseIterator(m_end);
+        }
+    };
+
+    FuncInfoRange(FuncInfoDsc* begin, FuncInfoDsc* end)
+        : m_begin(begin)
+        , m_end(end)
+    {
+        assert(m_begin <= m_end);
+        assert((m_begin != nullptr) || (m_begin == m_end));
+    }
+
+    iterator begin() const
+    {
+        return iterator(m_begin);
+    }
+
+    iterator end() const
+    {
+        return iterator(m_end);
+    }
+
+    ReverseView Reverse() const
+    {
+        return ReverseView(m_end, m_begin);
+    }
+};
+
+inline FuncInfoRange Compiler::Funcs() const
+{
+    assert(fgFuncletsCreated);
+    assert(compFuncInfoCount > 0);
+    return FuncInfoRange(compFuncInfos, compFuncInfos + compFuncInfoCount);
+}
+
+inline FuncInfoRange Compiler::Funclets() const
+{
+    assert(fgFuncletsCreated);
+    assert(compFuncInfoCount > 0);
+    return FuncInfoRange(compFuncInfos + 1, compFuncInfos + compFuncInfoCount);
+}
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

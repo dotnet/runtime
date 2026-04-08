@@ -448,6 +448,35 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, 
 }
 #include <optdefault.h>
 
+extern "C" void QCALLTYPE InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown(IUnknown* unk, QCall::ObjectHandleOnStack retObject)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    retObject.Set(ComCallWrapper::GetWrapperFromIP(unk)->GetObjectRef());
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IUnknown* unk)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ComMethodTable* pComMT = ComMethodTable::ComMethodTableFromIP(unk);
+
+    if (pComMT->IsIClassX())
+    {
+        pComMT->CheckParentComVisibility(FALSE);
+    }
+
+    END_QCALL;
+}
+
 #endif // FEATURE_COMINTEROP
 
 FCIMPL0(void, StubHelpers::ClearLastError)
@@ -674,6 +703,19 @@ extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::Object
     GCX_COOP();
 
     g_pDebugger->MulticastTraceNextStep((DELEGATEREF)(element.Get()), count);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE StubHelpers_CreateLayoutClassMarshalStubs(QCall::TypeHandle th, PCODE* pConvertToUnmanaged, PCODE* pConvertToManaged, PCODE* pFree)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    *pConvertToUnmanaged = PInvoke::CreateLayoutClassMarshalILStub(th.AsTypeHandle().GetMethodTable(), MarshalOperation::ConvertToUnmanaged)->GetMultiCallableAddrOfCode();
+    *pConvertToManaged = PInvoke::CreateLayoutClassMarshalILStub(th.AsTypeHandle().GetMethodTable(), MarshalOperation::ConvertToManaged)->GetMultiCallableAddrOfCode();
+    *pFree = PInvoke::CreateLayoutClassMarshalILStub(th.AsTypeHandle().GetMethodTable(), MarshalOperation::Free)->GetMultiCallableAddrOfCode();
 
     END_QCALL;
 }

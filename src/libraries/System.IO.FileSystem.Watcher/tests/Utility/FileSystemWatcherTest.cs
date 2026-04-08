@@ -193,13 +193,10 @@ namespace System.IO.Tests
         {
             int attemptsCompleted = 0;
             bool result = false;
-            FileSystemWatcher newWatcher = watcher;
             while (!result && attemptsCompleted++ < attempts)
             {
                 if (attemptsCompleted > 1)
                 {
-                    // Re-create the watcher to get a clean iteration.
-                    newWatcher = RecreateWatcher(newWatcher);
                     // Most intermittent failures in FSW are caused by either a shortage of resources (e.g. inotify instances)
                     // or by insufficient time to execute (e.g. CI gets bogged down). Immediately re-running a failed test
                     // won't resolve the first issue, so we wait a little while hoping that things clear up for the next run.
@@ -211,9 +208,13 @@ namespace System.IO.Tests
                 // with the attempt count to tolerate transient delays (thread pool starvation, slow CI machines, etc.).
                 int effectiveTimeout = timeout * attemptsCompleted;
 
+                // On retries, re-create the watcher to get a clean iteration, always based on the
+                // original watcher's state. using ensures prompt disposal to release handles.
+                using FileSystemWatcher recreated = attemptsCompleted > 1 ? RecreateWatcher(watcher) : null;
+
                 try
                 {
-                    result = ExecuteAndVerifyEvents(newWatcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, effectiveTimeout);
+                    result = ExecuteAndVerifyEvents(recreated ?? watcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, effectiveTimeout);
                 }
                 finally
                 {
@@ -506,6 +507,18 @@ namespace System.IO.Tests
             }
 
             return newWatcher;
+        }
+
+        /// <summary>
+        /// Asserts that the file-system entry at <paramref name="path"/> is fully removed within
+        /// <see cref="RetryDelayMilliseconds"/> milliseconds. Call this before recreating a deleted path
+        /// in a cleanup lambda so that NTFS pending-delete races do not silently no-op the recreation.
+        /// </summary>
+        public static void WaitForPathToBeDeleted(string path)
+        {
+            Assert.True(
+                SpinWait.SpinUntil(() => !Path.Exists(path), RetryDelayMilliseconds),
+                $"Timed out waiting for '{path}' to be deleted.");
         }
 
         internal readonly struct FiredEvent

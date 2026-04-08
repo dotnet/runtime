@@ -77,7 +77,7 @@ COR header of the input MSIL metadata which then points at the R2R header (via t
 `ManagedNativeHeaderDirectory` field).
 
 In composite R2R files there is no global COR header and the R2R header is located through the
-well-known export symbol `RTR_HEADER`. The "actual" input assemblies are tracked under the new
+well-known export symbol `RTR_HEADER` (customizable via the `--rtr-header-symbol-name` crossgen2 option). The "actual" input assemblies are tracked under the new
 R2R header table `READYTORUN_SECTION_ASSEMBLIES`.
 
 ## Manifest metadata and component assembly table
@@ -128,7 +128,7 @@ properly look up methods stored in this section in the composite R2R case.
 # CoreCLR runtime changes
 
 CoreCLR runtime will need to become able to recognize the new composite R2R format by means
-of locating the well-known export `RTR_HEADER` and validating the ReadyToRun header (magic
+of locating the well-known export `RTR_HEADER` (or a custom symbol name if `--rtr-header-symbol-name` was specified) and validating the ReadyToRun header (magic
 constant, version number and the `READYTORUN_FLAG_COMPOSITE` flag) and behave accordingly:
 
 * For composite files with embedded MSIL, we shouldn't need MVID checks for reference

@@ -591,11 +591,13 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
+#ifdef PROFILING_SUPPORTED
     if (CORProfilerDisableAllNGenImages() || CORProfilerUseProfileImages())
     {
         DoLog("Ready to Run disabled - profiler disabled native images");
         return NULL;
     }
+#endif // PROFILING_SUPPORTED
 
     if (g_pConfig->ExcludeReadyToRun(pModule->GetSimpleName()))
     {

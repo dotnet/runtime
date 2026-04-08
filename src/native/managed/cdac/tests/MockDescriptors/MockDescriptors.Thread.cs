@@ -28,18 +28,18 @@ internal partial class MockDescriptors
         // Most recently added thread. We update its link to the next thread if another thread is added.
         private TargetPointer _previousThread = TargetPointer.Null;
 
-        public Thread(MockMemorySpace.Builder builder)
-            : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
+        public Thread(MockMemorySpace.Builder builder, bool hasProfilingSupport = true)
+            : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), hasProfilingSupport)
         { }
 
-        public Thread(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+        public Thread(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool hasProfilingSupport = true)
         {
             Builder = builder;
             _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
 
             TargetTestHelpers helpers = builder.TargetTestHelpers;
 
-            Types = GetTypes(helpers);
+            Types = GetTypes(helpers, hasProfilingSupport);
 
             // Add thread store and set global to point at it
             MockMemorySpace.HeapFragment threadStoreGlobal = _allocator.Allocate((ulong)helpers.PointerSize, "[global pointer] ThreadStore");
@@ -70,13 +70,23 @@ internal partial class MockDescriptors
             ];
         }
 
-        private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
+        private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers, bool hasProfilingSupport = true)
         {
+            TypeFields threadFields = ThreadFields;
+            if (!hasProfilingSupport)
+            {
+                threadFields = new TypeFields()
+                {
+                    DataType = DataType.Thread,
+                    Fields = Array.FindAll(ThreadFields.Fields, f => f.Name != nameof(Data.Thread.ProfilerFilterContext)),
+                };
+            }
+
             var types = GetTypesForTypeFields(
                 helpers,
                 [
                     ExceptionInfoFields,
-                    ThreadFields,
+                    threadFields,
                     ThreadStoreFields,
                 ]);
 
