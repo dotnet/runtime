@@ -316,14 +316,14 @@ public partial class ZipArchiveEntry
     }
 
     // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
-    private async Task<bool> WriteLocalFileHeaderAsync(bool isEmptyFile, bool forceWrite, CancellationToken cancellationToken)
+    private async Task<bool> WriteLocalFileHeaderAsync(bool isEmptyFile, bool forceWrite, CancellationToken cancellationToken, bool preserveDataDescriptor = false)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength))
+        if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite))
         {
             byte[] lfStaticHeader = new byte[ZipLocalFileHeader.SizeOfLocalHeader];
-            WriteLocalFileHeaderPrepare(lfStaticHeader, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength);
+            WriteLocalFileHeaderPrepare(lfStaticHeader, crc32ToWrite, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength);
 
             // write header
             await _archive.ArchiveStream.WriteAsync(lfStaticHeader, cancellationToken).ConfigureAwait(false);
@@ -401,7 +401,11 @@ public partial class ZipArchiveEntry
             if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
             {
                 _everOpenedForWrite = true;
-                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, cancellationToken).ConfigureAwait(false);
+                // Preserve the data descriptor flag for entries that originally had one,
+                // since the descriptor bytes remain on disk after the compressed data.
+                bool preserveDataDescriptor = _originallyInArchive
+                    && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
+                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, cancellationToken, preserveDataDescriptor).ConfigureAwait(false);
 
                 // Advance the stream past the compressed data and any trailing data descriptor
                 // by seeking to the pre-computed end-of-entry boundary.

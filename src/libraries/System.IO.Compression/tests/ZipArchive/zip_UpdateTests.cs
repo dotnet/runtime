@@ -1669,6 +1669,75 @@ namespace System.IO.Compression.Tests
 
                 await DisposeZipArchive(async, readArchive);
             }
+
+            // Step 4: Validate structural integrity — original entries must retain bit 3 and
+            // have CRC/sizes zeroed in the local header (values live in the data descriptor).
+            const uint LocalFileHeaderSignature = 0x04034b50;
+            const uint DataDescriptorSignature = 0x08074b50;
+            const ushort DataDescriptorBitFlag = 0x0008;
+            const uint EndOfCentralDirectorySignature = 0x06054B50;
+            const uint CentralDirectoryFileHeaderSignature = 0x02014B50;
+
+            ReadOnlySpan<byte> span = updatedZipBytes.AsSpan();
+
+            int eocdOffset = -1;
+            for (int i = updatedZipBytes.Length - 22; i >= 0; i--)
+            {
+                if (BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(i)) == EndOfCentralDirectorySignature)
+                {
+                    eocdOffset = i;
+                    break;
+                }
+            }
+            Assert.True(eocdOffset >= 0, "EOCD not found.");
+
+            int centralDirOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(eocdOffset + 16)));
+            int totalEntries = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(eocdOffset + 10));
+            Assert.Equal(originalEntryCount + 1, totalEntries);
+
+            List<(int LocalHeaderOffset, uint CompressedSize)> entries = new();
+            int cdOffset = centralDirOffset;
+            for (int i = 0; i < totalEntries; i++)
+            {
+                Assert.Equal(CentralDirectoryFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(cdOffset)));
+                uint compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(cdOffset + 20));
+                ushort fileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(cdOffset + 28));
+                ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(cdOffset + 30));
+                ushort fileCommentLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(cdOffset + 32));
+                uint localHeaderOffset = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(cdOffset + 42));
+                entries.Add((checked((int)localHeaderOffset), compressedSize));
+                cdOffset += 46 + fileNameLength + extraFieldLength + fileCommentLength;
+            }
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                (int localHeaderOffset, uint compressedSize) = entries[i];
+                Assert.Equal(LocalFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(localHeaderOffset)));
+                ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(localHeaderOffset + 6));
+                uint localCrc = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(localHeaderOffset + 14));
+                uint localCompSize = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(localHeaderOffset + 18));
+                uint localUncompSize = BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(localHeaderOffset + 22));
+
+                if (i < originalEntryCount)
+                {
+                    // Original entries must preserve bit 3 and have zeroed CRC/sizes in the local header.
+                    Assert.True((flags & DataDescriptorBitFlag) != 0, $"Entry {i}: bit 3 should be preserved.");
+                    Assert.True(localCrc == 0, $"Entry {i}: local header CRC should be 0 when bit 3 is set.");
+                    Assert.True(localCompSize == 0, $"Entry {i}: local header compressed size should be 0 when bit 3 is set.");
+                    Assert.True(localUncompSize == 0, $"Entry {i}: local header uncompressed size should be 0 when bit 3 is set.");
+
+                    // Verify the data descriptor is present with the correct signature.
+                    ushort fileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(localHeaderOffset + 26));
+                    ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(localHeaderOffset + 28));
+                    int descriptorOffset = localHeaderOffset + 30 + fileNameLength + extraFieldLength + (int)compressedSize;
+                    Assert.Equal(DataDescriptorSignature, BinaryPrimitives.ReadUInt32LittleEndian(span.Slice(descriptorOffset)));
+                }
+                else
+                {
+                    // Newly added entry should NOT have bit 3 (written on seekable stream).
+                    Assert.True((flags & DataDescriptorBitFlag) == 0, $"Entry {i}: added entry should not have bit 3.");
+                }
+            }
         }
     }
 }
