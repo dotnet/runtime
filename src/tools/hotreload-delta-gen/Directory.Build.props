@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>Latest</LangVersion>
     <SlnGenSolutionFolder>tools\hotreload-delta-gen\</SlnGenSolutionFolder>
+    <IsShipping>false</IsShipping>
 
     <!--
       This code was imported from https://github.com/dotnet/hotreload-utils which did not
