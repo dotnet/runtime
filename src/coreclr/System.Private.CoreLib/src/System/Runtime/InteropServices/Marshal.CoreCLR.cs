@@ -240,16 +240,21 @@ namespace System.Runtime.InteropServices
             private static MemberInfo ConvertToManagedMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.ConvertToManaged), BindingFlags.Public | BindingFlags.Static)!;
             private static MemberInfo FreeMethod => field ??= typeof(BoxedLayoutTypeMarshaler<>).GetMethod(nameof(BoxedLayoutTypeMarshaler<object>.Free), BindingFlags.Public | BindingFlags.Static)!;
 
-            private readonly unsafe delegate*<object, byte*, int, ref CleanupWorkListElement?, void> _convertToUnmanaged;
-            private readonly unsafe delegate*<object, byte*, ref CleanupWorkListElement?, void> _convertToManaged;
-            private readonly unsafe delegate*<object?, byte*, int, ref CleanupWorkListElement?, void> _free;
+            private unsafe delegate void ConvertToUnmanagedDelegate(object obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
+            private unsafe delegate void ConvertToManagedDelegate(object obj, byte* native, ref CleanupWorkListElement? cleanupWorkList);
+            private unsafe delegate void FreeDelegate(object? obj, byte* native, int nativeSize, ref CleanupWorkListElement? cleanupWorkList);
+
+            private readonly ConvertToUnmanagedDelegate _convertToUnmanaged;
+            private readonly ConvertToManagedDelegate _convertToManaged;
+            private readonly FreeDelegate _free;
+
             private readonly int _nativeSize;
 
-            internal unsafe LayoutTypeMarshalerMethods(Type instantiatedType, int nativeSize)
+            internal LayoutTypeMarshalerMethods(Type instantiatedType, int nativeSize)
             {
-                _convertToUnmanaged = (delegate*<object, byte*, int, ref CleanupWorkListElement?, void>)((RuntimeMethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToUnmanagedMethod)).MethodHandle.GetFunctionPointer();
-                _convertToManaged = (delegate*<object, byte*, ref CleanupWorkListElement?, void>)((RuntimeMethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToManagedMethod)).MethodHandle.GetFunctionPointer();
-                _free = (delegate*<object?, byte*, int, ref CleanupWorkListElement?, void>)((RuntimeMethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(FreeMethod)).MethodHandle.GetFunctionPointer();
+                _convertToUnmanaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToUnmanagedMethod)).CreateDelegate<ConvertToUnmanagedDelegate>();
+                _convertToManaged = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(ConvertToManagedMethod)).CreateDelegate<ConvertToManagedDelegate>();
+                _free = ((MethodInfo)instantiatedType.GetMemberWithSameMetadataDefinitionAs(FreeMethod)).CreateDelegate<FreeDelegate>();
                 _nativeSize = nativeSize;
             }
 
