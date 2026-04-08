@@ -2,6 +2,11 @@ project(Runtime)
 
 include(FindPython)
 
+# Workaround from https://github.com/dotnet/runtime/pull/117513
+if (NOT "$ENV{EMSDK_PYTHON}" STREQUAL "")
+  set(Python_EXECUTABLE "$ENV{EMSDK_PYTHON}")
+endif()
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(EVENT_MANIFEST ${VM_DIR}/ClrEtwAll.man)

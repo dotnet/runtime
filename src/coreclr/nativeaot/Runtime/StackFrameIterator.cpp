@@ -64,6 +64,7 @@ EXTERN_C CODE_LOCATION RhpRethrow2;
 #define FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY(msg) { ASSERT_UNCONDITIONALLY(msg); RhFailFast(); }
 #endif
 
+#ifndef HOST_WASM // TODO-LLVM: consider excluding this whole file from the portable runtime build...
 StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame)
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ GC ]\n");
@@ -88,6 +89,7 @@ StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransition
 
     PrepareToYieldFrame();
 }
+#endif // !HOST_WASM
 
 StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PTR_PAL_LIMITED_CONTEXT pCtx)
 {
@@ -603,6 +605,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
 #endif // TARGET_ARM
 }
 
+#if !defined(HOST_WASM)
 // Prepare to start a stack walk from the context listed in the supplied NATIVE_CONTEXT.
 // NOTE: When a return address hijack is executed, the PC in the NATIVE_CONTEXT
 // matches the hijacked return address.  This PC is not guaranteed to be in managed code
@@ -861,6 +864,7 @@ void StackFrameIterator::EnsureInitializedToManagedFrame()
         FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY("Unadjusted initial PC points to an unexpected assembly thunk kind.");
     }
 }
+#endif // !HOST_WASM
 
 PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
 {

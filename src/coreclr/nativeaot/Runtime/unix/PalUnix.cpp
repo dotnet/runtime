@@ -29,9 +29,10 @@
 
 #include <unistd.h>
 #include <sched.h>
-#include <sys/mman.h>
 #include <sys/types.h>
+#ifndef TARGET_WASI // no dynamic linking in Wasi
 #include <dlfcn.h>
+#endif
 #include <dirent.h>
 #include <string.h>
 #include <ctype.h>
@@ -63,6 +64,14 @@
 
 #ifdef TARGET_APPLE
 #include <mach/mach.h>
+#endif
+
+#ifndef HOST_WASM
+#include <sys/mman.h>
+#endif
+
+#ifdef HOST_WASM
+#include "wasm/PalWasm.h"
 #endif
 
 #ifdef TARGET_HAIKU
@@ -192,12 +201,14 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
 
 static void UnmaskActivationSignal()
 {
+#ifndef HOST_WASM
     sigset_t signal_set;
     sigemptyset(&signal_set);
     sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
 
     int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
     _ASSERTE(sigmaskRet == 0);
+#endif
 }
 
 static void TimeSpecAdd(timespec* time, uint32_t milliseconds)
@@ -327,7 +338,7 @@ public:
             NanosecondsToTimeSpec(nanoseconds, &endTime);
             endNanoseconds = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) + nanoseconds;
         }
-#elif HAVE_PTHREAD_CONDATTR_SETCLOCK
+#elif HAVE_PTHREAD_CONDATTR_SETCLOCK || _WASI_EMULATED_PROCESS_CLOCKS
         if (milliseconds != INFINITE)
         {
             clock_gettime(CLOCK_MONOTONIC, &endTime);
@@ -651,7 +662,6 @@ UInt32_BOOL PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 #endif
 }
-#endif // !FEATURE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
 UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
@@ -666,6 +676,7 @@ UInt32_BOOL PalMarkThunksAsValidCallTargets(
         PROT_READ | PROT_WRITE);
     return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
 }
+#endif // !FEATURE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
 void PalSleep(uint32_t milliseconds)
 {
@@ -740,8 +751,9 @@ bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCa
 {
 #ifdef HOST_WASM
     // No threads, so we can't start one
-    ASSERT(false);
-#endif // HOST_WASM
+    RhFailFast();
+    return false;
+#else // !HOST_WASM
     pthread_attr_t attrs;
 
     int st = pthread_attr_init(&attrs);
@@ -780,6 +792,7 @@ bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCa
     ASSERT(st2 == 0);
 
     return st == 0;
+#endif // !HOST_WASM
 }
 
 bool PalSetCurrentThreadName(const char* name)
@@ -844,6 +857,7 @@ char* PalCopyTCharAsChar(const TCHAR* toCopy)
     return copy.Extract();
 }
 
+#ifndef HOST_WASM
 HANDLE PalLoadLibrary(const char* moduleName)
 {
     return dlopen(moduleName, RTLD_LAZY);
@@ -915,6 +929,7 @@ UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect
 
     return mprotect(pPageStart, memSize, unixProtect) == 0;
 }
+#endif // !HOST_WASM
 
 #if (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
 extern "C" void sys_icache_invalidate(const void* start, size_t len);
@@ -944,7 +959,9 @@ void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
 #elif (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
     sys_icache_invalidate (pAddress, size);
 #else
+#if !defined(HOST_WASM)
     __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
+#endif
 #endif
 }
 
@@ -1156,7 +1173,9 @@ bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHi
     void* pStackHighOut = NULL;
     void* pStackLowOut = NULL;
 
-#ifdef __APPLE__
+#if defined(HOST_WASM) && !defined(FEATURE_WASM_MANAGED_THREADS)
+    PalGetMaximumStackBounds_SingleThreadedWasm(&pStackLowOut, &pStackHighOut);
+#elif defined(__APPLE__)
     // This is a Mac specific method
     pStackHighOut = pthread_get_stackaddr_np(pthread_self());
     pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));

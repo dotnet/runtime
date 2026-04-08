@@ -489,10 +489,11 @@ class Thread;
 //in order to satisfy the runtime requirements of StackFrameIterator
 struct PInvokeTransitionFrame
 {
-    void*       m_RIP;
-    Thread*     m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
-                            // can be an invalid pointer in universal transition cases (which never need to call GetThread)
-    uint32_t    m_Flags;    // PInvokeTransitionFrameFlags
+#ifndef HOST_WASM
+    Thread*     m_pThread; // Cached so that GetThread is only called once per method
+    uint32_t    m_Flags; // PInvokeTransitionFrameFlags.
+    TgtPTR_Void m_RIP; // PInvokeTransitionFrameFlags.
+#endif // HOST_WASM
 };
 #else // FEATURE_PORTABLE_HELPERS
 struct PInvokeTransitionFrame

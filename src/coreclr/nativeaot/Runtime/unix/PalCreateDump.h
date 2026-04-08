@@ -3,6 +3,12 @@
 
 #pragma once
 
+// Forward declare for the benefit of Wasi.  We can't use this for browser/Emscripten as this struct is not tagged in 
+// Emscripten's headers.
+#if defined(TARGET_WASI)
+typedef struct siginfo_s siginfo_t;
+#endif
+
 #include <signal.h>
 
 extern bool PalCreateDumpInitialize();

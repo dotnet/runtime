@@ -75,7 +75,9 @@ inline void Thread::SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransiti
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());
+#ifndef HOST_WASM
     ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
+#endif // !HOST_WASM
     m_pDeferredTransitionFrame = pTransitionFrame;
 }
 
@@ -174,7 +176,9 @@ FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame* pFrame)
 FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame* pFrame)
 {
     ASSERT(!IsDoNotTriggerGcSet() || ThreadStore::IsTrapThreadsRequested());
+#ifndef HOST_WASM
     pFrame->m_pThread = this;
+#endif
     // set our mode to preemptive
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame);
 }
@@ -196,6 +200,7 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame* pFrame
     // remember the current transition frame, so it will be restored when we return from reverse pinvoke
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
 
+#ifndef HOST_WASM
     // If the thread is already in cooperative mode, this is a bad transition that will be a fail fast unless we are in
     // a do not trigger mode.  The exception to the rule allows us to have [UnmanagedCallersOnly] methods that are called via
     // the "restricted GC callouts" as well as from native, which is necessary because the methods are CCW vtable
@@ -215,6 +220,7 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame* pFrame
 
     if (IsCurrentThreadInCooperativeMode())
         return false; // bad transition
+#endif // !HOST_WASM
 
     // this is an ordinary transition to managed code
     // GC threads should not do that

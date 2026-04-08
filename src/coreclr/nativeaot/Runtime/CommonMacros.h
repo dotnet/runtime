@@ -183,37 +183,46 @@ typedef uint8_t CODE_LOCATION;
 #define FCDECL_RENAME(_rettype, ...)
 #define FCIMPL_RENAME(_rettype, ...)
 
-#define FCALL_METHOD_ARGS(dummy, ...) (__VA_ARGS__)
+#ifdef HOST_WASM
+//
+// WASM's managed calling convention uses an additional argument - the shadow stack.
+//
+#define FCALL_METHOD_ARGS_NO_METHOD_NAME(...) (void* pShadowStack __VA_OPT__(,) __VA_ARGS__)
+#else
+#define FCALL_METHOD_ARGS_NO_METHOD_NAME(...) (__VA_ARGS__)
+#endif
+
+#define FCALL_METHOD_ARGS(dummy, ...) FCALL_METHOD_ARGS_NO_METHOD_NAME(__VA_ARGS__)
 #define FCALL_METHOD_ARGS_(tuple) FCALL_METHOD_ARGS tuple
 
 #define FCIMPL1_F(_rettype, _method, a) \
-    EXTERN_C _rettype F_CALL_CONV _method (a) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a) \
     {
 #define FCIMPL1_D(_rettype, _method, a) \
-    EXTERN_C _rettype F_CALL_CONV _method (a) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a) \
     {
 #define FCIMPL1_L FCIMPL1_D
 #define FCIMPL2_FF(_rettype, _method, a, b) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b) \
     {
 #define FCIMPL2_DD(_rettype, _method, a, b) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b) \
     {
 #define FCIMPL2_LL FCIMPL2_DD
 #define FCIMPL2_FI(_rettype, _method, a, b) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b) \
     {
 #define FCIMPL2_DI(_rettype, _method, a, b) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b) \
     {
 #define FCIMPL3_FFF(_rettype, _method, a, b, c) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
     {
 #define FCIMPL3_DDD(_rettype, _method, a, b, c) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
     {
 #define FCIMPL3_ILL(_rettype, _method, a, b, c) \
-    EXTERN_C _rettype F_CALL_CONV _method (a, b, c) \
+    EXTERN_C _rettype F_CALL_CONV _method FCALL_METHOD_ARGS_NO_METHOD_NAME(a, b, c) \
     {
 
 #endif
