@@ -114,25 +114,18 @@ namespace System.Threading
 
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static unsafe void StartCallback(Thread* pThread, Exception* pException)
+        private static unsafe void StartCallback(Thread* pThread)
         {
-            try
-            {
-                StartHelper? startHelper = pThread->_startHelper;
-                Debug.Assert(startHelper != null);
-                pThread->_startHelper = null;
+            StartHelper? startHelper = pThread->_startHelper;
+            Debug.Assert(startHelper != null);
+            pThread->_startHelper = null;
 
-                startHelper.Run();
+            startHelper.Run();
 
-                // When this thread is about to exit, inform any subsystems that need to know.
-                // For external threads that have been attached to the runtime, we'll call this
-                // after the thread has been detached as it won't come through this path.
-                pThread->OnThreadExited();
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
+            // When this thread is about to exit, inform any subsystems that need to know.
+            // For external threads that have been attached to the runtime, we'll call this
+            // after the thread has been detached as it won't come through this path.
+            pThread->OnThreadExited();
         }
 
         // Max iterations to be done in SpinWait without switching GC modes.

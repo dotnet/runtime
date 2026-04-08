@@ -5651,7 +5651,7 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     pThread->IncPreventAbort();
 
     //Ex.RhThrowHwEx(exceptionCode, &exInfo)
-    throwHwEx.InvokeThrowing(exceptionCode, &exInfo);
+    throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
     DispatchExSecondPass(&exInfo);
 

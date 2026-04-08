@@ -1454,7 +1454,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         pThread->IncPreventAbort();
 
         //Ex.RhThrowHwEx(exceptionCode, &exInfo)
-        throwHwEx.InvokeThrowing(exceptionCode, &exInfo);
+        throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
         DispatchExSecondPass(&exInfo);
 
@@ -1628,7 +1628,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     pThread->IncPreventAbort();
 
     //Ex.RhThrowEx(throwable, &exInfo)
-    throwEx.InvokeThrowing(&throwable, &exInfo);
+    throwEx.InvokeDirect(&throwable, &exInfo);
 
     DispatchExSecondPass(&exInfo);
 
@@ -1681,7 +1681,7 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
     pThread->IncPreventAbort();
 
     //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
-    rethrow.InvokeThrowing(pActiveExInfo, &exInfo);
+    rethrow.InvokeDirect(pActiveExInfo, &exInfo);
     DispatchExSecondPass(&exInfo);
 
     GCPROTECT_END();

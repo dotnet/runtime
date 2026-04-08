@@ -580,10 +580,19 @@ namespace System.Runtime
         //
 #if NATIVEAOT
         [RuntimeExport("RhThrowHwEx")]
+#else
+    [UnmanagedCallersOnly]
 #endif
         [StackTraceHidden]
-        public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
+#if NATIVEAOT
+    public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
+#else
+    internal static void RhThrowHwEx(uint exceptionCode, ExInfo* pExInfo)
+#endif
         {
+#if !NATIVEAOT
+        ref ExInfo exInfo = ref *pExInfo;
+#endif
 #if NATIVEAOT
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
@@ -659,24 +668,24 @@ namespace System.Runtime
 #endif
         }
 
-#if !NATIVEAOT
-        [UnmanagedCallersOnly]
-        [StackTraceHidden]
-        internal static void RhThrowEx(object* pExceptionObj, ExInfo* pExInfo, Exception* _)
-        {
-            object exceptionObj = *pExceptionObj;
-            RhThrowEx(exceptionObj, ref *pExInfo);
-        }
-#endif
-
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
 #if NATIVEAOT
         [RuntimeExport("RhThrowEx")]
+#else
+        [UnmanagedCallersOnly]
 #endif
         [StackTraceHidden]
+#if NATIVEAOT
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
+#else
+        internal static void RhThrowEx(object* pExceptionObj, ExInfo* pExInfo)
+#endif
         {
+#if !NATIVEAOT
+            object exceptionObj = *pExceptionObj;
+            ref ExInfo exInfo = ref *pExInfo;
+#endif
 #if NATIVEAOT
 
 #if TARGET_WINDOWS
@@ -704,21 +713,22 @@ namespace System.Runtime
 #endif
         }
 
-#if !NATIVEAOT
-        [UnmanagedCallersOnly]
-        [StackTraceHidden]
-        internal static void RhRethrow(ExInfo* pActiveExInfo, ExInfo* pExInfo, Exception* _)
-        {
-            RhRethrow(ref *pActiveExInfo, ref *pExInfo);
-        }
-#endif
-
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
+#else
+    [UnmanagedCallersOnly]
 #endif
         [StackTraceHidden]
+#if NATIVEAOT
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+#else
+    internal static void RhRethrow(ExInfo* pActiveExInfo, ExInfo* pExInfo)
+#endif
         {
+#if !NATIVEAOT
+        ref ExInfo activeExInfo = ref *pActiveExInfo;
+        ref ExInfo exInfo = ref *pExInfo;
+#endif
 #if NATIVEAOT
 
 #if TARGET_WINDOWS
@@ -742,15 +752,6 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, null);
 #endif
         }
-
-#if !NATIVEAOT
-        [UnmanagedCallersOnly]
-        [StackTraceHidden]
-        internal static void RhThrowHwEx(uint exceptionCode, ExInfo* pExInfo, Exception* _)
-        {
-            RhThrowHwEx(exceptionCode, ref *pExInfo);
-        }
-#endif
 
         [StackTraceHidden]
         private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo)

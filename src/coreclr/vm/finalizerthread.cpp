@@ -299,7 +299,7 @@ void FinalizerThread::FinalizeAllObjects()
     }
 
     UnmanagedCallersOnlyCaller runFinalizers(METHOD__GC__RUN_FINALIZERS);
-    uint32_t count = runFinalizers.InvokeThrowing_Ret<uint32_t>();
+    uint32_t count = runFinalizers.InvokeDirect_Ret<uint32_t>();
 
     FireEtwGCFinalizersEnd_V1(count, GetClrInstanceId());
 }
