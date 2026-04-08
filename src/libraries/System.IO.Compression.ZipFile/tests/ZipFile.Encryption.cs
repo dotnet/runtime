@@ -1363,11 +1363,16 @@ namespace System.IO.Compression.Tests
                 ZipArchiveEntry entry = archive.GetEntry("test.txt");
                 Assert.NotNull(entry);
 
+
                 if (async)
                 {
-                    await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Write, password.AsMemory()));
-                    await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.ReadWrite, password.AsMemory()));
+                    await Assert.ThrowsAsync<InvalidOperationException>(
+                        () => entry.OpenAsync(FileAccess.Write, password));
+
+                    await Assert.ThrowsAsync<InvalidOperationException>(
+                        () => entry.OpenAsync(FileAccess.ReadWrite, password));
                 }
+
                 else
                 {
                     Assert.Throws<InvalidOperationException>(() => entry.Open(FileAccess.Write, password));
@@ -1390,7 +1395,7 @@ namespace System.IO.Compression.Tests
                 if (async)
                 {
                     // Read access in create mode throws
-                    await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Read, "password".AsMemory()));
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Read, "password"));
                     // Encryption without password throws
                     Assert.Throws<ArgumentException>(() => archive.CreateEntry("test_null.txt", (string)null!, ZipEncryptionMethod.Aes256));
                     Assert.Throws<ArgumentException>(() => archive.CreateEntry("test_empty.txt", "", ZipEncryptionMethod.Aes256));
@@ -1422,10 +1427,10 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.Read, null!));
-                    await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.Read, "".AsMemory()));
-                    await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.ReadWrite, null!));
-                    await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.ReadWrite, "".AsMemory()));
+                    await Assert.ThrowsAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.Read, null!));
+                    await Assert.ThrowsAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.Read, ""));
+                    await Assert.ThrowsAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.ReadWrite, null!));
+                    await Assert.ThrowsAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.ReadWrite, ""));
                 }
                 else
                 {

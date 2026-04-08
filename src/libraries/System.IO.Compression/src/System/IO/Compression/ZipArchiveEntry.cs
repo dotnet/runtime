@@ -1000,10 +1000,7 @@ namespace System.IO.Compression
             return (byte)((ZipHelper.DateTimeToDosTime(_lastModified.DateTime) >> 8) & 0xFF);
         }
 
-        private bool IsZipCryptoEncrypted()
-        {
-            return (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0 && (ushort)_headerCompressionMethod != WinZipAesMethod;
-        }
+        private bool IsZipCryptoEncrypted => (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0 && (ushort)_headerCompressionMethod != WinZipAesMethod;
 
         private bool UseAesEncryption()
         {
@@ -1022,7 +1019,9 @@ namespace System.IO.Compression
             };
         }
 
-        // Creates the appropriate decryption stream for an encrypted entry.
+        /// <summary>
+        /// Creates the appropriate decryption stream for an encrypted entry.
+        /// </summary>
         private Stream WrapWithDecryptionIfNeeded(Stream compressedStream, ReadOnlySpan<char> password)
         {
             if (Encryption == ZipEncryptionMethod.Unknown)
@@ -1031,34 +1030,18 @@ namespace System.IO.Compression
             if (password.IsEmpty)
                 throw new InvalidDataException(SR.PasswordRequired);
 
-            bool isAesEncrypted = IsAesEncrypted;
-
-            if (!isAesEncrypted && IsZipCryptoEncrypted())
-            {
-                byte expectedCheckByte = CalculateZipCryptoCheckByte();
-                ZipCryptoKeys keyMaterial = ZipCryptoStream.CreateKey(password);
-                return ZipCryptoStream.Create(compressedStream, keyMaterial, expectedCheckByte, encrypting: false);
-            }
-            else if (isAesEncrypted)
+            if (IsAesEncrypted)
             {
                 if (OperatingSystem.IsBrowser())
-                {
                     throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
-                }
 
                 int keySizeBits = GetAesKeySizeBits(Encryption);
-
-                // Read salt from stream to derive keys
                 int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
                 byte[] salt = new byte[saltSize];
                 compressedStream.ReadExactly(salt);
-
-                // Seek back so WinZipAesStream can read the header (salt + password verifier)
                 compressedStream.Seek(-saltSize, SeekOrigin.Current);
 
-                // Derive key material from the provided password
                 WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
-
                 return WinZipAesStream.Create(
                     baseStream: compressedStream,
                     keyMaterial: keyMaterial,
@@ -1066,8 +1049,14 @@ namespace System.IO.Compression
                     encrypting: false);
             }
 
-            // Not encrypted - return as-is
-            return compressedStream;
+            if (IsZipCryptoEncrypted)
+            {
+                byte expectedCheckByte = CalculateZipCryptoCheckByte();
+                ZipCryptoKeys keyMaterial = ZipCryptoStream.CreateKey(password);
+                return ZipCryptoStream.Create(compressedStream, keyMaterial, expectedCheckByte, encrypting: false);
+            }
+
+            throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
         }
 
         private Stream GetDataDecompressor(Stream compressedStreamToRead)
@@ -1112,7 +1101,6 @@ namespace System.IO.Compression
 
             if (IsEncrypted)
             {
-                // Use the shared helper that handles key caching
                 streamToDecompress = WrapWithDecryptionIfNeeded(compressedStream, password);
             }
             else
@@ -1120,11 +1108,19 @@ namespace System.IO.Compression
                 streamToDecompress = compressedStream;
             }
 
-            // Get decompressed stream
+            return BuildDecompressionPipeline(streamToDecompress);
+        }
+
+        /// <summary>
+        /// Wraps a (possibly decrypted) stream with decompression and CRC validation.
+        /// Shared by both sync and async read paths.
+        /// </summary>
+        private Stream BuildDecompressionPipeline(Stream streamToDecompress)
+        {
             Stream decompressedStream = GetDataDecompressor(streamToDecompress);
 
-            // AE-2 encrypted entries store CRC as 0 and use HMAC for integrity instead,
-            // so skip CRC validation for those. AE-1 entries store a valid CRC.
+            // AE-2 encrypted entries store CRC as 0 so skip CRC validation for those.
+            // AE-1 version entries store a valid CRC.
             if (IsAesEncrypted && _aeVersion == 2)
                 return decompressedStream;
 
@@ -1212,11 +1208,12 @@ namespace System.IO.Compression
             if (_currentlyOpenForWrite)
                 throw new IOException(SR.UpdateModeOneStream);
 
-            if (loadExistingContent && Encryption == ZipEncryptionMethod.Unknown)
+            if (Encryption == ZipEncryptionMethod.Unknown)
                 throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
 
-            // Validate password requirement for encrypted entries
-            if (loadExistingContent && IsEncrypted && password.IsEmpty)
+            // Encrypted entries always require a password for re-encryption,
+            // even when discarding existing content (write-only access).
+            if (IsEncrypted && password.IsEmpty)
                 throw new ArgumentException(SR.PasswordRequired, nameof(password));
 
             if (loadExistingContent)
@@ -1226,15 +1223,15 @@ namespace System.IO.Compression
 
             _currentlyOpenForWrite = true;
 
+            // Set up re-encryption key material so that the rewritten entry has valid encryption headers.
+            if (IsEncrypted)
+            {
+                SetupEncryptionKeyMaterial(password);
+            }
+
             if (loadExistingContent)
             {
                 _storedUncompressedData = GetUncompressedData(password);
-
-                // For encrypted entries, set up key material for re-encryption
-                if (IsEncrypted)
-                {
-                    SetupEncryptionKeyMaterial(password);
-                }
             }
             else
             {
@@ -1273,7 +1270,7 @@ namespace System.IO.Compression
         private void SetupEncryptionKeyMaterial(ReadOnlySpan<char> password)
         {
             // Derive and save key material for re-encryption
-            if (IsZipCryptoEncrypted())
+            if (IsZipCryptoEncrypted)
             {
                 _derivedZipCryptoKeyMaterial = ZipCryptoStream.CreateKey(password);
                 Encryption = ZipEncryptionMethod.ZipCrypto;
@@ -1290,9 +1287,6 @@ namespace System.IO.Compression
                 _derivedAesKeyMaterial = WinZipAesStream.CreateKey(password, salt: null, keySizeBits);
                 // Encryption is already set from constructor (parsed from central directory AES extra field)
             }
-
-            // Reset CRC - it will be recalculated when writing
-            _crc32 = 0;
         }
 
         /// <summary>
