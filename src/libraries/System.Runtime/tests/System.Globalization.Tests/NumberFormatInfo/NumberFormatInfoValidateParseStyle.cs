@@ -60,10 +60,12 @@ namespace System.Globalization.Tests
             if (!valid)
             {
                 AssertExtensions.Throws<ArgumentException>("style", () => decimal.Parse("0", style));
+                AssertExtensions.Throws<ArgumentException>("style", () => decimal.Parse("0"u8, style));
             }
             else
             {
-                decimal.Parse(value, style); // Should not throw
+                decimal.Parse("0", style); // Should not throw
+                decimal.Parse("0"u8, style); // Should not throw
             }
         }
     }

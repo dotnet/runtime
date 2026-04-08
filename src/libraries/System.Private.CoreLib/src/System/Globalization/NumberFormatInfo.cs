@@ -849,7 +849,7 @@ namespace System.Globalization
 
         internal static void ValidateParseStyleDecimal(NumberStyles style)
         {
-            // Check for undefined flags or hex number
+            // Check for undefined flags or hex/binary specifiers.
             if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0)
             {
                 ThrowInvalid(style);
