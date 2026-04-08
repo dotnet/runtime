@@ -1559,15 +1559,98 @@ namespace System.IO.Compression.Tests
         }
 
         /// <summary>
+        /// After a metadata-only update (e.g. LastWriteTime change) to an entry that originally used a
+        /// data descriptor, the rewritten local file header must still have bit 3 set and must keep CRC
+        /// and sizes as zero, because the original data descriptor bytes remain on disk after the
+        /// compressed data. Verifies the raw local header bytes of the modified entry.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_DataDescriptorWithMetadataOnlyChange_PreservesLocalHeaderFormat(bool async)
+        {
+            const ushort DataDescriptorBitFlag = 0x0008;
+            const uint DataDescriptorSignature = 0x08074b50;
+
+            byte[] entryData = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
+            // Create a zip on a non-seekable stream to force bit 3 / data descriptor on all entries.
+            byte[] zipBytes;
+            using (MemoryStream backing = new MemoryStream())
+            {
+                using (var nonSeekable = new WrappedStream(backing, canRead: false, canWrite: true, canSeek: false))
+                {
+                    ZipArchive createArchive = await CreateZipArchive(async, nonSeekable, ZipArchiveMode.Create);
+                    ZipArchiveEntry entry = createArchive.CreateEntry("entry.bin", CompressionLevel.NoCompression);
+                    Stream s = await OpenEntryStream(async, entry);
+                    if (async)
+                        await s.WriteAsync(entryData);
+                    else
+                        s.Write(entryData);
+                    await DisposeStream(async, s);
+                    await DisposeZipArchive(async, createArchive);
+                }
+                zipBytes = backing.ToArray();
+            }
+
+            // Reopen in Update mode and change only metadata — do NOT open the entry stream.
+            byte[] updatedZipBytes;
+            DateTimeOffset newTimestamp = new DateTimeOffset(2020, 6, 15, 12, 0, 0, TimeSpan.Zero);
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(zipBytes);
+                ms.Position = 0;
+                ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+                ZipArchiveEntry entry = updateArchive.GetEntry("entry.bin");
+                Assert.NotNull(entry);
+                entry.LastWriteTime = newTimestamp;
+                await DisposeZipArchive(async, updateArchive);
+                updatedZipBytes = ms.ToArray();
+            }
+
+            // Inspect the raw bytes of the rewritten local file header.
+            // Because the data descriptor bytes remain on disk after the compressed data, the local
+            // header must preserve bit 3 and write zeros for CRC/sizes so that sequential readers
+            // (not using the central directory) see a consistent streaming-format entry.
+            ReadOnlySpan<byte> span = updatedZipBytes.AsSpan();
+
+            // Local file header starts at offset 0 for the first (and only) entry.
+            ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(span[6..]);
+            Assert.True((flags & DataDescriptorBitFlag) != 0, "Bit 3 (data descriptor) must remain set in the rewritten local header.");
+
+            uint lhCrc32 = BinaryPrimitives.ReadUInt32LittleEndian(span[14..]);
+            uint lhCompressedSize = BinaryPrimitives.ReadUInt32LittleEndian(span[18..]);
+            uint lhUncompressedSize = BinaryPrimitives.ReadUInt32LittleEndian(span[22..]);
+            Assert.Equal(0u, lhCrc32, "CRC-32 must be zero in local header when bit 3 is set.");
+            Assert.Equal(0u, lhCompressedSize, "Compressed size must be zero in local header when bit 3 is set.");
+            Assert.Equal(0u, lhUncompressedSize, "Uncompressed size must be zero in local header when bit 3 is set.");
+
+            // The data descriptor must still be present immediately after the compressed data.
+            ushort fileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(span[26..]);
+            ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(span[28..]);
+            int dataOffset = 30 + fileNameLength + extraFieldLength;
+            int descriptorOffset = dataOffset + entryData.Length;
+            Assert.Equal(DataDescriptorSignature, BinaryPrimitives.ReadUInt32LittleEndian(span[descriptorOffset..]),
+                "Data descriptor signature must be present after the compressed data.");
+        }
+
+        /// <summary>
         /// Creates a zip archive via a non-seekable stream (which forces data descriptor / bit 3),
         /// reopens in Update mode, modifies only metadata (LastWriteTime) on a middle entry without
         /// reading its data, adds a new entry, and verifies all entries are intact.
         /// This exercises the metadata-only rewrite path which must seek past data descriptors.
+        /// Also validates the on-disk structure: original entries must still have bit 3 set and their
+        /// data descriptors present at the correct offsets; the new entry must not have bit 3.
         /// </summary>
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
         public async Task Update_DataDescriptorWithMetadataOnlyChange_PreservesArchive(bool async)
         {
+            const uint LocalFileHeaderSignature = 0x04034b50;
+            const uint DataDescriptorSignature = 0x08074b50;
+            const ushort DataDescriptorBitFlag = 0x0008;
+            const uint EndOfCentralDirectorySignature = 0x06054B50;
+            const uint CentralDirectoryFileHeaderSignature = 0x02014B50;
+
             byte[] entryData = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
             int originalEntryCount = 3;
 
@@ -1668,6 +1751,81 @@ namespace System.IO.Compression.Tests
                 await DisposeStream(async, addedRs);
 
                 await DisposeZipArchive(async, readArchive);
+            }
+
+            // Step 4: Validate the on-disk structure by walking raw bytes.
+            // Parse the central directory to obtain each entry's local header offset and compressed
+            // size, then inspect each local header directly.
+            // - The 3 original entries had data descriptors; the metadata-only rewrite must preserve
+            //   bit 3 and keep CRC/sizes as zero in the local header so sequential readers see a
+            //   consistent streaming-format entry.  The data descriptor must still follow the data.
+            // - The newly added entry was written to a seekable stream and must NOT have bit 3.
+            ReadOnlySpan<byte> span = updatedZipBytes.AsSpan();
+
+            int eocdOffset = -1;
+            for (int i = updatedZipBytes.Length - 22; i >= 0; i--)
+            {
+                if (BinaryPrimitives.ReadUInt32LittleEndian(span[i..]) == EndOfCentralDirectorySignature)
+                {
+                    eocdOffset = i;
+                    break;
+                }
+            }
+            Assert.True(eocdOffset >= 0, "End of Central Directory record not found.");
+
+            int totalEntries = BinaryPrimitives.ReadUInt16LittleEndian(span[(eocdOffset + 10)..]);
+            int cdOffset = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(span[(eocdOffset + 16)..]));
+            Assert.Equal(originalEntryCount + 1, totalEntries);
+
+            // Collect (localHeaderOffset, compressedSize) from the central directory.
+            var entries = new List<(int LocalHeaderOffset, uint CompressedSize)>(totalEntries);
+            int pos = cdOffset;
+            for (int i = 0; i < totalEntries; i++)
+            {
+                Assert.Equal(CentralDirectoryFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(span[pos..]));
+                uint compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(span[(pos + 20)..]);
+                ushort fnLen = BinaryPrimitives.ReadUInt16LittleEndian(span[(pos + 28)..]);
+                ushort exLen = BinaryPrimitives.ReadUInt16LittleEndian(span[(pos + 30)..]);
+                ushort cmLen = BinaryPrimitives.ReadUInt16LittleEndian(span[(pos + 32)..]);
+                uint lhOffset = BinaryPrimitives.ReadUInt32LittleEndian(span[(pos + 42)..]);
+                entries.Add((checked((int)lhOffset), compressedSize));
+                pos += 46 + fnLen + exLen + cmLen;
+            }
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                (int lhOff, uint compressedSize) = entries[i];
+                Assert.Equal(LocalFileHeaderSignature, BinaryPrimitives.ReadUInt32LittleEndian(span[lhOff..]));
+                ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(span[(lhOff + 6)..]);
+                bool isOriginalEntry = i < originalEntryCount;
+
+                if (isOriginalEntry)
+                {
+                    // Original entries must preserve bit 3: the data descriptor bytes remain on disk
+                    // and the local header CRC/sizes must be zero to stay consistent with them.
+                    Assert.True((flags & DataDescriptorBitFlag) != 0,
+                        $"Entry {i}: bit 3 must remain set after a metadata-only rewrite.");
+                    Assert.Equal(0u, BinaryPrimitives.ReadUInt32LittleEndian(span[(lhOff + 14)..]),
+                        $"Entry {i}: CRC-32 must be zero in local header when bit 3 is set.");
+                    Assert.Equal(0u, BinaryPrimitives.ReadUInt32LittleEndian(span[(lhOff + 18)..]),
+                        $"Entry {i}: compressed size must be zero in local header when bit 3 is set.");
+                    Assert.Equal(0u, BinaryPrimitives.ReadUInt32LittleEndian(span[(lhOff + 22)..]),
+                        $"Entry {i}: uncompressed size must be zero in local header when bit 3 is set.");
+
+                    // Data descriptor must be present immediately after the compressed data.
+                    ushort fnLen = BinaryPrimitives.ReadUInt16LittleEndian(span[(lhOff + 26)..]);
+                    ushort exLen = BinaryPrimitives.ReadUInt16LittleEndian(span[(lhOff + 28)..]);
+                    int descriptorOffset = lhOff + 30 + fnLen + exLen + (int)compressedSize;
+                    Assert.Equal(DataDescriptorSignature,
+                        BinaryPrimitives.ReadUInt32LittleEndian(span[descriptorOffset..]),
+                        $"Entry {i}: data descriptor signature must follow the compressed data.");
+                }
+                else
+                {
+                    // The newly added entry was written to a seekable stream; it must not have bit 3.
+                    Assert.True((flags & DataDescriptorBitFlag) == 0,
+                        $"Entry {i}: newly added entry must not have bit 3 set.");
+                }
             }
         }
     }

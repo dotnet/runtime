@@ -1062,7 +1062,7 @@ namespace System.IO.Compression
 
         private bool ShouldUseZIP64 => AreSizesTooLarge || IsOffsetTooLarge;
 
-        private bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength)
+        private bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite)
         {
             // _entryname only gets set when we read in or call moveTo. MoveTo does a check, and
             // reading in should not be able to produce an entryname longer than ushort.MaxValue
@@ -1080,6 +1080,7 @@ namespace System.IO.Compression
                 CompressionMethod = ZipCompressionMethod.Stored;
                 compressedSizeTruncated = 0;
                 uncompressedSizeTruncated = 0;
+                crc32ToWrite = 0;
                 Debug.Assert(_uncompressedSize == 0);
                 Debug.Assert(_crc32 == 0);
             }
@@ -1092,11 +1093,22 @@ namespace System.IO.Compression
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
+                    crc32ToWrite = 0;
                     // the crc should not have been set if we are in create mode, but clear it just to be sure
                     Debug.Assert(_crc32 == 0);
                 }
+                else if (preserveDataDescriptor)
+                {
+                    // The existing data descriptor bytes will remain on disk. Preserve bit 3 and
+                    // write zeros for CRC and sizes, matching the original streaming format, so that
+                    // sequential readers are not confused by the on-disk descriptor record.
+                    compressedSizeTruncated = 0;
+                    uncompressedSizeTruncated = 0;
+                    crc32ToWrite = 0;
+                }
                 else // if we are not in streaming mode, we have to decide if we want to write zip64 headers
                 {
+                    crc32ToWrite = _crc32;
                     if (ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
                         || (_archive._forceZip64 && _archive.Mode == ZipArchiveMode.Update)
@@ -1157,9 +1169,10 @@ namespace System.IO.Compression
                 return false;
             }
 
-            // We are writing the header. For seekable/empty-file paths the sizes are written
-            // directly into the header, so a data descriptor is not needed.
-            if (isEmptyFile || _archive.ArchiveStream.CanSeek)
+            // We are writing the header. Clear the data descriptor bit unless the existing
+            // on-disk data descriptor is being preserved, in which case bit 3 must remain set
+            // so sequential readers know to expect the descriptor record after the compressed data.
+            if (!preserveDataDescriptor && (isEmptyFile || _archive.ArchiveStream.CanSeek))
             {
                 _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
             }
@@ -1167,14 +1180,14 @@ namespace System.IO.Compression
             return true;
         }
 
-        private void WriteLocalFileHeaderPrepare(Span<byte> lfStaticHeader, uint compressedSizeTruncated, uint uncompressedSizeTruncated, ushort extraFieldLength)
+        private void WriteLocalFileHeaderPrepare(Span<byte> lfStaticHeader, uint compressedSizeTruncated, uint uncompressedSizeTruncated, ushort extraFieldLength, uint crc32ToWrite)
         {
             ZipLocalFileHeader.SignatureConstantBytes.CopyTo(lfStaticHeader[ZipLocalFileHeader.FieldLocations.Signature..]);
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.VersionNeededToExtract..], (ushort)_versionToExtract);
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags..], (ushort)_generalPurposeBitFlag);
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressionMethod..], (ushort)CompressionMethod);
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.LastModified..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
-            BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.Crc32..], _crc32);
+            BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.Crc32..], crc32ToWrite);
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressedSize..], compressedSizeTruncated);
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.UncompressedSize..], uncompressedSizeTruncated);
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.FilenameLength..], (ushort)_storedEntryNameBytes.Length);
@@ -1182,12 +1195,12 @@ namespace System.IO.Compression
         }
 
         // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
-        private bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite)
+        private bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor = false)
         {
-            if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength))
+            if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite))
             {
                 Span<byte> lfStaticHeader = stackalloc byte[ZipLocalFileHeader.SizeOfLocalHeader];
-                WriteLocalFileHeaderPrepare(lfStaticHeader, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength);
+                WriteLocalFileHeaderPrepare(lfStaticHeader, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength, crc32ToWrite);
 
                 // write header
                 _archive.ArchiveStream.Write(lfStaticHeader);
@@ -1261,7 +1274,11 @@ namespace System.IO.Compression
                 if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
                 {
                     _everOpenedForWrite = true;
-                    WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite);
+                    // If the entry originally used a data descriptor and we are not rewriting the data,
+                    // the descriptor record remains on disk after the compressed bytes. Preserve bit 3
+                    // and write zeros for CRC/sizes so that sequential readers see a consistent entry.
+                    bool preserveDataDescriptor = _originallyInArchive && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
+                    WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor: preserveDataDescriptor);
 
                     // Advance the stream past the compressed data and any trailing data descriptor
                     // by seeking to the pre-computed end-of-entry boundary.
