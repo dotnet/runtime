@@ -71,5 +71,16 @@ namespace System.Diagnostics.Tests
 
             Assert.Throws<InvalidOperationException>(() => Process.StartAndForget(startInfo));
         }
+
+        [Fact]
+        public void StartAndForget_WithUseShellExecute_ThrowsInvalidOperationException()
+        {
+            ProcessStartInfo startInfo = new("someprocess")
+            {
+                UseShellExecute = true,
+            };
+
+            Assert.Throws<InvalidOperationException>(() => Process.StartAndForget(startInfo));
+        }
     }
 }

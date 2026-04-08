@@ -19,11 +19,15 @@ namespace System.Diagnostics
         /// <returns>The process ID of the started process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException">
-        /// One or more of <see cref="ProcessStartInfo.RedirectStandardInput"/>,
+        /// <para>One or more of <see cref="ProcessStartInfo.RedirectStandardInput"/>,
         /// <see cref="ProcessStartInfo.RedirectStandardOutput"/>, or
         /// <see cref="ProcessStartInfo.RedirectStandardError"/> is set to <see langword="true"/>.
         /// Stream redirection is not supported in fire-and-forget scenarios because redirected streams
-        /// must be drained to avoid deadlocks.
+        /// must be drained to avoid deadlocks.</para>
+        /// <para>-or-</para>
+        /// <para><see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.
+        /// Shell execution is not supported in fire-and-forget scenarios because on Windows it may not
+        /// create a new process, making it impossible to return a valid process ID.</para>
         /// </exception>
         /// <remarks>
         /// <para>
@@ -44,6 +48,12 @@ namespace System.Diagnostics
         public static int StartAndForget(ProcessStartInfo startInfo)
         {
             ArgumentNullException.ThrowIfNull(startInfo);
+
+            if (startInfo.UseShellExecute)
+            {
+                throw new InvalidOperationException(SR.StartAndForget_UseShellExecuteNotSupported);
+            }
+
             startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
 
             if (anyRedirection)
