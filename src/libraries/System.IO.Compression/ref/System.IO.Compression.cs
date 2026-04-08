@@ -153,6 +153,7 @@ namespace System.IO.Compression
     }
     public enum ZipEncryptionMethod
     {
+        Unknown = -1,
         None = 0,
         ZipCrypto = 1,
         Aes128 = 2,

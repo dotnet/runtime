@@ -9,6 +9,12 @@ namespace System.IO.Compression
     public enum ZipEncryptionMethod
     {
         /// <summary>
+        /// An encryption method that is not supported by this implementation.
+        /// Attempting to open an entry with this encryption method will throw <see cref="NotSupportedException"/>.
+        /// </summary>
+        Unknown = -1,
+
+        /// <summary>
         /// No Encryption is applied to the entry.
         /// </summary>
         None = 0,

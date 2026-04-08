@@ -94,8 +94,15 @@ namespace System.IO.Compression
             }
             else if (IsEncrypted)
             {
-                // Encrypted but no AES extra field means ZipCrypto
-                Encryption = ZipEncryptionMethod.ZipCrypto;
+                if ((_generalPurposeBitFlag & BitFlagValues.StrongEncryption) != 0)
+                {
+                    Encryption = ZipEncryptionMethod.Unknown;
+                }
+                else
+                {
+                    // Encrypted but no AES extra field means ZipCrypto
+                    Encryption = ZipEncryptionMethod.ZipCrypto;
+                }
                 CompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
             }
             else
@@ -214,6 +221,7 @@ namespace System.IO.Compression
         /// </summary>
         /// <value>
         /// <see cref="ZipEncryptionMethod.None"/> if the entry is not encrypted;
+        /// <see cref="ZipEncryptionMethod.Unknown"/> if the entry uses an unsupported encryption method;
         /// otherwise, the specific encryption method (e.g., <see cref="ZipEncryptionMethod.ZipCrypto"/>,
         /// <see cref="ZipEncryptionMethod.Aes128"/>, <see cref="ZipEncryptionMethod.Aes192"/>,
         /// or <see cref="ZipEncryptionMethod.Aes256"/>).
@@ -1017,6 +1025,9 @@ namespace System.IO.Compression
         // Creates the appropriate decryption stream for an encrypted entry.
         private Stream WrapWithDecryptionIfNeeded(Stream compressedStream, ReadOnlySpan<char> password)
         {
+            if (Encryption == ZipEncryptionMethod.Unknown)
+                throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+
             if (password.IsEmpty)
                 throw new InvalidDataException(SR.PasswordRequired);
 
@@ -1200,6 +1211,9 @@ namespace System.IO.Compression
         {
             if (_currentlyOpenForWrite)
                 throw new IOException(SR.UpdateModeOneStream);
+
+            if (loadExistingContent && Encryption == ZipEncryptionMethod.Unknown)
+                throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
 
             // Validate password requirement for encrypted entries
             if (loadExistingContent && IsEncrypted && password.IsEmpty)
@@ -2319,6 +2333,7 @@ namespace System.IO.Compression
         {
             IsEncrypted = 0x1,
             DataDescriptor = 0x8,
+            StrongEncryption = 0x40,
             UnicodeFileNameAndComment = 0x800
         }
 

@@ -399,6 +399,9 @@ public partial class ZipArchiveEntry
 
     private async Task<Stream> WrapWithDecryptionIfNeededAsync(Stream compressedStream, ReadOnlyMemory<char> password, CancellationToken cancellationToken)
     {
+        if (Encryption == ZipEncryptionMethod.Unknown)
+            throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+
         if (password.IsEmpty)
             throw new InvalidDataException(SR.PasswordRequired);
 
@@ -448,6 +451,9 @@ public partial class ZipArchiveEntry
         cancellationToken.ThrowIfCancellationRequested();
         if (_currentlyOpenForWrite)
             throw new IOException(SR.UpdateModeOneStream);
+
+        if (loadExistingContent && Encryption == ZipEncryptionMethod.Unknown)
+            throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
 
         // Validate password requirement for encrypted entries
         if (loadExistingContent && IsEncrypted && password.IsEmpty)

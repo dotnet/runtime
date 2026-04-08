@@ -919,5 +919,52 @@ namespace System.IO.Compression.Tests
 
             await DisposeStream(async, readStream);
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task StrongEncryptionDetectedAsUnknown(bool async)
+        {
+            var ms = new MemoryStream();
+            ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry newEntry = createArchive.CreateEntry("test.txt");
+            using (Stream entryStream = async ? await newEntry.OpenAsync() : newEntry.Open())
+            {
+                byte[] data = "hello"u8.ToArray();
+                if (async)
+                    await entryStream.WriteAsync(data);
+                else
+                    entryStream.Write(data, 0, data.Length);
+            }
+            await DisposeZipArchive(async, createArchive);
+
+            byte[] zipBytes = ms.ToArray();
+
+            // Set bit 0 (encrypted) and bit 6 (strong encryption) in both LH and CD general purpose bit flags
+            const ushort strongEncryptionFlags = 0x01 | 0x40;
+
+            // Local file header: signature at 0, version at 4, bit flags at offset 6
+            int lhBitFlagOffset = 6;
+            BinaryPrimitives.WriteUInt16LittleEndian(zipBytes.AsSpan(lhBitFlagOffset), strongEncryptionFlags);
+
+            // Find central directory (from EOCD at end of file)
+            // EOCD signature is 0x06054b50, CD offset is at EOCD + 16
+            int eocdOffset = zipBytes.Length - 22; // minimal EOCD is 22 bytes with no comment
+            int cdOffset = BinaryPrimitives.ReadInt32LittleEndian(zipBytes.AsSpan(eocdOffset + 16));
+            // CD header: signature at 0, version-made-by at 4 (2 bytes), version-needed at 6 (2 bytes), bit flags at offset 8
+            int cdBitFlagOffset = cdOffset + 8;
+            BinaryPrimitives.WriteUInt16LittleEndian(zipBytes.AsSpan(cdBitFlagOffset), strongEncryptionFlags);
+
+            using var archiveStream = new MemoryStream(zipBytes);
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+            ZipArchiveEntry entry = archive.Entries[0];
+
+            Assert.True(entry.IsEncrypted);
+            Assert.Equal(ZipEncryptionMethod.Unknown, entry.EncryptionMethod);
+
+            Assert.Throws<NotSupportedException>(() => entry.Open("password".AsSpan()));
+
+            await DisposeZipArchive(async, archive);
+        }
     }
 }
