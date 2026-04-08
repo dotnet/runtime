@@ -1521,14 +1521,14 @@ namespace Mono.Linker.Steps
             foreach (TypeDefinition type in module.Types)
                 MarkEntireType(type, new DependencyInfo(DependencyKind.TypeInAssembly, assembly), origin);
 
-            MarkExportedTypes(assembly);
+            MarkExportedTypes(assembly, origin);
         }
 
-        void MarkExportedTypes(AssemblyDefinition assembly)
+        void MarkExportedTypes(AssemblyDefinition assembly, MessageOrigin origin)
         {
             ModuleDefinition module = assembly.MainModule;
             foreach (ExportedType exportedType in module.ExportedTypes)
-                MarkingHelpers.MarkExportedType(exportedType, module, new DependencyInfo(DependencyKind.ExportedType, assembly), new MessageOrigin(assembly));
+                MarkingHelpers.MarkExportedType(exportedType, module, new DependencyInfo(DependencyKind.ExportedType, assembly), origin);
         }
 
         sealed class TypeReferenceMarker : TypeReferenceWalker
