@@ -559,7 +559,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
 
                 currentWriterHolder.GetRW()->pHeap = this;
 
-                  LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Allocation returned %p, size 0x%zx - data -> %p\n", this, pCurrent, pCurrent->size, pPointer));
+                LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Allocation returned %p, size 0x%zx - data -> %p\n", this, pCurrent, pCurrent->size, pPointer));
                 return pCurrent;
             }
             pPrevious = pCurrent;
@@ -607,17 +607,17 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
                 else
                 {
                     m_pFreeList = pBlockToInsert;
-                      LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%zx] to head\n", this, pBlockToInsert, pBlockToInsert->size));
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%zx] to head\n", this, pBlockToInsert, pBlockToInsert->size));
                 }
 
                 // check for coalescing
                 if ((BYTE*)pBlockToInsert + pBlockToInsert->size == (BYTE*)pCurrent)
                 {
                     // coalesce with next
-                      LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%zx] with [%p, 0x%zx] - new size 0x%zx\n", this,
-                                                                        pBlockToInsert, pBlockToInsert->size,
-                                                                        pCurrent, pCurrent->size,
-                                                                        pCurrent->size + pBlockToInsert->size));
+                    LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Coalesce block [%p, 0x%zx] with [%p, 0x%zx] - new size 0x%zx\n", this,
+                                                                      pBlockToInsert, pBlockToInsert->size,
+                                                                      pCurrent, pCurrent->size,
+                                                                      pCurrent->size + pBlockToInsert->size));
                     pBlockToInsertRW->pNext = pCurrent->pNext;
                     pBlockToInsertRW->size += pCurrent->size;
                 }

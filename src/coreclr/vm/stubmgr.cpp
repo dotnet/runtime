@@ -48,7 +48,7 @@ void LogTraceDestination(const char * szHint, PCODE stubAddr, TraceDestination *
     {
         LOG((LF_CORDB, LL_INFO10000, "'%s' yields '%s' to address %p for input %p.\n",
             szHint, GetTType(pTrace->GetTraceType()),
-                  (void*)pTrace->GetAddress(), (void*)stubAddr));
+            (void*)pTrace->GetAddress(), (void*)stubAddr));
     }
 }
 #endif
@@ -544,8 +544,8 @@ BOOL StubManager::TraceStub(PCODE stubStartAddress, TraceDestination *trace)
             continue;
 
         LOG((LF_CORDB, LL_INFO10000,
-                  "StubManager::TraceStub: '%s' (%p) claimed %p.\n", pCurrent->DbgGetName(), pCurrent,
-                  (void*)stubStartAddress));
+                "StubManager::TraceStub: '%s' (%p) claimed %p.\n", pCurrent->DbgGetName(), pCurrent,
+                (void*)stubStartAddress));
 
         _ASSERTE_IMPL(IsSingleOwner(stubStartAddress, pCurrent));
 
@@ -553,8 +553,8 @@ BOOL StubManager::TraceStub(PCODE stubStartAddress, TraceDestination *trace)
 #ifdef _DEBUG
         if (IsStubLoggingEnabled())
         {
-              DbgWriteLog("Doing TraceStub for %p, claimed by '%s' (%p)\n", (void*)stubStartAddress,
-                          pCurrent->DbgGetName(), pCurrent);
+            DbgWriteLog("Doing TraceStub for %p, claimed by '%s' (%p)\n", (void*)stubStartAddress,
+                        pCurrent->DbgGetName(), pCurrent);
             if (fValid)
             {
                 SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;

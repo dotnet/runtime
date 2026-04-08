@@ -12474,7 +12474,7 @@ void emitter::emitDispEmbBroadcastCount(instrDesc* id) const
     }
     ssize_t baseSize   = GetInputSizeInBytes(id);
     ssize_t vectorSize = (ssize_t)emitGetMemOpSize(id, /* ignoreEmbeddedBroadcast */ true);
-    printf(" {1to%zd}", (size_t)(vectorSize / baseSize));
+    printf(" {1to%zu}", (size_t)(vectorSize / baseSize));
 }
 
 // emitDispEmbRounding: Display the tag where embedded rounding is activated
@@ -17722,10 +17722,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 printf("[3] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
             }
             printf("[3] Jump  block is at %08zX - %02X = %08zX\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
-                 printf("[3] Jump        is at %08zX - %02X = %08zX\n", (size_t)srcOffs, emitOffsAdj,
-                     (size_t)(srcOffs - emitOffsAdj));
-                 printf("[3] Label block is at %08zX - %02X = %08zX\n", (size_t)dstOffs, emitOffsAdj,
-                     (size_t)(dstOffs - emitOffsAdj));
+            printf("[3] Jump        is at %08zX - %02X = %08zX\n", (size_t)srcOffs, emitOffsAdj,
+                (size_t)(srcOffs - emitOffsAdj));
+            printf("[3] Label block is at %08zX - %02X = %08zX\n", (size_t)dstOffs, emitOffsAdj,
+                (size_t)(dstOffs - emitOffsAdj));
         }
 #endif
 
