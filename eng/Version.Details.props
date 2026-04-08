@@ -31,8 +31,6 @@ This file should be imported by eng/Versions.props
     <MicrosoftDotNetXUnitAssertPackageVersion>3.2.2-beta.26176.106</MicrosoftDotNetXUnitAssertPackageVersion>
     <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.9.3-beta.26176.106</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
     <MicrosoftDotNetXUnitExtensionsPackageVersion>11.0.0-beta.26176.106</MicrosoftDotNetXUnitExtensionsPackageVersion>
-    <!-- xunit v4 AOT packages (source-generator-based discovery, no Assembly.Location dependency) -->
-    <XUnitV3AotVersion>4.0.0-pre.33</XUnitV3AotVersion>
     <MicrosoftNetCompilersToolsetPackageVersion>5.6.0-2.26176.106</MicrosoftNetCompilersToolsetPackageVersion>
     <MicrosoftNETSdkILPackageVersion>11.0.0-preview.3.26176.106</MicrosoftNETSdkILPackageVersion>
     <MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportPackageVersion>11.0.100-preview.3.26176.106</MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportPackageVersion>

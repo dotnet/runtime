@@ -59,9 +59,6 @@
     netstandard reference that xunit.v3.runner.common.dll depends on, causing
     CS0012. Since mobile/WASM tests use custom test runners and don't need the
     built-in runner reporters, disable them.
-    NativeAOT uses the mtp-v2 package which has its own DefaultRunnerReporters.cs
-    and DefaultResultWriters.cs — those must remain enabled for the AOT runner to
-    produce console output and result files.
   -->
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
     <XunitRegisterBuiltInRunnerReporters>false</XunitRegisterBuiltInRunnerReporters>

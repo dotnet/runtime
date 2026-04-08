@@ -17,7 +17,7 @@
     <NoWarn>$(NoWarn);xUnit1051</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TestNativeAot)' != 'true'">
+  <ItemGroup>
     <!-- Excluding xunit.core/build as it enables deps file generation. -->
     <PackageReference Include="xunit.v3.core" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" ExcludeAssets="build" />
 
@@ -33,20 +33,6 @@
     <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" Publish="true" ExcludeAssets="compile" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
 
     <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
-  </ItemGroup>
-
-  <!--
-    NativeAOT builds use the xunit v4 AOT packages which employ source generators for
-    test discovery instead of runtime reflection.  This avoids the Assembly.Location
-    crash (Location returns empty in NativeAOT).  The AOT packages seal
-    FactAttribute/TheoryAttribute, so Microsoft.DotNet.XUnitV3Extensions (which
-    subclasses them) cannot be used.  Tests decorated with ConditionalFact/ConditionalTheory
-    will not be discovered in NativeAOT; only plain [Fact]/[Theory] tests run.
-    Compile-time shim attributes (XUnitExtensionsShims.cs) keep the source compilable.
-  -->
-  <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
-    <PackageReference Include="xunit.v3.core.aot" Version="$(XUnitV3AotVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" />
-    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" />
   </ItemGroup>
 
   <ItemGroup>
