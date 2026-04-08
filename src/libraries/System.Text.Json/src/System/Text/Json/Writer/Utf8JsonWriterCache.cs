@@ -29,7 +29,7 @@ namespace System.Text.Json
                 writer = state.Writer;
 
                 bufferWriter.InitializeEmptyInstance(defaultBufferSize);
-                writer.Reset(bufferWriter, options);
+                writer.ConfigureForCacheReuse(bufferWriter, options);
             }
             else
             {
@@ -50,7 +50,7 @@ namespace System.Text.Json
             {
                 // First JsonSerializer call in the stack -- initialize & return the cached instance.
                 writer = state.Writer;
-                writer.Reset(bufferWriter, options.GetWriterOptions());
+                writer.ConfigureForCacheReuse(bufferWriter, options.GetWriterOptions());
             }
             else
             {

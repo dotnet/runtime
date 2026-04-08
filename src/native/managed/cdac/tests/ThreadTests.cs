@@ -308,4 +308,27 @@ public unsafe class ThreadTests
         TargetPointer thrownObjectHandle = contract.GetCurrentExceptionHandle(addr);
         Assert.Equal(TargetPointer.Null, thrownObjectHandle);
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_NoProfilerFilterContext(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder, hasProfilingSupport: false);
+
+        uint id = 1;
+        TargetNUInt osId = new TargetNUInt(1234);
+
+        TargetPointer addr = thread.AddThread(id, osId);
+
+        Target target = CreateTarget(thread);
+
+        IThread contract = target.Contracts.Thread;
+        Assert.NotNull(contract);
+
+        ThreadData data = contract.GetThreadData(addr);
+        Assert.Equal(id, data.Id);
+        Assert.Equal(osId, data.OSId);
+    }
 }

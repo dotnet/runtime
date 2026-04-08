@@ -1445,6 +1445,16 @@ namespace System.Diagnostics.Tests
             });
         }
 
+        [Fact]
+        public void UserNameCantBeCombinedWithInheritedHandles()
+        {
+            using Process longRunning = CreateProcessLong();
+            longRunning.StartInfo.UserName = nameof(ProcessStartInfo.UserName);
+            longRunning.StartInfo.InheritedHandles = [];
+
+            Assert.Throws<InvalidOperationException>(() => longRunning.Start());
+        }
+
         private static TestProcessState CreateUserAndExecute(
             Process process,
             Action<string, string> additionalSetup = null,

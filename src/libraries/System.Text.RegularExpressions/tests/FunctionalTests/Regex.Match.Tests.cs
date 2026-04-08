@@ -2612,6 +2612,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, $@"{b2}\w+{b2}", "one two three", 1 };
                 yield return new object[] { engine, $@"{b2}\w+{b2}", "one two", 0 };
             }
+
         }
 
         [Theory]
@@ -2686,62 +2687,45 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                if (engine != RegexEngine.NonBacktracking) // Hangs, or effectively hangs. https://github.com/dotnet/runtime/issues/84188
-                {
-                    yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
-                }
-
-                yield return new object[] { engine, "(", "[aA]", ")+", "aA", 2000, 3000 };
-                yield return new object[] { engine, "(", "ab", "){0,1}", "ab", 2000, 1000 };
+                // Depth 2000 is large enough to trigger exponential blowup in the derivative
+                // computation if the engine lacks protection (2^2000 branches). These patterns
+                // use capturing groups, so ReduceLoops does not collapse the nesting (it only
+                // collapses non-capturing loops). The traditional engines handle them natively.
+                // For NonBacktracking, unbounded loops (* and +) are rejected by CountSingletons
+                // because the exponential estimate exceeds the safe-size threshold. Bounded
+                // loops ({0,1}) are accepted because Times(1, bodyCount) doesn't grow.
+                bool nb = RegexHelpers.IsNonBacktracking(engine);
+                yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000, nb };
+                yield return new object[] { engine, "(", "[aA]", ")+", "aA", 2000, 3000, nb };
+                yield return new object[] { engine, "(", "ab", "){0,1}", "ab", 2000, 1000, false };
             }
         }
 
         [OuterLoop("Can take a few seconds")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         [MemberData(nameof(StressTestDeepNestingOfLoops_TestData))]
-        public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, string input, int pattern_repetition, int input_repetition)
+        public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, string input, int pattern_repetition, int input_repetition, bool expectNotSupported)
         {
             string fullpattern = string.Concat(Enumerable.Repeat(begin, pattern_repetition)) + inner + string.Concat(Enumerable.Repeat(end, pattern_repetition));
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
+            if (expectNotSupported)
+            {
+                // NonBacktracking rejects deeply nested unbounded capturing loops via the
+                // safe-size threshold — CountSingletons detects nested unbounded loops even
+                // through capture wrappers and the exponential estimate exceeds the threshold.
+                Assert.Throws<NotSupportedException>(() => new Regex(fullpattern, RegexHelpers.RegexOptionNonBacktracking));
+                return;
+            }
+
             Func<string, string, string, Task> func = static async (engineStr, fullpattern, fullinput) =>
             {
                 RegexEngine engine = (RegexEngine)Enum.Parse(typeof(RegexEngine), engineStr);
-
-                if (RegexHelpers.IsNonBacktracking(engine))
-                {
-                    RegexHelpers.SetSafeSizeThreshold(int.MaxValue);
-                }
-
-                Regex re;
-                try
-                {
-                    re = await RegexHelpers.GetRegexAsync(engine, fullpattern);
-                }
-                finally
-                {
-                    if (RegexHelpers.IsNonBacktracking(engine))
-                    {
-                        RegexHelpers.RestoreSafeSizeThresholdToDefault();
-                    }
-                }
-
+                Regex re = await RegexHelpers.GetRegexAsync(engine, fullpattern);
                 Assert.True(re.Match(fullinput).Success);
             };
 
-            if (RegexHelpers.IsNonBacktracking(engine))
-            {
-                if (!RemoteExecutor.IsSupported)
-                {
-                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
-                }
-
-                RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
-            }
-            else
-            {
-                await func(engine.ToString(), fullpattern, fullinput);
-            }
+            await func(engine.ToString(), fullpattern, fullinput);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // deep nesting exhausts address space on 32-bit

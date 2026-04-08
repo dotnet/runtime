@@ -31,7 +31,9 @@ PALEXPORT int32_t SystemNative_ForkAndExecProcess(
                    int32_t* childPid,      // [out] the child process' id
                    int32_t stdinFd,        // the fd for the child's stdin
                    int32_t stdoutFd,       // the fd for the child's stdout
-                   int32_t stderrFd);      // the fd for the child's stderr
+                   int32_t stderrFd,       // the fd for the child's stderr
+                   int32_t* inheritedFds,  // array of fds to explicitly inherit (-1 to disable restriction)
+                   int32_t inheritedFdCount); // count of fds in inheritedFds; -1 means no restriction
 
 /************
  * The values below in the header are fixed and correct for managed callers to use forever.
@@ -56,13 +58,6 @@ typedef enum
     PAL_RLIMIT_NPROC = 8,   // Number of processes
     PAL_RLIMIT_NOFILE = 9,  // Number of open files
 } RLimitResources;
-
-typedef enum
-{
-    PAL_NONE = 0,
-    PAL_SIGKILL = 9, /* kill the specified process */
-    PAL_SIGSTOP = 19,
-} Signals;
 
 /**
  * Constants for passing to the first parameter of syslog.

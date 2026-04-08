@@ -87,7 +87,7 @@ namespace ILCompiler
             TargetOS targetOS = Get(_command.TargetOS);
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
-            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst)
+            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser)
             {
                 // These platforms do not support jitted code, so we want to ensure that we don't
                 // need to fall back to the interpreter for any hardware-intrinsic optimizations.
@@ -411,10 +411,25 @@ namespace ILCompiler
                         throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
                     }
 
+                    string rtrHeaderSymbolName = Get(_command.ReadyToRunHeaderSymbolName);
+
                     ReadyToRunContainerFormat format = Get(_command.OutputFormat);
                     if (!composite && format != ReadyToRunContainerFormat.PE && format != ReadyToRunContainerFormat.Wasm)
                     {
                         throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
+                    }
+
+                    if (rtrHeaderSymbolName is not null)
+                    {
+                        if (!composite)
+                        {
+                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameRequiresComposite);
+                        }
+
+                        if (string.IsNullOrWhiteSpace(rtrHeaderSymbolName))
+                        {
+                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameEmpty);
+                        }
                     }
 
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
@@ -602,6 +617,11 @@ namespace ILCompiler
                         }
 
                         compositeImageSettings.PublicKey = compositeStrongNameKey.ToImmutableArray();
+                    }
+
+                    if (rtrHeaderSymbolName != null)
+                    {
+                        compositeImageSettings.ReadyToRunHeaderSymbolName = rtrHeaderSymbolName;
                     }
 
                     //

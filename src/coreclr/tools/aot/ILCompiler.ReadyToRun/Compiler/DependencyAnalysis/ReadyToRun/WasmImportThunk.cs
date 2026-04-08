@@ -229,11 +229,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             expressions.Add(Local.Get(0)); // The address of the args is passed as the first argument
             expressions.Add(Local.Get(portableEntrypointLocalIndex)); // The address of the portable entrypoint is passed as the second
-            expressions.Add(Global.Get(1)); // The module base address is passed as the third argument
+            expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // The module base address is passed as the third argument
 
             // Load the helper function address and dispatch
             // global.get {module base}
-            expressions.Add(Global.Get(1)); // Module base?
+            expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // Module base used to load the helper function address
             // i32.const (RVA of R2RHelperID)
             expressions.Add(I32.ConstRVA(_helperCell));
             // i32.add
