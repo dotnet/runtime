@@ -1,6 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
 
 allocator::allocator (unsigned int num_b, int fbb, alloc_list* b, int gen)
 {
@@ -3253,29 +3262,6 @@ exit:
     return soh_alloc_state;
 }
 
-#ifdef BACKGROUND_GC
-inline
-void gc_heap::bgc_track_uoh_alloc()
-{
-    if (current_c_gc_state == c_gc_state_planning)
-    {
-        Interlocked::Increment (&uoh_alloc_thread_count);
-        dprintf (3, ("h%d: inc lc: %d", heap_number, (int32_t)uoh_alloc_thread_count));
-    }
-}
-
-inline
-void gc_heap::bgc_untrack_uoh_alloc()
-{
-    if (current_c_gc_state == c_gc_state_planning)
-    {
-        Interlocked::Decrement (&uoh_alloc_thread_count);
-        dprintf (3, ("h%d: dec lc: %d", heap_number, (int32_t)uoh_alloc_thread_count));
-    }
-}
-
-#endif //BACKGROUND_GC
-
 size_t gc_heap::get_uoh_seg_size (size_t size)
 {
     size_t default_seg_size =
@@ -4549,41 +4535,6 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
     while (status == a_state_retry_allocate);
 
     return (status == a_state_can_allocate);
-}
-
-inline
-CObjectHeader* gc_heap::allocate (size_t jsize, alloc_context* acontext, uint32_t flags)
-{
-    size_t size = Align (jsize);
-    assert (size >= Align (min_obj_size));
-    {
-    retry:
-        uint8_t*  result = acontext->alloc_ptr;
-        acontext->alloc_ptr+=size;
-        if (acontext->alloc_ptr <= acontext->alloc_limit)
-        {
-            CObjectHeader* obj = (CObjectHeader*)result;
-            assert (obj != 0);
-            return obj;
-        }
-        else
-        {
-            acontext->alloc_ptr -= size;
-
-#ifdef _MSC_VER
-#pragma inline_depth(0)
-#endif //_MSC_VER
-
-            if (! allocate_more_space (acontext, size, flags, 0))
-                return 0;
-
-#ifdef _MSC_VER
-#pragma inline_depth(20)
-#endif //_MSC_VER
-
-            goto retry;
-        }
-    }
 }
 
 void  gc_heap::leave_allocation_segment (generation* gen)
@@ -5880,3 +5831,5 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
 
     return obj;
 }
+
+} // namespace SVR/WKS

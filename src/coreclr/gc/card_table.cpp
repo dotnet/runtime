@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 #ifdef CARD_BUNDLE
 
 // Clear the specified card bundle
@@ -1260,8 +1270,7 @@ inline void gc_heap::verify_card_bundle_bits_set(size_t first_card_word, size_t 
 #endif
 }
 
-// Verifies that any bundles that are not set represent only cards that are not set.
-inline void gc_heap::verify_card_bundles()
+void gc_heap::verify_card_bundles()
 {
 #ifdef _DEBUG
     size_t lowest_card = card_word (card_of (lowest_address));
@@ -1276,23 +1285,22 @@ inline void gc_heap::verify_card_bundles()
     while (cardb < end_cardb)
     {
         uint32_t* card_word = &card_table[max(card_bundle_cardw (cardb), lowest_card)];
-        uint32_t* card_word_end = &card_table[min(card_bundle_cardw (cardb+1), highest_card)];
+        uint32_t* card_word_end = &card_table[min(card_bundle_cardw (cardb + 1), highest_card)];
 
         if (card_bundle_set_p (cardb) == 0)
         {
-            // Verify that no card is set
             while (card_word < card_word_end)
             {
                 if (*card_word != 0)
                 {
                     dprintf  (3, ("gc: %zd, Card word %zx for address %zx set, card_bundle %zx clear",
                             dd_collection_count (dynamic_data_of (0)),
-                            (size_t)(card_word-&card_table[0]),
-                            (size_t)(card_address ((size_t)(card_word-&card_table[0]) * card_word_width)),
+                            (size_t)(card_word - &card_table[0]),
+                            (size_t)(card_address ((size_t)(card_word - &card_table[0]) * card_word_width)),
                             cardb));
                 }
 
-                assert((*card_word)==0);
+                assert((*card_word) == 0);
                 card_word++;
             }
         }
@@ -1369,19 +1377,6 @@ void gc_heap::update_card_table_bundle()
 
 #endif //CARD_BUNDLE
 #endif //WRITE_WATCH
-#ifdef COLLECTIBLE_CLASS
-// We don't want to burn another ptr size space for pinned plugs to record this so just
-// set the card unconditionally for collectible objects if we are demoting.
-inline void
-gc_heap::unconditional_set_card_collectible (uint8_t* obj)
-{
-    if (settings.demotion)
-    {
-        set_card (card_of (obj));
-    }
-}
-
-#endif //COLLECTIBLE_CLASS
 
 //Clear the cards [start_card, end_card[
 void gc_heap::clear_cards (size_t start_card, size_t end_card)
@@ -2004,3 +1999,5 @@ bool gc_heap::find_next_chunk(card_marking_enumerator& card_mark_enumerator, hea
 }
 
 #endif //FEATURE_CARD_MARKING_STEALING
+
+} // namespace WKS/SVR
