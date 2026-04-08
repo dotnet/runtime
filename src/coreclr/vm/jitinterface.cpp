@@ -8997,10 +8997,15 @@ CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
     MethodDesc* pMD = GetMethod(ftn);
     MethodDesc* pAsyncOtherVariant = NULL;
 
-    if (pMD->HasAsyncOtherVariant())
+    if (pMD->ReturnsTaskOrValueTask())
     {
-         pAsyncOtherVariant = pMD->GetAsyncOtherVariant();
+         pAsyncOtherVariant = pMD->GetAsyncVariant();
     }
+    else if (pMD->IsAsyncVariantMethod())
+    {
+        pAsyncOtherVariant = pMD->GetOrdinaryVariant();
+    }
+
     result = (CORINFO_METHOD_HANDLE)pAsyncOtherVariant;
     *variantIsThunk = pAsyncOtherVariant != NULL && pAsyncOtherVariant->IsAsyncThunkMethod();
 

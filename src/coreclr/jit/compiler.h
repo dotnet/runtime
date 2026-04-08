@@ -2394,6 +2394,10 @@ public:
 
     bool HasMultipleEntryTryRegions() const { return m_hasMultipleEntryTryRegions; }
 
+    void AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
+
+    void RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
+
 #ifdef DEBUG
     static void Dump(FlowGraphTryRegions* regions);
 #endif
