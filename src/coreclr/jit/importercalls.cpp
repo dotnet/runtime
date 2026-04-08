@@ -12507,7 +12507,7 @@ int Compiler::lookupHalfRoundingMode(NamedIntrinsic ni)
     }
 #endif
 #endif
-    return NI_Illegal;
+    return -1;
 }
 
 NamedIntrinsic Compiler::lookupHalfConversionIntrinsic(var_types fromType, var_types toType)
