@@ -18,7 +18,7 @@ namespace System.Reflection.Context
     /// Represents a customizable reflection context.
     /// </summary>
     /// <remarks>
-    /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-context-customreflectioncontext.md">CustomReflectionContext</see>.
+    /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-context-customreflectioncontext.md">Supplemental API remarks for CustomReflectionContext</see>.
     /// </remarks>
     public abstract partial class CustomReflectionContext : ReflectionContext
     {
