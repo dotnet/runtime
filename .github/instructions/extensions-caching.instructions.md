@@ -39,5 +39,4 @@ applyTo: "src/libraries/Microsoft.Extensions.Caching*/**"
 - `IDistributedCache` implementations must handle serialization/deserialization correctly and document size limits
 - Test with both in-memory and distributed backing stores — behavior differences must be accounted for
 - Distributed cache key expiration semantics may differ from in-memory — document and test accordingly
-
-For deeper guidance, see the `writing-extensions-code` skill and `@extensions-reviewer` agent.
+

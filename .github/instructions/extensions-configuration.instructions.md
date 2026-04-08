@@ -42,5 +42,4 @@ applyTo: "src/libraries/Microsoft.Extensions.Configuration*/**"
 - Annotate reflection-using binding APIs with `[DynamicallyAccessedMembers]` to preserve required metadata
 - Provide feature switches so the linker can trim optional binding functionality
 - No new IL2xxx trim warnings without explicit justification
-
-For deeper guidance, see the `writing-extensions-code` skill and `@extensions-reviewer` agent.
+

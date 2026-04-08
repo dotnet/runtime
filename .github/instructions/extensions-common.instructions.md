@@ -38,5 +38,4 @@ Covers `Microsoft.Extensions.Http`, `Microsoft.Extensions.FileProviders`, and `M
 - All types in these libraries must be trim-safe and NativeAOT-compatible
 - Public API changes must be evaluated for backward compatibility — these are foundational types with many downstream consumers
 - Abstractions (interfaces, base classes) belong in `*.Abstractions` packages; implementations in concrete packages
-
-For deeper guidance, see the `writing-extensions-code` skill and `@extensions-reviewer` agent.
+

@@ -38,5 +38,4 @@ applyTo: "src/libraries/Microsoft.Extensions.Hosting*/**"
 - Hosted service lifecycle tests must use generous timeouts (3+ minutes in stress/JIT stress pipelines)
 - Avoid tight timing assertions — prefer event-based synchronization over `Task.Delay`-based waits
 - Tests must not leak global state (environment variables, static fields) across test runs
-
-For deeper guidance, see the `writing-extensions-code` skill and `@extensions-reviewer` agent.
+

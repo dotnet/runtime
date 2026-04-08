@@ -38,5 +38,4 @@ applyTo: "src/libraries/Microsoft.Extensions.Logging*/**"
 - Hot logging paths (per-request, per-operation) must use `[LoggerMessage]` source generation for zero-allocation logging
 - Avoid closures that capture state on frequently called log paths — use static lambdas with explicit state
 - String manipulation on log paths must use Span-based APIs to avoid substring allocations
-
-For deeper guidance, see the `writing-extensions-code` skill and `@extensions-reviewer` agent.
+

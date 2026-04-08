@@ -54,5 +54,4 @@ applyTo: "src/libraries/System.IO.Compression*/**"
 - Test with archives from multiple platforms and compression libraries to verify cross-tool compatibility
 - Cover edge cases: empty archives, many small entries, entries at size boundaries (4GB, uint.MaxValue)
 - Dispose behavior must be tested — verify resources are released and post-disposal operations throw
-
-For deeper guidance, see the `writing-extensions-code` skill and `@extensions-reviewer` agent.
+

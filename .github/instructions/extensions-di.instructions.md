@@ -41,5 +41,4 @@ applyTo: "src/libraries/Microsoft.Extensions.DependencyInjection*/**"
 - Every bug fix includes a regression test; every new feature has happy-path and edge/error tests
 - Dispose behavior must be tested — verify resources are released and post-disposal operations throw `ObjectDisposedException`
 - Test captive dependency detection and resolution order across different registration patterns
-
-For deeper guidance, see the `writing-extensions-code` skill and `@extensions-reviewer` agent.
+

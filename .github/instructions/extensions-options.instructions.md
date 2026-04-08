@@ -36,5 +36,4 @@ applyTo: "src/libraries/Microsoft.Extensions.Options*/**"
 - Do not introduce unnecessary new packages — prefer extending existing ones unless layering requires separation
 - Package references must target correct and aligned versions
 - Changes to options defaults or validation behavior are breaking changes requiring migration guidance
-
-For deeper guidance, see the `writing-extensions-code` skill and `@extensions-reviewer` agent.
+
