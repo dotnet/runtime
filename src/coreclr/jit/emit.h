@@ -3891,6 +3891,7 @@ public:
         debugPrevGCrefRegs = RBM_NONE;
         debugPrevByrefRegs = RBM_NONE;
 #endif
+        emitCurIG = nullptr;
     }
 };
 
