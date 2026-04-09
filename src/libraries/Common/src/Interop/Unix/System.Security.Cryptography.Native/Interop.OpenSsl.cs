@@ -877,62 +877,54 @@ internal static partial class Interop
         [UnmanagedCallersOnly]
         internal static Interop.Crypto.X509VerifyStatusCodeUniversal CertVerifyCallback(IntPtr ssl, IntPtr store)
         {
-            IntPtr data = Ssl.SslGetData(ssl);
-            Debug.Assert(data != IntPtr.Zero, "Expected non-null data pointer from SslGetData");
-            GCHandle gch = GCHandle.FromIntPtr(data);
-            SslAuthenticationOptions options = (SslAuthenticationOptions)gch.Target!;
-
-            using SafeX509StoreCtxHandle storeHandle = new(store, ownsHandle: false);
-
-            // the chain will get properly disposed inside the VerifyRemoteCertificate call
-            X509Chain chain = new X509Chain();
-            if (options.CertificateChainPolicy is not null)
+            try
             {
-                // Clone to avoid mutating the options-level policy with intermediates
-                // from this handshake, which would cause unbounded ExtraStore growth
-                // across renegotiations.
-                chain.ChainPolicy = options.CertificateChainPolicy.Clone();
-            }
-            X509Certificate2? certificate = null;
-            SafeSslHandle sslHandle = (SafeSslHandle)options.SslStream!._securityContext!;
+                IntPtr data = Ssl.SslGetData(ssl);
+                Debug.Assert(data != IntPtr.Zero, "Expected non-null data pointer from SslGetData");
+                GCHandle gch = GCHandle.FromIntPtr(data);
+                SslAuthenticationOptions options = (SslAuthenticationOptions)gch.Target!;
 
-            using (SafeSharedX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetSharedUntrusted(storeHandle))
-            {
-                if (!chainStack.IsInvalid)
+                using SafeX509StoreCtxHandle storeHandle = new(store, ownsHandle: false);
+
+                // the chain will get properly disposed inside the VerifyRemoteCertificate call
+                X509Chain chain = new X509Chain();
+                X509Certificate2? certificate = null;
+                SafeSslHandle sslHandle = (SafeSslHandle)options.SslStream!._securityContext!;
+
+                using (SafeSharedX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetSharedUntrusted(storeHandle))
                 {
-                    int count = Interop.Crypto.GetX509StackFieldCount(chainStack);
-
-                    for (int i = 0; i < count; i++)
+                    if (!chainStack.IsInvalid)
                     {
-                        IntPtr certPtr = Interop.Crypto.GetX509StackField(chainStack, i);
+                        int count = Interop.Crypto.GetX509StackFieldCount(chainStack);
 
-                        if (certPtr != IntPtr.Zero)
+                        for (int i = 0; i < count; i++)
                         {
-                            // X509Certificate2(IntPtr) calls X509_dup, so the reference is appropriately tracked.
-                            X509Certificate2 chainCert = new X509Certificate2(certPtr);
+                            IntPtr certPtr = Interop.Crypto.GetX509StackField(chainStack, i);
 
-                            if (certificate is null)
+                            if (certPtr != IntPtr.Zero)
                             {
-                                // First cert in the stack is the leaf cert.
-                                certificate = chainCert;
-                            }
-                            else
-                            {
-                                chain.ChainPolicy.ExtraStore.Add(chainCert);
+                                // X509Certificate2(IntPtr) calls X509_dup, so the reference is appropriately tracked.
+                                X509Certificate2 chainCert = new X509Certificate2(certPtr);
+
+                                if (certificate is null)
+                                {
+                                    // First cert in the stack is the leaf cert.
+                                    certificate = chainCert;
+                                }
+                                else
+                                {
+                                    chain.ChainPolicy.ExtraStore.Add(chainCert);
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            Debug.Assert(certificate != null, "OpenSSL only calls the callback if the certificate is present.");
+                Debug.Assert(certificate != null, "OpenSSL only calls the callback if the certificate is present.");
 
-            SslCertificateTrust? trust = options.CertificateContext?.Trust;
+                SslCertificateTrust? trust = options.CertificateContext?.Trust;
 
-            ProtocolToken alertToken = default;
-
-            try
-            {
+                ProtocolToken alertToken = default;
                 if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
                 {
                     // success
