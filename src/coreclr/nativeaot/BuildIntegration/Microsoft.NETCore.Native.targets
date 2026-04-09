@@ -392,6 +392,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       Command="&quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
 
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' != 'Static'"
+      IgnoreStandardErrorWarningFormat="true"
       Command="
         dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot; &amp;&amp;
         strip -no_code_signature_warning -x &quot;$(NativeBinary)&quot;" />
