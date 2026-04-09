@@ -998,7 +998,7 @@ namespace System.Runtime.CompilerServices
         }
 
         // Instrumentation helpers called from InstrumentedDispatchContinuations.
-        // These methods must not throw — exceptions would break the dispatch loop.
+        // These methods must not throw - exceptions would break the dispatch loop.
         internal static class RuntimeAsyncInstrumentationHelpers
         {
             public static bool InstrumentCheckPoint
@@ -1105,7 +1105,7 @@ namespace System.Runtime.CompilerServices
         }
 
         // All methods in this class guard against exceptions to protect the instrumented async execution.
-        // Instrumentation failures are silently swallowed — correctness of async execution takes priority over debugger diagnostics.
+        // Instrumentation failures are silently swallowed - correctness of async execution takes priority over debugger diagnostics.
         internal static class AsyncDebugger
         {
             public static void CreateAsyncContext(Task task)
