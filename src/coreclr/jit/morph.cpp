@@ -399,15 +399,21 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                         return nullptr;
 
                     case TYP_UINT:
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_S390X)
                         return nullptr;
 #endif
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
 
                     case TYP_LONG:
+#if defined(TARGET_S390X)
+                        return nullptr;
+#endif
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
 
                     case TYP_ULONG:
+#if defined(TARGET_S390X)
+                        return nullptr;
+#endif
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG, oper);
                     default:
                         unreached();
