@@ -903,7 +903,10 @@ public:
     TypeHandle m_thAllocContextObj;
 
 #ifdef FEATURE_INTERPRETER
+public:
     InterpThreadContext *m_pInterpThreadContext;
+    InterpThreadContext* GetInterpThreadContext();
+    InterpThreadContext* GetOrCreateInterpThreadContext();
 #endif // FEATURE_INTERPRETER
 
 #ifndef TARGET_UNIX
@@ -3754,12 +3757,6 @@ private:
     bool m_hasPendingActivation;
 
     friend struct ::cdac_data<Thread>;
-
-#ifdef FEATURE_INTERPRETER
-public:
-    InterpThreadContext* GetInterpThreadContext();
-    InterpThreadContext* GetOrCreateInterpThreadContext();
-#endif // FEATURE_INTERPRETER
 };
 
 template<>
