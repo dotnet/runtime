@@ -493,6 +493,17 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     }
                 }
             }
+
+            lock (_rootCreationWatcherLock)
+            {
+                if (_rootCreationWatcher != null &&
+                    _filePathTokenLookup.IsEmpty &&
+                    _wildcardTokenLookup.IsEmpty)
+                {
+                    _rootCreationWatcher.Dispose();
+                    _rootCreationWatcher = null;
+                }
+            }
         }
 
         private void TryEnableFileSystemWatcher()
