@@ -5492,29 +5492,6 @@ ClrDataAccess::RawGetMethodName(
                 EX_END_CATCH
             }
         }
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-        else
-        if (pStubManager == JumpStubStubManager::g_pManager)
-        {
-            PCODE pTarget = decodeBackToBackJump(TO_TADDR(address));
-
-            HRESULT hr = GetRuntimeNameByAddress(pTarget, flags, bufLen, symbolLen, symbolBuf, NULL);
-            if (SUCCEEDED(hr))
-            {
-                return hr;
-            }
-
-            PCSTR pHelperName = GetJitHelperName(pTarget);
-            if (pHelperName != NULL)
-            {
-                hr = ConvertUtf8(pHelperName, bufLen, symbolLen, symbolBuf);
-                if (FAILED(hr))
-                    return S_FALSE;
-
-                return hr;
-            }
-        }
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
