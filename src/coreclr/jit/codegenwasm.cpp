@@ -2575,6 +2575,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     if (helperIsManaged)
     {
         // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
+        // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP address
+        // to push.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
         GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
@@ -2582,7 +2584,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     if (params.callType == EC_INDIR_R)
     {
-        // Push the call target onto the wasm evaluation stack by dereferencing the PEP.
+        // Push the call target onto the wasm evaluation stack by dereferencing the indirection cell
+        // and then the PEP pointed to by the indirection cell.
         assert(helperFunction.accessType == IAT_PVALUE);
         GetEmitter()->emitAddressConstant(helperFunction.addr);
         GetEmitter()->emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
