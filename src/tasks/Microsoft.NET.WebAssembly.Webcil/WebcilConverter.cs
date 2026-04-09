@@ -117,7 +117,7 @@ public class WebcilConverter
         var sections = headers.SectionHeaders;
         WebcilHeader header = default;
         header.Id = WebcilConstants.WEBCIL_MAGIC;
-        header.VersionMajor = WebcilConstants.WC_VERSION_MAJOR;
+        header.VersionMajor = 0; // WASM-TODO: add webcil V1 support
         header.VersionMinor = WebcilConstants.WC_VERSION_MINOR;
         header.CoffSections = (ushort)coffHeader.NumberOfSections;
         header.Reserved0 = 0;

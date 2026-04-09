@@ -79,7 +79,7 @@ public sealed partial class WebcilReader : IDisposable
             header.PeDebugSize = BinaryPrimitives.ReverseEndianness(header.PeDebugSize);
         }
         if (header.Id != WebcilConstants.WEBCIL_MAGIC
-            || header.VersionMajor != WebcilConstants.WC_VERSION_MAJOR
+            || header.VersionMajor != 0 // WASM-TODO: add webcil V1 support
             || header.VersionMinor != WebcilConstants.WC_VERSION_MINOR)
         {
             return false;
