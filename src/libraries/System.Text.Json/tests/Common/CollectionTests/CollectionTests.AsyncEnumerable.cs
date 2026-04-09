@@ -538,7 +538,7 @@ namespace System.Text.Json.Serialization.Tests
                 public ValueTask DisposeAsync()
                 {
                     inner.Dispose();
-                    throw new InvalidOperationException("DisposeAsync failed");
+                    throw new InvalidOperationException("Simulated DisposeAsync failure for testing");
                 }
             }
         }
