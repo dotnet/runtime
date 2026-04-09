@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace System.Net.Mime
 {
@@ -29,6 +30,7 @@ namespace System.Net.Mime
         // We make this optional because this stream may be used recursively and
         // the encoding should only be done once.
         private readonly bool _shouldEncodeLeadingDots;
+        private bool _lastWriteEndedWithCr;
 
         private WriteStateInfoBase WriteState => _writeState ??= new WriteStateInfoBase();
 
@@ -58,7 +60,7 @@ namespace System.Net.Mime
             IAsyncResult result;
             if (_shouldEncodeLeadingDots)
             {
-                EncodeLines(buffer, offset, count);
+                EncodeLines(buffer.AsSpan(offset, count));
                 result = base.BeginWrite(WriteState.Buffer, 0, WriteState.Length, callback, state);
             }
             else
@@ -88,7 +90,7 @@ namespace System.Net.Mime
 
             if (_shouldEncodeLeadingDots)
             {
-                EncodeLines(buffer, offset, count);
+                EncodeLines(buffer.AsSpan(offset, count));
                 base.Write(WriteState.Buffer, 0, WriteState.Length);
                 WriteState.BufferFlushed();
             }
@@ -103,30 +105,72 @@ namespace System.Net.Mime
 
         // Despite not having to encode content, we still have to implement
         // RFC 2821 Section 4.5.2 about leading dots on a line
-        private void EncodeLines(byte[] buffer, int offset, int count)
+        private void EncodeLines(ReadOnlySpan<byte> buffer)
         {
-            for (int i = offset; (i < offset + count) && (i < buffer.Length); i++)
+            for (int i = 0; i < buffer.Length; i++)
             {
                 // Note: for legacy reasons we are not enforcing buffer[i] <= 127.
 
-                // Detect CRLF line endings
-                if ((buffer[i] == '\r') && ((i + 1) < (offset + count)) && (buffer[i + 1] == '\n'))
+                if (_lastWriteEndedWithCr)
                 {
-                    WriteState.AppendCRLF(false); // Resets CurrentLineLength to 0
-                    i++; // Skip past the recorded CRLF
+                    _lastWriteEndedWithCr = false;
+
+                    // Detect CRLF line endings
+                    if (buffer[i] == '\n')
+                    {
+                        WriteState.AppendCRLF(false); // Resets CurrentLineLength to 0
+                        continue;
+                    }
+                    else
+                    {
+                        // Write the delayed CR since it wasn't part of a CRLF sequence
+                        WriteState.Append((byte)'\r');
+                    }
                 }
-                else if ((WriteState.CurrentLineLength == 0) && (buffer[i] == '.'))
+
+                if ((WriteState.CurrentLineLength == 0) && (buffer[i] == '.'))
                 {
                     // RFC 2821 Section 4.5.2: We must pad leading dots on a line with an extra dot
                     // This is the only 'encoding' change we make to the data in this method
                     WriteState.Append((byte)'.');
-                    WriteState.Append(buffer[i]);
                 }
-                else
+
+                if (buffer[i] == '\r')
                 {
-                    // Just regular seven bit data
-                    WriteState.Append(buffer[i]);
+                    // defer writing CR until we see if it's followed by LF
+                    _lastWriteEndedWithCr = true;
+                    continue;
                 }
+
+                // Just regular seven bit data
+                WriteState.Append(buffer[i]);
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            try
+            {
+                if (disposing && _lastWriteEndedWithCr)
+                {
+                    // write the delayed CR
+                    _lastWriteEndedWithCr = false;
+                    BaseStream.WriteByte((byte)'\r');
+                }
+            }
+            finally
+            {
+                base.Dispose(disposing);
+            }
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (_lastWriteEndedWithCr)
+            {
+                // write the delayed CR
+                _lastWriteEndedWithCr = false;
+                await BaseStream.WriteAsync(new byte[] { (byte)'\r' }).ConfigureAwait(false);
             }
         }
 
