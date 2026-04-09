@@ -748,9 +748,9 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                              BOOL forceBoxedEntryPoint,
                                              Instantiation methodInst,
                                              BOOL allowInstParam,
+                                             AsyncVariantLookup asyncVariantLookup,
                                              BOOL forceRemotableMethod,
                                              BOOL allowCreate,
-                                             AsyncVariantLookup asyncVariantLookup,
                                              ClassLoadLevel level)
 {
     CONTRACT(MethodDesc*)
@@ -788,7 +788,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         methodInst.IsEmpty() &&
         !forceBoxedEntryPoint &&
         !pDefMD->IsUnboxingStub() &&
-        asyncVariantLookup == AsyncVariantLookup::MatchingAsyncVariant)
+        pDefMD->MatchesAsyncVariantLookup(asyncVariantLookup))
     {
         // Make sure that pDefMD->GetMethodTable() and pExactMT are related types even
         // if we took the fast path.
@@ -817,7 +817,9 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         COMPlusThrowHR(COR_E_TYPELOAD);
     }
 
-    if (pDefMD->HasClassOrMethodInstantiation() || !methodInst.IsEmpty() || asyncVariantLookup == AsyncVariantLookup::AsyncOtherVariant)
+    if (pDefMD->HasClassOrMethodInstantiation() ||
+        !methodInst.IsEmpty() ||
+        !pDefMD->MatchesAsyncVariantLookup(asyncVariantLookup))
     {
         // General checks related to generics: arity (if any) must match and generic method
         // instantiation (if any) must be well-formed.
@@ -845,8 +847,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     if (    methodInst.IsEmpty()
         && (allowInstParam || !pMDescInCanonMT->RequiresInstArg())
         && (forceBoxedEntryPoint == pMDescInCanonMT->IsUnboxingStub())
-        && (!forceRemotableMethod || !pMDescInCanonMT->IsInterface()
-                || !pMDescInCanonMT->GetMethodTable()->IsSharedByGenericInstantiations()) )
+        && (!forceRemotableMethod || !pMDescInCanonMT->IsInterface() || !pMDescInCanonMT->GetMethodTable()->IsSharedByGenericInstantiations())
+        && (pMDescInCanonMT->MatchesAsyncVariantLookup(asyncVariantLookup)))
     {
         RETURN(pMDescInCanonMT);
     }
@@ -992,7 +994,10 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                  pExactMT,
                                                                  FALSE /* not Unboxing */,
                                                                  methodInst,
-                                                                 FALSE, FALSE, TRUE, asyncVariantLookup);
+                                                                 FALSE,
+                                                                 asyncVariantLookup,
+                                                                 FALSE,
+                                                                 TRUE);
 
                 _ASSERTE(pNonUnboxingStub->GetClassification() == mcInstantiated);
                 _ASSERTE(!pNonUnboxingStub->RequiresInstArg());
@@ -1200,9 +1205,9 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                           FALSE,
                                                                           Instantiation(repInst, methodInst.GetNumArgs()),
                                                                           /* allowInstParam */ TRUE,
+                                                                          asyncVariantLookup,
                                                                           /* forceRemotableMethod */ FALSE,
                                                                           /* allowCreate */ TRUE,
-                                                                          asyncVariantLookup,
                                                                           /* level */ level);
 
                 _ASSERTE(pWrappedMD->IsSharedByGenericInstantiations());

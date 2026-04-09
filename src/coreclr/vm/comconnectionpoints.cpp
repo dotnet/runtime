@@ -344,11 +344,8 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
         }
 
         // Allocate the object handle and the connection cookie.
-        OBJECTHANDLEHolder phndEventItfObj = GetAppDomain()->CreateHandle((OBJECTREF)pEventItfObj);
-        ConnectionCookieHolder pConCookie = ConnectionCookie::CreateConnectionCookie(phndEventItfObj);
-
-        // pConCookie owns the handle now and will destroy it on exception
-        phndEventItfObj.SuppressRelease();
+        OBJECTHANDLEHolder phndEventItfObj(GetAppDomain()->CreateHandle((OBJECTREF)pEventItfObj));
+        ConnectionCookieHolder pConCookie = ConnectionCookie::CreateConnectionCookie(std::move(phndEventItfObj));
 
         // Add the connection cookie to the list.
         InsertWithLock(pConCookie);
@@ -1115,14 +1112,14 @@ HRESULT __stdcall ConnectionEnum::Next(ULONG cConnections, CONNECTDATA* rgcd, UL
         ConnectionPoint::LockHolder lh(m_pConnectionPoint);
 
         {
-            // Switch to cooperative GC mode before we manipulate OBJCETREF's.
+            // Switch to cooperative GC mode before we manipulate OBJECTREF's.
             GCX_COOP();
 
             for (cFetched = 0; cFetched < cConnections && m_CurrCookie; cFetched++)
             {
                 {
                     CONTRACT_VIOLATION(ThrowsViolation);
-                    rgcd[cFetched].pUnk = GetComIPFromObjectRef((OBJECTREF*)m_CurrCookie->m_hndEventProvObj, ComIpType_Unknown, NULL);
+                    rgcd[cFetched].pUnk = GetComIPFromObjectRef((OBJECTREF*)(OBJECTHANDLE)m_CurrCookie->m_hndEventProvObj, ComIpType_Unknown, NULL);
                     rgcd[cFetched].dwCookie = m_CurrCookie->m_id;
                 }
                 m_CurrCookie = pConnectionList->GetNext(m_CurrCookie);

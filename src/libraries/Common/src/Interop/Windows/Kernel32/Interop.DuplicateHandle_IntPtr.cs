@@ -15,7 +15,7 @@ internal static partial class Interop
             IntPtr hSourceProcessHandle,
             SafeHandle hSourceHandle,
             IntPtr hTargetProcess,
-            out SafeFileHandle targetHandle,
+            out IntPtr targetHandle,
             int dwDesiredAccess,
             [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle,
             int dwOptions
