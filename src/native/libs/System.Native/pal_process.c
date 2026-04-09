@@ -340,6 +340,22 @@ static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFd
     }
 }
 
+// Attempts to open a pidfd for the given pid using pidfd_open.
+// Returns the pidfd on success, or -1 if pidfd is not available.
+static int32_t TryOpenPidfd(int32_t pid)
+{
+#if defined(__linux__)
+    int pidfd = (int)syscall(SYS_pidfd_open, pid, 0);
+    if (pidfd >= 0)
+    {
+        return pidfd;
+    }
+#else
+    (void)pid;
+#endif
+    return -1;
+}
+
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -354,13 +370,18 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t stdoutFd,
                                       int32_t stderrFd,
                                       int32_t* inheritedFds,
-                                      int32_t inheritedFdCount)
+                                      int32_t inheritedFdCount,
+                                      int32_t* outPidfd)
 {
 #if HAVE_FORK || defined(TARGET_OSX)
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
             (groupsLength == 0 || groups != NULL) && "null argument.");
 
     *childPid = -1;
+    if (outPidfd != NULL)
+    {
+        *outPidfd = -1;
+    }
 
     // Make sure we can find and access the executable. exec will do this, of course, but at that point it's already
     // in the child process, at which point it'll translate to the child process' exit code rather than to failing
@@ -489,6 +510,10 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         }
 
         *childPid = spawnedPid;
+        if (outPidfd != NULL)
+        {
+            *outPidfd = TryOpenPidfd(spawnedPid);
+        }
         return 0;
     }
 #endif
@@ -713,6 +738,11 @@ done:;
 
     free(getGroupsBuffer);
 
+    if (success && outPidfd != NULL)
+    {
+        *outPidfd = TryOpenPidfd(*childPid);
+    }
+
     return success ? 0 : -1;
 #else
     // ignore unused parameters
@@ -731,6 +761,7 @@ done:;
     (void)stderrFd;
     (void)inheritedFds;
     (void)inheritedFdCount;
+    (void)outPidfd;
     return -1;
 #endif
 }
@@ -1092,20 +1123,11 @@ char* SystemNative_GetProcessPath(void)
 
 int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd)
 {
-    *out_pidfd = -1;
-
-#if defined(__linux__)
-    int pidfd = (int)syscall(SYS_pidfd_open, pid, 0);
-    if (pidfd < 0 && errno != ENOTSUP)
+    *out_pidfd = TryOpenPidfd(pid);
+    if (*out_pidfd >= 0)
     {
-        return -1;
-    }
-    else if (pidfd > 0)
-    {
-        *out_pidfd = pidfd;
         return 0;
     }
-#endif
 
     return kill(pid, 0);
 }

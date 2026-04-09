@@ -245,7 +245,7 @@ namespace Microsoft.Win32.SafeHandles
         private static bool UsesTerminal(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
             => ProcessUtils.IsTerminal(stdinHandle) || ProcessUtils.IsTerminal(stdoutHandle) || ProcessUtils.IsTerminal(stderrHandle);
 
-        private static SafeProcessHandle ForkAndExecProcess(
+        private static unsafe SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
             IDictionary<string, string?> env, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
@@ -261,6 +261,7 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             int childPid, errno;
+            int pidfd = -1;
 
             // Lock to avoid races with OnSigChild
             // By using a ReaderWriterLock we allow multiple processes to start concurrently.
@@ -281,7 +282,7 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
-                    inheritedHandles);
+                    inheritedHandles, &pidfd);
 
                 if (errno == 0)
                 {
@@ -318,7 +319,9 @@ namespace Microsoft.Win32.SafeHandles
                 throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
 
-            return new SafeProcessHandle(childPid, waitStateHolder!);
+            SafeProcessHandle processHandle = new SafeProcessHandle(childPid, waitStateHolder!);
+            processHandle._pidfd = pidfd;
+            return processHandle;
         }
     }
 }
