@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -196,6 +197,51 @@ namespace System.Diagnostics
         /// <value>A <see cref="SafeFileHandle"/> to use as the standard error handle of the child process, or <see langword="null"/> to use the default behavior.</value>
         public SafeFileHandle? StandardErrorHandle { get; set; }
 
+        /// <summary>
+        /// Gets or sets a list of handles that will be inherited by the child process.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// When this property is not <see langword="null"/>, handle inheritance is restricted to the standard handles
+        /// and the handles from this list. If the list is empty, only the standard handles are inherited.
+        /// </para>
+        /// <para>
+        /// Only <see cref="SafeFileHandle"/> and <see cref="SafePipeHandle"/> are supported in this list.
+        /// </para>
+        /// <para>
+        /// Setting this property on Unix systems that do not have native support for controlling handle inheritance can severely degrade process start performance.
+        /// </para>
+        /// <para>
+        /// Handles in this list should not have inheritance enabled beforehand.
+        /// If they do, they could be unintentionally inherited by other processes started concurrently with different APIs,
+        /// which may lead to security or resource management issues.
+        /// </para>
+        /// <para>
+        /// Two concurrent process starts that pass same handle in <see cref="InheritedHandles"/>
+        /// are not supported. The implementation temporarily modifies each handle's inheritance flags and this is not thread-safe across concurrent starts sharing the same handle.
+        /// </para>
+        /// <para>
+        /// This API can't be used together with <see cref="UseShellExecute"/> set to <see langword="true"/> or when specifying a user name via the <see cref="UserName"/> property.
+        /// </para>
+        /// <para>
+        /// On Windows, the implementation will temporarily enable inheritance on each handle in this list
+        /// by modifying the handle's flags using <see href="https://learn.microsoft.com/windows/win32/api/handleapi/nf-handleapi-sethandleinformation">SetHandleInformation</see>.
+        /// After the child process is created, inheritance will be unconditionally disabled on these handles to prevent them
+        /// from being inherited by other processes started with different APIs.
+        /// The handles themselves are not duplicated; they are made inheritable and passed to the child process.
+        /// </para>
+        /// <para>
+        /// On Unix, the implementation will modify each file descriptor in the child process
+        /// by removing the FD_CLOEXEC flag. This modification occurs after the fork and before the exec,
+        /// so it does not affect the parent process.
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// A list of <see cref="SafeHandle"/> objects to be explicitly inherited by the child process,
+        /// or <see langword="null"/> to use the default handle inheritance behavior.
+        /// </value>
+        public IList<SafeHandle>? InheritedHandles { get; set; }
+
         public Encoding? StandardInputEncoding { get; set; }
 
         public Encoding? StandardErrorEncoding { get; set; }
@@ -307,7 +353,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal void ThrowIfInvalid(out bool anyRedirection)
+        internal void ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles)
         {
             if (FileName.Length == 0)
             {
@@ -336,7 +382,7 @@ namespace System.Diagnostics
                 {
                     if (ArgumentList[i] is null)
                     {
-                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
+                        throw new ArgumentNullException($"ArgumentList[{i}]");
                     }
                 }
             }
@@ -346,6 +392,58 @@ namespace System.Diagnostics
             if (UseShellExecute && (anyRedirection || anyHandle))
             {
                 throw new InvalidOperationException(SR.CantRedirectStreams);
+            }
+
+            if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
+            {
+                throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
+            }
+
+            if (InheritedHandles is not null)
+            {
+                IList<SafeHandle> list = InheritedHandles;
+                SafeHandle[] snapshot = new SafeHandle[list.Count];
+                for (int i = 0; i < snapshot.Length; i++)
+                {
+                    SafeHandle? handle = list[i];
+                    if (handle is null)
+                    {
+                        throw new ArgumentNullException(InheritedHandlesParamName(i));
+                    }
+                    if (handle.IsInvalid)
+                    {
+                        throw new ArgumentException(SR.Arg_InvalidHandle, InheritedHandlesParamName(i));
+                    }
+                    ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
+
+                    switch (handle)
+                    {
+                        case SafeFileHandle:
+                        case SafePipeHandle:
+                            break;
+                        // As of today, we don't support other handle types because they would work
+                        // only on Windows (e.g. Process/Wait handles).
+                        default:
+                            throw new ArgumentException(SR.InheritedHandles_OnlySelectedSafeHandlesAreSupported, InheritedHandlesParamName(i));
+                    }
+
+                    nint rawValue = handle.DangerousGetHandle();
+                    for (int j = 0; j < i; j++)
+                    {
+                        if (snapshot[j].DangerousGetHandle() == rawValue)
+                        {
+                            throw new ArgumentException(SR.InheritedHandles_MustNotContainDuplicates, InheritedHandlesParamName(i));
+                        }
+                    }
+
+                    snapshot[i] = handle;
+                }
+
+                inheritedHandles = snapshot;
+            }
+            else
+            {
+                inheritedHandles = null;
             }
 
             if (anyHandle)
@@ -378,6 +476,33 @@ namespace System.Diagnostics
                     }
 
                     ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
+                }
+            }
+
+            static string InheritedHandlesParamName(int i) => $"InheritedHandles[{i}]";
+        }
+
+        internal static void ValidateInheritedHandles(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
+            SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles = null)
+        {
+            if (inheritedHandles is null || inheritedHandles.Length == 0 || !ProcessUtils.PlatformSupportsConsole)
+            {
+                return;
+            }
+
+            Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null);
+
+            nint input = stdinHandle.DangerousGetHandle();
+            nint output = stdoutHandle.DangerousGetHandle();
+            nint error = stderrHandle.DangerousGetHandle();
+
+            for (int i = 0; i < inheritedHandles.Length; i++)
+            {
+                nint handle = inheritedHandles[i].DangerousGetHandle();
+                if (handle == input || handle == output || handle == error)
+                {
+                    // After process start, the Windows implementation unconditionally disables inheritance for all provided inheritable handles.
+                    throw new ArgumentException(SR.InheritedHandles_MustNotContainStandardHandles, nameof(InheritedHandles));
                 }
             }
         }

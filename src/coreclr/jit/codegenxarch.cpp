@@ -130,7 +130,13 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
     genDefineTempLabel(gsCheckBlk);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+//------------------------------------------------------------------------
+// genCallFinally: Generate a call to a finally.
+//
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
@@ -181,17 +187,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         GetEmitter()->emitEnableGC();
     }
-
-    // The BBJ_CALLFINALLYRET is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbTargetEdge - that is already used to point
-    // to the finally block. So just skip past the BBJ_CALLFINALLYRET unless the
-    // block is RETLESS.
-    if (!block->HasFlag(BBF_RETLESS_CALL))
-    {
-        assert(block->isBBCallFinallyPair());
-        block = nextBlock;
-    }
-    return block;
 }
 
 void CodeGen::genEHCatchRet(BasicBlock* block)

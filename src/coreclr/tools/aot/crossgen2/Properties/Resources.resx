@@ -450,4 +450,7 @@
   <data name="StripDebugInfoOption" xml:space="preserve">
     <value>Strip debug info from the R2R image.</value>
   </data>
+  <data name="StripILBodiesOption" xml:space="preserve">
+    <value>Replace IL method bodies of compiled methods with a throwing stub in composite R2R output assemblies.</value>
+  </data>
 </root>
