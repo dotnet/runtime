@@ -665,6 +665,12 @@ namespace System.IO.Compression
                         {
                             break;
                         }
+
+                        ZipArchiveEntry lastEntry = _entries[_entries.Count - 1];
+                        if (lastEntry.IsEncrypted)
+                        {
+                            lastEntry.ReadEncryptionSaltIfNeeded();
+                        }
                     }
 
                     ReadCentralDirectoryEndOfOuterLoopWork(ref currPosition, sizedFileBuffer);

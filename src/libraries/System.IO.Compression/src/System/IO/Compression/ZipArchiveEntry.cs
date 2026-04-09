@@ -53,6 +53,9 @@ namespace System.IO.Compression
         // Only one of these is set at a time, depending on the encryption method.
         private ZipCryptoKeys? _derivedZipCryptoKeyMaterial;
         private WinZipAesKeyMaterial? _derivedAesKeyMaterial;
+        // Pre-read AES salt from the local file data area during central directory parsing.
+        // This allows async open methods to derive keys without synchronous I/O.
+        private byte[]? _aesSalt;
         internal const ushort WinZipAesMethod = 99;
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -616,6 +619,42 @@ namespace System.IO.Compression
             return _storedOffsetOfCompressedData.Value;
         }
 
+        /// <summary>
+        /// Reads and caches the AES encryption salt from the local file data area.
+        /// Called during central directory parsing for AES-encrypted entries so that
+        /// the salt is available for key derivation without additional I/O at open time.
+        /// </summary>
+        internal void ReadEncryptionSaltIfNeeded()
+        {
+            if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser())
+            {
+                return;
+            }
+
+            long savedPosition = _archive.ArchiveStream.Position;
+            try
+            {
+                long offset = GetOffsetOfCompressedData();
+                _archive.ArchiveStream.Seek(offset, SeekOrigin.Begin);
+
+                int keySizeBits = GetAesKeySizeBits(Encryption);
+                int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
+                _aesSalt = new byte[saltSize];
+                _archive.ArchiveStream.ReadExactly(_aesSalt);
+            }
+            catch (Exception ex) when (ex is InvalidDataException or EndOfStreamException)
+            {
+                // These are the only exceptions GetOffsetOfCompressedData() and ReadExactly()
+                // can throw for corrupt or truncated data. Swallow them here and defer the error
+                // to when the entry is actually opened.
+                _aesSalt = null;
+            }
+            finally
+            {
+                _archive.ArchiveStream.Seek(savedPosition, SeekOrigin.Begin);
+            }
+        }
+
         private MemoryStream GetUncompressedData(ReadOnlySpan<char> password = default)
         {
             if (_storedUncompressedData == null)
@@ -1021,27 +1060,34 @@ namespace System.IO.Compression
 
         /// <summary>
         /// Creates the appropriate decryption stream for an encrypted entry.
+        /// For AES entries, uses the salt that was pre-read during central directory parsing.
         /// </summary>
         private Stream WrapWithDecryptionIfNeeded(Stream compressedStream, ReadOnlySpan<char> password)
         {
             if (Encryption == ZipEncryptionMethod.Unknown)
+            {
                 throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+            }
 
             if (password.IsEmpty)
+            {
                 throw new InvalidDataException(SR.PasswordRequired);
+            }
 
             if (IsAesEncrypted)
             {
                 if (OperatingSystem.IsBrowser())
+                {
                     throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                }
+
+                if (_aesSalt is null)
+                {
+                    throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+                }
 
                 int keySizeBits = GetAesKeySizeBits(Encryption);
-                int saltSize = WinZipAesStream.GetSaltSize(keySizeBits);
-                byte[] salt = new byte[saltSize];
-                compressedStream.ReadExactly(salt);
-                compressedStream.Seek(-saltSize, SeekOrigin.Current);
-
-                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
+                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, _aesSalt, keySizeBits);
                 return WinZipAesStream.Create(
                     baseStream: compressedStream,
                     keyMaterial: keyMaterial,
@@ -1296,7 +1342,14 @@ namespace System.IO.Compression
         internal void PrepareEncryption(ReadOnlySpan<char> password, ZipEncryptionMethod encryptionMethod)
         {
             if (password.IsEmpty)
+            {
                 throw new ArgumentException(SR.EmptyPassword, nameof(password));
+            }
+
+            if (encryptionMethod is ZipEncryptionMethod.None or ZipEncryptionMethod.Unknown)
+            {
+                throw new ArgumentOutOfRangeException(nameof(encryptionMethod), SR.EncryptionNotSpecified);
+            }
 
             Encryption = encryptionMethod;
 
@@ -1802,6 +1855,24 @@ namespace System.IO.Compression
                     }
 
                     WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: true);
+
+                    // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
+                    // (because Encryption was temporarily set to None and the stream is seekable).
+                    // If the original entry had a data descriptor, patch the general-purpose bit
+                    // flags in the already-written local header to match, so the header on disk
+                    // is consistent with the data descriptor we conditionally write below.
+                    if ((savedFlags & BitFlagValues.DataDescriptor) != 0 &&
+                        (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
+                    {
+                        long currentPos = _archive.ArchiveStream.Position;
+                        _archive.ArchiveStream.Seek(
+                            _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags,
+                            SeekOrigin.Begin);
+                        Span<byte> flagBytes = stackalloc byte[2];
+                        BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)savedFlags);
+                        _archive.ArchiveStream.Write(flagBytes);
+                        _archive.ArchiveStream.Seek(currentPos, SeekOrigin.Begin);
+                    }
 
                     // Restore original state
                     _generalPurposeBitFlag = savedFlags;

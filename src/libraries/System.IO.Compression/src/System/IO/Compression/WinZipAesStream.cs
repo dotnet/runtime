@@ -616,6 +616,8 @@ namespace System.IO.Compression
                 return;
             }
 
+            _disposed = true;
+
             if (disposing)
             {
                 try
@@ -652,7 +654,6 @@ namespace System.IO.Compression
                 }
             }
 
-            _disposed = true;
             base.Dispose(disposing);
         }
 
