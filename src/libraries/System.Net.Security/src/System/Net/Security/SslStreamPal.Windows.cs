@@ -26,6 +26,15 @@ namespace System.Net.Security
             // API is supported since Windows 10 1809 (17763) but there is no reason to use at the moment.
             Environment.OSVersion.Version.Major >= 10 && Environment.OSVersion.Version.Build >= 18836;
 
+        // On Windows Server 2022 (build 20348) and older, Schannel has a race condition where
+        // ApplyControlToken(SSL_SESSION_DISABLE_RECONNECTS) doesn't reliably prevent the session
+        // cache from being repopulated. The workaround is to delete the context and retry
+        // InitializeSecurityContext after ApplyControlToken. This follows the same pattern used by
+        // Schannel's own webcli.c test and http.sys. The issue was fixed in newer Schannel builds
+        // shipping with Windows 11+ (build 22000+).
+        private static readonly bool NeedsDisableTlsResumeWorkaround =
+            Environment.OSVersion.Version.Build < 22000;
+
         private const string SecurityPackage = "Microsoft Unified Security Protocol Provider";
 
         private const Interop.SspiCli.ContextFlags RequiredFlags =
@@ -206,10 +215,49 @@ namespace System.Net.Security
                     ref context,
                     in securityBuffer));
 
-
                 if (result.ErrorCode != SecurityStatusPalErrorCode.OK)
                 {
                     token.Status = result;
+                }
+                else if (NeedsDisableTlsResumeWorkaround)
+                {
+                    // On affected builds, Schannel's internal LookupCacheByName finds a fresh
+                    // resumable entry and embeds the session ID in the ClientHello before
+                    // ApplyControlToken can expire it. Deleting the context and retrying ISC
+                    // ensures the new ClientHello is generated without a stale session ID.
+                    context?.Dispose();
+                    context = null;
+                    token.ReleasePayload();
+                    token = default;
+                    token.RentBuffer = true;
+
+                    scoped InputSecurityBuffers retryInputBuffers = default;
+                    retryInputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
+                    retryInputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
+                    if (sslAuthenticationOptions.ApplicationProtocols is { Count: > 0 })
+                    {
+                        Span<byte> retryLocalBuffer = stackalloc byte[64];
+                        SetAlpn(ref retryInputBuffers, sslAuthenticationOptions.ApplicationProtocols, retryLocalBuffer);
+                    }
+
+                    errorCode = SSPIWrapper.InitializeSecurityContext(
+                                    GlobalSSPI.SSPISecureChannel,
+                                    ref credentialsHandle,
+                                    ref context,
+                                    targetName,
+                                    RequiredFlags | Interop.SspiCli.ContextFlags.InitManualCredValidation,
+                                    Interop.SspiCli.Endianness.SECURITY_NATIVE_DREP,
+                                    ref retryInputBuffers,
+                                    ref token,
+                                    ref unusedAttributes);
+
+                    token.Status = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
+
+                    consumed = inputBuffer.Length;
+                    if (retryInputBuffers._item1.Type == SecurityBufferType.SECBUFFER_EXTRA)
+                    {
+                        consumed -= retryInputBuffers._item1.Token.Length;
+                    }
                 }
             }
 
