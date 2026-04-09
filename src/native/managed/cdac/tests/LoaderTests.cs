@@ -50,6 +50,9 @@ public unsafe class LoaderTests
             moduleAddrEmptyPath = loader.AddModule().Address;
         });
 
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+            string actual = contract.GetPath(handle);
             Assert.Equal(expected, actual);
         }
         {
@@ -73,6 +76,9 @@ public unsafe class LoaderTests
             moduleAddrEmptyName = loader.AddModule().Address;
         });
 
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+            string actual = contract.GetFileName(handle);
             Assert.Equal(expected, actual);
         }
         {
@@ -96,6 +102,9 @@ public unsafe class LoaderTests
             moduleAddrEmptyName = loader.AddModule().Address;
         });
 
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+            bool result = contract.TryGetSimpleName(handle, out string actual);
             Assert.True(result);
             Assert.Equal(expected, actual);
         }

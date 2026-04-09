@@ -43,10 +43,10 @@ internal sealed class CachingContractRegistry : ContractRegistry
             return (TContract)cached;
 
         if (!_tryGetContractVersion(TContract.Name, out int version))
-            throw new NotImplementedException();
+            throw new NotImplementedException($"Contract '{TContract.Name}' is not present in the contract descriptor.");
 
         if (!_creators.TryGetValue((typeof(TContract), version), out Func<Target, IContract>? creator))
-            throw new NotImplementedException();
+            throw new NotImplementedException($"No implementation registered for contract '{TContract.Name}' version {version}.");
 
         TContract contract = (TContract)creator(_target);
         if (_contracts.TryAdd(typeof(TContract), contract))
