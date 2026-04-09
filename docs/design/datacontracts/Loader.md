@@ -80,6 +80,8 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
 IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table);
 bool IsCollectible(ModuleHandle handle);
+bool IsDynamic(ModuleHandle handle);
+bool IsModuleMapped(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
 TargetPointer GetSystemAssembly();
@@ -90,6 +92,12 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
+// Gets the module handle for the module owned by the given DomainAssembly.
+// Assumes DomainAssembly layout: the first pointer-sized field is a pointer to Assembly,
+// and Assembly has a Module field pointing to the Module (1:1 Assembly-Module assumption).
+ModuleHandle GetModuleForDomainAssembly(TargetPointer domainAssemblyPointer);
+// Gets the DomainAssembly pointer for the module, using the Module's back-pointer field.
+TargetPointer GetDomainAssemblyFromModule(ModuleHandle handle);
 ```
 
 ## Version 1
@@ -106,6 +114,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
 | `Module` | `SimpleName` | Simple name of the Module (UTF-8, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
+| `Module` | `DomainAssembly` | Back-pointer to the DomainAssembly that owns this module |
 | `Module` | `AvailableTypeParams` | Pointer to an EETypeHashTable |
 | `Module` | `InstMethodHashTable` | Pointer to an InstMethodHashTable |
 | `Module` | `FieldDefToDescMap` | Mapping table |
@@ -370,11 +379,7 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
     size = 0;
     imageFlags = 0;
 
-    TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-    if (peAssembly == 0) return false; // no loaded PEAssembly
-
-    TargetPointer peImage = target.ReadPointer(peAssembly + /* PEAssembly::PEImage offset */);
-    if(peImage == 0) return false; // no loaded PEImage
+    // try to get loaded PE image, if not loaded return false
 
     TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
 
@@ -382,6 +387,14 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
     size = target.Read<uint>(peImageLayout + /* PEImageLayout::Size offset */);
     imageFlags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
     return true;
+}
+
+bool IsModuleMapped(ModuleHandle handle)
+{
+    // try to get loaded PE image, if not loaded return false
+
+    uint format = target.Read<uint>(peImageLayout + /* PEImageLayout::Format offset */);
+    return /* Webcil images are never mapped; for PE images check the FLAG_MAPPED flag */;
 }
 
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
@@ -410,7 +423,7 @@ private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNu
     TargetPointer baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
     uint imageFlags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
 
-    bool isMapped = (imageFlags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+    bool isMapped = /* Webcil images are never mapped; for PE images check the FLAG_MAPPED flag */;
 
     uint offset;
     if (isMapped)
@@ -545,11 +558,7 @@ IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle)
 
 bool IsProbeExtensionResultValid(ModuleHandle handle)
 {
-    TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-    if (peAssembly == 0) return false; // no loaded PEAssembly
-
-    TargetPointer peImage = target.ReadPointer(peAssembly + /* PEAssembly::PEImage offset */);
-    if(peImage == 0) return false; // no loaded PEImage
+    // try to get loaded PE image, if not loaded return false
 
     TargetPointer probeExtensionResult = target.ReadPointer(peImage + /* PEImage::ProbeExtensionResult offset */);
     int type = target.Read<int>(probeExtensionResult + /* ProbeExtensionResult::Type offset */);
@@ -816,6 +825,19 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
     SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
     Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
     return /* blob entry IL address */
+}
+
+ModuleHandle GetModuleForDomainAssembly(TargetPointer domainAssemblyPointer)
+{
+    // DomainAssembly layout assumption: the first pointer-sized field is a pointer to Assembly.
+    TargetPointer assemblyPointer = target.ReadPointer(domainAssemblyPointer);
+    Assembly assembly = // read Assembly object at assemblyPointer
+    return new ModuleHandle(assembly.Module);
+}
+
+TargetPointer GetDomainAssemblyFromModule(ModuleHandle handle)
+{
+    return target.ReadPointer(handle.Address + /* Module::DomainAssembly offset */);
 }
 ```
 

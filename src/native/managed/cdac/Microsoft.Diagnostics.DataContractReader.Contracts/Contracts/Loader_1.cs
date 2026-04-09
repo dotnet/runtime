@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -59,6 +60,28 @@ internal readonly struct Loader_1 : ILoader
             throw new InvalidOperationException("Assembly does not have a module associated with it.");
 
         return new ModuleHandle(assembly.Module);
+    }
+
+    ModuleHandle ILoader.GetModuleForDomainAssembly(TargetPointer domainAssemblyPointer)
+    {
+        if (domainAssemblyPointer == TargetPointer.Null)
+            throw new ArgumentNullException(nameof(domainAssemblyPointer));
+
+        TargetPointer assemblyPointer = _target.ReadPointer(domainAssemblyPointer);
+        if (assemblyPointer == TargetPointer.Null)
+            throw new InvalidOperationException("DomainAssembly does not have an associated Assembly.");
+
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(assemblyPointer);
+        if (assembly.Module == TargetPointer.Null)
+            throw new InvalidOperationException("Assembly does not have a module associated with it.");
+
+        return new ModuleHandle(assembly.Module);
+    }
+
+    TargetPointer ILoader.GetDomainAssemblyFromModule(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.DomainAssembly;
     }
 
     IEnumerable<ModuleHandle> ILoader.GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
@@ -165,25 +188,30 @@ internal readonly struct Loader_1 : ILoader
         return module.PEAssembly;
     }
 
+    private bool TryGetPEImage(ModuleHandle handle, [NotNullWhen(true)] out Data.PEImage? peImage)
+    {
+        peImage = default;
+
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.PEAssembly == TargetPointer.Null)
+            return false;
+
+        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
+        if (peAssembly.PEImage == TargetPointer.Null)
+            return false;
+
+        peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
+        return true;
+    }
+
     bool ILoader.TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags)
     {
         baseAddress = TargetPointer.Null;
         size = 0;
         imageFlags = 0;
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
 
-        if (module.PEAssembly == TargetPointer.Null)
-            return false; // no loaded PEAssembly
-
-        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
-
-        if (peAssembly.PEImage == TargetPointer.Null)
-            return false; // no loaded PEImage
-
-        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
-
-        if (peImage.LoadedImageLayout == TargetPointer.Null)
-            return false; // no loaded image layout
+        if (!TryGetPEImage(handle, out Data.PEImage? peImage))
+            return false; // no PE image
 
         Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
 
@@ -196,7 +224,23 @@ internal readonly struct Loader_1 : ILoader
 
     private static bool IsMapped(Data.PEImageLayout peImageLayout)
     {
+        if (peImageLayout.Format == (uint)ImageFormat.Webcil)
+            return false;
+
         return (peImageLayout.Flags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+    }
+
+    bool ILoader.IsModuleMapped(ModuleHandle handle)
+    {
+        if (!TryGetPEImage(handle, out Data.PEImage? peImage))
+            return false; // no PE image
+
+        if (peImage.LoadedImageLayout == TargetPointer.Null)
+            return false;
+
+        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+
+        return IsMapped(peImageLayout);
     }
 
     private TargetPointer FindNTHeaders(Data.PEImageLayout imageLayout)
@@ -339,17 +383,8 @@ internal readonly struct Loader_1 : ILoader
 
     bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle)
     {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-
-        if (module.PEAssembly == TargetPointer.Null)
-            return false; // no loaded PEAssembly
-
-        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
-
-        if (peAssembly.PEImage == TargetPointer.Null)
-            return false; // no loaded PEImage
-
-        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
+        if (!TryGetPEImage(handle, out Data.PEImage? peImage))
+            return false; // no PE image
 
         // 0 is the invalid type. See assemblyprobeextension.h for details
         return peImage.ProbeExtensionResult.Type != 0;
