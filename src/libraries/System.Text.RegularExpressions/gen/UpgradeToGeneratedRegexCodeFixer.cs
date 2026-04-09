@@ -116,24 +116,24 @@ namespace System.Text.RegularExpressions.Generator
                 semanticModel.GetDeclaredSymbol((CompilationUnitSyntax)typeDeclarationOrCompilationUnit, cancellationToken)?.ContainingType;
             if (typeSymbol is not null)
             {
-                int memberCount = 1;
-                while (GetAllMembers(typeSymbol).Any(m => m.Name == memberName))
-                {
-                    memberName = $"{DefaultRegexPropertyName}{memberCount++}";
-                }
-
                 // When the BatchFixer applies multiple fixes concurrently, each fix sees the
                 // original compilation and picks the same first-available name. To avoid
                 // duplicates, determine this node's position among all Regex call sites in
-                // the type that would generate new names, and offset accordingly.
+                // the type that would generate new names, and skip that many available names.
                 int precedingCount = CountPrecedingRegexCallSites(
                     typeSymbol, compilation, regexSymbol, nodeToFix, cancellationToken);
-                for (int i = 0; i < precedingCount; i++)
+
+                // Find the (precedingCount)th name (0-indexed) that doesn't collide with
+                // existing members. The Nth concurrent fixer claims the Nth available name.
+                int suffix = 0;
+                for (int available = 0; ; suffix++)
                 {
-                    memberName = $"{DefaultRegexPropertyName}{memberCount++}";
-                    while (GetAllMembers(typeSymbol).Any(m => m.Name == memberName))
+                    memberName = suffix == 0 ? DefaultRegexPropertyName : $"{DefaultRegexPropertyName}{suffix}";
+                    if (!GetAllMembers(typeSymbol).Any(m => m.Name == memberName))
                     {
-                        memberName = $"{DefaultRegexPropertyName}{memberCount++}";
+                        if (available == precedingCount)
+                            break;
+                        available++;
                     }
                 }
             }
@@ -536,19 +536,7 @@ namespace System.Text.RegularExpressions.Generator
                     }
 
                     IOperation? op = declModel.GetOperation(descendant, cancellationToken);
-                    bool isFixableRegexCall = op switch
-                    {
-                        IInvocationOperation inv => inv.TargetMethod.IsStatic &&
-                            SymbolEqualityComparer.Default.Equals(inv.TargetMethod.ContainingType, regexSymbol) &&
-                            UpgradeToGeneratedRegexAnalyzer.FixableMethodNames.Contains(inv.TargetMethod.Name) &&
-                            UpgradeToGeneratedRegexAnalyzer.ValidateParameters(inv.Arguments),
-                        IObjectCreationOperation create => SymbolEqualityComparer.Default.Equals(create.Type, regexSymbol) &&
-                            create.Arguments.Length <= 2 &&
-                            UpgradeToGeneratedRegexAnalyzer.ValidateParameters(create.Arguments),
-                        _ => false
-                    };
-
-                    if (isFixableRegexCall)
+                    if (op is not null && UpgradeToGeneratedRegexAnalyzer.IsFixableRegexOperation(op, regexSymbol))
                     {
                         callSites.Add((syntaxRef.SyntaxTree.FilePath ?? string.Empty, treeIndex, descendant.SpanStart));
                     }

@@ -29,7 +29,25 @@ namespace System.Text.RegularExpressions.Generator
         internal const string OptionsArgumentName = "options";
 
         /// <summary>Names of static Regex methods the analyzer considers fixable.</summary>
-        internal static readonly HashSet<string> FixableMethodNames = new() { "Count", "EnumerateMatches", "IsMatch", "Match", "Matches", "Split", "Replace" };
+        private static readonly HashSet<string> s_fixableMethodNames = new() { "Count", "EnumerateMatches", "IsMatch", "Match", "Matches", "Split", "Replace" };
+
+        /// <summary>
+        /// Determines whether the given operation is a fixable Regex call (constructor or static method).
+        /// Used by both the analyzer and the code fixer to share fixability logic.
+        /// </summary>
+        internal static bool IsFixableRegexOperation(IOperation operation, INamedTypeSymbol regexSymbol) => operation switch
+        {
+            IInvocationOperation inv =>
+                inv.TargetMethod.IsStatic &&
+                SymbolEqualityComparer.Default.Equals(inv.TargetMethod.ContainingType, regexSymbol) &&
+                s_fixableMethodNames.Contains(inv.TargetMethod.Name) &&
+                ValidateParameters(inv.Arguments),
+            IObjectCreationOperation create =>
+                SymbolEqualityComparer.Default.Equals(create.Type, regexSymbol) &&
+                create.Arguments.Length <= 2 &&
+                ValidateParameters(create.Arguments),
+            _ => false
+        };
 
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(DiagnosticDescriptors.UseRegexSourceGeneration);
@@ -51,101 +69,18 @@ namespace System.Text.RegularExpressions.Generator
                     return;
                 }
 
-                // Pre-compute a hash with all of the method symbols that we want to analyze for possibly emitting
-                // a diagnostic.
-                HashSet<IMethodSymbol> staticMethodsToDetect = GetMethodSymbolHash(regexTypeSymbol,
-                    FixableMethodNames);
-
-                // Register analysis of calls to the Regex constructors
-                context.RegisterOperationAction(context => AnalyzeObjectCreation(context, regexTypeSymbol), OperationKind.ObjectCreation);
-
-                // Register analysis of calls to Regex static methods
-                context.RegisterOperationAction(context => AnalyzeInvocation(context, regexTypeSymbol, staticMethodsToDetect), OperationKind.Invocation);
-            });
-
-            // Creates a HashSet of all of the method Symbols containing the static methods to analyze.
-            static HashSet<IMethodSymbol> GetMethodSymbolHash(INamedTypeSymbol regexTypeSymbol, HashSet<string> methodNames)
-            {
-                HashSet<IMethodSymbol> hash = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
-                ImmutableArray<ISymbol> allMembers = regexTypeSymbol.GetMembers();
-
-                foreach (ISymbol member in allMembers)
+                context.RegisterOperationAction(context =>
                 {
-                    if (member is IMethodSymbol method &&
-                        method.IsStatic &&
-                        methodNames.Contains(method.Name))
+                    if (IsFixableRegexOperation(context.Operation, regexTypeSymbol))
                     {
-                        hash.Add(method);
+                        // Report the diagnostic with a location that doesn't span the potentially multi-line pattern.
+                        SyntaxNode? syntaxNodeForDiagnostic = context.Operation.Syntax;
+                        Debug.Assert(syntaxNodeForDiagnostic is not null);
+                        Location location = GetLocationBeforeArguments(syntaxNodeForDiagnostic);
+                        context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, location));
                     }
-                }
-
-                return hash;
-            }
-        }
-
-        /// <summary>
-        /// Analyzes an invocation expression to see if the invocation is a call to one of the Regex static methods,
-        /// and checks if they could be using the source generator instead.
-        /// </summary>
-        /// <param name="context">The compilation context representing the invocation.</param>
-        private static void AnalyzeInvocation(OperationAnalysisContext context, INamedTypeSymbol regexTypeSymbol, HashSet<IMethodSymbol> staticMethodsToDetect)
-        {
-            // Ensure the invocation is a Regex static method.
-            IInvocationOperation invocationOperation = (IInvocationOperation)context.Operation;
-            IMethodSymbol method = invocationOperation.TargetMethod;
-            if (!method.IsStatic || !SymbolEqualityComparer.Default.Equals(method.ContainingType, regexTypeSymbol))
-            {
-                return;
-            }
-
-            // We need to save the parameters as properties so that we can save them onto the diagnostic so that the
-            // code fixer can later use that property bag to generate the code fix and emit the GeneratedRegex attribute.
-            if (staticMethodsToDetect.Contains(method))
-            {
-                // Validate that arguments pattern and options are constant and timeout was not passed in.
-                if (!ValidateParameters(invocationOperation.Arguments))
-                {
-                    return;
-                }
-
-                // Report the diagnostic with a location that doesn't span the potentially multi-line pattern.
-                SyntaxNode? syntaxNodeForDiagnostic = invocationOperation.Syntax;
-                Debug.Assert(syntaxNodeForDiagnostic is not null);
-                Location location = GetLocationBeforeArguments(syntaxNodeForDiagnostic);
-                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, location));
-            }
-        }
-
-        /// <summary>
-        /// Analyzes an object creation expression to see if the invocation is a call to one of the Regex constructors,
-        /// and checks if they could be using the source generator instead.
-        /// </summary>
-        /// <param name="context">The object creation context.</param>
-        private static void AnalyzeObjectCreation(OperationAnalysisContext context, INamedTypeSymbol regexTypeSymbol)
-        {
-            // Ensure the object creation is a call to the Regex constructor.
-            IObjectCreationOperation operation = (IObjectCreationOperation)context.Operation;
-            if (!SymbolEqualityComparer.Default.Equals(operation.Type, regexTypeSymbol))
-            {
-                return;
-            }
-
-            // If the constructor also has a timeout argument, then don't emit a diagnostic.
-            if (operation.Arguments.Length > 2)
-            {
-                return;
-            }
-
-            if (!ValidateParameters(operation.Arguments))
-            {
-                return;
-            }
-
-            // Report the diagnostic with a location that doesn't span the potentially multi-line pattern.
-            SyntaxNode? syntaxNodeForDiagnostic = operation.Syntax;
-            Debug.Assert(syntaxNodeForDiagnostic is not null);
-            Location location = GetLocationBeforeArguments(syntaxNodeForDiagnostic);
-            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, location));
+                }, OperationKind.ObjectCreation, OperationKind.Invocation);
+            });
         }
 
         /// <summary>
