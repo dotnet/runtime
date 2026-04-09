@@ -262,13 +262,13 @@ variables:
   # ===========================================
 
   # Browser WASM
-  # Latest: Ubuntu 24.04
+  # Latest: Ubuntu 26.04
   - name: helix_browser_wasm_latest
-    value: (Ubuntu.2404.Amd64)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-webassembly-amd64
+    value: (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64
 
   # Oldest: Ubuntu 22.04
   - name: helix_browser_wasm_oldest
-    value: (Ubuntu.2204.Amd64)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly-amd64
+    value: (Ubuntu.2204.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly-amd64
 
   # ===========================================
   # Android Platforms
