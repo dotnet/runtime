@@ -110,8 +110,8 @@ int main(int argc, char* argv[])
 
     fprintf(stderr, "corerun-wasi: clr_path=%s assembly=%s\n", clr_path, assembly);
 
-    // Build TPA list
-    static char tpa_list[65536];
+    // Build TPA list (large buffer for full framework deployment)
+    static char tpa_list[262144];
     build_tpa_list(clr_path, tpa_list, sizeof(tpa_list));
 
     char app_path[4096];
