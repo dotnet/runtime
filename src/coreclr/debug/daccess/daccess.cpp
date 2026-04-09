@@ -1126,7 +1126,7 @@ SplitName::CdStartField(_In_opt_ PCWSTR fullName,
             status = E_INVALIDARG;
             goto Fail;
         }
-         
+
         if (typeToken == mdTypeDefNil)
         {
             if (!split->FindType(mod->GetMDImport()))
@@ -5492,29 +5492,6 @@ ClrDataAccess::RawGetMethodName(
                 EX_END_CATCH
             }
         }
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-        else
-        if (pStubManager == JumpStubStubManager::g_pManager)
-        {
-            PCODE pTarget = decodeBackToBackJump(TO_TADDR(address));
-
-            HRESULT hr = GetRuntimeNameByAddress(pTarget, flags, bufLen, symbolLen, symbolBuf, NULL);
-            if (SUCCEEDED(hr))
-            {
-                return hr;
-            }
-
-            PCSTR pHelperName = GetJitHelperName(pTarget);
-            if (pHelperName != NULL)
-            {
-                hr = ConvertUtf8(pHelperName, bufLen, symbolLen, symbolBuf);
-                if (FAILED(hr))
-                    return S_FALSE;
-
-                return hr;
-            }
-        }
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
@@ -6651,7 +6628,7 @@ CLRDataCreateInstance(REFIID iid,
 #endif
 
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
-    NonVMComHolder<IUnknown> cdacInterface = nullptr;
+    ReleaseHolder<IUnknown> cdacInterface = nullptr;
 #ifdef CAN_USE_CDAC
     CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
     if (enable.IsSet())
@@ -6667,7 +6644,7 @@ CLRDataCreateInstance(REFIID iid,
                 HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
                 _ASSERTE(SUCCEEDED(qiRes));
                 CDAC& cdac = pClrDataAccess->m_cdac;
-                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pMutableTarget, thisImpl);
+                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.

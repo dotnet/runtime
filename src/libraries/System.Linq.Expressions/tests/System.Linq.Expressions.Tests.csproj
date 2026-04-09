@@ -223,8 +223,8 @@
     <Compile Include="Visitor\VisitorTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs"
-             Link="Common\System\Collections\DictionaryExtensions.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DictionaryPolyfills.cs"
+             Link="Common\Polyfills\DictionaryPolyfills.cs" />
     <Compile Include="ILReader\DynamicMethodILProvider.cs" />
     <Compile Include="ILReader\DynamicScopeTokenResolver.cs" />
     <Compile Include="ILReader\FormatProvider.cs" />

@@ -20,7 +20,6 @@ class FuncPtrStubs;
 #include "ilstubcache.h"
 
 #include "asynccontinuations.h"
-#include "callcounting.h"
 #include "methoddescbackpatchinfo.h"
 #include "crossloaderallocatorhash.h"
 #include "onstackreplacement.h"
@@ -35,6 +34,9 @@ enum LoaderAllocatorType
     LAT_Global,
     LAT_Assembly
 };
+
+class CallCountingManager;
+typedef DPTR(CallCountingManager) PTR_CallCountingManager;
 
 typedef SHash<PtrSetSHashTraits<LoaderAllocator *>> LoaderAllocatorSet;
 

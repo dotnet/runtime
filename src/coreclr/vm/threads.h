@@ -2718,13 +2718,6 @@ private:
     PTR_CONTEXT m_debuggerFilterContext;
 
     //---------------------------------------------------------------
-    // m_profilerFilterContext holds an additional context for the
-    // case when a (sampling) profiler wishes to hijack the thread
-    // and do a stack walk on the same thread.
-    //---------------------------------------------------------------
-    T_CONTEXT *m_pProfilerFilterContext;
-
-    //---------------------------------------------------------------
     // m_hijackLock holds a BOOL that is used for mutual exclusion
     // between profiler stack walks and thread hijacks (bashing
     // return addresses on the stack)
@@ -2742,13 +2735,21 @@ private:
     //---------------------------------------------------------------
     BOOL    m_fInteropDebuggingHijacked;
 
+
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+    //---------------------------------------------------------------
+    // m_profilerFilterContext holds an additional context for the
+    // case when a (sampling) profiler wishes to hijack the thread
+    // and do a stack walk on the same thread.
+    //---------------------------------------------------------------
+    T_CONTEXT *m_pProfilerFilterContext;
+
     //---------------------------------------------------------------
     // Bitmask to remember per-thread state useful for the profiler API.  See
     // COR_PRF_CALLBACKSTATE_* flags in clr\src\inc\ProfilePriv.h for bit values.
     //---------------------------------------------------------------
     DWORD m_profilerCallbackState;
 
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
     //---------------------------------------------------------------
     // m_dwProfilerEvacuationCounters keeps track of how many profiler
     // callback calls remain on the stack
@@ -2756,7 +2757,7 @@ private:
     // Why volatile?
     // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization.
     Volatile<DWORD> m_dwProfilerEvacuationCounters[MAX_NOTIFICATION_PROFILERS + 1];
-#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+#endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
 
 private:
 #ifndef DACCESS_COMPILE
@@ -2825,6 +2826,7 @@ public:
     void SetFilterContext(T_CONTEXT *pContext);
     T_CONTEXT *GetFilterContext(void);
 
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
     void SetProfilerFilterContext(T_CONTEXT *pContext)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2832,7 +2834,6 @@ public:
         m_pProfilerFilterContext = pContext;
     }
 
-#ifdef PROFILING_SUPPORTED
     FORCEINLINE DWORD GetProfilerEvacuationCounter(size_t slot)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2864,7 +2865,6 @@ public:
         _ASSERTE(newValue != (DWORD)-1);
     }
 
-#endif // PROFILING_SUPPORTED
 
     // Used by the profiler API to find which flags have been set on the Thread object,
     // in order to authorize a profiler's call into ICorProfilerInfo(2).
@@ -2896,11 +2896,16 @@ public:
         m_profilerCallbackState |= dwFlags;
         return dwRet;
     }
+#endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
 
     T_CONTEXT *GetProfilerFilterContext(void)
     {
         LIMITED_METHOD_CONTRACT;
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
         return m_pProfilerFilterContext;
+#else
+        return NULL;
+#endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
     }
 
     //-------------------------------------------------------------------------
@@ -3776,11 +3781,15 @@ struct cdac_data<Thread>
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
-    #ifndef TARGET_UNIX
+    static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
+#ifdef PROFILING_SUPPORTED
+    static constexpr size_t ProfilerFilterContext = offsetof(Thread, m_pProfilerFilterContext);
+#endif // PROFILING_SUPPORTED
+#ifndef TARGET_UNIX
     static constexpr size_t TEB = offsetof(Thread, m_pTEB);
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
-    #endif
+#endif
 };
 
 // End of class Thread

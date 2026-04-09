@@ -431,7 +431,7 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
 
     // Need to verify that this is a valid CLR assembly.
     if (!pILImage->CheckILFormat())
-        THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
+        THROW_BAD_FORMAT(BFA_BAD_IL, static_cast<PEImage*>(pILImage));
 
     RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage, true /* excludeAppPaths */);
 }
