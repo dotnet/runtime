@@ -441,6 +441,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     case 2:
                     {
+                        assert(!isRMW);
+
                         HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
                         for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -454,6 +456,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     case 3:
                     {
+                        assert(!isRMW);
+
                         HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
                         for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -469,7 +473,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         assert(isRMW);
 
-                        HWIntrinsicImmOpHelper helper(this, intrin.op4, node);
+                        // emitIns_R_R_R_R_I may emit a mov (when not redundant) for RMW instructions;
+                        // the ImmOpHelper must account for that mov
+                        int                    numInstrs = (targetReg != op1Reg) ? 2 : 1;
+                        HWIntrinsicImmOpHelper helper(this, intrin.op4, node, numInstrs);
 
                         for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                         {
@@ -499,8 +506,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(hasImmediateOperand);
 
-            GenTree*               shiftOp = isRMW ? intrin.op3 : intrin.op2;
-            HWIntrinsicImmOpHelper helper(this, shiftOp, node);
+            GenTree*               shiftOp   = isRMW ? intrin.op3 : intrin.op2;
+            int                    numInstrs = (isRMW && (targetReg != op1Reg)) ? 2 : 1;
+            HWIntrinsicImmOpHelper helper(this, shiftOp, node, numInstrs);
 
             for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
             {
@@ -2119,10 +2127,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, SVE_PATTERN_ALL);
                 break;
 
-            case NI_Sve_CreateWhileLessThanMask8Bit:
-            case NI_Sve_CreateWhileLessThanMask16Bit:
-            case NI_Sve_CreateWhileLessThanMask32Bit:
-            case NI_Sve_CreateWhileLessThanMask64Bit:
+            case NI_Sve_CreateWhileLessThanMaskByte:
+            case NI_Sve_CreateWhileLessThanMaskDouble:
+            case NI_Sve_CreateWhileLessThanMaskInt16:
+            case NI_Sve_CreateWhileLessThanMaskInt32:
+            case NI_Sve_CreateWhileLessThanMaskInt64:
+            case NI_Sve_CreateWhileLessThanMaskSByte:
+            case NI_Sve_CreateWhileLessThanMaskSingle:
+            case NI_Sve_CreateWhileLessThanMaskUInt16:
+            case NI_Sve_CreateWhileLessThanMaskUInt32:
+            case NI_Sve_CreateWhileLessThanMaskUInt64:
             {
                 // Emit size and instruction is based on the scalar operands.
                 var_types auxType = node->GetAuxiliaryType();
@@ -2136,10 +2150,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
-            case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
-            case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
-            case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskByte:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskDouble:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskInt16:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskInt32:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskInt64:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskSByte:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskSingle:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskUInt16:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskUInt32:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskUInt64:
             {
                 // Emit size and instruction is based on the scalar operands.
                 var_types auxType = node->GetAuxiliaryType();

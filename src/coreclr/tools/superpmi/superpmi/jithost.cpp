@@ -114,12 +114,13 @@ bool JitHost::convertStringValueToInt(const char* key, const char* stringValue, 
         return false;
     }
 
-    char*      endPtr;
+    char* endPtr;
+    errno = 0;
     unsigned long longResult = strtoul(stringValue, &endPtr, 16);
-    bool          succeeded  = (errno != ERANGE) && (endPtr != stringValue) && (longResult <= INT_MAX);
+    bool          succeeded  = (errno != ERANGE) && (endPtr != stringValue) && (longResult <= UINT_MAX);
     if (!succeeded)
     {
-        LogWarning("Can't convert int config value from string, key: %ws, string value: %ws\n", key, stringValue);
+        LogWarning("Can't convert int config value from string, key: %s, string value: %s\n", key, stringValue);
         return false;
     }
 

@@ -3082,6 +3082,25 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void TestBindingEmptyArrayToConstructorParameter()
+        {
+            string jsonConfig = """
+                {
+                    "ArrayField": []
+                }
+                """;
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build();
+
+            ClassWithArrayConstructorParameter result = configuration.Get<ClassWithArrayConstructorParameter>();
+
+            Assert.NotNull(result);
+            Assert.Empty(result.ArrayField);
+        }
+
+        [Fact]
         public void TestBindingNestedIEnumerable()
         {
             string jsonConfig1 = """

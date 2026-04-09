@@ -10,6 +10,8 @@ public interface IPlatformAgnosticContext
     public abstract uint Size { get; }
     public abstract uint DefaultContextFlags { get; }
 
+    public int StackPointerRegister { get; }
+
     public TargetPointer StackPointer { get; set; }
     public TargetPointer InstructionPointer { get; set; }
     public TargetPointer FramePointer { get; set; }

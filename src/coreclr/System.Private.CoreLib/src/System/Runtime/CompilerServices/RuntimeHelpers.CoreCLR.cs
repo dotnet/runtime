@@ -411,6 +411,7 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 #endif
+
         [DebuggerHidden]
         [DebuggerStepThrough]
         internal static ref byte GetRawData(this object obj) =>
@@ -1148,6 +1149,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct MethodTableAuxiliaryData
     {
         private uint Flags;
+        private int CachedVersionResilientHashCode;
         private void* LoaderModule;
         private nint ExposedClassObjectRaw;
 

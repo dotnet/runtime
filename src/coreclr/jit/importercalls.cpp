@@ -10779,9 +10779,22 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else
                     {
 #ifdef FEATURE_HW_INTRINSICS
-                        bool isVectorT = strcmp(className, "Vector`1") == 0;
+                        bool isVectorT = false;
+                        bool isVector  = false;
 
-                        if (isVectorT || (strcmp(className, "Vector") == 0))
+                        if (strncmp(className, "Vector", 6) == 0)
+                        {
+                            if (className[6] == '\0')
+                            {
+                                isVector = true;
+                            }
+                            else if (strcmp(className + 6, "`1") == 0)
+                            {
+                                isVectorT = true;
+                            }
+                        }
+
+                        if (isVectorT || isVector)
                         {
                             if (strncmp(methodName, "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector",
                                         60) == 0)
@@ -10797,7 +10810,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             }
 
                             uint32_t size = getVectorTByteLength();
+#ifdef TARGET_ARM64
+                            assert((size == 16) || (size == SIZE_UNKNOWN));
+#else
                             assert((size == 16) || (size == 32) || (size == 64));
+#endif
 
                             const char* lookupClassName = className;
 
@@ -10820,7 +10837,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                     lookupClassName = isVectorT ? "Vector512`1" : "Vector512";
                                     break;
                                 }
-
+#ifdef TARGET_ARM64
+                                case SIZE_UNKNOWN:
+                                {
+                                    // NTD, Vector<T> is implemented directly with SVE in this case.
+                                    break;
+                                }
+#endif
                                 default:
                                 {
                                     unreached();
