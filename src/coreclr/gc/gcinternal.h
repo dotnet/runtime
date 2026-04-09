@@ -2565,7 +2565,27 @@ size_t switch_alignment_size (BOOL already_padded_p)
 #define END_SPACE_AFTER_GC (loh_size_threshold + MAX_STRUCTALIGN)
 #define END_SPACE_AFTER_GC_FL (END_SPACE_AFTER_GC + Align (min_obj_size))
 
-size_t round_up_power2 (size_t size);
+inline
+size_t round_up_power2 (size_t size)
+{
+    // Get the 0-based index of the most-significant bit in size-1.
+    // If the call failed (because size-1 is zero), size must be 1,
+    // so return 1 (because 1 rounds up to itself).
+    DWORD highest_set_bit_index;
+    if (0 ==
+#ifdef HOST_64BIT
+        BitScanReverse64(
+#else
+        BitScanReverse(
+#endif
+            &highest_set_bit_index, size - 1)) { return 1; }
+
+    // The size == 0 case (which would have overflowed to SIZE_MAX when decremented)
+    // is handled below by relying on the fact that highest_set_bit_index is the maximum value
+    // (31 or 63, depending on sizeof(size_t)) and left-shifting a value >= 2 by that
+    // number of bits shifts in zeros from the right, resulting in an output of zero.
+    return static_cast<size_t>(2) << highest_set_bit_index;
+}
 
 inline
 size_t round_down_power2 (size_t size)
@@ -2779,6 +2799,8 @@ uint32_t*& card_table_next (uint32_t* c_table)
     // NOTE: The dac takes a dependency on card_table_info being right before c_table.
     return ((card_table_info*)((uint8_t*)c_table - sizeof (card_table_info)))->next_card_table;
 }
+
+void destroy_card_table (uint32_t* c_table);
 
 #define new_start() {if (ppstop <= start) {break;} else {parm = start}}
 #define ignore_start 0
@@ -3433,6 +3455,7 @@ ptrdiff_t ComputeStructAlignPad (uint8_t* plug, int requiredAlignment, size_t al
     return StructAlign (plug, requiredAlignment, alignmentOffset) - plug;
 }
 
+inline
 BOOL IsStructAligned (uint8_t *ptr, int requiredAlignment)
 {
     return StructAlign (ptr, requiredAlignment) == ptr;

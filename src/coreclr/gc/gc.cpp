@@ -215,28 +215,6 @@ double gc_heap::bgc_tuning::ratio_correction_step = 0.0;
 int gc_heap::saved_bgc_tuning_reason = -1;
 #endif //BGC_SERVO_TUNING
 
-inline
-size_t round_up_power2 (size_t size)
-{
-    // Get the 0-based index of the most-significant bit in size-1.
-    // If the call failed (because size-1 is zero), size must be 1,
-    // so return 1 (because 1 rounds up to itself).
-    DWORD highest_set_bit_index;
-    if (0 ==
-#ifdef HOST_64BIT
-        BitScanReverse64(
-#else
-        BitScanReverse(
-#endif
-            &highest_set_bit_index, size - 1)) { return 1; }
-
-    // The size == 0 case (which would have overflowed to SIZE_MAX when decremented)
-    // is handled below by relying on the fact that highest_set_bit_index is the maximum value
-    // (31 or 63, depending on sizeof(size_t)) and left-shifting a value >= 2 by that
-    // number of bits shifts in zeros from the right, resulting in an output of zero.
-    return static_cast<size_t>(2) << highest_set_bit_index;
-}
-
 #ifdef BACKGROUND_GC
 uint32_t bgc_alloc_spin_count = 140;
 uint32_t bgc_alloc_spin = 2;
@@ -567,12 +545,6 @@ const size_t min_segment_size_hard_limit = 1024*1024*16;
 const size_t min_segment_size_hard_limit = 1024*1024*4;
 #endif //HOST_64BIT
 
-#ifndef HOST_64BIT
-// Max size of heap hard limit (2^31) to be able to be aligned and rounded up on power of 2 and not overflow
-const size_t max_heap_hard_limit = (size_t)2 * (size_t)1024 * (size_t)1024 * (size_t)1024;
-#endif //!HOST_64BIT
-
-
 extern const size_t etw_allocation_tick = 100*1024;
 
 extern const size_t low_latency_alloc = 256*1024;
@@ -684,17 +656,6 @@ HRESULT AllocateCFinalize(CFinalize **pCFinalize);
 
 uint8_t* tree_search (uint8_t* tree, uint8_t* old_address);
 
-
-#ifdef USE_INTROSORT
-#define _sort introsort::sort
-#elif defined(USE_VXSORT)
-// in this case we have do_vxsort which takes an additional range that
-// all items to be sorted are contained in
-// so do not #define _sort
-#else //USE_INTROSORT
-#define _sort qsort1
-void qsort1(uint8_t** low, uint8_t** high, unsigned int depth);
-#endif //USE_INTROSORT
 
 /* per heap static initialization */
 #if defined(BACKGROUND_GC) && !defined(MULTIPLE_HEAPS)
@@ -2779,8 +2740,6 @@ void own_card_table (uint32_t* c_table)
 {
     card_table_refcount (c_table) += 1;
 }
-
-void destroy_card_table (uint32_t* c_table);
 
 void delete_next_card_table (uint32_t* c_table)
 {

@@ -3312,6 +3312,17 @@ inline void save_allocated(heap_segment* seg)
     }
 }
 
+#ifdef USE_INTROSORT
+#define _sort introsort::sort
+#elif defined(USE_VXSORT)
+// in this case we have do_vxsort which takes an additional range that
+// all items to be sorted are contained in
+// so do not #define _sort
+#else //USE_INTROSORT
+#define _sort qsort1
+void qsort1(uint8_t** low, uint8_t** high, unsigned int depth);
+#endif //USE_INTROSORT
+
 void gc_heap::plan_phase (int condemned_gen_number)
 {
     size_t old_gen2_allocated = 0;
