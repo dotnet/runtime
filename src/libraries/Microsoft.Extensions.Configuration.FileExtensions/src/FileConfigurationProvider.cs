@@ -86,7 +86,8 @@ namespace Microsoft.Extensions.Configuration
             {
                 stream = OpenRead(file);
             }
-            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) {
+            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+            {
                 // assuming file was deleted in meantime, we already checked existence at the begining once
                 HandleLoadingNonExisting(reload, file);
                 return;
@@ -191,7 +192,8 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        private void ClearData() {
+        private void ClearData()
+        {
             Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         }
 
