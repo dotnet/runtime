@@ -713,17 +713,14 @@ void WasmRegAlloc::CollectReference(GenTree* node)
     PerFuncletData* const data = m_perFuncletData[m_currentFunclet];
     VirtualRegReferences* refs = data->m_virtualRegRefs;
 
-    // We may make multiple consecutive collection calls for the same node.
+    // We may make multiple collection calls for the same node.
     // We only want to collect it once.
     //
-    if (data->m_lastVirtualRegRefsCount > 0)
+    if ((node->gtLIRFlags & LIR::Flags::Collected) != 0)
     {
-        assert(refs != nullptr);
-        if (node == refs->Nodes[data->m_lastVirtualRegRefsCount - 1])
-        {
-            return;
-        }
+        return;
     }
+    node->gtLIRFlags |= LIR::Flags::Collected;
 
     if (refs == nullptr)
     {
@@ -819,6 +816,8 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 //
 regNumber WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
 {
+    JITDUMP("Requesting internal %s register for [%06u]\n", varTypeName(type), Compiler::dspTreeID(node));
+
     regNumber reg = AllocateTemporaryRegister(type);
     m_codeGen->internalRegisters.Add(node, reg);
     CollectReference(node);

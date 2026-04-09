@@ -44,6 +44,7 @@ public:
 #ifdef TARGET_WASM
             MultiplyUsed = 0x08, // Set by lowering on nodes that the RA should allocate into
                                  // a dedicated register (WASM local), for multiple uses.
+            Collected = 0x10,    // Set by the RA on nodes that have had their references collected.
 #endif                           // TARGET_WASM
         };
     };
