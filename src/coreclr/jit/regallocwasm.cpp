@@ -716,11 +716,14 @@ void WasmRegAlloc::CollectReference(GenTree* node)
     // We may make multiple collection calls for the same node.
     // We only want to collect it once.
     //
-    if ((node->gtLIRFlags & LIR::Flags::Collected) != 0)
+    if (data->m_lastVirtualRegRefsCount > 0)
     {
-        return;
+        assert(refs != nullptr);
+        if (node == refs->Nodes[data->m_lastVirtualRegRefsCount - 1])
+        {
+            return;
+        }
     }
-    node->gtLIRFlags |= LIR::Flags::Collected;
 
     if (refs == nullptr)
     {
@@ -774,6 +777,8 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
     regNumber reg = AllocateTemporaryRegister(node->TypeGet());
     assert((node->GetRegNum() == REG_NA) && "Trying to double-assign a temporary register");
     node->SetRegNum(reg);
+
+    CollectReference(node);
 }
 
 //------------------------------------------------------------------------
@@ -796,7 +801,6 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 
     regNumber reg = ReleaseTemporaryRegister(genActualType(operand));
     assert((reg == operand->GetRegNum()) && "Temporary reg being consumed out of order");
-    CollectReference(operand);
 
     operand->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
     JITDUMP("Consumed a temporary reg for [%06u]: %s\n", Compiler::dspTreeID(operand), reason);
