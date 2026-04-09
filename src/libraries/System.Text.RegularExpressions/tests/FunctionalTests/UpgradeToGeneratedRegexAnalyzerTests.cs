@@ -1048,7 +1048,7 @@ public class Program
         }
 
         [Fact]
-        public async Task AnayzerSupportsMultipleDiagnostics()
+        public async Task AnalyzerSupportsMultipleDiagnostics()
         {
             // The first diagnostic is a method-body call, so FixAll for CreateGeneratedRegexProperty
             // runs first on the original document. The field (between the two method calls in source
