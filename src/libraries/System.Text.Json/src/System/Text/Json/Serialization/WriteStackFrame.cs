@@ -24,16 +24,9 @@ namespace System.Text.Json
         public IAsyncDisposable? AsyncDisposable;
 
         /// <summary>
-        /// The current stackframe has suspended serialization due to a pending task,
-        /// stored in the <see cref="WriteStack.PendingTask"/> property.
+        /// The state of the async enumerator for the current stack frame.
         /// </summary>
-        public bool AsyncEnumeratorIsPendingCompletion;
-
-        /// <summary>
-        /// The current stackframe has suspended serialization due to a pending DisposeAsync() task,
-        /// stored in the <see cref="WriteStack.PendingTask"/> property.
-        /// </summary>
-        public bool AsyncEnumeratorIsPendingDisposal;
+        public AsyncEnumeratorState AsyncEnumeratorState;
 
         /// <summary>
         /// The original JsonPropertyInfo that is not changed. It contains all properties.
