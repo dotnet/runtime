@@ -282,7 +282,11 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        private static bool IsNotNanoServerAndRemoteExecutorSupported =>
+            PlatformDetection.IsNotWindowsNanoServer &&
+            RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(typeof(ProcessTests), nameof(IsNotNanoServerAndRemoteExecutorSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void StartDetached_GrandchildSurvivesSignalingParent(bool enable)
@@ -334,7 +338,7 @@ namespace System.Diagnostics.Tests
                 Assert.True(int.TryParse(pidLine, out grandchildPid), $"Could not parse grandchild PID from: '{pidLine}'");
 
                 // Kill the child's entire process group
-                SendSignal(PosixSignal.SIGQUIT, childHandle.Process, entireProcessGroup: true);
+                SendSignal(OperatingSystem.IsWindows() ? PosixSignal.SIGQUIT : PosixSignal.SIGKILL, childHandle.Process, entireProcessGroup: true);
 
                 Assert.True(childHandle.Process.WaitForExit(WaitInMS));
             }

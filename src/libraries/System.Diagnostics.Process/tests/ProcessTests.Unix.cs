@@ -1055,10 +1055,8 @@ namespace System.Diagnostics.Tests
         {
             if (entireProcessGroup)
             {
-                // SIGKILL cannot be caught or ignored, ensuring reliable process-group termination
-                // even in environments where other signals like SIGQUIT may be set to SIG_IGN.
-                const int SIGKILL = 9;
-                Assert.Equal(0, Interop.Sys.Kill(-process.Id, SIGKILL));
+                int signalNumber = Interop.Sys.GetPlatformSignalNumber(signal);
+                Assert.Equal(0, Interop.Sys.Kill(-process.Id, signalNumber));
             }
             else
             {
