@@ -366,13 +366,7 @@ TypeHandle OleVariant::GetArrayForVarType(VARTYPE vt, TypeHandle elemType, unsig
         switch (vt)
         {
         case VT_BOOL:
-        case VTHACK_WINBOOL:
-        case VTHACK_CBOOL:
             baseElement = ELEMENT_TYPE_BOOLEAN;
-            break;
-
-        case VTHACK_ANSICHAR:
-            baseElement = ELEMENT_TYPE_CHAR;
             break;
 
         case VT_UI1:
@@ -621,26 +615,12 @@ UINT OleVariant::GetElementSizeForVarType(VARTYPE vt, MethodTable *pInterfaceMT)
         sizeof(LPWSTR),         // VT_LPWSTR
     };
 
-    // Special cases
-    switch (vt)
-    {
-        case VTHACK_WINBOOL:
-            return sizeof(BOOL);
-            break;
-        case VTHACK_ANSICHAR:
-            return GetMaxDBCSCharByteSize();  // Multi byte characters.
-            break;
-        case VTHACK_CBOOL:
-            return sizeof(BYTE);
-        default:
-            break;
-    }
 
     // VT_ARRAY indicates a safe array which is always sizeof(SAFEARRAY *).
     if (vt & VT_ARRAY)
         return sizeof(SAFEARRAY*);
 
-    if (vt == VTHACK_NONBLITTABLERECORD || vt == VTHACK_BLITTABLERECORD || vt == VT_RECORD)
+    if (vt == VT_RECORD)
     {
         _ASSERTE(pInterfaceMT != NULL);
         return pInterfaceMT->GetNativeSize();
@@ -677,12 +657,8 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
             return CoreLibBinder::GetClass(CLASS__DOUBLE);
         case VT_CY:
             return CoreLibBinder::GetClass(CLASS__CURRENCY);
-        case VTHACK_WINBOOL:
-            return CoreLibBinder::GetClass(CLASS__INT32);
         case VT_BOOL:
             return CoreLibBinder::GetClass(CLASS__INT16);
-        case VTHACK_CBOOL:
-            return CoreLibBinder::GetClass(CLASS__BYTE);
         case VT_DISPATCH:
         case VT_UNKNOWN:
         case VT_LPSTR:
@@ -694,8 +670,6 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
             return CoreLibBinder::GetClass(CLASS__INTPTR);
         case VT_VARIANT:
             return CoreLibBinder::GetClass(CLASS__COMVARIANT);
-        case VTHACK_ANSICHAR:
-            return CoreLibBinder::GetClass(CLASS__BYTE);
         case VT_UI2:
             // When CharSet = CharSet.Unicode, System.Char arrays are marshaled as VT_UI2.
             // However, since System.Char itself is CharSet.Ansi, the native size of
@@ -797,37 +771,6 @@ VariantArray:
         );
 
 #endif // FEATURE_COMINTEROP
-
-    case VTHACK_NONBLITTABLERECORD:
-        RETURN_MARSHALER(
-            MarshalNonBlittableRecordArrayOleToCom,
-            MarshalNonBlittableRecordArrayComToOle,
-            ClearNonBlittableRecordArray
-        );
-
-    case VTHACK_BLITTABLERECORD:
-        RETURN NULL; // Requires no marshaling
-
-    case VTHACK_WINBOOL:
-        RETURN_MARSHALER(
-            MarshalWinBoolArrayOleToCom,
-            MarshalWinBoolArrayComToOle,
-            NULL
-        );
-
-    case VTHACK_CBOOL:
-        RETURN_MARSHALER(
-            MarshalCBoolArrayOleToCom,
-            MarshalCBoolArrayComToOle,
-            NULL
-        );
-
-    case VTHACK_ANSICHAR:
-        RETURN_MARSHALER(
-            MarshalAnsiCharArrayOleToCom,
-            MarshalAnsiCharArrayComToOle,
-            NULL
-        );
 
     case VT_LPSTR:
         RETURN_MARSHALER(

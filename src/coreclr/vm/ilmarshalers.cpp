@@ -3841,9 +3841,14 @@ void ILMngdMarshaler::EmitCallMngdMarshalerMethod(ILCodeStream* pslILEmit, Metho
 
 bool ILNativeArrayMarshaler::CanMarshalViaPinning()
 {
-    // We can't pin an array if we have a marshaler for the var type
-    // or if we can't get a method-table representing the array (how we determine the offset to pin).
-    return IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && (NULL != m_pargs->na.m_pArrayMT) && (NULL == OleVariant::GetMarshalerForVarType(m_pargs->na.m_vt, TRUE));
+    // We can't pin an array if we have a non-default element native type (e.g. ANSICHAR, WINBOOL, CBOOL),
+    // if we have a marshaler for the var type, or if we can't get a method-table representing the array.
+    CREATE_MARSHALER_CARRAY_OPERANDS mops;
+    m_pargs->m_pMarshalInfo->GetMops(&mops);
+
+    return IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && (NULL != m_pargs->na.m_pArrayMT)
+        && mops.elementNativeType == NATIVE_TYPE_DEFAULT
+        && (NULL == OleVariant::GetMarshalerForVarType(m_pargs->na.m_vt, TRUE));
 }
 
 void ILNativeArrayMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
@@ -4233,6 +4238,40 @@ MethodTable* ILArrayMarshalerBase::GetMarshalerMT()
     MethodTable* pBestFitMT = bestFit ? pEnabledMT : pDisabledMT;
     MethodTable* pThrowOnUnmappableMT = throwOnUnmappable ? pEnabledMT : pDisabledMT;
 
+    // Handle non-VARTYPE marshalers identified by CorNativeType.
+    CorNativeType nt = mops.elementNativeType;
+    if (nt != NATIVE_TYPE_DEFAULT)
+    {
+        switch (nt)
+        {
+        case NATIVE_TYPE_BOOLEAN:
+        {
+            _ASSERTE(m_pargs->m_pMarshalInfo->GetArrayElementTypeHandle() == TypeHandle(CoreLibBinder::GetClass(CLASS__BOOLEAN)));
+            TypeHandle thInt32 = CoreLibBinder::GetClass(CLASS__INT32);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BOOL_MARSHALER)).Instantiate(Instantiation(&thInt32, 1)).AsMethodTable();
+        }
+
+        case NATIVE_TYPE_I1:
+        {
+            _ASSERTE(m_pargs->m_pMarshalInfo->GetArrayElementTypeHandle() == TypeHandle(CoreLibBinder::GetClass(CLASS__BOOLEAN)));
+            TypeHandle thByte = CoreLibBinder::GetClass(CLASS__BYTE);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BOOL_MARSHALER)).Instantiate(Instantiation(&thByte, 1)).AsMethodTable();
+        }
+
+        case NATIVE_TYPE_U1:
+        {
+            _ASSERTE(m_pargs->m_pMarshalInfo->GetArrayElementTypeHandle() == TypeHandle(CoreLibBinder::GetClass(CLASS__CHAR)));
+            TypeHandle thArgs[2] = { TypeHandle(pBestFitMT), TypeHandle(pThrowOnUnmappableMT) };
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__ANSICHAR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
+        }
+
+        default:
+            _ASSERTE(!"Unsupported CorNativeType for ILArrayMarshalerBase");
+            COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
+            return NULL;
+        }
+    }
+
     switch (vt)
     {
     case VT_I1:
@@ -4307,26 +4346,8 @@ MethodTable* ILArrayMarshalerBase::GetMarshalerMT()
     case VT_BOOL:
         return CoreLibBinder::GetClass(CLASS__VARIANT_BOOL_MARSHALER);
 
-    case VTHACK_WINBOOL:
-    {
-        TypeHandle thInt32 = CoreLibBinder::GetClass(CLASS__INT32);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__BOOL_MARSHALER)).Instantiate(Instantiation(&thInt32, 1)).AsMethodTable();
-    }
-
-    case VTHACK_CBOOL:
-    {
-        TypeHandle thByte = CoreLibBinder::GetClass(CLASS__BYTE);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__BOOL_MARSHALER)).Instantiate(Instantiation(&thByte, 1)).AsMethodTable();
-    }
-
     case VT_DATE:
         return CoreLibBinder::GetClass(CLASS__DATEMARSHALER);
-
-    case VTHACK_ANSICHAR:
-    {
-        TypeHandle thArgs[2] = { TypeHandle(pBestFitMT), TypeHandle(pThrowOnUnmappableMT) };
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__ANSICHAR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
-    }
 
     case VT_LPWSTR:
         return CoreLibBinder::GetClass(CLASS__LPWSTR_MARSHALER);
@@ -4363,8 +4384,6 @@ MethodTable* ILArrayMarshalerBase::GetMarshalerMT()
         return CoreLibBinder::GetClass(CLASS__VARIANT_ARRAY_ELEMENT_MARSHALER);
 #endif // FEATURE_COMINTEROP
 
-    case VTHACK_NONBLITTABLERECORD:
-    case VTHACK_BLITTABLERECORD:
     case VT_RECORD:
     {
         TypeHandle thElement(mops.methodTable);

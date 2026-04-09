@@ -4,25 +4,8 @@
 // File: OleVariant.h
 //
 
-//
-
-
 #ifndef _H_OLEVARIANT_
 #define _H_OLEVARIANT_
-
-
-// The COM interop native array marshaler is built on top of VT_* types.
-// The P/Invoke marshaler supports marshaling to WINBOOL's and ANSICHAR's.
-// This is an annoying workaround to shoehorn these non-OleAut types into
-// the COM interop marshaler.
-#define VTHACK_INSPECTABLE     247
-#define VTHACK_HSTRING         248
-#define VTHACK_CBOOL           250
-#define VTHACK_NONBLITTABLERECORD 251
-#define VTHACK_BLITTABLERECORD 252
-#define VTHACK_ANSICHAR        253
-#define VTHACK_WINBOOL         254
-
 
 class OleVariant
 {
