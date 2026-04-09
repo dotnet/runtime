@@ -3268,24 +3268,16 @@ protected:
     const BinderMethodID m_idClearManaged;
 };
 
-class ILNativeArrayMarshaler : public ILMngdMarshaler
+class ILNativeArrayMarshaler : public ILMarshaler
 {
 public:
     enum
     {
         c_fInOnly               = FALSE,
+        c_nativeSize            = TARGET_POINTER_SIZE,
     };
 
-    ILNativeArrayMarshaler() :
-        ILMngdMarshaler(
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CONVERT_SPACE_TO_MANAGED,
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_MANAGED,
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CONVERT_SPACE_TO_NATIVE,
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_NATIVE,
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CLEAR_NATIVE,
-            METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CLEAR_NATIVE_CONTENTS,
-            METHOD__NIL
-            )
+    ILNativeArrayMarshaler()
     {
         LIMITED_METHOD_CONTRACT;
         m_dwSavedSizeArg = LOCAL_NUM_UNUSED;
@@ -3295,30 +3287,54 @@ public:
 
     void EmitMarshalViaPinning(ILCodeStream* pslILEmit) override;
     void EmitSetupArgumentForMarshalling(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
     void EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit) override;
     void EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitClearNative(ILCodeStream* pslILEmit) override;
     void EmitClearNativeContents(ILCodeStream* pslILEmit) override;
+
+    bool NeedsClearNative() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return true;
+    }
 
     bool SupportsFieldMarshal(UINT* pErrorResID) override
     {
         LIMITED_METHOD_CONTRACT;
         return false;
     }
+
 protected:
+    LocalDesc GetNativeType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_I);
+    }
+
+    LocalDesc GetManagedType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_OBJECT);
+    }
 
     BOOL CheckSizeParamIndexArg(const CREATE_MARSHALER_CARRAY_OPERANDS &mops, CorElementType *pElementType);
 
     // Calculate element count and load it on evaluation stack
     void EmitLoadElementCount(ILCodeStream* pslILEmit);
 
-    void EmitCreateMngdMarshaler(ILCodeStream* pslILEmit) override;
-
     void EmitLoadNativeSize(ILCodeStream* pslILEmit);
     void EmitNewSavedSizeArgLocal(ILCodeStream* pslILEmit);
 
-private :
     DWORD m_dwSavedSizeArg;
+
+private:
+    // Resolve the managed marshaler MethodTable for the given VT/element type.
+    MethodTable* GetMarshalerMT();
+
+    // Instantiate one of the generic StubHelpers array methods with the element type and marshaler type.
+    MethodDesc* GetInstantiatedArrayMethod(BinderMethodID methodId);
 };
 
 struct MngdNativeArrayMarshaler

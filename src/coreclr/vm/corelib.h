@@ -1076,6 +1076,13 @@ DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_UNMA
 DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_MANAGED,   NonBlittableStructureArrayConvertToManaged, NoSig)
 DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_FREE,                 NonBlittableStructureArrayFree, NoSig)
 
+DEFINE_METHOD(STUBHELPERS,          CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, ConvertArrayContentsToUnmanaged, NoSig)
+DEFINE_METHOD(STUBHELPERS,          CONVERT_ARRAY_CONTENTS_TO_MANAGED,   ConvertArrayContentsToManaged,   NoSig)
+DEFINE_METHOD(STUBHELPERS,          FREE_ARRAY_CONTENTS,                 FreeArrayContents,               NoSig)
+DEFINE_METHOD(STUBHELPERS,          CONVERT_ARRAY_SPACE_TO_NATIVE,       ConvertArraySpaceToNative,       NoSig)
+DEFINE_METHOD(STUBHELPERS,          CONVERT_ARRAY_SPACE_TO_MANAGED,      ConvertArraySpaceToManaged,      NoSig)
+DEFINE_METHOD(STUBHELPERS,          CLEAR_ARRAY_NATIVE,                  ClearArrayNative,                NoSig)
+
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(IDISPATCHHELPERS,      Interop,                IDispatchHelpers)
 DEFINE_METHOD(IDISPATCHHELPERS,     GET_DISPATCH_EX_PROPERTY_FLAGS, GetDispatchExPropertyFlags, SM_PtrPropertyInfo_PtrException_RetInt)
@@ -1249,6 +1256,21 @@ DEFINE_METHOD(BOXEDLAYOUTTYPE_MARSHALER, CONVERT_TO_UNMANAGED,      ConvertToUnm
 DEFINE_METHOD(BOXEDLAYOUTTYPE_MARSHALER, FREE,                      Free,                   NoSig)
 
 DEFINE_CLASS(COMVARIANT,            Marshalling,            ComVariant)
+
+DEFINE_CLASS(VARIANT_BOOL_MARSHALER, StubHelpers,            VariantBoolMarshaler)
+DEFINE_CLASS(BOOL_MARSHALER,        StubHelpers,            BoolMarshaler`1)
+DEFINE_CLASS(LPWSTR_MARSHALER,      StubHelpers,            LPWSTRMarshaler)
+DEFINE_CLASS(ANSICHAR_ARRAY_ELEMENT_MARSHALER, StubHelpers,  AnsiCharArrayElementMarshaler`2)
+DEFINE_CLASS(LPSTR_ARRAY_ELEMENT_MARSHALER,    StubHelpers,  LPSTRArrayElementMarshaler`2)
+#ifdef FEATURE_COMINTEROP
+DEFINE_CLASS(CURRENCY_ARRAY_ELEMENT_MARSHALER, StubHelpers,  CurrencyArrayElementMarshaler)
+DEFINE_CLASS(BSTR_ARRAY_ELEMENT_MARSHALER,     StubHelpers,  BSTRArrayElementMarshaler)
+DEFINE_CLASS(INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, InterfaceArrayElementMarshaler`1)
+DEFINE_CLASS(TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, TypedInterfaceArrayElementMarshaler`1)
+DEFINE_CLASS(VARIANT_ARRAY_ELEMENT_MARSHALER,  StubHelpers,  VariantArrayElementMarshaler)
+#endif // FEATURE_COMINTEROP
+DEFINE_CLASS(MARSHALER_OPTION_ENABLED,  StubHelpers,         IMarshalerOption+EnabledOption)
+DEFINE_CLASS(MARSHALER_OPTION_DISABLED, StubHelpers,         IMarshalerOption+DisabledOption)
 
 DEFINE_CLASS(SZARRAYHELPER,         System,                        SZArrayHelper)
 // Note: The order of methods here has to match order they are implemented on the interfaces in
