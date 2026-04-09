@@ -129,8 +129,12 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Depending on Optional flag and reload mode, triggers exception about missing file.
+        /// Handles a missing configuration file during the initial load or a reload.
         /// </summary>
+        /// <param name="reload"><see langword="true"/> when the provider is reloading after a change notification;
+        /// <see langword="false"/> when loading for first time.</param>
+        /// <param name="file">The file information returned by the <see cref="FileConfigurationSource.FileProvider"/>,
+        /// or <see langword="null"/> if no file information is available.</param>
         private void HandleLoadingNonExisting(bool reload, IFileInfo? file)
         {
             if (Source.Optional || reload) // Always optional on reload
