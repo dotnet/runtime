@@ -583,18 +583,6 @@ namespace System.Text.RegularExpressions.Tests
                         }
                     };
 
-                    // ExpressionConditional with only a yes-branch (no no-branch) inside a loop (resumeAt = 2 pass-through path)
-                    yield return new object[]
-                    {
-                        engine, @"(?((?'-1'))(?'1'.)+)+(?!(?'-1'))", "abc", RegexOptions.None, new[]
-                        {
-                            new CaptureData("", 0, 0),
-                            new CaptureData("", 1, 0),
-                            new CaptureData("", 2, 0),
-                            new CaptureData("", 3, 0),
-                        }
-                    };
-
                     // Yes-only expression conditional with prefix capture feeding the condition, inside a loop
                     yield return new object[]
                     {
@@ -637,6 +625,18 @@ namespace System.Text.RegularExpressions.Tests
                         engine, @"anyexpress1(?<=(.(any express|(any express)*)+?)anyexpress1)", "anystring anyexpress1", RegexOptions.None, new[]
                         {
                             new CaptureData("anyexpress1", 10, 11),
+                        }
+                    };
+
+                    // ExpressionConditional with only a yes-branch (no no-branch) inside a loop (empty matches differ on .NET Framework)
+                    yield return new object[]
+                    {
+                        engine, @"(?((?'-1'))(?'1'.)+)+(?!(?'-1'))", "abc", RegexOptions.None, new[]
+                        {
+                            new CaptureData("", 0, 0),
+                            new CaptureData("", 1, 0),
+                            new CaptureData("", 2, 0),
+                            new CaptureData("", 3, 0),
                         }
                     };
                 }
