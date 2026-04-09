@@ -187,15 +187,12 @@ public:
     //      caller wants information about a specific frame.
     // CONTEXT* pContext:  A pointer to a CONTEXT structure.  Can be null,
     //      we use our temp context.
-    // bool suppressUMChainFromCLRToCOMMethodFrameGeneric - A ridiculous flag that is trying to narrowly
-    //      target a fix for issue 650903.
     // StackTraceTicket - ticket ensuring that we have permission to call this.
     void GetStackInfo(
         StackTraceTicket ticket,
         Thread *thread,
         FramePointer targetFP,
-        CONTEXT *pContext,
-        bool suppressUMChainFromCLRToCOMMethodFrameGeneric = false
+        CONTEXT *pContext
         );
 
     //bool ControllerStackInfo::HasReturnFrame()  Returns
@@ -217,11 +214,6 @@ private:
     bool                    m_activeFound;
     bool                    m_returnFound;
     FrameInfo               m_returnFrame;
-
-    // A ridiculous flag that is targeting a very narrow fix at issue 650903
-    // (4.5.1/Blue).  This is set for the duration of a stackwalk designed to
-    // help us "Step Out" to a managed frame (i.e., managed-only debugging).
-    bool                    m_suppressUMChainFromCLRToCOMMethodFrameGeneric;
 
     // Track if this stackwalk actually happened.
     // This is used by the StackTraceTicket(ControllerStackInfo * info) ticket.

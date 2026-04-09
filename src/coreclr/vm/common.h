@@ -295,6 +295,7 @@ namespace Loader
 #include "threads.h"
 #include "clrex.inl"
 #include "loaderallocator.hpp"
+#include "callcounting.h"
 #include "appdomain.hpp"
 #include "appdomain.inl"
 #include "assembly.hpp"

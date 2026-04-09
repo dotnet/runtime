@@ -2,91 +2,201 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
         internal static unsafe int ForkAndExecProcess(
-            string filename, string[] argv, string[] envp, string? cwd,
-            bool redirectStdin, bool redirectStdout, bool redirectStderr,
+            string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
-            out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd, bool shouldThrow = true)
+            out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd,
+            SafeHandle[]? inheritedHandles = null)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
+
+            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
+            int inheritedRefsAdded = 0;
             try
             {
-                AllocNullTerminatedArray(argv, ref argvPtr);
-                AllocNullTerminatedArray(envp, ref envpPtr);
+                int stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
+
+                if (stdinFd is not null)
+                {
+                    stdinFd.DangerousAddRef(ref stdinRefAdded);
+                    stdinRawFd = stdinFd.DangerousGetHandle().ToInt32();
+                }
+
+                if (stdoutFd is not null)
+                {
+                    stdoutFd.DangerousAddRef(ref stdoutRefAdded);
+                    stdoutRawFd = stdoutFd.DangerousGetHandle().ToInt32();
+                }
+
+                if (stderrFd is not null)
+                {
+                    stderrFd.DangerousAddRef(ref stderrRefAdded);
+                    stderrRawFd = stderrFd.DangerousGetHandle().ToInt32();
+                }
+
+                // inheritedFdCount == -1 means no restriction; >= 0 means restrict to stdio + list
+                int inheritedFdCount = -1;
+                scoped Span<int> inheritedFds = default;
+
+                if (inheritedHandles is not null)
+                {
+                    inheritedFdCount = inheritedHandles.Length;
+                    inheritedFds = inheritedHandles.Length <= 4
+                        ? stackalloc int[4]
+                        : new int[inheritedFdCount];
+
+                    bool ignore = false;
+                    for (int i = 0; i < inheritedHandles.Length; i++)
+                    {
+                        SafeHandle handle = inheritedHandles[i];
+                        handle.DangerousAddRef(ref ignore);
+                        inheritedRefsAdded++;
+                        inheritedFds[i] = (int)handle.DangerousGetHandle();
+                    }
+                }
+
+                AllocArgvArray(argv, ref argvPtr);
+                AllocEnvpArray(env, ref envpPtr);
                 fixed (uint* pGroups = groups)
+                fixed (int* pInheritedFds = inheritedFds)
                 {
                     result = ForkAndExecProcess(
                         filename, argvPtr, envpPtr, cwd,
-                        redirectStdin ? 1 : 0, redirectStdout ? 1 : 0, redirectStderr ? 1 : 0,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
-                        out lpChildPid, out stdinFd, out stdoutFd, out stderrFd);
+                        out lpChildPid, stdinRawFd, stdoutRawFd, stderrRawFd,
+                        pInheritedFds, inheritedFdCount);
                 }
                 return result == 0 ? 0 : Marshal.GetLastPInvokeError();
             }
             finally
             {
-                FreeArray(envpPtr, envp.Length);
-                FreeArray(argvPtr, argv.Length);
+                NativeMemory.Free(envpPtr);
+                NativeMemory.Free(argvPtr);
+
+                if (stdinRefAdded)
+                    stdinFd!.DangerousRelease();
+                if (stdoutRefAdded)
+                    stdoutFd!.DangerousRelease();
+                if (stderrRefAdded)
+                    stderrFd!.DangerousRelease();
+
+                // Only release the handles that were successfully AddRef'd
+                for (int i = 0; i < inheritedRefsAdded; i++)
+                {
+                    inheritedHandles![i].DangerousRelease();
+                }
             }
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ForkAndExecProcess", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static unsafe partial int ForkAndExecProcess(
             string filename, byte** argv, byte** envp, string? cwd,
-            int redirectStdin, int redirectStdout, int redirectStderr,
             int setUser, uint userId, uint groupId, uint* groups, int groupsLength,
-            out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd);
+            out int lpChildPid, int stdinFd, int stdoutFd, int stderrFd,
+            int* inheritedFds, int inheritedFdCount);
 
-        private static unsafe void AllocNullTerminatedArray(string[] arr, ref byte** arrPtr)
+        /// <summary>
+        /// Allocates a single native memory block containing both a null-terminated pointer array
+        /// and the UTF-8 encoded string data for the given array of strings.
+        /// </summary>
+        private static unsafe void AllocArgvArray(string[] arr, ref byte** arrPtr)
         {
-            nuint arrLength = (nuint)arr.Length + 1; // +1 is for null termination
+            int count = arr.Length;
 
-            // Allocate the unmanaged array to hold each string pointer.
-            // It needs to have an extra element to null terminate the array.
-            // Zero the memory so that if any of the individual string allocations fails,
-            // we can loop through the array to free any that succeeded.
-            // The last element will remain null.
-            arrPtr = (byte**)NativeMemory.AllocZeroed(arrLength, (nuint)sizeof(byte*));
-
-            // Now copy each string to unmanaged memory referenced from the array.
-            // We need the data to be an unmanaged, null-terminated array of UTF8-encoded bytes.
-            for (int i = 0; i < arr.Length; i++)
+            // First pass: compute total byte length of all strings.
+            int dataByteLength = 0;
+            foreach (string str in arr)
             {
-                string str = arr[i];
-
-                int byteLength = Encoding.UTF8.GetByteCount(str);
-                arrPtr[i] = (byte*)NativeMemory.Alloc((nuint)byteLength + 1); //+1 for null termination
-
-                int bytesWritten = Encoding.UTF8.GetBytes(str, new Span<byte>(arrPtr[i], byteLength));
-                Debug.Assert(bytesWritten == byteLength);
-
-                arrPtr[i][bytesWritten] = (byte)'\0'; // null terminate
+                dataByteLength = checked(dataByteLength + Encoding.UTF8.GetByteCount(str) + 1); // +1 for null terminator
             }
+
+            // Allocate a single block: pointer array (count + 1 for null terminator) followed by string data.
+            nuint pointersByteLength = checked((nuint)(count + 1) * (nuint)sizeof(byte*));
+            byte* block = (byte*)NativeMemory.Alloc(checked(pointersByteLength + (nuint)dataByteLength));
+            arrPtr = (byte**)block;
+
+            // Create spans over both portions of the block for bounds-checked access.
+            byte* dataPtr = block + pointersByteLength;
+            Span<nint> pointers = new Span<nint>(block, count + 1);
+            Span<byte> data = new Span<byte>(dataPtr, dataByteLength);
+
+            int dataOffset = 0;
+            for (int i = 0; i < count; i++)
+            {
+                pointers[i] = (nint)(dataPtr + dataOffset);
+
+                int bytesWritten = Encoding.UTF8.GetBytes(arr[i], data.Slice(dataOffset));
+                data[dataOffset + bytesWritten] = (byte)'\0';
+                dataOffset += bytesWritten + 1;
+            }
+
+            pointers[count] = 0; // null terminator
+            Debug.Assert(dataOffset == dataByteLength);
         }
 
-        private static unsafe void FreeArray(byte** arr, int length)
+        /// <summary>
+        /// Allocates a single native memory block containing both a null-terminated pointer array
+        /// and the UTF-8 encoded "key=value\0" data for all non-null entries in the environment dictionary.
+        /// </summary>
+        private static unsafe void AllocEnvpArray(IDictionary<string, string?> env, ref byte** arrPtr)
         {
-            if (arr != null)
+            // First pass: count entries with non-null values and compute total buffer size.
+            int count = 0;
+            int dataByteLength = 0;
+            foreach (KeyValuePair<string, string?> pair in env)
             {
-                // Free each element of the array
-                for (int i = 0; i < length; i++)
+                if (pair.Value is not null)
                 {
-                    NativeMemory.Free(arr[i]);
+                    // Each entry: UTF8(key) + '=' + UTF8(value) + '\0'
+                    dataByteLength = checked(dataByteLength + Encoding.UTF8.GetByteCount(pair.Key) + 1 + Encoding.UTF8.GetByteCount(pair.Value) + 1);
+                    count++;
                 }
-
-                // And then the array itself
-                NativeMemory.Free(arr);
             }
+
+            // Allocate a single block: pointer array (count + 1 for null terminator) followed by string data.
+            nuint pointersByteLength = checked((nuint)(count + 1) * (nuint)sizeof(byte*));
+            byte* block = (byte*)NativeMemory.Alloc(checked(pointersByteLength + (nuint)dataByteLength));
+            arrPtr = (byte**)block;
+
+            // Create spans over both portions of the block for bounds-checked access.
+            byte* dataPtr = block + pointersByteLength;
+            Span<nint> pointers = new Span<nint>(block, count + 1);
+            Span<byte> data = new Span<byte>(dataPtr, dataByteLength);
+
+            // Second pass: encode each key=value pair directly into the buffer.
+            int entryIndex = 0;
+            int dataOffset = 0;
+            foreach (KeyValuePair<string, string?> pair in env)
+            {
+                if (pair.Value is not null)
+                {
+                    pointers[entryIndex] = (nint)(dataPtr + dataOffset);
+
+                    int keyBytes = Encoding.UTF8.GetBytes(pair.Key, data.Slice(dataOffset));
+                    data[dataOffset + keyBytes] = (byte)'=';
+                    int valueBytes = Encoding.UTF8.GetBytes(pair.Value, data.Slice(dataOffset + keyBytes + 1));
+                    data[dataOffset + keyBytes + 1 + valueBytes] = (byte)'\0';
+
+                    dataOffset += keyBytes + 1 + valueBytes + 1;
+                    entryIndex++;
+                }
+            }
+
+            pointers[entryIndex] = 0; // null terminator
+            Debug.Assert(entryIndex == count);
+            Debug.Assert(dataOffset == dataByteLength);
         }
     }
 }

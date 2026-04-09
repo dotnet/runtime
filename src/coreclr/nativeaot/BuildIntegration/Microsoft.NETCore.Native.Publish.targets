@@ -14,19 +14,28 @@
   </Target>
 
   <!--
-    This target hooks into the dotnet CLI publish pipeline. That pipeline has
-    a target called ComputeFilesToPublish which produces the ItemGroup
-    ResolvedFileToPublish. We modify this item group to control what gets
-    published after NativeAOT optimizes the application.
+    ============================================================
+                                        NativeCompile
+
+    Redefine the SDK's empty NativeCompile placeholder target to perform the full
+    NativeAOT compilation pipeline: ILC compilation, native linking, and updating
+    ResolvedFileToPublish to replace managed assemblies with the native binary.
+
+    The SDK typically sequences this target in the publish pipeline as:
+      ComputeResolvedFilesToPublishList -> ILLink (when RunILLink is true) -> NativeCompile -> ...
+
+    This gives us a clean, explicit position after trim configuration (_PrepareTrimConfiguration),
+    regardless of whether ILLink itself runs.
+    ============================================================
   -->
-  <Target Name="ComputeLinkedFilesToPublish"
-          AfterTargets="ComputeResolvedFilesToPublishList"
+  <Target Name="NativeCompile"
           DependsOnTargets="_ComputeAssembliesToCompileToNative;LinkNative">
 
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_IlcManagedInputAssemblies)" />
       <!-- dotnet CLI produces managed debug symbols, which we will replace with native symbols instead -->
       <ResolvedFileToPublish Remove="@(_DebugSymbolsIntermediatePath)" />
+      <ResolvedFileToPublish Remove="@(IntermediateSatelliteAssembliesWithTargetPath)" />
       <!-- replace apphost with binary we generated during native compilation -->
       <ResolvedFileToPublish Include="$(NativeBinary)">
         <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</RelativePath>
@@ -59,6 +68,13 @@
       </ResolvedFileToPublish>
     </ItemGroup>
   </Target>
+
+  <!-- Back-compat: keep ComputeLinkedFilesToPublish scheduled after NativeCompile so that
+       external targets using BeforeTargets/AfterTargets="ComputeLinkedFilesToPublish" still
+       fire at approximately the same point in the publish pipeline. -->
+  <Target Name="ComputeLinkedFilesToPublish"
+          AfterTargets="NativeCompile"
+          DependsOnTargets="NativeCompile" />
 
   <!--
     Classify ResolvedFileToPublish for NativeAOT, then replace CoreCLR runtime pack
