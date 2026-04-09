@@ -8,6 +8,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -258,6 +259,7 @@ namespace System.Diagnostics
         /// </para>
         /// </remarks>
         /// <value><see langword="true"/> to terminate the child process when the parent exits; otherwise, <see langword="false"/>. The default is <see langword="false"/>.</value>
+        [SupportedOSPlatform("windows")]
         public bool KillOnParentExit { get; set; }
 
         public Encoding? StandardInputEncoding { get; set; }
@@ -417,7 +419,9 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
             }
 
+#pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the attribute guards the actual effect
             if (KillOnParentExit && UseShellExecute)
+#pragma warning restore CA1416
             {
                 throw new InvalidOperationException(SR.KillOnParentExitCannotBeUsedWithUseShellExecute);
             }

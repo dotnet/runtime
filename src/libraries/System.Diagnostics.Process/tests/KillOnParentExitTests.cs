@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
@@ -152,16 +151,38 @@ namespace System.Diagnostics.Tests
 
         private static void VerifyProcessIsRunning(bool shouldBeKilled, int processId)
         {
-            // Give the OS a moment to clean up
-            Thread.Sleep(500);
-
             if (shouldBeKilled)
             {
-                // When KillOnParentExit is enabled, the process should have been terminated.
-                Assert.Throws<ArgumentException>(() => Process.GetProcessById(processId));
+                const int timeoutMilliseconds = 10_000;
+                long deadline = Environment.TickCount64 + timeoutMilliseconds;
+
+                while (Environment.TickCount64 < deadline)
+                {
+                    try
+                    {
+                        using Process process = Process.GetProcessById(processId);
+                        if (process.HasExited || process.WaitForExit(100))
+                        {
+                            return;
+                        }
+                    }
+                    catch (ArgumentException)
+                    {
+                        return;
+                    }
+
+                    Thread.Sleep(100);
+                }
+
+                using Process finalCheck = Process.GetProcessById(processId);
+                Assert.True(finalCheck.HasExited || finalCheck.WaitForExit(0),
+                    $"Process {processId} was expected to exit within {timeoutMilliseconds}ms.");
             }
             else
             {
+                // Give the OS a moment to clean up
+                Thread.Sleep(500);
+
                 // When KillOnParentExit is disabled, the process should still be running.
                 using Process process = Process.GetProcessById(processId);
                 try

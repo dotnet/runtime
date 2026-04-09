@@ -605,11 +605,14 @@ namespace Microsoft.Win32.SafeHandles
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
 
-                Interop.Kernel32.ResumeThread(processInfo.hThread);
+                if (Interop.Kernel32.ResumeThread(processInfo.hThread) == -1)
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
             }
             catch
             {
-                // If we fail to assign to the job, terminate the suspended process.
+                // If we fail to assign to the job or resume the thread, terminate the process.
                 Interop.Kernel32.TerminateProcess(procSH, -1);
                 throw;
             }
