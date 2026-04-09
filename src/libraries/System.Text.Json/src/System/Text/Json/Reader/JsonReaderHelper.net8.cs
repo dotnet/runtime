@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System.Text.Json
 {
@@ -19,7 +22,40 @@ namespace System.Text.Json
             "\\"u8);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span) =>
+        public static int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span)
+        {
+            // For most inputs, we have a large span and we typically find a match within the first 16 bytes
+            // Usually, it's a quote in a property name.
+            if (!Vector128.IsHardwareAccelerated || span.Length < 16)
+                return IndexOfQuoteOrAnyControlOrBackSlash_Fallback(span);
+
+            Vector128<byte> vec = Vector128.Create(span);
+
+            // Any control character (i.e. 0 to 31) or '"' or '\'
+            Vector128<byte> cmp = Vector128.LessThan(vec, Vector128.Create((byte)32)) |
+                                  Vector128.Equals(vec, Vector128.Create((byte)'"')) |
+                                  Vector128.Equals(vec, Vector128.Create((byte)'\\'));
+
+            // TODO: this really should be just Vector128.IndexOfWhereAllBitsSet
+            // but that is not currently optimized in JIT for ARM64, so we do it manually here.
+            if (AdvSimd.IsSupported)
+            {
+                ulong mask = AdvSimd.ShiftRightLogicalNarrowingLower(cmp.AsUInt16(), 4).AsUInt64().ToScalar();
+                if (mask != 0)
+                    return BitOperations.TrailingZeroCount(mask) >> 2;
+            }
+            else
+            {
+                uint mask = cmp.ExtractMostSignificantBits();
+                if (mask != 0)
+                    return BitOperations.TrailingZeroCount(mask);
+            }
+
+            return IndexOfQuoteOrAnyControlOrBackSlash_Fallback(span.Slice(16));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int IndexOfQuoteOrAnyControlOrBackSlash_Fallback(ReadOnlySpan<byte> span) =>
             span.IndexOfAny(s_controlQuoteBackslash);
     }
 }
