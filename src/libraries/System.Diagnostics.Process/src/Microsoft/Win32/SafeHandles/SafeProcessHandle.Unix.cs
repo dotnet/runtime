@@ -245,7 +245,7 @@ namespace Microsoft.Win32.SafeHandles
         private static bool UsesTerminal(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
             => ProcessUtils.IsTerminal(stdinHandle) || ProcessUtils.IsTerminal(stdoutHandle) || ProcessUtils.IsTerminal(stderrHandle);
 
-        private static unsafe SafeProcessHandle ForkAndExecProcess(
+        private static SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
             IDictionary<string, string?> env, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
@@ -282,7 +282,7 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
-                    inheritedHandles, &pidfd);
+                    inheritedHandles, out pidfd);
 
                 if (errno == 0)
                 {

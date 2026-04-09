@@ -512,7 +512,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         *childPid = spawnedPid;
         if (outPidfd != NULL)
         {
-            *outPidfd = TryOpenPidfd(spawnedPid);
+            *outPidfd = -1;
         }
         return 0;
     }
