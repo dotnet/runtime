@@ -396,14 +396,13 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(ProcessTests), nameof(IsNotNanoServerAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StartDetached_StartsAndExitsSuccessfully()
         {
             // Simple smoke test: a process started with StartDetached=true should run and exit normally.
-            var options = new RemoteInvokeOptions
+            RemoteInvokeOptions options = new()
             {
-                StartInfo = new ProcessStartInfo { StartDetached = true },
-                CheckExitCode = false,
+                StartInfo = new ProcessStartInfo { StartDetached = true }
             };
             using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () => RemoteExecutor.SuccessExitCode, options);
             Assert.True(handle.Process.WaitForExit(WaitInMS));
