@@ -534,6 +534,38 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void DoesNotThrowWhenConfigKeyMatchesReadOnlyPropertyWithErrorOnUnknownConfiguration()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ReadOnly", "stuff"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+            config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true);
+
+            Assert.Null(instance.ReadOnly);
+        }
+
+        [Fact]
+        public void DoesNotThrowWhenConfigKeyMatchesSetOnlyPropertyWithErrorOnUnknownConfiguration()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"SetOnly", "42"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<SetOnlyPoco>(o => o.ErrorOnUnknownConfiguration = true);
+            Assert.False(options.AnyCalled);
+        }
+
+        [Fact]
         public void GetDefaultsWhenDataDoesNotExist()
         {
             var dic = new Dictionary<string, string>
@@ -1495,6 +1527,26 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var config = configurationBuilder.Build();
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ClassWithPrimaryCtorAndIgnoredProperty>());
+
+            Assert.Equal(
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWithPrimaryCtorAndIgnoredProperty), "color"),
+                ex.Message);
+        }
+
+        [Fact]
+        public void ThrowOnClassWithPrimaryCtorAndIgnoredPropertyWithUnknownConfigurationValidation()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => config.Get<ClassWithPrimaryCtorAndIgnoredProperty>(o => o.ErrorOnUnknownConfiguration = true));
 
             Assert.Equal(
                 SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWithPrimaryCtorAndIgnoredProperty), "color"),
