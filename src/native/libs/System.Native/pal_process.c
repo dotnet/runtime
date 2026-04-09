@@ -36,7 +36,23 @@
 #  define __NR_close_range 436
 # endif
 #endif // !defined(__NR_close_range)
+#else // HAVE_CLOSE_RANGE
+#include <sys/syscall.h>
 #endif // !defined(HAVE_CLOSE_RANGE)
+#if !defined(SYS_pidfd_open) && !defined(__NR_pidfd_open)
+// pidfd_open was added in Linux 5.3. The syscall number is 434 for all
+// architectures using the generic syscall table (asm-generic/unistd.h),
+// which covers aarch64, riscv, s390x, ppc64le, and others. The exception
+// is alpha, which has its own syscall table and uses 544 instead.
+# if defined(__alpha__)
+#  define __NR_pidfd_open 544
+# else
+#  define __NR_pidfd_open 434
+# endif
+#endif // !defined(SYS_pidfd_open) && !defined(__NR_pidfd_open)
+#if !defined(SYS_pidfd_open) && defined(__NR_pidfd_open)
+#define SYS_pidfd_open __NR_pidfd_open
+#endif
 #endif // defined(__linux__)
 #if (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
@@ -1072,4 +1088,24 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
+}
+
+int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd)
+{
+    *out_pidfd = -1;
+
+#if defined(__linux__)
+    int pidfd = (int)syscall(SYS_pidfd_open, pid, 0);
+    if (pidfd < 0 && errno != ENOTSUP)
+    {
+        return -1;
+    }
+    else if (pidfd > 0)
+    {
+        *out_pidfd = pidfd;
+        return 0;
+    }
+#endif
+
+    return kill(pid, 0);
 }

@@ -72,6 +72,40 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         /// <summary>
+        /// Opens an existing process by its process ID.
+        /// </summary>
+        /// <param name="processId">The process ID of the process to open.</param>
+        /// <returns>A <see cref="SafeProcessHandle"/> that represents the opened process.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="processId"/> is negative or zero.</exception>
+        /// <exception cref="Win32Exception">Thrown when the process could not be opened.</exception>
+        /// <remarks>
+        /// <para>
+        /// On Windows, this method uses OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION, SYNCHRONIZE, and PROCESS_TERMINATE permissions.
+        /// </para>
+        /// <para>
+        /// On Linux with pidfd support, this method uses the pidfd_open syscall.
+        /// </para>
+        /// <para>
+        /// On other Unix systems, this method uses kill(pid, 0) to verify the process exists and the caller has permission to signal it.
+        /// If it's not a child process of the current process, the returned handle is prone to process ID reuse issues in this case.
+        /// </para>
+        /// </remarks>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static SafeProcessHandle Open(int processId)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(processId, 0);
+
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            return OpenCore(processId);
+        }
+
+        /// <summary>
         /// Starts a process using the specified <see cref="ProcessStartInfo"/>.
         /// </summary>
         /// <param name="startInfo">The process start information.</param>

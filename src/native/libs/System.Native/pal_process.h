@@ -236,3 +236,14 @@ PALEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
  * resolving symbolic links. The caller is responsible for releasing the buffer.
  */
 PALEXPORT char* SystemNative_GetProcessPath(void);
+
+/**
+ * Opens a process by its process ID.
+ *
+ * On Linux with pidfd support, uses pidfd_open to obtain a process file descriptor.
+ * On other systems, uses kill(pid, 0) to verify the process exists.
+ *
+ * Returns 0 on success; returns -1 on failure and errno is set.
+ * On success, out_pidfd is set to the pidfd (or -1 if pidfd is not available).
+ */
+PALEXPORT int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd);

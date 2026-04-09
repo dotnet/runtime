@@ -249,5 +249,59 @@ namespace System.Diagnostics.Tests
                 process.WaitForExit();
             }
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public void Open_InvalidProcessId_ThrowsArgumentOutOfRangeException(int processId)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => SafeProcessHandle.Open(processId));
+        }
+
+        [Fact]
+        public void Open_NonExistentProcessId_ThrowsWin32Exception()
+        {
+            // Use an unlikely process ID that should not exist.
+            Assert.Throws<Win32Exception>(() => SafeProcessHandle.Open(int.MaxValue));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Open_RunningProcess_ReturnsValidHandle()
+        {
+            Process process = CreateProcess(static () =>
+            {
+                Thread.Sleep(Timeout.Infinite);
+                return RemoteExecutor.SuccessExitCode;
+            });
+            process.Start();
+
+            try
+            {
+                using SafeProcessHandle handle = SafeProcessHandle.Open(process.Id);
+                Assert.False(handle.IsInvalid);
+                Assert.Equal(process.Id, handle.ProcessId);
+            }
+            finally
+            {
+                process.Kill();
+                process.WaitForExit();
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Open_ThenKill_TerminatesProcess()
+        {
+            Process process = CreateProcess(static () =>
+            {
+                Thread.Sleep(Timeout.Infinite);
+                return RemoteExecutor.SuccessExitCode;
+            });
+            process.Start();
+
+            using SafeProcessHandle handle = SafeProcessHandle.Open(process.Id);
+            handle.Kill();
+
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
     }
 }

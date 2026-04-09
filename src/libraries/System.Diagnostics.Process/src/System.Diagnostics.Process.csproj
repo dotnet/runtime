@@ -264,6 +264,8 @@
              Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Kill.cs"
              Link="Common\Interop\Unix\Interop.Kill.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenProcess.cs"
+             Link="Common\Interop\Unix\Interop.OpenProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs"
              Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"

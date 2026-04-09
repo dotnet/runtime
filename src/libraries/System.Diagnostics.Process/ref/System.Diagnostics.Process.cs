@@ -23,6 +23,10 @@ namespace Microsoft.Win32.SafeHandles
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static Microsoft.Win32.SafeHandles.SafeProcessHandle Open(int processId) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static Microsoft.Win32.SafeHandles.SafeProcessHandle Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
     }
 }

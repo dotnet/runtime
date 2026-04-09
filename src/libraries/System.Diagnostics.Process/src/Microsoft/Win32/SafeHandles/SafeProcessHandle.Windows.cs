@@ -19,6 +19,25 @@ namespace Microsoft.Win32.SafeHandles
             return Interop.Kernel32.CloseHandle(handle);
         }
 
+        private static SafeProcessHandle OpenCore(int processId)
+        {
+            const int desiredAccess = Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION
+                | Interop.Advapi32.ProcessOptions.SYNCHRONIZE
+                | Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE;
+
+            SafeProcessHandle safeHandle = Interop.Kernel32.OpenProcess(desiredAccess, inherit: false, processId);
+
+            if (safeHandle.IsInvalid)
+            {
+                int error = Marshal.GetLastPInvokeError();
+                safeHandle.Dispose();
+                throw new Win32Exception(error);
+            }
+
+            safeHandle.ProcessId = processId;
+            return safeHandle;
+        }
+
         private static Func<ProcessStartInfo, SafeProcessHandle>? s_startWithShellExecute;
 
         internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,

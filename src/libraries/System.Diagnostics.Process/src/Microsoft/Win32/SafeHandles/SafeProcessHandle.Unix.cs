@@ -28,6 +28,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
+        private int _pidfd = -1;
 
         private SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
@@ -46,6 +47,13 @@ namespace Microsoft.Win32.SafeHandles
             handle.DangerousAddRef(ref _releaseRef);
         }
 
+        private SafeProcessHandle(int pidfd, int processId) : base(ownsHandle: true)
+        {
+            ProcessId = processId;
+            _pidfd = pidfd;
+            SetHandle(new IntPtr(pidfd));
+        }
+
         protected override bool ReleaseHandle()
         {
             if (_releaseRef)
@@ -53,11 +61,29 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_handle != null);
                 _handle.DangerousRelease();
             }
+
+            if (_pidfd >= 0)
+            {
+                Interop.Sys.Close(_pidfd);
+            }
+
             return true;
         }
 
         // On Unix, we don't use process descriptors yet, so we can't get PID.
         private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
+
+        private static SafeProcessHandle OpenCore(int processId)
+        {
+            int result = Interop.Sys.OpenProcess(processId, out int pidfd);
+
+            if (result == -1)
+            {
+                throw new Win32Exception();
+            }
+
+            return new SafeProcessHandle(pidfd, processId);
+        }
 
         private bool SignalCore(PosixSignal signal)
         {
