@@ -54,7 +54,7 @@ namespace System.StubHelpers
 
     internal static class CSTRMarshaler
     {
-        internal static unsafe IntPtr ConvertToNative(int flags, string strManaged, IntPtr pNativeBuffer)
+        internal static unsafe IntPtr ConvertToNative(int flags, string? strManaged, IntPtr pNativeBuffer)
         {
             if (null == strManaged)
             {
@@ -266,7 +266,7 @@ namespace System.StubHelpers
             s_trailByteTable!.Add(strManaged, new TrailByte(trailByte));
         }
 
-        internal static unsafe IntPtr ConvertToNative(string strManaged, IntPtr pNativeBuffer)
+        internal static unsafe IntPtr ConvertToNative(string? strManaged, IntPtr pNativeBuffer)
         {
             if (null == strManaged)
             {
@@ -960,9 +960,6 @@ namespace System.StubHelpers
 
     internal struct AsAnyMarshaler
     {
-        private const ushort VTHACK_ANSICHAR = 253;
-        private const ushort VTHACK_WINBOOL = 254;
-
         private enum BackPropAction
         {
             None,
@@ -972,8 +969,14 @@ namespace System.StubHelpers
             StringBuilderUnicode
         }
 
-        // Pointer to MngdNativeArrayMarshaler, ownership not assumed.
-        private readonly IntPtr pvArrayMarshaler;
+        private struct ArrayMarshalerMethods
+        {
+            public MethodInvoker convertContentsToNative;
+            public MethodInvoker convertContentsToManaged;
+            public unsafe delegate*<Array, byte*> convertSpaceToNative;
+        }
+
+        private ArrayMarshalerMethods arrayMarshalerMethods;
 
         // Type of action to perform after the CLR-to-unmanaged call.
         private BackPropAction backPropAction;
@@ -1000,89 +1003,75 @@ namespace System.StubHelpers
         private static bool IsThrowOn(int dwFlags) => (dwFlags & (int)AsAnyFlags.IsThrowOn) != 0;
         private static bool IsBestFit(int dwFlags) => (dwFlags & (int)AsAnyFlags.IsBestFit) != 0;
 
-        internal AsAnyMarshaler(IntPtr pvArrayMarshaler)
-        {
-            // we need this in case the value being marshaled turns out to be array
-            Debug.Assert(pvArrayMarshaler != IntPtr.Zero, "pvArrayMarshaler must not be null");
-
-            this.pvArrayMarshaler = pvArrayMarshaler;
-            backPropAction = BackPropAction.None;
-            layoutType = null;
-            cleanupWorkList = null;
-        }
-
         #region ConvertToNative helpers
 
         private unsafe IntPtr ConvertArrayToNative(object pManagedHome, int dwFlags)
         {
             Type elementType = pManagedHome.GetType().GetElementType()!;
-            VarEnum vt;
 
-            switch (Type.GetTypeCode(elementType))
+            Type[] marshalerGenericArgs = Type.GetTypeCode(elementType) switch
+             {
+                TypeCode.SByte
+                or TypeCode.Byte
+                or TypeCode.Int16
+                or TypeCode.UInt16
+                or TypeCode.Int32
+                or TypeCode.UInt32
+                or TypeCode.Int64
+                or TypeCode.UInt64
+                or TypeCode.Single
+                or TypeCode.Double => [elementType, typeof(StructureMarshaler<>).MakeGenericType(elementType)],
+                TypeCode.Object when elementType == typeof(nint) || elementType == typeof(nuint) => [elementType, typeof(StructureMarshaler<>).MakeGenericType(elementType)],
+                TypeCode.Char when !IsAnsi(dwFlags) => [typeof(char), typeof(StructureMarshaler<char>)],
+                TypeCode.Char when IsAnsi(dwFlags) => [
+                    typeof(char),
+                    typeof(AnsiCharArrayElementMarshaler<,>).MakeGenericType([
+                        IsBestFit(dwFlags)
+                        ? typeof(IMarshalerOption.EnabledOption)
+                        : typeof(IMarshalerOption.DisabledOption),
+                        IsThrowOn(dwFlags)
+                        ? typeof(IMarshalerOption.EnabledOption)
+                        : typeof(IMarshalerOption.DisabledOption)])],
+                TypeCode.Boolean => [typeof(bool), typeof(BoolMarshaler<int>)],
+                _ => []
+            };
+
+            arrayMarshalerMethods = new ArrayMarshalerMethods
             {
-                case TypeCode.SByte: vt = VarEnum.VT_I1; break;
-                case TypeCode.Byte: vt = VarEnum.VT_UI1; break;
-                case TypeCode.Int16: vt = VarEnum.VT_I2; break;
-                case TypeCode.UInt16: vt = VarEnum.VT_UI2; break;
-                case TypeCode.Int32: vt = VarEnum.VT_I4; break;
-                case TypeCode.UInt32: vt = VarEnum.VT_UI4; break;
-                case TypeCode.Int64: vt = VarEnum.VT_I8; break;
-                case TypeCode.UInt64: vt = VarEnum.VT_UI8; break;
-                case TypeCode.Single: vt = VarEnum.VT_R4; break;
-                case TypeCode.Double: vt = VarEnum.VT_R8; break;
-                case TypeCode.Char: vt = (IsAnsi(dwFlags) ? (VarEnum)VTHACK_ANSICHAR : VarEnum.VT_UI2); break;
-                case TypeCode.Boolean: vt = (VarEnum)VTHACK_WINBOOL; break;
+                convertContentsToManaged = MethodInvoker.Create(
+                    typeof(StubHelpers)
+                    .GetMethod(
+                        nameof(StubHelpers.ConvertArrayContentsToManaged),
+                        BindingFlags.Public | BindingFlags.Static)!
+                    .MakeGenericMethod(marshalerGenericArgs)),
+                convertContentsToNative = MethodInvoker.Create(
+                    typeof(StubHelpers)
+                    .GetMethod(
+                        nameof(StubHelpers.ConvertArrayContentsToUnmanaged),
+                        BindingFlags.Public | BindingFlags.Static)!
+                    .MakeGenericMethod(marshalerGenericArgs)),
+                convertSpaceToNative = (delegate*<Array, byte*>)
+                    typeof(StubHelpers)
+                    .GetMethod(
+                        nameof(StubHelpers.ConvertArraySpaceToNative),
+                        BindingFlags.Public | BindingFlags.Static)!
+                    .MakeGenericMethod(marshalerGenericArgs)
+                    .MethodHandle.GetFunctionPointer(),
+            };
 
-                case TypeCode.Object:
-                    {
-                        if (elementType == typeof(IntPtr))
-                        {
-                            vt = (IntPtr.Size == 4 ? VarEnum.VT_I4 : VarEnum.VT_I8);
-                        }
-                        else if (elementType == typeof(UIntPtr))
-                        {
-                            vt = (IntPtr.Size == 4 ? VarEnum.VT_UI4 : VarEnum.VT_UI8);
-                        }
-                        else goto default;
-                        break;
-                    }
-
-                default:
-                    throw new ArgumentException(SR.Arg_PInvokeBadObject);
-            }
-
-            // marshal the object as C-style array (UnmanagedType.LPArray)
-            int dwArrayMarshalerFlags = (int)vt;
-            if (IsBestFit(dwFlags)) dwArrayMarshalerFlags |= (1 << 16);
-            if (IsThrowOn(dwFlags)) dwArrayMarshalerFlags |= (1 << 24);
-
-            MngdNativeArrayMarshaler.CreateMarshaler(
-                pvArrayMarshaler,
-                IntPtr.Zero,      // not needed as we marshal primitive VTs only
-                dwArrayMarshalerFlags,
-                nativeDataValid: false);
-
-            IntPtr pNativeHome;
-            IntPtr pNativeHomeAddr = new IntPtr(&pNativeHome);
-
-            MngdNativeArrayMarshaler.ConvertSpaceToNative(
-                pvArrayMarshaler,
-                in pManagedHome,
-                pNativeHomeAddr);
+            byte* pNativeHome = arrayMarshalerMethods.convertSpaceToNative((Array)pManagedHome);
 
             if (IsIn(dwFlags))
             {
-                MngdNativeArrayMarshaler.ConvertContentsToNative(
-                    pvArrayMarshaler,
-                    in pManagedHome,
-                    pNativeHomeAddr);
+                arrayMarshalerMethods.convertContentsToNative.Invoke(pManagedHome, Pointer.Box(pNativeHome, typeof(byte*)));
             }
+
             if (IsOut(dwFlags))
             {
                 backPropAction = BackPropAction.Array;
             }
 
-            return pNativeHome;
+            return (IntPtr)pNativeHome;
         }
 
         private static IntPtr ConvertStringToNative(string pManagedHome, int dwFlags)
@@ -1267,10 +1256,7 @@ namespace System.StubHelpers
             {
                 case BackPropAction.Array:
                     {
-                        MngdNativeArrayMarshaler.ConvertContentsToManaged(
-                            pvArrayMarshaler,
-                            in pManagedHome,
-                            new IntPtr(&pNativeHome));
+                        arrayMarshalerMethods.convertContentsToManaged.Invoke(pManagedHome, pNativeHome);
                         break;
                     }
 
@@ -2345,7 +2331,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(T[] managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T>
+        public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(T[] managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T>
         {
             for (int i = 0; i < managed.Length; i++)
             {
@@ -2354,7 +2340,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(T[] managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T>
+        public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(T[] managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T>
         {
             for (int i = 0; i < managed.Length; i++)
             {

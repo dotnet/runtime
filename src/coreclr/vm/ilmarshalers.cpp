@@ -3756,19 +3756,9 @@ void ILAsAnyMarshalerBase::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     LocalDesc marshalerType(CoreLibBinder::GetClass(CLASS__ASANY_MARSHALER));
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(marshalerType);
-    DWORD dwTmpLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    pslILEmit->EmitLDC(sizeof(MngdNativeArrayMarshaler));
-    pslILEmit->EmitLOCALLOC();
-    pslILEmit->EmitSTLOC(dwTmpLocalNum);
-
-    // marshaler = new AsAnyMarshaler(local_buffer)
     pslILEmit->EmitLDLOCA(m_dwMngdMarshalerLocalNum);
     pslILEmit->EmitINITOBJ(pslILEmit->GetToken(marshalerType.InternalToken));
-
-    pslILEmit->EmitLDLOCA(m_dwMngdMarshalerLocalNum);
-    pslILEmit->EmitLDLOC(dwTmpLocalNum);
-    pslILEmit->EmitCALL(METHOD__ASANY_MARSHALER__CTOR, 2, 0);
 }
 
 void ILAsAnyMarshalerBase::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
