@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Runtime.ExceptionServices;
@@ -78,10 +77,6 @@ namespace System.Text.Json
         /// </summary>
         public Task? PendingTask;
 
-        /// <summary>
-        /// List of completed IAsyncDisposables that have been scheduled for disposal by converters.
-        /// </summary>
-        public List<IAsyncDisposable>? CompletedAsyncDisposables;
 
         /// <summary>
         /// The amount of bytes to write before the underlying Stream should be flushed and the
@@ -275,35 +270,6 @@ namespace System.Text.Json
                     Current = _stack[_count - _indexOffset];
                 }
             }
-        }
-
-        public void AddCompletedAsyncDisposable(IAsyncDisposable asyncDisposable)
-            => (CompletedAsyncDisposables ??= new List<IAsyncDisposable>()).Add(asyncDisposable);
-
-        // Asynchronously dispose of any AsyncDisposables that have been scheduled for disposal
-        public readonly async ValueTask DisposeCompletedAsyncDisposables()
-        {
-            Debug.Assert(CompletedAsyncDisposables?.Count > 0);
-            Exception? exception = null;
-
-            foreach (IAsyncDisposable asyncDisposable in CompletedAsyncDisposables)
-            {
-                try
-                {
-                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    exception = e;
-                }
-            }
-
-            if (exception is not null)
-            {
-                ExceptionDispatchInfo.Capture(exception).Throw();
-            }
-
-            CompletedAsyncDisposables.Clear();
         }
 
         /// <summary>

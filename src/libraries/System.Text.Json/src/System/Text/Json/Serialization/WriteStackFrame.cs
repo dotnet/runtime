@@ -30,6 +30,12 @@ namespace System.Text.Json
         public bool AsyncEnumeratorIsPendingCompletion;
 
         /// <summary>
+        /// The current stackframe has suspended serialization due to a pending DisposeAsync() task,
+        /// stored in the <see cref="WriteStack.PendingTask"/> property.
+        /// </summary>
+        public bool AsyncEnumeratorIsPendingDisposal;
+
+        /// <summary>
         /// The original JsonPropertyInfo that is not changed. It contains all properties.
         /// </summary>
         /// <remarks>

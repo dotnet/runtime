@@ -49,6 +49,17 @@ namespace System.Text.Json.Serialization.Converters
             IAsyncEnumerator<TElement> enumerator;
             ValueTask<bool> moveNextTask;
 
+            if (state.Current.AsyncEnumeratorIsPendingDisposal)
+            {
+                // Converter was previously suspended due to a pending DisposeAsync() task.
+                Debug.Assert(state.Current.AsyncDisposable is null);
+                Debug.Assert(state.PendingTask is not null && state.PendingTask.IsCompleted);
+                state.PendingTask.GetAwaiter().GetResult();
+                state.Current.AsyncEnumeratorIsPendingDisposal = false;
+                state.PendingTask = null;
+                return true;
+            }
+
             if (state.Current.AsyncDisposable is null)
             {
                 enumerator = value.GetAsyncEnumerator(state.CancellationToken);
@@ -100,10 +111,20 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (!moveNextTask.Result)
                 {
-                    // we have completed serialization for the enumerator,
-                    // clear from the stack and schedule for async disposal.
+                    // Enumeration complete, dispose the enumerator inline.
+                    // Clear from the stack first to prevent double disposal on exception.
                     state.Current.AsyncDisposable = null;
-                    state.AddCompletedAsyncDisposable(enumerator);
+                    ValueTask disposeTask = enumerator.DisposeAsync();
+                    if (!disposeTask.IsCompleted)
+                    {
+                        // DisposeAsync is pending; store as a pending task
+                        // and yield control to the root-level async serialization loop.
+                        state.PendingTask = disposeTask.AsTask();
+                        state.Current.AsyncEnumeratorIsPendingDisposal = true;
+                        return false;
+                    }
+
+                    disposeTask.GetAwaiter().GetResult();
                     return true;
                 }
 
