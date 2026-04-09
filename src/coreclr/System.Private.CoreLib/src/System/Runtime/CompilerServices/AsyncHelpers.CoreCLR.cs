@@ -456,42 +456,23 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
-            internal bool InstrumentedHandleSuspended(AsyncInstrumentation.Flags flags, Continuation? newContinuation = null)
+            internal void InstrumentedHandleSuspended(AsyncInstrumentation.Flags flags, Continuation? newContinuation = null)
             {
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
-                    Continuation? nc = t_runtimeAsyncAwaitState.SentinelContinuation!.Next;
+                    Continuation? nextContinuation = t_runtimeAsyncAwaitState.SentinelContinuation!.Next;
 
-                    if (nc != null)
-                    {
-                        if (newContinuation != null)
-                        {
-                            TryAddRuntimeAsyncContinuationChainTimestamps(nc, newContinuation);
-                        }
-                        else
-                        {
-                            TryAddRuntimeAsyncContinuationChainTimestamps(nc);
-                        }
-                    }
+                    AsyncDebugger.HandleSuspended(nextContinuation, newContinuation);
 
                     if (!HandleSuspended())
                     {
-                        if (nc != null)
-                        {
-                            RemoveRuntimeAsyncTask(this, nc);
-                        }
-                        else
-                        {
-                            RemoveRuntimeAsyncTask(this);
-                        }
-
-                        return false;
+                        AsyncDebugger.HandleSuspendedFailed(this, nextContinuation);
                     }
 
-                    return true;
+                    return;
                 }
 
-                return HandleSuspended();
+                HandleSuspended();
             }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -817,8 +798,7 @@ namespace System.Runtime.CompilerServices
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
                     task.NotifyDebuggerOfRuntimeAsyncState();
-                    Task.AddToActiveTasks(task);
-                    TplEventSource.Log.TraceOperationBegin(task.Id, "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask", 0);
+                    AsyncDebugger.CreateAsyncContext(task);
                 }
             }
 
@@ -1017,6 +997,8 @@ namespace System.Runtime.CompilerServices
             TaskAwaiter.ValidateEnd(task);
         }
 
+        // Instrumentation helpers called from InstrumentedDispatchContinuations.
+        // These methods must not throw — exceptions would break the dispatch loop.
         internal static class RuntimeAsyncInstrumentationHelpers
         {
             public static bool InstrumentCheckPoint
@@ -1034,7 +1016,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        TplEventSource.Log.TraceSynchronousWorkBegin(task.Id, CausalitySynchronousWork.Execution);
+                        AsyncDebugger.ResumeAsyncContext(task.Id);
                     }
                 }
             }
@@ -1046,12 +1028,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        if (info.NextContinuation != null)
-                        {
-                            Task.TryAddRuntimeAsyncContinuationChainTimestamps(info.NextContinuation, curContinuation);
-                        }
-
-                        TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                        AsyncDebugger.SuspendAsyncContext(ref info, curContinuation);
                     }
                 }
             }
@@ -1063,8 +1040,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        Task.ReplaceOrAddRuntimeAsyncContinuationTimestamp(curContinuation, newContinuation);
-                        TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                        AsyncDebugger.SuspendAsyncContext(curContinuation, newContinuation);
                     }
                 }
             }
@@ -1076,18 +1052,18 @@ namespace System.Runtime.CompilerServices
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        CompleteRuntimeAsyncContext(info.CurrentTask);
+                        AsyncDebugger.CompleteAsyncContext(info.CurrentTask);
                     }
                 }
             }
 
-            public static void UnwindRuntimeAsyncMethodUnhandledException(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Exception ex, Continuation curContinuation, uint unwindedFrames)
+            public static void UnwindRuntimeAsyncMethodUnhandledException(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Exception ex, Continuation curContinuation, uint _)
             {
                 if (AsyncInstrumentation.IsEnabled.UnwindAsyncException(flags))
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        UnwindRuntimeAsyncMethodUnhandledException(info.CurrentTask, ex, curContinuation, unwindedFrames);
+                        AsyncDebugger.AsyncMethodUnhandledException(info.CurrentTask, ex, curContinuation);
                     }
                 }
             }
@@ -1098,7 +1074,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        Task.RemoveRuntimeAsyncContinuationChainTimestamps(curContinuation, unwindedFrames);
+                        AsyncDebugger.AsyncMethodHandledException(curContinuation, unwindedFrames);
                     }
                 }
             }
@@ -1108,9 +1084,9 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags))
                 {
-                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags) && info.CurrentTask != null)
+                    if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        Task.UpdateRuntimeAsyncTaskTimestamp(info.CurrentTask, curContinuation);
+                        AsyncDebugger.ResumeAsyncMethod(ref info, curContinuation);
                     }
                 }
             }
@@ -1122,28 +1098,172 @@ namespace System.Runtime.CompilerServices
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        Task.RemoveRuntimeAsyncContinuationTimestamp(curContinuation);
+                        AsyncDebugger.CompleteAsyncMethod(curContinuation);
                     }
                 }
             }
+        }
 
-            private static void CompleteRuntimeAsyncContext(Task? task)
+        // All methods in this class guard against exceptions to protect the instrumented async execution.
+        // Instrumentation failures are silently swallowed — correctness of async execution takes priority over debugger diagnostics.
+        internal static class AsyncDebugger
+        {
+            public static void CreateAsyncContext(Task task)
             {
-                if (task != null)
+                try
                 {
-                    Task.RemoveRuntimeAsyncTask(task);
-                    TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
-                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                    Task.AddToActiveTasks(task);
+                    TplEventSource.Log.TraceOperationBegin(task.Id, "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask", 0);
+                }
+                catch
+                {
+                }
+
+            }
+
+            public static void ResumeAsyncContext(int id)
+            {
+                try
+                {
+                    TplEventSource.Log.TraceSynchronousWorkBegin(id, CausalitySynchronousWork.Execution);
+                }
+                catch
+                {
                 }
             }
 
-            private static void UnwindRuntimeAsyncMethodUnhandledException(Task? task, Exception ex, Continuation curContinuation, uint _)
+            public static void SuspendAsyncContext(ref AsyncDispatcherInfo info, Continuation curContinuation)
             {
-                if (task != null)
+                try
                 {
-                    Task.RemoveRuntimeAsyncTask(task, curContinuation);
-                    TplEventSource.Log.TraceOperationEnd(task.Id, ex is OperationCanceledException ? AsyncCausalityStatus.Canceled : AsyncCausalityStatus.Error);
+                    if (info.NextContinuation != null)
+                    {
+                        Task.TryAddRuntimeAsyncContinuationChainTimestamps(info.NextContinuation, curContinuation);
+                    }
+
                     TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                }
+                catch
+                {
+                }
+            }
+
+            public static void SuspendAsyncContext(Continuation curContinuation, Continuation newContinuation)
+            {
+                try
+                {
+                    Task.ReplaceOrAddRuntimeAsyncContinuationTimestamp(curContinuation, newContinuation);
+                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                }
+                catch
+                {
+                }
+            }
+
+            public static void CompleteAsyncContext(Task? task)
+            {
+                try
+                {
+                    if (task != null)
+                    {
+                        Task.RemoveRuntimeAsyncTask(task);
+                        TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
+                        TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            public static void AsyncMethodUnhandledException(Task? task, Exception ex, Continuation curContinuation)
+            {
+                try
+                {
+                    if (task != null)
+                    {
+                        Task.RemoveRuntimeAsyncTask(task, curContinuation);
+                        TplEventSource.Log.TraceOperationEnd(task.Id, ex is OperationCanceledException ? AsyncCausalityStatus.Canceled : AsyncCausalityStatus.Error);
+                        TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            public static void AsyncMethodHandledException(Continuation curContinuation, uint unwindedFrames)
+            {
+                try
+                {
+                    Task.RemoveRuntimeAsyncContinuationChainTimestamps(curContinuation, unwindedFrames);
+                }
+                catch
+                {
+                }
+            }
+
+            public static void ResumeAsyncMethod(ref AsyncDispatcherInfo info, Continuation curContinuation)
+            {
+                try
+                {
+                    if (info.CurrentTask != null)
+                    {
+                        Task.UpdateRuntimeAsyncTaskTimestamp(info.CurrentTask, curContinuation);
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            public static void CompleteAsyncMethod(Continuation curContinuation)
+            {
+                try
+                {
+                    Task.RemoveRuntimeAsyncContinuationTimestamp(curContinuation);
+                }
+                catch
+                {
+                }
+            }
+
+            public static void HandleSuspended(Continuation? nextContinuation, Continuation? newContinuation)
+            {
+                try
+                {
+                    if (nextContinuation != null)
+                    {
+                        if (newContinuation != null)
+                        {
+                            Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation, newContinuation);
+                        }
+                        else
+                        {
+                            Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation);
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            public static void HandleSuspendedFailed(Task task, Continuation? nextContinuation)
+            {
+                try
+                {
+                    if (nextContinuation != null)
+                    {
+                        Task.RemoveRuntimeAsyncTask(task, nextContinuation);
+                    }
+                    else
+                    {
+                        Task.RemoveRuntimeAsyncTask(task);
+                    }
+                }
+                catch
+                {
                 }
             }
         }
