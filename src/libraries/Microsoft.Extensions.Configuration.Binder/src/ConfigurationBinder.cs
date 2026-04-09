@@ -1172,20 +1172,7 @@ namespace Microsoft.Extensions.Configuration
             return propertyBindingPoint.Value;
         }
 
-        private static bool IsIgnoredProperty(PropertyInfo property)
-        {
-            ArgumentNullException.ThrowIfNull(property);
-
-            foreach (CustomAttributeData attributeData in property.GetCustomAttributesData())
-            {
-                if (attributeData.AttributeType == typeof(ConfigurationIgnoreAttribute))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
+        private static bool IsIgnoredProperty(PropertyInfo property) => property.IsDefined(typeof(ConfigurationIgnoreAttribute));
 
         private static string GetPropertyName(PropertyInfo property)
         {
