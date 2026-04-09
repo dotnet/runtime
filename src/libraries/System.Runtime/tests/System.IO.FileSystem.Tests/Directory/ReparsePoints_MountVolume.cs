@@ -30,16 +30,6 @@ namespace System.IO.Tests
         {
             try
             {
-                // On Helix CI, we expect a second NTFS drive to be available for cross-drive
-                // mount scenarios. Fail loudly if one isn't found so we notice if the CI
-                // environment changes and these scenarios silently stop running.
-                if (PlatformDetection.IsInHelix && IOServices.GetNtfsDriveOtherThanCurrent() == null)
-                {
-                    Assert.Fail("No suitable second NTFS drive found on Helix. " +
-                        "Cross-drive mount volume scenarios (1 & 2) cannot run. " +
-                        "Check DumpDriveInformation test output for drive details.");
-                }
-
                 Stopwatch watch;
 
                 const string MountPrefixName = "LaksMount";

@@ -44,10 +44,10 @@ namespace System.IO.Tests
 
                         if (OperatingSystem.IsWindows())
                         {
-                            StringBuilder volName = new StringBuilder(260);
-                            bool hasGuid = DllImports.GetVolumeNameForVolumeMountPoint(drive.Name, volName, volName.Capacity);
+                            char[] volName = new char[260];
+                            bool hasGuid = DllImports.GetVolumeNameForVolumeMountPoint(drive.Name, volName, volName.Length);
                             info += hasGuid
-                                ? $" VolumeGUID={volName}"
+                                ? $" VolumeGUID={new string(volName).TrimEnd('\0')}"
                                 : $" VolumeGUID=NONE({Marshal.GetLastPInvokeErrorMessage()})";
                         }
                     }

@@ -81,8 +81,8 @@ internal class IOServices
 
     private static bool HasVolumeGuid(string drive)
     {
-        StringBuilder volumeName = new StringBuilder(260);
-        return DllImports.GetVolumeNameForVolumeMountPoint(drive, volumeName, volumeName.Capacity);
+        char[] volumeName = new char[260];
+        return DllImports.GetVolumeNameForVolumeMountPoint(drive, volumeName, volumeName.Length);
     }
 
     public static string GetNonNtfsDriveOtherThanCurrent()
