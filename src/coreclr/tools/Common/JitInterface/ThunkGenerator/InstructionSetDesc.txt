@@ -26,7 +26,7 @@
 ; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numeric values definitions would be R2R format breaking change.
 
 ; The ISA definitions should also be mapped to `hwintrinsicIsaRangeArray` in hwintrinsic.cpp.
-; NEXT_AVAILABLE_R2R_BIT = 90
+; NEXT_AVAILABLE_R2R_BIT = 91
 
 ; Definition of X86 instruction sets
 definearch         ,X86   ,32Bit                ,X64, X64, X86
@@ -227,11 +227,11 @@ instructionset     ,ARM64 ,                      ,VectorT128 ,39 ,VectorT128    
 instructionset     ,ARM64 ,                      ,Rcpc2      ,42 ,Rcpc2                 ,rcpc2
 instructionset     ,ARM64 ,Sve                   ,           ,43 ,Sve                   ,sve
 instructionset     ,ARM64 ,Sve2                  ,           ,59 ,Sve2                  ,sve2
-instructionset     ,ARM64 ,Sha3                  ,           ,85 ,Sha3                  ,sha3
-instructionset     ,ARM64 ,Sm4                   ,           ,86 ,Sm4                   ,sm4
-instructionset     ,ARM64 ,SveAes                ,           ,87 ,SveAes                ,sve_aes
-instructionset     ,ARM64 ,SveSha3               ,           ,88 ,SveSha3               ,sve_sha3
-instructionset     ,ARM64 ,SveSm4                ,           ,89 ,SveSm4                ,sve_sm4
+instructionset     ,ARM64 ,Sha3                  ,           ,86 ,Sha3                  ,sha3
+instructionset     ,ARM64 ,Sm4                   ,           ,87 ,Sm4                   ,sm4
+instructionset     ,ARM64 ,SveAes                ,           ,88 ,SveAes                ,sve_aes
+instructionset     ,ARM64 ,SveSha3               ,           ,89 ,SveSha3               ,sve_sha3
+instructionset     ,ARM64 ,SveSm4                ,           ,90 ,SveSm4                ,sve_sm4
 
 instructionset64bit,ARM64 ,ArmBase
 instructionset64bit,ARM64 ,AdvSimd
