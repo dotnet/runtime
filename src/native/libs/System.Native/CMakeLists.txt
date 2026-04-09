@@ -57,13 +57,12 @@ else() # WASI
     )
 endif()
 
-if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI OR CLR_CMAKE_TARGET_OPENBSD)
+if (HAVE_PTHREAD_MUTEXATTR_SETROBUST AND HAVE_PTHREAD_MUTEX_CONSISTENT)
     list (APPEND NATIVE_SOURCES
-        pal_crossprocessmutex_unsupported.c)
+        pal_crossprocessmutex.c)
 else()
     list (APPEND NATIVE_SOURCES
-        pal_crossprocessmutex.c
-    )
+        pal_crossprocessmutex_unsupported.c)
 endif()
 
 if (CLR_CMAKE_TARGET_APPLE)
