@@ -220,7 +220,7 @@ namespace System.Net.Security
                     // ensures the new ClientHello is generated without a stale session ID.
                     // We can reuse inputBuffers since this only runs on the very first ISC call
                     // (newContext == true) where the input is empty.
-                    context.Dispose();
+                    context?.Dispose();
                     context = null;
                     token.ReleasePayload();
                     token = default;
