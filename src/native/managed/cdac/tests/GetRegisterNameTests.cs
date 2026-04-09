@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -16,17 +15,10 @@ public unsafe class GetRegisterNameTests
         MockTarget.Architecture arch,
         RuntimeInfoArchitecture targetArch)
     {
-        MockMemorySpace.Builder builder = new MockMemorySpace.Builder(new TargetTestHelpers(arch));
-        TestPlaceholderTarget target = new TestPlaceholderTarget(
-            arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            [],
-            [],
-            [(Constants.Globals.Architecture, targetArch.ToString().ToLowerInvariant())]);
-
-        ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.RuntimeInfo == (IRuntimeInfo)new RuntimeInfo_1(target));
-        target.SetContracts(reg);
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobalStrings((Constants.Globals.Architecture, targetArch.ToString().ToLowerInvariant()))
+            .AddContract<IRuntimeInfo>(version: 1)
+            .Build();
 
         return new SOSDacImpl(target, legacyObj: null);
     }

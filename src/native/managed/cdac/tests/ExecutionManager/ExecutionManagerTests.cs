@@ -42,12 +42,13 @@ public class ExecutionManagerTests
     private static Target CreateTarget(MockExecutionManagerBuilder emBuilder)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
-        TestPlaceholderTarget.ReadFromTargetDelegate reader = emBuilder.Builder.GetMemoryContext().ReadFromTarget;
-        var target = new TestPlaceholderTarget(arch, reader, CreateContractTypes(emBuilder), emBuilder.Globals);
-        var registry = target.SetupContractRegistry();
-        registry.SetVersion<IExecutionManager>(emBuilder.Version);
-        registry.SetMock(Mock.Of<IPlatformMetadata>());
-        return target;
+        return new TestPlaceholderTarget.Builder(arch)
+            .UseReader(emBuilder.Builder.GetMemoryContext().ReadFromTarget)
+            .AddTypes(CreateContractTypes(emBuilder))
+            .AddGlobals(emBuilder.Globals)
+            .AddContract<IExecutionManager>(version: emBuilder.Version)
+            .AddMockContract<IPlatformMetadata>(Mock.Of<IPlatformMetadata>())
+            .Build();
     }
 
     private static IExecutionManager CreateExecutionManagerContract(

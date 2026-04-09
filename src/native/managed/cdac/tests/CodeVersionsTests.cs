@@ -153,17 +153,14 @@ public class CodeVersionsTests
         mockExecutionManager ??= new Mock<IExecutionManager>();
         mockRuntimeTypeSystem ??= new Mock<IRuntimeTypeSystem>();
 
-        TestPlaceholderTarget target = new TestPlaceholderTarget(
-            arch,
-            builder.Builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(builder));
-
-        var registry = target.SetupContractRegistry();
-        registry.SetVersion<ICodeVersions>(1);
-        registry.SetMock(mockRuntimeTypeSystem.Object);
-        registry.SetMock(mockExecutionManager.Object);
-        registry.SetMock(mockLoader.Object);
-        return target;
+        return new TestPlaceholderTarget.Builder(arch)
+            .UseReader(builder.Builder.GetMemoryContext().ReadFromTarget)
+            .AddTypes(CreateContractTypes(builder))
+            .AddContract<ICodeVersions>(version: 1)
+            .AddMockContract(mockRuntimeTypeSystem)
+            .AddMockContract(mockExecutionManager)
+            .AddMockContract(mockLoader)
+            .Build();
     }
 
     [Theory]

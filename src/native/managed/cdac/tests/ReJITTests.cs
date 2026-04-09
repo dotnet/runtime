@@ -41,7 +41,7 @@ public class ReJITTests
             .AddTypes(CreateContractTypes(rejitBuilder))
             .AddGlobals((nameof(Constants.Globals.ProfilerControlBlock), rejitBuilder.ProfilerControlBlockGlobalAddress))
             .AddContract<IReJIT>(version: 1)
-            .AddMockContract<ICodeVersions>(mockCodeVersions.Object)
+            .AddMockContract(mockCodeVersions)
             .Build();
         return new ReJITContractContext(target.Contracts.ReJIT, target);
     }

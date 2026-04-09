@@ -28,7 +28,6 @@ public unsafe class ThreadTests
             .AddContract<IThread>(version: 1)
             .Build();
 
-
         return target;
     }
 

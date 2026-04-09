@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Moq;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -46,9 +47,10 @@ internal class TestPlaceholderTarget : Target
     }
 
     /// <summary>
-    /// Creates a <see cref="TestContractRegistry"/> with <see cref="CoreCLRContracts.Register"/>
-    /// applied, and sets it as the contract registry for this target. Returns the registry so
-    /// callers can call <see cref="TestContractRegistry.SetVersion{TContract}"/> and
+    /// Creates a <see cref="TestContractRegistry"/> with the given registration action
+    /// (defaulting to <see cref="CoreCLRContracts.Register"/>), and sets it as the
+    /// contract registry for this target. Returns the registry so callers can call
+    /// <see cref="TestContractRegistry.SetVersion{TContract}"/> and
     /// <see cref="TestContractRegistry.SetMock{TContract}"/>.
     /// </summary>
     internal TestContractRegistry SetupContractRegistry(Action<ContractRegistry>? registrations = null)
@@ -74,6 +76,7 @@ internal class TestPlaceholderTarget : Target
         private readonly List<(string Name, string Value)> _globalStrings = new();
         private readonly List<Action<TestContractRegistry>> _contractSetups = new();
         private Action<ContractRegistry> _registrations = CoreCLRContracts.Register;
+        private ReadFromTargetDelegate? _readerOverride;
 
         public Builder(MockTarget.Architecture arch)
         {
@@ -102,6 +105,12 @@ internal class TestPlaceholderTarget : Target
             return this;
         }
 
+        public Builder UseReader(ReadFromTargetDelegate reader)
+        {
+            _readerOverride = reader;
+            return this;
+        }
+
         public Builder UseRegistrations(Action<ContractRegistry> registrations)
         {
             _registrations = registrations;
@@ -120,11 +129,17 @@ internal class TestPlaceholderTarget : Target
             return this;
         }
 
+        public Builder AddMockContract<TContract>(Mock<TContract> mock) where TContract : class, IContract
+        {
+            _contractSetups.Add(registry => registry.SetMock(mock.Object));
+            return this;
+        }
+
         public TestPlaceholderTarget Build()
         {
             var target = new TestPlaceholderTarget(
                 _arch,
-                _memBuilder.GetMemoryContext().ReadFromTarget,
+                _readerOverride ?? _memBuilder.GetMemoryContext().ReadFromTarget,
                 _types,
                 _globals.ToArray(),
                 _globalStrings.ToArray());
@@ -525,7 +540,7 @@ internal class TestPlaceholderTarget : Target
             }
             else
             {
-                throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered. Use AddContract<T>(version) or AddMockContract<T>(mock) on the Builder.");
+                throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered. Use SetVersion<T>(version) or SetMock<T>(mock) to configure contracts.");
             }
 
             _resolved[typeof(TContract)] = contract;
