@@ -3143,11 +3143,16 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
     GetEmitter()->emitIns_I(INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+//------------------------------------------------------------------------
+// genCallFinally: Generate a call to a finally.
+//
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
     NYI_WASM("genCallFinally");
-    return nullptr;
 }
 
 //------------------------------------------------------------------------
