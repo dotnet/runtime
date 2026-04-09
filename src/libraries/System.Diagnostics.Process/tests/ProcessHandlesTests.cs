@@ -595,8 +595,9 @@ namespace System.Diagnostics.Tests
                             return shouldBeInherited ? RemoteExecutor.SuccessExitCode - 1 : RemoteExecutor.SuccessExitCode;
                         }
 
-                        // Handle value was reused for a different file — not our handle, acceptable.
-                        return RemoteExecutor.SuccessExitCode;
+                        // Handle value was reused for a different file.
+                        // This is only acceptable when the handle was not expected to be inherited.
+                        return shouldBeInherited ? RemoteExecutor.SuccessExitCode - 1 : RemoteExecutor.SuccessExitCode;
                     },
                     rawHandle.ToString(),
                     id,
