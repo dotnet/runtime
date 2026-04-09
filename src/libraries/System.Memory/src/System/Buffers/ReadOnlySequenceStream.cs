@@ -19,7 +19,7 @@ namespace System.Buffers
     {
         private ReadOnlySequence<byte> _sequence;
         private SequencePosition _position;
-        private long _positionPastEnd; // -1 if within bounds, or the actual position if past end
+        private long _absolutePosition;
         private bool _isDisposed;
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace System.Buffers
         {
             _sequence = sequence;
             _position = sequence.Start;
-            _positionPastEnd = -1;
+            _absolutePosition = 0;
             _isDisposed = false;
         }
 
@@ -61,24 +61,23 @@ namespace System.Buffers
             get
             {
                 EnsureNotDisposed();
-                return _positionPastEnd >= 0 ? _positionPastEnd : _sequence.Slice(_sequence.Start, _position).Length;
+                return _absolutePosition;
             }
             set
             {
                 EnsureNotDisposed();
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
 
-                // Allow seeking past the end
-                if (value >= Length)
+                if (value >= _sequence.Length)
                 {
                     _position = _sequence.End;
-                    _positionPastEnd = value;
                 }
                 else
                 {
                     _position = _sequence.GetPosition(value, _sequence.Start);
-                    _positionPastEnd = -1;
                 }
+
+                _absolutePosition = value;
             }
         }
 
@@ -94,7 +93,7 @@ namespace System.Buffers
         {
             EnsureNotDisposed();
 
-            if (_positionPastEnd >= 0)
+            if (_absolutePosition >= _sequence.Length)
             {
                 return 0;
             }
@@ -108,6 +107,7 @@ namespace System.Buffers
 
             remaining.Slice(0, n).CopyTo(buffer);
             _position = _sequence.GetPosition(n, _position);
+            _absolutePosition += n;
             return n;
         }
 
@@ -116,9 +116,10 @@ namespace System.Buffers
         {
             ValidateBufferArguments(buffer, offset, count);
 
-            // If cancellation was requested, bail early
             if (cancellationToken.IsCancellationRequested)
+            {
                 return Task.FromCanceled<int>(cancellationToken);
+            }
 
             int n = Read(buffer, offset, count);
             return Task.FromResult(n);
@@ -161,8 +162,8 @@ namespace System.Buffers
             long absolutePosition = origin switch
             {
                 SeekOrigin.Begin => offset,
-                SeekOrigin.Current => (_positionPastEnd >= 0 ? _positionPastEnd : _sequence.Slice(_sequence.Start, _position).Length) + offset,
-                SeekOrigin.End => Length + offset,
+                SeekOrigin.Current => _absolutePosition + offset,
+                SeekOrigin.End => _sequence.Length + offset,
                 _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin))
             };
 
@@ -173,22 +174,25 @@ namespace System.Buffers
             }
 
             // Update position - seeking past end is allowed
-            if (absolutePosition >= Length)
+            if (absolutePosition >= _sequence.Length)
             {
                 _position = _sequence.End;
-                _positionPastEnd = absolutePosition;
             }
             else
             {
                 _position = _sequence.GetPosition(absolutePosition, _sequence.Start);
-                _positionPastEnd = -1;
             }
 
+            _absolutePosition = absolutePosition;
             return absolutePosition;
         }
 
         /// <inheritdoc />
         public override void Flush() { }
+
+        /// <inheritdoc />
+        public override Task FlushAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) : Task.CompletedTask;
 
         /// <inheritdoc />
         public override void SetLength(long value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);

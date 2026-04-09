@@ -23,6 +23,13 @@ public sealed class StringStream : Stream
     private int _charPosition;
     private bool _disposed;
 
+    // Spillover buffer for multibyte encodings: when the caller's buffer is too small
+    // to hold even one encoded scalar (e.g., ReadByte with UTF-16), we encode into
+    // this buffer and serve bytes from it across subsequent Read/ReadByte calls.
+    private byte[]? _pendingBytes;
+    private int _pendingOffset;
+    private int _pendingCount;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="StringStream"/> class with the specified string and encoding.
     /// </summary>
@@ -91,18 +98,76 @@ public sealed class StringStream : Stream
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (buffer.Length == 0 || _charPosition >= _text.Length)
+        if (buffer.Length == 0 || (_charPosition >= _text.Length && _pendingCount == 0))
         {
             return 0;
         }
 
-        ReadOnlySpan<char> remaining = _text.Span.Slice(_charPosition);
-        bool flush = true;
+        int totalBytesWritten = 0;
 
-        _encoder.Convert(remaining, buffer, flush, out int charsUsed, out int bytesUsed, out _);
-        _charPosition += charsUsed;
+        // Drain any pending bytes from a previous partial read.
+        if (_pendingCount > 0)
+        {
+            int toCopy = Math.Min(_pendingCount, buffer.Length);
+            _pendingBytes.AsSpan(_pendingOffset, toCopy).CopyTo(buffer);
+            _pendingOffset += toCopy;
+            _pendingCount -= toCopy;
+            totalBytesWritten += toCopy;
 
-        return bytesUsed;
+            if (totalBytesWritten == buffer.Length)
+            {
+                return totalBytesWritten;
+            }
+
+            buffer = buffer.Slice(totalBytesWritten);
+        }
+
+        if (_charPosition < _text.Length)
+        {
+            ReadOnlySpan<char> remaining = _text.Span.Slice(_charPosition);
+
+            // If the caller's buffer may be too small for even one encoded scalar,
+            // encode into the spillover buffer first, then copy what fits.
+            // Encoder.Convert throws ArgumentException when the output buffer
+            // cannot hold a single complete encoded character.
+            if (buffer.Length < _encoding.GetMaxByteCount(1))
+            {
+                _pendingBytes ??= new byte[_encoding.GetMaxByteCount(2)];
+                int charsToEncode = Math.Min(2, remaining.Length);
+                bool flush = _charPosition + charsToEncode >= _text.Length;
+                _encoder.Convert(remaining.Slice(0, charsToEncode), _pendingBytes, flush, out int charsUsed, out int bytesUsed, out _);
+                _charPosition += charsUsed;
+
+                int toCopy = Math.Min(bytesUsed, buffer.Length);
+                _pendingBytes.AsSpan(0, toCopy).CopyTo(buffer);
+                totalBytesWritten += toCopy;
+
+                _pendingOffset = toCopy;
+                _pendingCount = bytesUsed - toCopy;
+            }
+            else
+            {
+                // Encode directly into the caller's buffer.
+                // Only flush on the final block to preserve encoder state
+                // for stateful encodings.
+                _encoder.Convert(remaining, buffer, flush: false, out int charsUsed, out int bytesUsed, out _);
+                _charPosition += charsUsed;
+                totalBytesWritten += bytesUsed;
+
+                // If we consumed all remaining input, flush encoder state.
+                if (_charPosition >= _text.Length && bytesUsed > 0)
+                {
+                    Span<byte> flushBuf = buffer.Slice(bytesUsed);
+                    if (flushBuf.Length > 0)
+                    {
+                        _encoder.Convert(ReadOnlySpan<char>.Empty, flushBuf, flush: true, out _, out int flushBytes, out _);
+                        totalBytesWritten += flushBytes;
+                    }
+                }
+            }
+        }
+
+        return totalBytesWritten;
     }
 
     /// <inheritdoc/>
@@ -120,7 +185,9 @@ public sealed class StringStream : Stream
         ValidateBufferArguments(buffer, offset, count);
 
         if (cancellationToken.IsCancellationRequested)
+        {
             return Task.FromCanceled<int>(cancellationToken);
+        }
 
         return Task.FromResult(Read(buffer, offset, count));
     }
@@ -129,7 +196,9 @@ public sealed class StringStream : Stream
     public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
+        {
             return ValueTask.FromCanceled<int>(cancellationToken);
+        }
 
         return new ValueTask<int>(Read(buffer.Span));
     }
@@ -145,6 +214,12 @@ public sealed class StringStream : Stream
 
     /// <inheritdoc/>
     public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+
+    /// <inheritdoc/>
+    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+
+    /// <inheritdoc/>
+    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
     /// <inheritdoc/>
     public override void Flush() { }

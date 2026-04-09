@@ -12,7 +12,7 @@ namespace System.IO.Tests
     public class ReadOnlyMemoryStreamTests
     {
         [Fact]
-        public void Constructor_DefaultParameters_CreatesPubliclyVisibleStream()
+        public void Constructor_CreatesReadOnlySeekableStream()
         {
             byte[] buffer = new byte[100];
             Stream stream = new ReadOnlyMemoryStream(new ReadOnlyMemory<byte>(buffer));

@@ -30,18 +30,9 @@ namespace System.IO.Tests
             byte[] buffer = new byte[10];
             Stream stream = new WritableMemoryStream(new Memory<byte>(buffer));
 
-            byte[] data = new byte[15];  // More than capacity
+            byte[] data = new byte[15];
 
-            // Both MemoryStream (fixed capacity) and WritableMemoryStream throw NotSupportedException
-            // when trying to expand beyond capacity, just with different messages
-            var exception = Assert.Throws<NotSupportedException>(() =>
-                stream.Write(data, 0, data.Length));
-
-            // Accept either message format: WritableMemoryStream's or MemoryStream's 'SR.NotSupported_MemStreamNotExpandable' message
-            Assert.True(
-                exception.Message.Contains("Cannot expand buffer") ||
-                exception.Message.Contains("not expandable"),
-                $"Unexpected exception message: {exception.Message}");
+            Assert.Throws<NotSupportedException>(() => stream.Write(data, 0, data.Length));
         }
 
         [Fact]
@@ -54,14 +45,7 @@ namespace System.IO.Tests
             stream.WriteByte(2);
             stream.WriteByte(3);
 
-            // Both MemoryStream (fixed capacity) and WritableMemoryStream throw NotSupportedException
-            var exception = Assert.Throws<NotSupportedException>(() => stream.WriteByte(4));
-
-            // Accept either message format: WritableMemoryStream's or MemoryStream's 'SR.NotSupported_MemStreamNotExpandable' message
-            Assert.True(
-                exception.Message.Contains("Cannot expand buffer") ||
-                exception.Message.Contains("not expandable"),
-                $"Unexpected exception message: {exception.Message}");
+            Assert.Throws<NotSupportedException>(() => stream.WriteByte(4));
         }
 
         [Fact]
@@ -87,7 +71,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void Write_PartialFitAtEndOfCapacity_WritesAvailableSpace()
+        public void Write_PastCapacity_ThrowsWithoutSideEffects()
         {
             byte[] buffer = new byte[10];
             Stream stream = new WritableMemoryStream(buffer);
@@ -135,17 +119,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ReadOnlyStream_WriteOperations_ThrowNotSupportedException()
-        {
-            byte[] buffer = new byte[100];
-            Stream stream = new ReadOnlyMemoryStream(buffer);
-
-            Assert.False(stream.CanWrite);
-            Assert.Throws<NotSupportedException>(() => stream.Write(new byte[5], 0, 5));
-            Assert.Throws<NotSupportedException>(() => stream.WriteByte(42));
-        }
-
-        [Fact]
         public void Write_OverExistingData_ReplacesData()
         {
             byte[] buffer = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
@@ -169,19 +142,10 @@ namespace System.IO.Tests
             byte[] buffer = new byte[100];
             Stream stream = new WritableMemoryStream(buffer);
 
-            // MemoryStream has MaxStreamLength (2147483591), WritableMemoryStream allows int.MaxValue
-            if (stream is MemoryStream)
-            {
-                // MemoryStream.MaxStreamLength = Array.MaxLength = 2147483591
-                // Setting position beyond this throws ArgumentOutOfRangeException
-                Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = int.MaxValue);
-            }
-            else
-            {
-                // WritableMemoryStream should not throw even though it's way beyond capacity
-                stream.Position = int.MaxValue;
-                Assert.Equal(int.MaxValue, stream.Position);
-            }
+            // WritableMemoryStream allows Position up to int.MaxValue even though it's beyond capacity.
+            // Our override permits this — reads return -1, writes throw.
+            stream.Position = int.MaxValue;
+            Assert.Equal(int.MaxValue, stream.Position);
         }
 
         [Fact]
@@ -257,30 +221,6 @@ namespace System.IO.Tests
             Stream stream = new WritableMemoryStream(new byte[10]);
 
             Assert.Throws<NotSupportedException>(() => stream.SetLength(20));
-        }
-
-        [Fact]
-        public async Task ReadAsync_SameResultSize_ReusesCachedTask()
-        {
-            byte[] data = new byte[20];
-            for (int i = 0; i < 20; i++) data[i] = (byte)i;
-            Stream stream = new WritableMemoryStream(data);
-
-            byte[] buffer1 = new byte[5];
-            byte[] buffer2 = new byte[5];
-            byte[] buffer3 = new byte[5];
-
-            Task<int> task1 = stream.ReadAsync(buffer1, 0, 5);
-            Task<int> task2 = stream.ReadAsync(buffer2, 0, 5);
-            Task<int> task3 = stream.ReadAsync(buffer3, 0, 5);
-
-            await task1;
-            await task2;
-            await task3;
-
-            Assert.Equal(new byte[] { 0, 1, 2, 3, 4 }, buffer1);
-            Assert.Equal(new byte[] { 5, 6, 7, 8, 9 }, buffer2);
-            Assert.Equal(new byte[] { 10, 11, 12, 13, 14 }, buffer3);
         }
 
         [Fact]

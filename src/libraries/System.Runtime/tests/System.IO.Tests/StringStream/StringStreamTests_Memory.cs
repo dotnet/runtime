@@ -13,7 +13,7 @@ namespace System.IO.Tests
     public class StringStreamTests_Memory
     {
         [Fact]
-        public void Constructor_DefaultEncoding_UsesUTF8()
+        public void Constructor_WithUTF8Encoding_CreatesReadableStream()
         {
             var chars = "test".AsMemory();
             var stream = new StringStream(chars, Encoding.UTF8);

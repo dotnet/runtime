@@ -10904,7 +10904,7 @@ namespace System.IO
         public System.Threading.Tasks.ValueTask ReadExactlyAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public abstract long Seek(long offset, System.IO.SeekOrigin origin);
         public abstract void SetLength(long value);
-        public static Stream Synchronized(Stream stream) { throw null; }
+        public static System.IO.Stream Synchronized(System.IO.Stream stream) { throw null; }
         protected static void ValidateBufferArguments(byte[] buffer, int offset, int count) { }
         protected static void ValidateCopyToArguments(System.IO.Stream destination, int bufferSize) { }
         public abstract void Write(byte[] buffer, int offset, int count);
@@ -11034,48 +11034,77 @@ namespace System.IO
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
         public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override int Read(System.Span<byte> buffer) { throw null; }
-        public override int ReadByte() { throw null; }
-        public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
-        public override void SetLength(long value) { }
-        public override void Write(byte[] buffer, int offset, int count) { }
-    }
-    public sealed partial class ReadOnlyMemoryStream : System.IO.Stream
-    {
-        public ReadOnlyMemoryStream(System.ReadOnlyMemory<byte> source) { }
-        public override bool CanRead { get { throw null; } }
-        public override bool CanSeek { get { throw null; } }
-        public override bool CanWrite { get { throw null; } }
-        public override long Length { get { throw null; } }
-        public override long Position { get { throw null; } set { } }
-        public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
-        public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override void Flush() { }
-        public override int Read(byte[] buffer, int offset, int count) { throw null; }
-        public override int Read(System.Span<byte> buffer) { throw null; }
-        public override int ReadByte() { throw null; }
-        public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
-        public override void SetLength(long value) { }
-        public override void Write(byte[] buffer, int offset, int count) { }
-    }
-    public sealed partial class WritableMemoryStream : System.IO.Stream
-    {
-        public WritableMemoryStream(System.Memory<byte> buffer) { }
-        public override bool CanRead { get { throw null; } }
-        public override bool CanSeek { get { throw null; } }
-        public override bool CanWrite { get { throw null; } }
-        public override long Length { get { throw null; } }
-        public override long Position { get { throw null; } set { } }
-        public override void Flush() { }
-        public override int Read(byte[] buffer, int offset, int count) { throw null; }
-        public override int Read(System.Span<byte> buffer) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class ReadOnlyMemoryStream : System.IO.MemoryStream
+    {
+        public ReadOnlyMemoryStream(System.ReadOnlyMemory<byte> source) { }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        public override int Capacity { get { throw null; } set { } }
+        public override long Length { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
+        public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
+        public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override byte[] GetBuffer() { throw null; }
+        public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> buffer) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override int ReadByte() { throw null; }
+        public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
+        public override void SetLength(long value) { }
+        public override byte[] ToArray() { throw null; }
+        public override bool TryGetBuffer(out System.ArraySegment<byte> buffer) { throw null; }
+        public override void Write(byte[] buffer, int offset, int count) { }
+        public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override void WriteTo(System.IO.Stream stream) { }
+    }
+    public sealed partial class WritableMemoryStream : System.IO.MemoryStream
+    {
+        public WritableMemoryStream(System.Memory<byte> buffer) { }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        public override int Capacity { get { throw null; } set { } }
+        public override long Length { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
+        public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
+        public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override byte[] GetBuffer() { throw null; }
+        public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> buffer) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override int ReadByte() { throw null; }
+        public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
+        public override void SetLength(long value) { }
+        public override byte[] ToArray() { throw null; }
+        public override bool TryGetBuffer(out System.ArraySegment<byte> buffer) { throw null; }
+        public override void Write(byte[] buffer, int offset, int count) { }
+        public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
+        public override void WriteTo(System.IO.Stream stream) { }
     }
     public partial class StringWriter : System.IO.TextWriter
     {

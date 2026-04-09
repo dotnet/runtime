@@ -14,17 +14,7 @@ namespace System.IO.Tests
         // This stream can't grow beyond initial capacity
         protected override bool CanSetLengthGreaterThanCapacity => false;
 
-        protected override Task<Stream?> CreateReadOnlyStreamCore(byte[]? initialData)
-        {
-            if (initialData == null || initialData.Length == 0)
-            {
-                // Create empty memory for null or empty data
-                return Task.FromResult<Stream?>(new ReadOnlyMemoryStream(ReadOnlyMemory<byte>.Empty));
-            }
-
-            // Create read-only stream from ReadOnlyMemory<byte>
-            return Task.FromResult<Stream?>(new ReadOnlyMemoryStream(new ReadOnlyMemory<byte>(initialData)));
-        }
+        protected override Task<Stream?> CreateReadOnlyStreamCore(byte[]? initialData) => Task.FromResult<Stream?>(null);
 
         protected override Task<Stream?> CreateWriteOnlyStreamCore(byte[]? initialData) => Task.FromResult<Stream?>(null);
 
@@ -49,24 +39,5 @@ namespace System.IO.Tests
         // Note to both skipped tests: It was already verified that this works when using just WritableMemoryStream,
         // before adding the 'forking' in Stream behavior for fast-path MemoryStream usage.
 
-        // Override to skip the SetLength test for writable streams
-        // MemoryStream (returned by fast path) behaves differently than WritableMemoryStream
-        [Fact]
-        public override Task SetLength_FailsForWritableIfApplicable_Throws()
-        {
-            // Skip this test - MemoryStream vs WritableMemoryStream have different SetLength behavior
-            // MemoryStream allows SetLength, WritableMemoryStream throws NotSupportedException
-            return Task.CompletedTask;
-        }
-
-        // Override ArgumentValidation test because MemoryStream and WritableMemoryStream
-        // have different SetLength behavior which affects validation
-        [Fact]
-        public override Task ArgumentValidation_ThrowsExpectedException()
-        {
-            // Skip this test - it validates SetLength which behaves differently
-            // between MemoryStream and WritableMemoryStream
-            return Task.CompletedTask;
-        }
     }
 }
