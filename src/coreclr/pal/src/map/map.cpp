@@ -466,7 +466,15 @@ CorUnix::InternalCreateFileMapping(
             // information, though...
             //
 
+#ifdef TARGET_WASI
+            // WASI's fcntl may not support F_DUPFD_CLOEXEC at runtime.
+            // CLOEXEC is irrelevant on WASI (no exec). Use fd_fdstat_get + path_open
+            // workaround: just reuse the fd directly without duplication since
+            // WASI doesn't support fork/exec anyway.
+            UnixFd = pFileLocalData->unix_fd;
+#else
             UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
+#endif
             if (-1 == UnixFd)
             {
                 ERROR( "Unable to duplicate the Unix file descriptor!\n" );

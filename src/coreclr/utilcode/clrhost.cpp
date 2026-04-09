@@ -12,6 +12,11 @@
 #include "clrnt.h"
 #include "contract.h"
 
+#ifdef TARGET_WASI
+#include <stdlib.h>
+#include <limits.h>
+#endif
+
 #if HOST_WINDOWS
 extern "C" IMAGE_DOS_HEADER __ImageBase;
 #else
@@ -62,6 +67,48 @@ DWORD GetClrModulePathName(SString& buffer)
 #ifdef HOST_WINDOWS
     return WszGetModuleFileName((HINSTANCE)GetClrModuleBase(), buffer);
 #else
+#ifdef TARGET_WASI
+    // On WASI, the runtime is statically linked and there's no loadable module.
+    // Use CORE_ROOT env var to determine where CoreLib lives.
+    const char* coreRoot = getenv("CORE_ROOT");
+    if (coreRoot != NULL && coreRoot[0] != '\0')
+    {
+        char absPath[4096];
+        const char* resolvedRoot = coreRoot;
+        if (coreRoot[0] != '/')
+        {
+            // Use getcwd + relative path (not realpath which resolves through symlinks
+            // and on WASI returns '/' for '.', losing the preopen-relative path)
+            char cwd[4096];
+            if (getcwd(cwd, sizeof(cwd)) != NULL)
+            {
+                size_t cwdLen = strlen(cwd);
+                // Skip "./" prefix if CORE_ROOT is "."
+                if (strcmp(coreRoot, ".") == 0)
+                {
+                    resolvedRoot = cwd;
+                }
+                else
+                {
+                    snprintf(absPath, sizeof(absPath), "%s%s%s",
+                        cwd,
+                        (cwdLen > 0 && cwd[cwdLen-1] != '/') ? "/" : "",
+                        coreRoot);
+                    resolvedRoot = absPath;
+                }
+            }
+        }
+        // Construct a fake module path so GetClrModuleDirectory extracts the dir
+        SString corePath;
+        corePath.SetUTF8(resolvedRoot);
+        size_t len = strlen(resolvedRoot);
+        if (len == 0 || resolvedRoot[len - 1] != '/')
+            corePath.Append(DIRECTORY_SEPARATOR_CHAR_W);
+        corePath.AppendUTF8("libcoreclr.so");
+        buffer.Set(corePath);
+        return buffer.GetCount();
+    }
+#endif // TARGET_WASI
 #ifndef HOST_WASM
     HMODULE hModule = PAL_GetPalHostModule();
 #else

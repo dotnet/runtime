@@ -289,7 +289,15 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         goto LExit;
     }
 
-#if REALPATH_SUPPORTS_NONEXISTENT_FILES
+#ifdef TARGET_WASI
+    // On WASI, realpath cannot resolve virtual preopen paths (e.g. "/app/foo")
+    // since they don't exist on a real filesystem. Use the path directly.
+    if (!lpBuffer.Set(lpUnixPath, strlen(lpUnixPath)))
+    {
+        palError = ERROR_NOT_ENOUGH_MEMORY;
+        goto LExit;
+    }
+#elif REALPATH_SUPPORTS_NONEXISTENT_FILES
     RealPathHelper(lpUnixPath, lpBuffer);
 #else   // !REALPATH_SUPPORTS_NONEXISTENT_FILES
 
@@ -330,21 +338,16 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         lpBuffer.Append(lpExistingPath, strlen(lpExistingPath));
         return NO_ERROR;
     }
+#ifdef TARGET_WASI
+    // On WASI, realpath cannot resolve virtual preopen paths (e.g. "/app/foo")
+    // since they don't exist on a real filesystem. Use the path directly.
+    lpBuffer.Clear();
+    lpBuffer.Append(lpExistingPath, strlen(lpExistingPath));
+    return NO_ERROR;
+#else // !TARGET_WASI
     else
     {
         bool fSetFilename = true;
-        // Since realpath implementation cannot handle inexistent filenames,
-        // check if we are going to truncate the "/" corresponding to the
-        // root folder (e.g. case of "/Volumes"). If so:
-        //
-        // 1) Set the separator to point to the NULL terminator of the specified
-        //    file/folder name.
-        //
-        // 2) Null terminate lpBuffer
-        //
-        // 3) Since there is no explicit filename component in lpExistingPath (as
-        //    we only have "/" corresponding to the root), set lpFilename to NULL,
-        //    alongwith a flag indicating that it has already been set.
         if (pchSeparator == lpExistingPath)
         {
             pchSeparator = lpExistingPath+strlen(lpExistingPath);
@@ -378,10 +381,9 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         ERROR ("Append failed!\n");
         palError = ERROR_INSUFFICIENT_BUFFER;
 
-        // Doing a goto here since we want to exit now. This will work
-        // incase someone else adds another if clause below us.
         goto LExit;
     }
+#endif // TARGET_WASI
 
 #endif // REALPATH_SUPPORTS_NONEXISTENT_FILES
 LExit:

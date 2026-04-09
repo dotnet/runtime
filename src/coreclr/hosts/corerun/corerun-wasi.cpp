@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <unistd.h>
 #include <coreclrhost.h>
 
 extern void add_pinvoke_override();
@@ -15,6 +16,31 @@ extern void add_pinvoke_override();
 static void build_tpa_list(const char* directory, char* tpa_list, size_t tpa_list_size)
 {
     tpa_list[0] = '\0';
+
+    // Resolve to absolute path — the binder rejects relative TPA entries
+    char abs_dir[4096];
+    if (directory[0] != '/')
+    {
+        char cwd[4096];
+        if (getcwd(cwd, sizeof(cwd)) != NULL)
+        {
+            if (strcmp(directory, ".") == 0)
+            {
+                strncpy(abs_dir, cwd, sizeof(abs_dir) - 1);
+            }
+            else
+            {
+                size_t cwdLen = strlen(cwd);
+                snprintf(abs_dir, sizeof(abs_dir), "%s%s%s",
+                    cwd,
+                    (cwdLen > 0 && cwd[cwdLen-1] != '/') ? "/" : "",
+                    directory);
+            }
+            abs_dir[sizeof(abs_dir) - 1] = '\0';
+            directory = abs_dir;
+        }
+    }
+
     DIR* dir = opendir(directory);
     if (dir == NULL)
         return;
@@ -29,7 +55,10 @@ static void build_tpa_list(const char* directory, char* tpa_list, size_t tpa_lis
                 strncat(tpa_list, ":", tpa_list_size - strlen(tpa_list) - 1);
 
             strncat(tpa_list, directory, tpa_list_size - strlen(tpa_list) - 1);
-            strncat(tpa_list, "/", tpa_list_size - strlen(tpa_list) - 1);
+            // Avoid double-slash when directory ends with '/'
+            size_t dirlen = strlen(directory);
+            if (dirlen == 0 || directory[dirlen - 1] != '/')
+                strncat(tpa_list, "/", tpa_list_size - strlen(tpa_list) - 1);
             strncat(tpa_list, entry->d_name, tpa_list_size - strlen(tpa_list) - 1);
         }
     }
@@ -87,11 +116,20 @@ int main(int argc, char* argv[])
 
     char app_path[4096];
     strncpy(app_path, assembly, sizeof(app_path) - 1);
+    app_path[sizeof(app_path) - 1] = '\0';
     char* last_slash = strrchr(app_path, '/');
     if (last_slash != NULL)
         *last_slash = '\0';
     else
         strcpy(app_path, ".");
+
+    // Resolve app_path to absolute
+    char abs_app_path[4096];
+    if (app_path[0] != '/' && realpath(app_path, abs_app_path) != NULL)
+    {
+        strncpy(app_path, abs_app_path, sizeof(app_path) - 1);
+        app_path[sizeof(app_path) - 1] = '\0';
+    }
 
     add_pinvoke_override();
 

@@ -560,20 +560,25 @@ function(install_clr)
     foreach(destination ${destinations})
       # CMake bug with executable WASM outputs - https://gitlab.kitware.com/cmake/cmake/-/issues/20745
       if (CLR_CMAKE_TARGET_ARCH_WASM AND "${targetType}" STREQUAL "EXECUTABLE")
-        # Use install FILES since these are WASM assets that aren't executable.
-        install(FILES
-          "$<TARGET_FILE_DIR:${targetName}>/${targetName}.js"
-          "$<TARGET_FILE_DIR:${targetName}>/${targetName}.wasm"
-          DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        if (CLR_CMAKE_TARGET_WASI)
+          # WASI SDK produces a single .wasm file without .js glue
+          install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        else()
+          # Emscripten produces .js + .wasm assets that aren't directly executable.
+          install(FILES
+            "$<TARGET_FILE_DIR:${targetName}>/${targetName}.js"
+            "$<TARGET_FILE_DIR:${targetName}>/${targetName}.wasm"
+            DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
 
-        # Conditionally check for and copy any extra data file at install time.
-        install(CODE
-        "
-          if(EXISTS \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\")
-              file(INSTALL \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\" DESTINATION \"${CMAKE_INSTALL_PREFIX}/${destination}\")
-          endif()
-        "
-        COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+          # Conditionally check for and copy any extra data file at install time.
+          install(CODE
+          "
+            if(EXISTS \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\")
+                file(INSTALL \"$<TARGET_FILE_DIR:${targetName}>/${targetName}.data\" DESTINATION \"${CMAKE_INSTALL_PREFIX}/${destination}\")
+            endif()
+          "
+          COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        endif()
       else()
         # We don't need to install the export libraries for our DLLs
         # since they won't be directly linked against.
