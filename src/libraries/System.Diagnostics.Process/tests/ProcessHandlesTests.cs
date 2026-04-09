@@ -541,8 +541,10 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => Process.Start(startInfo));
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void NonInheritedFileHandle_IsNotAvailableInChildProcess()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NonInheritedFileHandle_IsNotAvailableInChildProcess(bool inheritHandle)
         {
             string path = Path.GetTempFileName();
             try
@@ -557,43 +559,48 @@ namespace System.Diagnostics.Tests
 
                 string id = GetSafeFileHandleId(fileHandle);
 
-                // Spawn a child process with InheritedHandles = [] (no handles inherited).
                 RemoteInvokeOptions options = new() { CheckExitCode = true };
-                options.StartInfo.InheritedHandles = [];
+                // When inheritHandle is true, explicitly add the handle to the allow-list so it gets inherited.
+                // When inheritHandle is false, use an empty allow-list so no handles are inherited.
+                options.StartInfo.InheritedHandles = inheritHandle ? [fileHandle] : [];
 
                 using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
-                    static (string handleStr, string fileId) =>
+                    static (string handleStr, string fileId, string inheritHandleStr) =>
                     {
+                        bool shouldBeInherited = bool.Parse(inheritHandleStr);
                         nint rawHandle = nint.Parse(handleStr);
                         using SafeFileHandle handle = new SafeFileHandle(rawHandle, ownsHandle: false);
 
                         if (handle.IsInvalid)
                         {
-                            // Handle is invalid in the child: correct, it was not inherited.
-                            return RemoteExecutor.SuccessExitCode;
+                            // Handle is invalid in the child: only acceptable when not inherited.
+                            return shouldBeInherited ? RemoteExecutor.SuccessExitCode - 1 : RemoteExecutor.SuccessExitCode;
                         }
 
-                        // If the handle appears valid, verify it doesn't point to our file.
+                        // If the handle appears valid, check whether it points to our file.
                         // (the Operating System could reuse same value for a different file)
                         try
                         {
                             string childId = GetSafeFileHandleId(handle);
 
-                            // If the ID matches, the handle was incorrectly inherited.
-                            if (string.Equals(childId, fileId, StringComparison.OrdinalIgnoreCase))
+                            if (childId == fileId)
                             {
-                                return RemoteExecutor.SuccessExitCode - 1;
+                                // Handle points to our file — correct only when inherited.
+                                return shouldBeInherited ? RemoteExecutor.SuccessExitCode : RemoteExecutor.SuccessExitCode - 1;
                             }
                         }
                         catch
                         {
-                            // Expected: the handle is not a valid file handle in this process.
+                            // Handle is not a valid file handle in this process.
+                            return shouldBeInherited ? RemoteExecutor.SuccessExitCode - 1 : RemoteExecutor.SuccessExitCode;
                         }
 
+                        // Handle value was reused for a different file — not our handle, acceptable.
                         return RemoteExecutor.SuccessExitCode;
                     },
                     rawHandle.ToString(),
                     id,
+                    inheritHandle.ToString(),
                     options);
             }
             finally

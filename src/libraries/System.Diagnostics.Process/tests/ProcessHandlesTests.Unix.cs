@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tests
@@ -9,7 +10,10 @@ namespace System.Diagnostics.Tests
     {
         private static partial string GetSafeFileHandleId(SafeFileHandle handle)
         {
-            Interop.Sys.FStat(handle, out Interop.Sys.FileStatus status);
+            if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus status) != 0)
+            {
+                throw new Win32Exception();
+            }
             return status.Ino.ToString();
         }
     }
