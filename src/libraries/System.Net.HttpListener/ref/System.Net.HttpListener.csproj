@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System.Net.HttpListener.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Primitives\ref\Microsoft.Win32.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Security\ref\System.Net.Security.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebHeaderCollection\ref\System.Net.WebHeaderCollection.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebSockets\ref\System.Net.WebSockets.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Claims\ref\System.Security.Claims.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <!-- Needed for NativeAotIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- Testing various TypeLoadExceptions -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="genmeth.ilproj" />
+    <ProjectReference Include="gentype.ilproj" />
+  </ItemGroup>
+</Project>

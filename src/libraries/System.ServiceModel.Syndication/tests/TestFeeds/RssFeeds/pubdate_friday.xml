@@ -1,0 +1,13 @@
+<!--
+  Description:  valid pubDate (Friday)
+  Expect:       ValidRFC2822Date{parent:channel,element:pubDate}
+-->
+
+<rss version="2.0">
+<channel>
+<title>Validity test</title>
+<link>http://contoso.com/rss/2.0/</link>
+<description>valid pubDate (Friday)</description>
+<pubDate>Fri, 27 Dec 2002 14:20:20 GMT</pubDate>
+</channel>
+</rss>

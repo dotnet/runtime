@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ForwardedType Include="System.Diagnostics.EntryWrittenEventArgs" />
+    <ForwardedType Include="System.Diagnostics.EntryWrittenEventHandler" />
+    <ForwardedType Include="System.Diagnostics.EventInstance" />
+    <ForwardedType Include="System.Diagnostics.EventLog" />
+    <ForwardedType Include="System.Diagnostics.EventLogEntry" />
+    <ForwardedType Include="System.Diagnostics.EventLogEntryCollection" />
+    <ForwardedType Include="System.Diagnostics.EventLogEntryType" />
+    <ForwardedType Include="System.Diagnostics.EventLogTraceListener" />
+    <ForwardedType Include="System.Diagnostics.EventSourceCreationData" />
+    <ForwardedType Include="System.Diagnostics.OverflowAction" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventBookmark" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventKeyword" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLevel" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogConfiguration" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogException" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogInformation" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogInvalidDataException" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogIsolation" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogLink" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogMode" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogNotFoundException" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogPropertySelector" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogQuery" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogReader" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogReadingException" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogRecord" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogSession" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogStatus" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogType" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogWatcher" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventMetadata" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventOpcode" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventProperty" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventRecord" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventRecordWrittenEventArgs" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.EventTask" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.PathType" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.ProviderMetadata" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.SessionAuthentication" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.StandardEventKeywords" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.StandardEventLevel" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.StandardEventOpcode" />
+    <ForwardedType Include="System.Diagnostics.Eventing.Reader.StandardEventTask" />
+  </ItemGroup>
+
+</Project>

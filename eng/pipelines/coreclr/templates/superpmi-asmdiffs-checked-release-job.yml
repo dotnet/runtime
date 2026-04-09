@@ -1,0 +1,52 @@
+parameters:
+  buildConfig: ''                 # required -- build configuration
+  archType: ''                    # required -- targeting CPU architecture
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  pool: ''
+  timeoutInMinutes: 320           # build timeout
+  variables: {}
+  helixQueues: ''
+  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-asmdiffs-checked-release-job.yml'
+
+jobs:
+- template: ${{ parameters.runJobTemplate }}
+  parameters:
+    jobName: ${{ format('superpmi_asmdiffs_checked_release_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    displayName: ${{ format('SuperPMI asmdiffs checked release {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    pool: ${{ parameters.pool }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    helixQueues: ${{ parameters.helixQueues }}
+    dependsOn:
+      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_checked_'
+      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_release_'
+
+    variables:
+    - ${{ each variable in parameters.variables }}:
+      - ${{insert}}: ${{ variable }}
+
+    - name: releaseProductRootFolderPath
+      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release'
+
+    steps:
+    # Download jit checked builds
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+        artifactFileName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
+        artifactName: 'CheckedJIT_$(osGroup)$(osSubgroup)_$(archType)'
+        displayName: 'JIT checked build'
+        cleanUnpackFolder: false
+
+    # Download jit release builds
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+        artifactFileName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)'
+        artifactName: 'ReleaseJIT_$(osGroup)$(osSubgroup)_$(archType)'
+        displayName: 'JIT release build'
+        cleanUnpackFolder: false

@@ -1,0 +1,49 @@
+﻿<TestDataSet>
+  <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true">
+      <xs:complexType>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element name="ScoreList">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="ID" type="xs:int" minOccurs="0" />
+                <xs:element name="RegisteredDate" type="xs:dateTime" minOccurs="0" />
+                <xs:element name="Name" type="xs:string" minOccurs="0" />
+                <xs:element name="Score" type="xs:int" minOccurs="0" />
+                <xs:element name="Gender" type="xs:boolean" minOccurs="0" />
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <ScoreList>
+    <ID>1</ID>
+    <RegisteredDate>2008-05-13T00:00:00.000</RegisteredDate>
+    <Name>Dorkpuff</Name>
+    <Score>100</Score>
+    <Gender>0</Gender>
+  </ScoreList>
+  <ScoreList>
+    <ID>2</ID>
+    <RegisteredDate>2008-05-14T00:00:00.000</RegisteredDate>
+    <Name>Headfoot</Name>
+    <Score>30</Score>
+    <Gender>0</Gender>
+  </ScoreList>
+  <ScoreList>
+    <ID>3</ID>
+    <RegisteredDate>2008-05-15T00:00:00.000</RegisteredDate>
+    <Name>Muckdoof</Name>
+    <Score>60</Score>
+    <Gender>1</Gender>
+  </ScoreList>
+  <ScoreList>
+    <ID>4</ID>
+    <RegisteredDate>2008-05-16T00:00:00.000</RegisteredDate>
+    <Name>Numbcheese</Name>
+    <Score>80</Score>
+    <Gender>0</Gender>
+  </ScoreList>
+</TestDataSet>

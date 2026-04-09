@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CustomMarshaler.cs" />
+  </ItemGroup>
+</Project>

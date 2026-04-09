@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DeepEquals.cs" />
+    <Compile Include="DocOrderComparer.cs" />
+    <Compile Include="FunctionalTests.cs" />
+    <Compile Include="ImplicitConversionsRoundTrip.cs" />
+    <Compile Include="ImplicitConversionsXElement.cs" />
+    <Compile Include="IXmlLineInfo.cs" />
+    <Compile Include="NamespaceAccessors.cs" />
+    <Compile Include="XElement_Value.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
+    <ProjectReference Include="$(CommonTestPath)System\Xml\XmlDiff\XmlDiff.csproj" />
+    <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />
+    <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj" />
+    <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj" />
+  </ItemGroup>
+</Project>

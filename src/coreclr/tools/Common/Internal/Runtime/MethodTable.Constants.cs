@@ -1,0 +1,257 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+
+namespace Internal.Runtime
+{
+    /// <summary>
+    /// Represents the flags stored in the <c>_usFlags</c> field of a <c>System.Runtime.MethodTable</c>.
+    /// </summary>
+    [Flags]
+    internal enum EETypeFlags : uint
+    {
+        /// <summary>
+        /// There are four kinds of EETypes, defined in <c>Kinds</c>.
+        /// </summary>
+        EETypeKindMask = 0x00030000,
+
+        /// <summary>
+        /// Type has an associated dispatch map.
+        /// </summary>
+        HasDispatchMap = 0x00040000,
+
+        /// <summary>
+        /// This type was dynamically allocated at runtime.
+        /// </summary>
+        IsDynamicTypeFlag = 0x00080000,
+
+        /// <summary>
+        /// This MethodTable represents a type which requires finalization.
+        /// </summary>
+        HasFinalizerFlag = 0x00100000,
+
+        /// <summary>
+        /// This MethodTable has sealed vtable entries
+        /// </summary>
+        HasSealedVTableEntriesFlag = 0x00400000,
+
+        /// <summary>
+        /// This type is generic and one or more of its type parameters is co- or contra-variant. This
+        /// only applies to interface and delegate types.
+        /// </summary>
+        GenericVarianceFlag = 0x00800000,
+
+        /// <summary>
+        /// This type contain GC pointers.
+        /// </summary>
+        HasPointersFlag = 0x01000000,
+
+        /// <summary>
+        /// This type is generic.
+        /// </summary>
+        IsGenericFlag = 0x02000000,
+
+        /// <summary>
+        /// We are storing a EETypeElementType in the upper bits for unboxing enums.
+        /// </summary>
+        ElementTypeMask = 0x7C000000,
+        ElementTypeShift = 26,
+
+        /// <summary>
+        /// The _usComponentSize is a number (not holding FlagsEx).
+        /// </summary>
+        HasComponentSizeFlag = 0x80000000,
+    };
+
+    /// <summary>
+    /// Represents the extra flags stored in the <c>_usComponentSize</c> field of a <c>System.Runtime.MethodTable</c>
+    /// when <c>_usComponentSize</c> does not represent ComponentSize. (i.e. when the type is not an array, string or typedef)
+    /// </summary>
+    [Flags]
+    internal enum EETypeFlagsEx : ushort
+    {
+        HasEagerFinalizerFlag = 0x0001,
+        HasCriticalFinalizerFlag = 0x0002,
+        IsTrackedReferenceWithFinalizerFlag = 0x0004,
+
+        /// <summary>
+        /// This type implements IDynamicInterfaceCastable to allow dynamic resolution of interface casts.
+        /// </summary>
+        IDynamicInterfaceCastableFlag = 0x0008,
+
+        /// <summary>
+        /// This MethodTable is for a Byref-like class (TypedReference, Span&lt;T&gt;,...)
+        /// </summary>
+        IsByRefLikeFlag = 0x0010,
+
+        /// <summary>
+        /// For valuetypes, stores the padding by which the type size is padded on the GC heap.
+        /// </summary>
+        ValueTypeFieldPaddingMask = 0x00E0,
+
+        /// <summary>
+        /// For nullable types, stores the log2 of offset of the value field.
+        /// </summary>
+        NullableValueOffsetMask = 0x0700,
+
+        /// <summary>
+        /// This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
+        /// </summary>
+        RequiresAlign8Flag = 0x1000
+    }
+
+    internal static class ValueTypeFieldPaddingConsts
+    {
+        public const int Shift = 5;
+    }
+
+    internal static class NullableValueOffsetConsts
+    {
+        public const int Shift = 8;
+    }
+
+    internal enum EETypeKind : uint
+    {
+        /// <summary>
+        /// Represents a standard ECMA type
+        /// </summary>
+        CanonicalEEType = 0x00000000,
+
+        /// <summary>
+        /// Represents a function pointer
+        /// </summary>
+        FunctionPointerEEType = 0x00010000,
+
+        /// <summary>
+        /// Represents a parameterized type. For example a single dimensional array or pointer type
+        /// </summary>
+        ParameterizedEEType = 0x00020000,
+
+        /// <summary>
+        /// Represents an uninstantiated generic type definition
+        /// </summary>
+        GenericTypeDefEEType = 0x00030000,
+    }
+
+    /// <summary>
+    /// Flags that are set for dynamically allocated types.
+    /// </summary>
+    [Flags]
+    internal enum DynamicTypeFlags : int
+    {
+        /// <summary>
+        /// This dynamically created type has a static constructor
+        /// </summary>
+        HasLazyCctor = 0x00000001,
+
+        /// <summary>
+        /// This dynamically created types has gc statics
+        /// </summary>
+        HasGCStatics = 0x00000002,
+
+        /// <summary>
+        /// This dynamically created types has non gc statics
+        /// </summary>
+        HasNonGCStatics = 0x00000004,
+
+        /// <summary>
+        /// This dynamically created types has thread statics
+        /// </summary>
+        HasThreadStatics = 0x00000008,
+    }
+
+    internal enum EETypeField
+    {
+        ETF_TypeManagerIndirection,
+        ETF_WritableData,
+        ETF_DispatchMap,
+        ETF_Finalizer,
+        ETF_SealedVirtualSlots,
+        ETF_DynamicTemplateType,
+        ETF_GenericDefinition,
+        ETF_GenericComposition,
+        ETF_FunctionPointerParameters,
+        ETF_DynamicTypeFlags,
+        ETF_DynamicGcStatics,
+        ETF_DynamicNonGcStatics,
+        ETF_DynamicThreadStaticOffset,
+    }
+
+    // Subset of the managed TypeFlags enum understood by the runtime.
+    // This should match the values in the TypeFlags enum except for the special
+    // entry that marks System.Array specifically.
+    internal enum EETypeElementType
+    {
+        // Primitive
+        Unknown = 0x00,
+        Void = 0x01,
+        Boolean = 0x02,
+        Char = 0x03,
+        SByte = 0x04,
+        Byte = 0x05,
+        Int16 = 0x06,
+        UInt16 = 0x07,
+        Int32 = 0x08,
+        UInt32 = 0x09,
+        Int64 = 0x0A,
+        UInt64 = 0x0B,
+        IntPtr = 0x0C,
+        UIntPtr = 0x0D,
+        Single = 0x0E,
+        Double = 0x0F,
+
+        ValueType = 0x10,
+        // Enum = 0x11, // EETypes store enums as their underlying type
+        Nullable = 0x12,
+        // Unused 0x13,
+
+        Class = 0x14,
+        Interface = 0x15,
+
+        SystemArray = 0x16, // System.Array type
+
+        Array = 0x17,
+        SzArray = 0x18,
+        ByRef = 0x19,
+        Pointer = 0x1A,
+        FunctionPointer = 0x1B,
+    }
+
+    // Keep this synchronized with GenericVarianceType in rhbinder.h.
+    internal enum GenericVariance : byte
+    {
+        NonVariant = 0,
+        Covariant = 1,
+        Contravariant = 2,
+        ArrayCovariant = 0x20,
+    }
+
+    internal static class ParameterizedTypeShapeConstants
+    {
+        // NOTE: Parameterized type kind is stored in the BaseSize field of the MethodTable.
+        // Array types use their actual base size. Pointer and ByRef types are never boxed,
+        // so we can reuse the MethodTable BaseSize field to indicate the kind.
+        // It's important that these values always stay lower than any valid value of a base
+        // size for an actual array.
+        public const int Pointer = 0;
+        public const int ByRef = 1;
+    }
+
+    internal static class FunctionPointerFlags
+    {
+        public const uint IsUnmanaged = 0x80000000;
+        public const uint FlagsMask = IsUnmanaged;
+    }
+
+    internal static class StringComponentSize
+    {
+        public const int Value = sizeof(char);
+    }
+
+    internal static class WritableData
+    {
+        public static int GetSize(int pointerSize) => pointerSize;
+        public static int GetAlignment(int pointerSize) => pointerSize;
+    }
+}

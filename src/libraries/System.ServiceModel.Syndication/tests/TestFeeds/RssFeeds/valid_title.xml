@@ -1,0 +1,12 @@
+<!--
+  Description:  channel title must not include HTML
+  Expect:       !ContainsHTML{parent:channel,element:title}
+-->
+
+<rss version="2.0">
+<channel>
+<title>Valid title</title>
+<link>http://contoso.com/rss/2.0/</link>
+<description>channel title must not include HTML</description>
+</channel>
+</rss>

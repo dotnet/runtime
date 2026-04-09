@@ -1,0 +1,7 @@
+<Directives>
+  <Application>
+    <!-- NB Shared specializations must also be replicated in the roslyn4.4.rd.xml file -->
+    <Assembly Name="System.Text.Json.SourceGeneration.Roslyn3.11.Tests">
+    </Assembly> 
+  </Application>
+</Directives>

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Build;IlcCompile">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <IlcMultiModule>true</IlcMultiModule>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Library.cs" />
+  </ItemGroup>
+</Project>

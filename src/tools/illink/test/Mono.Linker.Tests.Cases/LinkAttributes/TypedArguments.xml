@@ -1,0 +1,40 @@
+<linker xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../src/ILLink.Shared/ILLink.LinkAttributes.xsd">
+  <assembly fullname="test">
+    <type fullname="Mono.Linker.Tests.Cases.LinkAttributes.TypedArguments">
+      <field name="field1">
+        <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.TypedArguments/ObjectAttribute">
+          <argument type="System.Object">
+            <argument type="System.String">StringValue</argument>
+          </argument>
+        </attribute>
+      </field>
+      <field name="field2">
+        <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.TypedArguments/ObjectAttribute">
+          <argument type="System.Object">
+            <argument type="System.Char">9</argument>
+          </argument>
+        </attribute>
+      </field>
+      <field name="field3">
+        <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.TypedArguments/EnumAttribute">
+          <argument type="Mono.Linker.Tests.Cases.LinkAttributes.TypedArgumentsEnumA">3</argument>
+        </attribute>
+      </field>
+      <field name="field4">
+        <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.TypedArguments/ByteAttribute">
+          <argument type="System.Byte">6</argument>
+        </attribute>
+      </field>      
+      <field name="field5">
+        <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.TypedArguments/StringAttribute">
+          <argument type="System.String">str</argument>
+        </attribute>
+      </field>
+      <field name="field6">
+        <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.TypedArguments/TypeAttribute">
+          <argument type="System.Type">System.DateTime</argument>
+        </attribute>
+      </field>
+    </type>
+  </assembly>
+</linker>

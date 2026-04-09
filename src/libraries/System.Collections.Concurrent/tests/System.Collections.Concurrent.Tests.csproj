@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs"
+             Link="System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs" />
+    <!-- Common Collections tests -->
+    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs"
+             Link="Common\System\Collections\CollectionAsserts.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs"
+             Link="Common\System\Collections\ICollection.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.Generic.Tests.cs"
+             Link="Common\System\Collections\IDictionary.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IList.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IList.Generic.Tests.cs"
+             Link="Common\System\Collections\IList.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IGenericSharedAPI.Tests.cs"
+             Link="Common\System\Collections\IGenericSharedAPI.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ISet.Generic.Tests.cs"
+             Link="Common\System\Collections\ISet.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs"
+             Link="Common\System\Collections\TestBase.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs"
+             Link="Common\System\Collections\TestBase.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\DebugView.Tests.cs"
+             Link="Common\System\Collections\DebugView.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs"
+             Link="Common\System\Collections\TestingTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
+             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
+             Link="Common\System\EnumTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
+             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
+    <Compile Include="BlockingCollectionCancellationTests.cs" />
+    <Compile Include="BlockingCollectionTests.cs" />
+    <Compile Include="ConcurrentBagTests.cs" />
+    <Compile Include="ConcurrentDictionary\ConcurrentDictionary.NonGeneric.Tests.cs" />
+    <Compile Include="ConcurrentDictionary\ConcurrentDictionary.Generic.Tests.cs" />
+    <Compile Include="ConcurrentDictionary\ConcurrentDictionaryExtensions.cs" />
+    <Compile Include="ConcurrentDictionary\ConcurrentDictionaryTests.cs" />
+    <Compile Include="ConcurrentQueueTests.cs" />
+    <Compile Include="ConcurrentStackTests.cs" />
+    <Compile Include="EtwTests.cs" />
+    <Compile Include="IntRangePartitionerTests.cs" />
+    <Compile Include="LongRangePartitionerTests.cs" />
+    <Compile Include="PartitionerHelpers.cs" />
+    <Compile Include="PartitionerStaticTests.cs" />
+    <Compile Include="PartitionerTests.cs" />
+    <Compile Include="ProducerConsumerCollectionTests.cs" />
+    <Compile Include="RangePartitionerNegativeTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" />
+  </ItemGroup>
+</Project>

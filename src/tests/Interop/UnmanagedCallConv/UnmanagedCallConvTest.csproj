@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(InteropCommonDir)CheckGCMode.cs" />
+    <Compile Include="PInvokesCS.cs" />
+    <Compile Include="UnmanagedCallConvTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <ProjectReference Include="PInvokesIL.ilproj" />
+  </ItemGroup>
+</Project>

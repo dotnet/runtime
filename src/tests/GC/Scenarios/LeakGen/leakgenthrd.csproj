@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- The test leaves secondary threads running at exit -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="leakgenthrd.cs" />
+  </ItemGroup>
+</Project>

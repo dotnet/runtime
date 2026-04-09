@@ -1,0 +1,31 @@
+parameters:
+  rootFolder: ''
+  includeRootFolder: false
+  archiveType: ''
+  tarCompression: ''
+  archiveExtension: ''
+  artifactName: ''
+  displayName: ''
+  condition: succeeded()
+  isOfficialBuild: false
+
+steps:
+  # Zip Artifact
+  - task: ArchiveFiles@2
+    displayName: 'Zip ${{ parameters.displayName }}'
+    inputs:
+      rootFolderOrFile:  ${{ parameters.rootFolder }}
+      archiveFile:       $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
+      archiveType:       ${{ parameters.archiveType }}
+      tarCompression:    ${{ parameters.tarCompression }}
+      includeRootFolder: ${{ parameters.includeRootFolder }}
+    condition: ${{ parameters.condition }}
+
+  - template: /eng/pipelines/common/templates/publish-build-artifacts.yml
+    parameters:
+      isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      displayName: 'Publish ${{ parameters.displayName }}'
+      inputs:
+        PathtoPublish: $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
+        artifactName:  ${{ parameters.artifactName }}
+      condition: ${{ parameters.condition }}

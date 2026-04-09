@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="EssCertId"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc5035#section-6
+
+    ESSCertID ::=  SEQUENCE {
+        certHash                 Hash,
+        issuerSerial             IssuerSerial OPTIONAL
+    }
+  -->
+  <asn:OctetString name="Hash" />
+  <asn:AsnType name="IssuerSerial" typeName="System.Security.Cryptography.Pkcs.Asn1.CadesIssuerSerial" optional="true" />
+</asn:Sequence>

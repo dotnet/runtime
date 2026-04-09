@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for JitOptimizationSensitive, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Weak.cs" />
+  </ItemGroup>
+</Project>

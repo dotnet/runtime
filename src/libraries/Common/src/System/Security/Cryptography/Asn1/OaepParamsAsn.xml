@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="OaepParamsAsn"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://tools.ietf.org/html/rfc3560#section-3
+
+   RSAES-OAEP-params  ::=  SEQUENCE  {
+     hashFunc    [0] AlgorithmIdentifier DEFAULT sha1Identifier,
+     maskGenFunc [1] AlgorithmIdentifier DEFAULT mgf1SHA1Identifier,
+     pSourceFunc [2] AlgorithmIdentifier DEFAULT
+                         pSpecifiedEmptyIdentifier  }
+
+   sha1Identifier  AlgorithmIdentifier  ::=  { id-sha1, NULL }
+
+   mgf1SHA1Identifier  AlgorithmIdentifier  ::=
+                         { id-mgf1, sha1Identifier }
+
+   pSpecifiedEmptyIdentifier  AlgorithmIdentifier ::=
+                         { id-pSpecified, nullOctetString }
+
+   nullOctetString  OCTET STRING (SIZE (0))  ::=  { ''H }
+
+   id-sha1  OBJECT IDENTIFIER  ::=  { iso(1)
+                         identified-organization(3) oiw(14)
+                         secsig(3) algorithms(2) 26 }
+
+   pkcs-1  OBJECT IDENTIFIER  ::=  { iso(1) member-body(2)
+                         us(840) rsadsi(113549) pkcs(1) pkcs-1(1) }
+
+   id-mgf1  OBJECT IDENTIFIER  ::=  { pkcs-1 8 }
+
+   id-pSpecified  OBJECT IDENTIFIER  ::=  { pkcs-1 9 }
+
+  -->
+  <asn:AsnType name="HashFunc" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" explicitTag="0" defaultDerInit="0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00" />
+  <asn:AsnType name="MaskGenFunc" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" explicitTag="1" defaultDerInit="0x30, 0x16, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00" />
+  <asn:AsnType name="PSourceFunc" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" explicitTag="2" defaultDerInit="0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x09, 0x04, 0x00" />
+</asn:Sequence>

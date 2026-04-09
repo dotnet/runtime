@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DllImport.cs" />
+    <Compile Include="ThreadPoolBoundHandle_PreAllocatedOverlappedTests.cs" />
+    <Compile Include="ThreadPoolBoundHandle_IntegrationTests.cs" />
+    <Compile Include="ThreadPoolBoundHandle_IntegrationTests.netcoreapp.cs" />
+    <Compile Include="ThreadPoolBoundHandle_Helpers.cs" />
+    <Compile Include="AsyncResult.cs" />
+    <Compile Include="Win32Handle.cs" />
+    <Compile Include="HandleFactory.cs" />
+    <Compile Include="ThreadPoolBoundHandle_HandleTests.cs" />
+    <Compile Include="ThreadPoolBoundHandle_GetNativeOverlappedStateTests.cs" />
+    <Compile Include="ThreadPoolBoundHandle_FreeNativeOverlappedTests.cs" />
+    <Compile Include="ThreadPoolBoundHandle_AllocateNativeOverlappedTests.cs" />
+    <Compile Include="ThreadPoolBoundHandle_DisposeTests.cs" />
+    <Compile Include="ThreadPoolBoundHandle_BindHandleTests.cs" />
+    <Compile Include="OverlappedTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
+             Link="CommonTest\System\Threading\ThreadTestHelpers.cs" />
+  </ItemGroup>
+</Project>

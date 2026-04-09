@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <MonoAotIncompatible>true</MonoAotIncompatible>  <!-- https://github.com/dotnet/runtime/issues/90427  -->
+    <!-- Needed for MonoAotIncompatible, NativeAotIncompatible, CrossGenTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Crossgen is not intended to serve as an IL verifier, and is not designed to provide error semantics on bad input. -->
+    <CrossGenTest>false</CrossGenTest>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ValidateNegative.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <ProjectReference Include="InvalidCSharpNegative.ilproj" />
+  </ItemGroup>
+</Project>

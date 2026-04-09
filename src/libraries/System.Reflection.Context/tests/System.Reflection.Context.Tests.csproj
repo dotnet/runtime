@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AttributeInheritanceTests.cs" />
+    <Compile Include="CustomAssemblyAttributes.cs" />
+    <Compile Include="CustomAttributeDataTests.cs" />
+    <Compile Include="CustomConstructorInfoTests.cs" />
+    <Compile Include="CustomEventInfoTests.cs" />
+    <Compile Include="CustomMethodInfoTests.cs" />
+    <Compile Include="CustomModuleTests.cs" />
+    <Compile Include="CustomParameterInfoTests.cs" />
+    <Compile Include="CustomPropertyInfoTests.cs" />
+    <Compile Include="CustomReflectionContextTests.cs" />
+    <Compile Include="CustomTypeTests.cs" />
+    <Compile Include="ExtendedAssemblyTests.cs" />
+    <Compile Include="ExtendedAssemblyTests2.cs" />
+    <Compile Include="ExtendedFieldInfoTests.cs" />
+    <Compile Include="ExtendedPropertyInfoTests.cs" />
+    <Compile Include="ExtendedTypeTests.cs" />
+    <Compile Include="FinalCoverageTests.cs" />
+    <Compile Include="FinalCoverageTests2.cs" />
+    <Compile Include="FinalBranchCoverageTests.cs" />
+    <Compile Include="InheritedPropertyInfoTests.cs" />
+    <Compile Include="InteritedMethodInfoTests.cs" />
+    <Compile Include="MethodBodyTests.cs" />
+    <Compile Include="MethodLookupBranchTests.cs" />
+    <Compile Include="MoreCoverageTests.cs" />
+    <Compile Include="ProjectingFieldInfoTests.cs" />
+    <Compile Include="ProjectingModuleTests.cs" />
+    <Compile Include="TestTypes.cs" />
+    <Compile Include="CustomAssemblyTests.cs" />
+    <Compile Include="ProjectionConstants.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="VirtualMethodBaseTests.cs" />
+    <Compile Include="VirtualPropertyInfo.PropertySetter.Tests.cs" />
+    <Compile Include="VirtualPropertyInfo.PropertyGetter.Tests.cs" />
+    <Compile Include="VirtualPropertyInfoTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.Context.csproj" />
+  </ItemGroup>
+</Project>

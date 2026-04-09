@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for NativeAotIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <ProjectReference Include="..\NETServer\NETServer.csproj">
+      <Project>{C04AB564-CC61-499D-9F4C-AA1A9FDE42C9}</Project>
+      <Name>NETServer</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

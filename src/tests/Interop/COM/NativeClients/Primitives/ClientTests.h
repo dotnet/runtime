@@ -1,0 +1,18 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include <xplatform.h>
+#include <cassert>
+#include <Server.Contracts.h>
+
+#define COM_CLIENT
+#include <Servers.h>
+
+#define THROW_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { ::printf("FAILURE: 0x%08x = %s\n", hr, #exp); throw hr; } }
+#define THROW_FAIL_IF_FALSE(exp) { if (!(exp)) { ::printf("FALSE: %s\n", #exp); throw E_FAIL; } }
+
+void Run_NumericTests();
+void Run_ArrayTests();
+void Run_StringTests();
+void Run_ErrorTests();
+void Run_ColorTests();

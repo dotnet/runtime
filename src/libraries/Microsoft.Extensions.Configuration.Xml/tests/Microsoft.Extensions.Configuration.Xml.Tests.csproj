@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <IncludePlatformAttributes>false</IncludePlatformAttributes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs"
+             Link="Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs"
+             Link="Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs"
+             Link="Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj" />  
+    <ProjectReference Include="..\src\Microsoft.Extensions.Configuration.Xml.csproj" SkipUseReferenceAssembly="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.Security" />
+  </ItemGroup>
+
+</Project>

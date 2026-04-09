@@ -1,0 +1,3 @@
+; exported for GDBJIT
+__jit_debug_register_code
+__jit_debug_descriptor

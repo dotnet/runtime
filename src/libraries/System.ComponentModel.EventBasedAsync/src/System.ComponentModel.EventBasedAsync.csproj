@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\ComponentModel\AsyncCompletedEvent.cs" />
+    <Compile Include="System\ComponentModel\AsyncOperation.cs" />
+    <Compile Include="System\ComponentModel\AsyncOperationManager.cs" />
+    <Compile Include="System\ComponentModel\ProgressChangedEvent.cs" />
+    <Compile Include="System\ComponentModel\BackgroundWorker.cs" />
+    <Compile Include="System\ComponentModel\DoWorkEvent.cs" />
+    <Compile Include="System\ComponentModel\RunWorkerCompletedEvent.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel\src\System.ComponentModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+  </ItemGroup>
+
+</Project>

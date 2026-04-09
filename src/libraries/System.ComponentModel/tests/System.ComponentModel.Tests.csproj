@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CancelEventArgsTests.cs" />
+    <Compile Include="ComponentModelBasicTests.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,111 @@
+<Project>
+  <PropertyGroup>
+    <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
+    <!-- This avoids creating VS.*.symbols.nupkg packages that are identical to the original package. -->
+    <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
+  </PropertyGroup>
+
+  <!-- The PGO runtime should always have External visibility, even if someone changes the default artifact visibility -->
+  <ItemGroup>
+    <Artifact Update="$(ArtifactsNonShippingPackagesDir)dotnet-runtime-pgo-*" Visibility="External" />
+  </ItemGroup>
+
+  <!--
+    Mark host-RID-targeting assets as Vertical visibility when building in the VMR.
+    We can't use NETCoreSdkRuntimeIdentifier here as the Arcade SDK projects don't import the .NET SDK.
+    Instead, just make sure we include the assets targeting "not the output rid", which will catch the host assets.
+  -->
+  <ItemGroup Condition="'$(EnableDefaultRidSpecificArtifacts)' != 'true' and '$(DotNetBuildFromVMR)' == 'true'">
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILAsm.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(TargetRid).Microsoft.NETCore.ILAsm.*.nupkg" />
+
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILDAsm.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(TargetRid).Microsoft.NETCore.ILDAsm.*.nupkg" />
+
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.DotNet.ILCompiler.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(TargetRid).Microsoft.DotNet.ILCompiler.*.nupkg" />
+
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(TargetRid).*.nupkg" />
+
+    <Artifact Update="@(_HostArtifact)"
+              Visibility="Vertical"
+              IsShipping="false" />
+  </ItemGroup>
+
+  <Target Name="GetNonStableProductVersion">
+    <!-- Retrieve the non-stable runtime pack product version.
+         Don't stabilize the package version in order to retrieve the VersionSuffix. -->
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
+             Targets="ReturnProductVersion"
+             Properties="IsShipping=false;
+                         Crossgen2SdkOverridePropsPath=;
+                         Crossgen2SdkOverrideTargetsPath=">
+      <Output TaskParameter="TargetOutputs" PropertyName="NonStableProductVersion" />
+    </MSBuild>
+  </Target>
+
+  <!--
+    Only generate the productVersion.txt and runtime-productVersion.txt files when we're building
+    either the full VMR repo or not building in the VMR infrastructure.
+    This ensures that we don't produce these files in the "Repo source build" builds,
+    but we do produce them in both the VMR and the runtime official build.
+  -->
+  <PropertyGroup Condition="'$(DotNetBuildFromVMR)' == 'true'">
+    <ShouldGenerateProductVersionFiles Condition="'$(TargetRid)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
+    <ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ShouldGenerateProductVersionFiles>
+  </PropertyGroup>
+
+  <Target Name="GenerateProductVersionFiles"
+          DependsOnTargets="GetNonStableProductVersion"
+          BeforeTargets="PublishToAzureDevOpsArtifacts"
+          Condition="'$(ShouldGenerateProductVersionFiles)' == 'true'">
+    <!-- Retrieve the runtime pack product version. -->
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
+             Targets="ReturnProductVersion"
+             Properties="Crossgen2SdkOverridePropsPath=;
+                         Crossgen2SdkOverrideTargetsPath=">
+      <Output TaskParameter="TargetOutputs" PropertyName="ProductVersionForVersionsFile" />
+    </MSBuild>
+
+    <ItemGroup>
+      <ProductVersionFile Include="$(ArtifactsShippingPackagesDir)productVersion.txt" />
+      <ProductVersionFile Include="$(ArtifactsShippingPackagesDir)runtime-productVersion.txt" />
+    </ItemGroup>
+
+    <!-- Generate productVersion.txt file containing the product version. -->
+    <WriteLinesToFile File="%(ProductVersionFile.Identity)"
+                      Lines="$(ProductVersionForVersionsFile)"
+                      Overwrite="true"
+                      Encoding="ASCII" />
+
+    <ItemGroup>
+      <Artifact Include="@(ProductVersionFile)"
+                RelativeBlobPath="Runtime/$(NonStableProductVersion)/%(Filename)%(Extension)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddRelativeBlobPathToInstallerArtifacts"
+          DependsOnTargets="GetNonStableProductVersion"
+          BeforeTargets="PublishToAzureDevOpsArtifacts"
+          AfterTargets="GenerateChecksumsFromArtifacts">
+    <ItemGroup Condition="'$(DotNetBuildFromVMR)' == 'true'">
+      <Artifact Condition="'%(Artifact.Kind)' != 'Package' and '%(Artifact.RelativeBlobPath)' == ''"
+                RelativeBlobPath="Runtime/$(NonStableProductVersion)/%(Artifact.SubBlobFolder)%(Filename)%(Extension)" />
+    </ItemGroup>
+    <!-- In vertical dotnet/runtime legs outside of the VMR, set the "relative blob path" to shipping vs non-shipping to make our download/upload work. -->
+    <ItemGroup Condition="'$(DotNetBuildFromVMR)' != 'true'">
+      <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' == 'true'"
+                RelativeBlobPath="packages/$(Configuration)/Shipping/%(Filename)%(Extension)" />
+      <Artifact Condition="'%(Artifact.Kind)' == 'Blob' and '%(Artifact.IsShipping)' != 'true'"
+                RelativeBlobPath="packages/$(Configuration)/NonShipping/%(Filename)%(Extension)" />
+      <ItemsToPushToBlobFeed Condition="'%(ItemsToPushToBlobFeed.Kind)' == 'Blob' and '%(ItemsToPushToBlobFeed.IsShipping)' == 'true'"
+                             RelativeBlobPath="packages/$(Configuration)/Shipping/%(Filename)%(Extension)" />
+      <ItemsToPushToBlobFeed Condition="'%(ItemsToPushToBlobFeed.Kind)' == 'Blob' and '%(ItemsToPushToBlobFeed.IsShipping)' != 'true'"
+                             RelativeBlobPath="packages/$(Configuration)/NonShipping/%(Filename)%(Extension)" />
+
+      <Artifact Condition="'%(Artifact.IsVSSetup)' == 'true'"
+                RelativeBlobPath="VSSetup/%(Filename)%(Extension)" />
+    </ItemGroup>
+  </Target>
+</Project>

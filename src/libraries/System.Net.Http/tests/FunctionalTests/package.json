@@ -1,0 +1,10 @@
+{
+  "name": "system.net.websockets.client.tests",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "node-abort-controller": "3.1.1",
+    "node-fetch": "3.3.2",
+    "ws": "8.17.1"
+  }
+}

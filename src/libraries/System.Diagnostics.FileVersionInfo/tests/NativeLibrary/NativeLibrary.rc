@@ -1,0 +1,32 @@
+#include "winres.h"
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 9,9,3,3
+ PRODUCTVERSION 20,30,40,50
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x6L
+ FILEOS 0x40004L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404b0"
+        BEGIN
+            VALUE "CompanyName", "A non-existent company"
+            VALUE "FileDescription", "Here is the description of the native library."
+            VALUE "FileVersion", "9.9.3.3"
+            VALUE "InternalName", "NativeLibrary.dll"
+            VALUE "LegalCopyright", "None"
+            VALUE "OriginalFilename", "NativeLibrary.dll"
+            VALUE "ProductName", "I was never given a name."
+            VALUE "ProductVersion", "20.30.40.50"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END

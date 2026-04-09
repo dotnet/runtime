@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Annotation.cs" />
+    <Compile Include="FunctionalTests.cs" />
+    <Compile Include="PrefixNamespaceFixes.cs" />
+    <Compile Include="RegressionTests.cs" />
+    <Compile Include="XHashtable.cs" />
+    <Compile Include="XLinqErrata4.cs" />
+    <Compile Include="XNameAPI.cs" />
+    <Compile Include="XAttribute.cs" />
+    <Compile Include="LoadSaveAsyncTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />
+    <ProjectReference Include="$(CommonTestPath)System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
+    <ProjectReference Include="$(CommonTestPath)System\Xml\XmlDiff\XmlDiff.csproj" />
+    <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj" />
+    <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj" />
+  </ItemGroup>
+</Project>

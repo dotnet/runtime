@@ -1,0 +1,4629 @@
+{
+  "runtimes": {
+    "alpine": {
+      "#import": [
+        "linux-musl"
+      ]
+    },
+    "alpine-arm": {
+      "#import": [
+        "alpine",
+        "linux-musl-arm"
+      ]
+    },
+    "alpine-arm64": {
+      "#import": [
+        "alpine",
+        "linux-musl-arm64"
+      ]
+    },
+    "alpine-armv6": {
+      "#import": [
+        "alpine",
+        "linux-musl-armv6"
+      ]
+    },
+    "alpine-ppc64le": {
+      "#import": [
+        "alpine",
+        "linux-musl-ppc64le"
+      ]
+    },
+    "alpine-s390x": {
+      "#import": [
+        "alpine",
+        "linux-musl-s390x"
+      ]
+    },
+    "alpine-x64": {
+      "#import": [
+        "alpine",
+        "linux-musl-x64"
+      ]
+    },
+    "alpine-x86": {
+      "#import": [
+        "alpine",
+        "linux-musl-x86"
+      ]
+    },
+    "alpine.3.10": {
+      "#import": [
+        "alpine.3.9"
+      ]
+    },
+    "alpine.3.10-arm": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-arm"
+      ]
+    },
+    "alpine.3.10-arm64": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-arm64"
+      ]
+    },
+    "alpine.3.10-armv6": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-armv6"
+      ]
+    },
+    "alpine.3.10-ppc64le": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-ppc64le"
+      ]
+    },
+    "alpine.3.10-s390x": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-s390x"
+      ]
+    },
+    "alpine.3.10-x64": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-x64"
+      ]
+    },
+    "alpine.3.10-x86": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-x86"
+      ]
+    },
+    "alpine.3.11": {
+      "#import": [
+        "alpine.3.10"
+      ]
+    },
+    "alpine.3.11-arm": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-arm"
+      ]
+    },
+    "alpine.3.11-arm64": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-arm64"
+      ]
+    },
+    "alpine.3.11-armv6": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-armv6"
+      ]
+    },
+    "alpine.3.11-ppc64le": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-ppc64le"
+      ]
+    },
+    "alpine.3.11-s390x": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-s390x"
+      ]
+    },
+    "alpine.3.11-x64": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-x64"
+      ]
+    },
+    "alpine.3.11-x86": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-x86"
+      ]
+    },
+    "alpine.3.12": {
+      "#import": [
+        "alpine.3.11"
+      ]
+    },
+    "alpine.3.12-arm": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-arm"
+      ]
+    },
+    "alpine.3.12-arm64": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-arm64"
+      ]
+    },
+    "alpine.3.12-armv6": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-armv6"
+      ]
+    },
+    "alpine.3.12-ppc64le": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-ppc64le"
+      ]
+    },
+    "alpine.3.12-s390x": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-s390x"
+      ]
+    },
+    "alpine.3.12-x64": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-x64"
+      ]
+    },
+    "alpine.3.12-x86": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-x86"
+      ]
+    },
+    "alpine.3.13": {
+      "#import": [
+        "alpine.3.12"
+      ]
+    },
+    "alpine.3.13-arm": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-arm"
+      ]
+    },
+    "alpine.3.13-arm64": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-arm64"
+      ]
+    },
+    "alpine.3.13-armv6": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-armv6"
+      ]
+    },
+    "alpine.3.13-ppc64le": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-ppc64le"
+      ]
+    },
+    "alpine.3.13-s390x": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-s390x"
+      ]
+    },
+    "alpine.3.13-x64": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-x64"
+      ]
+    },
+    "alpine.3.13-x86": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-x86"
+      ]
+    },
+    "alpine.3.14": {
+      "#import": [
+        "alpine.3.13"
+      ]
+    },
+    "alpine.3.14-arm": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-arm"
+      ]
+    },
+    "alpine.3.14-arm64": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-arm64"
+      ]
+    },
+    "alpine.3.14-armv6": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-armv6"
+      ]
+    },
+    "alpine.3.14-ppc64le": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-ppc64le"
+      ]
+    },
+    "alpine.3.14-s390x": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-s390x"
+      ]
+    },
+    "alpine.3.14-x64": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-x64"
+      ]
+    },
+    "alpine.3.14-x86": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-x86"
+      ]
+    },
+    "alpine.3.15": {
+      "#import": [
+        "alpine.3.14"
+      ]
+    },
+    "alpine.3.15-arm": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-arm"
+      ]
+    },
+    "alpine.3.15-arm64": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-arm64"
+      ]
+    },
+    "alpine.3.15-armv6": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-armv6"
+      ]
+    },
+    "alpine.3.15-ppc64le": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-ppc64le"
+      ]
+    },
+    "alpine.3.15-s390x": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-s390x"
+      ]
+    },
+    "alpine.3.15-x64": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-x64"
+      ]
+    },
+    "alpine.3.15-x86": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-x86"
+      ]
+    },
+    "alpine.3.16": {
+      "#import": [
+        "alpine.3.15"
+      ]
+    },
+    "alpine.3.16-arm": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-arm"
+      ]
+    },
+    "alpine.3.16-arm64": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-arm64"
+      ]
+    },
+    "alpine.3.16-armv6": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-armv6"
+      ]
+    },
+    "alpine.3.16-ppc64le": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-ppc64le"
+      ]
+    },
+    "alpine.3.16-s390x": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-s390x"
+      ]
+    },
+    "alpine.3.16-x64": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-x64"
+      ]
+    },
+    "alpine.3.16-x86": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-x86"
+      ]
+    },
+    "alpine.3.17": {
+      "#import": [
+        "alpine.3.16"
+      ]
+    },
+    "alpine.3.17-arm": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-arm"
+      ]
+    },
+    "alpine.3.17-arm64": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-arm64"
+      ]
+    },
+    "alpine.3.17-armv6": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-armv6"
+      ]
+    },
+    "alpine.3.17-ppc64le": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-ppc64le"
+      ]
+    },
+    "alpine.3.17-s390x": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-s390x"
+      ]
+    },
+    "alpine.3.17-x64": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-x64"
+      ]
+    },
+    "alpine.3.17-x86": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-x86"
+      ]
+    },
+    "alpine.3.18": {
+      "#import": [
+        "alpine.3.17"
+      ]
+    },
+    "alpine.3.18-arm": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-arm"
+      ]
+    },
+    "alpine.3.18-arm64": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-arm64"
+      ]
+    },
+    "alpine.3.18-armv6": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-armv6"
+      ]
+    },
+    "alpine.3.18-ppc64le": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-ppc64le"
+      ]
+    },
+    "alpine.3.18-s390x": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-s390x"
+      ]
+    },
+    "alpine.3.18-x64": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-x64"
+      ]
+    },
+    "alpine.3.18-x86": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-x86"
+      ]
+    },
+    "alpine.3.6": {
+      "#import": [
+        "alpine"
+      ]
+    },
+    "alpine.3.6-arm": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-arm"
+      ]
+    },
+    "alpine.3.6-arm64": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-arm64"
+      ]
+    },
+    "alpine.3.6-armv6": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-armv6"
+      ]
+    },
+    "alpine.3.6-ppc64le": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-ppc64le"
+      ]
+    },
+    "alpine.3.6-s390x": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-s390x"
+      ]
+    },
+    "alpine.3.6-x64": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-x64"
+      ]
+    },
+    "alpine.3.6-x86": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-x86"
+      ]
+    },
+    "alpine.3.7": {
+      "#import": [
+        "alpine.3.6"
+      ]
+    },
+    "alpine.3.7-arm": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-arm"
+      ]
+    },
+    "alpine.3.7-arm64": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-arm64"
+      ]
+    },
+    "alpine.3.7-armv6": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-armv6"
+      ]
+    },
+    "alpine.3.7-ppc64le": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-ppc64le"
+      ]
+    },
+    "alpine.3.7-s390x": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-s390x"
+      ]
+    },
+    "alpine.3.7-x64": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-x64"
+      ]
+    },
+    "alpine.3.7-x86": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-x86"
+      ]
+    },
+    "alpine.3.8": {
+      "#import": [
+        "alpine.3.7"
+      ]
+    },
+    "alpine.3.8-arm": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-arm"
+      ]
+    },
+    "alpine.3.8-arm64": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-arm64"
+      ]
+    },
+    "alpine.3.8-armv6": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-armv6"
+      ]
+    },
+    "alpine.3.8-ppc64le": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-ppc64le"
+      ]
+    },
+    "alpine.3.8-s390x": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-s390x"
+      ]
+    },
+    "alpine.3.8-x64": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-x64"
+      ]
+    },
+    "alpine.3.8-x86": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-x86"
+      ]
+    },
+    "alpine.3.9": {
+      "#import": [
+        "alpine.3.8"
+      ]
+    },
+    "alpine.3.9-arm": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-arm"
+      ]
+    },
+    "alpine.3.9-arm64": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-arm64"
+      ]
+    },
+    "alpine.3.9-armv6": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-armv6"
+      ]
+    },
+    "alpine.3.9-ppc64le": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-ppc64le"
+      ]
+    },
+    "alpine.3.9-s390x": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-s390x"
+      ]
+    },
+    "alpine.3.9-x64": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-x64"
+      ]
+    },
+    "alpine.3.9-x86": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-x86"
+      ]
+    },
+    "android": {
+      "#import": [
+        "linux-bionic"
+      ]
+    },
+    "android-arm": {
+      "#import": [
+        "android",
+        "linux-bionic-arm"
+      ]
+    },
+    "android-arm64": {
+      "#import": [
+        "android",
+        "linux-bionic-arm64"
+      ]
+    },
+    "android-x64": {
+      "#import": [
+        "android",
+        "linux-bionic-x64"
+      ]
+    },
+    "android-x86": {
+      "#import": [
+        "android",
+        "linux-bionic-x86"
+      ]
+    },
+    "android.21": {
+      "#import": [
+        "android"
+      ]
+    },
+    "android.21-arm": {
+      "#import": [
+        "android.21",
+        "android-arm"
+      ]
+    },
+    "android.21-arm64": {
+      "#import": [
+        "android.21",
+        "android-arm64"
+      ]
+    },
+    "android.21-x64": {
+      "#import": [
+        "android.21",
+        "android-x64"
+      ]
+    },
+    "android.21-x86": {
+      "#import": [
+        "android.21",
+        "android-x86"
+      ]
+    },
+    "android.22": {
+      "#import": [
+        "android.21"
+      ]
+    },
+    "android.22-arm": {
+      "#import": [
+        "android.22",
+        "android.21-arm"
+      ]
+    },
+    "android.22-arm64": {
+      "#import": [
+        "android.22",
+        "android.21-arm64"
+      ]
+    },
+    "android.22-x64": {
+      "#import": [
+        "android.22",
+        "android.21-x64"
+      ]
+    },
+    "android.22-x86": {
+      "#import": [
+        "android.22",
+        "android.21-x86"
+      ]
+    },
+    "android.23": {
+      "#import": [
+        "android.22"
+      ]
+    },
+    "android.23-arm": {
+      "#import": [
+        "android.23",
+        "android.22-arm"
+      ]
+    },
+    "android.23-arm64": {
+      "#import": [
+        "android.23",
+        "android.22-arm64"
+      ]
+    },
+    "android.23-x64": {
+      "#import": [
+        "android.23",
+        "android.22-x64"
+      ]
+    },
+    "android.23-x86": {
+      "#import": [
+        "android.23",
+        "android.22-x86"
+      ]
+    },
+    "android.24": {
+      "#import": [
+        "android.23"
+      ]
+    },
+    "android.24-arm": {
+      "#import": [
+        "android.24",
+        "android.23-arm"
+      ]
+    },
+    "android.24-arm64": {
+      "#import": [
+        "android.24",
+        "android.23-arm64"
+      ]
+    },
+    "android.24-x64": {
+      "#import": [
+        "android.24",
+        "android.23-x64"
+      ]
+    },
+    "android.24-x86": {
+      "#import": [
+        "android.24",
+        "android.23-x86"
+      ]
+    },
+    "android.25": {
+      "#import": [
+        "android.24"
+      ]
+    },
+    "android.25-arm": {
+      "#import": [
+        "android.25",
+        "android.24-arm"
+      ]
+    },
+    "android.25-arm64": {
+      "#import": [
+        "android.25",
+        "android.24-arm64"
+      ]
+    },
+    "android.25-x64": {
+      "#import": [
+        "android.25",
+        "android.24-x64"
+      ]
+    },
+    "android.25-x86": {
+      "#import": [
+        "android.25",
+        "android.24-x86"
+      ]
+    },
+    "android.26": {
+      "#import": [
+        "android.25"
+      ]
+    },
+    "android.26-arm": {
+      "#import": [
+        "android.26",
+        "android.25-arm"
+      ]
+    },
+    "android.26-arm64": {
+      "#import": [
+        "android.26",
+        "android.25-arm64"
+      ]
+    },
+    "android.26-x64": {
+      "#import": [
+        "android.26",
+        "android.25-x64"
+      ]
+    },
+    "android.26-x86": {
+      "#import": [
+        "android.26",
+        "android.25-x86"
+      ]
+    },
+    "android.27": {
+      "#import": [
+        "android.26"
+      ]
+    },
+    "android.27-arm": {
+      "#import": [
+        "android.27",
+        "android.26-arm"
+      ]
+    },
+    "android.27-arm64": {
+      "#import": [
+        "android.27",
+        "android.26-arm64"
+      ]
+    },
+    "android.27-x64": {
+      "#import": [
+        "android.27",
+        "android.26-x64"
+      ]
+    },
+    "android.27-x86": {
+      "#import": [
+        "android.27",
+        "android.26-x86"
+      ]
+    },
+    "android.28": {
+      "#import": [
+        "android.27"
+      ]
+    },
+    "android.28-arm": {
+      "#import": [
+        "android.28",
+        "android.27-arm"
+      ]
+    },
+    "android.28-arm64": {
+      "#import": [
+        "android.28",
+        "android.27-arm64"
+      ]
+    },
+    "android.28-x64": {
+      "#import": [
+        "android.28",
+        "android.27-x64"
+      ]
+    },
+    "android.28-x86": {
+      "#import": [
+        "android.28",
+        "android.27-x86"
+      ]
+    },
+    "android.29": {
+      "#import": [
+        "android.28"
+      ]
+    },
+    "android.29-arm": {
+      "#import": [
+        "android.29",
+        "android.28-arm"
+      ]
+    },
+    "android.29-arm64": {
+      "#import": [
+        "android.29",
+        "android.28-arm64"
+      ]
+    },
+    "android.29-x64": {
+      "#import": [
+        "android.29",
+        "android.28-x64"
+      ]
+    },
+    "android.29-x86": {
+      "#import": [
+        "android.29",
+        "android.28-x86"
+      ]
+    },
+    "android.30": {
+      "#import": [
+        "android.29"
+      ]
+    },
+    "android.30-arm": {
+      "#import": [
+        "android.30",
+        "android.29-arm"
+      ]
+    },
+    "android.30-arm64": {
+      "#import": [
+        "android.30",
+        "android.29-arm64"
+      ]
+    },
+    "android.30-x64": {
+      "#import": [
+        "android.30",
+        "android.29-x64"
+      ]
+    },
+    "android.30-x86": {
+      "#import": [
+        "android.30",
+        "android.29-x86"
+      ]
+    },
+    "android.31": {
+      "#import": [
+        "android.30"
+      ]
+    },
+    "android.31-arm": {
+      "#import": [
+        "android.31",
+        "android.30-arm"
+      ]
+    },
+    "android.31-arm64": {
+      "#import": [
+        "android.31",
+        "android.30-arm64"
+      ]
+    },
+    "android.31-x64": {
+      "#import": [
+        "android.31",
+        "android.30-x64"
+      ]
+    },
+    "android.31-x86": {
+      "#import": [
+        "android.31",
+        "android.30-x86"
+      ]
+    },
+    "android.32": {
+      "#import": [
+        "android.31"
+      ]
+    },
+    "android.32-arm": {
+      "#import": [
+        "android.32",
+        "android.31-arm"
+      ]
+    },
+    "android.32-arm64": {
+      "#import": [
+        "android.32",
+        "android.31-arm64"
+      ]
+    },
+    "android.32-x64": {
+      "#import": [
+        "android.32",
+        "android.31-x64"
+      ]
+    },
+    "android.32-x86": {
+      "#import": [
+        "android.32",
+        "android.31-x86"
+      ]
+    },
+    "any": {
+      "#import": [
+        "base"
+      ]
+    },
+    "aot": {
+      "#import": [
+        "any"
+      ]
+    },
+    "arch": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "arch-x64": {
+      "#import": [
+        "arch",
+        "linux-x64"
+      ]
+    },
+    "base": {
+      "#import": []
+    },
+    "browser": {
+      "#import": [
+        "any"
+      ]
+    },
+    "browser-wasm": {
+      "#import": [
+        "browser"
+      ]
+    },
+    "centos": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "centos-arm64": {
+      "#import": [
+        "centos",
+        "rhel-arm64"
+      ]
+    },
+    "centos-x64": {
+      "#import": [
+        "centos",
+        "rhel-x64"
+      ]
+    },
+    "centos.7": {
+      "#import": [
+        "centos",
+        "rhel.7"
+      ]
+    },
+    "centos.7-x64": {
+      "#import": [
+        "centos.7",
+        "centos-x64",
+        "rhel.7-x64"
+      ]
+    },
+    "centos.8": {
+      "#import": [
+        "centos",
+        "rhel.8"
+      ]
+    },
+    "centos.8-arm64": {
+      "#import": [
+        "centos.8",
+        "centos-arm64",
+        "rhel.8-arm64"
+      ]
+    },
+    "centos.8-x64": {
+      "#import": [
+        "centos.8",
+        "centos-x64",
+        "rhel.8-x64"
+      ]
+    },
+    "centos.9": {
+      "#import": [
+        "centos",
+        "rhel.9"
+      ]
+    },
+    "centos.9-arm64": {
+      "#import": [
+        "centos.9",
+        "centos-arm64",
+        "rhel.9-arm64"
+      ]
+    },
+    "centos.9-x64": {
+      "#import": [
+        "centos.9",
+        "centos-x64",
+        "rhel.9-x64"
+      ]
+    },
+    "debian": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "debian-arm": {
+      "#import": [
+        "debian",
+        "linux-arm"
+      ]
+    },
+    "debian-arm64": {
+      "#import": [
+        "debian",
+        "linux-arm64"
+      ]
+    },
+    "debian-armel": {
+      "#import": [
+        "debian",
+        "linux-armel"
+      ]
+    },
+    "debian-x64": {
+      "#import": [
+        "debian",
+        "linux-x64"
+      ]
+    },
+    "debian-x86": {
+      "#import": [
+        "debian",
+        "linux-x86"
+      ]
+    },
+    "debian.10": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "debian.10-arm": {
+      "#import": [
+        "debian.10",
+        "debian-arm"
+      ]
+    },
+    "debian.10-arm64": {
+      "#import": [
+        "debian.10",
+        "debian-arm64"
+      ]
+    },
+    "debian.10-armel": {
+      "#import": [
+        "debian.10",
+        "debian-armel"
+      ]
+    },
+    "debian.10-x64": {
+      "#import": [
+        "debian.10",
+        "debian-x64"
+      ]
+    },
+    "debian.10-x86": {
+      "#import": [
+        "debian.10",
+        "debian-x86"
+      ]
+    },
+    "debian.11": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "debian.11-arm": {
+      "#import": [
+        "debian.11",
+        "debian-arm"
+      ]
+    },
+    "debian.11-arm64": {
+      "#import": [
+        "debian.11",
+        "debian-arm64"
+      ]
+    },
+    "debian.11-armel": {
+      "#import": [
+        "debian.11",
+        "debian-armel"
+      ]
+    },
+    "debian.11-x64": {
+      "#import": [
+        "debian.11",
+        "debian-x64"
+      ]
+    },
+    "debian.11-x86": {
+      "#import": [
+        "debian.11",
+        "debian-x86"
+      ]
+    },
+    "debian.12": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "debian.12-arm": {
+      "#import": [
+        "debian.12",
+        "debian-arm"
+      ]
+    },
+    "debian.12-arm64": {
+      "#import": [
+        "debian.12",
+        "debian-arm64"
+      ]
+    },
+    "debian.12-armel": {
+      "#import": [
+        "debian.12",
+        "debian-armel"
+      ]
+    },
+    "debian.12-x64": {
+      "#import": [
+        "debian.12",
+        "debian-x64"
+      ]
+    },
+    "debian.12-x86": {
+      "#import": [
+        "debian.12",
+        "debian-x86"
+      ]
+    },
+    "debian.8": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "debian.8-arm": {
+      "#import": [
+        "debian.8",
+        "debian-arm"
+      ]
+    },
+    "debian.8-arm64": {
+      "#import": [
+        "debian.8",
+        "debian-arm64"
+      ]
+    },
+    "debian.8-armel": {
+      "#import": [
+        "debian.8",
+        "debian-armel"
+      ]
+    },
+    "debian.8-x64": {
+      "#import": [
+        "debian.8",
+        "debian-x64"
+      ]
+    },
+    "debian.8-x86": {
+      "#import": [
+        "debian.8",
+        "debian-x86"
+      ]
+    },
+    "debian.9": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "debian.9-arm": {
+      "#import": [
+        "debian.9",
+        "debian-arm"
+      ]
+    },
+    "debian.9-arm64": {
+      "#import": [
+        "debian.9",
+        "debian-arm64"
+      ]
+    },
+    "debian.9-armel": {
+      "#import": [
+        "debian.9",
+        "debian-armel"
+      ]
+    },
+    "debian.9-x64": {
+      "#import": [
+        "debian.9",
+        "debian-x64"
+      ]
+    },
+    "debian.9-x86": {
+      "#import": [
+        "debian.9",
+        "debian-x86"
+      ]
+    },
+    "exherbo": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "exherbo-x64": {
+      "#import": [
+        "exherbo",
+        "linux-x64"
+      ]
+    },
+    "fedora": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "fedora-arm64": {
+      "#import": [
+        "fedora",
+        "linux-arm64"
+      ]
+    },
+    "fedora-x64": {
+      "#import": [
+        "fedora",
+        "linux-x64"
+      ]
+    },
+    "fedora.23": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.23-arm64": {
+      "#import": [
+        "fedora.23",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.23-x64": {
+      "#import": [
+        "fedora.23",
+        "fedora-x64"
+      ]
+    },
+    "fedora.24": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.24-arm64": {
+      "#import": [
+        "fedora.24",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.24-x64": {
+      "#import": [
+        "fedora.24",
+        "fedora-x64"
+      ]
+    },
+    "fedora.25": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.25-arm64": {
+      "#import": [
+        "fedora.25",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.25-x64": {
+      "#import": [
+        "fedora.25",
+        "fedora-x64"
+      ]
+    },
+    "fedora.26": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.26-arm64": {
+      "#import": [
+        "fedora.26",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.26-x64": {
+      "#import": [
+        "fedora.26",
+        "fedora-x64"
+      ]
+    },
+    "fedora.27": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.27-arm64": {
+      "#import": [
+        "fedora.27",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.27-x64": {
+      "#import": [
+        "fedora.27",
+        "fedora-x64"
+      ]
+    },
+    "fedora.28": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.28-arm64": {
+      "#import": [
+        "fedora.28",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.28-x64": {
+      "#import": [
+        "fedora.28",
+        "fedora-x64"
+      ]
+    },
+    "fedora.29": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.29-arm64": {
+      "#import": [
+        "fedora.29",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.29-x64": {
+      "#import": [
+        "fedora.29",
+        "fedora-x64"
+      ]
+    },
+    "fedora.30": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.30-arm64": {
+      "#import": [
+        "fedora.30",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.30-x64": {
+      "#import": [
+        "fedora.30",
+        "fedora-x64"
+      ]
+    },
+    "fedora.31": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.31-arm64": {
+      "#import": [
+        "fedora.31",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.31-x64": {
+      "#import": [
+        "fedora.31",
+        "fedora-x64"
+      ]
+    },
+    "fedora.32": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.32-arm64": {
+      "#import": [
+        "fedora.32",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.32-x64": {
+      "#import": [
+        "fedora.32",
+        "fedora-x64"
+      ]
+    },
+    "fedora.33": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.33-arm64": {
+      "#import": [
+        "fedora.33",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.33-x64": {
+      "#import": [
+        "fedora.33",
+        "fedora-x64"
+      ]
+    },
+    "fedora.34": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.34-arm64": {
+      "#import": [
+        "fedora.34",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.34-x64": {
+      "#import": [
+        "fedora.34",
+        "fedora-x64"
+      ]
+    },
+    "fedora.35": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.35-arm64": {
+      "#import": [
+        "fedora.35",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.35-x64": {
+      "#import": [
+        "fedora.35",
+        "fedora-x64"
+      ]
+    },
+    "fedora.36": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.36-arm64": {
+      "#import": [
+        "fedora.36",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.36-x64": {
+      "#import": [
+        "fedora.36",
+        "fedora-x64"
+      ]
+    },
+    "fedora.37": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.37-arm64": {
+      "#import": [
+        "fedora.37",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.37-x64": {
+      "#import": [
+        "fedora.37",
+        "fedora-x64"
+      ]
+    },
+    "fedora.38": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.38-arm64": {
+      "#import": [
+        "fedora.38",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.38-x64": {
+      "#import": [
+        "fedora.38",
+        "fedora-x64"
+      ]
+    },
+    "fedora.39": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.39-arm64": {
+      "#import": [
+        "fedora.39",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.39-x64": {
+      "#import": [
+        "fedora.39",
+        "fedora-x64"
+      ]
+    },
+    "freebsd": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "freebsd-arm64": {
+      "#import": [
+        "freebsd",
+        "unix-arm64"
+      ]
+    },
+    "freebsd-x64": {
+      "#import": [
+        "freebsd",
+        "unix-x64"
+      ]
+    },
+    "freebsd.12": {
+      "#import": [
+        "freebsd"
+      ]
+    },
+    "freebsd.12-arm64": {
+      "#import": [
+        "freebsd.12",
+        "freebsd-arm64"
+      ]
+    },
+    "freebsd.12-x64": {
+      "#import": [
+        "freebsd.12",
+        "freebsd-x64"
+      ]
+    },
+    "freebsd.13": {
+      "#import": [
+        "freebsd.12"
+      ]
+    },
+    "freebsd.13-arm64": {
+      "#import": [
+        "freebsd.13",
+        "freebsd.12-arm64"
+      ]
+    },
+    "freebsd.13-x64": {
+      "#import": [
+        "freebsd.13",
+        "freebsd.12-x64"
+      ]
+    },
+    "gentoo": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "gentoo-x64": {
+      "#import": [
+        "gentoo",
+        "linux-x64"
+      ]
+    },
+    "haiku": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "haiku-x64": {
+      "#import": [
+        "haiku",
+        "unix-x64"
+      ]
+    },
+    "illumos": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "illumos-x64": {
+      "#import": [
+        "illumos",
+        "unix-x64"
+      ]
+    },
+    "ios": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "ios-arm": {
+      "#import": [
+        "ios",
+        "unix-arm"
+      ]
+    },
+    "ios-arm64": {
+      "#import": [
+        "ios",
+        "unix-arm64"
+      ]
+    },
+    "ios-x64": {
+      "#import": [
+        "ios",
+        "unix-x64"
+      ]
+    },
+    "ios-x86": {
+      "#import": [
+        "ios",
+        "unix-x86"
+      ]
+    },
+    "ios.10": {
+      "#import": [
+        "ios"
+      ]
+    },
+    "ios.10-arm": {
+      "#import": [
+        "ios.10",
+        "ios-arm"
+      ]
+    },
+    "ios.10-arm64": {
+      "#import": [
+        "ios.10",
+        "ios-arm64"
+      ]
+    },
+    "ios.10-x64": {
+      "#import": [
+        "ios.10",
+        "ios-x64"
+      ]
+    },
+    "ios.10-x86": {
+      "#import": [
+        "ios.10",
+        "ios-x86"
+      ]
+    },
+    "ios.11": {
+      "#import": [
+        "ios.10"
+      ]
+    },
+    "ios.11-arm64": {
+      "#import": [
+        "ios.11",
+        "ios.10-arm64"
+      ]
+    },
+    "ios.11-x64": {
+      "#import": [
+        "ios.11",
+        "ios.10-x64"
+      ]
+    },
+    "ios.12": {
+      "#import": [
+        "ios.11"
+      ]
+    },
+    "ios.12-arm64": {
+      "#import": [
+        "ios.12",
+        "ios.11-arm64"
+      ]
+    },
+    "ios.12-x64": {
+      "#import": [
+        "ios.12",
+        "ios.11-x64"
+      ]
+    },
+    "ios.13": {
+      "#import": [
+        "ios.12"
+      ]
+    },
+    "ios.13-arm64": {
+      "#import": [
+        "ios.13",
+        "ios.12-arm64"
+      ]
+    },
+    "ios.13-x64": {
+      "#import": [
+        "ios.13",
+        "ios.12-x64"
+      ]
+    },
+    "ios.14": {
+      "#import": [
+        "ios.13"
+      ]
+    },
+    "ios.14-arm64": {
+      "#import": [
+        "ios.14",
+        "ios.13-arm64"
+      ]
+    },
+    "ios.14-x64": {
+      "#import": [
+        "ios.14",
+        "ios.13-x64"
+      ]
+    },
+    "ios.15": {
+      "#import": [
+        "ios.14"
+      ]
+    },
+    "ios.15-arm64": {
+      "#import": [
+        "ios.15",
+        "ios.14-arm64"
+      ]
+    },
+    "ios.15-x64": {
+      "#import": [
+        "ios.15",
+        "ios.14-x64"
+      ]
+    },
+    "iossimulator": {
+      "#import": [
+        "ios"
+      ]
+    },
+    "iossimulator-arm64": {
+      "#import": [
+        "iossimulator",
+        "ios-arm64"
+      ]
+    },
+    "iossimulator-x64": {
+      "#import": [
+        "iossimulator",
+        "ios-x64"
+      ]
+    },
+    "iossimulator-x86": {
+      "#import": [
+        "iossimulator",
+        "ios-x86"
+      ]
+    },
+    "iossimulator.10": {
+      "#import": [
+        "iossimulator"
+      ]
+    },
+    "iossimulator.10-arm64": {
+      "#import": [
+        "iossimulator.10",
+        "iossimulator-arm64"
+      ]
+    },
+    "iossimulator.10-x64": {
+      "#import": [
+        "iossimulator.10",
+        "iossimulator-x64"
+      ]
+    },
+    "iossimulator.10-x86": {
+      "#import": [
+        "iossimulator.10",
+        "iossimulator-x86"
+      ]
+    },
+    "iossimulator.11": {
+      "#import": [
+        "iossimulator.10"
+      ]
+    },
+    "iossimulator.11-arm64": {
+      "#import": [
+        "iossimulator.11",
+        "iossimulator.10-arm64"
+      ]
+    },
+    "iossimulator.11-x64": {
+      "#import": [
+        "iossimulator.11",
+        "iossimulator.10-x64"
+      ]
+    },
+    "iossimulator.12": {
+      "#import": [
+        "iossimulator.11"
+      ]
+    },
+    "iossimulator.12-arm64": {
+      "#import": [
+        "iossimulator.12",
+        "iossimulator.11-arm64"
+      ]
+    },
+    "iossimulator.12-x64": {
+      "#import": [
+        "iossimulator.12",
+        "iossimulator.11-x64"
+      ]
+    },
+    "iossimulator.13": {
+      "#import": [
+        "iossimulator.12"
+      ]
+    },
+    "iossimulator.13-arm64": {
+      "#import": [
+        "iossimulator.13",
+        "iossimulator.12-arm64"
+      ]
+    },
+    "iossimulator.13-x64": {
+      "#import": [
+        "iossimulator.13",
+        "iossimulator.12-x64"
+      ]
+    },
+    "iossimulator.14": {
+      "#import": [
+        "iossimulator.13"
+      ]
+    },
+    "iossimulator.14-arm64": {
+      "#import": [
+        "iossimulator.14",
+        "iossimulator.13-arm64"
+      ]
+    },
+    "iossimulator.14-x64": {
+      "#import": [
+        "iossimulator.14",
+        "iossimulator.13-x64"
+      ]
+    },
+    "iossimulator.15": {
+      "#import": [
+        "iossimulator.14"
+      ]
+    },
+    "iossimulator.15-arm64": {
+      "#import": [
+        "iossimulator.15",
+        "iossimulator.14-arm64"
+      ]
+    },
+    "iossimulator.15-x64": {
+      "#import": [
+        "iossimulator.15",
+        "iossimulator.14-x64"
+      ]
+    },
+    "linux": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "linux-arm": {
+      "#import": [
+        "linux",
+        "unix-arm"
+      ]
+    },
+    "linux-arm64": {
+      "#import": [
+        "linux",
+        "unix-arm64"
+      ]
+    },
+    "linux-armel": {
+      "#import": [
+        "linux",
+        "unix-armel"
+      ]
+    },
+    "linux-armv6": {
+      "#import": [
+        "linux",
+        "unix-armv6"
+      ]
+    },
+    "linux-bionic": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "linux-bionic-arm": {
+      "#import": [
+        "linux-bionic",
+        "linux-arm"
+      ]
+    },
+    "linux-bionic-arm64": {
+      "#import": [
+        "linux-bionic",
+        "linux-arm64"
+      ]
+    },
+    "linux-bionic-x64": {
+      "#import": [
+        "linux-bionic",
+        "linux-x64"
+      ]
+    },
+    "linux-bionic-x86": {
+      "#import": [
+        "linux-bionic",
+        "linux-x86"
+      ]
+    },
+    "linux-loongarch64": {
+      "#import": [
+        "linux",
+        "unix-loongarch64"
+      ]
+    },
+    "linux-mips64": {
+      "#import": [
+        "linux",
+        "unix-mips64"
+      ]
+    },
+    "linux-musl": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "linux-musl-arm": {
+      "#import": [
+        "linux-musl",
+        "linux-arm"
+      ]
+    },
+    "linux-musl-arm64": {
+      "#import": [
+        "linux-musl",
+        "linux-arm64"
+      ]
+    },
+    "linux-musl-armel": {
+      "#import": [
+        "linux-musl",
+        "linux-armel"
+      ]
+    },
+    "linux-musl-armv6": {
+      "#import": [
+        "linux-musl",
+        "linux-armv6"
+      ]
+    },
+    "linux-musl-ppc64le": {
+      "#import": [
+        "linux-musl",
+        "linux-ppc64le"
+      ]
+    },
+    "linux-musl-riscv64": {
+      "#import": [
+        "linux-musl",
+        "linux-riscv64"
+      ]
+    },
+    "linux-musl-loongarch64": {
+      "#import": [
+        "linux-musl",
+        "linux-loongarch64"
+      ]
+    },
+    "linux-musl-s390x": {
+      "#import": [
+        "linux-musl",
+        "linux-s390x"
+      ]
+    },
+    "linux-musl-x64": {
+      "#import": [
+        "linux-musl",
+        "linux-x64"
+      ]
+    },
+    "linux-musl-x86": {
+      "#import": [
+        "linux-musl",
+        "linux-x86"
+      ]
+    },
+    "linux-ppc64le": {
+      "#import": [
+        "linux",
+        "unix-ppc64le"
+      ]
+    },
+    "linux-riscv64": {
+      "#import": [
+        "linux",
+        "unix-riscv64"
+      ]
+    },
+    "linux-s390x": {
+      "#import": [
+        "linux",
+        "unix-s390x"
+      ]
+    },
+    "linux-x64": {
+      "#import": [
+        "linux",
+        "unix-x64"
+      ]
+    },
+    "linux-x86": {
+      "#import": [
+        "linux",
+        "unix-x86"
+      ]
+    },
+    "linuxmint.17": {
+      "#import": [
+        "ubuntu.14.04"
+      ]
+    },
+    "linuxmint.17-x64": {
+      "#import": [
+        "linuxmint.17",
+        "ubuntu.14.04-x64"
+      ]
+    },
+    "linuxmint.17.1": {
+      "#import": [
+        "linuxmint.17"
+      ]
+    },
+    "linuxmint.17.1-x64": {
+      "#import": [
+        "linuxmint.17.1",
+        "linuxmint.17-x64"
+      ]
+    },
+    "linuxmint.17.2": {
+      "#import": [
+        "linuxmint.17.1"
+      ]
+    },
+    "linuxmint.17.2-x64": {
+      "#import": [
+        "linuxmint.17.2",
+        "linuxmint.17.1-x64"
+      ]
+    },
+    "linuxmint.17.3": {
+      "#import": [
+        "linuxmint.17.2"
+      ]
+    },
+    "linuxmint.17.3-x64": {
+      "#import": [
+        "linuxmint.17.3",
+        "linuxmint.17.2-x64"
+      ]
+    },
+    "linuxmint.18": {
+      "#import": [
+        "ubuntu.16.04"
+      ]
+    },
+    "linuxmint.18-x64": {
+      "#import": [
+        "linuxmint.18",
+        "ubuntu.16.04-x64"
+      ]
+    },
+    "linuxmint.18.1": {
+      "#import": [
+        "linuxmint.18"
+      ]
+    },
+    "linuxmint.18.1-x64": {
+      "#import": [
+        "linuxmint.18.1",
+        "linuxmint.18-x64"
+      ]
+    },
+    "linuxmint.18.2": {
+      "#import": [
+        "linuxmint.18.1"
+      ]
+    },
+    "linuxmint.18.2-x64": {
+      "#import": [
+        "linuxmint.18.2",
+        "linuxmint.18.1-x64"
+      ]
+    },
+    "linuxmint.18.3": {
+      "#import": [
+        "linuxmint.18.2"
+      ]
+    },
+    "linuxmint.18.3-x64": {
+      "#import": [
+        "linuxmint.18.3",
+        "linuxmint.18.2-x64"
+      ]
+    },
+    "linuxmint.19": {
+      "#import": [
+        "ubuntu.18.04"
+      ]
+    },
+    "linuxmint.19-x64": {
+      "#import": [
+        "linuxmint.19",
+        "ubuntu.18.04-x64"
+      ]
+    },
+    "linuxmint.19.1": {
+      "#import": [
+        "linuxmint.19"
+      ]
+    },
+    "linuxmint.19.1-x64": {
+      "#import": [
+        "linuxmint.19.1",
+        "linuxmint.19-x64"
+      ]
+    },
+    "linuxmint.19.2": {
+      "#import": [
+        "linuxmint.19.1"
+      ]
+    },
+    "linuxmint.19.2-x64": {
+      "#import": [
+        "linuxmint.19.2",
+        "linuxmint.19.1-x64"
+      ]
+    },
+    "maccatalyst": {
+      "#import": [
+        "ios"
+      ]
+    },
+    "maccatalyst-arm64": {
+      "#import": [
+        "maccatalyst",
+        "ios-arm64"
+      ]
+    },
+    "maccatalyst-x64": {
+      "#import": [
+        "maccatalyst",
+        "ios-x64"
+      ]
+    },
+    "maccatalyst.13": {
+      "#import": [
+        "maccatalyst"
+      ]
+    },
+    "maccatalyst.13-arm64": {
+      "#import": [
+        "maccatalyst.13",
+        "maccatalyst-arm64"
+      ]
+    },
+    "maccatalyst.13-x64": {
+      "#import": [
+        "maccatalyst.13",
+        "maccatalyst-x64"
+      ]
+    },
+    "maccatalyst.14": {
+      "#import": [
+        "maccatalyst.13"
+      ]
+    },
+    "maccatalyst.14-arm64": {
+      "#import": [
+        "maccatalyst.14",
+        "maccatalyst.13-arm64"
+      ]
+    },
+    "maccatalyst.14-x64": {
+      "#import": [
+        "maccatalyst.14",
+        "maccatalyst.13-x64"
+      ]
+    },
+    "maccatalyst.15": {
+      "#import": [
+        "maccatalyst.14"
+      ]
+    },
+    "maccatalyst.15-arm64": {
+      "#import": [
+        "maccatalyst.15",
+        "maccatalyst.14-arm64"
+      ]
+    },
+    "maccatalyst.15-x64": {
+      "#import": [
+        "maccatalyst.15",
+        "maccatalyst.14-x64"
+      ]
+    },
+    "manjaro": {
+      "#import": [
+        "arch"
+      ]
+    },
+    "manjaro-x64": {
+      "#import": [
+        "manjaro",
+        "arch-x64"
+      ]
+    },
+    "miraclelinux": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "miraclelinux-x64": {
+      "#import": [
+        "miraclelinux",
+        "rhel-x64"
+      ]
+    },
+    "miraclelinux.8": {
+      "#import": [
+        "miraclelinux",
+        "rhel.8"
+      ]
+    },
+    "miraclelinux.8-x64": {
+      "#import": [
+        "miraclelinux.8",
+        "miraclelinux-x64",
+        "rhel.8-x64"
+      ]
+    },
+    "miraclelinux.9": {
+      "#import": [
+        "miraclelinux",
+        "rhel.9"
+      ]
+    },
+    "miraclelinux.9-x64": {
+      "#import": [
+        "miraclelinux.9",
+        "miraclelinux-x64",
+        "rhel.9-x64"
+      ]
+    },
+    "ol": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "ol-x64": {
+      "#import": [
+        "ol",
+        "rhel-x64"
+      ]
+    },
+    "ol.7": {
+      "#import": [
+        "ol",
+        "rhel.7"
+      ]
+    },
+    "ol.7-x64": {
+      "#import": [
+        "ol.7",
+        "ol-x64",
+        "rhel.7-x64"
+      ]
+    },
+    "ol.7.0": {
+      "#import": [
+        "ol.7",
+        "rhel.7.0"
+      ]
+    },
+    "ol.7.0-x64": {
+      "#import": [
+        "ol.7.0",
+        "ol.7-x64",
+        "rhel.7.0-x64"
+      ]
+    },
+    "ol.7.1": {
+      "#import": [
+        "ol.7.0",
+        "rhel.7.1"
+      ]
+    },
+    "ol.7.1-x64": {
+      "#import": [
+        "ol.7.1",
+        "ol.7.0-x64",
+        "rhel.7.1-x64"
+      ]
+    },
+    "ol.7.2": {
+      "#import": [
+        "ol.7.1",
+        "rhel.7.2"
+      ]
+    },
+    "ol.7.2-x64": {
+      "#import": [
+        "ol.7.2",
+        "ol.7.1-x64",
+        "rhel.7.2-x64"
+      ]
+    },
+    "ol.7.3": {
+      "#import": [
+        "ol.7.2",
+        "rhel.7.3"
+      ]
+    },
+    "ol.7.3-x64": {
+      "#import": [
+        "ol.7.3",
+        "ol.7.2-x64",
+        "rhel.7.3-x64"
+      ]
+    },
+    "ol.7.4": {
+      "#import": [
+        "ol.7.3",
+        "rhel.7.4"
+      ]
+    },
+    "ol.7.4-x64": {
+      "#import": [
+        "ol.7.4",
+        "ol.7.3-x64",
+        "rhel.7.4-x64"
+      ]
+    },
+    "ol.7.5": {
+      "#import": [
+        "ol.7.4",
+        "rhel.7.5"
+      ]
+    },
+    "ol.7.5-x64": {
+      "#import": [
+        "ol.7.5",
+        "ol.7.4-x64",
+        "rhel.7.5-x64"
+      ]
+    },
+    "ol.7.6": {
+      "#import": [
+        "ol.7.5",
+        "rhel.7.6"
+      ]
+    },
+    "ol.7.6-x64": {
+      "#import": [
+        "ol.7.6",
+        "ol.7.5-x64",
+        "rhel.7.6-x64"
+      ]
+    },
+    "ol.8": {
+      "#import": [
+        "ol",
+        "rhel.8"
+      ]
+    },
+    "ol.8-x64": {
+      "#import": [
+        "ol.8",
+        "ol-x64",
+        "rhel.8-x64"
+      ]
+    },
+    "ol.8.0": {
+      "#import": [
+        "ol.8",
+        "rhel.8.0"
+      ]
+    },
+    "ol.8.0-x64": {
+      "#import": [
+        "ol.8.0",
+        "ol.8-x64",
+        "rhel.8.0-x64"
+      ]
+    },
+    "omnios": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "omnios-x64": {
+      "#import": [
+        "omnios",
+        "illumos-x64"
+      ]
+    },
+    "omnios.15": {
+      "#import": [
+        "omnios"
+      ]
+    },
+    "omnios.15-x64": {
+      "#import": [
+        "omnios.15",
+        "omnios-x64"
+      ]
+    },
+    "openindiana": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "openindiana-x64": {
+      "#import": [
+        "openindiana",
+        "illumos-x64"
+      ]
+    },
+    "opensuse": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "opensuse-x64": {
+      "#import": [
+        "opensuse",
+        "linux-x64"
+      ]
+    },
+    "opensuse.13.2": {
+      "#import": [
+        "opensuse"
+      ]
+    },
+    "opensuse.13.2-x64": {
+      "#import": [
+        "opensuse.13.2",
+        "opensuse-x64"
+      ]
+    },
+    "opensuse.15.0": {
+      "#import": [
+        "opensuse"
+      ]
+    },
+    "opensuse.15.0-x64": {
+      "#import": [
+        "opensuse.15.0",
+        "opensuse-x64"
+      ]
+    },
+    "opensuse.15.1": {
+      "#import": [
+        "opensuse"
+      ]
+    },
+    "opensuse.15.1-x64": {
+      "#import": [
+        "opensuse.15.1",
+        "opensuse-x64"
+      ]
+    },
+    "opensuse.42.1": {
+      "#import": [
+        "opensuse"
+      ]
+    },
+    "opensuse.42.1-x64": {
+      "#import": [
+        "opensuse.42.1",
+        "opensuse-x64"
+      ]
+    },
+    "opensuse.42.2": {
+      "#import": [
+        "opensuse"
+      ]
+    },
+    "opensuse.42.2-x64": {
+      "#import": [
+        "opensuse.42.2",
+        "opensuse-x64"
+      ]
+    },
+    "opensuse.42.3": {
+      "#import": [
+        "opensuse"
+      ]
+    },
+    "opensuse.42.3-x64": {
+      "#import": [
+        "opensuse.42.3",
+        "opensuse-x64"
+      ]
+    },
+    "osx": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "osx-arm64": {
+      "#import": [
+        "osx",
+        "unix-arm64"
+      ]
+    },
+    "osx-x64": {
+      "#import": [
+        "osx",
+        "unix-x64"
+      ]
+    },
+    "osx.10.10": {
+      "#import": [
+        "osx"
+      ]
+    },
+    "osx.10.10-arm64": {
+      "#import": [
+        "osx.10.10",
+        "osx-arm64"
+      ]
+    },
+    "osx.10.10-x64": {
+      "#import": [
+        "osx.10.10",
+        "osx-x64"
+      ]
+    },
+    "osx.10.11": {
+      "#import": [
+        "osx.10.10"
+      ]
+    },
+    "osx.10.11-arm64": {
+      "#import": [
+        "osx.10.11",
+        "osx.10.10-arm64"
+      ]
+    },
+    "osx.10.11-x64": {
+      "#import": [
+        "osx.10.11",
+        "osx.10.10-x64"
+      ]
+    },
+    "osx.10.12": {
+      "#import": [
+        "osx.10.11"
+      ]
+    },
+    "osx.10.12-arm64": {
+      "#import": [
+        "osx.10.12",
+        "osx.10.11-arm64"
+      ]
+    },
+    "osx.10.12-x64": {
+      "#import": [
+        "osx.10.12",
+        "osx.10.11-x64"
+      ]
+    },
+    "osx.10.13": {
+      "#import": [
+        "osx.10.12"
+      ]
+    },
+    "osx.10.13-arm64": {
+      "#import": [
+        "osx.10.13",
+        "osx.10.12-arm64"
+      ]
+    },
+    "osx.10.13-x64": {
+      "#import": [
+        "osx.10.13",
+        "osx.10.12-x64"
+      ]
+    },
+    "osx.10.14": {
+      "#import": [
+        "osx.10.13"
+      ]
+    },
+    "osx.10.14-arm64": {
+      "#import": [
+        "osx.10.14",
+        "osx.10.13-arm64"
+      ]
+    },
+    "osx.10.14-x64": {
+      "#import": [
+        "osx.10.14",
+        "osx.10.13-x64"
+      ]
+    },
+    "osx.10.15": {
+      "#import": [
+        "osx.10.14"
+      ]
+    },
+    "osx.10.15-arm64": {
+      "#import": [
+        "osx.10.15",
+        "osx.10.14-arm64"
+      ]
+    },
+    "osx.10.15-x64": {
+      "#import": [
+        "osx.10.15",
+        "osx.10.14-x64"
+      ]
+    },
+    "osx.10.16": {
+      "#import": [
+        "osx.10.15"
+      ]
+    },
+    "osx.10.16-arm64": {
+      "#import": [
+        "osx.10.16",
+        "osx.10.15-arm64"
+      ]
+    },
+    "osx.10.16-x64": {
+      "#import": [
+        "osx.10.16",
+        "osx.10.15-x64"
+      ]
+    },
+    "osx.11.0": {
+      "#import": [
+        "osx.10.16"
+      ]
+    },
+    "osx.11.0-arm64": {
+      "#import": [
+        "osx.11.0",
+        "osx.10.16-arm64"
+      ]
+    },
+    "osx.11.0-x64": {
+      "#import": [
+        "osx.11.0",
+        "osx.10.16-x64"
+      ]
+    },
+    "osx.12": {
+      "#import": [
+        "osx.11.0"
+      ]
+    },
+    "osx.12-arm64": {
+      "#import": [
+        "osx.12",
+        "osx.11.0-arm64"
+      ]
+    },
+    "osx.12-x64": {
+      "#import": [
+        "osx.12",
+        "osx.11.0-x64"
+      ]
+    },
+    "osx.13": {
+      "#import": [
+        "osx.12"
+      ]
+    },
+    "osx.13-arm64": {
+      "#import": [
+        "osx.13",
+        "osx.12-arm64"
+      ]
+    },
+    "osx.13-x64": {
+      "#import": [
+        "osx.13",
+        "osx.12-x64"
+      ]
+    },
+    "rhel": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "rhel-arm64": {
+      "#import": [
+        "rhel",
+        "linux-arm64"
+      ]
+    },
+    "rhel-x64": {
+      "#import": [
+        "rhel",
+        "linux-x64"
+      ]
+    },
+    "rhel.6": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "rhel.6-x64": {
+      "#import": [
+        "rhel.6",
+        "rhel-x64"
+      ]
+    },
+    "rhel.7": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "rhel.7-x64": {
+      "#import": [
+        "rhel.7",
+        "rhel-x64"
+      ]
+    },
+    "rhel.7.0": {
+      "#import": [
+        "rhel.7"
+      ]
+    },
+    "rhel.7.0-x64": {
+      "#import": [
+        "rhel.7.0",
+        "rhel.7-x64"
+      ]
+    },
+    "rhel.7.1": {
+      "#import": [
+        "rhel.7.0"
+      ]
+    },
+    "rhel.7.1-x64": {
+      "#import": [
+        "rhel.7.1",
+        "rhel.7.0-x64"
+      ]
+    },
+    "rhel.7.2": {
+      "#import": [
+        "rhel.7.1"
+      ]
+    },
+    "rhel.7.2-x64": {
+      "#import": [
+        "rhel.7.2",
+        "rhel.7.1-x64"
+      ]
+    },
+    "rhel.7.3": {
+      "#import": [
+        "rhel.7.2"
+      ]
+    },
+    "rhel.7.3-x64": {
+      "#import": [
+        "rhel.7.3",
+        "rhel.7.2-x64"
+      ]
+    },
+    "rhel.7.4": {
+      "#import": [
+        "rhel.7.3"
+      ]
+    },
+    "rhel.7.4-x64": {
+      "#import": [
+        "rhel.7.4",
+        "rhel.7.3-x64"
+      ]
+    },
+    "rhel.7.5": {
+      "#import": [
+        "rhel.7.4"
+      ]
+    },
+    "rhel.7.5-x64": {
+      "#import": [
+        "rhel.7.5",
+        "rhel.7.4-x64"
+      ]
+    },
+    "rhel.7.6": {
+      "#import": [
+        "rhel.7.5"
+      ]
+    },
+    "rhel.7.6-x64": {
+      "#import": [
+        "rhel.7.6",
+        "rhel.7.5-x64"
+      ]
+    },
+    "rhel.8": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "rhel.8-arm64": {
+      "#import": [
+        "rhel.8",
+        "rhel-arm64"
+      ]
+    },
+    "rhel.8-x64": {
+      "#import": [
+        "rhel.8",
+        "rhel-x64"
+      ]
+    },
+    "rhel.8.0": {
+      "#import": [
+        "rhel.8"
+      ]
+    },
+    "rhel.8.0-arm64": {
+      "#import": [
+        "rhel.8.0",
+        "rhel.8-arm64"
+      ]
+    },
+    "rhel.8.0-x64": {
+      "#import": [
+        "rhel.8.0",
+        "rhel.8-x64"
+      ]
+    },
+    "rhel.8.1": {
+      "#import": [
+        "rhel.8.0"
+      ]
+    },
+    "rhel.8.1-arm64": {
+      "#import": [
+        "rhel.8.1",
+        "rhel.8.0-arm64"
+      ]
+    },
+    "rhel.8.1-x64": {
+      "#import": [
+        "rhel.8.1",
+        "rhel.8.0-x64"
+      ]
+    },
+    "rhel.9": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "rhel.9-arm64": {
+      "#import": [
+        "rhel.9",
+        "rhel-arm64"
+      ]
+    },
+    "rhel.9-x64": {
+      "#import": [
+        "rhel.9",
+        "rhel-x64"
+      ]
+    },
+    "rocky": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "rocky-arm64": {
+      "#import": [
+        "rocky",
+        "rhel-arm64"
+      ]
+    },
+    "rocky-x64": {
+      "#import": [
+        "rocky",
+        "rhel-x64"
+      ]
+    },
+    "rocky.8": {
+      "#import": [
+        "rocky",
+        "rhel.8"
+      ]
+    },
+    "rocky.8-arm64": {
+      "#import": [
+        "rocky.8",
+        "rocky-arm64",
+        "rhel.8-arm64"
+      ]
+    },
+    "rocky.8-x64": {
+      "#import": [
+        "rocky.8",
+        "rocky-x64",
+        "rhel.8-x64"
+      ]
+    },
+    "rocky.9": {
+      "#import": [
+        "rocky",
+        "rhel.9"
+      ]
+    },
+    "rocky.9-arm64": {
+      "#import": [
+        "rocky.9",
+        "rocky-arm64",
+        "rhel.9-arm64"
+      ]
+    },
+    "rocky.9-x64": {
+      "#import": [
+        "rocky.9",
+        "rocky-x64",
+        "rhel.9-x64"
+      ]
+    },
+    "sles": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "sles-x64": {
+      "#import": [
+        "sles",
+        "linux-x64"
+      ]
+    },
+    "sles.12": {
+      "#import": [
+        "sles"
+      ]
+    },
+    "sles.12-x64": {
+      "#import": [
+        "sles.12",
+        "sles-x64"
+      ]
+    },
+    "sles.12.1": {
+      "#import": [
+        "sles.12"
+      ]
+    },
+    "sles.12.1-x64": {
+      "#import": [
+        "sles.12.1",
+        "sles.12-x64"
+      ]
+    },
+    "sles.12.2": {
+      "#import": [
+        "sles.12.1"
+      ]
+    },
+    "sles.12.2-x64": {
+      "#import": [
+        "sles.12.2",
+        "sles.12.1-x64"
+      ]
+    },
+    "sles.12.3": {
+      "#import": [
+        "sles.12.2"
+      ]
+    },
+    "sles.12.3-x64": {
+      "#import": [
+        "sles.12.3",
+        "sles.12.2-x64"
+      ]
+    },
+    "sles.12.4": {
+      "#import": [
+        "sles.12.3"
+      ]
+    },
+    "sles.12.4-x64": {
+      "#import": [
+        "sles.12.4",
+        "sles.12.3-x64"
+      ]
+    },
+    "sles.15": {
+      "#import": [
+        "sles.12.4"
+      ]
+    },
+    "sles.15-x64": {
+      "#import": [
+        "sles.15",
+        "sles.12.4-x64"
+      ]
+    },
+    "sles.15.1": {
+      "#import": [
+        "sles.15"
+      ]
+    },
+    "sles.15.1-x64": {
+      "#import": [
+        "sles.15.1",
+        "sles.15-x64"
+      ]
+    },
+    "smartos": {
+      "#import": [
+        "illumos"
+      ]
+    },
+    "smartos-x64": {
+      "#import": [
+        "smartos",
+        "illumos-x64"
+      ]
+    },
+    "smartos.2020": {
+      "#import": [
+        "smartos"
+      ]
+    },
+    "smartos.2020-x64": {
+      "#import": [
+        "smartos.2020",
+        "smartos-x64"
+      ]
+    },
+    "smartos.2021": {
+      "#import": [
+        "smartos.2020"
+      ]
+    },
+    "smartos.2021-x64": {
+      "#import": [
+        "smartos.2021",
+        "smartos.2020-x64"
+      ]
+    },
+    "solaris": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "solaris-x64": {
+      "#import": [
+        "solaris",
+        "unix-x64"
+      ]
+    },
+    "solaris.11": {
+      "#import": [
+        "solaris"
+      ]
+    },
+    "solaris.11-x64": {
+      "#import": [
+        "solaris.11",
+        "solaris-x64"
+      ]
+    },
+    "tizen": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "tizen-arm64": {
+      "#import": [
+        "tizen",
+        "linux-arm64"
+      ]
+    },
+    "tizen-armel": {
+      "#import": [
+        "tizen",
+        "linux-armel"
+      ]
+    },
+    "tizen-x86": {
+      "#import": [
+        "tizen",
+        "linux-x86"
+      ]
+    },
+    "tizen.4.0.0": {
+      "#import": [
+        "tizen"
+      ]
+    },
+    "tizen.4.0.0-arm64": {
+      "#import": [
+        "tizen.4.0.0",
+        "tizen-arm64"
+      ]
+    },
+    "tizen.4.0.0-armel": {
+      "#import": [
+        "tizen.4.0.0",
+        "tizen-armel"
+      ]
+    },
+    "tizen.4.0.0-x86": {
+      "#import": [
+        "tizen.4.0.0",
+        "tizen-x86"
+      ]
+    },
+    "tizen.5.0.0": {
+      "#import": [
+        "tizen.4.0.0"
+      ]
+    },
+    "tizen.5.0.0-arm64": {
+      "#import": [
+        "tizen.5.0.0",
+        "tizen.4.0.0-arm64"
+      ]
+    },
+    "tizen.5.0.0-armel": {
+      "#import": [
+        "tizen.5.0.0",
+        "tizen.4.0.0-armel"
+      ]
+    },
+    "tizen.5.0.0-x86": {
+      "#import": [
+        "tizen.5.0.0",
+        "tizen.4.0.0-x86"
+      ]
+    },
+    "tizen.5.5.0": {
+      "#import": [
+        "tizen.5.0.0"
+      ]
+    },
+    "tizen.5.5.0-arm64": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-arm64"
+      ]
+    },
+    "tizen.5.5.0-armel": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-armel"
+      ]
+    },
+    "tizen.5.5.0-x86": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-x86"
+      ]
+    },
+    "tizen.6.0.0": {
+      "#import": [
+        "tizen.5.5.0"
+      ]
+    },
+    "tizen.6.0.0-arm64": {
+      "#import": [
+        "tizen.6.0.0",
+        "tizen.5.5.0-arm64"
+      ]
+    },
+    "tizen.6.0.0-armel": {
+      "#import": [
+        "tizen.6.0.0",
+        "tizen.5.5.0-armel"
+      ]
+    },
+    "tizen.6.0.0-x86": {
+      "#import": [
+        "tizen.6.0.0",
+        "tizen.5.5.0-x86"
+      ]
+    },
+    "tizen.6.5.0": {
+      "#import": [
+        "tizen.6.0.0"
+      ]
+    },
+    "tizen.6.5.0-arm64": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-arm64"
+      ]
+    },
+    "tizen.6.5.0-armel": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-armel"
+      ]
+    },
+    "tizen.6.5.0-x86": {
+      "#import": [
+        "tizen.6.5.0",
+        "tizen.6.0.0-x86"
+      ]
+    },
+    "tizen.7.0.0": {
+      "#import": [
+        "tizen.6.5.0"
+      ]
+    },
+    "tizen.7.0.0-arm64": {
+      "#import": [
+        "tizen.7.0.0",
+        "tizen.6.5.0-arm64"
+      ]
+    },
+    "tizen.7.0.0-armel": {
+      "#import": [
+        "tizen.7.0.0",
+        "tizen.6.5.0-armel"
+      ]
+    },
+    "tizen.7.0.0-x86": {
+      "#import": [
+        "tizen.7.0.0",
+        "tizen.6.5.0-x86"
+      ]
+    },
+    "tvos": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "tvos-arm64": {
+      "#import": [
+        "tvos",
+        "unix-arm64"
+      ]
+    },
+    "tvos-x64": {
+      "#import": [
+        "tvos",
+        "unix-x64"
+      ]
+    },
+    "tvos.10": {
+      "#import": [
+        "tvos"
+      ]
+    },
+    "tvos.10-arm64": {
+      "#import": [
+        "tvos.10",
+        "tvos-arm64"
+      ]
+    },
+    "tvos.10-x64": {
+      "#import": [
+        "tvos.10",
+        "tvos-x64"
+      ]
+    },
+    "tvos.11": {
+      "#import": [
+        "tvos.10"
+      ]
+    },
+    "tvos.11-arm64": {
+      "#import": [
+        "tvos.11",
+        "tvos.10-arm64"
+      ]
+    },
+    "tvos.11-x64": {
+      "#import": [
+        "tvos.11",
+        "tvos.10-x64"
+      ]
+    },
+    "tvos.12": {
+      "#import": [
+        "tvos.11"
+      ]
+    },
+    "tvos.12-arm64": {
+      "#import": [
+        "tvos.12",
+        "tvos.11-arm64"
+      ]
+    },
+    "tvos.12-x64": {
+      "#import": [
+        "tvos.12",
+        "tvos.11-x64"
+      ]
+    },
+    "tvos.13": {
+      "#import": [
+        "tvos.12"
+      ]
+    },
+    "tvos.13-arm64": {
+      "#import": [
+        "tvos.13",
+        "tvos.12-arm64"
+      ]
+    },
+    "tvos.13-x64": {
+      "#import": [
+        "tvos.13",
+        "tvos.12-x64"
+      ]
+    },
+    "tvos.14": {
+      "#import": [
+        "tvos.13"
+      ]
+    },
+    "tvos.14-arm64": {
+      "#import": [
+        "tvos.14",
+        "tvos.13-arm64"
+      ]
+    },
+    "tvos.14-x64": {
+      "#import": [
+        "tvos.14",
+        "tvos.13-x64"
+      ]
+    },
+    "tvos.15": {
+      "#import": [
+        "tvos.14"
+      ]
+    },
+    "tvos.15-arm64": {
+      "#import": [
+        "tvos.15",
+        "tvos.14-arm64"
+      ]
+    },
+    "tvos.15-x64": {
+      "#import": [
+        "tvos.15",
+        "tvos.14-x64"
+      ]
+    },
+    "tvossimulator": {
+      "#import": [
+        "tvos"
+      ]
+    },
+    "tvossimulator-arm64": {
+      "#import": [
+        "tvossimulator",
+        "tvos-arm64"
+      ]
+    },
+    "tvossimulator-x64": {
+      "#import": [
+        "tvossimulator",
+        "tvos-x64"
+      ]
+    },
+    "tvossimulator.10": {
+      "#import": [
+        "tvossimulator"
+      ]
+    },
+    "tvossimulator.10-arm64": {
+      "#import": [
+        "tvossimulator.10",
+        "tvossimulator-arm64"
+      ]
+    },
+    "tvossimulator.10-x64": {
+      "#import": [
+        "tvossimulator.10",
+        "tvossimulator-x64"
+      ]
+    },
+    "tvossimulator.11": {
+      "#import": [
+        "tvossimulator.10"
+      ]
+    },
+    "tvossimulator.11-arm64": {
+      "#import": [
+        "tvossimulator.11",
+        "tvossimulator.10-arm64"
+      ]
+    },
+    "tvossimulator.11-x64": {
+      "#import": [
+        "tvossimulator.11",
+        "tvossimulator.10-x64"
+      ]
+    },
+    "tvossimulator.12": {
+      "#import": [
+        "tvossimulator.11"
+      ]
+    },
+    "tvossimulator.12-arm64": {
+      "#import": [
+        "tvossimulator.12",
+        "tvossimulator.11-arm64"
+      ]
+    },
+    "tvossimulator.12-x64": {
+      "#import": [
+        "tvossimulator.12",
+        "tvossimulator.11-x64"
+      ]
+    },
+    "tvossimulator.13": {
+      "#import": [
+        "tvossimulator.12"
+      ]
+    },
+    "tvossimulator.13-arm64": {
+      "#import": [
+        "tvossimulator.13",
+        "tvossimulator.12-arm64"
+      ]
+    },
+    "tvossimulator.13-x64": {
+      "#import": [
+        "tvossimulator.13",
+        "tvossimulator.12-x64"
+      ]
+    },
+    "tvossimulator.14": {
+      "#import": [
+        "tvossimulator.13"
+      ]
+    },
+    "tvossimulator.14-arm64": {
+      "#import": [
+        "tvossimulator.14",
+        "tvossimulator.13-arm64"
+      ]
+    },
+    "tvossimulator.14-x64": {
+      "#import": [
+        "tvossimulator.14",
+        "tvossimulator.13-x64"
+      ]
+    },
+    "tvossimulator.15": {
+      "#import": [
+        "tvossimulator.14"
+      ]
+    },
+    "tvossimulator.15-arm64": {
+      "#import": [
+        "tvossimulator.15",
+        "tvossimulator.14-arm64"
+      ]
+    },
+    "tvossimulator.15-x64": {
+      "#import": [
+        "tvossimulator.15",
+        "tvossimulator.14-x64"
+      ]
+    },
+    "ubuntu": {
+      "#import": [
+        "debian"
+      ]
+    },
+    "ubuntu-arm": {
+      "#import": [
+        "ubuntu",
+        "debian-arm"
+      ]
+    },
+    "ubuntu-arm64": {
+      "#import": [
+        "ubuntu",
+        "debian-arm64"
+      ]
+    },
+    "ubuntu-x64": {
+      "#import": [
+        "ubuntu",
+        "debian-x64"
+      ]
+    },
+    "ubuntu-x86": {
+      "#import": [
+        "ubuntu",
+        "debian-x86"
+      ]
+    },
+    "ubuntu.14.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.14.04-arm": {
+      "#import": [
+        "ubuntu.14.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.14.04-x64": {
+      "#import": [
+        "ubuntu.14.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.14.04-x86": {
+      "#import": [
+        "ubuntu.14.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.14.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.14.10-arm": {
+      "#import": [
+        "ubuntu.14.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.14.10-x64": {
+      "#import": [
+        "ubuntu.14.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.14.10-x86": {
+      "#import": [
+        "ubuntu.14.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.15.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.15.04-arm": {
+      "#import": [
+        "ubuntu.15.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.15.04-x64": {
+      "#import": [
+        "ubuntu.15.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.15.04-x86": {
+      "#import": [
+        "ubuntu.15.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.15.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.15.10-arm": {
+      "#import": [
+        "ubuntu.15.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.15.10-x64": {
+      "#import": [
+        "ubuntu.15.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.15.10-x86": {
+      "#import": [
+        "ubuntu.15.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.16.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.16.04-arm": {
+      "#import": [
+        "ubuntu.16.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.16.04-arm64": {
+      "#import": [
+        "ubuntu.16.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.16.04-x64": {
+      "#import": [
+        "ubuntu.16.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.16.04-x86": {
+      "#import": [
+        "ubuntu.16.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.16.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.16.10-arm": {
+      "#import": [
+        "ubuntu.16.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.16.10-arm64": {
+      "#import": [
+        "ubuntu.16.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.16.10-x64": {
+      "#import": [
+        "ubuntu.16.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.16.10-x86": {
+      "#import": [
+        "ubuntu.16.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.17.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.17.04-arm": {
+      "#import": [
+        "ubuntu.17.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.17.04-arm64": {
+      "#import": [
+        "ubuntu.17.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.17.04-x64": {
+      "#import": [
+        "ubuntu.17.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.17.04-x86": {
+      "#import": [
+        "ubuntu.17.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.17.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.17.10-arm": {
+      "#import": [
+        "ubuntu.17.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.17.10-arm64": {
+      "#import": [
+        "ubuntu.17.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.17.10-x64": {
+      "#import": [
+        "ubuntu.17.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.17.10-x86": {
+      "#import": [
+        "ubuntu.17.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.18.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.18.04-arm": {
+      "#import": [
+        "ubuntu.18.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.18.04-arm64": {
+      "#import": [
+        "ubuntu.18.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.18.04-x64": {
+      "#import": [
+        "ubuntu.18.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.18.04-x86": {
+      "#import": [
+        "ubuntu.18.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.18.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.18.10-arm": {
+      "#import": [
+        "ubuntu.18.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.18.10-arm64": {
+      "#import": [
+        "ubuntu.18.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.18.10-x64": {
+      "#import": [
+        "ubuntu.18.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.18.10-x86": {
+      "#import": [
+        "ubuntu.18.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.19.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.19.04-arm": {
+      "#import": [
+        "ubuntu.19.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.19.04-arm64": {
+      "#import": [
+        "ubuntu.19.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.19.04-x64": {
+      "#import": [
+        "ubuntu.19.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.19.04-x86": {
+      "#import": [
+        "ubuntu.19.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.19.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.19.10-arm": {
+      "#import": [
+        "ubuntu.19.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.19.10-arm64": {
+      "#import": [
+        "ubuntu.19.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.19.10-x64": {
+      "#import": [
+        "ubuntu.19.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.19.10-x86": {
+      "#import": [
+        "ubuntu.19.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.20.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.20.04-arm": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.20.04-arm64": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.20.04-x64": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.20.04-x86": {
+      "#import": [
+        "ubuntu.20.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.20.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.20.10-arm": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.20.10-arm64": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.20.10-x64": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.20.10-x86": {
+      "#import": [
+        "ubuntu.20.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.21.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.21.04-arm": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.21.04-arm64": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.21.04-x64": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.21.04-x86": {
+      "#import": [
+        "ubuntu.21.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.21.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.21.10-arm": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.21.10-arm64": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.21.10-x64": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.21.10-x86": {
+      "#import": [
+        "ubuntu.21.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.22.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.22.04-arm": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.22.04-arm64": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.22.04-x64": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.22.04-x86": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.22.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.22.10-arm": {
+      "#import": [
+        "ubuntu.22.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.22.10-arm64": {
+      "#import": [
+        "ubuntu.22.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.22.10-x64": {
+      "#import": [
+        "ubuntu.22.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.22.10-x86": {
+      "#import": [
+        "ubuntu.22.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.23.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.23.04-arm": {
+      "#import": [
+        "ubuntu.23.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.23.04-arm64": {
+      "#import": [
+        "ubuntu.23.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.23.04-x64": {
+      "#import": [
+        "ubuntu.23.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.23.04-x86": {
+      "#import": [
+        "ubuntu.23.04",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.23.10": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.23.10-arm": {
+      "#import": [
+        "ubuntu.23.10",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.23.10-arm64": {
+      "#import": [
+        "ubuntu.23.10",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.23.10-x64": {
+      "#import": [
+        "ubuntu.23.10",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.23.10-x86": {
+      "#import": [
+        "ubuntu.23.10",
+        "ubuntu-x86"
+      ]
+    },
+    "unix": {
+      "#import": [
+        "any"
+      ]
+    },
+    "unix-arm": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-arm64": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-armel": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-armv6": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-loongarch64": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-mips64": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-ppc64le": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-riscv64": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-s390x": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-x64": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-x86": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "wasi": {
+      "#import": [
+        "any"
+      ]
+    },
+    "wasi-wasm": {
+      "#import": [
+        "wasi"
+      ]
+    },
+    "win": {
+      "#import": [
+        "any"
+      ]
+    },
+    "win-aot": {
+      "#import": [
+        "win",
+        "aot"
+      ]
+    },
+    "win-arm": {
+      "#import": [
+        "win"
+      ]
+    },
+    "win-arm-aot": {
+      "#import": [
+        "win-aot",
+        "win-arm"
+      ]
+    },
+    "win-arm64": {
+      "#import": [
+        "win"
+      ]
+    },
+    "win-arm64-aot": {
+      "#import": [
+        "win-aot",
+        "win-arm64"
+      ]
+    },
+    "win-x64": {
+      "#import": [
+        "win"
+      ]
+    },
+    "win-x64-aot": {
+      "#import": [
+        "win-aot",
+        "win-x64"
+      ]
+    },
+    "win-x86": {
+      "#import": [
+        "win"
+      ]
+    },
+    "win-x86-aot": {
+      "#import": [
+        "win-aot",
+        "win-x86"
+      ]
+    },
+    "win10": {
+      "#import": [
+        "win81"
+      ]
+    },
+    "win10-aot": {
+      "#import": [
+        "win10",
+        "win81-aot"
+      ]
+    },
+    "win10-arm": {
+      "#import": [
+        "win10",
+        "win81-arm"
+      ]
+    },
+    "win10-arm-aot": {
+      "#import": [
+        "win10-aot",
+        "win10-arm",
+        "win10",
+        "win81-arm-aot"
+      ]
+    },
+    "win10-arm64": {
+      "#import": [
+        "win10",
+        "win81-arm64"
+      ]
+    },
+    "win10-arm64-aot": {
+      "#import": [
+        "win10-aot",
+        "win10-arm64",
+        "win10",
+        "win81-arm64-aot"
+      ]
+    },
+    "win10-x64": {
+      "#import": [
+        "win10",
+        "win81-x64"
+      ]
+    },
+    "win10-x64-aot": {
+      "#import": [
+        "win10-aot",
+        "win10-x64",
+        "win10",
+        "win81-x64-aot"
+      ]
+    },
+    "win10-x86": {
+      "#import": [
+        "win10",
+        "win81-x86"
+      ]
+    },
+    "win10-x86-aot": {
+      "#import": [
+        "win10-aot",
+        "win10-x86",
+        "win10",
+        "win81-x86-aot"
+      ]
+    },
+    "win7": {
+      "#import": [
+        "win"
+      ]
+    },
+    "win7-aot": {
+      "#import": [
+        "win7",
+        "win-aot"
+      ]
+    },
+    "win7-arm": {
+      "#import": [
+        "win7",
+        "win-arm"
+      ]
+    },
+    "win7-arm-aot": {
+      "#import": [
+        "win7-aot",
+        "win7-arm",
+        "win7",
+        "win-arm-aot"
+      ]
+    },
+    "win7-arm64": {
+      "#import": [
+        "win7",
+        "win-arm64"
+      ]
+    },
+    "win7-arm64-aot": {
+      "#import": [
+        "win7-aot",
+        "win7-arm64",
+        "win7",
+        "win-arm64-aot"
+      ]
+    },
+    "win7-x64": {
+      "#import": [
+        "win7",
+        "win-x64"
+      ]
+    },
+    "win7-x64-aot": {
+      "#import": [
+        "win7-aot",
+        "win7-x64",
+        "win7",
+        "win-x64-aot"
+      ]
+    },
+    "win7-x86": {
+      "#import": [
+        "win7",
+        "win-x86"
+      ]
+    },
+    "win7-x86-aot": {
+      "#import": [
+        "win7-aot",
+        "win7-x86",
+        "win7",
+        "win-x86-aot"
+      ]
+    },
+    "win8": {
+      "#import": [
+        "win7"
+      ]
+    },
+    "win8-aot": {
+      "#import": [
+        "win8",
+        "win7-aot"
+      ]
+    },
+    "win8-arm": {
+      "#import": [
+        "win8",
+        "win7-arm"
+      ]
+    },
+    "win8-arm-aot": {
+      "#import": [
+        "win8-aot",
+        "win8-arm",
+        "win8",
+        "win7-arm-aot"
+      ]
+    },
+    "win8-arm64": {
+      "#import": [
+        "win8",
+        "win7-arm64"
+      ]
+    },
+    "win8-arm64-aot": {
+      "#import": [
+        "win8-aot",
+        "win8-arm64",
+        "win8",
+        "win7-arm64-aot"
+      ]
+    },
+    "win8-x64": {
+      "#import": [
+        "win8",
+        "win7-x64"
+      ]
+    },
+    "win8-x64-aot": {
+      "#import": [
+        "win8-aot",
+        "win8-x64",
+        "win8",
+        "win7-x64-aot"
+      ]
+    },
+    "win8-x86": {
+      "#import": [
+        "win8",
+        "win7-x86"
+      ]
+    },
+    "win8-x86-aot": {
+      "#import": [
+        "win8-aot",
+        "win8-x86",
+        "win8",
+        "win7-x86-aot"
+      ]
+    },
+    "win81": {
+      "#import": [
+        "win8"
+      ]
+    },
+    "win81-aot": {
+      "#import": [
+        "win81",
+        "win8-aot"
+      ]
+    },
+    "win81-arm": {
+      "#import": [
+        "win81",
+        "win8-arm"
+      ]
+    },
+    "win81-arm-aot": {
+      "#import": [
+        "win81-aot",
+        "win81-arm",
+        "win81",
+        "win8-arm-aot"
+      ]
+    },
+    "win81-arm64": {
+      "#import": [
+        "win81",
+        "win8-arm64"
+      ]
+    },
+    "win81-arm64-aot": {
+      "#import": [
+        "win81-aot",
+        "win81-arm64",
+        "win81",
+        "win8-arm64-aot"
+      ]
+    },
+    "win81-x64": {
+      "#import": [
+        "win81",
+        "win8-x64"
+      ]
+    },
+    "win81-x64-aot": {
+      "#import": [
+        "win81-aot",
+        "win81-x64",
+        "win81",
+        "win8-x64-aot"
+      ]
+    },
+    "win81-x86": {
+      "#import": [
+        "win81",
+        "win8-x86"
+      ]
+    },
+    "win81-x86-aot": {
+      "#import": [
+        "win81-aot",
+        "win81-x86",
+        "win81",
+        "win8-x86-aot"
+      ]
+    }
+  }
+}

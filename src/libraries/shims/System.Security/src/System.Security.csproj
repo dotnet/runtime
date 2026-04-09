@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Cryptography.Pkcs.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Cryptography.ProtectedData.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Cryptography.Xml.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Windows.Extensions.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

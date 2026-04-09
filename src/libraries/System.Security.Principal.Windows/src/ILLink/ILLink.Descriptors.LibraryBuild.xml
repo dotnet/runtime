@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Security.Principal.Windows">
+    <type fullname="System.Security.Principal.WindowsPrincipal">
+      <!-- called through reflection by AppDomain -->
+      <method name="GetDefaultInstance" />
+    </type>
+  </assembly>
+</linker>

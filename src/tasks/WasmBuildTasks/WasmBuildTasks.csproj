@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <NoWarn>$(NoWarn),CA1050</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Common\LogAsErrorException.cs" />
+  </ItemGroup>
+
+  <Target Name="PublishBuilder"
+          AfterTargets="Build"
+          DependsOnTargets="Publish" />
+
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks" />
+    </ItemGroup>
+  </Target>
+
+</Project>

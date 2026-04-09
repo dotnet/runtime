@@ -1,0 +1,3 @@
+* Replace make-opcodes-def.pl with XLST process
+
+	We should use an XSLT file to do the conversion there.

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ldobj_R4_d.il" />
+    <Compile Include="ldobj_R4.il" />
+  </ItemGroup>
+</Project>

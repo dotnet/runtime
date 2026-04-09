@@ -1,0 +1,19 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <UseManagedCOMServer>true</UseManagedCOMServer>
+    <IgnoreCoreCLRTestLibraryDependency>true</IgnoreCoreCLRTestLibraryDependency>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- The entry point for these tests is native and the produced assembly is a no-op, so unloadability testing doesn't do anything here. -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <CLRTestIsHosted>false</CLRTestIsHosted>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- The true entrypoint for these tests is a native executable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- This test needs process isolation because it tests native library loading -->
+    <!-- from explicitly specified paths. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Finalize in different assembly from Dispose, tries to load the assembly with Dispose after the ALC unload started -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <SetIlcRPath>false</SetIlcRPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="../NativeLibraryToLoad/NativeLibraryToLoad.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../NativeLibraryToLoad/NativeLibrary.cpp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <CMakeProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
+  </ItemGroup>
+  <PropertyGroup>
+    <LibrarySubdirectory>$(OutputPath)/subdirectory</LibrarySubdirectory>
+    <FileNameSuffix>-in-subdirectory</FileNameSuffix>
+  </PropertyGroup>
+
+  <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyNativeProjectBinaries">
+    <ItemGroup>
+      <NativeLibrariesToCopy Include="$(OutDir)/libNativeLibrary.*" />
+      <NativeLibrariesToCopy Include="$(OutDir)/NativeLibrary.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(LibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
+  </Target>
+
+  <Target Name="SetUpSubdirectoryManaged" AfterTargets="Build">
+    <ItemGroup>
+      <AssembliesToCopy Include="$(OutDir)/$(TargetName).dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AssembliesToCopy)" DestinationFiles="@(AssembliesToCopy -> '$(LibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
+  </Target>
+
+  <Target Name="SetUpAOTDirectory" Condition="'$(TestBuildMode)' == 'nativeaot'" AfterTargets="Build">
+    <ItemGroup>
+      <NativeLibrariesToCopyAOT Include="$(OutDir)/libNativeLibrary.*" />
+      <NativeLibrariesToCopyAOT Include="$(OutDir)/NativeLibrary.*" />
+      <GlobalLoadHelpersToCopy Include="$(OutDir)/libGlobalLoadHelper.*" />
+      <GlobalLoadHelpersToCopy Include="$(OutDir)/GlobalLoadHelper.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NativeLibrariesToCopyAOT)" DestinationFiles="@(NativeLibrariesToCopyAOT -> '$(NativeOutputPath)/%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(NativeLibrariesToCopyAOT)" DestinationFiles="@(NativeLibrariesToCopyAOT -> '$(NativeOutputPath)/%(Filename)-in-native%(Extension)')" />
+    <Copy SourceFiles="@(GlobalLoadHelpersToCopy)" DestinationFiles="@(GlobalLoadHelpersToCopy -> '$(NativeOutputPath)/%(Filename)%(Extension)')" />
+  </Target>
+</Project>

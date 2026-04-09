@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Ace\Ace.Common.Tests.cs" />
+    <Compile Include="Ace\Ace.Compound.Tests.cs" />
+    <Compile Include="Ace\Ace.Custom.Tests.cs" />
+    <Compile Include="Ace\Ace.Generic.Tests.cs" />
+    <Compile Include="Ace\Ace.Object.Tests.cs" />
+    <Compile Include="AccessRule.Tests.cs" />
+    <Compile Include="AuditRule.Tests.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_Constructor.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_CreateFromRawSecurityDescriptor.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_CreateFromSddlForm.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_DiscretionaryAcl.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_GetBinaryForm.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_GetSddlForm.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_Group.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_Owner.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_PurgeAccessControl.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_PurgeAudit.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_SetDiscretionaryAclProtection.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_SetSystemAclProtection.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_SystemAcl.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_WasDiscretionaryAclCanonicalInitially.cs" />
+    <Compile Include="CommonSecurityDescriptor\CommonSecurityDescriptor_WasSystemAclCanonicalInitially.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_AceCount.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_AddAccess.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_BinaryLength.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_Constructor1.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_Constructor2.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_Constructor3.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_GetBinaryForm.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_Index.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_Purge.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_RemoveAccess.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_RemoveAccessSpecific.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_RemoveInheritedAces.cs" />
+    <Compile Include="DiscretionaryAcl\DiscretionaryAcl_SetAccess.cs" />
+    <Compile Include="RawAcl\RawAcl_AceCount.cs" />
+    <Compile Include="RawAcl\RawAcl_BinaryLength.cs" />
+    <Compile Include="RawAcl\RawAcl_Constructor.cs" />
+    <Compile Include="RawAcl\RawAcl_CopyTo.cs" />
+    <Compile Include="RawAcl\RawAcl_CreateFromBinaryForm.cs" />
+    <Compile Include="RawAcl\RawAcl_ExplicitInterfaceCopyTo.cs" />
+    <Compile Include="RawAcl\RawAcl_ExplicitInterfaceGetEnumerator.cs" />
+    <Compile Include="RawAcl\RawAcl_GetBinaryForm.cs" />
+    <Compile Include="RawAcl\RawAcl_GetEnumerator.cs" />
+    <Compile Include="RawAcl\RawAcl_Index.cs" />
+    <Compile Include="RawAcl\RawAcl_InsertAce.cs" />
+    <Compile Include="RawAcl\RawAcl_IsSynchronized.cs" />
+    <Compile Include="RawAcl\RawAcl_RemoveAce.cs" />
+    <Compile Include="RawAcl\RawAcl_SyncRoot.cs" />
+    <Compile Include="SystemAcl\SystemAcl_AceCount.cs" />
+    <Compile Include="SystemAcl\SystemAcl_AddAudit.cs" />
+    <Compile Include="SystemAcl\SystemAcl_BinaryLength.cs" />
+    <Compile Include="SystemAcl\SystemAcl_Constructor1.cs" />
+    <Compile Include="SystemAcl\SystemAcl_Constructor2.cs" />
+    <Compile Include="SystemAcl\SystemAcl_Constructor3.cs" />
+    <Compile Include="SystemAcl\SystemAcl_GetBinaryForm.cs" />
+    <Compile Include="SystemAcl\SystemAcl_Index.cs" />
+    <Compile Include="SystemAcl\SystemAcl_Purge.cs" />
+    <Compile Include="SystemAcl\SystemAcl_RemoveAudit.cs" />
+    <Compile Include="SystemAcl\SystemAcl_RemoveAuditSpecific.cs" />
+    <Compile Include="SystemAcl\SystemAcl_RemoveInheritedAces.cs" />
+    <Compile Include="SystemAcl\SystemAcl_SetAudit.cs" />
+    <Compile Include="Utils.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.AccessControl\src\System.IO.FileSystem.AccessControl.csproj" />
+  </ItemGroup>
+</Project>

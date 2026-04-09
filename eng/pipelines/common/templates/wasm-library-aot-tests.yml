@@ -1,0 +1,41 @@
+parameters:
+  alwaysRun: false
+  extraBuildArgs: ''
+  extraHelixArguments: ''
+  isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
+  buildAOTOnHelix: true
+  nameSuffix: ''
+  platforms: []
+  runAOT: false
+  shouldRunSmokeOnly: false
+  shouldContinueOnError: false
+  scenarios: []
+
+jobs:
+
+#
+# Build for Browser/wasm, with EnableAggressiveTrimming=true
+#
+# non-windows - run only with v8
+- ${{ each platform in parameters.platforms }}:
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - ${{ platform }}
+      nameSuffix: ${{ parameters.nameSuffix }}
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
+      extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArguments }}
+      alwaysRun: ${{ parameters.alwaysRun }}
+      shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      scenarios:
+        - ${{ if ne(parameters.scenarios[0], '') }}:
+          - ${{ parameters.scenarios }}
+        - ${{ else }}:
+          - ${{ if or(eq(platform, 'browser_wasm'), eq(platform, 'browser_wasm_win')) }}:
+            - WasmTestOnChrome
+          - ${{ if or(eq(platform, 'wasi_wasm_win'), eq(platform, 'wasi_wasm')) }}:
+            - WasmTestOnWasmtime

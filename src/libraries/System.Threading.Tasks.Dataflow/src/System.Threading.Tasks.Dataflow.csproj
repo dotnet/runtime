@@ -1,0 +1,90 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>TPL Dataflow promotes actor/agent-oriented designs through primitives for in-process message passing, dataflow, and pipelining. TDF builds upon the APIs and scheduling infrastructure provided by the Task Parallel Library (TPL), and integrates with the language support for asynchrony provided by C#, Visual Basic, and F#.
+
+Commonly Used Types:
+System.Threading.Tasks.Dataflow.ActionBlock&lt;TInput&gt;
+System.Threading.Tasks.Dataflow.BatchBlock&lt;T&gt;
+System.Threading.Tasks.Dataflow.BatchedJoinBlock&lt;T1, T2&gt;
+System.Threading.Tasks.Dataflow.BatchedJoinBlock&lt;T1, T2, T3&gt;
+System.Threading.Tasks.Dataflow.BroadcastBlock&lt;T&gt;
+System.Threading.Tasks.Dataflow.BufferBlock&lt;T&gt;
+System.Threading.Tasks.Dataflow.DataflowBlock
+System.Threading.Tasks.Dataflow.JoinBlock&lt;T1, T2&gt;
+System.Threading.Tasks.Dataflow.JoinBlock&lt;T1, T2, T3&gt;
+System.Threading.Tasks.Dataflow.TransformBlock&lt;TInput, TOutput&gt;
+System.Threading.Tasks.Dataflow.TransformManyBlock&lt;TInput, TOutput&gt;
+System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Base\DataflowBlock.cs" />
+    <Compile Include="Base\DataflowBlock.netstandard21.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
+    <Compile Include="Base\DataflowBlockOptions.cs" />
+    <Compile Include="Base\DataflowLinkOptions.cs" />
+    <Compile Include="Base\DataflowMessageHeader.cs" />
+    <Compile Include="Base\DataflowMessageStatus.cs" />
+    <Compile Include="Base\IDataflowBlock.cs" />
+    <Compile Include="Base\IPropagatorBlock.cs" />
+    <Compile Include="Base\IReceivableSourceBlock.cs" />
+    <Compile Include="Base\ISourceBlock.cs" />
+    <Compile Include="Base\ITargetBlock.cs" />
+    <Compile Include="Blocks\ActionBlock.cs" />
+    <Compile Include="Blocks\BatchBlock.cs" />
+    <Compile Include="Blocks\BatchedJoinBlock.cs" />
+    <Compile Include="Blocks\BroadcastBlock.cs" />
+    <Compile Include="Blocks\BufferBlock.cs" />
+    <Compile Include="Blocks\JoinBlock.cs" />
+    <Compile Include="Blocks\TransformBlock.cs" />
+    <Compile Include="Blocks\TransformManyBlock.cs" />
+    <Compile Include="Blocks\TransformManyBlock.netstandard21.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
+    <Compile Include="Blocks\WriteOnceBlock.cs" />
+    <Compile Include="Internal\ActionOnDispose.cs" />
+    <Compile Include="Internal\Common.cs" />
+    <Compile Include="Internal\DataflowEtwProvider.cs" />
+    <Compile Include="Internal\EnumerableDebugView.cs" />
+    <Compile Include="Internal\IDebuggerDisplay.cs" />
+    <Compile Include="Internal\ImmutableArray.cs" />
+    <Compile Include="Internal\Padding.cs" />
+    <Compile Include="Internal\QueuedMap.cs" />
+    <Compile Include="Internal\ReorderingBuffer.cs" />
+    <Compile Include="Internal\SourceCore.cs" />
+    <Compile Include="Internal\SpscTargetCore.cs" />
+    <Compile Include="Internal\TargetCore.cs" />
+    <Compile Include="Internal\TargetRegistry.cs" />
+    <Compile Include="$(CommonPath)Internal\Padding.cs"
+             Link="Common\Internal\Padding.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\IProducerConsumerQueue.cs"
+             Link="Common\System\Collections\Concurrent\IProducerConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs"
+             Link="Common\System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs"
+             Link="Common\System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
+             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="XmlDocs\CommonXmlDocComments.xml" />
+    <Content Include="XmlDocs\System.Threading.Tasks.Dataflow.xml" Pack="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq\src\System.Linq.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\src\System.Threading.ThreadPool.csproj" />
+  </ItemGroup>
+
+</Project>

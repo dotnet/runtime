@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- This test is failing under GCStress variations, so disabling it under GCStress till the issue is investigated:
+         Issue: https://github.com/dotnet/runtime/issues/63860
+    -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TotalMemory2.cs" />
+  </ItemGroup>
+</Project>

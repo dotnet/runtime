@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+targetNamespace="http://xsdtesting"
+>
+	<xsd:import schemaLocation="wildG010a.imp"/>
+	<xsd:import namespace="http://www.w3.org/1999/xhtml" schemaLocation="wildG010b.imp"/>
+
+	<xsd:element name="foo">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:any namespace="##local http://www.w3.org/1999/xhtml" maxOccurs="10"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="b" type="xsd:string"/>
+</xsd:schema>

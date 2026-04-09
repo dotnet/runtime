@@ -1,0 +1,4 @@
+﻿In pattern @Title:
+   The element Person must have a Title attribute
+In pattern (@Title = 'Mr' and ex:Gender = 'Male') or @Title != 'Mr':
+   If the Title is "Mr" then the gender of the person must be "Male".

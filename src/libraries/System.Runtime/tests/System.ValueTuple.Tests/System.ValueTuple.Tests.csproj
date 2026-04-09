@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TupleElementNamesTests.cs" />
+    <Compile Include="ExtensionsTests.cs" />
+    <Compile Include="TupleTests.cs" />
+    <Compile Include="ValueTupleTests.cs" />
+  </ItemGroup>
+</Project>

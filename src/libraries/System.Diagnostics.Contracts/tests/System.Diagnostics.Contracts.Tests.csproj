@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssertTests.cs" />
+    <Compile Include="AssumeTests.cs" />
+    <Compile Include="ContractFailedTests.cs" />
+    <Compile Include="ExistsTests.cs" />
+    <Compile Include="ForAllTests.cs" />
+    <Compile Include="Utilities.cs" />
+    <Compile Include="ValueTests.cs" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
+             Link="Common\System\ShouldNotBeInvokedException.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,3 @@
+<Doc xmlns:ns="uri:this is a test">
+    <ns:elem ns:attr="attribute value"/>
+</Doc>

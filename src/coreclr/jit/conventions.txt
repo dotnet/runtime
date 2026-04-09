@@ -1,0 +1,81 @@
+This file contains an extracted, plain-text version of some of the "CLR JIT
+Coding Conventions" document, that can be used as a template when writing new
+comments in the JIT source code. The definitive coding conventions document is
+located here:
+
+https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/clr-jit-coding-conventions.md
+
+
+********** Section 7.1.5 TODO comments
+
+This is the format to be used:
+
+// TODO[-Arch][-Platform][-CQ|-Throughput|-Cleanup|-Bug|-Bug?]: description of the issue
+
+-- One type modifier (CQ, Throughput, Cleanup, Bug or Bug?) must be specified.
+-- The -Arch and -Platform modifiers are optional, and should generally specify
+actual architectures in all-caps (e.g. AMD64, X86, ARM, ARM64), and then in
+Pascal casing for Platforms and architecture classes (e.g. ARMArch, LdStArch, XArch, Unix, Windows).
+-- This list is not intended to be exhaustive.
+
+Examples:
+
+    // TODO-LdStArch-Bug: Should regTmp be a dst on the node or an internal reg?
+    // Either way, it is not currently being handled by Lowering.
+
+    // TODO-CQ: based on whether src type is aligned use movaps instead.
+
+    // TODO-Cleanup: Add a comment about why this is unreached() for RyuJIT backend.
+
+    // TODO-Arm64-Bug: handle large constants!  Probably need something like the ARM
+    // case above: if (arm_Valid_Imm_For_Instr(ins, val)) ...
+
+
+********** Section 9.4 Function header comment
+
+All functions, except trivial accessors and wrappers, should have a function
+header comment which describes the behavior and the implementation details of
+the function. The format of the function header in an implementation file is
+as shown below.
+
+Within the comment, argument names (and other program-related names) should be
+surrounded by double quotes, to emphasize that they are program objects, and
+not simple English words. This helps clarify those cases where a function
+argument might be parsed (by a human) in either way.
+
+Any of the sections that do not apply to a method may be skipped. For example,
+if a method has no arguments, the "Arguments" section can be omitted. If a
+function is a void return function, the "Return Value" section can be omitted.
+
+If you can formulate any assumptions as asserts in the code itself, you should
+do so. The "Assumptions" section is intended to encapsulate things that are
+harder (or impossible) to formulate as asserts, or to provide a place to write
+a more easily read English description of any assumptions that exist, even if
+they can be written with asserts.
+
+
+//------------------------------------------------------------------------
+// <Function name>: <Short description of the function>
+//
+// <Full description of the function>
+//
+// Arguments:
+//    <argument1-name> - Description of argument 1
+//    <argument2-name> - Description of argument 2
+//    ... one line for each function argument
+//
+// Return Value:
+//    Description of the values this function could return
+//    and under what conditions. When the return value is a
+//    described as a function of the arguments, those arguments
+//    should be mentioned specifically by name.
+//
+// Assumptions:
+//    Any entry and exit conditions, such as required preconditions of
+//    data structures, memory to be freed by caller, etc.
+//
+// Notes:
+//    More detailed notes about the function.
+//    What errors can the function return?
+//    What other methods are related or alternatives to be considered?
+

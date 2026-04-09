@@ -1,0 +1,191 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);FUNCTIONAL_TESTS</DefineConstants>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <RootNamespace />
+    <AssemblyVersion>9.9.9.9</AssemblyVersion>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
+    <OverrideDefaultValueAndDesignerHostSupport>true</OverrideDefaultValueAndDesignerHostSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Drawing\ColorConverterTests.cs" />
+    <Compile Include="Drawing\PointConverterTests.cs" />
+    <Compile Include="Drawing\RectangleConverterTests.cs" />
+    <Compile Include="Drawing\SizeConverterTests.cs" />
+    <Compile Include="Drawing\SizeFConverterTests.cs" />
+    <Compile Include="Design\Serialization\ComponentSerializationServiceTests.cs" />
+    <Compile Include="Design\StandardCommandsTests.cs" />
+    <Compile Include="Extensions\EnumeratorExtensions.cs" />
+    <Compile Include="MaskedTextProviderTests.cs" />
+    <Compile Include="Mocks\MockDesigner.cs" />
+    <Compile Include="Mocks\MockDesignerHost.cs" />
+    <Compile Include="NestedContainerTests.cs" />
+    <Compile Include="PasswordPropertyTextAttributeTests.cs" />
+    <Compile Include="MarshalByValueComponentTests.cs" />
+    <Compile Include="ReflectTypeDescriptionProviderTests.cs" />
+    <Compile Include="ToolboxItemAttributeTests.cs" />
+    <Compile Include="ToolboxItemFilterAttributeTests.cs" />
+    <Compile Include="WarningExceptionTests.cs" />
+    <Compile Include="RecommendedAsConfigurableAttributeTests.cs" />
+    <Compile Include="SyntaxCheckTests.cs" />
+    <Compile Include="RunInstallerAttributeTests.cs" />
+    <Compile Include="SettingsBindableAttributeTests.cs" />
+    <Compile Include="RefreshEventArgsTests.cs" />
+    <Compile Include="LookupBindingPropertiesAttributeTests.cs" />
+    <Compile Include="ListSortDescriptionTests.cs" />
+    <Compile Include="ListBindableAttributeTests.cs" />
+    <Compile Include="ListChangedEventArgsTests.cs" />
+    <Compile Include="LicenseProviderAttributeTests.cs" />
+    <Compile Include="LicenseExceptionTests.cs" />
+    <Compile Include="ExtenderProvidedPropertyAttributeTests.cs" />
+    <Compile Include="InstanceCreationEditorTests.cs" />
+    <Compile Include="InstallerTypeAttributeTests.cs" />
+    <Compile Include="InheritanceAttributeTests.cs" />
+    <Compile Include="HandledEventArgsTests.cs" />
+    <Compile Include="BindableAttributeTests.cs" />
+    <Compile Include="AmbientValueAttributeTests.cs" />
+    <Compile Include="AddingNewEventArgsTests.cs" />
+    <Compile Include="ArrayConverterTests.cs" />
+    <Compile Include="AttributeCollectionTests.cs" />
+    <Compile Include="AttributeProviderAttributeTests.cs" />
+    <Compile Include="BaseNumberConverterTests.cs" />
+    <Compile Include="BindingListTests.cs" />
+    <Compile Include="BooleanConverterTests.cs" />
+    <Compile Include="ByteConvertersTests.cs" />
+    <Compile Include="CharConverterTests.cs" />
+    <Compile Include="CollectionChangedEventArgsTests.cs" />
+    <Compile Include="CollectionConverterTests.cs" />
+    <Compile Include="ComponentConverterTests.cs" />
+    <Compile Include="ComplexBindingPropertiesAttributeTests.cs" />
+    <Compile Include="ComponentResourceManagerTests.cs" />
+    <Compile Include="ComponentEditorTests.cs" />
+    <Compile Include="ContainerFilterServiceTests.cs" />
+    <Compile Include="ConverterTestBase.cs" />
+    <Compile Include="CustomTypeDescriptorTests.cs" />
+    <Compile Include="DefaultBindingPropertyAttributeTests.cs" />
+    <Compile Include="DataObjectMethodAttributeTests.cs" />
+    <Compile Include="DataObjectFieldAttributeTests.cs" />
+    <Compile Include="DataObjectAttributeTests.cs" />
+    <Compile Include="DateOnlyConverterTests.cs" />
+    <Compile Include="DateTimeConverterTests.cs" />
+    <Compile Include="DateTimeOffsetConverterTests.cs" />
+    <Compile Include="DecimalConverterTests.cs" />
+    <Compile Include="DefaultEventAttributeTests.cs" />
+    <Compile Include="DesignTimeVisibleAttributeTests.cs" />
+    <Compile Include="DefaultPropertyAttributeTests.cs" />
+    <Compile Include="Design\DesignerTransactionCloseEventArgsTests.cs" />
+    <Compile Include="Design\DesignerVerbTests.cs" />
+    <Compile Include="Design\DesignerVerbCollectionTests.cs" />
+    <Compile Include="Design\DesigntimeLicenseContextTests.cs" />
+    <Compile Include="Design\DesigntimeLicenseContextSerializerTests.cs" />
+    <Compile Include="Design\HelpKeywordAttributeTests.cs" />
+    <Compile Include="Design\Serialization\MemberRelationshipServiceTests.cs" />
+    <Compile Include="Design\ServiceContainerTests.cs" />
+    <Compile Include="Design\StandardToolWindowsTests.cs" />
+    <Compile Include="Design\Serialization\SerializationStoreTests.cs" />
+    <Compile Include="Design\Serialization\RootDesignerSerializerAttributeTests.cs" />
+    <Compile Include="Design\Serialization\ResolveNameEventArgsTests.cs" />
+    <Compile Include="Design\Serialization\MemberRelationshipTests.cs" />
+    <Compile Include="Design\Serialization\DesignerLoaderTests.cs" />
+    <Compile Include="Design\Serialization\DefaultSerializationProviderAttributeTests.cs" />
+    <Compile Include="Design\MenuCommandTests.cs" />
+    <Compile Include="LicenseContextTests.cs" />
+    <Compile Include="TestDesignerHost.cs" />
+    <Compile Include="DoubleConverterTests.cs" />
+    <Compile Include="EnumConverterTest.cs" />
+    <Compile Include="EventDescriptorCollectionTests.cs" />
+    <Compile Include="EventDescriptorTests.cs" />
+    <Compile Include="GuidConverterTests.cs" />
+    <Compile Include="Int128ConverterTests.cs" />
+    <Compile Include="Int16ConverterTests.cs" />
+    <Compile Include="Int32ConverterTests.cs" />
+    <Compile Include="Int64ConverterTests.cs" />
+    <Compile Include="MemberDescriptorTests.cs" />
+    <Compile Include="DescriptorTestAttribute.cs" />
+    <Compile Include="DescriptorTestComponent.cs" />
+    <Compile Include="Mocks\MockEventDescriptor.cs" />
+    <Compile Include="Mocks\MockPropertyDescriptor.cs" />
+    <Compile Include="Mocks\MockServiceProvider.cs" />
+    <Compile Include="MultilineStringConverterTests.cs" />
+    <Compile Include="NullableConverterTests.cs" />
+    <Compile Include="ReflectionCachesUpdateHandlerTests.cs" />
+    <Compile Include="PropertyDescriptorCollectionTests.cs" />
+    <Compile Include="PropertyDescriptorTests.cs" />
+    <Compile Include="ProvidePropertyAttributeTests.cs" />
+    <Compile Include="Resources\TestResx.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>TestResx.resx</DependentUpon>
+    </Compile>
+    <Compile Include="SampleClasses.cs" />
+    <Compile Include="SByteConverterTests.cs" />
+    <Compile Include="SingleConverterTests.cs" />
+    <Compile Include="HalfConverterTests.cs" />
+    <Compile Include="RegisteredTypesTests.cs" />
+    <Compile Include="StringConverterTests.cs" />
+    <Compile Include="Timers\TimersDescriptionAttributeTests.cs" />
+    <Compile Include="TimeOnlyConverterTests.cs" />
+    <Compile Include="TimeSpanConverterTests.cs" />
+    <Compile Include="TypeConverterAttributeTests.cs" />
+    <Compile Include="TypeConverterTests.cs" />
+    <Compile Include="TypeConverterTestBase.cs" />
+    <Compile Include="TypeDescriptionProviderTests.cs" />
+    <Compile Include="TypeDescriptionProviderAttributeTests.cs" />
+    <Compile Include="TypeDescriptorTests.cs" />
+    <Compile Include="TypeListConverterTests.cs" />
+    <Compile Include="UInt128ConverterTests.cs" />
+    <Compile Include="UInt16ConverterTests.cs" />
+    <Compile Include="UInt32ConverterTests.cs" />
+    <Compile Include="UInt64ConverterTests.cs" />
+    <Compile Include="UriTypeConverterTests.cs" />
+    <Compile Include="VersionConverterTests.cs" />
+    <Compile Include="Drawing\StringTypeConverterTestBase.cs" />
+    <Compile Include="TimerTests.cs" />
+    <Compile Include="ContainerTests.cs" />
+    <Compile Include="CultureInfoConverterTests.cs" />
+    <Compile Include="LicenseManagerTests.cs" />
+    <Compile Include="ReferenceConverterTests.cs" />
+    <Compile Include="ContextStackTests.cs" />
+    <Compile Include="Design\Serialization\InstanceDescriptorTests.cs" />
+    <Compile Include="Design\ActiveDesignerEventArgsTests.cs" />
+    <Compile Include="Design\CheckoutExceptionTests.cs" />
+    <Compile Include="Design\CommandIDTests.cs" />
+    <Compile Include="Design\ComponentChangedEventArgsTests.cs" />
+    <Compile Include="Design\ComponentChangingEventArgsTests.cs" />
+    <Compile Include="Design\ComponentEventArgsTests.cs" />
+    <Compile Include="Design\ComponentRenameEventArgsTests.cs" />
+    <Compile Include="Design\DesignerCollectionTests.cs" />
+    <Compile Include="Design\DesignerEventArgsTests.cs" />
+    <Compile Include="Design\DesignerOptionServiceTests.cs" />
+    <Compile Include="Design\DesignerTransactionTests.cs" />
+    <Compile Include="Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverterTests.cs" />
+    <Compile Include="XTypeDescriptionProviderTests.cs" />
+
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
+    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.ComponentModel.TypeConverter.TestData" Version="$(SystemComponentModelTypeConverterTestDataVersion)" />
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\TestResx.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>TestResx.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="UnloadableTestTypes\UnloadableTestTypes.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
+</Project>

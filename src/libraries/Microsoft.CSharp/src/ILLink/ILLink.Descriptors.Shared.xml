@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="Microsoft.CSharp" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="true" featuredefault="true">
+    <!-- Required by the Expression Evaluator -->
+    <type fullname="Microsoft.CSharp.RuntimeBinder.DynamicMetaObjectProviderDebugView"/>
+    <!-- Required by the Expression Evaluator -->
+    <type fullname="Microsoft.CSharp.RuntimeBinder.DynamicMetaObjectProviderDebugView/DynamicDebugViewEmptyException"/>
+  </assembly>
+</linker>

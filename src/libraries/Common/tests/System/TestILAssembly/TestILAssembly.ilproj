@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <TestStrongNameKeyId>Microsoft</TestStrongNameKeyId>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TestILAssembly.il" />
+  </ItemGroup>
+</Project>

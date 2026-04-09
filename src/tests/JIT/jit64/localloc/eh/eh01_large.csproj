@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);LOCALLOC_LARGE</DefineConstants>
+    <NoWarn>$(NoWarn),8002</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="eh01.cs" />
+    <ProjectReference Include="..\..\..\common\localloc_common.ilproj" />
+  </ItemGroup>
+</Project>

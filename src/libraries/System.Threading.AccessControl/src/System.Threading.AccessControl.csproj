@@ -1,0 +1,87 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides support for managing access and audit control lists for synchronization primitives.
+
+Commonly Used Types:
+System.Security.AccessControl.EventWaitHandleAccessRule
+System.Security.AccessControl.EventWaitHandleAuditRule
+System.Security.AccessControl.MutexAccessRule
+System.Security.AccessControl.MutexAuditRule
+System.Security.AccessControl.MutexSecurity
+System.Security.AccessControl.SemaphoreAccessRule
+System.Security.AccessControl.SemaphoreAuditRule
+System.Security.AccessControl.SemaphoreSecurity</PackageDescription>
+  </PropertyGroup>
+
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
+             Link="Common\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
+             Link="Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EventWaitHandle.cs"
+             Link="Interop\Windows\Kernel32\Interop.EventWaitHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs"
+             Link="Interop\Windows\Kernel32\Interop.Constants.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
+             Link="Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Mutex.cs"
+             Link="Interop\Windows\Kernel32\Interop.Mutex.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"
+             Link="Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Semaphore.cs"
+             Link="Interop\Windows\Kernel32\Interop.Semaphore.cs" />
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs"
+             Link="Common\System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CommonPath)System\Threading\OpenExistingResult.cs"
+             Link="Common\System\Threading\OpenExistingResult.cs" />
+    <Compile Include="System\Security\AccessControl\MutexSecurity.cs" />
+    <Compile Include="System\Security\AccessControl\EventWaitHandleSecurity.cs" />
+    <Compile Include="System\Security\AccessControl\SemaphoreSecurity.cs" />
+    <Compile Include="System\Threading\EventWaitHandleAcl.cs" />
+    <Compile Include="System\Threading\MutexAcl.cs" />
+    <Compile Include="System\Threading\SemaphoreAcl.cs" />
+    <Compile Include="System\Threading\ThreadingAclExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="System\Threading\EventWaitHandleAcl.net46.cs" />
+    <Compile Include="System\Threading\MutexAcl.net46.cs" />
+    <Compile Include="System\Threading\SemaphoreAcl.net46.cs" />
+    <Compile Include="System\Threading\ThreadingAclExtensions.net46.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+
+</Project>

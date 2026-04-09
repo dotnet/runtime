@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Dataflow\ActionBlockTests.cs" />
+    <Compile Include="Dataflow\BatchBlockTests.cs" />
+    <Compile Include="Dataflow\BatchedJoinBlockTests.cs" />
+    <Compile Include="Dataflow\BroadcastBlockTests.cs" />
+    <Compile Include="Dataflow\BufferBlockTests.cs" />
+    <Compile Include="Dataflow\ConcurrentTests.cs" />
+    <Compile Include="Dataflow\DataflowBlockExtensionTests.cs" />
+    <Compile Include="Dataflow\DataflowBlockOptionsTests.cs" />
+    <Compile Include="Dataflow\DataflowTestHelper.cs" />
+    <Compile Include="Dataflow\DebugAttributeTests.cs" />
+    <Compile Include="Dataflow\DelegateBasedMocks.cs" />
+    <Compile Include="Dataflow\EtwTests.cs" />
+    <Compile Include="Dataflow\JoinBlockTests.cs" />
+    <Compile Include="Dataflow\SimpleNetworkTests.cs" />
+    <Compile Include="Dataflow\TransformBlockTests.cs" />
+    <Compile Include="Dataflow\TransformManyBlockTests.cs" />
+    <Compile Include="Dataflow\WriteOnceBlockTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
+             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="Dataflow\DataflowBlockExtensionTests.IAsyncEnumerable.cs" />
+    <Compile Include="Dataflow\DataflowTestHelper.IAsyncEnumerable.cs" />
+    <Compile Include="Dataflow\TransformManyBlockTests.IAsyncEnumerable.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj" />
+    <ProjectReference Include="..\..\System.Linq.AsyncEnumerable\src\System.Linq.AsyncEnumerable.csproj" />
+  </ItemGroup>
+
+</Project>

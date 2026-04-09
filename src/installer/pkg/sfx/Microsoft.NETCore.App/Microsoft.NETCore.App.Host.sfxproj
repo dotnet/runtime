@@ -1,0 +1,91 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <SkipBuild Condition="'$(DotNetBuildAllRuntimePacks)' != 'true' and ('$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true')">true</SkipBuild>
+    <PlatformPackageType>AppHostPack</PlatformPackageType>
+    <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
+    <ArchiveName>dotnet-apphost-pack</ArchiveName>
+    <InstallerName>dotnet-apphost-pack</InstallerName>
+    <VSInsertionShortComponentName>NetCore.AppHostPack</VSInsertionShortComponentName>
+  </PropertyGroup>
+
+  <!--
+    See https://github.com/dotnet/runtime/issues/3746. Cross-arch MSI installers are needed for
+    C++/CLI project system support.
+  -->
+  <ItemGroup>
+    <CrossArchSdkMsiInstallerArch Include="x86;x64;arm64" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/apphost$(ExeSuffix)" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(LibSuffix)" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/nethost.h" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/hostfxr.h" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TargetsLinuxBionic)' != 'true'">
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/comhost.dll" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/ijwhost.dll" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/ijwhost.lib" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/libnethost.lib" />
+
+    <!-- Always include the static library PDB. When consuming the static library on Windows,
+        the linker needs the PDB to produce complete debug information for whatever is linking
+        in the static library. Without the PDB, consumers will hit LNK4099. -->
+    <_SymbolsToIncludeAlways Include="$(DotNetHostBinDir)PDB/libnethost.pdb" />
+    <NativeRuntimeAsset Include="@(_SymbolsToIncludeAlways)" IncludeAlways="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_SymbolFiles Condition="'$(TargetOS)' == 'windows'"
+                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)PDB/%(Filename).pdb')"
+                    IsSymbolFile="true"
+                    IsNative="true" />
+    <_SymbolFiles Condition="'$(TargetOS)' != 'windows'"
+                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)%(Filename)%(Extension)$(SymbolsSuffix)')"
+                    IsSymbolFile="true"
+                    IsNative="true" />
+
+    <!-- dotnet doesn't have its own package, so it uses this one as a means to publish to symbol servers -->
+    <_SymbolFiles Condition="'$(TargetOS)' == 'windows'"
+                    Include="$(DotNetHostBinDir)PDB/dotnet.pdb"
+                    IsSymbolFile="true"
+                    IsNative="true" />
+    <_SymbolFiles Condition="'$(TargetOS)' != 'windows'"
+                    Include="$(DotNetHostBinDir)dotnet$(ExeSuffix)$(SymbolsSuffix)"
+                    IsSymbolFile="true"
+                    IsNative="true" />
+
+    <!-- Remove symbols that are explicitly shipped with implementation package -->
+    <_SymbolFiles Remove="@(_SymbolsToIncludeAlways)" />
+  </ItemGroup>
+
+  <Target Name="AddSymbolFiles" BeforeTargets="GetFilesToPackage">
+    <ItemGroup>
+        <FilesToPackage Include="@(_SymbolFiles)" Condition="Exists('%(Identity)')" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    These files are not signed, because they're templates: they are modified by the SDK on the
+    user's machine before use. We have a signing validation exception for Visual Studio insertion's
+    signature validation. However, the exceptions are based on the file IDs, which are not stable
+    because product version is in the path. We need to force these IDs to be stable by modifying
+    the WiX source file. https://github.com/dotnet/runtime/issues/3694
+  -->
+  <ItemGroup>
+    <HeatOutputFileElementToStabilize Include="native\apphost.exe" ReplacementId="apphosttemplateapphostexe" />
+    <HeatOutputFileElementToStabilize Include="native\singlefilehost.exe" ReplacementId="staticapphosttemplateapphostexe" />
+    <HeatOutputFileElementToStabilize Include="native\comhost.dll" ReplacementId="comhosttemplatecomhostdll" />
+  </ItemGroup>
+</Project>

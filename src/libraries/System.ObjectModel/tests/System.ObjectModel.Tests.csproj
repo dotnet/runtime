@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerableTest.cs"
+             Link="Common\System\CollectionsIEnumerableTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollectionTest.cs"
+             Link="Common\System\CollectionsICollectionTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IListTest.cs"
+             Link="Common\System\CollectionsIListTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\Utils.cs"
+             Link="Common\System\CollectionsUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
+             Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionaryTest.cs"
+             Link="Common\System\CollectionsIDictionaryTest.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_MethodsTest.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_ReentrancyTests.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_Serialization.cs" />
+    <Compile Include="System\Collections\ObjectModel\KeyedCollectionTests.cs" />
+    <Compile Include="System\Collections\Specialized\NotifyCollectionChangedEventArgsTests.cs" />
+    <Compile Include="System\ComponentModel\DataErrorsChangedEventArgsTests.cs" />
+    <Compile Include="System\ComponentModel\PropertyChangedEventArgsTests.cs" />
+    <Compile Include="System\ComponentModel\PropertyChangingEventArgsTests.cs" />
+    <Compile Include="System\ComponentModel\TypeConverterAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\TypeDescriptionProviderAttributeTests.cs" />
+    <Compile Include="System\Windows\Markup\ValueSerializerAttributeTests.cs" />
+    <Compile Include="KeyedCollection\TestMethods.cs" />
+    <Compile Include="KeyedCollection\ConcreteTestClasses.cs" />
+    <Compile Include="KeyedCollection\Utils.cs" />
+    <Compile Include="ReadOnlyDictionary\ReadOnlyDictionaryTests.cs" />
+    <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_EventsTests.cs" />
+    <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollectionTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="KeyedCollection\Serialization.cs" />
+    <Compile Include="ReadOnlyDictionary\ReadOnlyDictionary_SerializationTests.cs" />
+    <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_SerializationTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
+             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
+
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+  </ItemGroup>
+</Project>

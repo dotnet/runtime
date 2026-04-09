@@ -1,0 +1,9 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <!-- TODO remove with https://github.com/dotnet/runtime/pull/107185 -->
+    <UnsupportedOSPlatforms>wasi</UnsupportedOSPlatforms>
+  </PropertyGroup>
+</Project>

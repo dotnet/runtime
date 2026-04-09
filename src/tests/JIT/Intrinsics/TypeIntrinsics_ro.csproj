@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="TypeIntrinsicsEnums.ilproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="TypeIntrinsics.cs" />
+    <Compile Include="TypeIntrinsics.IsAssignableFrom.cs" />
+    <Compile Include="TypeIntrinsics.IsAssignableTo.cs" />
+    <Compile Include="TypeIntrinsics.GetEnumUnderlyingType.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

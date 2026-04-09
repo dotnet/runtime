@@ -1,0 +1,44 @@
+/**
+ * \file Runtime options
+ *
+ * Copyright 2020 Microsoft
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
+#ifndef __MONO_UTILS_FLAGS_H__
+#define __MONO_UTILS_FLAGS_H__
+
+#include <config.h>
+#include <glib.h>
+
+#include "mono/utils/mono-error.h"
+
+/* Declare list of options */
+/* Each option will declare an exported C variable named mono_opt_... */
+MONO_BEGIN_DECLS
+#define DEFINE_OPTION_FULL(flag_type, ctype, c_name, cmd_name, def_value, comment) \
+	MONO_API_DATA ctype mono_opt_##c_name;
+#define DEFINE_OPTION_READONLY(flag_type, ctype, c_name, cmd_name, def_value, comment) \
+	static const ctype mono_opt_##c_name = def_value;
+#include "options-def.h"
+MONO_END_DECLS
+
+typedef enum {
+	MONO_OPTION_BOOL,
+	MONO_OPTION_BOOL_READONLY,
+	MONO_OPTION_INT,
+	MONO_OPTION_STRING
+} MonoOptionType;
+
+extern int mono_options_version;
+
+void mono_options_print_usage (void);
+
+void mono_options_parse_options (const char **args, int argc, int *out_argc, GPtrArray *processed, MonoError *error);
+
+/* returns a json blob representing the current values of all options */
+char * mono_options_get_as_json (void);
+
+gboolean
+mono_options_get (const char *name, MonoOptionType *type, void **value_address);
+
+#endif

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="sin_cs_d.il" />
+    <Compile Include="sin_cs.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="sinlib_cs.csproj" />
+  </ItemGroup>
+</Project>

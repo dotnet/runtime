@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyExtensionTests.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfoInvokeArrayTests.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfoTests.cs" />
+    <Compile Include="EventInfoTests.cs" />
+    <Compile Include="FieldInfoTests.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="MetadataTokenTests.cs" />
+    <Compile Include="MethodBaseTests.cs" />
+    <Compile Include="MethodInfoTests.cs" />
+    <Compile Include="ModuleTests.cs" />
+    <Compile Include="PropertyInfoTests.cs" />
+    <Compile Include="TypeTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(CommonTestPath)Data\TinyAssembly.dll">
+      <Link>TinyAssembly.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

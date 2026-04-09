@@ -1,0 +1,89 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.GeneratedCertificates.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.GeneratedCertificates.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
+             Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
+             Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
+    <Compile Include="Certificates.cs" />
+    <Compile Include="CertLoader.cs" />
+    <Compile Include="CertLoader.Settings.cs" />
+    <Compile Include="CmsRecipientCollectionTests.cs" />
+    <Compile Include="CryptographicAttributeObjectCollectionTests.cs" />
+    <Compile Include="EnvelopedCms\CertificateTests.cs" />
+    <Compile Include="EnvelopedCms\ContentEncryptionAlgorithmTests.cs" />
+    <Compile Include="EnvelopedCms\DecryptTests.cs" />
+    <Compile Include="EnvelopedCms\DecryptTestsUsingCertWithPrivateKey.cs" />
+    <Compile Include="EnvelopedCms\EdgeCasesTests.cs" />
+    <Compile Include="EnvelopedCms\GeneralTests.cs" />
+    <Compile Include="EnvelopedCms\KeyAgreeRecipientInfoTests.cs" />
+    <Compile Include="EnvelopedCms\KeyTransRecipientInfoTests.cs" />
+    <Compile Include="EnvelopedCms\StateTests.cs" />
+    <Compile Include="EnvelopedCms\UnprotectedAttributeTests.cs" />
+    <Compile Include="Oids.cs" />
+    <Compile Include="Pkcs9AttributeTests.cs" />
+    <Compile Include="RecipientInfoCollectionTests.cs" />
+    <Compile Include="SignatureSupport.cs" />
+    <Compile Include="SignedCms\CmsSignerTests.cs" />
+    <Compile Include="SignedCms\CounterSigningDerOrder.cs" />
+    <Compile Include="SignedCms\SignedCmsTests.cs" />
+    <Compile Include="SignedCms\SignedCmsWholeDocumentTests.cs" />
+    <Compile Include="SignedCms\SignedDocuments.cs" />
+    <Compile Include="SignedCms\SignerInfoTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="AlgorithmIdentifierTest.cs" />
+    <Compile Include="EnvelopedCms\DecryptTestsRsaPaddingModeTests.cs" />
+    <Compile Include="EnvelopedCms\DecryptTestsUsingExplicitPrivateKey.cs" />
+    <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaOaepCertTests.cs" />
+    <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaPaddingModeTests.cs" />
+    <Compile Include="EnvelopedCms\SubjectIdentifierTests.cs" />
+    <Compile Include="Pkcs12\CertBagTests.cs" />
+    <Compile Include="Pkcs12\CustomBagTypeTests.cs" />
+    <Compile Include="Pkcs12\KeyBagTests.cs" />
+    <Compile Include="Pkcs12\Pkcs12BuilderTests.cs" />
+    <Compile Include="Pkcs12\Pkcs12Documents.cs" />
+    <Compile Include="Pkcs12\Pkcs12InfoTests.cs" />
+    <Compile Include="Pkcs12\Pkcs12SafeContentsTests.cs" />
+    <Compile Include="Pkcs12\Pkcs12SafeBagTests.cs" />
+    <Compile Include="Pkcs12\Pkcs9LocalKeyIdTests.cs" />
+    <Compile Include="Pkcs12\SafeContentsBagTests.cs" />
+    <Compile Include="Pkcs12\SecretBagTests.cs" />
+    <Compile Include="Pkcs12\ShroudedKeyBagTests.cs" />
+    <Compile Include="Pkcs12\SimpleRead.cs" />
+    <Compile Include="Pkcs12\WriteToWindows.cs" />
+    <Compile Include="Rfc3161\TimestampRequestTests.cs" />
+    <Compile Include="Rfc3161\TimestampTokenInfoTests.cs" />
+    <Compile Include="Rfc3161\TimestampTokenTestData.cs" />
+    <Compile Include="Rfc3161\TimestampTokenTests.cs" />
+    <Compile Include="SignedCms\SignedCmsTests.netcoreapp.cs" />
+    <Compile Include="SignedCms\SignerInfoTests.netcoreapp.cs" />
+    <Compile Include="ImportedCollection.cs" />
+    <Compile Include="Pkcs8PrivateKeyInfoTests.cs" />
+    <Compile Include="PrivateKeyHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Cryptography.Pkcs.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.Security" />
+  </ItemGroup>
+</Project>

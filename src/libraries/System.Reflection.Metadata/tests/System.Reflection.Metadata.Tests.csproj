@@ -1,0 +1,164 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- 436: Type conflicts on "Interop" due to InternalsVisibleTo access
+         SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
+    <NoWarn>$(NoWarn);436;SYSLIB0037</NoWarn>
+    <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <!-- This test library intentionally references an inbox P2P as it needs the implementation, instead of the contract.
+         Suppress the NU1511 warning in the whole project as putting it on a P2P doesn't work: https://github.com/NuGet/Home/issues/14121 -->
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
+             Link="Common\Interop\Windows\Interop.FreeLibrary.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleHandle.cs"
+             Link="Common\Interop\Windows\Interop.GetModuleHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs"
+             Link="Common\Interop\Windows\Interop.LoadLibraryEx.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
+             Link="Common\System\IO\TempFile.cs" />
+
+    <Compile Include="Metadata\AssemblyNameInfoTests.cs" />
+    <Compile Include="Metadata\BlobContentIdTests.cs" />
+    <Compile Include="Metadata\BlobTests.cs" />
+    <Compile Include="Metadata\BlobUtilitiesTests.cs" />
+    <Compile Include="Metadata\Ecma335\CodedIndexTests.cs" />
+    <Compile Include="Metadata\Ecma335\Encoding\ExceptionRegionEncoderTests.cs" />
+    <Compile Include="Metadata\Ecma335\Encoding\ControlFlowBuilderTests.cs" />
+    <Compile Include="Metadata\Ecma335\Encoding\InstructionEncoderTests.cs" />
+    <Compile Include="Metadata\Ecma335\MetadataRootBuilderTests.cs" />
+    <Compile Include="Metadata\Ecma335\PortablePdbBuilderTests.cs" />
+    <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
+    <Compile Include="Metadata\TypeNameParserHelpersTests.cs" />
+    <Compile Include="Metadata\TypeNameTests.cs" />
+    <Compile Include="Metadata\TypeNameParserSamples.cs" />
+    <Compile Include="Metadata\TypeSystem\AssemblyDefinitionTests.cs" />
+    <Compile Include="Metadata\TypeSystem\AssemblyReferenceTests.cs" />
+    <Compile Include="Metadata\TypeSystem\ClassLayoutRow.cs" />
+    <Compile Include="Metadata\Decoding\CustomAttributeDecoderTests.cs" />
+    <Compile Include="Metadata\Decoding\DisassemblingTypeProvider.cs" />
+    <Compile Include="Metadata\Decoding\MethodSignatureTests.cs" />
+    <Compile Include="Metadata\Decoding\OpaqueHandleTypeProvider.cs" />
+    <Compile Include="Metadata\Decoding\SignatureDecoderTests.cs" />
+    <Compile Include="Metadata\Ecma335\Encoding\BlobEncodersTests.cs" />
+    <Compile Include="Metadata\Ecma335\MetadataAggregatorTests.cs" />
+    <Compile Include="Metadata\Ecma335\MetadataTokensTests.cs" />
+    <Compile Include="Metadata\HandleComparerTests.cs" />
+    <Compile Include="Metadata\HandleTests.cs" />
+    <Compile Include="Metadata\Ecma335\Encoding\LabelHandleTests.cs" />
+    <Compile Include="Metadata\Ecma335\MetadataBuilderTests.cs" />
+    <Compile Include="Metadata\MetadataReaderTestHelpers.cs" />
+    <Compile Include="Metadata\MetadataReaderTests.cs" />
+    <Compile Include="Metadata\Ecma335\Encoding\MethodBodyStreamEncoderTests.cs" />
+    <Compile Include="Metadata\TypeSystem\MethodImportRow.cs" />
+    <Compile Include="Metadata\PortablePdb\StandalonePortablePdbStreamTests.cs" />
+    <Compile Include="Metadata\TagToTokenTests.cs" />
+    <Compile Include="Metadata\PortablePdb\DocumentNameTests.cs" />
+    <Compile Include="Metadata\TypeSystem\TypeDefinitionTests.cs" />
+    <Compile Include="PortableExecutable\DebugDirectoryBuilderTests.cs" />
+    <Compile Include="PortableExecutable\PEHeaderBuilderTests.cs" />
+    <Compile Include="PortableExecutable\PEMemoryBlockTests.cs" />
+    <Compile Include="PortableExecutable\TestStream.cs" />
+    <Compile Include="TestUtilities\ByteArrayUtilities.cs" />
+    <Compile Include="TestUtilities\LoaderUtilities.cs" />
+    <Compile Include="TestUtilities\PinnedBlob.cs" />
+    <Compile Include="TestUtilities\SigningUtilities.cs" />
+    <Compile Include="TestUtilities\TestBuilders.cs" />
+    <Compile Include="TestUtilities\TestMetadataStringDecoder.cs" />
+    <Compile Include="Utilities\AbstractMemoryBlockTests.cs" />
+    <Compile Include="PortableExecutable\BadImageFormat.cs" />
+    <Compile Include="PortableExecutable\DebugDirectoryTests.cs" />
+    <Compile Include="PortableExecutable\PEBinaryReaderTests.cs" />
+    <Compile Include="PortableExecutable\PEBuilderTests.cs" />
+    <Compile Include="PortableExecutable\PEHeadersTests.cs" />
+    <Compile Include="PortableExecutable\PEReaderTests.cs" />
+    <Compile Include="PortableExecutable\SectionHeaderTests.cs" />
+    <Compile Include="Utilities\HashTests.cs" />
+    <Compile Include="Utilities\StreamExtensionsTests.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+    <Compile Include="Metadata\MetadataReaderProviderTests.cs" />
+    <Compile Include="Resources\TestResources.cs" />
+    <Compile Include="TestUtilities\AssertEx.cs" />
+    <Compile Include="TestUtilities\DiffUtil.cs" />
+    <Compile Include="TestUtilities\TestMetadataResolver.cs" />
+    <Compile Include="PortableExecutable\TestStreamBase.cs" />
+    <Compile Include="TestUtilities\CustomAccessMemoryStream.cs" />
+    <Compile Include="Utilities\StringUtilsTests.cs" />
+    <Compile Include="Utilities\BlobReaderTests.cs" />
+    <Compile Include="Utilities\CompressedIntegerTests.cs" />
+    <Compile Include="Utilities\MemoryBlockTests.cs" />
+    <Compile Include="Utilities\OrderByTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Resources\Namespace\NamespaceForwardedCS.cs" />
+    <None Include="Resources\Namespace\NamespaceTests.cs" />
+    <EmbeddedResource Include="Resources\Namespace\NamespaceForwardedCS.dll" />
+    <EmbeddedResource Include="Resources\Namespace\NamespaceTests.dll" />
+    <None Include="Resources\Interop\Interop.Mock01.cs" />
+    <None Include="Resources\Interop\Interop.Mock01.Impl.cs" />
+    <None Include="Resources\Interop\IndexerWithByRefParam.il" />
+    <None Include="Resources\Interop\OtherAccessors.il" />
+    <EmbeddedResource Include="Resources\Interop\IndexerWithByRefParam.dll" />
+    <EmbeddedResource Include="Resources\Interop\OtherAccessors.dll" />
+    <EmbeddedResource Include="Resources\Interop\Interop.Mock01.dll" />
+    <EmbeddedResource Include="Resources\Interop\Interop.Mock01.Impl.dll" />
+    <None Include="Resources\Misc\CPPClassLibrary2.h" />
+    <EmbeddedResource Include="Resources\Misc\KeyPair.snk" />
+    <EmbeddedResource Include="Resources\Misc\CPPClassLibrary2.obj" />
+    <None Include="Resources\Misc\EmptyType.il" />
+    <EmbeddedResource Include="Resources\Misc\EmptyType.dll" />
+    <None Include="Resources\Misc\Members.cs" />
+    <EmbeddedResource Include="Resources\Misc\Members.dll" />
+    <None Include="Resources\Misc\Deterministic.cs" />
+    <EmbeddedResource Include="Resources\Misc\Deterministic.dll" />
+    <None Include="Resources\Misc\Debug.cs" />
+    <EmbeddedResource Include="Resources\Misc\Debug.dll" />
+    <None Include="Resources\NetModule\AppCS.cs" />
+    <EmbeddedResource Include="Resources\NetModule\AppCS.exe" />
+    <None Include="Resources\NetModule\ModuleCS00.cs" />
+    <EmbeddedResource Include="Resources\NetModule\ModuleCS00.mod" />
+    <None Include="Resources\NetModule\ModuleCS01.cs" />
+    <EmbeddedResource Include="Resources\NetModule\ModuleCS01.mod" />
+    <EmbeddedResource Include="Resources\NetModule\ModuleVB01.mod" />
+    <None Include="Resources\NetModule\ModuleVB01.vb" />
+    <EmbeddedResource Include="Resources\WinRT\Lib.winmd" />
+    <None Include="Resources\WinRT\Lib.cs" />
+    <EmbeddedResource Include="Resources\PortablePdbs\Documents.dll" />
+    <EmbeddedResource Include="Resources\PortablePdbs\Documents.pdb" />
+    <EmbeddedResource Include="Resources\PortablePdbs\Documents.Embedded.dll" />
+    <None Include="Resources\PortablePdbs\Documents.cmd" />
+    <None Include="Resources\PortablePdbs\Documents.cs" />
+    <None Include="Resources\Misc\SatelliteAssembly.resources.cs" />
+    <EmbeddedResource Include="Resources\Misc\SatelliteAssembly.resources.dll" />
+    <None Include="Resources\Misc\Signed.cmd" />
+    <None Include="Resources\Misc\Signed.cs" />
+    <EmbeddedResource Include="Resources\Misc\Signed.exe" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <ProjectReference Include="..\src\System.Reflection.Metadata.csproj" SkipUseReferenceAssembly="true" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
+  </ItemGroup>
+
+</Project>

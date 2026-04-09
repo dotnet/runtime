@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <NoWarn>$(NoWarn);CS8002</NoWarn>
+  </PropertyGroup>
+
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <SignAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">false</SignAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="6.2.0" />
+    <PackageReference Include="LightInject.Microsoft.DependencyInjection" Version="3.7.1" />
+    <PackageReference Include="Grace.DependencyInjection.Extensions" Version="7.1.0" />
+    <PackageReference Include="Stashbox.Extensions.Dependencyinjection" Version="4.2.3" />
+  </ItemGroup>
+
+  <!-- These packages don't support .NETFramework -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <PackageReference Include="Lamar.Microsoft.DependencyInjection" Version="8.0.1" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssembliesBeingTested Include="System.IO.Pipes" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AnonymousPipeTests\AnonymousPipeServerStreamAclTests.cs" />
+    <Compile Include="AnonymousPipeTests\AnonymousPipeTest.AclExtensions.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeServerStreamAclTests.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.AclExtensions.cs" />
+    <Compile Include="PipeServerStreamAclTestBase.cs" />
+    <Compile Include="PipeTest.AclExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.Pipes.AccessControl.csproj" />
+  </ItemGroup>
+</Project>

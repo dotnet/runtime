@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <PlatformPackageType>TargetingPack</PlatformPackageType>
+    <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
+    <InstallerName>dotnet-targeting-pack</InstallerName>
+    <VSInsertionShortComponentName>NetCore.TargetingPack</VSInsertionShortComponentName>
+    <PackageDescription>A set of .NET APIs that are included in the default .NET application model. Contains reference assemblies, documentation, and other design-time assets.</PackageDescription>
+  </PropertyGroup>
+
+  <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesToPackage">
+    <ItemGroup>
+      <ReferencePath Include="@(LibrariesRefAssemblies)" />
+      <ReferencePath ReferenceAssembly="%(Identity)" />
+      <DocFilesToPackage Include="$(MicrosoftNetCoreAppRefPackRefDir)%(LibrariesRefAssemblies.FileName).xml" Condition="Exists('$(MicrosoftNetCoreAppRefPackRefDir)%(LibrariesRefAssemblies.FileName).xml')"/>
+      <Analyzer Include="$(MicrosoftNetCoreAppRefPackDir)/analyzers/**/*.*" />
+      <FilesToPackage Include="@(Analyzer)" ExcludeFromValidation="true" TargetPath="analyzers/%(RecursiveDir)" />
+    </ItemGroup>
+  </Target>
+</Project>

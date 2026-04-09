@@ -1,0 +1,19 @@
+trigger: none
+
+schedules:
+- cron: "0 7 * * *"
+  displayName: Daily at 11:00 PM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template:  /eng/pipelines/coreclr/templates/jit-replay-pipeline.yml
+  parameters:
+    platforms:
+    - windows_x64
+    replayType: apx

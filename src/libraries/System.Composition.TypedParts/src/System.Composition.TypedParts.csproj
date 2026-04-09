@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <RootNamespace>System.Composition</RootNamespace>
+    <IsTrimmable>false</IsTrimmable>
+    <IsAotCompatible>false</IsAotCompatible>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides container configuration and some extension methods for the Managed Extensibility Framework (MEF).</PackageDescription>
+    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Composition\CompositionContextExtensions.cs" />
+    <Compile Include="System\Composition\Convention\AttributedModelProviderExtensions.cs" />
+    <Compile Include="System\Composition\Debugging\ContainerConfigurationDebuggerProxy.cs" />
+    <Compile Include="System\Composition\Debugging\DiscoveredPartDebuggerProxy.cs" />
+    <Compile Include="System\Composition\Hosting\ContainerConfiguration.cs" />
+    <Compile Include="System\Composition\Hosting\InstanceExportDescriptorProvider.cs" />
+    <Compile Include="System\Composition\Hosting\SinglePartExportDescriptorProvider.cs" />
+    <Compile Include="System\Composition\TypedParts\ActivationFeatures\ActivationFeature.cs" />
+    <Compile Include="System\Composition\TypedParts\ActivationFeatures\DisposalFeature.cs" />
+    <Compile Include="System\Composition\TypedParts\ActivationFeatures\LifetimeFeature.cs" />
+    <Compile Include="System\Composition\TypedParts\ActivationFeatures\OnImportsSatisfiedFeature.cs" />
+    <Compile Include="System\Composition\TypedParts\ActivationFeatures\PropertyImportSite.cs" />
+    <Compile Include="System\Composition\TypedParts\ActivationFeatures\PropertyInjectionFeature.cs" />
+    <Compile Include="System\Composition\TypedParts\ContractHelpers.cs" />
+    <Compile Include="System\Composition\TypedParts\Discovery\DiscoveredExport.cs" />
+    <Compile Include="System\Composition\TypedParts\Discovery\DiscoveredInstanceExport.cs" />
+    <Compile Include="System\Composition\TypedParts\Discovery\DiscoveredPart.cs" />
+    <Compile Include="System\Composition\TypedParts\Discovery\DiscoveredPropertyExport.cs" />
+    <Compile Include="System\Composition\TypedParts\Discovery\ParameterImportSite.cs" />
+    <Compile Include="System\Composition\TypedParts\Discovery\TypeInspector.cs" />
+    <Compile Include="System\Composition\TypedParts\ImportInfo.cs" />
+    <Compile Include="System\Composition\TypedParts\TypedPartExportDescriptorProvider.cs" />
+    <Compile Include="System\Composition\TypedParts\Util\DirectAttributeContext.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
+             Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Hosting\src\System.Composition.Hosting.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

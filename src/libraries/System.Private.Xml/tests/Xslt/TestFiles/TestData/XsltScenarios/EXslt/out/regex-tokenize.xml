@@ -1,0 +1,106 @@
+﻿<out>
+  <test1>
+    <match>The</match>
+    <match>quick</match>
+    <match>brown</match>
+    <match>fox</match>
+    <match>jumps</match>
+    <match>over</match>
+    <match>a</match>
+    <match>lazy</match>
+    <match>dog.</match>
+  </test1>
+  <test2>
+    <match>The</match>
+    <match>quick</match>
+    <match>brown</match>
+    <match>fox</match>
+    <match>jumps</match>
+    <match>over</match>
+    <match>a</match>
+    <match>lazy</match>
+    <match>dog.</match>
+  </test2>
+  <test3>
+    <match>The</match>
+    <match>quick</match>
+    <match>brown</match>
+    <match>fox</match>
+    <match>jumps</match>
+    <match>over</match>
+    <match>a</match>
+    <match>lazy</match>
+    <match>dog.</match>
+  </test3>
+  <test4>
+    <match>The</match>
+    <match>quick</match>
+    <match>brown</match>
+    <match>fox</match>
+    <match>jumps</match>
+    <match>over</match>
+    <match>a</match>
+    <match>lazy</match>
+    <match>dog.</match>
+  </test4>
+  <test5>
+    <match>The</match>
+    <match>quick</match>
+    <match>brown</match>
+    <match>fox</match>
+    <match>jumps</match>
+    <match>over</match>
+    <match>a</match>
+    <match>lazy</match>
+    <match>dog.</match>
+  </test5>
+  <test6>
+    <match></match>
+  </test6>
+  <test7>
+    <match></match>
+    <match>T</match>
+    <match>h</match>
+    <match>e</match>
+    <match> </match>
+    <match>q</match>
+    <match>u</match>
+    <match>i</match>
+    <match>c</match>
+    <match>k</match>
+    <match> </match>
+    <match>b</match>
+    <match>r</match>
+    <match>o</match>
+    <match>w</match>
+    <match>n</match>
+    <match> </match>
+    <match>f</match>
+    <match>o</match>
+    <match>x</match>
+    <match> </match>
+    <match>j</match>
+    <match>u</match>
+    <match>m</match>
+    <match>p</match>
+    <match>s</match>
+    <match> </match>
+    <match>o</match>
+    <match>v</match>
+    <match>e</match>
+    <match>r</match>
+    <match> </match>
+    <match>a</match>
+    <match> </match>
+    <match>l</match>
+    <match>a</match>
+    <match>z</match>
+    <match>y</match>
+    <match> </match>
+    <match>d</match>
+    <match>o</match>
+    <match>g</match>
+    <match>.</match>
+    <match></match>
+  </test7>
+</out>

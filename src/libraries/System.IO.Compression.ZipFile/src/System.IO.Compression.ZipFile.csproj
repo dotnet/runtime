@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\IO\Compression\ZipFile.Create.cs" />
+    <Compile Include="System\IO\Compression\ZipFile.Create.Async.cs" />
+    <Compile Include="System\IO\Compression\ZipFile.Extract.cs" />
+    <Compile Include="System\IO\Compression\ZipFile.Extract.Async.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.Async.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Extract.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Extract.Async.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.Async.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)System\IO\Archiving.Utils.cs"
+             Link="Common\System\IO\Archiving.Utils.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
+             Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
+  </ItemGroup>
+
+  <!-- Windows specific files -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Windows.cs"
+             Link="Common\System\IO\Archiving.Utils.Windows.cs" />
+    <Compile Include="System\IO\Compression\ZipFile.Create.Windows.cs" />
+  </ItemGroup>
+
+  <!-- Unix specific files -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
+    <Compile Include="System\IO\Compression\ZipFile.Create.Unix.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.Unix.cs" />
+    <Compile Include="$(CommonPath)System\IO\Compression\ZipArchiveEntryConstants.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
+             Link="Common\Interop\Unix\Interop.IOErrors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
+    <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Unix.cs"
+             Link="Common\System\IO\Archiving.Utils.Unix.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression\src\System.IO.Compression.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+  </ItemGroup>
+
+</Project>

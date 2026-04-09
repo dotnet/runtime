@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AttributedModelConventionExtensions.cs" />
+    <Compile Include="ConventionBuilderTests.cs" />
+    <Compile Include="ExportBuilderTests.cs" />
+    <Compile Include="ExportBuilderUnitTests.cs" />
+    <Compile Include="ExportInterfacesContractExclusionTests.cs" />
+    <Compile Include="ImportBuilderTests.cs" />
+    <Compile Include="PartBuilderInheritanceTests.cs" />
+    <Compile Include="PartBuilderInterfaceTests.cs" />
+    <Compile Include="PartBuilderOfTInheritanceTests.cs" />
+    <Compile Include="PartBuilderOfTTests.cs" />
+    <Compile Include="PartBuilderTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../src/System.Composition.Convention.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.TypedParts\src\System.Composition.TypedParts.csproj" />
+  </ItemGroup>
+</Project>

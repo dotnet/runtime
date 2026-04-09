@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ldsfld_mulovf_r.il" />
+    <Compile Include="ldsfld_mulovf.il" />
+  </ItemGroup>
+</Project>

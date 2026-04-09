@@ -1,0 +1,127 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Net.Http;
+using System.Net.Sockets;
+using System.Runtime.Serialization;
+using System.Threading.Tasks;
+
+namespace System.Net
+{
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public partial class WebException : InvalidOperationException, ISerializable
+    {
+        private const WebExceptionStatus DefaultStatus = WebExceptionStatus.UnknownError;
+
+        private readonly WebExceptionStatus _status = DefaultStatus;
+        private readonly WebResponse? _response;
+
+        public WebException()
+        {
+        }
+
+        public WebException(string? message) :
+            base(message)
+        {
+        }
+
+        public WebException(string? message, Exception? innerException) :
+            this(message, innerException, DefaultStatus, null)
+        {
+        }
+
+        public WebException(string? message, WebExceptionStatus status) :
+            this(message, null, status, null)
+        {
+        }
+
+        public WebException(string? message,
+                            Exception? innerException,
+                            WebExceptionStatus status,
+                            WebResponse? response) :
+            base(message, innerException)
+        {
+            _status = status;
+            _response = response;
+
+            if (innerException != null)
+            {
+                HResult = innerException.HResult;
+            }
+        }
+
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected WebException(SerializationInfo serializationInfo, StreamingContext streamingContext)
+            : base(serializationInfo, streamingContext)
+        {
+        }
+
+        public WebExceptionStatus Status => _status;
+
+        public WebResponse? Response => _response;
+
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            base.GetObjectData(serializationInfo, streamingContext);
+        }
+
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            base.GetObjectData(serializationInfo, streamingContext);
+        }
+
+        internal static Exception CreateCompatibleException(Exception exception)
+        {
+            Debug.Assert(exception != null);
+            if (exception is HttpRequestException hre)
+            {
+                return new WebException(
+                    exception.Message,
+                    exception,
+                    GetStatusFromException(hre),
+                    null);
+            }
+            else if (exception is TaskCanceledException)
+            {
+                return new WebException(
+                    SR.net_webstatus_Timeout,
+                    null,
+                    WebExceptionStatus.Timeout,
+                    null);
+            }
+
+            return exception;
+        }
+
+        private static WebExceptionStatus GetStatusFromExceptionHelper(HttpRequestException ex)
+        {
+            SocketException? socketException = ex.InnerException as SocketException;
+
+            if (socketException is null)
+            {
+                return WebExceptionStatus.UnknownError;
+            }
+
+            WebExceptionStatus status;
+            switch (socketException.SocketErrorCode)
+            {
+                case SocketError.NoData:
+                case SocketError.HostNotFound:
+                    status = WebExceptionStatus.NameResolutionFailure;
+                    break;
+                default:
+                    status = WebExceptionStatus.UnknownError;
+                    break;
+            }
+
+            return status;
+        }
+    }
+}

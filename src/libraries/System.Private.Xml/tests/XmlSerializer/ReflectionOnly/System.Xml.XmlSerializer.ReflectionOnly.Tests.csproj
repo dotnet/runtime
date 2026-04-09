@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
+    <OverrideDefaultValueAndDesignerHostSupport>true</OverrideDefaultValueAndDesignerHostSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Microsoft.XmlSerializer.Generator\tests\SerializableAssembly.csproj" />
+    <TrimmerRootAssembly Include="SerializableAssembly" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs" />
+    <None Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
+    <Compile Include="$(TestSourceFolder)..\XmlSerializerTests.cs" />
+    <Compile Include="$(TestSourceFolder)..\XmlSerializerTests.RuntimeOnly.cs" />
+
+    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Serialization.xml" />
+  </ItemGroup>
+</Project>

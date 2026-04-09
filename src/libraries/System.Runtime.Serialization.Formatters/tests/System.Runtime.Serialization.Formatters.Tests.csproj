@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- hardcode version to avoid breaking tests which embed the string length and are broken by bumping to 10.0.0.0 -->
+    <AssemblyVersion>9.0.0.0</AssemblyVersion>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-haiku;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetFrameworkCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BinaryFormatterTestData.cs" />
+    <Compile Include="BinaryFormatterTests.cs" />
+    <Compile Include="EqualityExtensions.cs" />
+    <Compile Include="OptionalFieldAttributeTests.cs" />
+    <Compile Include="FormatterConverterTests.cs" />
+    <Compile Include="FormatterServicesTests.cs" />
+    <Compile Include="FormatterServicesTests.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Compile Include="FormatterTests.cs" />
+    <Compile Include="PlatformExtensions.cs" />
+    <Compile Include="SerializationBinderTests.cs" />
+    <Compile Include="SerializationInfoTests.cs" />
+    <Compile Include="SerializationTypes.cs" />
+    <Compile Include="SurrogateSelectorTests.cs" />
+    <Compile Include="TargetFrameworkMoniker.cs" />
+    <Compile Include="TestConfiguration.cs" />
+    <Compile Include="TypeSerializableValue.cs" />
+    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
+             Link="Common\System\Drawing\Helpers.cs" />
+    <Compile Include="$(CommonTestPath)System\NonRuntimeType.cs"
+             Link="Common\System\NonRuntimeType.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
+             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs"
+             Link="Common\System\Collections\Generic\ReferenceEqualityComparer.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="BinaryFormatterEventSourceTests.cs" />
+    <Compile Include="SerializationGuardTests.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\Serialization\SerializationGuard.cs"
+         Link="Common\System\Runtime\Serialization\SerializationGuard.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Composition\src\System.ComponentModel.Composition.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.Odbc\src\System.Data.Odbc.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\src\System.Diagnostics.EventLog.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.AccountManagement\src\System.DirectoryServices.AccountManagement.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Packaging\src\System.IO.Packaging.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Channels\src\System.Threading.Channels.csproj" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.DirectoryServices" />
+    <Reference Include="System.DirectoryServices.AccountManagement" />
+    <Reference Include="System.DirectoryServices.Protocols" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TimerConstructorTests.cs" />
+    <Compile Include="TimerChangeTests.cs" />
+    <Compile Include="TimerFiringTests.cs" />
+    <Compile Include="TimerDisposeTests.cs" />
+    <Compile Include="TimerMetricsTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
+             Link="CommonTest\System\Threading\ThreadTestHelpers.cs" />
+  </ItemGroup>
+</Project>

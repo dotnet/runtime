@@ -1,0 +1,15 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:element name="foo" abstract="true"/>
+	<xsd:element name="root">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="foo" minOccurs="0" maxOccurs="1"/>
+				<xsd:element name="a"/>
+				<xsd:element name="b"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="sg1" substitutionGroup="foo"/>
+	<xsd:element name="sg2" substitutionGroup="foo"/>
+</xsd:schema>

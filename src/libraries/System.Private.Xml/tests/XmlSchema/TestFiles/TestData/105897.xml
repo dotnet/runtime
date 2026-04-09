@@ -1,0 +1,6 @@
+<SOAP:Envelope xmlns:SOAP="http://www.w3.org/2002/12/soap-envelope" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <SOAP:Header>
+    </SOAP:Header>
+    <SOAP:Body>
+    </SOAP:Body>
+</SOAP:Envelope>

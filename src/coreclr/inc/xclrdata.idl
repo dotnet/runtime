@@ -1,0 +1,2552 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+/*****************************************************************************
+ **                                                                         **
+ ** clrdata.idl - Common Language Runtime data access interfaces for         **
+ **              clients needing to access runtime state from outside       **
+ **              runtime, such as out-of-process debuggers.                 **
+ **                                                                         **
+ ** The access interface defines two different types of code running:       **
+ ** The host is the user of the access interface.                           **
+ ** The target is the target of the access.                                 **
+ **                                                                         **
+ ** The host and target can be have different instruction sets,             **
+ ** pointer sizes, runtime versions and so on.                              **
+ **                                                                         **
+ *****************************************************************************/
+
+import "clrdata.idl";
+
+cpp_quote("#if 0")
+
+typedef UINT32  mdToken;
+typedef mdToken mdTypeDef;
+typedef mdToken mdMethodDef;
+typedef mdToken mdFieldDef;
+
+typedef ULONG CorElementType;
+
+#define EXCEPTION_MAXIMUM_PARAMETERS 15 // maximum number of exception parameters
+
+// The following definition is pasted in from winnt.h, which doesn't
+// import cleanly as a whole.
+typedef struct _EXCEPTION_RECORD64 {
+    DWORD    ExceptionCode;
+    DWORD ExceptionFlags;
+    DWORD64 ExceptionRecord;
+    DWORD64 ExceptionAddress;
+    DWORD NumberParameters;
+    DWORD __unusedAlignment;
+    DWORD64 ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
+} EXCEPTION_RECORD64, *PEXCEPTION_RECORD64;
+
+cpp_quote("#endif")
+
+/* ------------------------------------------------------------------------- *
+ * Forward declarations.
+ * ------------------------------------------------------------------------- */
+
+/*
+ * The following interfaces (with an "IX" prefix instead of the conventional
+ * "I") are works in progress. They will change at least once before Whidbey
+ * ships.
+ */
+
+#pragma warning(push)
+#pragma warning(disable:28718)    //Unable to annotate as this is not a local interface
+
+interface IXCLRDataProcess;
+interface IXCLRDataAppDomain;
+interface IXCLRDataAssembly;
+interface IXCLRDataModule;
+interface IXCLRDataModule2;
+
+interface IXCLRDataTypeDefinition;
+interface IXCLRDataTypeInstance;
+interface IXCLRDataMethodDefinition;
+interface IXCLRDataMethodInstance;
+
+interface IXCLRDataTask;
+interface IXCLRDataStackWalk;
+interface IXCLRDataFrame;
+interface IXCLRDataFrame2;
+
+interface IXCLRDataExceptionState;
+interface IXCLRDataExceptionNotification;
+
+interface IXCLRDataValue;
+
+interface IXCLRDataTarget3;
+
+interface IXCLRDataDisplay;
+
+#pragma warning(pop)
+
+typedef struct
+{
+    CLRDATA_ADDRESS startAddress;
+    CLRDATA_ADDRESS endAddress;
+} CLRDATA_ADDRESS_RANGE;
+
+/*
+ * Many enumerators are based on an opaque state bundle.
+ */
+typedef ULONG64 CLRDATA_ENUM;
+
+/*
+ * Exception code used for notifications in this interface.
+ */
+cpp_quote("#define CLRDATA_NOTIFY_EXCEPTION 0xe0444143")
+
+/*
+ * General requests shared by two or more interfaces.
+ */
+
+typedef enum
+{
+    CLRDATA_REQUEST_REVISION = 0xe0000000,
+} CLRDataGeneralRequest;
+
+/*
+ * The following three sets of flags share
+ * many common definitions are so are
+ * grouped into a block.
+ */
+
+typedef enum
+{
+    CLRDATA_TYPE_DEFAULT       = 0x00000000,
+
+    // Identify particular kinds of types.  These flags
+    // are shared between type, field and value.
+    CLRDATA_TYPE_IS_PRIMITIVE  = 0x00000001,
+    CLRDATA_TYPE_IS_VALUE_TYPE = 0x00000002,
+    CLRDATA_TYPE_IS_STRING     = 0x00000004,
+    CLRDATA_TYPE_IS_ARRAY      = 0x00000008,
+    CLRDATA_TYPE_IS_REFERENCE  = 0x00000010,
+    CLRDATA_TYPE_IS_POINTER    = 0x00000020,
+    CLRDATA_TYPE_IS_ENUM       = 0x00000040,
+
+    // Alias for all field kinds.
+    CLRDATA_TYPE_ALL_KINDS     = 0x7f,
+} CLRDataTypeFlag;
+
+typedef enum
+{
+    CLRDATA_FIELD_DEFAULT         = 0x00000000,
+
+    // Identify particular kinds of types.  These flags
+    // are shared between type, field and value.
+    CLRDATA_FIELD_IS_PRIMITIVE    = CLRDATA_TYPE_IS_PRIMITIVE,
+    CLRDATA_FIELD_IS_VALUE_TYPE   = CLRDATA_TYPE_IS_VALUE_TYPE,
+    CLRDATA_FIELD_IS_STRING       = CLRDATA_TYPE_IS_STRING,
+    CLRDATA_FIELD_IS_ARRAY        = CLRDATA_TYPE_IS_ARRAY,
+    CLRDATA_FIELD_IS_REFERENCE    = CLRDATA_TYPE_IS_REFERENCE,
+    CLRDATA_FIELD_IS_POINTER      = CLRDATA_TYPE_IS_POINTER,
+    CLRDATA_FIELD_IS_ENUM         = CLRDATA_TYPE_IS_ENUM,
+
+    // Alias for all field kinds.
+    CLRDATA_FIELD_ALL_KINDS       = CLRDATA_TYPE_ALL_KINDS,
+
+    // Identify field properties.  These flags are
+    // shared between field and value.
+    CLRDATA_FIELD_IS_INHERITED    = 0x00000080,
+    CLRDATA_FIELD_IS_LITERAL      = 0x00000100,
+
+    // Identify field storage location.  These flags are
+    // shared between field and value.
+    CLRDATA_FIELD_FROM_INSTANCE   = 0x00000200,
+    CLRDATA_FIELD_FROM_TASK_LOCAL = 0x00000400,
+    CLRDATA_FIELD_FROM_STATIC     = 0x00000800,
+
+    // Alias for all types of field locations.
+    CLRDATA_FIELD_ALL_LOCATIONS   = 0x00000e00,
+    // Alias for all fields from all locations.
+    CLRDATA_FIELD_ALL_FIELDS      = 0x00000eff,
+} CLRDataFieldFlag;
+
+typedef enum
+{
+    CLRDATA_VALUE_DEFAULT         = 0x00000000,
+
+    // Identify particular kinds of types.  These flags
+    // are shared between type, field and value.
+    CLRDATA_VALUE_IS_PRIMITIVE    = CLRDATA_TYPE_IS_PRIMITIVE,
+    CLRDATA_VALUE_IS_VALUE_TYPE   = CLRDATA_TYPE_IS_VALUE_TYPE,
+    CLRDATA_VALUE_IS_STRING       = CLRDATA_TYPE_IS_STRING,
+    CLRDATA_VALUE_IS_ARRAY        = CLRDATA_TYPE_IS_ARRAY,
+    CLRDATA_VALUE_IS_REFERENCE    = CLRDATA_TYPE_IS_REFERENCE,
+    CLRDATA_VALUE_IS_POINTER      = CLRDATA_TYPE_IS_POINTER,
+    CLRDATA_VALUE_IS_ENUM         = CLRDATA_TYPE_IS_ENUM,
+
+    // Alias for all value kinds.
+    CLRDATA_VALUE_ALL_KINDS       = CLRDATA_TYPE_ALL_KINDS,
+
+    // Identify field properties.  These flags are
+    // shared between field and value.
+    CLRDATA_VALUE_IS_INHERITED    = CLRDATA_FIELD_IS_INHERITED,
+    CLRDATA_VALUE_IS_LITERAL      = CLRDATA_FIELD_IS_LITERAL,
+
+    // Identify field storage location.  These flags are
+    // shared between field and value.
+    CLRDATA_VALUE_FROM_INSTANCE   = CLRDATA_FIELD_FROM_INSTANCE,
+    CLRDATA_VALUE_FROM_TASK_LOCAL = CLRDATA_FIELD_FROM_TASK_LOCAL,
+    CLRDATA_VALUE_FROM_STATIC     = CLRDATA_FIELD_FROM_STATIC,
+
+    // Alias for all types of field locations.
+    CLRDATA_VALUE_ALL_LOCATIONS   = CLRDATA_FIELD_ALL_LOCATIONS,
+    // Alias for all fields from all locations.
+    CLRDATA_VALUE_ALL_FIELDS      = CLRDATA_FIELD_ALL_FIELDS,
+
+    // Identify whether the value is a boxed object.
+    CLRDATA_VALUE_IS_BOXED        = 0x00001000,
+} CLRDataValueFlag;
+
+[
+    object,
+    local,
+    uuid(59d9b5e1-4a6f-4531-84c3-51d12da22fd4),
+    pointer_default(unique)
+]
+interface IXCLRDataTarget3 : ICLRDataTarget2
+{
+    /*
+     * Ask the target to recover metadata for
+     * an image.  May not succeed.
+     */
+    HRESULT GetMetaData([in] LPCWSTR imagePath,
+                        [in] ULONG32 imageTimestamp,
+                        [in] ULONG32 imageSize,
+                        [in] GUID* mvid,
+                        [in] ULONG32 mdRva,
+                        [in] ULONG32 flags,
+                        [in] ULONG32 bufferSize,
+                        [out, size_is(bufferSize), length_is(*dataSize)]
+                        BYTE* buffer,
+                        [out] ULONG32* dataSize);
+};
+
+/*
+ * Flags used for *ByName methods.
+ */
+typedef enum
+{
+    CLRDATA_BYNAME_CASE_SENSITIVE   = 0x00000000,
+    CLRDATA_BYNAME_CASE_INSENSITIVE = 0x00000001,
+} CLRDataByNameFlag;
+
+/*
+ * Flags used in GetName methods.
+ */
+typedef enum
+{
+    CLRDATA_GETNAME_DEFAULT       = 0x00000000,
+    CLRDATA_GETNAME_NO_NAMESPACES = 0x00000001,
+    CLRDATA_GETNAME_NO_PARAMETERS = 0x00000002,
+} CLRDataGetNameFlag;
+
+typedef enum
+{
+    CLRDATA_PROCESS_DEFAULT = 0x00000000,
+    CLRDATA_PROCESS_IN_GC   = 0x00000001,
+} CLRDataProcessFlag;
+
+typedef enum
+{
+    CLRDATA_ADDRESS_UNRECOGNIZED,
+    CLRDATA_ADDRESS_MANAGED_METHOD,
+    CLRDATA_ADDRESS_RUNTIME_MANAGED_CODE,
+    CLRDATA_ADDRESS_RUNTIME_UNMANAGED_CODE,
+    CLRDATA_ADDRESS_GC_DATA,
+    CLRDATA_ADDRESS_RUNTIME_MANAGED_STUB,
+    CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB,
+} CLRDataAddressType;
+
+typedef enum
+{
+    CLRDATA_NOTIFY_ON_MODULE_LOAD           = 0x00000001,
+    CLRDATA_NOTIFY_ON_MODULE_UNLOAD         = 0x00000002,
+    CLRDATA_NOTIFY_ON_EXCEPTION             = 0x00000004,
+    CLRDATA_NOTIFY_ON_EXCEPTION_CATCH_ENTER = 0x00000008,
+} CLRDataOtherNotifyFlag;
+
+/*
+ * Data buffer and flags for follow-stub data.
+ */
+
+typedef struct
+{
+    ULONG64 Data[8];
+} CLRDATA_FOLLOW_STUB_BUFFER;
+
+typedef enum
+{
+    CLRDATA_FOLLOW_STUB_DEFAULT = 0x00000000,
+} CLRDataFollowStubInFlag;
+
+typedef enum
+{
+    CLRDATA_FOLLOW_STUB_INTERMEDIATE = 0x00000000,
+    CLRDATA_FOLLOW_STUB_EXIT         = 0x00000001,
+} CLRDataFollowStubOutFlag;
+
+typedef enum
+{
+    CLRNATIVEIMAGE_PE_INFO          = 0x00000001,
+    CLRNATIVEIMAGE_COR_INFO         = 0x00000002,
+    CLRNATIVEIMAGE_FIXUP_TABLES     = 0x00000004,
+    CLRNATIVEIMAGE_FIXUP_HISTOGRAM  = 0x00000008,
+    CLRNATIVEIMAGE_MODULE           = 0x00000010,
+    CLRNATIVEIMAGE_METHODS          = 0x00000020,
+    CLRNATIVEIMAGE_DISASSEMBLE_CODE = 0x00000040,
+    CLRNATIVEIMAGE_IL               = 0x00000080,
+    CLRNATIVEIMAGE_METHODTABLES     = 0x00000100,
+    CLRNATIVEIMAGE_NATIVE_INFO      = 0x00000200,
+    CLRNATIVEIMAGE_MODULE_TABLES    = 0x00000400,
+    CLRNATIVEIMAGE_FROZEN_SEGMENT   = 0x00000800,
+    CLRNATIVEIMAGE_PE_FILE          = 0x00001000,
+    CLRNATIVEIMAGE_GC_INFO          = 0x00002000,
+    CLRNATIVEIMAGE_EECLASSES        = 0x00004000,
+    CLRNATIVEIMAGE_NATIVE_TABLES    = 0x00008000,
+    CLRNATIVEIMAGE_PRECODES         = 0x00010000,
+    CLRNATIVEIMAGE_TYPEDESCS        = 0x00020000,
+    CLRNATIVEIMAGE_VERBOSE_TYPES    = 0x00040000,
+    CLRNATIVEIMAGE_METHODDESCS      = 0x00080000,
+    CLRNATIVEIMAGE_METADATA         = 0x00100000,
+    CLRNATIVEIMAGE_DISABLE_NAMES    = 0x00200000,
+    CLRNATIVEIMAGE_DISABLE_REBASING = 0x00400000,
+    CLRNATIVEIMAGE_SLIM_MODULE_TBLS = 0x00800000,
+    CLRNATIVEIMAGE_RESOURCES        = 0x01000000,
+    CLRNATIVEIMAGE_FILE_OFFSET      = 0x02000000,
+    CLRNATIVEIMAGE_DEBUG_TRACE      = 0x04000000,
+    CLRNATIVEIMAGE_RELOCATIONS      = 0x08000000,
+    CLRNATIVEIMAGE_FIXUP_THUNKS     = 0x10000000,
+    CLRNATIVEIMAGE_DEBUG_COVERAGE   = 0x80000000
+} CLRNativeImageDumpOptions;
+cpp_quote("#ifdef __cplusplus")
+cpp_quote("inline CLRNativeImageDumpOptions operator|=(CLRNativeImageDumpOptions& lhs, CLRNativeImageDumpOptions rhs) { return (lhs = (CLRNativeImageDumpOptions)( ((unsigned)lhs) | ((unsigned)rhs) )); }")
+cpp_quote("#endif")
+typedef enum
+{
+    CLRDATAHINT_DISPLAY_HINTS_NONE          = 0,
+    //array hints 0x000000ff
+    CLRDATAHINT_DISPLAY_ARRAY_AS_TABLE      = 0x00000001,
+    CLRDATAHINT_DISPLAY_ARRAY_AS_ARRAY      = 0x00000002,
+    CLRDATAHINT_DISPLAY_ARRAY_AS_ARRAY_IDX  = 0x00000003, //print idx as field 1
+    CLRDATAHINT_DISPLAY_ARRAY_AS_MAP        = 0x00000004,
+    CLRDATAHINT_DISPLAY_ARRAY_HINT_MASK     = 0x000000ff,
+
+    //structure hints
+    CLRDATAHINT_DISPLAY_STRUCT_AS_TABLE     = 0x00000100,
+    CLRDATAHINT_DISPLAY_STRUCT_HINT_MASK    = 0x0000ff00,
+
+    //separate fields with tabs
+    CLRDATAHINT_DISPLAY_SEP_TAB             = 0x00000000,
+    //separate fields with spaces
+    CLRDATAHINT_DISPLAY_SEP_SPACE           = 0x01000000,
+    //separate first field by a tab, and all other fields with spaces
+    CLRDATAHINT_DISPLAY_SEP_TAB_SPACE       = 0x02000000,
+    CLRDATAHINT_DISPLAY_SEP_MASK            = 0xff000000,
+} CLRDataDisplayHints;
+
+#pragma warning(push)
+#pragma warning(disable:28718)	/* suppress warning for interface IXCLRDataProcess */
+
+/*
+ * This interface supports the loading of dependencies and processing of PE
+ * files for the NativeImageDumper.
+ */
+[
+    object,
+    local,
+    uuid(E5F3039D-2C0C-4230-A69E-12AF1C3E563C)
+]
+interface IXCLRLibrarySupport : IUnknown
+{
+    //loads a dependency.  It can fail if the image needs to be relocated.
+    HRESULT LoadHardboundDependency(const WCHAR * name, REFGUID mvid,
+                                    [out]SIZE_T *loadedBase);
+    HRESULT LoadSoftboundDependency(const WCHAR * name,
+                                    const BYTE * assemblymetadataBinding,
+                                    const BYTE * hash, ULONG hashLength,
+                                    [out]SIZE_T *loadedBase);
+};
+
+interface IXCLRDisassemblySupport;
+typedef  SIZE_T (__stdcall *CDSTranslateAddrCB)(IXCLRDisassemblySupport *, CLRDATA_ADDRESS, WCHAR *, SIZE_T, DWORDLONG *);
+typedef  SIZE_T (__stdcall *CDSTranslateFixupCB)(IXCLRDisassemblySupport *, CLRDATA_ADDRESS, SIZE_T, WCHAR *, SIZE_T, DWORDLONG *);
+typedef  SIZE_T (__stdcall *CDSTranslateConstCB)(IXCLRDisassemblySupport *, DWORD, WCHAR *, SIZE_T);
+typedef  SIZE_T (__stdcall *CDSTranslateRegrelCB)(IXCLRDisassemblySupport *, unsigned rega, CLRDATA_ADDRESS, WCHAR *, SIZE_T, DWORD *);
+
+[
+    object,
+    local,
+    uuid(1F0F7134-D3F3-47DE-8E9B-C2FD358A2936)
+]
+interface IXCLRDisassemblySupport : IUnknown
+{
+    HRESULT SetTranslateAddrCallback([in] CDSTranslateAddrCB cb);
+    HRESULT PvClientSet([in] void * pv);
+
+    SIZE_T CbDisassemble(CLRDATA_ADDRESS, const void *, SIZE_T);
+    SIZE_T Cinstruction();
+    BOOL FSelectInstruction(SIZE_T);
+    SIZE_T CchFormatInstr(WCHAR *, SIZE_T);
+    void *PvClient();
+    HRESULT SetTranslateFixupCallback([in]CDSTranslateFixupCB cb);
+    HRESULT SetTranslateConstCallback([in]CDSTranslateConstCB cb);
+    HRESULT SetTranslateRegrelCallback([in]CDSTranslateRegrelCB cb);
+    BOOL TargetIsAddress();
+};
+
+/*
+ * This interface is passed to CLRDataCreateInstance::DumpNativeImage.  It
+ * handles display of the logical data in the ngen image.
+ */
+[
+    object,
+    local,
+    uuid(A3C1704A-4559-4a67-8D28-E8F4FE3B3F62)
+]
+interface IXCLRDataDisplay : IUnknown
+{
+    HRESULT ErrorPrintF(const char * const fmt, ...);
+    HRESULT NativeImageDimensions(SIZE_T base, SIZE_T size, DWORD sectionAlign);
+    HRESULT Section(const char * const name, SIZE_T rva, SIZE_T size);
+    HRESULT GetDumpOptions([out] CLRNativeImageDumpOptions * pOptions);
+
+    //Start and end the document
+    HRESULT StartDocument();
+    HRESULT EndDocument();
+
+    //XML-Constructs that do not map to actual fields or structures
+
+    //A category is a top level section of the ngen output.  For example,
+    //"Sections", "Directories", "CLR Info", etc.
+    HRESULT StartCategory(const char * const name);
+    HRESULT EndCategory();
+
+    //starts an element containing either xml text or other elements.  Only
+    //used within arrays and lists.  Otherwise use StartVStructure.
+    HRESULT StartElement(const char * const name);
+    HRESULT EndElement();
+    //like a Structure, but without a name and size.  Used within categories
+    //and structures.
+    HRESULT StartVStructure(const char * const name );
+    HRESULT StartVStructureWithOffset( const char * const name,
+                                       unsigned fieldOffset,
+                                       unsigned fieldSize );
+    HRESULT EndVStructure();
+
+    //An element that contains xml text.
+    HRESULT StartTextElement(const char * const name);
+    HRESULT EndTextElement();
+    HRESULT WriteXmlText(const char * const fmt, ...);
+    HRESULT WriteXmlTextBlock(const char * const fmt, ...);
+
+    HRESULT WriteEmptyElement(const char * const element);
+
+
+    //produces <element>ptr</element>
+    HRESULT WriteElementPointer(const char * const element, SIZE_T ptr);
+    HRESULT WriteElementPointerAnnotated(const char * const element, SIZE_T ptr,
+                                         const WCHAR * const annotation );
+    //produces <element base="base" size="size"/>
+    HRESULT WriteElementAddress(const char * const element, SIZE_T base, SIZE_T size);
+    HRESULT WriteElementAddressNamed(const char * const element, const char * const name,
+                                     SIZE_T base, SIZE_T size);
+    HRESULT WriteElementAddressNamedW(const char * const element, const WCHAR * const name,
+                                      SIZE_T base, SIZE_T size);
+    HRESULT WriteElementString(const char * const element, const char * const data);
+    HRESULT WriteElementStringW(const char * const element, const WCHAR * const data);
+    HRESULT WriteElementInt(const char * const element, int value);
+    HRESULT WriteElementUInt(const char * const element, DWORD value);
+    HRESULT WriteElementEnumerated(const char * const element, DWORD value,
+                                   const WCHAR * const mnemonic);
+    //writes <element>value</element> if value != suppressIfEqual.
+    //in text mode the whole element is suppressed (and a "" is appended if
+    //inside an array or list.
+    HRESULT WriteElementIntWithSuppress( const char * const element, int value,
+                                          int suppressIfEqual );
+    //For text, it produces "(element)" or "" instead of "true" or "false".
+    HRESULT WriteElementFlag(const char * const element, BOOL flag);
+
+    //if countPrefix is not Null, displays a total at the end in text mode.
+    //Arrays have headings in both text and xml.  Lists are "repeated elements"
+    HRESULT StartArray( const char * const name, const WCHAR * const fmt);
+    HRESULT EndArray( const char * const countPrefix );
+    HRESULT StartList( const WCHAR * const fmt );
+    HRESULT EndList();
+
+    //XML-Constructs that represent real C++ Data structure
+    HRESULT StartArrayWithOffset( const char * const name, unsigned fieldOffset,
+                                  unsigned fieldSize, const WCHAR * const fmt );
+#if 0
+
+    //writes <element>value</element> if value != suppressIfEqual.
+    //in text mode the whole element is suppressed (and a "" is appended if
+    //inside an array or list.
+    HRESULT WriteFieldIntWithSuppress( const char * const element, unsigned offset,
+                                       int value, int suppressIfEqual );
+#endif
+
+    HRESULT WriteFieldString(const char * const element, unsigned fieldOffset,
+                             unsigned fieldSize, const char * const data);
+    HRESULT WriteFieldStringW(const char * const element, unsigned fieldOffset,
+                              unsigned fieldSize, const WCHAR * const data);
+    //produces <element>ptr</element>
+    HRESULT WriteFieldPointer(const char * const element, unsigned fieldOffset,
+                              unsigned fieldSize, SIZE_T ptr);
+    //produces <element>ptr+size</element>
+    HRESULT WriteFieldPointerWithSize(const char * const element,
+                                      unsigned fieldOffset, unsigned fieldSize,
+                                      SIZE_T ptr, SIZE_T size);
+    HRESULT WriteFieldInt(const char * const element, unsigned fieldOffset,
+                          unsigned fieldSize, int value);
+    HRESULT WriteFieldUInt(const char * const element, unsigned fieldOffset,
+                           unsigned fieldSize, DWORD value);
+    HRESULT WriteFieldEnumerated(const char * const element, unsigned fieldOffset,
+                                 unsigned fieldSize, DWORD value,
+                                 const WCHAR * const mnemonic);
+    HRESULT WriteFieldEmpty(const char * const element, unsigned fieldOffset,
+                            unsigned fieldSize);
+    HRESULT WriteFieldFlag(const char * const element, unsigned fieldOffset,
+                           unsigned fieldSize, BOOL flag);
+    HRESULT WriteFieldPointerAnnotated(const char * const element,
+                                       unsigned fieldOffset, unsigned fieldSize,
+                                       SIZE_T ptr, const WCHAR * const annotation);
+
+    //produces <element base="base" size="size"/>
+    HRESULT WriteFieldAddress(const char * const element, unsigned fieldOffset,
+                              unsigned fieldSize, SIZE_T base, SIZE_T size);
+    //For text, it produces "(element)" or "" instead of "true" or "false".
+#if 0
+    HRESULT WriteFieldFlag(const char * const element, unsigned offset, BOOL flag);
+    HRESULT WriteFieldInt(const char * const element, unsigned offset, int value);
+    HRESULT WriteFieldUInt(const char * const element, unsigned offset, DWORD value);
+
+
+    HRESULT WriteFieldEnumerated(const char * const element, unsigned offset,
+                                 DWORD value, const WCHAR * const mnemonic);
+#endif
+    //structures are like categories and elements, but they have a base and
+    //size.
+    HRESULT StartStructure( const char * const name, SIZE_T ptr, SIZE_T size );
+    HRESULT StartStructureWithNegSpace( const char * const name, SIZE_T ptr,
+                                        SIZE_T startPtr, SIZE_T totalSize );
+    HRESULT StartStructureWithOffset( const char * const name, unsigned fieldOffset,
+                                      unsigned fieldSize, SIZE_T ptr,
+                                      SIZE_T size );
+    HRESULT EndStructure();
+#if 0
+    //produces <element>ptr+size</element>
+    HRESULT WriteElementPointerWithSize(const char * const element, SIZE_T ptr,
+                                        SIZE_T size);
+    HRESULT WriteElementInt(const char * const element, int value);
+
+
+    HRESULT WriteFixupDescription(SIZE_T ptr, DWORD tagged, SIZE_T handle,
+                                  const char * const name );
+
+
+    //structures are like categories and elements, but they have a base and
+    //size.
+    HRESULT StartStructure( const char * const name, SIZE_T ptr, SIZE_T size );
+    HRESULT EndStructure();
+
+#endif
+};
+
+/*
+ * Interface representing the process itself. Can be obtained via
+ * CLRDataCreateInstance.
+ */
+[
+    object,
+    local,
+    uuid(5c552ab6-fc09-4cb3-8e36-22fa03c798b7)
+]
+interface IXCLRDataProcess : IUnknown
+{
+    /*
+     * Flush any cached data for this process. All ICLR* interfaces obtained
+     * for this process will become invalid with this call.
+     */
+    HRESULT Flush();
+
+    /*
+     * Begin enumeration of tasks.
+     * Returns S_FALSE if the enumeration is empty.
+     */
+    HRESULT StartEnumTasks([out] CLRDATA_ENUM* handle);
+
+    /*
+     * Get the next entry in the enumeration.
+     * Returns S_FALSE if there isn't a next entry.
+     */
+    HRESULT EnumTask([in, out] CLRDATA_ENUM* handle,
+                     [out] IXCLRDataTask** task);
+
+    /*
+     * Release the enumerator.
+     */
+    HRESULT EndEnumTasks([in] CLRDATA_ENUM handle);
+
+    /*
+     * Get the managed task running on the given OS thread ID
+     */
+    HRESULT GetTaskByOSThreadID([in] ULONG32 osThreadID,
+                                [out] IXCLRDataTask** task);
+
+    /*
+     * Get the managed task corresponding to the given task ID.
+     */
+    HRESULT GetTaskByUniqueID([in] ULONG64 taskID,
+                              [out] IXCLRDataTask** task);
+
+    /*
+     * Get state flags, defined in CLRDataProcessFlag.
+     */
+    HRESULT GetFlags([out] ULONG32* flags);
+
+    /*
+     * Determine whether the given interface represents
+     * the same target state.
+     */
+    HRESULT IsSameObject([in] IXCLRDataProcess* process);
+
+    /*
+     * Get the managed object representing the process.
+     */
+    HRESULT GetManagedObject([out] IXCLRDataValue** value);
+
+    /*
+     * Mark the process so that it attempts to reach the
+     * desired execution state the next time it executes.
+     */
+    HRESULT GetDesiredExecutionState([out] ULONG32* state);
+    HRESULT SetDesiredExecutionState([in] ULONG32 state);
+
+    /*
+     * Return an indicator of the type of data referred
+     * to by the given address.
+     */
+    HRESULT GetAddressType([in] CLRDATA_ADDRESS address,
+                           [out] CLRDataAddressType* type);
+
+    /*
+     * Get a name for the given address if
+     * the address refers to non-managed-method information.
+     * Method names can be retrieved by using GetMethodInstanceByAddress
+     * and GetName on the method instance.
+     *
+     * Returns S_FALSE if the buffer is not large enough for the name,
+     * and sets nameLen to be the buffer length needed.
+     */
+    HRESULT GetRuntimeNameByAddress([in] CLRDATA_ADDRESS address,
+                                    [in] ULONG32 flags,
+                                    [in] ULONG32 bufLen,
+                                    [out] ULONG32 *nameLen,
+                                    [out, size_is(bufLen)] WCHAR nameBuf[],
+                                    [out] CLRDATA_ADDRESS* displacement);
+
+    /*
+     * App domain enumeration.
+     */
+    HRESULT StartEnumAppDomains([out] CLRDATA_ENUM* handle);
+    HRESULT EnumAppDomain([in, out] CLRDATA_ENUM* handle,
+                          [out] IXCLRDataAppDomain** appDomain);
+    HRESULT EndEnumAppDomains([in] CLRDATA_ENUM handle);
+
+    /*
+     * Find an app domain by its unique ID.
+     */
+    HRESULT GetAppDomainByUniqueID([in] ULONG64 id,
+                                   [out] IXCLRDataAppDomain** appDomain);
+
+    /*
+     * Assembly enumeration.
+     */
+    HRESULT StartEnumAssemblies([out] CLRDATA_ENUM* handle);
+    HRESULT EnumAssembly([in, out] CLRDATA_ENUM* handle,
+                         [out] IXCLRDataAssembly **assembly);
+    HRESULT EndEnumAssemblies([in] CLRDATA_ENUM handle);
+
+    /*
+     * Module enumeration.
+     */
+    HRESULT StartEnumModules([out] CLRDATA_ENUM* handle);
+    HRESULT EnumModule([in, out] CLRDATA_ENUM* handle,
+                       [out] IXCLRDataModule **mod);
+    HRESULT EndEnumModules([in] CLRDATA_ENUM handle);
+
+    /*
+     * Look up a module by address.
+     */
+    HRESULT GetModuleByAddress([in] CLRDATA_ADDRESS address,
+                               [out] IXCLRDataModule** mod);
+
+    /*
+     * Look up method instances by native code address.
+     */
+    HRESULT StartEnumMethodInstancesByAddress([in] CLRDATA_ADDRESS address,
+                                              [in] IXCLRDataAppDomain* appDomain,
+                                              [out] CLRDATA_ENUM* handle);
+    HRESULT EnumMethodInstanceByAddress([in] CLRDATA_ENUM* handle,
+                                        [out] IXCLRDataMethodInstance** method);
+    HRESULT EndEnumMethodInstancesByAddress([in] CLRDATA_ENUM handle);
+
+    /*
+     * Look up the name and value of a piece of data by its address.
+     */
+    HRESULT GetDataByAddress([in] CLRDATA_ADDRESS address,
+                             [in] ULONG32 flags,
+                             [in] IXCLRDataAppDomain* appDomain,
+                             [in] IXCLRDataTask* tlsTask,
+                             [in] ULONG32 bufLen,
+                             [out] ULONG32 *nameLen,
+                             [out, size_is(bufLen)] WCHAR nameBuf[],
+                             [out] IXCLRDataValue** value,
+                             [out] CLRDATA_ADDRESS* displacement);
+
+    /*
+     * Get managed state, if any, for the given system exception.
+     * OBSOLETE, DO NOT USE.
+     */
+    HRESULT GetExceptionStateByExceptionRecord([in] EXCEPTION_RECORD64* record,
+                                               [out] IXCLRDataExceptionState **exState);
+
+    /*
+     * Translate a system exception record into
+     * a particular kind of notification if possible.
+     */
+    HRESULT TranslateExceptionRecordToNotification([in] EXCEPTION_RECORD64* record,
+                                                   [in] IXCLRDataExceptionNotification* notify);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * Create a simple value based on the given
+     * type and address information.
+     */
+    HRESULT CreateMemoryValue([in] IXCLRDataAppDomain* appDomain,
+                              [in] IXCLRDataTask* tlsTask,
+                              [in] IXCLRDataTypeInstance* type,
+                              [in] CLRDATA_ADDRESS addr,
+                              [out] IXCLRDataValue** value);
+
+    /*
+     * Update all existing notifications for a module.
+     * If module is NULL all modules are affected.
+     */
+    HRESULT SetAllTypeNotifications(IXCLRDataModule* mod,
+                                    ULONG32 flags);
+    HRESULT SetAllCodeNotifications(IXCLRDataModule* mod,
+                                    ULONG32 flags);
+
+    /*
+     * Request notification when a type is
+     * loaded or unloaded.
+     * If mods is NULL singleMod is used as
+     * the module for all tokens.
+     * If flags is NULL singleFlags is used as
+     * the flags for all tokens.
+     */
+    HRESULT GetTypeNotifications([in] ULONG32 numTokens,
+                                 [in, size_is(numTokens)]
+                                 IXCLRDataModule* mods[],
+                                 [in] IXCLRDataModule* singleMod,
+                                 [in, size_is(numTokens)] mdTypeDef tokens[],
+                                 [out, size_is(numTokens)] ULONG32 flags[]);
+    HRESULT SetTypeNotifications([in] ULONG32 numTokens,
+                                 [in, size_is(numTokens)]
+                                 IXCLRDataModule* mods[],
+                                 [in] IXCLRDataModule* singleMod,
+                                 [in, size_is(numTokens)] mdTypeDef tokens[],
+                                 [in, size_is(numTokens)] ULONG32 flags[],
+                                 [in] ULONG32 singleFlags);
+
+    /*
+     * Request notification when code is generated or
+     * discarded for a method.
+     * If mods is NULL singleMod is used as
+     * the module for all tokens.
+     * If flags is NULL singleFlags is used as
+     * the flags for all tokens.
+     */
+    HRESULT GetCodeNotifications([in] ULONG32 numTokens,
+                                 [in, size_is(numTokens)]
+                                 IXCLRDataModule* mods[],
+                                 [in] IXCLRDataModule* singleMod,
+                                 [in, size_is(numTokens)] mdMethodDef tokens[],
+                                 [out, size_is(numTokens)] ULONG32 flags[]);
+    HRESULT SetCodeNotifications([in] ULONG32 numTokens,
+                                 [in, size_is(numTokens)]
+                                 IXCLRDataModule* mods[],
+                                 [in] IXCLRDataModule* singleMod,
+                                 [in, size_is(numTokens)] mdMethodDef tokens[],
+                                 [in, size_is(numTokens)] ULONG32 flags[],
+                                 [in] ULONG32 singleFlags);
+
+    /*
+     * Control notifications other than code and
+     * type notifications.
+     */
+    HRESULT GetOtherNotificationFlags([out] ULONG32* flags);
+    HRESULT SetOtherNotificationFlags([in] ULONG32 flags);
+
+    /*
+     * Look up method definitions by IL code address.
+     */
+    HRESULT StartEnumMethodDefinitionsByAddress([in] CLRDATA_ADDRESS address,
+                                                [out] CLRDATA_ENUM* handle);
+    HRESULT EnumMethodDefinitionByAddress([in] CLRDATA_ENUM* handle,
+                                          [out] IXCLRDataMethodDefinition** method);
+    HRESULT EndEnumMethodDefinitionsByAddress([in] CLRDATA_ENUM handle);
+
+    /*
+     * Given an address which is a CLR stub
+     * (and potentially state from a previous follow)
+     * determine the next execution address at which
+     * to check whether the stub has been exited.
+     * OBSOLETE: Use FollowStub2.
+     */
+    HRESULT FollowStub([in] ULONG32 inFlags,
+                       [in] CLRDATA_ADDRESS inAddr,
+                       [in] CLRDATA_FOLLOW_STUB_BUFFER* inBuffer,
+                       [out] CLRDATA_ADDRESS* outAddr,
+                       [out] CLRDATA_FOLLOW_STUB_BUFFER* outBuffer,
+                       [out] ULONG32* outFlags);
+
+    /* Requires revision 7. */
+    HRESULT FollowStub2([in] IXCLRDataTask* task,
+                        [in] ULONG32 inFlags,
+                        [in] CLRDATA_ADDRESS inAddr,
+                        [in] CLRDATA_FOLLOW_STUB_BUFFER* inBuffer,
+                        [out] CLRDATA_ADDRESS* outAddr,
+                        [out] CLRDATA_FOLLOW_STUB_BUFFER* outBuffer,
+                        [out] ULONG32* outFlags);
+    HRESULT DumpNativeImage([in] CLRDATA_ADDRESS loadedBase,
+                            [in] LPCWSTR name,
+                            [in] IXCLRDataDisplay* display,
+                            [in] IXCLRLibrarySupport* libSupport,
+                            [in] IXCLRDisassemblySupport* dis);
+}
+#pragma warning(pop)
+
+/*
+ * Types used in IXCLRDataProcess2 and IXCLRDataExceptionNotification3
+ */
+
+typedef enum
+{
+    GC_MARK_END = 1,
+    GC_EVENT_TYPE_MAX,
+} GcEvt_t;
+
+typedef struct
+{
+    GcEvt_t typ;
+
+    [switch_is(typ)]
+    union
+    {
+    	[case(GC_MARK_END)]
+        int condemnedGeneration;
+    };
+} GcEvtArgs;
+
+
+[
+    object,
+    local,
+    uuid(5c552ab6-fc09-4cb3-8e36-22fa03c798b8)
+]
+interface IXCLRDataProcess2 : IXCLRDataProcess
+{
+    /*
+     * Request notification when a GC is triggered.
+     * GcEvtArgs specifies exactly which GC events
+     * are of interest.
+     */
+    /*
+     * On entry gcEvtArgs is a mask, specifying all events of
+     * interest, in accordance with GcNotification::IsMatch
+     * On exit it represents the first entry matching the input.
+     */
+	HRESULT GetGcNotification([in, out] GcEvtArgs* gcEvtArgs);
+	HRESULT SetGcNotification([in] GcEvtArgs gcEvtArgs);
+}
+
+typedef enum
+{
+    CLRDATA_DOMAIN_DEFAULT = 0x00000000,
+} CLRDataAppDomainFlag;
+
+#pragma warning(push)
+#pragma warning(disable:28718)	/* suppress warning 28718 for interface IXCLRDataAppDomain */
+[
+    object,
+    local,
+    uuid(7CA04601-C702-4670-A63C-FA44F7DA7BD5)
+]
+interface IXCLRDataAppDomain : IUnknown
+{
+    /*
+     * Get the process that contains this app domain.
+     */
+    HRESULT GetProcess([out] IXCLRDataProcess** process);
+
+    /*
+     * Get the app domain's name.
+     */
+    HRESULT GetName([in] ULONG32 bufLen,
+                    [out] ULONG32 *nameLen,
+                    [out, size_is(bufLen)] WCHAR name[]);
+
+    /*
+     * Get a unique, stable identifier for this object.
+     */
+    HRESULT GetUniqueID([out] ULONG64* id);
+
+    /*
+     * Get state flags, defined in CLRDataAppDomainFlag.
+     */
+    HRESULT GetFlags([out] ULONG32* flags);
+
+    /*
+     * Determine whether the given interface represents
+     * the same target state.
+     */
+    HRESULT IsSameObject([in] IXCLRDataAppDomain* appDomain);
+
+    /*
+     * Get the managed object representing the app domain.
+     */
+    HRESULT GetManagedObject([out] IXCLRDataValue** value);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+}
+#pragma warning(pop)
+
+typedef enum
+{
+    CLRDATA_ASSEMBLY_DEFAULT = 0x00000000,
+} CLRDataAssemblyFlag;
+
+#pragma warning(push)
+#pragma warning(disable:28718)
+[
+    object,
+    local,
+    uuid(2FA17588-43C2-46ab-9B51-C8F01E39C9AC)
+]
+interface IXCLRDataAssembly : IUnknown
+{
+    /*
+     * Enumerate modules in the assembly.
+     */
+    HRESULT StartEnumModules([out] CLRDATA_ENUM* handle);
+    HRESULT EnumModule([in, out] CLRDATA_ENUM* handle,
+                       [out] IXCLRDataModule **mod);
+    HRESULT EndEnumModules([in] CLRDATA_ENUM handle);
+
+    /*
+     * Get the assembly's base name.
+     */
+    HRESULT GetName([in] ULONG32 bufLen,
+                    [out] ULONG32 *nameLen,
+                    [out, size_is(bufLen)] WCHAR name[]);
+
+    /*
+     * Get the full path and filename for the assembly,
+     * if there is one.
+     */
+    HRESULT GetFileName([in] ULONG32 bufLen,
+                        [out] ULONG32 *nameLen,
+                        [out, size_is(bufLen)] WCHAR name[]);
+
+    /*
+     * Get state flags, defined in CLRDataAssemblyFlag.
+     */
+    HRESULT GetFlags([out] ULONG32* flags);
+
+    /*
+     * Determine whether the given interface represents
+     * the same target state.
+     */
+    HRESULT IsSameObject([in] IXCLRDataAssembly* assembly);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * Enumerate the app domains using this assembly.
+     */
+    HRESULT StartEnumAppDomains([out] CLRDATA_ENUM* handle);
+    HRESULT EnumAppDomain([in, out] CLRDATA_ENUM* handle,
+                          [out] IXCLRDataAppDomain** appDomain);
+    HRESULT EndEnumAppDomains([in] CLRDATA_ENUM handle);
+
+    /*
+     * Get the metadata display name for the assembly.
+     * Requires revision 2.
+     */
+    HRESULT GetDisplayName([in] ULONG32 bufLen,
+                           [out] ULONG32 *nameLen,
+                           [out, size_is(bufLen)] WCHAR name[]);
+}
+#pragma warning(pop)
+
+typedef enum
+{
+    CLRDATA_MODULE_DEFAULT          = 0x00000000,
+    CLRDATA_MODULE_IS_DYNAMIC       = 0x00000001,
+    CLRDATA_MODULE_IS_MEMORY_STREAM = 0x00000002,
+    CLRDATA_MODULE_IS_MAIN_MODULE   = 0x00000004,
+} CLRDataModuleFlag;
+
+typedef enum
+{
+    CLRDATA_MODULE_PE_FILE,
+    CLRDATA_MODULE_PREJIT_FILE,
+    CLRDATA_MODULE_MEMORY_STREAM,
+    CLRDATA_MODULE_OTHER
+} CLRDataModuleExtentType;
+
+typedef struct
+{
+    CLRDATA_ADDRESS base;
+    ULONG32 length;
+    CLRDataModuleExtentType type;
+} CLRDATA_MODULE_EXTENT;
+
+typedef enum
+{
+    CLRDATA_TYPENOTIFY_NONE     = 0x00000000,
+    CLRDATA_TYPENOTIFY_LOADED   = 0x00000001,
+    CLRDATA_TYPENOTIFY_UNLOADED = 0x00000002,
+} CLRDataTypeNotification;
+
+typedef enum
+{
+    CLRDATA_METHNOTIFY_NONE      = 0x00000000,
+    CLRDATA_METHNOTIFY_GENERATED = 0x00000001,
+    CLRDATA_METHNOTIFY_DISCARDED = 0x00000002,
+} CLRDataMethodCodeNotification;
+
+#pragma warning(push)
+#pragma warning(disable:28718)
+/*
+ * Represents a loaded module.
+ *
+ * Can be QI'd for a metadata interface or a symbol-store interface.
+ */
+[
+    object,
+    local,
+    uuid(88E32849-0A0A-4cb0-9022-7CD2E9E139E2)
+]
+interface IXCLRDataModule : IUnknown
+{
+    /*
+     * Enumerate assemblies this module is part of.
+     * Module-to-assembly is an enumeration as a
+     * shared module might be part of more than one assembly.
+     */
+    HRESULT StartEnumAssemblies([out] CLRDATA_ENUM* handle);
+    HRESULT EnumAssembly([in, out] CLRDATA_ENUM* handle,
+                         [out] IXCLRDataAssembly **assembly);
+    HRESULT EndEnumAssemblies([in] CLRDATA_ENUM handle);
+
+    /*
+     * Enumerate types in this module.
+     */
+    HRESULT StartEnumTypeDefinitions([out] CLRDATA_ENUM* handle);
+    HRESULT EnumTypeDefinition([in, out] CLRDATA_ENUM* handle,
+                               [out] IXCLRDataTypeDefinition **typeDefinition);
+    HRESULT EndEnumTypeDefinitions([in] CLRDATA_ENUM handle);
+
+    HRESULT StartEnumTypeInstances([in] IXCLRDataAppDomain* appDomain,
+                                   [out] CLRDATA_ENUM* handle);
+    HRESULT EnumTypeInstance([in, out] CLRDATA_ENUM* handle,
+                             [out] IXCLRDataTypeInstance **typeInstance);
+    HRESULT EndEnumTypeInstances([in] CLRDATA_ENUM handle);
+
+    /*
+     * Look up types by name.
+     */
+    HRESULT StartEnumTypeDefinitionsByName([in] LPCWSTR name,
+                                           [in] ULONG32 flags,
+                                           [out] CLRDATA_ENUM* handle);
+    HRESULT EnumTypeDefinitionByName([in,out] CLRDATA_ENUM* handle,
+                                     [out] IXCLRDataTypeDefinition** type);
+    HRESULT EndEnumTypeDefinitionsByName([in] CLRDATA_ENUM handle);
+
+    HRESULT StartEnumTypeInstancesByName([in] LPCWSTR name,
+                                         [in] ULONG32 flags,
+                                         [in] IXCLRDataAppDomain* appDomain,
+                                         [out] CLRDATA_ENUM* handle);
+    HRESULT EnumTypeInstanceByName([in,out] CLRDATA_ENUM* handle,
+                                   [out] IXCLRDataTypeInstance** type);
+    HRESULT EndEnumTypeInstancesByName([in] CLRDATA_ENUM handle);
+
+    /*
+     * Get a type definition by metadata token.
+     */
+    HRESULT GetTypeDefinitionByToken([in] mdTypeDef token,
+                                     [out] IXCLRDataTypeDefinition** typeDefinition);
+
+    /*
+     * Look up methods by name.
+     */
+    HRESULT StartEnumMethodDefinitionsByName([in] LPCWSTR name,
+                                             [in] ULONG32 flags,
+                                             [out] CLRDATA_ENUM* handle);
+    HRESULT EnumMethodDefinitionByName([in,out] CLRDATA_ENUM* handle,
+                                       [out] IXCLRDataMethodDefinition** method);
+    HRESULT EndEnumMethodDefinitionsByName([in] CLRDATA_ENUM handle);
+
+    HRESULT StartEnumMethodInstancesByName([in] LPCWSTR name,
+                                           [in] ULONG32 flags,
+                                           [in] IXCLRDataAppDomain* appDomain,
+                                           [out] CLRDATA_ENUM* handle);
+    HRESULT EnumMethodInstanceByName([in,out] CLRDATA_ENUM* handle,
+                                     [out] IXCLRDataMethodInstance** method);
+    HRESULT EndEnumMethodInstancesByName([in] CLRDATA_ENUM handle);
+
+    /*
+     * Get a method definition by metadata token.
+     */
+    HRESULT GetMethodDefinitionByToken([in] mdMethodDef token,
+                                       [out] IXCLRDataMethodDefinition** methodDefinition);
+
+    /*
+     * Look up pieces of data by name.
+     */
+    HRESULT StartEnumDataByName([in] LPCWSTR name,
+                                [in] ULONG32 flags,
+                                [in] IXCLRDataAppDomain* appDomain,
+                                [in] IXCLRDataTask* tlsTask,
+                                [out] CLRDATA_ENUM* handle);
+    HRESULT EnumDataByName([in,out] CLRDATA_ENUM* handle,
+                           [out] IXCLRDataValue** value);
+    HRESULT EndEnumDataByName([in] CLRDATA_ENUM handle);
+
+    /*
+     * Get the module's base name.
+     */
+    HRESULT GetName([in] ULONG32 bufLen,
+                    [out] ULONG32 *nameLen,
+                    [out, size_is(bufLen)] WCHAR name[]);
+
+    /*
+     * Get the full path and filename for the module,
+     * if there is one.
+     */
+    HRESULT GetFileName([in] ULONG32 bufLen,
+                        [out] ULONG32 *nameLen,
+                        [out, size_is(bufLen)] WCHAR name[]);
+
+    /*
+     * Get state flags, defined in CLRDataModuleFlag.
+     */
+    HRESULT GetFlags([out] ULONG32* flags);
+
+    /*
+     * Determine whether the given interface represents
+     * the same target state.
+     */
+    HRESULT IsSameObject([in] IXCLRDataModule* mod);
+
+    /*
+     * Get the memory regions associated with this module.
+     */
+    HRESULT StartEnumExtents([out] CLRDATA_ENUM* handle);
+    HRESULT EnumExtent([in, out] CLRDATA_ENUM* handle,
+                       [out] CLRDATA_MODULE_EXTENT* extent);
+    HRESULT EndEnumExtents([in] CLRDATA_ENUM handle);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * Enumerate the app domains using this module.
+     */
+    HRESULT StartEnumAppDomains([out] CLRDATA_ENUM* handle);
+    HRESULT EnumAppDomain([in, out] CLRDATA_ENUM* handle,
+                          [out] IXCLRDataAppDomain** appDomain);
+    HRESULT EndEnumAppDomains([in] CLRDATA_ENUM handle);
+
+    /*
+     * Get the module's version ID.
+     * Requires revision 3.
+     */
+    HRESULT GetVersionId([out] GUID* vid);
+}
+#pragma warning(pop)
+
+
+/*
+ * Represents additional APIs for a loaded module.
+ *
+ */
+[
+    object,
+    local,
+    uuid(34625881-7EB3-4524-817B-8DB9D064C760)
+]
+interface IXCLRDataModule2 : IUnknown
+{
+  /*
+   * SetJITCompilerFlags sets the flags that control the JIT compiler. If the set of flags is invalid,
+   * the function will fail. This function can only be called from within the LoadModule callback
+   * for the given module.
+   */
+    HRESULT SetJITCompilerFlags( [in] DWORD dwFlags );
+}
+
+#pragma warning(push)
+#pragma warning(disable:28718)	/* suppress warning 28718 for interface IXCLRDataTypeDefinition */
+[
+    object,
+    local,
+    uuid(4675666C-C275-45b8-9F6C-AB165D5C1E09)
+]
+interface IXCLRDataTypeDefinition : IUnknown
+{
+    /*
+     * Get the module this type is part of.
+     */
+    HRESULT GetModule([out] IXCLRDataModule **mod);
+
+    /*
+     * Enumerate the methods for this type.
+     */
+    HRESULT StartEnumMethodDefinitions([out] CLRDATA_ENUM* handle);
+    HRESULT EnumMethodDefinition([in, out] CLRDATA_ENUM* handle,
+                                 [out] IXCLRDataMethodDefinition **methodDefinition);
+    HRESULT EndEnumMethodDefinitions([in] CLRDATA_ENUM handle);
+
+    /*
+     * Look up methods by name.
+     */
+    HRESULT StartEnumMethodDefinitionsByName([in] LPCWSTR name,
+                                             [in] ULONG32 flags,
+                                             [out] CLRDATA_ENUM* handle);
+    HRESULT EnumMethodDefinitionByName([in,out] CLRDATA_ENUM* handle,
+                                       [out] IXCLRDataMethodDefinition** method);
+    HRESULT EndEnumMethodDefinitionsByName([in] CLRDATA_ENUM handle);
+
+    /*
+     * Get a method definition by metadata token.
+     */
+    HRESULT GetMethodDefinitionByToken([in] mdMethodDef token,
+                                       [out] IXCLRDataMethodDefinition** methodDefinition);
+
+    /*
+     * Enumerate instances of this definition.
+     */
+    HRESULT StartEnumInstances([in] IXCLRDataAppDomain* appDomain,
+                               [out] CLRDATA_ENUM* handle);
+    HRESULT EnumInstance([in, out] CLRDATA_ENUM* handle,
+                         [out] IXCLRDataTypeInstance **instance);
+    HRESULT EndEnumInstances([in] CLRDATA_ENUM handle);
+
+    /*
+     * Get the namespace-qualified name for this type definition.
+     */
+    HRESULT GetName([in] ULONG32 flags,
+                    [in] ULONG32 bufLen,
+                    [out] ULONG32 *nameLen,
+                    [out, size_is(bufLen)] WCHAR nameBuf[]);
+
+    /*
+     * Get the metadata token and scope.
+     */
+    HRESULT GetTokenAndScope([out] mdTypeDef* token,
+                             [out] IXCLRDataModule **mod);
+
+    /*
+     * Get standard element type.
+     */
+    HRESULT GetCorElementType([out] CorElementType* type);
+
+    /*
+     * Get state flags, defined in CLRDataTypeFlag.
+     */
+    HRESULT GetFlags([out] ULONG32* flags);
+
+    /*
+     * Determine whether the given interface represents
+     * the same target state.
+     */
+    HRESULT IsSameObject([in] IXCLRDataTypeDefinition* type);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * If this is an array type, return the number
+     * of dimensions in the array.
+     */
+    HRESULT GetArrayRank([out] ULONG32* rank);
+
+    /*
+     * Get the base type of this type, if any.
+     */
+    HRESULT GetBase([out] IXCLRDataTypeDefinition** base);
+
+    /*
+     * Get the number of fields in the type.
+     */
+    HRESULT GetNumFields([in] ULONG32 flags,
+                         [out] ULONG32* numFields);
+
+    /*
+     * Enumerate the fields for this type.
+     * OBSOLETE: Use EnumField2.
+     */
+    HRESULT StartEnumFields([in] ULONG32 flags,
+                            [out] CLRDATA_ENUM* handle);
+    HRESULT EnumField([in, out] CLRDATA_ENUM* handle,
+                      [in] ULONG32 nameBufLen,
+                      [out] ULONG32* nameLen,
+                      [out, size_is(nameBufLen)] WCHAR nameBuf[],
+                      [out] IXCLRDataTypeDefinition** type,
+                      [out] ULONG32* flags,
+                      [out] mdFieldDef* token);
+    HRESULT EndEnumFields([in] CLRDATA_ENUM handle);
+
+    HRESULT StartEnumFieldsByName([in] LPCWSTR name,
+                                  [in] ULONG32 nameFlags,
+                                  [in] ULONG32 fieldFlags,
+                                  [out] CLRDATA_ENUM* handle);
+    HRESULT EnumFieldByName([in, out] CLRDATA_ENUM* handle,
+                            [out] IXCLRDataTypeDefinition** type,
+                            [out] ULONG32* flags,
+                            [out] mdFieldDef* token);
+    HRESULT EndEnumFieldsByName([in] CLRDATA_ENUM handle);
+
+    /*
+     * Look up information for a specific field by token.
+     */
+    HRESULT GetFieldByToken([in] mdFieldDef token,
+                            [in] ULONG32 nameBufLen,
+                            [out] ULONG32* nameLen,
+                            [out, size_is(nameBufLen)] WCHAR nameBuf[],
+                            [out] IXCLRDataTypeDefinition** type,
+                            [out] ULONG32* flags);
+
+    /*
+     * Request notification when the given type is
+     * loaded or unloaded.
+     */
+    HRESULT GetTypeNotification([out] ULONG32* flags);
+    HRESULT SetTypeNotification([in] ULONG32 flags);
+
+    HRESULT EnumField2([in, out] CLRDATA_ENUM* handle,
+                       [in] ULONG32 nameBufLen,
+                       [out] ULONG32* nameLen,
+                       [out, size_is(nameBufLen)] WCHAR nameBuf[],
+                       [out] IXCLRDataTypeDefinition** type,
+                       [out] ULONG32* flags,
+                       [out] IXCLRDataModule** tokenScope,
+                       [out] mdFieldDef* token);
+    HRESULT EnumFieldByName2([in, out] CLRDATA_ENUM* handle,
+                             [out] IXCLRDataTypeDefinition** type,
+                             [out] ULONG32* flags,
+                             [out] IXCLRDataModule** tokenScope,
+                             [out] mdFieldDef* token);
+    HRESULT GetFieldByToken2([in] IXCLRDataModule* tokenScope,
+                             [in] mdFieldDef token,
+                             [in] ULONG32 nameBufLen,
+                             [out] ULONG32* nameLen,
+                             [out, size_is(nameBufLen)] WCHAR nameBuf[],
+                             [out] IXCLRDataTypeDefinition** type,
+                             [out] ULONG32* flags);
+}
+#pragma warning(pop)
+
+#pragma warning(push)
+#pragma warning(disable:28718)
+[
+    object,
+    local,
+    uuid(4D078D91-9CB3-4b0d-97AC-28C8A5A82597)
+]
+interface IXCLRDataTypeInstance : IUnknown
+{
+    /*
+     * Enumerate method instances within this type.
+     */
+    HRESULT StartEnumMethodInstances([out] CLRDATA_ENUM* handle);
+    HRESULT EnumMethodInstance([in, out] CLRDATA_ENUM* handle,
+                               [out] IXCLRDataMethodInstance** methodInstance);
+    HRESULT EndEnumMethodInstances([in] CLRDATA_ENUM handle);
+
+    /*
+     * Look up method instances by name.
+     */
+    HRESULT StartEnumMethodInstancesByName([in] LPCWSTR name,
+                                           [in] ULONG32 flags,
+                                           [out] CLRDATA_ENUM* handle);
+    HRESULT EnumMethodInstanceByName([in,out] CLRDATA_ENUM* handle,
+                                     [out] IXCLRDataMethodInstance** method);
+    HRESULT EndEnumMethodInstancesByName([in] CLRDATA_ENUM handle);
+
+    /*
+     * Get the number of static fields in the type.
+     * OBSOLETE: Use GetNumStaticFields2.
+     */
+    HRESULT GetNumStaticFields([out] ULONG32* numFields);
+
+    /*
+     * Get one static field of the type.
+     *
+     * Because static field ordering is not fixed, can also return name
+     * information and/or the metadata token, if the caller passes
+     * in appropriate values.
+     * OBSOLETE: Use EnumStaticField.
+     */
+    HRESULT GetStaticFieldByIndex([in] ULONG32 index,
+                                  [in] IXCLRDataTask* tlsTask,
+                                  [out] IXCLRDataValue **field,
+                                  [in] ULONG32 bufLen,
+                                  [out] ULONG32 *nameLen,
+                                  [out, size_is(bufLen)] WCHAR nameBuf[],
+                                  [out] mdFieldDef* token);
+
+    /*
+     * Look up fields by name.
+     * OBSOLETE: Use EnumStaticFieldByName2.
+     */
+    HRESULT StartEnumStaticFieldsByName([in] LPCWSTR name,
+                                        [in] ULONG32 flags,
+                                        [in] IXCLRDataTask* tlsTask,
+                                        [out] CLRDATA_ENUM* handle);
+    HRESULT EnumStaticFieldByName([in,out] CLRDATA_ENUM* handle,
+                                  [out] IXCLRDataValue** value);
+    HRESULT EndEnumStaticFieldsByName([in] CLRDATA_ENUM handle);
+
+    /*
+     * Enumerate this type's parameterization.
+     */
+    HRESULT GetNumTypeArguments([out] ULONG32* numTypeArgs);
+    HRESULT GetTypeArgumentByIndex([in] ULONG32 index,
+                                   [out] IXCLRDataTypeInstance** typeArg);
+
+    /*
+     * Get the fully qualified name for this type instance.
+     */
+    HRESULT GetName([in] ULONG32 flags,
+                    [in] ULONG32 bufLen,
+                    [out] ULONG32 *nameLen,
+                    [out, size_is(bufLen)] WCHAR nameBuf[]);
+
+    /*
+     * Get the module for this type instance.
+     */
+    HRESULT GetModule([out] IXCLRDataModule **mod);
+
+    /*
+     * Get the definition matching this instance.
+     */
+    HRESULT GetDefinition([out] IXCLRDataTypeDefinition **typeDefinition);
+
+    /*
+     * Get state flags, defined in CLRDataTypeFlag.
+     */
+    HRESULT GetFlags([out] ULONG32* flags);
+
+    /*
+     * Determine whether the given interface represents
+     * the same target state.
+     */
+    HRESULT IsSameObject([in] IXCLRDataTypeInstance* type);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * Get the number of static fields in the type.
+     */
+    HRESULT GetNumStaticFields2([in] ULONG32 flags,
+                                [out] ULONG32* numFields);
+
+    /*
+     * Enumerate values for the static fields of this type.
+     */
+    HRESULT StartEnumStaticFields([in] ULONG32 flags,
+                                  [in] IXCLRDataTask* tlsTask,
+                                  [out] CLRDATA_ENUM* handle);
+    HRESULT EnumStaticField([in,out] CLRDATA_ENUM* handle,
+                            [out] IXCLRDataValue** value);
+    HRESULT EndEnumStaticFields([in] CLRDATA_ENUM handle);
+
+    HRESULT StartEnumStaticFieldsByName2([in] LPCWSTR name,
+                                         [in] ULONG32 nameFlags,
+                                         [in] ULONG32 fieldFlags,
+                                         [in] IXCLRDataTask* tlsTask,
+                                         [out] CLRDATA_ENUM* handle);
+    HRESULT EnumStaticFieldByName2([in,out] CLRDATA_ENUM* handle,
+                                   [out] IXCLRDataValue** value);
+    HRESULT EndEnumStaticFieldsByName2([in] CLRDATA_ENUM handle);
+
+    /*
+     * Retrieve a static field by field metadata token.
+     */
+    HRESULT GetStaticFieldByToken([in] mdFieldDef token,
+                                  [in] IXCLRDataTask* tlsTask,
+                                  [out] IXCLRDataValue **field,
+                                  [in] ULONG32 bufLen,
+                                  [out] ULONG32 *nameLen,
+                                  [out, size_is(bufLen)] WCHAR nameBuf[]);
+
+    /*
+     * Get the base type of this type, if any.
+     */
+    HRESULT GetBase([out] IXCLRDataTypeInstance** base);
+
+    HRESULT EnumStaticField2([in,out] CLRDATA_ENUM* handle,
+                             [out] IXCLRDataValue** value,
+                             [in] ULONG32 bufLen,
+                             [out] ULONG32 *nameLen,
+                             [out, size_is(bufLen)] WCHAR nameBuf[],
+                             [out] IXCLRDataModule** tokenScope,
+                             [out] mdFieldDef* token);
+    HRESULT EnumStaticFieldByName3([in,out] CLRDATA_ENUM* handle,
+                                   [out] IXCLRDataValue** value,
+                                   [out] IXCLRDataModule** tokenScope,
+                                   [out] mdFieldDef* token);
+    HRESULT GetStaticFieldByToken2([in] IXCLRDataModule* tokenScope,
+                                   [in] mdFieldDef token,
+                                   [in] IXCLRDataTask* tlsTask,
+                                   [out] IXCLRDataValue **field,
+                                   [in] ULONG32 bufLen,
+                                   [out] ULONG32 *nameLen,
+                                   [out, size_is(bufLen)] WCHAR nameBuf[]);
+}
+#pragma warning(pop)
+
+typedef enum
+{
+    CLRDATA_SOURCE_TYPE_INVALID        = 0x00, // To indicate that nothing else applies
+} CLRDataSourceType;
+
+/*
+ * Special IL offset values for special regions.
+ */
+typedef enum
+{
+    CLRDATA_IL_OFFSET_NO_MAPPING = -1,
+    CLRDATA_IL_OFFSET_PROLOG     = -2,
+    CLRDATA_IL_OFFSET_EPILOG     = -3
+} CLRDATA_IL_OFFSET_MARKER;
+
+typedef struct
+{
+    ULONG32 ilOffset;
+    CLRDATA_ADDRESS startAddress;
+    CLRDATA_ADDRESS endAddress;
+    CLRDataSourceType type;
+} CLRDATA_IL_ADDRESS_MAP;
+
+typedef enum
+{
+    CLRDATA_METHOD_DEFAULT  = 0x00000000,
+
+    // Method has a 'this' pointer.
+    CLRDATA_METHOD_HAS_THIS = 0x00000001,
+} CLRDataMethodFlag;
+
+typedef enum
+{
+    CLRDATA_METHDEF_IL
+} CLRDataMethodDefinitionExtentType;
+
+typedef struct
+{
+    CLRDATA_ADDRESS startAddress;
+    CLRDATA_ADDRESS endAddress;
+    ULONG32 enCVersion;
+    CLRDataMethodDefinitionExtentType type;
+} CLRDATA_METHDEF_EXTENT;
+
+#pragma warning(push)
+#pragma warning(disable:28718)	/* suppress warning 28718 for interface IXCLRDataMethodDefinition */
+[
+    object,
+    local,
+    uuid(AAF60008-FB2C-420b-8FB1-42D244A54A97)
+]
+interface IXCLRDataMethodDefinition : IUnknown
+{
+    /*
+     * Get the type this method is part of.
+     */
+    HRESULT GetTypeDefinition([out] IXCLRDataTypeDefinition **typeDefinition);
+
+    /*
+     * Enumerate instances of this definition.
+     */
+    HRESULT StartEnumInstances([in] IXCLRDataAppDomain* appDomain,
+                               [out] CLRDATA_ENUM* handle);
+    HRESULT EnumInstance([in, out] CLRDATA_ENUM* handle,
+                         [out] IXCLRDataMethodInstance **instance);
+    HRESULT EndEnumInstances([in] CLRDATA_ENUM handle);
+
+    /*
+     * Get the method's name.
+     */
+    HRESULT GetName([in] ULONG32 flags,
+                    [in] ULONG32 bufLen,
+                    [out] ULONG32 *nameLen,
+                    [out, size_is(bufLen)] WCHAR name[]);
+
+    /*
+     * Get the metadata token and scope.
+     */
+    HRESULT GetTokenAndScope([out] mdMethodDef* token,
+                             [out] IXCLRDataModule **mod);
+
+    /*
+     * Get state flags, defined in CLRDataMethodFlag.
+     */
+    HRESULT GetFlags([out] ULONG32* flags);
+
+    /*
+     * Determine whether the given interface represents
+     * the same target state.
+     */
+    HRESULT IsSameObject([in] IXCLRDataMethodDefinition* method);
+
+    /*
+     * Get the latest EnC version of this method.
+     */
+    HRESULT GetLatestEnCVersion([out] ULONG32* version);
+
+    /*
+     * Get the IL code regions associated with this method.
+     */
+    HRESULT StartEnumExtents([out] CLRDATA_ENUM* handle);
+    HRESULT EnumExtent([in, out] CLRDATA_ENUM* handle,
+                       [out] CLRDATA_METHDEF_EXTENT* extent);
+    HRESULT EndEnumExtents([in] CLRDATA_ENUM handle);
+
+    /*
+     * Request notification when code is generated or
+     * discarded for the method.
+     */
+    HRESULT GetCodeNotification([out] ULONG32* flags);
+    HRESULT SetCodeNotification([in] ULONG32 flags);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * Gets the most representative start address of
+     * the native code for this method.
+     * A method may have multiple entry points, so this
+     * address is not guaranteed to be hit by all entries.
+     * Requires revision 1.
+     */
+    HRESULT GetRepresentativeEntryAddress([out] CLRDATA_ADDRESS* addr);
+
+    HRESULT HasClassOrMethodInstantiation([out] BOOL* bGeneric);
+}
+#pragma warning(pop)
+
+#pragma warning(push)
+#pragma warning(disable:28718)	/* suppress warning 28718 for interface IXCLRDataMethodInstance */
+[
+    object,
+    local,
+    uuid(ECD73800-22CA-4b0d-AB55-E9BA7E6318A5)
+]
+interface IXCLRDataMethodInstance : IUnknown
+{
+    /*
+     * Get the type instance for this method.
+     */
+    HRESULT GetTypeInstance([out] IXCLRDataTypeInstance **typeInstance);
+
+    /*
+     * Get the definition that matches this instance.
+     */
+    HRESULT GetDefinition([out] IXCLRDataMethodDefinition **methodDefinition);
+
+    /*
+     * Get the metadata token and scope.
+     */
+    HRESULT GetTokenAndScope([out] mdMethodDef* token,
+                             [out] IXCLRDataModule **mod);
+
+    /*
+     * Get the fully qualified name for this method instance.
+     */
+    HRESULT GetName([in] ULONG32 flags,
+                    [in] ULONG32 bufLen,
+                    [out] ULONG32 *nameLen,
+                    [out, size_is(bufLen)] WCHAR nameBuf[]);
+
+    /*
+     * Get state flags, defined in CLRDataMethodFlag.
+     */
+    HRESULT GetFlags([out] ULONG32* flags);
+
+    /*
+     * Determine whether the given interface represents
+     * the same target state.
+     */
+    HRESULT IsSameObject([in] IXCLRDataMethodInstance* method);
+
+    /*
+     * Get the EnC version of this instance.
+     */
+    HRESULT GetEnCVersion([out] ULONG32* version);
+
+    /*
+     * Enumerate this method's parameterization.
+     */
+    HRESULT GetNumTypeArguments([out] ULONG32* numTypeArgs);
+    HRESULT GetTypeArgumentByIndex([in] ULONG32 index,
+                                   [out] IXCLRDataTypeInstance** typeArg);
+
+    /*
+     * Access the IL <-> address mapping information.
+     */
+    HRESULT GetILOffsetsByAddress([in] CLRDATA_ADDRESS address,
+                                  [in] ULONG32 offsetsLen,
+                                  [out] ULONG32 *offsetsNeeded,
+                                  [out, size_is(offsetsLen)]
+                                  ULONG32 ilOffsets[]);
+    HRESULT GetAddressRangesByILOffset([in] ULONG32 ilOffset,
+                                       [in] ULONG32 rangesLen,
+                                       [out] ULONG32 *rangesNeeded,
+                                       [out, size_is(rangesLen)]
+                                       CLRDATA_ADDRESS_RANGE addressRanges[]);
+    HRESULT GetILAddressMap([in] ULONG32 mapLen,
+                            [out] ULONG32 *mapNeeded,
+                            [out, size_is(mapLen)]
+                            CLRDATA_IL_ADDRESS_MAP maps[]);
+
+    /*
+     * Get the native code regions associated with this method.
+     */
+    HRESULT StartEnumExtents([out] CLRDATA_ENUM* handle);
+    HRESULT EnumExtent([in, out] CLRDATA_ENUM* handle,
+                       [out] CLRDATA_ADDRESS_RANGE* extent);
+    HRESULT EndEnumExtents([in] CLRDATA_ENUM handle);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * Gets the most representative start address of
+     * the native code for this method.
+     * A method may have multiple entry points, so this
+     * address is not guaranteed to be hit by all entries.
+     * Requires revision 1.
+     */
+    HRESULT GetRepresentativeEntryAddress([out] CLRDATA_ADDRESS* addr);
+}
+#pragma warning(pop)
+
+typedef enum
+{
+    CLRDATA_TASK_DEFAULT        = 0x00000000,
+    CLRDATA_TASK_WAITING_FOR_GC = 0x00000001,
+} CLRDataTaskFlag;
+
+#pragma warning(push)
+#pragma warning(disable:28718)	/* suppress warning 28718 for interface IXCLRDataMethodInstance */
+/*
+ * Interface representing a task (thread or fiber) in the process.
+ */
+[
+    object,
+    local,
+    uuid(A5B0BEEA-EC62-4618-8012-A24FFC23934C)
+]
+interface IXCLRDataTask : IUnknown
+{
+    /*
+     * Get the process for this task.
+     */
+    HRESULT GetProcess([out] IXCLRDataProcess** process);
+
+    /*
+     * Get the application domain that the task is
+     * currently running in.  This can change over time.
+     */
+    HRESULT GetCurrentAppDomain([out] IXCLRDataAppDomain **appDomain);
+
+    /*
+     * Get a unique, stable identifier for this task.
+     */
+    HRESULT GetUniqueID([out] ULONG64* id);
+
+    /*
+     * Get state flags, defined in CLRDataTaskFlag.
+     */
+    HRESULT GetFlags([out] ULONG32* flags);
+
+    /*
+     * Determine whether the given interface represents
+     * the same target state.
+     */
+    HRESULT IsSameObject([in] IXCLRDataTask* task);
+
+    /*
+     * Get the managed object representing the task.
+     */
+    HRESULT GetManagedObject([out] IXCLRDataValue** value);
+
+    /*
+     * Mark the task so that it attempts to reach the
+     * given execution state the next time it executes.
+     */
+    HRESULT GetDesiredExecutionState([out] ULONG32* state);
+    HRESULT SetDesiredExecutionState([in] ULONG32 state);
+
+    /*
+     * Create a stack walker to walk this task's stack. The
+     * flags parameter takes a bitfield of values from the
+     * CLRDataSimpleFrameType enum.
+     */
+    HRESULT CreateStackWalk([in] ULONG32 flags,
+                            [out] IXCLRDataStackWalk** stackWalk);
+
+    /*
+     * Get the current OS thread ID for this task. If this task is on a fiber,
+     * the ID may change over time.
+     */
+    HRESULT GetOSThreadID([out] ULONG32* id);
+
+    /*
+     * Get the current context for this task, controlled by the given flags.
+     * Returns S_FALSE if the size is not large enough.
+     */
+    HRESULT GetContext([in] ULONG32 contextFlags,
+                       [in] ULONG32 contextBufSize,
+                       [out] ULONG32* contextSize,
+                       [out, size_is(contextBufSize)] BYTE contextBuf[]);
+
+    /*
+     * Destructively set the current context for this task.
+     */
+    HRESULT SetContext([in] ULONG32 contextSize,
+                       [in, size_is(contextSize)] BYTE context[]);
+
+    /*
+     * Get the current exception state for the
+     * task, if any.  This may be the first element
+     * in a list of exception states if there are
+     * nested exceptions.
+     */
+    HRESULT GetCurrentExceptionState([out] IXCLRDataExceptionState **exception);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * Get the task's name if it has one.
+     * Requires revision 1.
+     */
+    HRESULT GetName([in] ULONG32 bufLen,
+                    [out] ULONG32 *nameLen,
+                    [out, size_is(bufLen)] WCHAR name[]);
+
+    /*
+     * Get the last exception state for the
+     * task, if any.  If an exception is currently
+     * being processed the last exception state may
+     * be the same as the current exception state.
+     * Requires revision 2.
+     */
+    HRESULT GetLastExceptionState([out] IXCLRDataExceptionState **exception);
+}
+#pragma warning(pop)
+
+typedef enum
+{
+    /* Frame not recognized */
+    CLRDATA_SIMPFRAME_UNRECOGNIZED = 0x1,
+
+    /* Frame corresponds to a managed method */
+    CLRDATA_SIMPFRAME_MANAGED_METHOD = 0x2,
+
+    /* Frame corresponds to runtime-controlled managed code */
+    CLRDATA_SIMPFRAME_RUNTIME_MANAGED_CODE = 0x4,
+
+    /* Frame corresponds to runtime-controlled unmanaged code */
+    CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE = 0x8
+} CLRDataSimpleFrameType;
+
+typedef enum
+{
+    /* These are tentative values...they will likely change as
+     * implementation progresses. */
+    CLRDATA_DETFRAME_UNRECOGNIZED,
+    CLRDATA_DETFRAME_UNKNOWN_STUB,
+    CLRDATA_DETFRAME_CLASS_INIT,
+    CLRDATA_DETFRAME_EXCEPTION_FILTER,
+    CLRDATA_DETFRAME_SECURITY,
+    CLRDATA_DETFRAME_CONTEXT_POLICY,
+    CLRDATA_DETFRAME_INTERCEPTION,
+    CLRDATA_DETFRAME_PROCESS_START,
+    CLRDATA_DETFRAME_THREAD_START,
+    CLRDATA_DETFRAME_TRANSITION_TO_MANAGED,
+    CLRDATA_DETFRAME_TRANSITION_TO_UNMANAGED,
+    CLRDATA_DETFRAME_COM_INTEROP_STUB,
+    CLRDATA_DETFRAME_DEBUGGER_EVAL,
+    CLRDATA_DETFRAME_CONTEXT_SWITCH,
+    CLRDATA_DETFRAME_FUNC_EVAL,
+    CLRDATA_DETFRAME_FINALLY
+    /* There will be others */
+} CLRDataDetailedFrameType;
+
+/*
+ * StackWalk requests.
+ */
+
+typedef enum
+{
+    CLRDATA_STACK_WALK_REQUEST_SET_FIRST_FRAME = 0xe1000000,
+} CLRDataStackWalkRequest;
+
+/*
+ * SetContext flags.
+ */
+
+typedef enum
+{
+    /* Context being set is the result of stack unwinding. */
+    CLRDATA_STACK_SET_UNWIND_CONTEXT  = 0x00000000,
+    /* Context being set is the "current" context. */
+    CLRDATA_STACK_SET_CURRENT_CONTEXT = 0x00000001,
+} CLRDataStackSetContextFlag;
+
+/*
+ * Stack-walker interface.
+ */
+[
+    object,
+    local,
+    uuid(E59D8D22-ADA7-49a2-89B5-A415AFCFC95F)
+]
+interface IXCLRDataStackWalk : IUnknown
+{
+    /*
+     * Get the current context of this stack walk.
+     * This is the original context with any unwinding
+     * applied to it.  As unwinding may only restore
+     * a subset of the registers, such as only non-volatile
+     * registers, the context may not exactly match the
+     * register state at the time of the actual call.
+     */
+    HRESULT GetContext([in] ULONG32 contextFlags,
+                       [in] ULONG32 contextBufSize,
+                       [out] ULONG32* contextSize,
+                       [out, size_is(contextBufSize)] BYTE contextBuf[]);
+
+    /*
+     * Change the current context of this stack walk, allowing the
+     * debugger to move it to an arbitrary context. Does not actually
+     * alter the current context of the thread whose stack is being walked.
+     * OBSOLETE: Use SetContext2.
+     */
+    HRESULT SetContext([in] ULONG32 contextSize,
+                       [in, size_is(contextSize)] BYTE context[]);
+
+    /*
+     * Attempt to advance the stack walk to the next frame that
+     * matches the stack walk's filter. If the current frame type is
+     * CLRDATA_UNRECOGNIZED_FRAME, Next() will be unable to
+     * advance. (The debugger will have to walk the unrecognized frame
+     * itself, reset the walk's context, and try again.)
+     *
+     * Upon creation, the stack walk is positioned "before" the first
+     * frame on the stack.  Debuggers must call Next() to advance to
+     * the first frame before any other functions will work. The
+     * function will output S_FALSE when there are no more frames that
+     * meet its filter criteria.
+     */
+    HRESULT Next();
+
+    /*
+     * Return the number of bytes skipped by the last call to Next().
+     * If Next() moved to the very next frame, outputs 0.
+     *
+     * Note that calling GetStackSizeSkipped() after any function other
+     * than Next() has no meaning.
+     */
+    HRESULT GetStackSizeSkipped([out] ULONG64* stackSizeSkipped);
+
+    /*
+     * Return information about the type of the current frame
+     */
+    HRESULT GetFrameType([out] CLRDataSimpleFrameType* simpleType,
+                         [out] CLRDataDetailedFrameType* detailedType);
+
+    /*
+     * Return the current frame, if it is recognized.
+     */
+    HRESULT GetFrame([out] IXCLRDataFrame** frame);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * Change the current context of this stack walk, allowing the
+     * debugger to move it to an arbitrary context. Does not actually
+     * alter the current context of the thread whose stack is being walked.
+     */
+    HRESULT SetContext2([in] ULONG32 flags,
+                        [in] ULONG32 contextSize,
+                        [in, size_is(contextSize)] BYTE context[]);
+}
+
+#pragma warning(push)
+#pragma warning(disable:28718)	/* suppress warning 28718 for interface IXCLRDataFrame */
+[
+    object,
+    local,
+    uuid(271498C2-4085-4766-BC3A-7F8ED188A173)
+]
+interface IXCLRDataFrame : IUnknown
+{
+    /*
+     * Return information about the type of this frame.
+     */
+    HRESULT GetFrameType([out] CLRDataSimpleFrameType* simpleType,
+                         [out] CLRDataDetailedFrameType* detailedType);
+
+    /*
+     * Get the stack walk context as of this frame.
+     * This is the original context with any unwinding
+     * applied to it.  As unwinding may only restore
+     * a subset of the registers, such as only non-volatile
+     * registers, the context may not exactly match the
+     * register state at the time of the actual call.
+     */
+    HRESULT GetContext([in] ULONG32 contextFlags,
+                       [in] ULONG32 contextBufSize,
+                       [out] ULONG32* contextSize,
+                       [out, size_is(contextBufSize)] BYTE contextBuf[]);
+
+    /*
+     * Return the app domain of this frame
+     */
+    HRESULT GetAppDomain([out] IXCLRDataAppDomain** appDomain);
+
+    /*
+     * Return the number of arguments on the stack.
+     */
+    HRESULT GetNumArguments([out] ULONG32* numArgs);
+
+    /*
+     * Return an argument by (0-based) index.
+     * The name parameter is filled in if name information is available.
+     */
+    HRESULT GetArgumentByIndex([in] ULONG32 index,
+                               [out] IXCLRDataValue** arg,
+                               [in] ULONG32 bufLen,
+                               [out] ULONG32 *nameLen,
+                               [out, size_is(bufLen)] WCHAR name[]);
+
+    /*
+     * Return the number of local variables on the stack.
+     */
+    HRESULT GetNumLocalVariables([out] ULONG32* numLocals);
+
+    /*
+     * Return a local variable by (0-based) index.
+     * The name parameter is filled in if name information is available.
+     */
+    HRESULT GetLocalVariableByIndex([in] ULONG32 index,
+                                    [out] IXCLRDataValue** localVariable,
+                                    [in] ULONG32 bufLen,
+                                    [out] ULONG32 *nameLen,
+                                    [out, size_is(bufLen)] WCHAR name[]);
+
+    /*
+     * Get a name for the frame's current instruction pointer.
+     * This is either a method's name or a runtime code name.
+     *
+     * Returns S_FALSE if the buffer is not large enough for the name,
+     * and sets nameLen to be the buffer length needed.
+     */
+    HRESULT GetCodeName([in] ULONG32 flags,
+                        [in] ULONG32 bufLen,
+                        [out] ULONG32 *nameLen,
+                        [out, size_is(bufLen)] WCHAR nameBuf[]);
+
+    /*
+     * Gets the method instance corresponding to this frame.
+     */
+    HRESULT GetMethodInstance([out] IXCLRDataMethodInstance** method);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * Enumerate the full parameterization of the frame's
+     * type and method.
+     */
+    HRESULT GetNumTypeArguments([out] ULONG32* numTypeArgs);
+    HRESULT GetTypeArgumentByIndex([in] ULONG32 index,
+                                   [out] IXCLRDataTypeInstance** typeArg);
+}
+#pragma warning(pop)
+
+[
+    object,
+    local,
+    uuid(1C4D9A4B-702D-4CF6-B290-1DB6F43050D0)
+]
+interface IXCLRDataFrame2 : IUnknown
+{
+    /*
+     * Retun generic token if available.
+     */
+    HRESULT GetExactGenericArgsToken([out] IXCLRDataValue** genericToken);
+}
+
+typedef enum
+{
+    CLRDATA_EXCEPTION_DEFAULT = 0x00000000,
+
+    // Exception is occurring during processing
+    // of other exception states.
+    CLRDATA_EXCEPTION_NESTED  = 0x00000001,
+
+    // Exception state is not completely available.
+    // This can happen when the state is no longer
+    // active or before a state is fully initialized.
+    CLRDATA_EXCEPTION_PARTIAL = 0x00000002,
+} CLRDataExceptionStateFlag;
+
+typedef enum
+{
+    CLRDATA_EXBASE_EXCEPTION,
+    CLRDATA_EXBASE_OUT_OF_MEMORY,
+    CLRDATA_EXBASE_INVALID_ARGUMENT,
+} CLRDataBaseExceptionType;
+
+typedef enum
+{
+    CLRDATA_EXSAME_SECOND_CHANCE = 0x00000000,
+    CLRDATA_EXSAME_FIRST_CHANCE  = 0x00000001,
+} CLRDataExceptionSameFlag;
+
+#pragma warning(push)
+#pragma warning(disable:28718)	/* suppress warning 28718 for interface IXCLRDataExceptionState */
+[
+    object,
+    local,
+    uuid(75DA9E4C-BD33-43C8-8F5C-96E8A5241F57)
+]
+interface IXCLRDataExceptionState : IUnknown
+{
+    /*
+     * Get state flags, defined in CLRDataExceptionStateFlag.
+     */
+    HRESULT GetFlags([out] ULONG32* flags);
+
+    /*
+     * For nested exceptions, get the exception that
+     * was being handled when this exception occurred.
+     */
+    HRESULT GetPrevious([out] IXCLRDataExceptionState** exState);
+
+    /*
+     * Get the managed object representing the exception.
+     */
+    HRESULT GetManagedObject([out] IXCLRDataValue** value);
+
+    /*
+     * Get the standard base type of the exception.
+     */
+    HRESULT GetBaseType([out] CLRDataBaseExceptionType* type);
+
+    /*
+     * Get exception information.
+     */
+    HRESULT GetCode([out] ULONG32* code);
+    HRESULT GetString([in] ULONG32 bufLen,
+                      [out] ULONG32 *strLen,
+                      [out, size_is(bufLen)] WCHAR str[]);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * Determine whether the given interface represents
+     * the same exception state.
+     * OBSOLETE: Use IsSameState2.
+     * Requires revision 1.
+     */
+    HRESULT IsSameState([in] EXCEPTION_RECORD64* exRecord,
+                        [in] ULONG32 contextSize,
+                        [in, size_is(contextSize)] BYTE cxRecord[]);
+
+    /*
+     * Determine whether the given interface represents
+     * the same exception state.
+     * Requires revision 2.
+     */
+    HRESULT IsSameState2([in] ULONG32 flags,
+                         [in] EXCEPTION_RECORD64* exRecord,
+                         [in] ULONG32 contextSize,
+                         [in, size_is(contextSize)] BYTE cxRecord[]);
+
+    /*
+     * Gets the task this exception state is associated with.
+     * Requires revision 2.
+     */
+    HRESULT GetTask([out] IXCLRDataTask** task);
+}
+#pragma warning(pop)
+
+typedef enum
+{
+    CLRDATA_VLOC_MEMORY   = 0x00000000,
+    CLRDATA_VLOC_REGISTER = 0x00000001,
+} ClrDataValueLocationFlag;
+
+#pragma warning(push)
+#pragma warning(disable:28718)	/* suppress warning 28718 for interface IXCLRDataValue */
+/*
+ * Object inspection interface.
+ */
+[
+    object,
+    local,
+    uuid(96EC93C7-1000-4e93-8991-98D8766E6666)
+]
+interface IXCLRDataValue : IUnknown
+{
+    /*
+     * Get state flags, defined in CLRDataValueFlag.
+     */
+    HRESULT GetFlags([out] ULONG32* flags);
+
+    /*
+     * Get the address of the object.
+     * Fails unless the object is a single contiguous
+     * piece of data in memory.
+     * OBSOLETE: Use GetLocation instead.
+     */
+    HRESULT GetAddress([out] CLRDATA_ADDRESS* address);
+
+    /*
+     * Return the size (in bytes) of the object.
+     */
+    HRESULT GetSize([out] ULONG64* size);
+
+    /*
+     * Copy between an object and a buffer.
+     * Returns S_FALSE if the buffer was not at least as large
+     * as the object.
+     */
+    HRESULT GetBytes([in] ULONG32 bufLen,
+                     [out] ULONG32 *dataSize,
+                     [out, size_is(bufLen)] BYTE buffer[]);
+    HRESULT SetBytes([in] ULONG32 bufLen,
+                     [out] ULONG32 *dataSize,
+                     [in, size_is(bufLen)] BYTE buffer[]);
+
+    /*
+     * Get the type of the object
+     */
+    HRESULT GetType([out] IXCLRDataTypeInstance **typeInstance);
+
+    /*
+     * Get the number of fields in the object.
+     * OBSOLETE: Use GetNumFields2.
+     */
+    HRESULT GetNumFields([out] ULONG32 *numFields);
+
+    /*
+     * Gets one field of the object.
+     *
+     * Because field ordering is not fixed, can also return name
+     * information and/or the metadata token, if the caller passes in
+     * appropriate values.
+     * OBSOLETE: Use EnumField.
+     */
+    HRESULT GetFieldByIndex([in] ULONG32 index,
+                            [out] IXCLRDataValue **field,
+                            [in] ULONG32 bufLen,
+                            [out] ULONG32 *nameLen,
+                            [out, size_is(bufLen)] WCHAR nameBuf[],
+                            [out] mdFieldDef* token);
+
+    HRESULT Request([in] ULONG32 reqCode,
+                    [in] ULONG32 inBufferSize,
+                    [in, size_is(inBufferSize)] BYTE* inBuffer,
+                    [in] ULONG32 outBufferSize,
+                    [out, size_is(outBufferSize)] BYTE* outBuffer);
+
+    /*
+     * Get the number of fields in the value.
+     * If a type is passed in only fields defined
+     * by that type are enumerated.
+     */
+    HRESULT GetNumFields2([in] ULONG32 flags,
+                          [in] IXCLRDataTypeInstance* fromType,
+                          [out] ULONG32* numFields);
+
+    /*
+     * Enumerate the fields for this value.
+     * If a type is passed in only fields defined
+     * by that type are enumerated.
+     */
+    HRESULT StartEnumFields([in] ULONG32 flags,
+                            [in] IXCLRDataTypeInstance* fromType,
+                            [out] CLRDATA_ENUM* handle);
+    HRESULT EnumField([in, out] CLRDATA_ENUM* handle,
+                      [out] IXCLRDataValue** field,
+                      [in] ULONG32 nameBufLen,
+                      [out] ULONG32* nameLen,
+                      [out, size_is(nameBufLen)] WCHAR nameBuf[],
+                      [out] mdFieldDef* token);
+    HRESULT EndEnumFields([in] CLRDATA_ENUM handle);
+
+    HRESULT StartEnumFieldsByName([in] LPCWSTR name,
+                                  [in] ULONG32 nameFlags,
+                                  [in] ULONG32 fieldFlags,
+                                  [in] IXCLRDataTypeInstance* fromType,
+                                  [out] CLRDATA_ENUM* handle);
+    HRESULT EnumFieldByName([in, out] CLRDATA_ENUM* handle,
+                            [out] IXCLRDataValue** field,
+                            [out] mdFieldDef* token);
+    HRESULT EndEnumFieldsByName([in] CLRDATA_ENUM handle);
+
+    /*
+     * Retrieve a field by field metadata token.
+     */
+    HRESULT GetFieldByToken([in] mdFieldDef token,
+                            [out] IXCLRDataValue **field,
+                            [in] ULONG32 bufLen,
+                            [out] ULONG32 *nameLen,
+                            [out, size_is(bufLen)] WCHAR nameBuf[]);
+
+    /*
+     * Get the value implicitly associated with this value.
+     * For pointers or reference values this is the value
+     *   pointed/referred to.
+     * For boxed values this is the contained value.
+     * For other values there is no associated value.
+     */
+    HRESULT GetAssociatedValue([out] IXCLRDataValue** assocValue);
+
+    /*
+     * Get the type implicitly associated with this value.
+     * For pointers or reference types this is the type
+     *   pointed/referred to.
+     * For boxed values this is the type of the contained value.
+     * For arrays this is the element type.
+     * For other values there is no associated type.
+     */
+    HRESULT GetAssociatedType([out] IXCLRDataTypeInstance** assocType);
+
+    /*
+     * String methods that only work for string data values.
+     */
+
+    /*
+     * Return the length and contents of the string.
+     */
+    HRESULT GetString([in] ULONG32 bufLen,
+                      [out] ULONG32 *strLen,
+                      [out, size_is(bufLen)] WCHAR str[]);
+
+    /*
+     * Array methods that only work for array data values.
+     */
+
+    /*
+     * Return the definition of the array.
+     */
+    HRESULT GetArrayProperties([out] ULONG32 *rank,
+                               [out] ULONG32 *totalElements,
+                               [in] ULONG32 numDim,
+                               [out, size_is(numDim)] ULONG32 dims[],
+                               [in] ULONG32 numBases,
+                               [out, size_is(numBases)] LONG32 bases[]);
+
+    /*
+     * Return a value representing the given element in the array.
+     */
+    HRESULT GetArrayElement([in] ULONG32 numInd,
+                            [in, size_is(numInd)] LONG32 indices[],
+                            [out] IXCLRDataValue **value);
+
+    HRESULT EnumField2([in, out] CLRDATA_ENUM* handle,
+                       [out] IXCLRDataValue** field,
+                       [in] ULONG32 nameBufLen,
+                       [out] ULONG32* nameLen,
+                       [out, size_is(nameBufLen)] WCHAR nameBuf[],
+                       [out] IXCLRDataModule** tokenScope,
+                       [out] mdFieldDef* token);
+    HRESULT EnumFieldByName2([in, out] CLRDATA_ENUM* handle,
+                             [out] IXCLRDataValue** field,
+                             [out] IXCLRDataModule** tokenScope,
+                             [out] mdFieldDef* token);
+    HRESULT GetFieldByToken2([in] IXCLRDataModule* tokenScope,
+                             [in] mdFieldDef token,
+                             [out] IXCLRDataValue **field,
+                             [in] ULONG32 bufLen,
+                             [out] ULONG32 *nameLen,
+                             [out, size_is(bufLen)] WCHAR nameBuf[]);
+
+    /*
+     * Returns the locations the value's
+     * data is spread across.
+     * Placeholder values, such as values for variables
+     * which are dead, may not have any locations.
+     * Memory locations return the memory address in arg.
+     * Register locations do not return an indication
+     * of which register.
+     * Requires revision 3.
+     */
+    HRESULT GetNumLocations([out] ULONG32* numLocs);
+    HRESULT GetLocationByIndex([in] ULONG32 loc,
+                               [out] ULONG32* flags,
+                               [out] CLRDATA_ADDRESS* arg);
+}
+#pragma warning(pop)
+
+[
+    object,
+    local,
+    uuid(2D95A079-42A1-4837-818F-0B97D7048E0E)
+]
+interface IXCLRDataExceptionNotification : IUnknown
+{
+    /*
+     * New code was generated or discarded for a method.
+     */
+    HRESULT OnCodeGenerated([in] IXCLRDataMethodInstance* method);
+    HRESULT OnCodeDiscarded([in] IXCLRDataMethodInstance* method);
+
+    /*
+     * The process or task reached the desired execution state.
+     */
+    HRESULT OnProcessExecution([in] ULONG32 state);
+    HRESULT OnTaskExecution([in] IXCLRDataTask* task,
+                            [in] ULONG32 state);
+
+    /*
+     * The given module was loaded or unloaded.
+     */
+    HRESULT OnModuleLoaded([in] IXCLRDataModule* mod);
+    HRESULT OnModuleUnloaded([in] IXCLRDataModule* mod);
+
+    /*
+     * The given type was loaded or unloaded.
+     */
+    HRESULT OnTypeLoaded([in] IXCLRDataTypeInstance* typeInst);
+    HRESULT OnTypeUnloaded([in] IXCLRDataTypeInstance* typeInst);
+}
+
+[
+    object,
+    local,
+    uuid(31201a94-4337-49b7-aef7-0c755054091f)
+]
+interface IXCLRDataExceptionNotification2 : IXCLRDataExceptionNotification
+{
+    /*
+     * The given app domain was loaded or unloaded.
+     */
+    HRESULT OnAppDomainLoaded([in] IXCLRDataAppDomain* domain);
+    HRESULT OnAppDomainUnloaded([in] IXCLRDataAppDomain* domain);
+
+    /*
+     * A managed exception has been raised.
+     */
+    HRESULT OnException([in] IXCLRDataExceptionState* exception);
+}
+
+[
+    object,
+    local,
+    uuid(31201a94-4337-49b7-aef7-0c7550540920)
+]
+interface IXCLRDataExceptionNotification3 : IXCLRDataExceptionNotification2
+{
+    /*
+     * The specified GC event was triggered.  The GC event is passed in an
+     * opaque structure, whose structure is given by buffSize
+     */
+    HRESULT OnGcEvent([in] GcEvtArgs gcEvtArgs);
+}
+
+[
+    object,
+    local,
+    uuid(C25E926E-5F09-4AA2-BBAD-B7FC7F10CFD7)
+]
+interface IXCLRDataExceptionNotification4 : IXCLRDataExceptionNotification3
+{
+    /*
+     * A managed catch clause is about to be executed
+     */
+    HRESULT ExceptionCatcherEnter([in] IXCLRDataMethodInstance* catchingMethod, DWORD catcherNativeOffset);
+}
+
+[
+    object,
+    local,
+    uuid(e77a39ea-3548-44d9-b171-8569ed1a9423)
+]
+interface IXCLRDataExceptionNotification5 : IXCLRDataExceptionNotification4
+{
+    /*
+     * New code was generated for a method. The given address is the start address of
+     * the native newly jitted code.
+     */
+    HRESULT OnCodeGenerated2([in] IXCLRDataMethodInstance* method, [in] CLRDATA_ADDRESS nativeCodeLocation);
+}

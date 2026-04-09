@@ -1,0 +1,12 @@
+[*.cs]
+# Avoid redundant accessibility modifiers when they're default
+dotnet_style_require_accessibility_modifiers = omit_if_default:suggestion
+
+file_header_template = Copyright (c) .NET Foundation and contributors. All rights reserved.\nLicensed under the MIT license. See LICENSE file in the project root for full license information.
+
+### Code Style Analyzers
+
+# Access modifier must be declared
+dotnet_diagnostic.SA1400.severity = none
+
+dotnet_diagnostic.IDE0073.severity = none

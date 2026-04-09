@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="NonMsdtcPromoterTests.cs" />
+    <Compile Include="AsyncTransactionScopeTests.cs" />
+    <Compile Include="IntResourceManager.cs" />
+    <Compile Include="TransactionManagerTest.cs" />
+    <Compile Include="OleTxNonWindowsUnsupportedTests.cs" />
+    <Compile Include="OleTxTests.cs" />
+    <Compile Include="TransactionScopeTest.cs" />
+    <Compile Include="AsyncTest.cs" />
+    <Compile Include="EnlistTest.cs" />
+    <Compile Include="CloneTxTests.cs" />
+    <Compile Include="LTMEnlistmentTests.cs" />
+    <Compile Include="HelperFunctions.cs" />
+    <Compile Include="TestEnlistments.cs" />
+    <Compile Include="TransactionTracingEventListener.cs" />
+  </ItemGroup>
+</Project>

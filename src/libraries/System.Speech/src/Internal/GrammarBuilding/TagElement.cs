@@ -1,0 +1,112 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Speech.Internal.SrgsParser;
+using System.Speech.Recognition;
+
+namespace System.Speech.Internal.GrammarBuilding
+{
+    [DebuggerDisplay("{DebugSummary}")]
+    internal sealed class TagElement : BuilderElements
+    {
+        #region Constructors
+
+        internal TagElement(object value)
+        {
+            _value = value;
+        }
+
+        internal TagElement(GrammarBuilderBase builder, object value)
+            : this(value)
+        {
+            Add(builder);
+        }
+
+        internal TagElement(GrammarBuilder builder, object value)
+            : this(value)
+        {
+            Add(builder);
+        }
+
+        #endregion
+
+        #region Public Methods
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            if (obj is not TagElement refObj)
+            {
+                return false;
+            }
+
+            if (!base.Equals(obj))
+            {
+                return false;
+            }
+
+            return _value.Equals(refObj._value);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        #endregion
+
+        #region Internal Methods
+
+        internal override GrammarBuilderBase Clone()
+        {
+            TagElement tag = new(_value);
+            tag.CloneItems(this);
+            return tag;
+        }
+
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        {
+            // Create the children elements
+            if (parent is IItem item)
+            {
+                CreateChildrenElements(elementFactory, item, rule, ruleIds);
+            }
+            else
+            {
+                if (parent == rule)
+                {
+                    CreateChildrenElements(elementFactory, rule, ruleIds);
+                }
+                else
+                {
+                    System.Diagnostics.Debug.Assert(false);
+                }
+            }
+
+            // Create the tag element at the end only if there were some children
+            IPropertyTag tag = elementFactory.CreatePropertyTag(parent);
+            tag.NameValue(parent, null, _value);
+            return tag;
+        }
+
+        #endregion
+
+        #region Internal Properties
+
+        internal override string DebugSummary
+        {
+            get
+            {
+                return base.DebugSummary + " {" + _value + "}";
+            }
+        }
+
+        #endregion
+
+        #region Private Fields
+
+        private readonly object _value;
+
+        #endregion
+    }
+}

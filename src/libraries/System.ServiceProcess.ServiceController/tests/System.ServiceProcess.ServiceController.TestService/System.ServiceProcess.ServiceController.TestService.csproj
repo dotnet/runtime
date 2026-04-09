@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Helpers.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="TestServiceInstaller.cs" />
+    <Compile Include="TestService.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="..\..\src\Microsoft\Win32\SafeHandles\SafeServiceHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeServiceHandle.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs"
+             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+            Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ServiceProcessOptions.cs"
+             Link="Common\Interop\Windows\Interop.ServiceProcessOptions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CloseServiceHandle.cs"
+             Link="Common\Interop\Windows\Interop.CloseServiceHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenSCManager.cs"
+             Link="Common\Interop\Windows\Interop.OpenSCManager.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenService.cs"
+             Link="Common\Interop\Windows\Interop.OpenService.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CreateService.cs"
+             Link="Common\Interop\Windows\Interop.CreateService.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SERVICE_DESCRIPTION.cs"
+             Link="Common\Interop\Windows\Interop.SERVICE_DESCRIPTION.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ChangeServiceConfig2.cs"
+             Link="Common\Interop\Windows\Interop.ChangeServiceConfig2.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DeleteService.cs"
+             Link="Common\Interop\Windows\Interop.DeleteService.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.ServiceProcess.ServiceController.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.ServiceProcess" />
+  </ItemGroup>
+</Project>

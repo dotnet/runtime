@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+	<!-- When KeepNativeSymbols is set, debug symbols are kept in the .so files. So when it is true, we don't need a symbols archive. -->
+    <CreateSymbolsArchive Condition="'$(KeepNativeSymbols)' != 'true'">true</CreateSymbolsArchive>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
+  </ItemGroup>
+
+  <Target Name="PublishToDisk">
+    <Error Condition="'$(OutputPath)' == ''" Text="Publishing to disk requires the OutputPath to be set to the root of the path to write to." />
+
+    <ItemGroup>
+      <FilesToPublish Include="$(DotNetHostBinDir)\$(LibPrefix)nethost$(LibSuffix)"
+            Destination="$(OutputPath)$(LibPrefix)nethost$(LibSuffix)" />
+      <FilesToPublish Include="$(DotNetHostBinDir)\$(StaticLibPrefix)nethost$(StaticLibSuffix)"
+            Destination="$(OutputPath)$(StaticLibPrefix)nethost$(StaticLibSuffix)" />
+      <FilesToPublish Condition="'$(TargetsWindows)' == 'true'"
+            Include="$(DotNetHostBinDir)\nethost.lib"
+            Destination="$(OutputPath)$(LibPrefix)nethost.lib" />
+      <FilesToPublish Include="$(DotNetHostBinDir)\nethost.h"
+            Destination="$(OutputPath)$(LibPrefix)nethost.h" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(FilesToPublish)"
+          DestinationFiles="%(FilesToPublish.Destination)" />
+  </Target>
+
+  <Target Name="PublishSymbolsToDisk">
+    <Error Condition="'$(SymbolsOutputPath)' == ''" Text="Publishing to disk requires the SymbolsOutputPath to be set to the root of the path to write to." />
+
+    <Copy SourceFiles="$(DotNetHostBinDir)\PDB\$(LibPrefix)nethost$(SymbolsSuffix);$(DotNetHostBinDir)\PDB\$(StaticLibPrefix)nethost$(SymbolsSuffix)"
+          Condition="'$(TargetsWindows)' == 'true'"
+          DestinationFolder="$(SymbolsOutputPath)" />
+    <Copy SourceFiles="$(DotNetHostBinDir)\$(LibPrefix)nethost$(LibSuffix)$(SymbolsSuffix)"
+          Condition="'$(TargetsWindows)' != 'true'"
+          DestinationFolder="$(SymbolsOutputPath)" />
+  </Target>
+</Project>

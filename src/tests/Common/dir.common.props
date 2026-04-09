@@ -1,0 +1,43 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="../../coreclr/Directory.Build.props" />
+
+  <!-- This file contains common build properties for projects under
+       the test tree, and also generated test projects in
+       artifacts/tests. It currently has only those properties that are
+       shared between old-style test projects and SDK-style test
+       projects. Eventually every test project should build using the
+       SDK. Some test projects still bypass this by importing
+       tests/dir.props directly - these should eventually go away. -->
+
+  <PropertyGroup>
+    <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
+
+    <BaseOutputPath>$(ArtifactsDir)tests\coreclr</BaseOutputPath>
+    <BaseOutputPathWithConfig>$([MSBuild]::NormalizePath('$(BaseOutputPath)\$(OSPlatformConfig)\'))</BaseOutputPathWithConfig>
+    <TestBinDir>$(BaseOutputPathWithConfig)</TestBinDir>
+
+    <TestSrcDir>$([MSBuild]::NormalizePath('$(RepoRoot)/src/tests/'))</TestSrcDir>
+    <TestSrcDir Condition="$([System.String]::new('$(MSBuildProjectDirectory)').StartsWith('$(BaseOutputPathWithConfig)'))">$(BaseOutputPathWithConfig)</TestSrcDir>
+    <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestSrcDir), $(MSBuildProjectDirectory)))\$(MSBuildProjectName)\</BuildProjectRelativeDir>
+
+    <!-- BaseIntermediateOutputPath is used by the SDK as the location
+         for the lock file, and props/targets from nuget packages. -->
+    <BaseIntermediateOutputPath>$(BaseOutputPath)/obj/$(OSPlatformConfig)/Managed/$(BuildProjectRelativeDir)</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <UseVisualStudioNativeBinariesLayout Condition="'$(UseVisualStudioNativeBinariesLayout)' == '' and '$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform(Windows))">true</UseVisualStudioNativeBinariesLayout>
+    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == '' and '$(UseVisualStudioNativeBinariesLayout)' != 'true'">$(BaseOutputPath)\obj\$(OSPlatformConfig)\Native\</__NativeTestIntermediatesDir>
+    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == '' and '$(UseVisualStudioNativeBinariesLayout)' == 'true'">$(BaseOutputPath)\obj\$(OSPlatformConfig)\Native\ide\</__NativeTestIntermediatesDir>
+
+    <BasePackagePath>$(BaseOutputPath)\packages\$(BuildProjectRelativeDir)</BasePackagePath>
+    <BasePackagePath Condition="'$(PackageRuntimeIdentifier)' != ''">$([System.IO.Path]::GetFullPath($(IntermediateOutputPath)\$(PackageRuntimeIdentifier)))</BasePackagePath>
+
+    <PackageOutputPath>$(BasePackagePath)</PackageOutputPath>
+    <RestoreOutputPath>$(BasePackagePath)</RestoreOutputPath>
+    <MSBuildProjectExtensionsPath>$(BasePackagePath)</MSBuildProjectExtensionsPath>
+
+    <ProjectAssetsFile>$(RestoreOutputPath)/project.assets.json</ProjectAssetsFile>
+
+    <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)</OutputPath>
+  </PropertyGroup>
+
+</Project>

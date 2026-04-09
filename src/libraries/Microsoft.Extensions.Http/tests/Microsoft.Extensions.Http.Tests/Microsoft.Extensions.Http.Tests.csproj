@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\TestSink.cs"
+             Link="tests\DI.Common\Common\src\TestSink.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\WriteContext.cs"
+             Link="tests\DI.Common\Common\src\WriteContext.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\BeginScopeContext.cs"
+             Link="tests\DI.Common\Common\src\BeginScopeContext.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\ITestSink.cs"
+             Link="tests\DI.Common\Common\src\ITestSink.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\TestLogger.cs"
+             Link="tests\DI.Common\Common\src\TestLogger.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\TestLoggerFactory.cs"
+             Link="tests\DI.Common\Common\src\TestLoggerFactory.cs" />
+    <Compile Include="$(CommonPath)..\tests\Extensions\SingleThreadedSynchronizationContext.cs"
+             Link="Shared\SingleThreadedSynchronizationContext.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="tests\System\Net\RemoteExecutorExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Http\src\Microsoft.Extensions.Http.csproj" SkipUseReferenceAssembly="true" />
+  	<ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+  	<ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\src\Microsoft.Extensions.Configuration.csproj" />
+  	<ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
+    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+</Project>

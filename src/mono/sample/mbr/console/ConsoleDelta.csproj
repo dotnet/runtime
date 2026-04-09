@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- always set SelfContained when running to use Mono on desktop -->
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- to call AsssemblyExtensions.ApplyUpdate we need Optimize=false, EmitDebugInformation=true in all configurations -->
+    <Optimize>false</Optimize>
+    <EmitDebugInformation>true</EmitDebugInformation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeltaHelper\DeltaHelper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="$(MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="TestClass.cs" />
+  </ItemGroup>
+
+
+  <PropertyGroup>
+    <DeltaScript>deltascript.json</DeltaScript>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuiltRuntimeConfiguration)' != ''">
+    <HotReloadDeltaGeneratorExtraArgs>$(HotReloadDeltaGeneratorExtraArgs) -p:BuiltRuntimeConfiguration=$(BuiltRuntimeConfiguration)</HotReloadDeltaGeneratorExtraArgs>
+  </PropertyGroup>
+
+  <Target Name="CodeSignIfNeeded" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">
+    <Message Importance="High" Text="Running codesign -s - -f $(PublishDir)/$(MSBuildProjectName)" />
+    <Exec Command="codesign -s - -f &quot;$(PublishDir)$(MSBuildProjectName)&quot;" />
+  </Target>
+
+
+</Project>

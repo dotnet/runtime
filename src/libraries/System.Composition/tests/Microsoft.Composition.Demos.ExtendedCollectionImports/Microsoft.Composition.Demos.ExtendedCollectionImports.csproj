@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Dictionaries\DictionaryExportDescriptorProvider.cs" />
+    <Compile Include="Util\Formatters.cs" />
+    <Compile Include="OrderedImportManyAttribute.cs" />
+    <Compile Include="OrderedCollections\OrderedImportManyExportDescriptorProvider.cs" />
+    <Compile Include="KeyByMetadataAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.TypedParts\src\System.Composition.TypedParts.csproj" />
+  </ItemGroup>
+</Project>

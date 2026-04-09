@@ -1,0 +1,19 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Xunit;
+
+namespace System.Runtime.InteropServices.Tests
+{
+    public class ComDefaultInterfaceAttributeTests
+    {
+        [Theory]
+        [InlineData(null)]
+        [InlineData(typeof(int))]
+        public void Ctor_DefaultInterface(Type? defaultInterface)
+        {
+            var attribute = new ComDefaultInterfaceAttribute(defaultInterface);
+            Assert.Equal(defaultInterface, attribute.Value);
+        }
+    }
+}

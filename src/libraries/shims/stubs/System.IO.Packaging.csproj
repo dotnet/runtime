@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ForwardedType Include="System.IO.FileFormatException" />
+    <ForwardedType Include="System.IO.Packaging.CompressionOption" />
+    <ForwardedType Include="System.IO.Packaging.EncryptionOption" />
+    <ForwardedType Include="System.IO.Packaging.PackUriHelper" />
+    <ForwardedType Include="System.IO.Packaging.Package" />
+    <ForwardedType Include="System.IO.Packaging.PackagePart" />
+    <ForwardedType Include="System.IO.Packaging.PackagePartCollection" />
+    <ForwardedType Include="System.IO.Packaging.PackageProperties" />
+    <ForwardedType Include="System.IO.Packaging.PackageRelationship" />
+    <ForwardedType Include="System.IO.Packaging.PackageRelationshipCollection" />
+    <ForwardedType Include="System.IO.Packaging.PackageRelationshipSelector" />
+    <ForwardedType Include="System.IO.Packaging.PackageRelationshipSelectorType" />
+    <ForwardedType Include="System.IO.Packaging.TargetMode" />
+    <ForwardedType Include="System.IO.Packaging.ZipPackage" />
+    <ForwardedType Include="System.IO.Packaging.ZipPackagePart" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,1028 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
+
+// The implementations of most the methods in this file are provided as intrinsics.
+// In CoreCLR, the body of the functions are replaced by the EE with unsafe code. See see getILIntrinsicImplementationForUnsafe for details.
+// In AOT compilers, see Internal.IL.Stubs.UnsafeIntrinsics for details.
+
+namespace System.Runtime.CompilerServices
+{
+    /// <summary>
+    /// Contains generic, low-level functionality for manipulating pointers.
+    /// </summary>
+    public static unsafe partial class Unsafe
+    {
+        /// <summary>
+        /// Returns a pointer to the given by-ref parameter.
+        /// </summary>
+        /// <typeparam name="T">The type referenced by the byref parameter.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__AS_POINTER
+        // AOT:AsPointer
+        // Mono:AsPointer
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void* AsPointer<T>(ref readonly T value)
+            where T : allows ref struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // conv.u
+            // ret
+        }
+
+        /// <summary>
+        /// Returns the size of an object of the given type parameter.
+        /// </summary>
+        /// <typeparam name="T">The type whose size is returned.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__SIZEOF
+        // AOT:SizeOf
+        // Mono:SizeOf
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int SizeOf<T>()
+            where T : allows ref struct
+        {
+            return sizeof(T);
+        }
+
+        /// <summary>
+        /// Casts the given object to the specified type, performs no dynamic type checking.
+        /// </summary>
+        /// <typeparam name="T">The target reference type. The return value will be of this type.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__OBJECT_AS
+        // AOT:As
+        // Mono:As
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NotNullIfNotNull(nameof(o))]
+        public static T? As<T>(object? o) where T : class?
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ret
+        }
+
+        /// <summary>
+        /// Reinterprets the given reference as a reference to a value of type <typeparamref name="TTo"/>.
+        /// </summary>
+        /// <typeparam name="TFrom">The source type of the reference to reinterpret.</typeparam>
+        /// <typeparam name="TTo">The destination type to reinterpret the reference as.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_AS
+        // AOT:As
+        // Mono:As
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref TTo As<TFrom, TTo>(ref TFrom source)
+            where TFrom : allows ref struct
+            where TTo : allows ref struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ret
+        }
+
+        /// <summary>
+        /// Adds an element offset to the given reference.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_ADD
+        // AOT:Add
+        // Mono:Add
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Add<T>(ref T source, int elementOffset)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString(); // Type token used by the actual method body
+            throw new PlatformNotSupportedException();
+#else
+            return ref AddByteOffset(ref source, elementOffset * (nint)sizeof(T));
+#endif
+            // ldarg .0
+            // ldarg .1
+            // sizeof !!T
+            // conv.i
+            // mul
+            // add
+            // ret
+        }
+
+        /// <summary>
+        /// Adds an element offset to the given reference.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_ADD
+        // AOT:Add
+        // Mono:Add
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Add<T>(ref T source, nint elementOffset)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString(); // Type token used by the actual method body
+            throw new PlatformNotSupportedException();
+#else
+            return ref AddByteOffset(ref source, elementOffset * (nint)sizeof(T));
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // sizeof !!T
+            // mul
+            // add
+            // ret
+        }
+
+        /// <summary>
+        /// Adds an element offset to the given pointer.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by the pointer.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_ADD
+        // AOT:Add
+        // Mono:Add
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void* Add<T>(void* source, int elementOffset)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString(); // Type token used by the actual method body
+            throw new PlatformNotSupportedException();
+#else
+            return (byte*)source + (elementOffset * (nint)sizeof(T));
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // sizeof !!T
+            // conv.i
+            // mul
+            // add
+            // ret
+        }
+
+        /// <summary>
+        /// Adds an element offset to the given reference.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
+        [Intrinsic]
+        // CoreCLR:
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Add<T>(ref T source, nuint elementOffset)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return ref AddByteOffset(ref source, elementOffset * (nuint)sizeof(T));
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // sizeof !!T
+            // mul
+            // add
+            // ret
+        }
+
+        /// <summary>
+        /// Adds an byte offset to the given reference.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET_UINTPTR
+        // AOT:AddByteOffset
+        // Mono:AddByteOffset
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return ref AddByteOffset(ref source, (nint)byteOffset);
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // add
+            // ret
+        }
+
+        /// <summary>
+        /// Determines whether the specified references point to the same location.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by the inputs.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_ARE_SAME
+        // AOT:AreSame
+        // Mono:AreSame
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AreSame<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ldarg.1
+            // ceq
+            // ret
+        }
+
+        /// <summary>
+        /// Reinterprets the given value of type <typeparamref name="TFrom" /> as a value of type <typeparamref name="TTo" />.
+        /// </summary>
+        /// <exception cref="NotSupportedException">The sizes of <typeparamref name="TFrom" /> and <typeparamref name="TTo" /> are not the same
+        /// or the type parameters are not <see langword="struct"/>s.</exception>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TTo BitCast<TFrom, TTo>(TFrom source)
+            where TFrom : allows ref struct
+            where TTo : allows ref struct
+        {
+            if (sizeof(TFrom) != sizeof(TTo) || !typeof(TFrom).IsValueType || !typeof(TTo).IsValueType)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return ReadUnaligned<TTo>(ref As<TFrom, byte>(ref source));
+        }
+
+        /// <summary>
+        /// Copies a value of type T to the given location.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_BYREF_COPY
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
+        public static void Copy<T>(void* destination, ref readonly T source)
+            where T : allows ref struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldobj !!T
+            // stobj !!T
+            // ret
+        }
+
+        /// <summary>
+        /// Copies a value of type T to the given location.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_PTR_COPY
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
+        public static void Copy<T>(ref T destination, void* source)
+            where T : allows ref struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldobj !!T
+            // stobj !!T
+            // ret
+        }
+
+        /// <summary>
+        /// Copies bytes from the source address to the destination address.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_COPY_BLOCK
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
+        public static void CopyBlock(void* destination, void* source, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // cpblk
+            // ret
+        }
+
+        /// <summary>
+        /// Copies bytes from the source address to the destination address.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_COPY_BLOCK
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyBlock(ref byte destination, ref readonly byte source, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // cpblk
+            // ret
+        }
+
+        /// <summary>
+        /// Copies bytes from the source address to the destination address without assuming architecture dependent alignment of the addresses.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_COPY_BLOCK_UNALIGNED
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
+        public static void CopyBlockUnaligned(void* destination, void* source, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // unaligned. 0x1
+            // cpblk
+            // ret
+        }
+
+        /// <summary>
+        /// Copies bytes from the source address to the destination address without assuming architecture dependent alignment of the addresses.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_COPY_BLOCK_UNALIGNED
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyBlockUnaligned(ref byte destination, ref readonly byte source, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // unaligned. 0x1
+            // cpblk
+            // ret
+        }
+
+        /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is greater than
+        /// the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &gt; (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        // CoreCLR:CoreCLR:METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN
+        // AOT:IsAddressGreaterThan
+        // Mono:IsAddressGreaterThan
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressGreaterThan<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ldarg.1
+            // cgt.un
+            // ret
+        }
+
+        /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is greater than
+        /// or equal to the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &gt;= (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressGreaterThanOrEqualTo<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
+        {
+            return !IsAddressLessThan(in left, in right);
+        }
+
+        /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is less than
+        /// the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &lt; (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN
+        // AOT:IsAddressLessThan
+        // Mono:IsAddressLessThan
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressLessThan<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ldarg.1
+            // clt.un
+            // ret
+        }
+
+        /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is less than
+        /// or equal to the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &lt;= (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressLessThanOrEqualTo<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
+        {
+            return !IsAddressGreaterThan(in left, in right);
+        }
+
+        /// <summary>
+        /// Initializes a block of memory at the given location with a given initial value.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_INIT_BLOCK
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
+        public static void InitBlock(void* startAddress, byte value, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // initblk
+            // ret
+        }
+
+        /// <summary>
+        /// Initializes a block of memory at the given location with a given initial value.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INIT_BLOCK
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InitBlock(ref byte startAddress, byte value, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // initblk
+            // ret
+        }
+
+        /// <summary>
+        /// Initializes a block of memory at the given location with a given initial value
+        /// without assuming architecture dependent alignment of the address.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_INIT_BLOCK_UNALIGNED
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
+        public static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // unaligned. 0x1
+            // initblk
+            // ret
+        }
+
+        /// <summary>
+        /// Initializes a block of memory at the given location with a given initial value
+        /// without assuming architecture dependent alignment of the address.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INIT_BLOCK_UNALIGNED
+        // AOT:InitBlockUnaligned
+        // Mono:InitBlockUnaligned
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount)
+        {
+            for (uint i = 0; i < byteCount; i++)
+            {
+                AddByteOffset(ref startAddress, i) = value;
+            }
+
+            // ldarg .0
+            // ldarg .1
+            // ldarg .2
+            // unaligned. 0x1
+            // initblk
+            // ret
+        }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_READ_UNALIGNED
+        // AOT:ReadUnaligned
+        // Mono:ReadUnaligned
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
+        public static T ReadUnaligned<T>(void* source)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString(); // Type token used by the actual method body
+            throw new PlatformNotSupportedException();
+#else
+            return *(T*)source;
+#endif
+
+            // ldarg.0
+            // unaligned. 0x1
+            // ldobj !!T
+            // ret
+        }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_READ_UNALIGNED
+        // AOT:ReadUnaligned
+        // Mono:ReadUnaligned
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ReadUnaligned<T>(scoped ref readonly byte source)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString(); // Type token used by the actual method body
+            throw new PlatformNotSupportedException();
+#else
+            return As<byte, T>(ref Unsafe.AsRef(in source));
+#endif
+
+            // ldarg.0
+            // unaligned. 0x1
+            // ldobj !!T
+            // ret
+        }
+
+        /// <summary>
+        /// Writes a value of type <typeparamref name="T"/> to the given location.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_WRITE_UNALIGNED
+        // AOT:WriteUnaligned
+        // Mono:WriteUnaligned
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
+        public static void WriteUnaligned<T>(void* destination, T value)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString(); // Type token used by the actual method body
+            throw new PlatformNotSupportedException();
+#else
+            *(T*)destination = value;
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // unaligned. 0x01
+            // stobj !!T
+            // ret
+        }
+
+        /// <summary>
+        /// Writes a value of type <typeparamref name="T"/> to the given location.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_WRITE_UNALIGNED
+        // AOT:WriteUnaligned
+        // Mono:WriteUnaligned
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUnaligned<T>(ref byte destination, T value)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString(); // Type token used by the actual method body
+            throw new PlatformNotSupportedException();
+#else
+            As<byte, T>(ref destination) = value;
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // unaligned. 0x01
+            // stobj !!T
+            // ret
+        }
+
+        /// <summary>
+        /// Adds an byte offset to the given reference.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET_INTPTR
+        // AOT:AddByteOffset
+        // Mono:AddByteOffset
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AddByteOffset<T>(ref T source, nint byteOffset)
+            where T : allows ref struct
+        {
+            // This method is implemented by the toolchain
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ldarg.1
+            // add
+            // ret
+        }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
+        public static T Read<T>(void* source)
+            where T : allows ref struct
+        {
+            return *(T*)source;
+        }
+
+        /// <summary>
+        /// Writes a value of type <typeparamref name="T"/> to the given location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
+        public static void Write<T>(void* destination, T value)
+            where T : allows ref struct
+        {
+            *(T*)destination = value;
+        }
+
+        /// <summary>
+        /// Reinterprets the given location as a reference to a value of type <typeparamref name="T"/>.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
+        public static ref T AsRef<T>(void* source)
+            where T : allows ref struct
+        {
+            return ref *(T*)source;
+        }
+
+        /// <summary>
+        /// Reinterprets the given location as a reference to a value of type <typeparamref name="T"/>.
+        /// </summary>
+        /// <remarks>The lifetime of the reference will not be validated when using this API.</remarks>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__AS_REF_IN
+        // AOT:AsRef
+        // Mono:AsRef
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AsRef<T>(scoped ref readonly T source)
+            where T : allows ref struct
+        {
+            throw new PlatformNotSupportedException();
+
+            //ldarg .0
+            //ret
+        }
+
+        /// <summary>
+        /// Determines the byte offset from origin to target from the given references.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_BYTE_OFFSET
+        // AOT:ByteOffset
+        // Mono:ByteOffset
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint ByteOffset<T>([AllowNull] ref readonly T origin, [AllowNull] ref readonly T target)
+            where T : allows ref struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .1
+            // ldarg .0
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Returns a by-ref to type <typeparamref name="T"/> that is a null reference.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_NULLREF
+        // AOT:NullRef
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T NullRef<T>()
+            where T : allows ref struct
+        {
+            return ref AsRef<T>(null);
+
+            // ldc.i4.0
+            // conv.u
+            // ret
+        }
+
+        /// <summary>
+        /// Returns if a given by-ref to type <typeparamref name="T"/> is a null reference.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;source) == nullptr".
+        /// </remarks>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_IS_NULL
+        // AOT: IsNullRef
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNullRef<T>(ref readonly T source)
+            where T : allows ref struct
+        {
+            return AsPointer(in source) == null;
+
+            // ldarg.0
+            // ldc.i4.0
+            // conv.u
+            // ceq
+            // ret
+        }
+
+        /// <summary>
+        /// Bypasses definite assignment rules by taking advantage of <c>out</c> semantics.
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__SKIPINIT
+        // AOT:SkipInit
+        // Mono:SkipInit
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SkipInit<T>(out T value)
+            where T : allows ref struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ret
+        }
+
+        /// <summary>
+        /// Subtracts an element offset from the given reference.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INT_SUBTRACT
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Subtract<T>(ref T source, int elementOffset)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return ref SubtractByteOffset(ref source, elementOffset * (nint)sizeof(T));
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // sizeof !!T
+            // conv.i
+            // mul
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Subtracts an element offset from the given void pointer.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by the pointer.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__PTR_INT_SUBTRACT
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void* Subtract<T>(void* source, int elementOffset)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return (byte*)source - (elementOffset * (nint)sizeof(T));
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // sizeof !!T
+            // conv.i
+            // mul
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Subtracts an element offset from the given reference.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Subtract<T>(ref T source, nint elementOffset)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return ref SubtractByteOffset(ref source, elementOffset * (nint)sizeof(T));
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // sizeof !!T
+            // mul
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Subtracts an element offset from the given reference.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Subtract<T>(ref T source, nuint elementOffset)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return ref SubtractByteOffset(ref source, elementOffset * (nuint)sizeof(T));
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // sizeof !!T
+            // mul
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Subtracts a byte offset from the given reference.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T SubtractByteOffset<T>(ref T source, nint byteOffset)
+            where T : allows ref struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // ldarg .1
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Subtracts a byte offset from the given reference.
+        /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET
+        [NonVersionable]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T SubtractByteOffset<T>(ref T source, nuint byteOffset)
+            where T : allows ref struct
+        {
+#if CORECLR
+            typeof(T).ToString();
+            throw new PlatformNotSupportedException();
+#else
+            return ref SubtractByteOffset(ref source, (nint)byteOffset);
+#endif
+
+            // ldarg .0
+            // ldarg .1
+            // sub
+            // ret
+        }
+
+        /// <summary>
+        /// Returns a mutable ref to a boxed value
+        /// </summary>
+        [Intrinsic]
+        // CoreCLR:METHOD__UNSAFE__UNBOX
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T Unbox<T>(object box)
+            where T : struct
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .0
+            // unbox !!T
+            // ret
+        }
+
+
+        // Internal helper methods:
+
+        // Determines if the address is aligned at least to `alignment` bytes.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsOpportunisticallyAligned<T>(ref readonly T address, nuint alignment)
+        {
+            // `alignment` is expected to be a power of 2 in bytes.
+            // We use Unsafe.AsPointer to convert to a pointer,
+            // GC will keep alignment when moving objects (up to sizeof(void*)),
+            // otherwise alignment should be considered a hint if not pinned.
+            Debug.Assert(nuint.IsPow2(alignment));
+            return ((nuint)AsPointer(in address) & (alignment - 1)) == 0;
+        }
+
+        // Determines the misalignment of the address with respect to the specified `alignment`.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static nuint OpportunisticMisalignment<T>(ref readonly T address, nuint alignment)
+        {
+            // `alignment` is expected to be a power of 2 in bytes.
+            // We use Unsafe.AsPointer to convert to a pointer,
+            // GC will keep alignment when moving objects (up to sizeof(void*)),
+            // otherwise alignment should be considered a hint if not pinned.
+            Debug.Assert(nuint.IsPow2(alignment));
+            return (nuint)AsPointer(in address) & (alignment - 1);
+        }
+    }
+}

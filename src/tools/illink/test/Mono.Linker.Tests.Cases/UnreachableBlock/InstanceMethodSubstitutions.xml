@@ -1,0 +1,16 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.UnreachableBlock.InstanceMethodSubstitutions">
+      <method signature="System.Boolean IsEnabled()" body="stub" value="false">
+      </method>
+    </type>
+    <type fullname="Mono.Linker.Tests.Cases.UnreachableBlock.InstanceMethodSubstitutions/TestVirtualMethodBase">
+      <method signature="System.Boolean IsEnabled()" body="stub" value="true">
+      </method>
+    </type>
+    <type fullname="Mono.Linker.Tests.Cases.UnreachableBlock.InstanceMethodSubstitutions/TestVirtualMethodType">
+      <method signature="System.Boolean IsEnabled()" body="stub" value="true">
+      </method>
+    </type>
+  </assembly>
+</linker>

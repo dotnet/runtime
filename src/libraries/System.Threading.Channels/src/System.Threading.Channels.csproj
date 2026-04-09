@@ -1,0 +1,71 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides types for passing data between producers and consumers.
+
+Commonly Used Types:
+System.Threading.Channel
+System.Threading.Channel&lt;T&gt;</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\VoidResult.cs" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.cs" />
+    <Compile Include="System\Threading\Channels\BoundedChannel.cs" />
+    <Compile Include="System\Threading\Channels\BoundedChannelFullMode.cs" />
+    <Compile Include="System\Threading\Channels\Channel.cs" />
+    <Compile Include="System\Threading\Channels\ChannelClosedException.cs" />
+    <Compile Include="System\Threading\Channels\ChannelOptions.cs" />
+    <Compile Include="System\Threading\Channels\ChannelReader.cs" />
+    <Compile Include="System\Threading\Channels\ChannelUtilities.cs" />
+    <Compile Include="System\Threading\Channels\ChannelWriter.cs" />
+    <Compile Include="System\Threading\Channels\Channel_1.cs" />
+    <Compile Include="System\Threading\Channels\Channel_2.cs" />
+    <Compile Include="System\Threading\Channels\IDebugEnumerator.cs" />
+    <Compile Include="System\Threading\Channels\RendezvousChannel.cs" />
+    <Compile Include="System\Threading\Channels\SingleConsumerUnboundedChannel.cs" />
+    <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
+    <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\IProducerConsumerQueue.cs" Link="Common\System\Collections\Concurrent\IProducerConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs" Link="Common\System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs" Link="Common\System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs" Link="Common\System\Collections\Generic\Deque.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard.cs" />
+    <Compile Include="System\Threading\Channels\ChannelUtilities.netstandard.cs" />
+    <Compile Include="System\Threading\Channels\TaskCompletionSource.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs" />
+    <Compile Include="System\Threading\Channels\Channel.netcoreapp.cs" />
+    <Compile Include="System\Threading\Channels\ChannelOptions.netcoreapp.cs" />
+    <Compile Include="System\Threading\Channels\ChannelUtilities.netcoreapp.cs" />
+    <Compile Include="System\Threading\Channels\UnboundedPriorityChannel.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\src\System.Threading.ThreadPool.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+    <Compile Include="System\Threading\Channels\ChannelClosedException.netstandard21.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
+  </ItemGroup>
+
+</Project>

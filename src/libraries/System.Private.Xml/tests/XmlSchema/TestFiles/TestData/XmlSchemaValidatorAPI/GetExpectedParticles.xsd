@@ -1,0 +1,224 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+		   xmlns:temp="uri:tempuri">
+
+	<xs:element name="BasicElement" type="xs:string" />
+	
+	<xs:element name="NoTypeElement" />
+	
+	
+	<xs:element name="SequenceElement">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="elem1" />
+				<xs:element name="elem2" />
+			</xs:sequence>
+			<xs:attribute name="attr1" />
+			<xs:attribute name="attr2" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="ChoiceElement">
+		<xs:complexType>
+			<xs:choice>
+				<xs:element name="elem1" />
+				<xs:element name="elem2" />
+			</xs:choice>
+			<xs:attribute name="attr1" />
+			<xs:attribute name="attr2" />
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="AllElement">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="elem1" />
+				<xs:element name="elem2" />
+			</xs:all>
+			<xs:attribute name="attr1" />
+			<xs:attribute name="attr2" />
+		</xs:complexType>
+	</xs:element>
+	
+	
+	<xs:element name="NestedElement">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="foo">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="bar" type="xs:string" />
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	
+	<xs:element name="ReferenceElement">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="NestedElement" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	
+	<xs:element name="MinOccurs0Element">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="foo" minOccurs="0" />
+				<xs:element name="bar" type="xs:string" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="MaxOccurs0Element">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="foo" maxOccurs="0" />
+				<xs:element name="bar" type="xs:string" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	
+	<xs:element name="SequenceWildcardElement">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:any namespace="uri:tempuri" processContents="strict" />
+				<xs:element name="foo" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="ChoiceWildcardElement">
+		<xs:complexType>
+			<xs:choice>
+				<xs:any namespace="uri:tempuri" processContents="strict" />
+				<xs:element name="foo" />
+			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+	
+	
+	<xs:group name="SequenceGroup">
+		<xs:sequence>
+			<xs:element name="g1" />
+			<xs:element name="g2" />
+		</xs:sequence>
+	</xs:group>
+	
+	<xs:group name="ChoiceGroup">
+		<xs:choice>
+			<xs:element name="g1" />
+			<xs:element name="g2" />
+		</xs:choice>
+	</xs:group>
+	
+	<xs:element name="SequenceGroupElement">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:group ref="ChoiceGroup" />
+				<xs:element name="foo" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="ChoiceGroupElement">
+		<xs:complexType>
+			<xs:choice>
+				<xs:group ref="SequenceGroup" />
+				<xs:element name="foo" />
+			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+	
+	
+	<xs:complexType name="SequenceType">
+		<xs:sequence>
+			<xs:element name="elem1" />
+			<xs:element name="elem2" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="ChoiceType">
+		<xs:choice>
+			<xs:element name="elem1" />
+			<xs:element name="elem2" />
+		</xs:choice>
+	</xs:complexType>
+	
+	<xs:complexType name="AllType">
+		<xs:all>
+			<xs:element name="elem1" />
+			<xs:element name="elem2" minOccurs="0"/>
+		</xs:all>
+	</xs:complexType>
+	
+	<xs:element name="SequenceExtensionElement">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="SequenceType">
+					<xs:sequence>
+						<xs:element name="extended" />
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="ChoiceExtensionElement">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="ChoiceType">
+					<xs:choice>
+						<xs:element name="ext1" />
+						<xs:element name="ext2" />
+					</xs:choice>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="SequenceRestrictionElement">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:restriction base="SequenceType">
+					<xs:sequence>
+						<xs:element name="elem1" />
+						<xs:element name="elem2" maxOccurs="0"/>
+					</xs:sequence>
+				</xs:restriction>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="ChoiceRestrictionElement">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:restriction base="ChoiceType">
+					<xs:choice>
+						<xs:element name="elem1" />
+						<xs:element name="elem2" maxOccurs="0"/>
+					</xs:choice>
+				</xs:restriction>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="AllRestrictionElement">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:restriction base="AllType">
+					<xs:all>
+						<xs:element name="elem1" />
+						<xs:element name="elem2" maxOccurs="0"/>
+					</xs:all>
+				</xs:restriction>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

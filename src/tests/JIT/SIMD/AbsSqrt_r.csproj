@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AbsSqrt.cs" />
+  </ItemGroup>
+</Project>

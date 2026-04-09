@@ -1,0 +1,43 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="Interop/Globalization">
+      <!-- Internal API used by tests only. -->
+      <method name="GetICUVersion" />
+    </type>
+    <type fullname="System.Diagnostics.StackFrame">
+      <!-- Used by VS4Mac via reflection to symbolize stack traces -->
+      <method name="GetMethodFromNativeIP" />
+    </type>
+    <type fullname="System.Reflection.Emit.AssemblyBuilder">
+      <!-- Used by System.Linq.Expressions via reflection -->
+      <method name="ForceAllowDynamicCode" />
+    </type>
+    <type fullname="System.Runtime.Serialization.SerializationInfo">
+      <!-- Used by System.Runtime.Serialization.Formatters via reflection -->
+      <method name="UpdateValue" />
+      <method name="ThrowIfDeserializationInProgress" />
+    </type>
+    <type fullname="Internal.Runtime.InteropServices.ComActivator">
+      <!-- Used by hostpolicy.cpp -->
+      <method name="GetClassFactoryForTypeInContext" />
+      <method name="GetClassFactoryForTypeInternal" />
+      <method name="RegisterClassForTypeInContext" />
+      <method name="RegisterClassForTypeInternal" />
+      <method name="UnregisterClassForTypeInContext" />
+      <method name="UnregisterClassForTypeInternal" />
+    </type>
+    <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">
+      <!-- Used by hostpolicy.cpp -->
+      <method name="LoadInMemoryAssembly" />
+      <!-- Used by ijwhost.cpp -->
+      <method name="LoadInMemoryAssemblyInContext" />
+    </type>
+    <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
+      <!-- Used by hostpolicy.cpp -->
+      <method name="LoadAssembly" />
+      <method name="LoadAssemblyBytes" />
+      <method name="LoadAssemblyAndGetFunctionPointer" />
+      <method name="GetFunctionPointer" />
+    </type>
+  </assembly>
+</linker>

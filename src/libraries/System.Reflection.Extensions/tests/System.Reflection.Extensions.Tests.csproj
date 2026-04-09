@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Definitions\ConstructorDefinitions.cs" />
+    <Compile Include="Definitions\EventDefinitions.cs" />
+    <Compile Include="Definitions\FieldDefinitions.cs" />
+    <Compile Include="Definitions\MethodDefinitions.cs" />
+    <Compile Include="Definitions\PropertyDefinitions.cs" />
+    <Compile Include="GetCustomAttributes_Assembly.cs" />
+    <Compile Include="GetCustomAttributes_Compat.cs" />
+    <Compile Include="GetCustomAttributes_MemberInfo.cs" />
+    <Compile Include="GetCustomAttributes_ParameterInfo.cs" />
+    <Compile Include="ReflectionTestExtensions.cs" />
+    <Compile Include="RuntimeReflectionExtensionTests.cs" />
+    <Compile Include="RuntimeReflectionExtensionTestsWithQuirks.cs" />
+  </ItemGroup>
+</Project>

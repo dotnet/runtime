@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Mono\DataRowComparerTest.cs" />
+    <Compile Include="Mono\DataRowExtensionsTest.cs" />
+    <Compile Include="Mono\DataTableExtensionsTest.cs" />
+    <Compile Include="Mono\EnumerableRowCollectionTest.cs" />
+    <Compile Include="System\Data\DataRowComparerTests.cs" />
+    <Compile Include="System\Data\DataRowExtensionsTests.cs" />
+    <Compile Include="System\Data\DataTableExtensionsTests.cs" />
+    <Compile Include="System\Data\EnumerableRowCollectionExtensionsTests.cs" />
+    <Compile Include="System\Data\TypedTableBaseExtensionsTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Mono\testdataset1.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

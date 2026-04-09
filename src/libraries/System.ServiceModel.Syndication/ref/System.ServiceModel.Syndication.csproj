@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+
+    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System.ServiceModel.Syndication.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'"/>
+    <Compile Include="System.ServiceModel.Syndication.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"/>
+    <Compile Include="System.ServiceModel.Syndication.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="System.ServiceModel" />
+  </ItemGroup>
+</Project>

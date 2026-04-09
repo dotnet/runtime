@@ -1,0 +1,94 @@
+TOP=$(realpath $(CURDIR)/../../..)
+-include Make.config
+
+escape_quote = $(subst ",\",$(1))
+
+ifneq ($(V),)
+MSBUILD_ARGS+=/p:MonoVerboseBuild=true
+MSBUILD_ARGS+=-bl
+endif
+
+DOTNET=$(TOP)/dotnet.sh
+
+CONFIG?=Release
+BINDIR?=$(TOP)/artifacts/bin
+OBJDIR?=$(TOP)/artifacts/obj
+_MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=wasi /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
+HELIX_TARGET_QUEUE?=Ubuntu.1804.Amd64.Open
+
+all: build-all
+
+MONO_OBJ_DIR=$(OBJDIR)/mono/wasi.wasm.$(CONFIG)
+BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm
+
+#
+# Helper targets
+#
+
+.PHONY: runtime
+.PHONY: build
+
+build:
+	$(TOP)/build.sh mono+libs.pretest -os wasi -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
+build-all:
+	$(TOP)/build.sh mono+libs+packs -os wasi -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
+runtime:
+	$(TOP)/build.sh mono.runtime+mono.wasiruntime+libs.native+libs.pretest -os wasi -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
+# Rebuild only the mono runtime+cross compiler, don't build dotnet.wasm
+mono-runtime:
+	$(TOP)/build.sh mono.runtime+libs.native+libs.pretest -os wasi -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
+corlib:
+	$(TOP)/build.sh mono.corelib+mono.wasiruntime+libs.pretest -os wasi -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
+test-runner:
+	$(DOTNET) build $(TOP)/src/libraries/Common/tests/WasmTestRunner /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+
+app-builder:
+	$(DOTNET) build $(TOP)/src/tasks/WasmAppBuilder
+
+build-tasks:
+	$(DOTNET) build $(TOP)/src/tasks/tasks.proj /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+
+build-packages:
+	rm -f $(TOP)/artifacts/packages/$(CONFIG)/Shipping/*.nupkg
+	$(TOP)/build.sh mono.packages+mono.manifests+packs.product -os wasi -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
+clean:
+	$(RM) -rf $(BUILDS_OBJ_DIR)
+
+run-tests-%:
+	$(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+run-build-tests:
+	$(DOTNET) build $(TOP)/src/mono/wasi//Wasi.Build.Tests/ /t:Test /bl $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+submit-wbt-helix:
+	PATH="$(JSVU):$(PATH)" \
+		$(DOTNET) build $(TOP)/src/mono/wasi/Wasi.Build.Tests/ /v:m /p:ArchiveTests=true /t:ArchiveTests $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS) && \
+	    BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
+		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
+		/p:TestRunNamePrefixSuffix=WasiBuildTests /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
+		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -v:m -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
+		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
+		/p:_Scenarios=buildwasmapps \
+		$(_MSBUILD_WASM_BUILD_ARGS) \
+		$(MSBUILD_ARGS)
+
+submit-tests-helix:
+	echo "\n** This will submit all the available test zip files to helix **\n"
+	BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
+		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
+		/p:TestRunNamePrefixSuffix=WasiTests /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
+		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -v:n -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
+		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
+		$(_MSBUILD_WASM_BUILD_ARGS) \
+		$(MSBUILD_ARGS)
+
+build-dbg-proxy:
+	$(DOTNET) build $(TOP)/src/mono/browser/debugger/wasiDebugHost $(MSBUILD_ARGS)
+build-app-host:
+	$(DOTNET) build $(TOP)/src/mono/wasm/host $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)

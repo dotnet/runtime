@@ -1,0 +1,3 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="a">
+	<xs:include schemaLocation="include_v12_b.xsd" />
+</xs:schema>

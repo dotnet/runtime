@@ -1,0 +1,77 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
+             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
+             Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs"
+             Link="CommonTest\System\Threading\ThreadPoolHelpers.cs" />
+    <Compile Include="Combinatorial\CancellationParallelQueryCombinationTests.cs" />
+    <Compile Include="Combinatorial\FailingParallelQueryCombinationTests.cs" />
+    <Compile Include="Combinatorial\ParallelQueryCombinationTests.cs" />
+    <Compile Include="Combinatorial\SourcesAndOperators.cs" />
+    <Compile Include="Combinatorial\UnorderedParallelQueryCombinationTests.cs" />
+    <Compile Include="Helpers\AssertThrows.cs" />
+    <Compile Include="Helpers\Comparers.cs" />
+    <Compile Include="Helpers\DeliberateTestException.cs" />
+    <Compile Include="Helpers\Enumerables.cs" />
+    <Compile Include="Helpers\Functions.cs" />
+    <Compile Include="Helpers\IntegerRangeSet.cs" />
+    <Compile Include="Helpers\Labeled.cs" />
+    <Compile Include="Helpers\KeyValuePair.cs" />
+    <Compile Include="Helpers\Sources.cs" />
+    <Compile Include="Helpers\CustomPartitioners.cs" />
+    <Compile Include="Helpers\UnorderedSources.cs" />
+    <Compile Include="QueryOperators\AggregateTests.cs" />
+    <Compile Include="QueryOperators\AllTests.cs" />
+    <Compile Include="QueryOperators\AnyTests.cs" />
+    <Compile Include="QueryOperators\AsEnumerableTests.cs" />
+    <Compile Include="QueryOperators\AsSequentialTests.cs" />
+    <Compile Include="QueryOperators\AverageTests.cs" />
+    <Compile Include="QueryOperators\CastTests.cs" />
+    <Compile Include="QueryOperators\ConcatTests.cs" />
+    <Compile Include="QueryOperators\ContainsTests.cs" />
+    <Compile Include="QueryOperators\CountLongCountTests.cs" />
+    <Compile Include="QueryOperators\DefaultIfEmptyTests.cs" />
+    <Compile Include="QueryOperators\DistinctTests.cs" />
+    <Compile Include="QueryOperators\ElementAtElementAtOrDefaultTests.cs" />
+    <Compile Include="QueryOperators\ExceptTests.cs" />
+    <Compile Include="QueryOperators\FirstFirstOrDefaultTests.cs" />
+    <Compile Include="QueryOperators\ForAllTests.cs" />
+    <Compile Include="QueryOperators\GetEnumeratorTests.cs" />
+    <Compile Include="QueryOperators\GroupByTests.cs" />
+    <Compile Include="QueryOperators\GroupJoinTests.cs" />
+    <Compile Include="QueryOperators\IntersectTests.cs" />
+    <Compile Include="QueryOperators\JoinTests.cs" />
+    <Compile Include="QueryOperators\LastLastOrDefaultTests.cs" />
+    <Compile Include="QueryOperators\MaxTests.cs" />
+    <Compile Include="QueryOperators\MinTests.cs" />
+    <Compile Include="QueryOperators\OfTypeTests.cs" />
+    <Compile Include="QueryOperators\OrderByThenByTests.cs" />
+    <Compile Include="QueryOperators\ReverseTests.cs" />
+    <Compile Include="QueryOperators\SingleSingleOrDefaultTests.cs" />
+    <Compile Include="QueryOperators\SelectSelectManyTests.cs" />
+    <Compile Include="QueryOperators\SequenceEqualTests.cs" />
+    <Compile Include="QueryOperators\SkipSkipWhileTests.cs" />
+    <Compile Include="QueryOperators\SumTests.cs" />
+    <Compile Include="QueryOperators\TakeTakeWhileTests.cs" />
+    <Compile Include="QueryOperators\ToArrayTests.cs" />
+    <Compile Include="QueryOperators\ToDictionaryTests.cs" />
+    <Compile Include="QueryOperators\ToListTests.cs" />
+    <Compile Include="QueryOperators\ToLookupTests.cs" />
+    <Compile Include="QueryOperators\UnionTests.cs" />
+    <Compile Include="QueryOperators\WhereTests.cs" />
+    <Compile Include="QueryOperators\ZipTests.cs" />
+    <Compile Include="DegreeOfParallelismTests.cs" />
+    <Compile Include="EtwTests.cs" />
+    <Compile Include="ExchangeTests.cs" />
+    <Compile Include="ParallelEnumerableTests.cs" />
+    <Compile Include="PlinqModesTests.cs" />
+    <Compile Include="WithCancellationTests.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
+  </ItemGroup>
+</Project>

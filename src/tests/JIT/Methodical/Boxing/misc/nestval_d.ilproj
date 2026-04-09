@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="nestval_d.il" />
+    <Compile Include="nestval.il" />
+  </ItemGroup>
+</Project>

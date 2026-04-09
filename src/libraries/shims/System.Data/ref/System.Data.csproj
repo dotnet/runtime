@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.Common\ref\System.Data.Common.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Data.Odbc.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Data.OleDb.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Data.SqlClient.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

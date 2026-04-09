@@ -1,0 +1,11 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="a" xmlns:a="a">
+
+		<xs:complexType name="ct">
+		  <xs:sequence>
+		   <xs:element ref="b"/>
+		  </xs:sequence>
+		</xs:complexType>
+
+		<xs:element name="root" />
+
+	</xs:schema>

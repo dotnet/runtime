@@ -1,0 +1,100 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+/* eslint-disable no-undef */
+
+"use strict";
+
+// -- this javascript file is evaluated by emcc during compilation! --
+
+// because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
+const WASM_ENABLE_SIMD = process.env.WASM_ENABLE_SIMD === "1";
+const WASM_ENABLE_EVENTPIPE = process.env.WASM_ENABLE_EVENTPIPE === "1";
+const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
+const ENABLE_DEVTOOLS_PROFILER = process.env.ENABLE_DEVTOOLS_PROFILER === "1";
+const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
+const ENABLE_LOG_PROFILER = process.env.ENABLE_LOG_PROFILER === "1";
+const RUN_AOT_COMPILATION = process.env.RUN_AOT_COMPILATION === "1";
+var methodIndexByName = undefined;
+var gitHash = undefined;
+
+function setup(emscriptenBuildOptions) {
+    // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
+    #if USE_PTHREADS
+    const modulePThread = PThread;
+    #else
+    const modulePThread = {};
+    const ENVIRONMENT_IS_PTHREAD = false;
+    #endif
+    const dotnet_replacements = {
+        fetch: globalThis.fetch,
+        ENVIRONMENT_IS_WORKER,
+        modulePThread,
+        scriptDirectory,
+    };
+
+    ENVIRONMENT_IS_WORKER = dotnet_replacements.ENVIRONMENT_IS_WORKER;
+    Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
+    noExitRuntime = dotnet_replacements.noExitRuntime;
+    fetch = dotnet_replacements.fetch;
+    scriptDirectory = dotnet_replacements.scriptDirectory;
+    Module.__dotnet_runtime.passEmscriptenInternals({
+        isPThread: ENVIRONMENT_IS_PTHREAD,
+        quit_, ExitStatus,
+        updateMemoryViews,
+        getMemory: () => { return wasmMemory; },
+        getWasmIndirectFunctionTable: () => { return wasmTable; },
+    }, emscriptenBuildOptions);
+
+    #if USE_PTHREADS
+    if (ENVIRONMENT_IS_PTHREAD) {
+        Module.config = {};
+        Module.__dotnet_runtime.configureWorkerStartup(Module);
+    } else {
+        #endif
+        Module.__dotnet_runtime.configureEmscriptenStartup(Module);
+        #if USE_PTHREADS
+    }
+    #endif
+}
+
+const DotnetSupportLib = {
+    $DOTNET: { setup },
+};
+
+function createWasmImportStubsFrom(collection) {
+    for (let functionName in collection) {
+        if (functionName in DotnetSupportLib) throw new Error(`Function ${functionName} is already defined`);
+        const runtime_idx = collection[functionName]
+        const stub_fn = new Function(`return {runtime_idx:${runtime_idx}};//${functionName}`);
+        DotnetSupportLib[functionName] = stub_fn;
+    }
+}
+
+// the JS methods would be visible to EMCC linker and become imports of the WASM module
+// we generate simple stub for each exported function so that emcc will include them in the final output
+// we will replace them with the real implementation in replace_linker_placeholders
+function injectDependencies() {
+    createWasmImportStubsFrom(methodIndexByName.mono_wasm_imports);
+
+    #if USE_PTHREADS
+    createWasmImportStubsFrom(methodIndexByName.mono_wasm_threads_imports);
+    #endif
+
+    DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
+        `wasmEnableSIMD: ${WASM_ENABLE_SIMD},` +
+        `wasmEnableEH: ${WASM_ENABLE_EH},` +
+        `enableAotProfiler: ${ENABLE_AOT_PROFILER}, ` +
+        `enableDevToolsProfiler: ${ENABLE_DEVTOOLS_PROFILER}, ` +
+        `enableLogProfiler: ${ENABLE_LOG_PROFILER}, ` +
+        `enableEventPipe: ${WASM_ENABLE_EVENTPIPE}, ` +
+        `runAOTCompilation: ${RUN_AOT_COMPILATION}, ` +
+        `wasmEnableThreads: ${!!USE_PTHREADS}, ` +
+        `gitHash: "${gitHash}", ` +
+        `});`;
+
+    autoAddDeps(DotnetSupportLib, "$DOTNET");
+    mergeInto(LibraryManager.library, DotnetSupportLib);
+}
+
+
+// var methodIndexByName wil be appended below by the MSBuild in browser.proj via exports-linker.ts

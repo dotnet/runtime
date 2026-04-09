@@ -1,0 +1,7 @@
+const MonoBundledDataResource %ResourceName% = {
+    .resource = { .type = MONO_BUNDLED_DATA,
+                  .id = "%ResourceID%" },
+    .data = { .name = "%RegisteredFilename%",
+              .data = %ResourceDataSymbol%_data,
+              .size = %Len% }
+};

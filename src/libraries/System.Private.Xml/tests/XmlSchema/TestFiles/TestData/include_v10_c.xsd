@@ -1,0 +1,20 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" >
+
+	<xsd:include schemaLocation="include_v10_a.xsd"/>
+	<xsd:include schemaLocation="include_v10_b.xsd"/>
+
+	<xsd:complexType name="ct-C">
+		<xsd:sequence minOccurs="1">
+			<xsd:element name="c1" type="xsd:int" />
+			<xsd:element name="c2" type="xsd:int" />
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="e3" type="ct-C" />
+
+	<xsd:element name="c-e2" type="ct-B" />
+	<xsd:element name="c-e1" type="ct-A" />
+
+</xsd:schema>
+
+

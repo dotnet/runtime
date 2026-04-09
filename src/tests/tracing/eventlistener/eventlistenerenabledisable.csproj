@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible, JitOptimizationSensitive -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Tracing tests routinely time out with jitstress and gcstress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="eventlistenerenabledisable.cs" />
+    <ProjectReference Include="../common/tracing_common.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnmanagedCallersOnlyBasicTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- This is needed to make sure native binary gets installed in the right location -->
+    <CMakeProjectReference Include="../UnmanagedCallersOnly/CMakeLists.txt" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

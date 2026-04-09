@@ -1,0 +1,38 @@
+<Project>
+
+  <Import Project="..\..\Directory.Build.targets" />
+
+  <PropertyGroup>
+    <ForwardedTypesCompilePath>$(IntermediateOutputPath)$(MSBuildProjectName).ForwardedTypes.cs</ForwardedTypesCompilePath>
+  </PropertyGroup>
+
+  <Target Name="CreateCompileSourceForForwardedTypes"
+          BeforeTargets="CoreCompile"
+          Inputs="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath)"
+          Outputs="$(ForwardedTypesCompilePath)">
+    <Error Text="The 'ForwardedType' item must not be empty." Condition="'@(ForwardedType)' == ''" />
+
+    <ItemGroup>
+      <ForwardedType Namespace="$([System.String]::new('%(Identity)').Substring(0, $([System.String]::new('%(Identity)').LastIndexOf('.'))))" />
+      <ForwardedType TypeName="$([System.String]::new('%(Identity)').Substring($([MSBuild]::Add($([System.String]::new('%(Identity)').LastIndexOf('.')), 1))))" />
+
+      <ForwardedTypeWithoutInnerClass Include="@(ForwardedType->WithMetadataValue('InnerClass', ''))" />
+      <ForwardedTypeWithInnerClass Include="@(ForwardedType)"
+                                   Exclude="@(ForwardedTypeWithoutInnerClass)" />
+
+      <ForwardedTypesLine Include="namespace %(ForwardedTypeWithoutInnerClass.Namespace) { public static class %(ForwardedTypeWithoutInnerClass.TypeName) { } }"
+                          Condition="'@(ForwardedTypeWithoutInnerClass)' != ''" />
+      <ForwardedTypesLine Include="namespace %(ForwardedTypeWithInnerClass.Namespace) { public static class %(ForwardedTypeWithInnerClass.TypeName) { public static class $([System.String]::new('%(ForwardedTypeWithInnerClass.InnerClass)').Replace(';', ' { } public static class ')) { } } }"
+                          Condition="'@(ForwardedTypeWithInnerClass)' != ''" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(ForwardedTypesCompilePath)"
+                      Lines="@(ForwardedTypesLine)"
+                      Overwrite="true" />
+
+    <ItemGroup>
+      <Compile Include="$(ForwardedTypesCompilePath)" />
+      <FileWrites Include="$(ForwardedTypesCompilePath)" />
+    </ItemGroup>
+  </Target>
+</Project> 

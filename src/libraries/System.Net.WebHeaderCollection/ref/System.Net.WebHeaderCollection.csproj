@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+     <!-- Nullability of parameter 'name' doesn't match overridden member -->
+    <NoWarn>$(NoWarn);CS8765</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Net.WebHeaderCollection.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
+  </ItemGroup>
+</Project>

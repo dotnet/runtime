@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Composition\Hosting\Core\CompositionContractTests.cs" />
+    <Compile Include="System\Composition\Hosting\CompositionFailedExceptionTests.cs" />
+    <Compile Include="System\Composition\CompositionContextTests.cs" />
+    <Compile Include="System\Composition\ExportFactoryTMetadataTests.cs" />
+    <Compile Include="System\Composition\ExportFactoryTests.cs" />
+    <Compile Include="System\Composition\ExportTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Composition.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

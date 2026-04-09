@@ -1,0 +1,67 @@
+<Project>
+  <PropertyGroup>
+    <AsnXml />
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)asn.xsd">
+      <Link>Common\System\Security\Cryptography\Asn1\asn.xsd</Link>
+    </None>
+  </ItemGroup>
+
+  <UsingTask
+    TaskName="CompareFilesIgnoreLineEndings"
+    TaskFactory="RoslynCodeTaskFactory"
+    AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <GeneratedFile ParameterType="Microsoft.Build.Framework.ITaskItem" Required="true" />
+      <ExistingFile ParameterType="Microsoft.Build.Framework.ITaskItem" Required="true" />
+      <ContentsDiffer ParameterType="System.Boolean" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+        ContentsDiffer = !File.Exists(ExistingFile.ItemSpec) ||
+          !File.ReadLines(ExistingFile.ItemSpec).SequenceEqual(File.ReadLines(GeneratedFile.ItemSpec));
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="CompileAsn" BeforeTargets="CoreCompile"
+    Condition=" '@(AsnXml)' != '' "
+    Inputs="@(AsnXml);$(MSBuildThisFileDirectory)asn.xslt"
+    Outputs="%(Identity).cs">
+
+    <PropertyGroup>
+      <_AsnIntermediatePath>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'asnxml'))</_AsnIntermediatePath>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_AsnIntermediatePath)" />
+
+    <XslTransformation
+      XslInputPath="$(MSBuildThisFileDirectory)asn.xslt"
+      XmlInputPaths="@(AsnXml)"
+      OutputPaths="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')" />
+
+    <CompareFilesIgnoreLineEndings
+      GeneratedFile="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')"
+      ExistingFile="@(AsnXml -> '%(Identity).cs')">
+      <Output TaskParameter="ContentsDiffer" ItemName="_FilesDiffer" />
+    </CompareFilesIgnoreLineEndings>
+
+    <Copy
+      Condition="'@(_FilesDiffer)' == 'true'"
+      SourceFiles="@(AsnXml -> '$(_AsnIntermediatePath)%(filename).cs')"
+      DestinationFiles="@(AsnXml -> '%(Identity).cs')" />
+
+    <!-- For files that were not copied because there were no meaningful changes, we still need to touch the timestamp
+    if they were part of the build input.
+    Otherwise, MSBuild will think the output from the target is still out of date, and it will continue to re-run the
+    target for all inputs for incremental builds. -->
+    <Touch Condition="'@(_FilesDiffer)' != 'true'" Files="@(AsnXml -> '%(Identity).cs')" />
+
+    <Warning Condition="'@(_FilesDiffer)' == 'true'" Text="AsnXml regenerated files, be sure to check them in: @(AsnXml -> '%(Identity).cs')" />
+  </Target>
+</Project>

@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ForwardedType Include="System.Security.Cryptography.Xml.CipherData" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.CipherReference" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.DSAKeyValue" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.DataObject" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.DataReference" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.EncryptedData" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.EncryptedKey" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.EncryptedReference" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.EncryptedType" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.EncryptedXml" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.EncryptionMethod" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.EncryptionProperty" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.EncryptionPropertyCollection" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.IRelDecryptor" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.KeyInfo" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.KeyInfoClause" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.KeyInfoEncryptedKey" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.KeyInfoName" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.KeyInfoNode" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.KeyInfoRetrievalMethod" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.KeyInfoX509Data" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.KeyReference" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.RSAKeyValue" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.Reference" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.ReferenceList" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.Signature" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.SignedInfo" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.SignedXml" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.Transform" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.TransformChain" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.XmlDecryptionTransform" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.XmlDsigBase64Transform" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.XmlDsigC14NTransform" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.XmlDsigC14NWithCommentsTransform" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.XmlDsigEnvelopedSignatureTransform" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.XmlDsigExcC14NTransform" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.XmlDsigExcC14NWithCommentsTransform" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.XmlDsigXPathTransform" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.XmlDsigXsltTransform" />
+    <ForwardedType Include="System.Security.Cryptography.Xml.XmlLicenseTransform" />
+  </ItemGroup>
+
+</Project>

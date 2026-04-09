@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ForwardedTypesAssembly.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UnloadableAssembly\UnloadableAssembly.csproj" />
+  </ItemGroup>
+</Project>

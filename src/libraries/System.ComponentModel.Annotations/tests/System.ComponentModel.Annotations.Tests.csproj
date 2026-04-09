@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Nullable>disable</Nullable> <!-- Disable nullable attributes as some tests depend on them not being present. -->
+    <NoWarn>$(NoWarn);nullable</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\ComponentModel\DataAnnotations\AllowedValuesAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProviderTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Base64StringAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\LengthAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\UIHintAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\FilterUIHintAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationAttributeTestBase.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\AssociationAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CompareAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CreditCardAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CustomValidationAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DataTypeAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayColumnAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttributeTests.netcoreapp.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EditableAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EmailAddressAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EnumDataTypeAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\FileExtensionsAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MaxLengthAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MetadataTypeAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MinLengthAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\PhoneAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RangeAttributeTests.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttributeTests.Core.cs" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RequiredAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ScaffoldColumnAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\ColumnAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\DatabaseGeneratedAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\ForeignKeyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\InversePropertyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\TableAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\StringLengthAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\UrlAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationContextTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationExceptionTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationResultTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidatorTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DeniedValuesAttributeTests.cs" />
+
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+  </ItemGroup>
+</Project>

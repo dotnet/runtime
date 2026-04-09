@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="EventsAdd.cs" />
+    <Compile Include="EventsName.cs" />
+    <Compile Include="EventsRemove.cs" />
+    <Compile Include="EventsReplace.cs" />
+    <Compile Include="EventsValue.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj" />
+    <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,8 @@
+/semantic.cache
+/TAGS
+/.metadata
+
+# Global patterns
+.gdb_history
+xdb.il
+*.[oa]

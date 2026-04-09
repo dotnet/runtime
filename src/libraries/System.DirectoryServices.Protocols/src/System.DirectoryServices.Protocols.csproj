@@ -1,0 +1,102 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-osx;$(NetCoreAppMinimum)-linux;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)-osx;$(NetCoreAppPrevious)-linux;$(NetCoreAppPrevious)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <IsPackable>true</IsPackable>
+    <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
+    <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
+    <PackageDescription>Provides the methods defined in the Lightweight Directory Access Protocol (LDAP) version 3 (V3) and Directory Services Markup Language (DSML) version 2.0 (V2) standards.</PackageDescription>
+    <!-- CS3016: Arrays as attribute arguments is not CLS-compliant -->
+    <NoWarn>$(NoWarn);CS3016</NoWarn>
+
+    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
+  </PropertyGroup>
+
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.DirectoryServicesProtocols_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+    <Compile Include="System\DirectoryServices\Protocols\common\AsnWriterExtensions.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\AuthTypes.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DereferenceAlias.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryAttribute.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryAttributeOperation.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryConnection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryControl.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryException.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryIdentifier.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryOperation.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryRequest.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\DirectoryResponse.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\PartialResultsCollection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\ReferralChasingOption.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\ResultCode.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\SearchResults.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\SearchScope.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\utils.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapAsyncResult.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapDirectoryIdentifier.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapException.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapPartialResultsProcessor.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.cs" />
+
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)Interop\Interop.Ldap.cs" Link="Common\Interop\Interop.Ldap.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\QuotaControl.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\BerPal.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.Windows.cs" />
+
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wldap32\Interop.Ldap.cs" Link="Common\Interop\Windows\Wldap32\Interop.Ldap.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Wldap32\Interop.Ber.cs" Link="Common\Interop\Windows\Wldap32\Interop.Ber.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'osx'">
+    <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\QuotaControl.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\BerPal.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LocalAppContextSwitches.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.Linux.cs" />
+
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs" Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\OpenLdap\Interop.Ldap.cs" Link="Common\Interop\Linux\OpenLdap\Interop.Ldap.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\OpenLdap\Interop.Ber.cs" Link="Common\Interop\Linux\OpenLdap\Interop.Ber.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux'">
+    <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs" Link="Common\Interop\Linux\Interop.Libraries.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx'">
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs" Link="Common\Interop\OSX\Interop.Libraries.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
+  </ItemGroup>
+
+</Project>

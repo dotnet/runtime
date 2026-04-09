@@ -1,0 +1,8 @@
+<?msg piMessage?> 
+ <!-- cmtMessage --> 
+<Message id="9">
+ <message>
+  <varMessage/> 
+  Message : in temp. this is a sample message 
+  </message>
+</Message>

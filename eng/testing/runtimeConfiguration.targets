@@ -1,0 +1,13 @@
+<Project> 
+  <PropertyGroup>
+    <!-- By default copy the test runtime config file for executable test projects (+ test support projects). -->
+    <IsTestProjectOrExecutable Condition="'$(IsTestProject)' == 'true' or
+                                          '$(OutputType.ToLower())' == 'exe'">true</IsTestProjectOrExecutable>
+    <GenerateRuntimeConfigurationFiles Condition="'$(GenerateRuntimeConfigurationFiles)' == '' and
+                                                  '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                                                  '$(IsTestProjectOrExecutable)' == 'true'">true</GenerateRuntimeConfigurationFiles>
+    <GenerateAppConfigurationFile Condition="'$(IsTestProjectOrExecutable)' == 'true' and
+                                             '$(TargetFrameworkIdentifier)' == '.NETFramework'">true</GenerateAppConfigurationFile>
+    <AppConfig Condition="'$(GenerateAppConfigurationFile)' == 'true'">$(MSBuildThisFileDirectory)netfx.exe.config</AppConfig>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,11 @@
+﻿<out>
+  <test1>                
+Average value: 7.5.
+            </test1>
+  <test2>                
+Average value: NaN.
+            </test2>
+  <test3>                
+Average value: NaN.
+            </test3>
+</out>

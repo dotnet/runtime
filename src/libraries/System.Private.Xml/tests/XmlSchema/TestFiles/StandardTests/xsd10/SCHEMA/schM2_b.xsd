@@ -1,0 +1,17 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+elementFormDefault="qualified"
+>
+
+	<xsd:attributeGroup name="b-g1">
+		<xsd:attribute name="b1" type="xsd:boolean"/>
+		<xsd:attribute name="b2" />
+		<xsd:attribute name="b3" />
+	</xsd:attributeGroup>
+
+	<xsd:complexType name="b-ct">
+		<xsd:attributeGroup ref="b-g1"/>
+	</xsd:complexType>
+
+	<xsd:element name="b-e1" type="b-ct" />
+	
+</xsd:schema>

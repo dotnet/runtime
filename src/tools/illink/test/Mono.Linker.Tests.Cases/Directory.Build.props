@@ -1,0 +1,27 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);INCLUDE_EXPECTATIONS;SUPPORTS_DEFAULT_INTERFACE_METHODS</DefineConstants>
+    <WarningLevel>0</WarningLevel>
+    <AnalysisLevel>0</AnalysisLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Get relative path of each .csproj inside the Mono.Linker.Tests.Cases directory -->
+    <_TestProjectRelativePath>$([MSBuild]::MakeRelative($(MSBuildThisFileDirectory), $(MSBuildProjectDirectory)))/</_TestProjectRelativePath>
+    <_RootTestDirName>$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($(MSBuildThisFileDirectory)))))</_RootTestDirName>
+    <!-- Place nested project outputs into a subdirectory of the Mono.Linker.Tests.Cases output directory -->
+    <BaseIntermediateOutputPath>$(ArtifactsObjDir)$(_RootTestDirName)/$(Configuration)/$(TargetFramework)/$(_TestProjectRelativePath)</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <BaseOutputPath>$(ArtifactsBinDir)$(_RootTestDirName)/$(Configuration)/$(TargetFramework)/$(_TestProjectRelativePath)</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
+  </ItemGroup>
+
+</Project>

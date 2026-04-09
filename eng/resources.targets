@@ -1,0 +1,29 @@
+<Project>
+  <PropertyGroup>
+    <StringResourcesPath Condition="'$(StringResourcesPath)' == '' and Exists('$(MSBuildProjectDirectory)\Resources\Strings.resx')">$(MSBuildProjectDirectory)\Resources\Strings.resx</StringResourcesPath>
+    <StringResourcesNamespace Condition="'$(StringResourcesNamespace)' == ''">System</StringResourcesNamespace>
+    <StringResourcesClassName Condition="'$(StringResourcesClassName)' == ''">SR</StringResourcesClassName>
+    <StringResourcesName Condition="'$(StringResourcesName)' == ''">FxResources.$(AssemblyName).$(StringResourcesClassName)</StringResourcesName>
+
+    <!-- We define our own implementation of GetResourceString -->
+    <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
+    <!-- For debug builds we include the full value string so that we get actual resources, even in the case the toolchain strips the resources file -->
+    <GenerateResxSourceIncludeDefaultValues Condition="'$(Configuration)' == 'Debug'">true</GenerateResxSourceIncludeDefaultValues>
+  </PropertyGroup>
+
+  <!-- Include files under StringResourcesPath by convention unless OmitResources is set. -->
+  <ItemGroup Condition="'$(StringResourcesPath)' != '' and '$(OmitResources)' != 'true'"> 
+    <!-- Delete the embedded resource item pointing to StringResourcesPath in case the
+         EnableDefaultEmbeddedResourceItems glob didn't include it and include it again. -->
+    <EmbeddedResource Remove="$(StringResourcesPath)" Condition="'$(EnableDefaultEmbeddedResourceItems)' == 'true'" />
+    <EmbeddedResource Include="$(StringResourcesPath)"
+                      Visible="true"
+                      ManifestResourceName="$(StringResourcesName)"
+                      GenerateSource="true"
+                      ClassName="$(StringResourcesNamespace).$(StringResourcesClassName)" />
+    <!-- Include common SR helper when resources are included. -->
+    <Compile Include="$(CommonPath)/System/SR$(DefaultLanguageSourceExtension)"
+             Visible="true"
+             Link="Resources/Common/SR$(DefaultLanguageSourceExtension)" />
+  </ItemGroup>
+</Project>

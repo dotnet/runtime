@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Linq\EnumerableExecutor.cs" />
+    <Compile Include="System\Linq\EnumerableQuery.cs" />
+    <Compile Include="System\Linq\EnumerableRewriter.cs" />
+    <Compile Include="System\Linq\Error.cs" />
+    <Compile Include="System\Linq\Queryable.cs" />
+    <Compile Include="System\Linq\Strings.cs" />
+    <Compile Include="System\Linq\TypeHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq\src\System.Linq.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq.Expressions\src\System.Linq.Expressions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+
+</Project>

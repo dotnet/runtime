@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+    <DefineConstants>$(DefineConstants);NETWORKINFORMATION_TEST</DefineConstants>
+    <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <!-- Shared code with src assembly -->
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Addresses.cs"
+             Link="SharedSource\StringParsingHelpers.Addresses.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Connections.cs"
+             Link="SharedSource\StringParsingHelpers.Connections.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Dns.cs"
+             Link="SharedSource\StringParsingHelpers.Dns.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Misc.cs"
+             Link="SharedSource\StringParsingHelpers.Misc.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Statistics.cs"
+             Link="SharedSource\StringParsingHelpers.Statistics.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkFiles.cs"
+             Link="SharedSource\NetworkFiles.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleTcpConnectionInformation.Unix.cs"
+             Link="SharedSource\SimpleTcpConnectionInformation.cs" />
+    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleGatewayIPAddressInformation.Unix.cs"
+             Link="SharedSource\SimpleGatewayIPAddressInformation.cs" />
+    <!-- Tests -->
+    <Compile Include="AddressParsingTests.cs" />
+    <Compile Include="DnsParsingTests.cs" />
+    <Compile Include="ExceptionHelper.cs" />
+    <Compile Include="FileUtil.cs" />
+    <Compile Include="IPGlobalPropertiesTest.cs" />
+    <Compile Include="IPInterfacePropertiesTest_Linux.cs" />
+    <Compile Include="IPInterfacePropertiesTest_OSX.cs" />
+    <Compile Include="IPInterfacePropertiesTest_Windows.cs" />
+    <Compile Include="MiscParsingTests.cs" />
+    <Compile Include="MockMapTcpState.cs" />
+    <Compile Include="NetworkAddressChangedTests.cs" />
+    <Compile Include="NetworkInterfaceBasicTest.cs" />
+    <Compile Include="PhysicalAddressTest.cs" />
+    <Compile Include="ConnectionsParsingTests.cs" />
+    <Compile Include="StatisticsParsingTests.cs" />
+    <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs"
+             Link="Common\System\Net\Http\TestHelper.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs"
+             Link="Common\System\Net\TestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs"
+             Link="Common\System\Net\VerboseTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
+             Link="Common\System\Net\EventSourceTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Sockets.cs"
+             Link="Common\System\Net\Capability.Sockets.cs" />
+    <Compile Include="$(CommonPath)System\IO\StringParser.cs"
+             Link="Common\System\IO\StringParser.cs" />
+    <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs"
+             Link="Common\System\IO\RowConfigReader.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="NetworkAvailabilityChangedTests.cs" />
+    <Compile Include="NetworkInterfaceIPv4Statistics.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="NetworkFiles\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

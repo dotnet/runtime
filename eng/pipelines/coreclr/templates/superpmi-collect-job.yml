@@ -1,0 +1,106 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  liveLibrariesBuildConfig: ''
+  crossBuild: ''
+  variables: {}
+  pool: ''
+  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-collect-job.yml'
+  collectionType: ''
+  collectionName: ''
+
+### SuperPMI job
+### Each collection job depends on a corresponding build job with the same buildConfig and archType.
+
+jobs:
+- template: ${{ parameters.runJobTemplate }}
+  parameters:
+    # Compute job name from template parameters
+    jobName: ${{ format('superpmi_collect_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('SuperPMI collect {4} {5} {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.collectionName, parameters.collectionType) }}
+    pool: ${{ parameters.pool }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    container: ${{ parameters.container }}
+    crossBuild: ${{ parameters.crossBuild }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    collectionType: ${{ parameters.collectionType }}
+    collectionName: ${{ parameters.collectionName }}
+    # Test job depends on the corresponding build job
+    dependsOn:
+     - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
+     - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
+        - 'coreclr_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+
+    variables:
+
+    - name: crossArg
+      value: ''
+    - ${{ if eq(parameters.crossBuild, true) }}:
+      - name: crossArg
+        value: '-cross'
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{insert}}: ${{ variable }}
+
+    steps:
+    # Extra steps that will be passed to the superpmi template and run before sending the job to helix (all of which is done in the template)
+
+    # Download runtime artifacts
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+        artifactFileName: 'BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
+        artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+        displayName: 'Runtime build artifacts'
+
+    # Download release runtime artifacts
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+        artifactFileName: 'BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release$(archiveExtension)'
+        artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release
+        displayName: 'Release runtime build artifacts'
+        cleanUnpackFolder: false
+        overwriteExistingFiles: true
+
+    # Unzip individual test projects
+    - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(Build.SourcesDirectory)/artifacts/helix/'
+          artifactFileName: 'LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
+          artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+          displayName: 'Libraries test artifacts'
+      - task: ExtractFiles@1
+        displayName: 'Unzip libraries tests'
+        inputs:
+          archiveFilePatterns: '$(Build.SourcesDirectory)/artifacts/helix/**/*.zip'
+          destinationFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
+          cleanDestinationFolder: true
+          overwriteExistingFiles: true
+
+    # Download and unzip managed test artifacts
+    - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(managedTestArtifactRootFolderPath)'
+          artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+          artifactName: '$(managedGenericTestArtifactName)'
+          displayName: 'generic managed test artifacts'
+
+    # Create Core_Root
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
+      displayName: Create Core_Root
+      condition: succeeded()
+
+    # Create Core_Root
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) release $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
+      displayName: Create Release Core_Root
+      condition: succeeded()
+

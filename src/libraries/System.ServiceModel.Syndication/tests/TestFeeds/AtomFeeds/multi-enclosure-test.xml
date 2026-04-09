@@ -1,0 +1,25 @@
+<!--
+  Description:  can have multiple enclosures per entry 
+  Expect:       !Error
+-->
+
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en-us">
+  <title>Enclosure Test</title>
+  <link href="http://www.contoso.com/workbench/"/>
+  <id>http://www.contoso.com/workbench/</id>
+  <subtitle>Testing multiple enclosure elements</subtitle>
+  <generator>Wordzilla/0.101</generator>
+  <updated>2004-12-27T11:12:01-05:00</updated>
+  <author>
+    <name>input name</name>
+  </author>
+  <entry>
+     <title>Kirk Cameron</title>
+     <link href="http://www.contoso.com/workbench/entry/2004/12/27#2424"/>
+     <summary>Here's a two-enclosure test</summary>
+     <updated>2004-12-27T11:12:01-05:00</updated>
+     <id>tag:contoso.com,2004-09-30:test.2423</id>
+     <link rel="enclosure" href="http://www.contoso.com/workbench/gems/kirk-cameron-you-are-a-blasphemer.mp3" length="3762" type="audio/mpeg"/>
+     <link rel="enclosure" href="http://www.contoso.com/workbench/gems/kirk-cameron-you-only-love-god.mp3" length="19331" type="audio/mpeg"/>
+  </entry>
+</feed>

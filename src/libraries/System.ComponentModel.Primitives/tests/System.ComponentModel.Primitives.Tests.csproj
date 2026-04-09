@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System\ComponentModel\BrowsableAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\CategoryAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\ComponentCollectionTests.cs" />
+    <Compile Include="System\ComponentModel\ComponentTests.cs" />
+    <Compile Include="System\ComponentModel\DescriptionAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DesignerAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DesignerCategoryAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DesignOnlyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DisplayNameAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\EditorAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\EventHandlerListTests.cs" />
+    <Compile Include="System\ComponentModel\ImmutableObjectAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\InitializationEventAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\InvalidAsynchronousStateExceptionTests.cs" />
+    <Compile Include="System\ComponentModel\InvalidEnumArgumentExceptionTests.cs" />
+    <Compile Include="System\ComponentModel\LocalizableAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\MergablePropertyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\MockISite.cs" />
+    <Compile Include="System\ComponentModel\NotifyParentPropertyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\ParenthesizePropertyNameAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\ReadOnlyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\RefreshPropertiesAttributeTests.cs" />
+
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+  </ItemGroup>
+</Project>

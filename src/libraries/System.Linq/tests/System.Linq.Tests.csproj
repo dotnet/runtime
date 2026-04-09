@@ -1,0 +1,90 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+    <!-- Apple mobile trimming descriptor for Mono runtime -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AggregateTests.cs" />
+    <Compile Include="AllTests.cs" />
+    <Compile Include="AnyTests.cs" />
+    <Compile Include="AppendPrependTests.cs" />
+    <Compile Include="AsEnumerableTests.cs" />
+    <Compile Include="AverageTests.cs" />
+    <Compile Include="CastTests.cs" />
+    <Compile Include="ChunkTests.cs" />
+    <Compile Include="ConcatTests.cs" />
+    <Compile Include="ConsistencyTests.cs" />
+    <Compile Include="ContainsTests.cs" />
+    <Compile Include="AggregateByTests.cs" />
+    <Compile Include="CountTests.cs" />
+    <Compile Include="DefaultIfEmptyTests.cs" />
+    <Compile Include="CountByTests.cs" />
+    <Compile Include="DistinctTests.cs" />
+    <Compile Include="ElementAtOrDefaultTests.cs" />
+    <Compile Include="ElementAtTests.cs" />
+    <Compile Include="EmptyEnumerable.cs" />
+    <Compile Include="EnumerableTests.cs" />
+    <Compile Include="ExceptTests.cs" />
+    <Compile Include="FirstOrDefaultTests.cs" />
+    <Compile Include="FirstTests.cs" />
+    <Compile Include="GroupByTests.cs" />
+    <Compile Include="GroupJoinTests.cs" />
+    <Compile Include="IndexTests.cs" />
+    <Compile Include="InfiniteSequenceTests.cs" />
+    <Compile Include="IntersectTests.cs" />
+    <Compile Include="JoinTests.cs" />
+    <Compile Include="LastOrDefaultTests.cs" />
+    <Compile Include="LastTests.cs" />
+    <Compile Include="LeftJoinTests.cs" />
+    <Compile Include="LifecycleTests.cs" />
+    <Compile Include="LongCountTests.cs" />
+    <Compile Include="MaxTests.cs" />
+    <Compile Include="MinTests.cs" />
+    <Compile Include="OfTypeTests.cs" />
+    <Compile Include="OrderByDescendingTests.cs" />
+    <Compile Include="OrderByTests.cs" />
+    <Compile Include="OrderDescendingTests.cs" />
+    <Compile Include="OrderedSubsetting.cs" />
+    <Compile Include="OrderTests.cs" />
+    <Compile Include="SequenceTests.cs" />
+    <Compile Include="RangeTests.cs" />
+    <Compile Include="RepeatTests.cs" />
+    <Compile Include="ReverseTests.cs" />
+    <Compile Include="RightJoinTests.cs" />
+    <Compile Include="SelectManyTests.cs" />
+    <Compile Include="SelectTests.cs" />
+    <Compile Include="SequenceEqualTests.cs" />
+    <Compile Include="ShortCircuitingTests.cs" />
+    <Compile Include="ShuffleTests.cs" />
+    <Compile Include="SingleOrDefaultTests.cs" />
+    <Compile Include="SingleTests.cs" />
+    <Compile Include="SkipLastTests.cs" />
+    <Compile Include="SkipTests.cs" />
+    <Compile Include="SkipWhileTests.cs" />
+    <Compile Include="SumTests.cs" />
+    <Compile Include="TakeLastTests.cs" />
+    <Compile Include="TakeTests.cs" />
+    <Compile Include="TakeWhileTests.cs" />
+    <Compile Include="TestExtensions.cs" />
+    <Compile Include="ThenByDescendingTests.cs" />
+    <Compile Include="ThenByTests.cs" />
+    <Compile Include="ToArrayTests.cs" />
+    <Compile Include="ToDictionaryTests.cs" />
+    <Compile Include="ToHashSetTests.cs" />
+    <Compile Include="ToListTests.cs" />
+    <Compile Include="ToLookupTests.cs" />
+    <Compile Include="UnionTests.cs" />
+    <Compile Include="WhereTests.cs" />
+    <Compile Include="ZipTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs" Link="Common\System\Linq\SkipTakeData.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="GroupByTests.DebuggerAttributes.cs" />
+    <Compile Include="ToLookupTests.DebuggerAttributes.cs" />
+    <Compile Include="EnumerableDebugViewTests.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <!-- Needed for MonoAotIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Make sure that invalid operations are not optimized out by Roslyn -->
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Validate.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="InvalidCSharp.ilproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

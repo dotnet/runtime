@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="CertificationRequestInfoAsn"
+  namespace="System.Security.Cryptography.X509Certificates.Asn1"
+  emitType="both">
+
+  <!--
+    https://tools.ietf.org/html/rfc2986#section-4.1
+
+    CertificationRequestInfo ::= SEQUENCE {
+        version INTEGER { v1(0) } (v1,...),
+        subject Name,
+        subjectPKInfo SubjectPublicKeyInfo{ { PKInfoAlgorithms } },
+        attributes[0] Attributes{ { CRIAttributes } }
+    }
+  -->
+  <asn:Integer name="Version" type="int" />
+  <asn:AnyValue name="Subject" universalTagNumber="16" />
+  <asn:AsnType
+    name="SubjectPublicKeyInfo"
+    typeName="System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn"
+    valueTypeName="System.Security.Cryptography.Asn1.ValueSubjectPublicKeyInfoAsn" />
+  <asn:SetOf name="Attributes" implicitTag="0" valueName="GetAttributes">
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.AttributeAsn" valueTypeName="System.Security.Cryptography.Asn1.ValueAttributeAsn" />
+  </asn:SetOf>
+</asn:Sequence>

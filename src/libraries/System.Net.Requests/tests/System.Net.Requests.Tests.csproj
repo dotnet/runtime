@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+    <!-- SYSLIB0014: WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. -->
+    <NoWarn>$(NoWarn);SYSLIB0014</NoWarn>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="HttpWebRequestTest.cs" />
+    <Compile Include="HttpWebResponseTest.cs" />
+    <Compile Include="RequestStreamTest.cs" />
+    <Compile Include="WebRequestTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs"
+             Link="Common\System\Net\Capability.Security.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
+             Link="Common\System\Net\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
+             Link="Common\System\Net\Configuration.Certificates.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs"
+             Link="Common\System\Net\Configuration.Http.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs"
+             Link="Common\System\Net\Configuration.Security.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\QuicLoad.cs"
+             Link="Common\System\Net\System\Net\QuicLoad.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="Common\System\Net\RemoteExecutorExtensions.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs"
+             Link="Common\System\Net\Http\LoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.AuthenticationHelpers.cs"
+             Link="Common\System\Net\Http\LoopbackServer.AuthenticationHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs"
+             Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs"
+             Link="Common\System\Net\Http\TestHelper.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AuthorizationTest.cs" />
+    <Compile Include="AuthenticationManagerTest.cs" />
+    <Compile Include="GlobalProxySelectionTest.cs" />
+    <Compile Include="FileWebRequestTest.cs" />
+    <Compile Include="FtpWebRequestTest.cs" />
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="HttpRequestCachePolicyTest.cs" />
+    <Compile Include="HttpWebResponseHeaderTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+  </ItemGroup>
+</Project>

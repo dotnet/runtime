@@ -1,0 +1,24 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">			
+
+  <xs:import schemaLocation="bug264908_v11a.xsd"/>
+
+  <xs:attribute name="lang" type="xs:language" />			
+  <xs:attribute name="base" type="xs:anyURI" />			
+  <xs:attribute default="preserve" name="space">		
+    <xs:simpleType>			
+      <xs:restriction base="xs:NCName">			
+        <xs:enumeration value="default" />			
+        <xs:enumeration value="preserve" />			
+      </xs:restriction>			
+    </xs:simpleType>			
+  </xs:attribute>
+
+  <xs:attribute name="blah" />
+ 
+  <xs:attributeGroup name="specialAttrs">			
+    <xs:attribute ref="lang" />			
+    <xs:attribute ref="space" />			
+    <xs:attribute ref="base" />			
+    <xs:attribute ref="blah" />
+  </xs:attributeGroup>	
+</xs:schema>

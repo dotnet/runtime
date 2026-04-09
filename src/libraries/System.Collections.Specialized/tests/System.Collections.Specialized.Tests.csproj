@@ -1,0 +1,84 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Common Collections tests -->
+    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs"
+             Link="Common\System\Collections\CollectionAsserts.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs"
+             Link="Common\System\Collections\TestBase.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs"
+             Link="Common\System\Collections\TestingTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
+             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
+             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
+    <Compile Include="BitVector32Tests.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="HybridDictionary\HybridDictionary.AddTests.cs" />
+    <Compile Include="HybridDictionary\HybridDictionary.CtorTests.cs" />
+    <Compile Include="HybridDictionary\HybridDictionary.KeysTests.cs" />
+    <Compile Include="HybridDictionary\HybridDictionary.RemoveTests.cs" />
+    <Compile Include="HybridDictionary\HybridDictionary.SetItemTests.cs" />
+    <Compile Include="HybridDictionary\HybridDictionary.ValuesTests.cs" />
+    <Compile Include="HybridDictionary\HybridDictionaryTests.cs" />
+    <Compile Include="ListDictionary\ListDictionary.Values.Tests.cs" />
+    <Compile Include="ListDictionary\ListDictionary.Keys.Tests.cs" />
+    <Compile Include="ListDictionary\ListDictionary.IDictionary.Tests.cs" />
+    <Compile Include="ListDictionaryTests.cs" />
+    <Compile Include="NameObjectCollectionBase\MyNameObjectCollection.cs" />
+    <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.GetEnumeratorTests.cs" />
+    <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.CopyToTests.cs" />
+    <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.GetAllValuesTests.cs" />
+    <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.KeysTests.cs" />
+    <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.ReadOnlyTests.cs" />
+    <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.RemoveAtTests.cs" />
+    <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.SetItemTests.cs" />
+    <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.SyncRootTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.AddNVCTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.AddStringStringTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.ClearTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.CopyToTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.CtorTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.GetItemTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.GetStringTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.GetKeyTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.GetIntTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.GetValuesStringTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.GetValuesIntTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.ReadOnlyTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.RemoveTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.SetItemTests.cs" />
+    <Compile Include="NameValueCollection\NameValueCollection.SetTests.cs" />
+    <Compile Include="OrderedDictionary\OrderedDictionaryTests.cs" />
+    <Compile Include="StringCollectionTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.AddTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.ContainsKeyTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.ContainsValueTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.CopyToTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.CtorTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.GetEnumeratorTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.GetItemTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.KeysTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.RemoveTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.SetItemTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.SyncRootTests.cs" />
+    <Compile Include="StringDictionary\StringDictionary.ValuesTests.cs" />
+    <Compile Include="StringDictionary\StringDictionaryClearTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs"
+             Link="Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" />
+    <Compile Include="NameObjectCollectionBase\NameObjectCollectionBase.ConstructorTests.cs" />
+
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
+    <NoWarn>$(NoWarn);CS9368</NoWarn>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Reflection.Emit.Lightweight.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Reflection.Emit.ILGeneration\ref\System.Reflection.Emit.ILGeneration.csproj" />
+  </ItemGroup>
+</Project>

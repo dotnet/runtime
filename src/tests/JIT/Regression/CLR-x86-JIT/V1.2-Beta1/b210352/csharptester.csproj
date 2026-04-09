@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="csharptester.cs" />
+    <ProjectReference Include="csharpgenerictypes.csproj" />
+  </ItemGroup>
+</Project>

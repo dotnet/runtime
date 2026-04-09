@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <DeterministicSourcePaths>false</DeterministicSourcePaths>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>generated</CompilerGeneratedFilesOutputPath>
+    <TestCaseBuildOutputRoot>$(ArtifactsBinDir)Mono.Linker.Tests.Cases\$(Configuration)\$(TargetFramework)</TestCaseBuildOutputRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="TestCaseBuildOutputRoot" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Common\tests\SourceGenerators\LiveReferencePack.cs" />
+    <Compile Remove="$(CompilerGeneratedFilesOutputPath)/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
+
+    <ProjectReference Include="..\..\src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" />
+    <ProjectReference Include="..\..\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" />
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases\**\*.csproj" />
+    <ProjectReference Include="..\ILLink.RoslynAnalyzer.Tests.Generator\ILLink.RoslynAnalyzer.Tests.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="ILLink.RoslynAnalyzer.Tests.LinkerTestDir">
+      <Value>$(LinkerTestDir)</Value>
+    </RuntimeHostConfigurationOption>
+  </ItemGroup>
+
+  <!-- The analyzer tests require the reference assemblies that are compiled against.
+       Copy them to the output/publish directory so that tests still work on a different
+       machine (i.e. when testing with Helix). -->
+  <ItemGroup>
+    <None Include="$(MicrosoftNetCoreAppRefPackRefDir)**/*.dll"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest"
+          LinkBase="live-ref-pack/"
+          Visible="false" />
+  </ItemGroup>
+
+</Project>

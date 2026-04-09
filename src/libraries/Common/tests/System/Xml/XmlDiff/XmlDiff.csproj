@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>System.Xml.XmlDiff</RootNamespace>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="XmlDiff.cs" />
+    <Compile Include="XmlDiffDocument.cs" />
+    <Compile Include="XmlDiffOption.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ModuleCore\ModuleCore.csproj" />
+  </ItemGroup>
+</Project>

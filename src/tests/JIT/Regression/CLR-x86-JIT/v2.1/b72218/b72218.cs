@@ -1,0 +1,37 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+//
+
+
+namespace b72218;
+
+using System;
+using System.Threading;
+using TestLibrary;
+using Xunit;
+
+public class My
+{
+
+    static void Worker()
+    {
+        GC.Collect();
+        Thread.Sleep(5);
+    }
+
+    [OuterLoop]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    public static void TestEntryPoint()
+    {
+
+        Thread t = new Thread(new ThreadStart(Worker));
+        t.Start();
+
+        long x = 1;
+        for (long i = 0; i < 100000; i++)
+        {
+            x *= i;
+        }
+        Console.WriteLine((object)x);
+    }
+}

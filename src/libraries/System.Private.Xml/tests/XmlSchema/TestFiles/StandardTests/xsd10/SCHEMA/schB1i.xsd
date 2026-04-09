@@ -1,0 +1,8 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="unqualified">
+    <xsd:include schemaLocation="schB1_b.xsd" id="a"/>
+    <xsd:group name="grp" id="a">
+	<xsd:sequence>
+		<xsd:element name="e" type="xsd:string" />
+	</xsd:sequence>  
+    </xsd:group>
+</xsd:schema>

@@ -1,0 +1,15 @@
+steps:
+  - task: NuGetAuthenticate@1
+    inputs:
+      nuGetServiceConnections: 'devdiv/dotnet-core-internal-tooling'
+      forceReinstallCredentialProvider: true
+
+  - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
+            -ci
+            -restore
+            -configuration $(_BuildConfig)
+            -projects $(Build.SourcesDirectory)/eng/common/internal/Tools.csproj
+            /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/RestoreInternal.binlog
+            /v:normal
+    displayName: Restore internal tools
+    condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'))

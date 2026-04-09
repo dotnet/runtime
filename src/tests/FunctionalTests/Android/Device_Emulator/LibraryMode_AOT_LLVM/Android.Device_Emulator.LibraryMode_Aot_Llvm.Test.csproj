@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <TestRuntime>true</TestRuntime>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <MainLibraryFileName>Android.Device_Emulator.LibraryMode_Aot_Llvm.Test.dll</MainLibraryFileName>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <MonoEnableLLVM>true</MonoEnableLLVM>
+    <ForceAOT>true</ForceAOT>
+    <NativeLib>shared</NativeLib>
+    <ForceLibraryModeGenerateAppBundle>true</ForceLibraryModeGenerateAppBundle>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Preserves the UnmanagedCallersOnly method -->
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

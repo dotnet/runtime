@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SDMAttribute.cs" />
+    <Compile Include="SDMCData.cs" />
+    <Compile Include="SDMComment.cs" />
+    <Compile Include="SDMContainer.cs" />
+    <Compile Include="SDMDocument.cs" />
+    <Compile Include="SDMElement.cs" />
+    <Compile Include="SDMLoadSave.cs" />
+    <Compile Include="SDMMisc.cs" />
+    <Compile Include="SDMNode.cs" />
+    <Compile Include="SDMPI.cs" />
+    <Compile Include="SDMXName.cs" />
+  </ItemGroup>
+</Project>

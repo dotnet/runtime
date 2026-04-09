@@ -1,0 +1,28 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+targetNamespace="ns-a"
+xmlns="ns-a"
+xmlns:b="ns-b" 
+elementFormDefault="qualified"
+>
+
+	<xsd:import namespace="ns-b" schemaLocation="schN11_b.xsd"/>
+
+	<xsd:complexType name="a-ct">
+		<xsd:sequence>
+			<xsd:group ref="b:c-g2"/>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="e1" type="a-ct" />
+	
+	<xsd:element name="root">
+		<xsd:complexType>
+			<xsd:choice maxOccurs="unbounded">
+				<xsd:any namespace="##any" processContents="strict"/>
+			</xsd:choice>
+		</xsd:complexType>
+	</xsd:element>
+
+</xsd:schema>
+
+

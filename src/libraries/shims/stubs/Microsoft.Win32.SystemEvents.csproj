@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ForwardedType Include="Microsoft.Win32.PowerModeChangedEventArgs" />
+    <ForwardedType Include="Microsoft.Win32.PowerModeChangedEventHandler" />
+    <ForwardedType Include="Microsoft.Win32.PowerModes" />
+    <ForwardedType Include="Microsoft.Win32.SessionEndReasons" />
+    <ForwardedType Include="Microsoft.Win32.SessionEndedEventArgs" />
+    <ForwardedType Include="Microsoft.Win32.SessionEndedEventHandler" />
+    <ForwardedType Include="Microsoft.Win32.SessionEndingEventArgs" />
+    <ForwardedType Include="Microsoft.Win32.SessionEndingEventHandler" />
+    <ForwardedType Include="Microsoft.Win32.SessionSwitchEventArgs" />
+    <ForwardedType Include="Microsoft.Win32.SessionSwitchEventHandler" />
+    <ForwardedType Include="Microsoft.Win32.SessionSwitchReason" />
+    <ForwardedType Include="Microsoft.Win32.SystemEvents" />
+    <ForwardedType Include="Microsoft.Win32.TimerElapsedEventArgs" />
+    <ForwardedType Include="Microsoft.Win32.TimerElapsedEventHandler" />
+    <ForwardedType Include="Microsoft.Win32.UserPreferenceCategory" />
+    <ForwardedType Include="Microsoft.Win32.UserPreferenceChangedEventArgs" />
+    <ForwardedType Include="Microsoft.Win32.UserPreferenceChangedEventHandler" />
+    <ForwardedType Include="Microsoft.Win32.UserPreferenceChangingEventArgs" />
+    <ForwardedType Include="Microsoft.Win32.UserPreferenceChangingEventHandler" />
+  </ItemGroup>
+
+</Project>
+
+    

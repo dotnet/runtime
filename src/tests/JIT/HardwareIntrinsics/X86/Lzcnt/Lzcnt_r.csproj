@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>X86_Lzcnt_r</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Lzcnt.cs" />
+  </ItemGroup>
+</Project>

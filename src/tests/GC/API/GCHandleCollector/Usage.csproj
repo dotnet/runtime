@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Usage.cs" />
+  </ItemGroup>
+</Project>

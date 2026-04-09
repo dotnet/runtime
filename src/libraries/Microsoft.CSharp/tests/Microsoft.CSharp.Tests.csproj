@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <!--
+    We wish to test operations that would result in
+    "Operator '-' cannot be applied to operands of type 'ushort' and 'EnumArithmeticTests.UInt16Enum'"
+    -->
+    <Features>$(Features.Replace('strict', '')</Features>
+
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="AccessTests.cs" />
+    <Compile Include="ArrayHandling.cs" />
+    <Compile Include="AssignmentTests.cs" />
+    <Compile Include="BindingErrors.cs" />
+    <Compile Include="DynamicDebuggerProxyTests.cs" />
+    <Compile Include="EnumUnaryOperationTests.cs" />
+    <Compile Include="ExplicitConversionTests.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="ImplicitConversionTests.cs" />
+    <Compile Include="CSharpArgumentInfoTests.cs" />
+    <Compile Include="DefaultParameterTests.cs" />
+    <Compile Include="DelegateInDynamicTests.cs" />
+    <Compile Include="EnumArithmeticTests.cs" />
+    <Compile Include="IndexingTests.cs" />
+    <Compile Include="IntegerBinaryOperationTests.cs" />
+    <Compile Include="IntegerUnaryOperationTests.cs" />
+    <Compile Include="IsEventTests.cs" />
+    <Compile Include="NamedArgumentTests.cs" />
+    <Compile Include="NullableEnumUnaryOperationTest.cs" />
+    <Compile Include="RuntimeBinderExceptionTests.cs" />
+    <Compile Include="RuntimeBinderInternalCompilerExceptionTests.cs" />
+    <Compile Include="RuntimeBinderTests.cs" />
+    <Compile Include="UserDefinedShortCircuitOperators.cs" />
+    <Compile Include="VarArgsTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="AccessTests.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+</Project>

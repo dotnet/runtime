@@ -1,0 +1,27 @@
+codecov:
+  max_report_age: off
+  notify:
+    wait_for_ci: false
+  require_ci_to_pass: false
+comment:
+  require_base: false
+  require_head: false
+coverage:
+  status:
+    project:
+      default:
+        threshold: 0.07
+fixes:
+- '/home/actions-runner/_work/zlib-ng/zlib-ng::'
+- '/home/actions-runner/_work/zlib-ng/zlib-ng/build/::'
+ignore:
+- usr/include/.*
+- /usr/include/.*
+- /build/usr/include/.*
+- usr/lib/.*
+- /usr/lib/.*
+- /build/usr/lib/.*
+- usr/lib64/.*
+- /usr/lib64/.*
+- /build/usr/lib64/.*
+- _deps/**/*

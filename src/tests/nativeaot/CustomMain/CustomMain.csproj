@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CustomNativeMain>true</CustomNativeMain>
+    <StaticLibraryPrefix Condition="'$(TargetOS)' != 'windows'">lib</StaticLibraryPrefix>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="CustomMain.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NativeLibrary Include="$(OutputPath)$(StaticLibraryPrefix)CustomMainNative$(LibFileExt)" />
+  </ItemGroup>
+</Project>

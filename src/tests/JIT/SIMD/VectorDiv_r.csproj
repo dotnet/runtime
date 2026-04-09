@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="VectorDiv.cs" />
+    <Compile Include="VectorUtil.cs" />
+  </ItemGroup>
+</Project>

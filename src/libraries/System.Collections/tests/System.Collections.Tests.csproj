@@ -1,0 +1,129 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj" Private="true" SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+  </ItemGroup>
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Common Collections tests -->
+    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs" Link="Common\System\Collections\CollectionAsserts.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs" Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs" Link="Common\System\Collections\ICollection.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs" Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.Generic.Tests.cs" Link="Common\System\Collections\IDictionary.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs" Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs" Link="Common\System\Collections\IEnumerable.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs" Link="Common\System\Collections\IList.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IList.Generic.Tests.cs" Link="Common\System\Collections\IList.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IGenericSharedAPI.Tests.cs" Link="Common\System\Collections\IGenericSharedAPI.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ISet.Generic.Tests.cs" Link="Common\System\Collections\ISet.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs" Link="Common\System\Collections\TestBase.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs" Link="Common\System\Collections\TestBase.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\DebugView.Tests.cs" Link="Common\System\Collections\DebugView.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\DictionaryEntry.Tests.cs" Link="Common\System\Collections\DictionaryEntry.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs" Link="Common\System\Collections\TestingTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\EnumTypes.cs" Link="Common\System\EnumTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\ObjectCloner.cs" Link="Common\System\ObjectCloner.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
+    <Compile Include="Generic\HashSet\HashSet.NonGeneric.Tests.cs" />
+    <Compile Include="Generic\ReadOnlySet\ReadOnlySetTests.cs" />
+    <!-- Generic tests -->
+    <Compile Include="Generic\SortedSet\SortedSet.TreeSubSet.Tests.cs" />
+    <Compile Include="StructuralComparisonsTests.cs" />
+    <Compile Include="BitArray\BitArray_CtorTests.cs" />
+    <Compile Include="BitArray\BitArray_GetSetTests.cs" />
+    <Compile Include="BitArray\BitArray_OperatorsTests.cs" />
+    <Compile Include="Generic\CollectionExtensionsTests.cs" />
+    <Compile Include="Generic\Comparers\Comparer.Generic.Tests.cs" />
+    <Compile Include="Generic\Comparers\Comparer.Tests.cs" />
+    <Compile Include="Generic\Comparers\Comparers.Generic.cs" />
+    <Compile Include="Generic\Comparers\EqualityComparer.Generic.Tests.cs" />
+    <Compile Include="Generic\Comparers\EqualityComparer.Tests.cs" />
+    <Compile Include="Generic\Comparers\ReferenceEqualityComparer.Tests.cs" />
+    <Compile Include="Generic\Dictionary\Dictionary.Tests.cs" />
+    <Compile Include="Generic\Dictionary\HashCollisionScenarios\InputData.cs" />
+    <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />
+    <Compile Include="Generic\Dictionary\Dictionary.Generic.cs" />
+    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.ConcurrentAccessDetection.cs" />
+    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.cs" />
+    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Keys.cs" />
+    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Values.cs" />
+    <Compile Include="Generic\HashSet\HashSet.Generic.cs" />
+    <Compile Include="Generic\HashSet\HashSet.Generic.Tests.cs" />
+    <Compile Include="Generic\HashSet\HashSet.Generic.Tests.AsNonGenericIEnumerable.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.AddAfter.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.AddBefore.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.AddFirst.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.AddLast.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.AsNonGenericICollection.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.Find.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.FindLast.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.Node.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.Constructor.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.RemoveFirst.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.RemoveLast.cs" />
+    <Compile Include="Generic\LinkedList\LinkedList.Generic.Tests.RemoveNode.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.AsNonGenericIList.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.ForEach.cs" />
+    <Compile Include="Generic\List\List.Generic.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.IndexOf.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.Misc.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.Reverse.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.AddRange.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.BinarySearch.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.Constructor.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.ConvertAll.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.CopyTo.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.Find.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.EnsureCapacity.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.InsertRange.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.Remove.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.Sort.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.IList.Tests.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.Generic.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.Generic.Tests.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.Generic.Tests.Keys.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.Generic.Tests.Values.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.Tests.cs" />
+    <Compile Include="Generic\PriorityQueue\PriorityQueue.Generic.cs" />
+    <Compile Include="Generic\PriorityQueue\PriorityQueue.Generic.Tests.cs" />
+    <Compile Include="Generic\PriorityQueue\PriorityQueue.PropertyTests.cs" />
+    <Compile Include="Generic\PriorityQueue\PriorityQueue.Tests.cs" />
+    <Compile Include="Generic\PriorityQueue\PriorityQueue.Tests.Dijkstra.cs" />
+    <Compile Include="Generic\Queue\Queue.Generic.cs" />
+    <Compile Include="Generic\Queue\Queue.Generic.Tests.cs" />
+    <Compile Include="Generic\Queue\Queue.Tests.cs" />
+    <Compile Include="Generic\SortedDictionary\SortedDictionary.Generic.cs" />
+    <Compile Include="Generic\SortedDictionary\SortedDictionary.Generic.Tests.cs" />
+    <Compile Include="Generic\SortedDictionary\SortedDictionary.Tests.cs" />
+    <Compile Include="Generic\SortedDictionary\SortedDictionary.Generic.Tests.Keys.cs" />
+    <Compile Include="Generic\SortedDictionary\SortedDictionary.Generic.Tests.Values.cs" />
+    <Compile Include="Generic\SortedList\SortedList.Generic.Tests.Values.cs" />
+    <Compile Include="Generic\SortedList\SortedList.Generic.Tests.Keys.cs" />
+    <Compile Include="Generic\SortedList\SortedList.Tests.cs" />
+    <Compile Include="Generic\SortedList\SortedList.Generic.cs" />
+    <Compile Include="Generic\SortedList\SortedList.Generic.Tests.cs" />
+    <Compile Include="Generic\SortedSet\SortedSet.Generic.cs" />
+    <Compile Include="Generic\SortedSet\SortedSet.Generic.Tests.cs" />
+    <Compile Include="Generic\SortedSet\SortedSet.Tests.cs" />
+    <Compile Include="Generic\Stack\Stack.Tests.cs" />
+    <Compile Include="Generic\Stack\Stack.Generic.cs" />
+    <Compile Include="Generic\Stack\Stack.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="Generic\Comparers\EqualityComparer.Generic.Serialization.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" Link="Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs" Link="Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.Generic.Tests.netcoreapp.cs" Link="Common\System\Collections\IDictionary.Generic.Tests.netcoreapp.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs" Link="Common\System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs" />
+  </ItemGroup>
+</Project>

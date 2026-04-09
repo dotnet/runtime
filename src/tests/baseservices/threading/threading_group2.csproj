@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="commitstackonlyasneeded/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="coverage/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="DeadThreads/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="delegate/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="generics/syncdelegate/*.??proj" />
+    <MergedWrapperProjectReference Remove="generics/threadstart/*.??proj" />
+    <MergedWrapperProjectReference Remove="regressions/**/*.??proj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

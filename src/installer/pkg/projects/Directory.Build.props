@@ -1,0 +1,133 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <Platform>$(TargetArchitecture)</Platform>
+    <PackagePlatform>AnyCPU</PackagePlatform>
+
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
+    <OutputPath>$(PackageOutputPath)</OutputPath>
+
+    <BuildRuntimePackages Condition="'$(BuildRuntimePackages)' == ''">true</BuildRuntimePackages>
+    <BuildLineupPackage Condition="'$(BuildLineupPackage)' == ''">true</BuildLineupPackage>
+
+    <PackProjectDependencies Condition="'$(PackProjectDependencies)' == ''">true</PackProjectDependencies>
+
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+    <!-- Prevent unintended Microsoft.NETCore.Platforms package downgrade. -->
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <ImportNuGetBuildTasksPackTargetsFromSdk>false</ImportNuGetBuildTasksPackTargetsFromSdk>
+
+    <!-- Tell NuGet where the assets file is. I think the intermediate output path got more complex with Arcade. -->
+    <RestoreOutputPath>$(BaseIntermediateOutputPath)</RestoreOutputPath>
+    <ProjectAssetsFile>$(RestoreOutputPath)\project.assets.json</ProjectAssetsFile>
+
+    <!--
+      Disable ResolveAssemblyReference cache. The packaging projects run in parallel and use MSBuild
+      tasks calling various targets, many of which use ResolveReferences. The parallel writes to the
+      cache conflict and cause build failures. Disable the cache to avoid this.
+
+      In the long term, the "base" project build (depproj as of writing) should lay out the files or
+      metadata in a way the other projects can consume. Gathering the information ahead of time
+      removes the benefit of a cache.
+    -->
+    <DisableRarCache>true</DisableRarCache>
+
+    <!-- During a build from source, only current-RID assets are available from upstream repos. -->
+    <RestoreAllBuildRids Condition="'$(RestoreAllBuildRids)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">false</RestoreAllBuildRids>
+    <!--
+      Normally, it is necessary to restore all RIDs so that assets are available to inspect. For
+      example, the platform manifest includes data from all RIDs.
+    -->
+    <RestoreAllBuildRids Condition="'$(RestoreAllBuildRids)' == ''">true</RestoreAllBuildRids>
+  </PropertyGroup>
+
+  <!-- Host packages need the host to be built first. -->
+  <ItemGroup Condition="'$(DisableOrderDependencies)' != 'true'">
+    <OrderProjectReference Include="@(CorehostProjectToBuild)" />
+  </ItemGroup>
+
+  <!-- In *.proj projects, the current phase's name is the same as the project name. -->
+  <PropertyGroup>
+    <BuildPhase>$(MSBuildProjectName)</BuildPhase>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <IncludeRuntimeJson Condition="'$(IncludeRuntimeJson)' == ''">true</IncludeRuntimeJson>
+    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">$(PackageTargetFramework)</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RIDPropsFile Condition="'$(RIDPropsFile)' == ''">$(MSBuildThisFileDirectory)\netcoreappRIDs.props</RIDPropsFile>
+  </PropertyGroup>
+
+  <Import Project="$(RIDPropsFile)" />
+
+  <ItemGroup>
+    <_buildingOnRID Include="$(NETCoreSdkRuntimeIdentifier)" Condition="'$(BuildOnUnknownPlatforms)' != 'false'">
+      <Platform>$(Platform)</Platform>
+    </_buildingOnRID>
+    <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
+    <BuildRID Include="@(OfficialBuildRID)" Exclude="@(_buildingOnRID)"/>
+    <!-- Include Unofficial Build RIDs in runtime.json's but do not include in the platform manifest -->
+    <BuildRID Include="@(UnofficialBuildRID)" Exclude="@(_buildingOnRID)">
+      <ExcludeFromPlatformManifest>true</ExcludeFromPlatformManifest>
+    </BuildRID>
+    <BuildRID Include="@(_buildingOnRID)"/>
+
+    <RestoreBuildRID Include="@(BuildRID)" Exclude="@(UnofficialBuildRID)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!--
+      By default, lineup and runtime packages are built by the same project. Allow overriding so
+      a project can depend on another to produce runtime packages with a different base ID.
+    -->
+    <RuntimeProjectFile Condition="'$(RuntimeProjectFile)' == ''">$(MSBuildProjectFullPath)</RuntimeProjectFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(HasRuntimePackages)' != 'false'">
+    <_project Include="@(BuildRID)">
+      <Platform Condition="'%(Platform)' == ''">x64</Platform>
+      <BuildRID>%(Identity)</BuildRID>
+      <PackageTargetRuntime>%(BuildRID)</PackageTargetRuntime>
+      <AdditionalProperties>PackageTargetRuntime=%(BuildRID);RuntimeIdentifier=%(BuildRID);Platform=%(Platform)</AdditionalProperties>
+    </_project>
+
+    <RuntimeProject Include="@(_project->'$(RuntimeProjectFile)')" />
+
+    <!--
+      Pack projects need package IDs like "Microsoft.NETCore.App.Host.Runtime.<rid>". The package
+      tooling statically uses the MSBuild project name as the package ID, allowing for a prefix, but
+      not a suffix. Set BaseId as a non-overridable global to force the desired ID in a way that the
+      rest of the packaging tooling automatically respects.
+
+      Force IdPrefix to '' to allow using the well-supported PackageTargetRuntime without adding the
+      undesired 'runtime.<rid>.' prefix to the package ID.
+    -->
+    <RidSpecificPackProject
+      Include="@(_project->'$(RuntimeProjectFile)')"
+      BaseId="$(MSBuildProjectName).%(BuildRID)"
+      AdditionalProperties="%(AdditionalProperties);BaseId=%(BaseId);IdPrefix=" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- During NuGet restore, grab assets for all applicable RIDs. -->
+    <RuntimeIdentifiers Condition="'$(RestoreAllBuildRids)' == 'true'">@(RestoreBuildRID)</RuntimeIdentifiers>
+    <!-- When resolving assets to pack, use the target runtime (if any). -->
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+</Project>

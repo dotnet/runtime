@@ -1,0 +1,25 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics.CodeAnalysis;
+
+namespace System.ComponentModel
+{
+    public interface IIntellisenseBuilder
+    {
+        /// <summary>
+        /// Return a localized name.
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
+        /// Show the builder and return a boolean indicating whether value should be replaced with newValue
+        /// - false if the user cancels for example
+        ///
+        /// language - indicates which language service is calling the builder
+        /// value - expression being edited
+        /// newValue - return the new value
+        /// </summary>
+        bool Show(string language, string value, ref string newValue);
+    }
+}

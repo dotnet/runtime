@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <AutoGenerateBindingRedirects Condition="'$(AutoGenerateBindingRedirects)' == ''">true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType Condition="'$(GenerateBindingRedirectsOutputType)' == ''">true</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
+
+  <!-- Run target (F5) support. -->
+  <PropertyGroup>
+    <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(OutDir)</RunWorkingDirectory>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(RunCommand)' == ''">
+    <RunCommand>$(DotNetTool)</RunCommand>
+    <RunArguments>test $(TargetPath) --settings $(OutDir).runsettings</RunArguments>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <RunCommand>$(DevEnvDir)Extensions\TestPlatform\vstest.console.exe</RunCommand>
+    <RunArguments>$(TargetPath) --settings:$(OutDir).runsettings</RunArguments>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" />
+</Project>

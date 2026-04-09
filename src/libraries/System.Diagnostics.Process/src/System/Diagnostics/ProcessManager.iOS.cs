@@ -1,0 +1,45 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
+using System.Runtime.Versioning;
+
+namespace System.Diagnostics
+{
+    internal static partial class ProcessManager
+    {
+#pragma warning disable IDE0060
+        /// <summary>Gets the IDs of all processes on the current machine.</summary>
+        public static int[] GetProcessIds()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>Gets process infos for each process on the local machine.</summary>
+        /// <param name="builder">The builder to add found process infos to.</param>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>Gets an array of module infos for the specified process.</summary>
+        /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
+        /// <returns>The array of modules.</returns>
+        internal static ProcessModuleCollection GetModules(int processId)
+        {
+            return new ProcessModuleCollection(0);
+        }
+
+        internal static string? GetProcessName(int processId, string machineName, bool isRemoteMachine, ref ProcessInfo? processInfo)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        private static ProcessInfo CreateProcessInfo(int pid)
+        {
+            throw new PlatformNotSupportedException();
+        }
+#pragma warning restore IDE0060
+    }
+}

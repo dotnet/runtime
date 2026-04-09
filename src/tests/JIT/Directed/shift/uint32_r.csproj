@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="uint32.cs" />
+  </ItemGroup>
+</Project>

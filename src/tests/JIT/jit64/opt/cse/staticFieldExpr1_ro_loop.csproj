@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <DefineConstants>$(DefineConstants);LOOP</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="staticFieldExpr1.cs" />
+  </ItemGroup>
+</Project>

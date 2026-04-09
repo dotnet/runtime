@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<xs:schema elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:simpleType name="Count">
+        <xs:restriction base="xs:integer"/>
+    </xs:simpleType>
+    
+	<xs:complexType name="NameType">
+		<xs:sequence>
+			<xs:element name="Last" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>Last Name</xs:documentation>
+				</xs:annotation>	
+			</xs:element>
+			<xs:element name="First" type="xs:string">
+				<xs:annotation>
+					<xs:documentation>First Name</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:simpleType name="Level">
+		<xs:restriction base="xs:integer">
+			<xs:maxInclusive value="10"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	
+	<xs:complexType name="PositionType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute ref="Role"/>
+				<xs:attribute name="Status" type="StatusType"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	
+	<xs:simpleType name="DepartmentType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Accounting"/>
+			<xs:enumeration value="Operations"/>
+			<xs:enumeration value="Marketing"/>			
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="StatusType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Current"/>
+			<xs:enumeration value="On Leave"/>
+			<xs:enumeration value="Terminated"/>
+			<xs:enumeration value="Resigned"/>
+			<xs:enumeration value="Retired"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="SexType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="M"/>
+			<xs:enumeration value="F"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+
+	<xs:simpleType name="RoleType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="Standard"/>
+			<xs:enumeration value="Lead"/>
+			<xs:enumeration value="Manager"/>
+			<xs:enumeration value="Architect"/>
+		</xs:restriction>
+	</xs:simpleType>
+
+
+	<xs:group name="Address">
+		<xs:sequence>
+			<xs:element name="Street" type="xs:string"/>
+			<xs:element name="City" type="xs:string"/>
+			<xs:element name="State" type="xs:string"/>
+			<xs:element name="ZipCode" type="xs:string"/>
+		</xs:sequence>
+	</xs:group>
+
+	<xs:attribute name="Role" type="RoleType"/>
+	<xs:attribute name="sex" type="SexType"/>
+    <xs:attribute name="MI" type="xs:string"/>
+
+
+	<xs:element name="Department" type="DepartmentType">
+		
+	</xs:element>
+
+	<xs:simpleType name="SizeType">
+		<xs:union>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="XS"/>
+					<xs:enumeration value="S"/>
+					<xs:enumeration value="M"/>
+					<xs:enumeration value="L"/>
+					<xs:enumeration value="XL"/>
+					<xs:enumeration value="XXL"/>
+				</xs:restriction>
+			</xs:simpleType>
+			<xs:simpleType>
+				<xs:restriction base="xs:integer">
+					<xs:enumeration value="36"/>
+					<xs:enumeration value="38"/>
+					<xs:enumeration value="40"/>
+					<xs:enumeration value="42"/>
+					<xs:enumeration value="44"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:union>		
+	</xs:simpleType>
+	
+
+
+
+	<xs:attributeGroup name="PersonalDescription">
+		<xs:attribute ref="sex"/>
+		<xs:attribute name="weight" type="xs:double"/>
+		<xs:attribute name="height" type="xs:double"/>
+		<xs:attribute name="shirtsize" type="SizeType"/>
+	</xs:attributeGroup>
+	
+</xs:schema>

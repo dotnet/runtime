@@ -1,0 +1,13 @@
+<!--
+  Description:  lastBuildDate must be RFC 2822 date format
+  Expect:       ValidRFC2822Date{parent:channel,element:lastBuildDate}
+-->
+
+<rss version="2.0">
+<channel>
+<title>Invalid date format</title>
+<link>http://contoso.com/rss/2.0/</link>
+<description>lastBuildDate must be RFC 2822 date format</description>
+<lastBuildDate>Tue, 31 Dec 2002 14:20:20 GMT</lastBuildDate>
+</channel>
+</rss>

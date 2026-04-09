@@ -1,0 +1,36 @@
+<Project>
+  <!-- This depends on the root Directory.Build.targets imported this file -->
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+
+  <!-- For MacCatalyst, adhoc is the default. Set it here so that we don't have to specify when running local -->
+  <PropertyGroup>
+    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == '' and '$(TargetOS)' != 'maccatalyst'">-</DevTeamProvisioning>
+    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == '' and '$(TargetOS)' == 'maccatalyst'">adhoc</DevTeamProvisioning>
+  </PropertyGroup>
+
+  <Import Project="..\..\common\LibraryBuilder.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)AppleBuild.targets" />
+
+  <!-- Workaround for SDK not knowing about CoreCLR iOS runtime packs -->
+  <Target Name="UpdateKnownFrameworkReference" BeforeTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                               RuntimePackRuntimeIdentifiers="%(KnownFrameworkReference.RuntimePackRuntimeIdentifiers);ios-arm64;iossimulator-arm64;iossimulator-x64;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-arm64;maccatalyst-x64"
+                               Condition="'$(UseMonoRuntime)' == 'false'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Use local runtime pack -->
+  <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences" Condition="'$(PublishAotUsingRuntimePack)' != 'true'">
+    <PropertyGroup>
+      <_LocalMicrosoftNetCoreAppRuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_LocalMicrosoftNetCoreAppRuntimePackDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <ResolvedRuntimePack PackageDirectory="$(_LocalMicrosoftNetCoreAppRuntimePackDir)"
+                           Condition="'$(_LocalMicrosoftNetCoreAppRuntimePackDir)' != '' and
+                                      '%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
+    </ItemGroup>
+    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+</Project>

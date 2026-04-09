@@ -1,0 +1,23 @@
+<Doc>
+	<Test1>
+		<Para>Test</Para>
+		<Para>Test</Para>
+	</Test1>
+	<Test2>
+		<Para>10</Para>
+		<Para>20</Para>
+		<Para>30</Para>
+	</Test2>
+	<Test3>
+		<Para>true</Para>
+		<Para>false</Para>
+	</Test3>
+	<Test4>
+		<Para>   A   B   </Para>
+	</Test4>
+	<Test5>
+		<Para>2.9</Para>
+		<Para>2.1</Para>
+		<Para>2.5</Para>
+	</Test5>
+</Doc>

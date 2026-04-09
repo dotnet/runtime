@@ -1,0 +1,160 @@
+<?xml version='1.0'?>
+<!-- This file represents a fragment of a book store inventory database -->
+<bookstore specialty="novel" xmlns:dt="urn:uuid:C2F41010-65B3-11d1-A29F-00AA00C14882/" xmlns:my="urn:http//www.placeholder-name-here.com/schema/">
+	<book style="autobiography">
+	<title>Seven Years in Trenton</title>
+		<author>
+			<first-name>Joe</first-name>
+			<last-name>Bob</last-name>
+			<award>Trenton Literary Review Honorable Mention</award>
+			<my:country>USA</my:country>
+		</author>
+		<price>12</price>
+	</book>
+	<book style="textbook">
+		<title>History of Trenton</title>
+		<author>
+			<first-name>Mary</first-name>
+			<last-name>Bob</last-name>
+			<publication>
+				Selected Short Stories of
+				<first-name>JoeBob</first-name>
+				<last-name>Loser</last-name>
+				<country>US</country>
+			</publication>
+		</author>
+		<price>55</price>
+	</book>
+	<book style="storybook">
+		<title>XQL The Golden Years</title>
+		<author>
+			<first.name>Mike</first.name>
+			<last.name>Hyman</last.name>
+			<publication>
+				XQL For Dummies
+				<first.name>Jonathan</first.name>
+				<last.name>Marsh</last.name>
+			</publication>
+		</author>
+		<price dt:dt="fixed.14.4">55.95</price>
+	</book>
+	<magazine style="glossy" frequency="monthly">
+		<title>Road and Track</title>
+		<price>3.50</price>
+		<subscription price="24" per="year"/>
+		<special_edition per_year="1">Yes</special_edition>
+	</magazine>
+	<magazine style="glossy" frequency="weekly">
+		<title>PC Week</title>
+		<price>free</price>
+		<publisher>Ziff Davis</publisher>
+	</magazine>
+	<magazine style="glossy" frequency="bi-monthly">
+		<title>PC Magazine</title>
+		<price dt:dt="fiXed.14.4">3.95</price>
+		<publisher>Ziff Davis</publisher>
+		<articles>
+			<story1>Create a dream PC
+				<details>Create a list of needed hardware</details>
+			</story1>
+			<story2>The future of the web
+				<details>Can Netscape stay alive with Microsoft eating up its browser share?</details>
+				<stock>MSFT 99.30</stock>
+				<date dt:dt="date">1998-06-23</date>
+			</story2>
+			<story3>Visual Basic 5.0 - Will it stand the test of time?
+			</story3>
+		</articles>
+	</magazine>
+	<magazine style="glossy" frequency="monthly">
+		<articles>
+			<story1>Sport Cars - Can you really dream?
+			</story1>
+		</articles>
+	</magazine>
+	<magazine style="glossy" frequency="monthly">
+		<award>PC Magazine Best Product of 1997</award>
+	</magazine>
+	<book style="textbook">
+		<title>History of Trenton 2</title>
+		<author>
+			<first.name>Mary F</first.name>
+			<last-name>Robinson</last-name>
+			<publication>
+				Selected Short Stories of
+				<first.name>Mary F</first.name>
+				<last-name>Robinson</last-name>
+			</publication>
+		</author>
+		<price>55</price>
+	</book>
+	<book style="textbook">
+		<title>History of Trenton Vol 3</title>
+		<author>
+			<first-name>Mary F</first-name>
+			<last-name>Robinson</last-name>
+			<first-name>Frank</first-name>
+			<last-name>Anderson</last-name>
+			<award>Pulizer</award>
+			<publication>
+				Selected Short Stories of
+				<first-name>Mary F</first-name>
+				<last-name>Robinson</last-name>
+			</publication>
+		</author>
+		<price>10</price>
+	</book>
+	<book style="textbook">
+		<title>How To Fix Computers</title>
+		<author>
+			<first-name>Hack</first-name>
+			<last-name>er</last-name>
+			<degree from="Harvard">Ph.D.</degree>
+		</author>
+		<price>08</price>
+	</book>
+	<magazine style="glossy" frequency="monthly">
+		<title>Tracking Trenton</title>
+		<price>2.50</price>
+		<subscription price="24" per="year"/>
+	</magazine>
+	<my:magazine style="flat" frequency="monthly">
+		<title>Tracking Trenton Stocks</title>
+		<price>0.98</price>
+		<subscription price="10.75" per="year"/>
+	</my:magazine>
+	<book style="novel" id="myfave">
+		<title>Trenton Today, Trenton Tomorrow</title>
+		<author>
+			<first-name>Toni</first-name>
+			<last-name>Bob</last-name>
+			<degree from="Trenton U">B.A.</degree>
+			<degree from="Harvard">Ph.D.</degree>
+			<award>Pulizer</award>
+			<publication>Still in Trenton</publication>
+			<publication>Trenton Forever</publication>
+		</author>
+		<price intl="canada" exchange="0.7">6.50</price>
+		<excerpt>
+			<p>It was a dark and stormy night.</p>
+			<p>But then all nights in Trenton seem dark and
+			stormy to someone who has gone through what
+			<emph>I</emph> have.
+			</p>
+			<definition-list>
+				<term>Trenton</term>
+				<definition>misery</definition>
+			</definition-list>
+		</excerpt>
+	</book>
+	<my:book style="leather" price="29.50">
+		<my:title>Who's Who in Trenton</my:title>
+		<my:author>Robert Bob</my:author>
+	</my:book>
+	<my:book style="hard back" price="99.95">
+		<my:title>Where is Trenton?</my:title>
+	</my:book>
+	<my:book dt:style="string" style="hard back" price="19.99">
+		<my:title>Where in the world is Trenton?</my:title>
+	</my:book>
+</bookstore>

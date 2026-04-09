@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides the foundational attributes that allow you to declare parts for composition, such as imports, exports, and metadata with the Managed Extensibility Framework (MEF).</PackageDescription>
+    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Composition\Convention\AttributedModelProvider.cs" />
+    <Compile Include="System\Composition\ExportAttribute.cs" />
+    <Compile Include="System\Composition\ExportMetadataAttribute.cs" />
+    <Compile Include="System\Composition\ImportAttribute.cs" />
+    <Compile Include="System\Composition\ImportingConstructorAttribute.cs" />
+    <Compile Include="System\Composition\ImportManyAttribute.cs" />
+    <Compile Include="System\Composition\ImportMetadataConstraintAttribute.cs" />
+    <Compile Include="System\Composition\MetadataAttributeAttribute.cs" />
+    <Compile Include="System\Composition\OnImportsSatisfiedAttribute.cs" />
+    <Compile Include="System\Composition\PartMetadataAttribute.cs" />
+    <Compile Include="System\Composition\PartNotDiscoverableAttribute.cs" />
+    <Compile Include="System\Composition\SharedAttribute.cs" />
+    <Compile Include="System\Composition\SharingBoundaryAttribute.cs" />
+  </ItemGroup>
+
+</Project>

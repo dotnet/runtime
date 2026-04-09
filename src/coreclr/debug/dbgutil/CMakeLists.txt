@@ -1,0 +1,32 @@
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+if(CLR_CMAKE_HOST_WIN32)
+  #use static crt
+  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
+endif(CLR_CMAKE_HOST_WIN32)
+
+if(CLR_CMAKE_HOST_WIN32 OR CLR_CMAKE_HOST_OSX)
+  include_directories(${CLR_DIR}/inc/llvm)
+endif(CLR_CMAKE_HOST_WIN32 OR CLR_CMAKE_HOST_OSX)
+
+if(CLR_CMAKE_TARGET_LINUX_MUSL)
+    add_definitions(-DTARGET_LINUX_MUSL)
+endif(CLR_CMAKE_TARGET_LINUX_MUSL)
+
+set(DBGUTIL_SOURCES
+    dbgutil.cpp
+)
+
+if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_HAIKU)
+    list(APPEND DBGUTIL_SOURCES
+        elfreader.cpp
+    )
+endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_HAIKU)
+
+if(CLR_CMAKE_TARGET_APPLE)
+    list(APPEND DBGUTIL_SOURCES
+        machoreader.cpp
+    )
+endif(CLR_CMAKE_TARGET_APPLE)
+
+add_library_clr(dbgutil STATIC ${DBGUTIL_SOURCES})

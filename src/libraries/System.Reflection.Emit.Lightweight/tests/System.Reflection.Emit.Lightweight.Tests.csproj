@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DynamicILInfoTests.cs" />
+    <Compile Include="DynamicMethodCreateDelegate.cs" />
+    <Compile Include="DynamicMethodCtor.cs" />
+    <Compile Include="DynamicMethodDefineParameter.cs" />
+    <Compile Include="DynamicMethodGetBaseDefinition.cs" />
+    <Compile Include="DynamicMethodGetILGenerator.cs" />
+    <Compile Include="DynamicMethodInitLocals.cs" />
+    <Compile Include="DynamicMethodToString.cs" />
+    <Compile Include="Utilities.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>XDocument.Common</AssemblyName>
+    <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BridgeHelpers.cs" />
+    <Compile Include="CXmlCache.cs" />
+    <Compile Include="DNException.cs" />
+    <Compile Include="EventsHelper.cs" />
+    <Compile Include="HelperExtensionMethods.cs" />
+    <Compile Include="InputSpace.cs" />
+    <Compile Include="ManagedNodeWriter.cs" />
+    <Compile Include="XLinqTestCase.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
+    <ProjectReference Include="$(CommonTestPath)System\Xml\XmlDiff\XmlDiff.csproj" />
+    <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj" />
+  </ItemGroup>
+</Project>

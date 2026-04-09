@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ApplicationManifest>App.manifest</ApplicationManifest>
+    <IsManagedCOMClient>true</IsManagedCOMClient>
+    <UseManagedCOMServer>true</UseManagedCOMServer>
+    <!-- This test is very slow under some GCStress variations, especially with DOTNET_HeapVerify=1, so disable it under GCStress to avoid test timeouts in the CI.
+         Issue: https://github.com/dotnet/runtime/issues/39584
+    -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BasicTest.cs" />
+    <Compile Include="CollectionTest.cs" />
+    <Compile Include="EventTest.cs" />
+    <Compile Include="ParametersTest.cs" />
+    <Compile Include="NETServerTest.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="ServerGuids.cs" />
+    <Compile Include="../ServerContracts/ServerGuids.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CoreShim.X.manifest">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="Server/CMakeLists.txt" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <ProjectReference Include="../NETServer/NETServer.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,40 @@
+parameters:
+  archType: ''
+  buildConfig: ''
+  condition: always()
+  creator: ''
+  extraHelixArguments: ''
+  helixQueues: ''
+  interpreter: ''
+  osGroup: ''
+  additionalSteps: []
+  runTests: true
+  runtimeFlavor: ''
+  shouldContinueOnError: false
+  targetRid: ''
+  testRunNamePrefixSuffix: ''
+  testScope: 'innerloop' # innerloop | outerloop | all
+  scenarios: ['normal']
+
+steps:
+  - ${{ if ne(parameters.additionalSteps, '') }}:
+    - ${{ each additionalStep in parameters.additionalSteps }}:
+      - ${{ additionalStep }}
+
+  - ${{ if eq(parameters.runTests, true) }}:
+    - template: /eng/pipelines/libraries/helix.yml
+      parameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        archType: ${{ parameters.archType }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueues: ${{ parameters.helixQueues }}
+        osGroup: ${{ parameters.osGroup }}
+        targetRid: ${{ parameters.targetRid }}
+        testRunNamePrefixSuffix: ${{ parameters.testRunNamePrefixSuffix }}
+        testScope: ${{ parameters.testScope }}
+        interpreter: ${{ parameters.interpreter }}
+        condition: ${{ parameters.condition }}
+        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+        extraHelixArguments: ${{ parameters.extraHelixArguments }} /p:BrowserHost=$(_hostedOs)
+        creator: dotnet-bot
+        scenarios: ${{ parameters.scenarios }}

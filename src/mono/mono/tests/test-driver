@@ -1,0 +1,106 @@
+#!/usr/bin/env perl
+
+my $interpreter = shift;
+my $test = shift;
+my $disabled_tests = shift;
+my $dump_output = shift;
+
+my $output = $test;
+my $stdout = $test.'.stdout';
+my $stderr = $test.'.stderr';
+
+$output =~ s/\.exe$/.output/;
+
+my $timeout_in_minutes = 2;
+
+my $test_binary = $test;
+
+if ($test =~ /.*\|.*/) {
+	my @values = split(/\|/, $test);
+	my $binary = @values[0];
+	my $test_name = @values[1];
+
+	$test_binary = $binary;
+	$test = $test_name . "_" . $binary;
+	$stdout = $test.'.stdout';
+	$stderr = $test.'.stderr';
+	$output = $test;
+
+	#This is a silly workaround, but all tests that use extra parameters need a larger timeout.
+	$timeout_in_minutes = 15;
+}
+$ENV{'TEST_DRIVER_TIMEOUT_SEC'} = $timeout_in_minutes * 60;
+
+$| = 0;
+print "Testing $test... ";
+
+foreach $disabled (split (/ /, $disabled_tests)) {
+	$disabled =~ s/^\s+|\s+$//g;
+	if ($disabled eq $test) {
+		print "disabled.\n";
+		exit (0);
+	}
+}
+
+my $res;
+my $cpid = fork ();
+if (!defined ($cpid)) {
+	$res = system("$interpreter @ARGV $test_binary 2>$stderr 1>$stdout");
+} elsif ($cpid == 0) {
+	exec ("$interpreter @ARGV $test_binary 2>$stderr 1>$stdout") || die "Cannot exec: $!";
+} else {
+	# in the parent, setup the alarm
+	# test must complete in 2 minutes or it is considered buggy
+	my $timeout = $timeout_in_minutes * 60;
+	alarm ($timeout);
+	$SIG{ALRM} = sub {
+		print "failed after $timeout seconds timeout.\n";
+		dump_files ();
+		# process group kill
+		kill (-9, $cpid);
+		exit (3);
+	};
+	$res = wait ();
+	$SIG{ALRM} = sub {};
+	$res = $? >> 8;
+}
+
+if ($res) {
+	printf ("failed $? (%d) signal (%d).\n", $? >> 8, $? & 127);
+	dump_files ();
+	if (($? & 127) == 2) {
+		exit (2);
+	} else {
+		exit (1);
+	}
+}
+if (-f $output && (read_file ($output) ne read_file ($stdout))) {
+    	print "failed output.\n";
+	dump_files ();
+	exit (1);
+}
+
+print "pass.\n";
+unlink ($stderr);
+exit (0);
+
+sub dump_files {
+	if ($dump_output ne "dump-output") {
+		return;
+	}
+
+	printf ("----STDOUT-----\n");
+	print read_file($stdout);
+	printf ("----STDERR-----\n");
+	print read_file($stderr);
+	printf ("---------------\n");
+}
+
+sub read_file {
+	local ($/);
+	my $out = shift;
+	open (F, "<$out") || die $!;
+	$out = <F>;
+	close(F);
+	return $out;
+}

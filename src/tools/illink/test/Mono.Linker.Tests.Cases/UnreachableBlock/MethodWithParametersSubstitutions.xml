@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions">
+      <method signature="System.Boolean IsEnabledWithValueParam(System.Int32)" body="stub" value="true" />
+      <method signature="System.Boolean IsEnabledWithReferenceParam(System.String)" body="stub" value="true" />
+      <method signature="System.Boolean IsEnabledWithMultipleInParamsInstance(System.Int32,System.String,Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions/TestClass,Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions/TestStruct,Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions/TestEnum)" body="stub" value="true" />
+      <!--<method signature="System.Boolean IsEnabledWithOutParam(System.Int32&amp;)" body="stub" value="true" />-->
+      <method signature="System.Boolean IsEnabledWithRefParam(System.Int32&amp;)" body="stub" value="true" />
+      <method signature="System.Boolean IsEnabledWithMultipleRefParams(System.Int32,System.Int32&amp;,Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions/TestStruct&amp;,System.String)" body="stub" value="true" />
+      <method signature="System.Boolean IsEnabledWithVarArgs()" body="stub" value="true" />
+      <method signature="System.Boolean IsEnabledWithParamAndVarArgs(System.Int32)" body="stub" value="true" />
+      <method signature="System.Boolean TestMethodWithComplexParams_5_Substituted()" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>

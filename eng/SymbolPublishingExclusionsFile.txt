@@ -1,0 +1,4 @@
+tools/x86_arm/mscordaccore.dll
+tools/x86_arm/mscordbi.dll
+tools/x64_arm64/mscordaccore.dll
+tools/x64_arm64/mscordbi.dll

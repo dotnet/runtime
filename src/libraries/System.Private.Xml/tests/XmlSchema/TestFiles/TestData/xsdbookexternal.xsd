@@ -1,0 +1,16 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="xsdbook"
+    targetNamespace="xsdbook"
+    xmlns:xauth="xsdauthor"
+    version="1.0"
+    >
+		<xsd:include schemaLocation="xsdprice.xsd"/>
+		<xsd:import namespace="xsdauthor" schemaLocation="xsdauthor.xsd"/>
+		<xsd:element name="book">
+			<xsd:complexType>
+				<xsd:sequence>
+					<xsd:element ref="price"/>
+					<xsd:element ref="xauth:author"/>
+				</xsd:sequence>
+			</xsd:complexType>
+		</xsd:element>
+</xsd:schema>

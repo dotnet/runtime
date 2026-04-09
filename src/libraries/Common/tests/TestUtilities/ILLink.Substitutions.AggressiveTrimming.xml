@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="TestUtilities">
+    <type fullname="System.PlatformDetection">
+      <method signature="System.Boolean get_IsBuiltWithAggressiveTrimming()" body="stub" value="true" />
+    </type>
+  </assembly>
+</linker>
