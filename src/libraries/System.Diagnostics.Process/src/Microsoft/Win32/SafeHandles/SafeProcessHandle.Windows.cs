@@ -78,7 +78,7 @@ namespace Microsoft.Win32.SafeHandles
             bool killOnParentExit = startInfo.KillOnParentExit;
             // We need extended startup info when we have inherited handles or when we need to pass
             // a job list via PROC_THREAD_ATTRIBUTE_JOB_LIST (only for CreateProcess, not CreateProcessWithLogonW).
-            bool useExtendedStartupInfo = hasInheritedHandles || (killOnParentExit && startInfo.UserName.Length == 0);
+            bool useExtendedStartupInfo = hasInheritedHandles || (killOnParentExit && string.IsNullOrEmpty(startInfo.UserName));
 
             // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance.
             // For that, we need a reader lock (concurrent starts with different explicit lists are safe).
@@ -294,7 +294,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 // When the process was started suspended for KillOnParentExit with CreateProcessWithLogonW,
                 // assign it to the job object and then resume the thread.
-                if (killOnParentExit && startInfo.UserName.Length != 0)
+                if (killOnParentExit && !string.IsNullOrEmpty(startInfo.UserName))
                 {
                     Debug.Assert(!IsInvalidHandle(processInfo.hThread), "Thread handle must be valid for suspended process.");
                     try
@@ -303,6 +303,7 @@ namespace Microsoft.Win32.SafeHandles
                         {
                             throw new Win32Exception(Marshal.GetLastWin32Error());
                         }
+                        Interop.Kernel32.ResumeThread(processInfo.hThread);
                     }
                     catch
                     {
@@ -312,7 +313,6 @@ namespace Microsoft.Win32.SafeHandles
                     }
                     finally
                     {
-                        Interop.Kernel32.ResumeThread(processInfo.hThread);
                         Interop.Kernel32.CloseHandle(processInfo.hThread);
                     }
                 }
