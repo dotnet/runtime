@@ -25,7 +25,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <_HotReloadDeltaGeneratorDeltaScript Condition="'$(DeltaScript)' != ''">$([System.IO.Path]::Combine($(MSBuildProjectDirectory), '$(DeltaScript)'))</_HotReloadDeltaGeneratorDeltaScript>
+    <_HotReloadDeltaGeneratorDeltaScript Condition="'$(DeltaScript)' != ''">$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(DeltaScript)'))</_HotReloadDeltaGeneratorDeltaScript>
   </PropertyGroup>
 
   <PropertyGroup>
