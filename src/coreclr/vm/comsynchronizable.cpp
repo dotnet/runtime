@@ -141,7 +141,7 @@ static void KickOffThread_Worker(LPVOID ptr)
     }
 
     UnmanagedCallersOnlyCaller startCallback(METHOD__THREAD__START_CALLBACK);
-    startCallback.InvokeDirect(&exposedObj);
+    startCallback.InvokeDirect(OBJECTREFToObject(exposedObj));
 
     GCPROTECT_END();
 }
