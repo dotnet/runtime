@@ -52,15 +52,7 @@ namespace System.Runtime.CompilerServices
             public static bool AsyncDebugger(Flags flags) => (Flags.AsyncDebugger & flags) != 0 && Task.s_asyncDebuggingEnabled;
         }
 
-        public static Flags ActiveFlags
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                Debug.Assert(IsInitialized(s_activeFlags), "ActiveFlags accessed before initialized. Make sure SyncActiveFlags gets called first.");
-                return s_activeFlags;
-            }
-        }
+        public static Flags ActiveFlags => s_activeFlags;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Flags SyncActiveFlags()

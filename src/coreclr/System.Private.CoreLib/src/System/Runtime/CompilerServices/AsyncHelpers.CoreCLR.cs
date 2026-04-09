@@ -998,7 +998,7 @@ namespace System.Runtime.CompilerServices
         }
 
         // Instrumentation helpers called from InstrumentedDispatchContinuations.
-        // These methods must not throw - exceptions would break the dispatch loop.
+        // These methods should not throw - exceptions would break the dispatch loop.
         internal static class RuntimeAsyncInstrumentationHelpers
         {
             public static bool InstrumentCheckPoint
@@ -1104,166 +1104,97 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        // All methods in this class guard against exceptions to protect the instrumented async execution.
-        // Instrumentation failures are silently swallowed - correctness of async execution takes priority over debugger diagnostics.
         internal static class AsyncDebugger
         {
             public static void CreateAsyncContext(Task task)
             {
-                try
-                {
-                    Task.AddToActiveTasks(task);
-                    TplEventSource.Log.TraceOperationBegin(task.Id, "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask", 0);
-                }
-                catch
-                {
-                }
-
+                Task.AddToActiveTasks(task);
+                TplEventSource.Log.TraceOperationBegin(task.Id, "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask", 0);
             }
 
             public static void ResumeAsyncContext(int id)
             {
-                try
-                {
-                    TplEventSource.Log.TraceSynchronousWorkBegin(id, CausalitySynchronousWork.Execution);
-                }
-                catch
-                {
-                }
+                TplEventSource.Log.TraceSynchronousWorkBegin(id, CausalitySynchronousWork.Execution);
             }
 
             public static void SuspendAsyncContext(ref AsyncDispatcherInfo info, Continuation curContinuation)
             {
-                try
+                if (info.NextContinuation != null)
                 {
-                    if (info.NextContinuation != null)
-                    {
-                        Task.TryAddRuntimeAsyncContinuationChainTimestamps(info.NextContinuation, curContinuation);
-                    }
+                    Task.TryAddRuntimeAsyncContinuationChainTimestamps(info.NextContinuation, curContinuation);
+                }
 
-                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
-                }
-                catch
-                {
-                }
+                TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
             }
 
             public static void SuspendAsyncContext(Continuation curContinuation, Continuation newContinuation)
             {
-                try
-                {
-                    Task.ReplaceOrAddRuntimeAsyncContinuationTimestamp(curContinuation, newContinuation);
-                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
-                }
-                catch
-                {
-                }
+                Task.ReplaceOrAddRuntimeAsyncContinuationTimestamp(curContinuation, newContinuation);
+                TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
             }
 
             public static void CompleteAsyncContext(Task? task)
             {
-                try
+                if (task != null)
                 {
-                    if (task != null)
-                    {
-                        Task.RemoveRuntimeAsyncTask(task);
-                        TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
-                        TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
-                    }
-                }
-                catch
-                {
+                    Task.RemoveRuntimeAsyncTask(task);
+                    TplEventSource.Log.TraceOperationEnd(task.Id, AsyncCausalityStatus.Completed);
+                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
                 }
             }
 
             public static void AsyncMethodUnhandledException(Task? task, Exception ex, Continuation curContinuation)
             {
-                try
+                if (task != null)
                 {
-                    if (task != null)
-                    {
-                        Task.RemoveRuntimeAsyncTask(task, curContinuation);
-                        TplEventSource.Log.TraceOperationEnd(task.Id, ex is OperationCanceledException ? AsyncCausalityStatus.Canceled : AsyncCausalityStatus.Error);
-                        TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
-                    }
-                }
-                catch
-                {
+                    Task.RemoveRuntimeAsyncTask(task, curContinuation);
+                    TplEventSource.Log.TraceOperationEnd(task.Id, ex is OperationCanceledException ? AsyncCausalityStatus.Canceled : AsyncCausalityStatus.Error);
+                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
                 }
             }
 
             public static void AsyncMethodHandledException(Continuation curContinuation, uint unwindedFrames)
             {
-                try
-                {
-                    Task.RemoveRuntimeAsyncContinuationChainTimestamps(curContinuation, unwindedFrames);
-                }
-                catch
-                {
-                }
+                Task.RemoveRuntimeAsyncContinuationChainTimestamps(curContinuation, unwindedFrames);
             }
 
             public static void ResumeAsyncMethod(ref AsyncDispatcherInfo info, Continuation curContinuation)
             {
-                try
+                if (info.CurrentTask != null)
                 {
-                    if (info.CurrentTask != null)
-                    {
-                        Task.UpdateRuntimeAsyncTaskTimestamp(info.CurrentTask, curContinuation);
-                    }
-                }
-                catch
-                {
+                    Task.UpdateRuntimeAsyncTaskTimestamp(info.CurrentTask, curContinuation);
                 }
             }
 
             public static void CompleteAsyncMethod(Continuation curContinuation)
             {
-                try
-                {
-                    Task.RemoveRuntimeAsyncContinuationTimestamp(curContinuation);
-                }
-                catch
-                {
-                }
+                Task.RemoveRuntimeAsyncContinuationTimestamp(curContinuation);
             }
 
             public static void HandleSuspended(Continuation? nextContinuation, Continuation? newContinuation)
             {
-                try
+                if (nextContinuation != null)
                 {
-                    if (nextContinuation != null)
+                    if (newContinuation != null)
                     {
-                        if (newContinuation != null)
-                        {
-                            Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation, newContinuation);
-                        }
-                        else
-                        {
-                            Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation);
-                        }
+                        Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation, newContinuation);
                     }
-                }
-                catch
-                {
+                    else
+                    {
+                        Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation);
+                    }
                 }
             }
 
             public static void HandleSuspendedFailed(Task task, Continuation? nextContinuation)
             {
-                try
+                if (nextContinuation != null)
                 {
-                    if (nextContinuation != null)
-                    {
-                        Task.RemoveRuntimeAsyncTask(task, nextContinuation);
-                    }
-                    else
-                    {
-                        Task.RemoveRuntimeAsyncTask(task);
-                    }
+                    Task.RemoveRuntimeAsyncTask(task, nextContinuation);
                 }
-                catch
+                else
                 {
+                    Task.RemoveRuntimeAsyncTask(task);
                 }
             }
         }
