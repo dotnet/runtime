@@ -11041,10 +11041,15 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         lowerCns &= prevMask;
         upperCns &= currMask;
 
-        size_t val = 0;
-        val |= (lowerCns << ((prevData.offset - minOffset) * BITS_PER_BYTE));
-        val |= (upperCns << ((currData.offset - minOffset) * BITS_PER_BYTE));
-        val &= newMask;
+        unsigned const prevShift = static_cast<unsigned>((prevData.offset - minOffset) * BITS_PER_BYTE);
+        unsigned const currShift = static_cast<unsigned>((currData.offset - minOffset) * BITS_PER_BYTE);
+
+        size_t prevBits = (lowerCns << prevShift) & newMask;
+        size_t currBits = (upperCns << currShift) & newMask;
+
+        // Later stores must overwrite any overlapping bytes from earlier stores.
+        size_t currBitsMask = (currMask << currShift) & newMask;
+        size_t val          = (prevBits & ~currBitsMask) | currBits;
         JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
 
         auto* intCon      = currData.value->AsIntCon();

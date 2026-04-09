@@ -67,11 +67,11 @@ public class SpAddr
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int OverlappingZeroThenShort()
+    static int OverlappingNonZeroThenShort()
     {
         Pair p = default;
-        p.A = 0;
-        Unsafe.As<Pair, short>(ref p) = 256;
+        p.A = unchecked((int)0xDEADBEEF);
+        Unsafe.As<Pair, short>(ref p) = 0;
         return p.A;
     }
 
@@ -82,12 +82,12 @@ public class SpAddr
         Console.WriteLine("M(1, 2, 3, 4) is {0}.", res);
         long nonAddressExposed = NonAddressExposed(0x11223344, 0x55667788);
         long addressExposed    = AddressExposed(0x10203040, 0x50607080);
-        int  overlapping       = OverlappingZeroThenShort();
+        int  overlapping       = OverlappingNonZeroThenShort();
 
         if ((res == 10) &&
             (nonAddressExposed == 0x5566778811223344L) &&
             (addressExposed == 0x5060708010203040L) &&
-            (overlapping == 256))
+            (overlapping == unchecked((int)0xDEAD0000)))
             return 100;
         else
             return 99;
