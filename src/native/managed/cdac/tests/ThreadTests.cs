@@ -25,7 +25,7 @@ public unsafe class ThreadTests
                 (nameof(Constants.Globals.ThreadStore), threadBuilder.ThreadStoreGlobalAddress),
                 (nameof(Constants.Globals.FinalizerThread), threadBuilder.FinalizerThreadGlobalAddress),
                 (nameof(Constants.Globals.GCThread), threadBuilder.GCThreadGlobalAddress))
-            .AddContract<IThread>(static target => (IThread)new Thread_1(target))
+            .AddContract<IThread>(version: 1)
             .Build();
 
 

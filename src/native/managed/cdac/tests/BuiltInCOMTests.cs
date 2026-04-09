@@ -71,7 +71,6 @@ public class BuiltInCOMTests
             (Constants.Globals.RCWInterfaceCacheSize, MockRCW.InterfaceEntryCacheSize),
         ];
 
-
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetSimpleComCallWrapperData_ReturnsRefCountMasked(MockTarget.Architecture arch)

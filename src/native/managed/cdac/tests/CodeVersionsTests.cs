@@ -158,12 +158,11 @@ public class CodeVersionsTests
             builder.Builder.GetMemoryContext().ReadFromTarget,
             CreateContractTypes(builder));
 
-        ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.CodeVersions == (ICodeVersions)new CodeVersions_1(target)
-                && c.RuntimeTypeSystem == mockRuntimeTypeSystem.Object
-                && c.ExecutionManager == mockExecutionManager.Object
-                && c.Loader == mockLoader.Object);
-        target.SetContracts(reg);
+        var registry = target.SetupContractRegistry();
+        registry.SetVersion<ICodeVersions>(1);
+        registry.SetMock(mockRuntimeTypeSystem.Object);
+        registry.SetMock(mockExecutionManager.Object);
+        registry.SetMock(mockLoader.Object);
         return target;
     }
 

@@ -26,15 +26,9 @@ public class GCMemoryRegionTests
         TestPlaceholderTarget.ReadFromTargetDelegate readFromTarget)
     {
         var target = new TestPlaceholderTarget(arch, readFromTarget, types, globals, globalStrings);
-        var gcContract = CreateGC(target);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.GC == gcContract));
-        return gcContract;
-    }
-
-    private static IGC CreateGC(Target target)
-    {
-        return new GC_1(target);
+        var registry = target.SetupContractRegistry();
+        registry.SetVersion<IGC>(1);
+        return target.Contracts.GC;
     }
 
     private static (string Name, ulong Value)[] BuildGlobals(

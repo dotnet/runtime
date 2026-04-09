@@ -65,7 +65,7 @@ public class DebuggerTests
             builder.AddGlobals((Constants.Globals.MetadataUpdatesApplied, metadataFrag.Address));
         }
 
-        builder.AddContract<IDebugger>(target => (IDebugger)new Debugger_1(target));
+        builder.AddContract<IDebugger>(version: 1);
 
         return builder.Build();
     }
@@ -82,7 +82,7 @@ public class DebuggerTests
         helpers.WritePointer(debuggerPtrFrag.Data, 0);
         memBuilder.AddHeapFragment(debuggerPtrFrag);
         builder.AddGlobals((Constants.Globals.Debugger, debuggerPtrFrag.Address));
-        builder.AddContract<IDebugger>(target => (IDebugger)new Debugger_1(target));
+        builder.AddContract<IDebugger>(version: 1);
 
         return builder.Build();
     }

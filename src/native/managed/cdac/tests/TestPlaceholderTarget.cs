@@ -46,6 +46,21 @@ internal class TestPlaceholderTarget : Target
     }
 
     /// <summary>
+    /// Creates a <see cref="TestContractRegistry"/> with <see cref="CoreCLRContracts.Register"/>
+    /// applied, and sets it as the contract registry for this target. Returns the registry so
+    /// callers can call <see cref="TestContractRegistry.SetVersion{TContract}"/> and
+    /// <see cref="TestContractRegistry.SetMock{TContract}"/>.
+    /// </summary>
+    internal TestContractRegistry SetupContractRegistry(Action<ContractRegistry>? registrations = null)
+    {
+        var registry = new TestContractRegistry();
+        registry.SetTarget(this);
+        (registrations ?? CoreCLRContracts.Register)(registry);
+        _contractRegistry = registry;
+        return registry;
+    }
+
+    /// <summary>
     /// Fluent builder for <see cref="TestPlaceholderTarget"/>. Accumulates types,
     /// globals, and contract factories from mock descriptors, then materializes the
     /// target and wires contracts in <see cref="Build"/>.
@@ -57,7 +72,8 @@ internal class TestPlaceholderTarget : Target
         private readonly Dictionary<DataType, Target.TypeInfo> _types = new();
         private readonly List<(string Name, ulong Value)> _globals = new();
         private readonly List<(string Name, string Value)> _globalStrings = new();
-        private readonly List<(Type Type, Func<Target, IContract> Factory)> _contractFactories = new();
+        private readonly List<Action<TestContractRegistry>> _contractSetups = new();
+        private Action<ContractRegistry> _registrations = CoreCLRContracts.Register;
 
         public Builder(MockTarget.Architecture arch)
         {
@@ -86,9 +102,21 @@ internal class TestPlaceholderTarget : Target
             return this;
         }
 
-        public Builder AddContract<TContract>(Func<Target, TContract> factory) where TContract : IContract
+        public Builder UseRegistrations(Action<ContractRegistry> registrations)
         {
-            _contractFactories.Add((typeof(TContract), target => factory(target)));
+            _registrations = registrations;
+            return this;
+        }
+
+        public Builder AddContract<TContract>(int version) where TContract : IContract
+        {
+            _contractSetups.Add(registry => registry.SetVersion<TContract>(version));
+            return this;
+        }
+
+        public Builder AddMockContract<TContract>(TContract mock) where TContract : IContract
+        {
+            _contractSetups.Add(registry => registry.SetMock(mock));
             return this;
         }
 
@@ -102,8 +130,12 @@ internal class TestPlaceholderTarget : Target
                 _globalStrings.ToArray());
 
             var registry = new TestContractRegistry();
-            foreach (var (type, factory) in _contractFactories)
-                registry.Add(type, new Lazy<IContract>(() => factory(target)));
+            registry.SetTarget(target);
+            _registrations(registry);
+
+            foreach (var setup in _contractSetups)
+                setup(registry);
+
             target.SetContracts(registry);
 
             return target;
@@ -455,22 +487,50 @@ internal class TestPlaceholderTarget : Target
         }
     }
 
-    private sealed class TestContractRegistry : ContractRegistry
+    internal sealed class TestContractRegistry : ContractRegistry
     {
-        private readonly Dictionary<Type, Lazy<IContract>> _contracts = new();
+        private readonly Dictionary<(Type, int), Func<Target, IContract>> _creators = new();
+        private readonly Dictionary<Type, int> _versions = new();
+        private readonly Dictionary<Type, IContract> _mocks = new();
+        private readonly Dictionary<Type, IContract> _resolved = new();
+        private Target _target = null!;
 
-        public void Add(Type type, Lazy<IContract> contract) => _contracts[type] = contract;
+        public void SetTarget(Target target) => _target = target;
+
+        public void SetVersion<TContract>(int version) where TContract : IContract
+            => _versions[typeof(TContract)] = version;
+
+        public void SetMock<TContract>(TContract mock) where TContract : IContract
+            => _mocks[typeof(TContract)] = mock;
+
+        public override void Register<TContract>(int version, Func<Target, TContract> creator)
+            => _creators[(typeof(TContract), version)] = t => creator(t);
 
         public override TContract GetContract<TContract>()
         {
-            if (_contracts.TryGetValue(typeof(TContract), out var lazy))
-                return (TContract)lazy.Value;
+            if (_resolved.TryGetValue(typeof(TContract), out var cached))
+                return (TContract)cached;
 
-            throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered.");
+            IContract contract;
+            if (_mocks.TryGetValue(typeof(TContract), out var mock))
+            {
+                contract = mock;
+            }
+            else if (_versions.TryGetValue(typeof(TContract), out int version))
+            {
+                if (!_creators.TryGetValue((typeof(TContract), version), out var creator))
+                    throw new NotImplementedException($"No implementation registered for contract '{typeof(TContract).Name}' version {version}.");
+
+                contract = creator(_target);
+            }
+            else
+            {
+                throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered. Use AddContract<T>(version) or AddMockContract<T>(mock) on the Builder.");
+            }
+
+            _resolved[typeof(TContract)] = contract;
+            return (TContract)contract;
         }
-
-        public override void Register<TContract>(int version, Func<Target, TContract> creator)
-            => throw new NotSupportedException("TestContractRegistry does not support dynamic registration. Use SetContracts to configure contracts for testing.");
 
         public override void Flush() { }
     }

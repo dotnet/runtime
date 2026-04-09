@@ -43,8 +43,8 @@ public class DacStreamsTests
         }
 
         var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, DacStreamsTypes, DacStreamsGlobals);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.DacStreams == (IDacStreams)new DacStreams_1(target)));
+        var registry = target.SetupContractRegistry();
+        registry.SetVersion<IDacStreams>(1);
 
         testCase(target);
     }
