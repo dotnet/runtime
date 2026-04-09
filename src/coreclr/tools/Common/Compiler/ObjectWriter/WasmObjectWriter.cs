@@ -946,7 +946,7 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                         {
                             // These relocs should be for cases of the form:
-                            //  global.get __image_base
+                            //  global.get $imageBase
                             //  i32.const <reloc>
                             //  i32.add
                             //  i32.load 0
@@ -964,7 +964,7 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_MEMORY_ADDR_REL_LEB:
                         {
                             // These relocs should be for cases of the form:
-                            //  global.get __image_base
+                            //  global.get $imageBase
                             //  i32.load <reloc>
                             // So, the relocated address value should always represent an offset relative to image base. 
                             // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
