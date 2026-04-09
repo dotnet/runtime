@@ -428,6 +428,8 @@ namespace Server.Contract
     internal interface ITrackMyLifetimeTesting
     {
         IntPtr GetAllocationCountCallback();
+        ITrackMyLifetimeTesting CreateAgileInstance();
+        void Method();
     }
 }
 
