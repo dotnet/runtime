@@ -19,6 +19,13 @@ Branch:     refs/heads/main
 ================================================================================
 
 ================================================================================
+Prerequisites
+================================================================================
+
+[HH:mm:ss] pip install requests — OK
+[HH:mm:ss] ADO_TOKEN — <source: env var | az cli | user-provided>
+
+================================================================================
 Load Pipeline Definitions
 ================================================================================
 
@@ -42,10 +49,6 @@ Fetch Latest Builds
 ================================================================================
 Extract Failed Tests via Test Results API
 ================================================================================
-
-[HH:mm:ss] Obtaining Azure CLI bearer token...
-[HH:mm:ss] GET az account get-access-token --resource "499b84ac-1321-427f-aa17-267ca6975798"
-           → Token obtained (length=<N>, expires=<time>)
 
 [HH:mm:ss] Running: python scripts/extract_failed_tests.py --db scripts/monitor.db
 [HH:mm:ss] Dispatching <N> sub-agents for <F> failing pipelines...
@@ -152,7 +155,7 @@ Validate DB
 [HH:mm:ss] <X>/<Y> checks passed
 
 ================================================================================
-Fix Validation Failures (if any — one retry)
+Fix Validation Failures (if any — up to 3 retries)
 ================================================================================
 
 [HH:mm:ss] Fixing <N> validation failures...
@@ -161,8 +164,9 @@ Fix Validation Failures (if any — one retry)
 [HH:mm:ss] Re-running validator...
 [HH:mm:ss] <X>/<Y> checks passed
 
-// If a check still fails after retry:
-[WARN] Validation retry failed — <check description>
+// Repeat if failures decreased (up to 3 retries total).
+// If checks still fail after retries:
+[WARN] Validation error persists after retry — <check description>
   Pipeline: [<name> <build_number>](<ado_test_results_tab_url>)
   Console Log: [Console Log](<helix_url>)
   Field: <field_name>, failure_id=<N>

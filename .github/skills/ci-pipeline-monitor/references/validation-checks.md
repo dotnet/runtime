@@ -32,6 +32,6 @@ log (catches mid-line truncation).
 count matches DB, all failing pipelines mentioned.
 
 **Debug Log** (if `--log` provided): log file is non-empty, contains all
-required step headers (Load Pipeline Definitions, Fetch Latest Builds,
-Extract Failed Tests, Fetch Helix Console Logs, Triage, Validate DB,
+required step headers (Prerequisites, Load Pipeline Definitions, Fetch Latest
+Builds, Extract Failed Tests, Fetch Helix Console Logs, Triage, Validate DB,
 Generate Report), contains SUMMARY section.

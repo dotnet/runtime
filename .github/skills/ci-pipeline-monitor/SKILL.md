@@ -35,7 +35,12 @@ The list of pipelines and their cached definition IDs is maintained in
 
 ## Scripts
 
-Use these scripts — do NOT write ad-hoc replacements.
+Use these scripts — do NOT write ad-hoc replacements. Do NOT create new files
+in `scripts/` — only the committed scripts below belong there. For ad-hoc
+queries during triage (e.g., DB lookups, grouping), prefer `python -c '...'`
+inline. If a query is too complex for inline (escaping issues, multi-line),
+write a temp file under `temp/` (e.g., `temp/_query.py`) and delete it after
+use. The `temp/` directory is gitignored.
 
 | Script | Step | What it does |
 |--------|------|-------------|
@@ -49,6 +54,10 @@ Use these scripts — do NOT write ad-hoc replacements.
 ```bash
 cd .github/skills/ci-pipeline-monitor
 
+# Step 0: Prerequisites (agent)
+pip install requests
+# Obtain ADO_TOKEN — see Step 0 section below for full logic
+
 # Step 1: Resolve pipeline definitions (agent)
 # Agent compares Pipeline Details against Cached Mapping in pipelines.md,
 # resolves missing def IDs via AzDO Definitions API, updates pipelines.md
@@ -57,7 +66,6 @@ cd .github/skills/ci-pipeline-monitor
 python scripts/setup_and_fetch_builds.py --pipelines pipelines.md --db scripts/monitor.db
 
 # Step 3: Extract failed tests + fetch logs (deterministic)
-export ADO_TOKEN=$(az account get-access-token --resource "499b84ac-1321-427f-aa17-267ca6975798" --query accessToken -o tsv)
 python scripts/extract_failed_tests.py --db scripts/monitor.db
 python scripts/fetch_helix_logs.py --db scripts/monitor.db
 
@@ -68,8 +76,8 @@ python scripts/fetch_helix_logs.py --db scripts/monitor.db
 
 # Step 5: Validate DB before report (deterministic)
 python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --log logs/ci-pipeline-monitor-*.log
-# Step 5a: If validation fails, fix issues in DB, re-validate ONCE.
-# If still failing, log WARN in debug log and proceed.
+# Step 5a: If validation fails, fix issues in DB, re-validate (up to 3 retries,
+# only while failure count decreases). Log remaining WARNs and proceed.
 
 # Step 6: Generate report (deterministic — only after DB is clean)
 # Pass --validation-warnings if Step 5a had unresolved failures
@@ -168,6 +176,17 @@ All output goes in `logs/` (sibling of `scripts/`).
 - **Test Report** (`logs/test-report-<timestamp>.md`) — always generated
   via `generate_report.py`.
 
+### Step 0: Prerequisites (agent)
+
+Run before anything else. See [`references/prerequisites.md`](references/prerequisites.md)
+for full details.
+
+1. `pip install requests`
+2. Ensure `ADO_TOKEN` env var is set (required for Step 3).
+
+**⚠️ Do NOT proceed to Step 3 without a valid `ADO_TOKEN`.** The Test Results
+API returns 203 (sign-in HTML) without auth, even on dnceng-public.
+
 ### Step 1: Resolve Pipeline Definitions (agent)
 
 Compare the **Pipeline Details** table (source of truth) against the **Cached
@@ -255,7 +274,7 @@ and content accuracy. Exits 1 on failure.
 
 For the full list of checks, see [`references/validation-checks.md`](references/validation-checks.md).
 
-### Step 5a: Fix Validation Failures (one retry)
+### Step 5a: Fix Validation Failures (up to 3 retries)
 
 If any checks fail after Step 5:
 
@@ -268,23 +287,26 @@ If any checks fail after Step 5:
    - Re-read the console log file at `console_log_path`
    - UPDATE the corrected field in the DB
 
-3. **Re-run the validator once:**
+3. **Re-run the validator:**
    ```bash
    python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --log <log_path>
    ```
 
-4. **If a check still fails after retry**, log it as a WARN in the debug
+4. **If failures decreased**, repeat from step 1 (up to 3 total retries).
+   **If failures did NOT decrease** (same or more), stop retrying.
+
+5. **If checks still fail after retries**, log each as a WARN in the debug
    log with clickable links and move on:
    ```
-   [WARN] Validation retry failed — <check description>
+   [WARN] Validation error persists after retry — <check description>
      Pipeline: [<name> <build_number>](<ado_test_results_tab_url>)
      Console Log: [Console Log](<helix_url>)
      Field: <field_name>, failure_id=<N>
    ```
 
-**Do NOT retry more than once.** Log the WARN and proceed to report
-generation. Some failures (e.g., LLM output truncation) may not be
-fixable programmatically.
+**Stop retrying when failure count stops decreasing or after 3 attempts.**
+Log remaining WARNs and proceed to report generation. Some failures
+(e.g., LLM output truncation) may not be fixable programmatically.
 
 ### Step 6: Generate Report (deterministic — scripted)
 
@@ -321,11 +343,12 @@ DB validation (Step 5/5a) is complete so the report is generated once.
 
 | Step | Tools | Purpose |
 |------|-------|---------|
+| 0 | `powershell` | Install dependencies, obtain `ADO_TOKEN` |
 | 1 | `powershell`, `edit` | Resolve def IDs via AzDO API, update `pipelines.md` |
 | 2-3 | `powershell` | Run scripts |
 | 4 | `powershell`, `github-mcp-server-search_issues`, `github-mcp-server-issue_read` | Read logs, search GitHub, INSERT failures |
 | 5 | `powershell` | Run `validate_results.py` |
-| 5a | `powershell`, `view` | Fix validation failures, re-validate once |
+| 5a | `powershell`, `view` | Fix validation failures, re-validate (up to 3 retries) |
 | 6 | `powershell` | Run `generate_report.py` |
 | 7 | `github-mcp-server-list_commits`, `get_commit`, `search_pull_requests`, `get_file_contents` | Trace regressions |
 
@@ -348,10 +371,8 @@ File I/O tools (`view`, `edit`, `create`, `grep`, `glob`) always allowed.
   each sub-agent for AzDO Test Results API. Helix API needs no auth.
 - Old `failingSince` builds may be purged (>90 days). Link to the latest
   failed build instead of generating a dead URL.
-- **AzDO Test Results API requires a bearer token** — even on dnceng-public,
-  `/_apis/test/runs` returns 203 (sign-in HTML page) without auth. Get a token:
-  `az account get-access-token --resource "499b84ac-1321-427f-aa17-267ca6975798"`.
-  Valid ~60 minutes. Set as `ADO_TOKEN` env var.
+- **AzDO Test Results API requires a bearer token** — see Step 0 for how to
+  obtain and set `ADO_TOKEN`. The token is valid ~60 minutes.
 - **AzDO Builds API and Helix API require NO authentication.**
 
 ### Triage

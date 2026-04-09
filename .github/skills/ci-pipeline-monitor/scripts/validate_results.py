@@ -651,6 +651,7 @@ def main():
             # 21. Debug log contains all required step headers
             total += 1
             required_steps = [
+                "Prerequisites",
                 "Load Pipeline Definitions",
                 "Fetch Latest Builds",
                 "Extract Failed Tests",
