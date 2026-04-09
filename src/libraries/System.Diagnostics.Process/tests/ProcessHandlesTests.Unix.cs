@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tests
             {
                 throw new Win32Exception();
             }
-            return status.Ino.ToString();
+            return FormattableString.Invariant($"{status.Dev}:{status.Ino}");
         }
     }
 }

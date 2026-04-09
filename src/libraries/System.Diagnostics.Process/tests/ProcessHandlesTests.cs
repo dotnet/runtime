@@ -549,7 +549,7 @@ namespace System.Diagnostics.Tests
             string path = Path.GetTempFileName();
             try
             {
-                // Open with exclusive access so no other process can open the same file.
+                // Open with FileShare.None so independent opens that honor .NET/OS sharing semantics are prevented.
                 using SafeFileHandle fileHandle = File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None, FileOptions.None);
 
                 // Verify the handle is valid in the parent process.
