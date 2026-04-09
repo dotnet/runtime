@@ -1445,7 +1445,7 @@ namespace System.Diagnostics.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void UserNameCantBeCombinedWithInheritedHandles()
         {
             using Process longRunning = CreateProcessLong();

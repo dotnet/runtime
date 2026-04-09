@@ -10,6 +10,7 @@ endif()
 if (FEATURE_DYNAMIC_CODE_COMPILED)
   set(FEATURE_TIERED_COMPILATION 1)
   set(FEATURE_REJIT 1)
+  set(FEATURE_PGO 1)
 endif()
 
 # On desktop, if dynamic code compiled is false, we still enable static linking so we don't have to add platform manifest entries
