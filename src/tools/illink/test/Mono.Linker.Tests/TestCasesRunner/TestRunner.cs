@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Linker.Tests.Extensions;
-using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
     {
         partial void IgnoreTest(string reason)
         {
-            Assert.Ignore(reason);
+            Assert.Inconclusive(reason);
         }
 
         private partial IEnumerable<string>? GetAdditionalDefines() => null;
@@ -29,10 +29,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 if (e.InnerException != null)
                 {
-                    if (e.InnerException is AssertionException
-                    || e.InnerException is SuccessException
-                    || e.InnerException is IgnoreException
-                    || e.InnerException is InconclusiveException)
+                    if (e.InnerException is UnitTestAssertException)
                         throw e.InnerException;
                 }
 
@@ -40,7 +37,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
         }
 
-        protected partial TrimmingCustomizations? CustomizeTrimming(TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
+        protected virtual partial TrimmingCustomizations? CustomizeTrimming(TrimmingDriver linker, TestCaseMetadataProvider metadataProvider)
         {
             TrimmingCustomizations customizations = new TrimmingCustomizations();
 

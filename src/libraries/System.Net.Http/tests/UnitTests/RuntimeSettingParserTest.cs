@@ -11,7 +11,7 @@ namespace System.Net.Http.Tests
     {
         public static bool SupportsRemoteExecutor = RemoteExecutor.IsSupported;
 
-        [ConditionalTheory(nameof(SupportsRemoteExecutor))]
+        [ConditionalTheory(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task QueryRuntimeSettingSwitch_WhenNotSet_DefaultIsUsed(bool defaultValue)
@@ -26,7 +26,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest, defaultValue.ToString()).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task QueryRuntimeSettingSwitch_AppContextHasPriority()
         {
             static void RunTest()
@@ -41,7 +41,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task QueryRuntimeSettingSwitch_EnvironmentVariable()
         {
             static void RunTest()
@@ -55,7 +55,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task QueryRuntimeSettingSwitch_InvalidValue_FallbackToDefault()
         {
             static void RunTest()
@@ -69,7 +69,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
-        [ConditionalTheory(nameof(SupportsRemoteExecutor))]
+        [ConditionalTheory(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         [InlineData(0)]
         [InlineData(42)]
         public async Task QueryRuntimeSettingInt32_WhenNotSet_DefaultIsUsed(int defaultValue)
@@ -84,7 +84,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest, defaultValue.ToString()).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task QueryRuntimeSettingInt32_AppContextHasPriority()
         {
             static void RunTest()
@@ -99,7 +99,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task QueryRuntimeSettingInt32_EnvironmentVariable()
         {
             static void RunTest()
@@ -114,7 +114,7 @@ namespace System.Net.Http.Tests
         }
 
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task QueryRuntimeSettingInt32_InvalidValue_FallbackToDefault()
         {
             static void RunTest()
@@ -128,7 +128,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task ParseInt32EnvironmentVariableValue_WhenNotSet_DefaultIsUsed()
         {
             static void RunTest()
@@ -139,7 +139,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task ParseInt32EnvironmentVariableValue_ValidValue()
         {
             static void RunTest()
@@ -154,7 +154,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task ParseInt32EnvironmentVariableValue_InvalidValue_FallbackToDefault()
         {
             static void RunTest()
@@ -169,7 +169,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task ParseDoubleEnvironmentVariableValue_WhenNotSet_DefaultIsUsed()
         {
             static void RunTest()
@@ -180,7 +180,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task ParseDoubleEnvironmentVariableValue_ValidValue()
         {
             static void RunTest()
@@ -195,7 +195,7 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        [ConditionalFact(typeof(RuntimeSettingParserTest), nameof(SupportsRemoteExecutor))]
         public async Task ParseDoubleEnvironmentVariableValue_InvalidValue_FallbackToDefault()
         {
             static void RunTest()

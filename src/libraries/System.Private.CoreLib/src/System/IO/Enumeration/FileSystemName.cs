@@ -274,18 +274,11 @@ namespace System.IO.Enumeration
                             // If we are at a period, determine if we are allowed to
                             // consume it, i.e. make sure it is not the last one.
 
-                            bool notLastPeriod = false;
-                            if (!nameFinished && nameChar == '.')
-                            {
-                                for (int offset = nameOffset; offset < name.Length; offset++)
-                                {
-                                    if (name[offset] == '.')
-                                    {
-                                        notLastPeriod = true;
-                                        break;
-                                    }
-                                }
-                            }
+                            // Check if there's another period after this one (not the last period)
+                            bool notLastPeriod =
+                                !nameFinished &&
+                                nameChar == '.' &&
+                                name.Slice(nameOffset).Contains('.');
 
                             if (nameFinished || nameChar != '.' || notLastPeriod)
                             {
@@ -412,6 +405,36 @@ namespace System.IO.Enumeration
             currentState = priorMatches[matchCount - 1];
 
             return currentState == maxState;
+        }
+
+        /// <summary>
+        /// Escapes the given expression so that only '*' and '?' are treated as wildcards, and
+        /// '\' isn't treated as an escape character.
+        /// </summary>
+        internal static string EscapeExpression(string expression)
+        {
+            ReadOnlySpan<char> span = expression;
+            ReadOnlySpan<char> charsToEscape = ['\\', '"', '<', '>'];
+
+            int i = span.IndexOfAny(charsToEscape);
+            if (i >= 0)
+            {
+                ValueStringBuilder vsb = new(stackalloc char[256]);
+                do
+                {
+                    vsb.Append(span.Slice(0, i));
+                    vsb.Append('\\');
+                    vsb.Append(span[i]);
+                    span = span.Slice(i + 1);
+                    i = span.IndexOfAny(charsToEscape);
+                }
+                while (i >= 0);
+
+                vsb.Append(span);
+                expression = vsb.ToString();
+            }
+
+            return expression;
         }
     }
 }

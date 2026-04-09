@@ -3,12 +3,14 @@
 
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 [StructLayout(LayoutKind.Auto, Size = 16)]
 public struct Foo
 {
     private int _field;
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static unsafe int TestEntryPoint()
     {

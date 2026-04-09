@@ -8,7 +8,7 @@ include(CheckStructHasMember)
 include(CheckTypeSize)
 include(CheckLibraryExists)
 
-if(CLR_CMAKE_TARGET_FREEBSD)
+if(CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
   set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
 elseif(CLR_CMAKE_TARGET_SUNOS)
   set(CMAKE_REQUIRED_INCLUDES /opt/local/include)
@@ -16,7 +16,7 @@ endif()
 
 if(CLR_CMAKE_TARGET_APPLE)
   set(CMAKE_REQUIRED_DEFINITIONS -D_XOPEN_SOURCE)
-elseif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
+elseif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD AND NOT CLR_CMAKE_TARGET_OPENBSD)
   set(CMAKE_REQUIRED_DEFINITIONS "-D_BSD_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L")
 endif()
 
@@ -141,7 +141,6 @@ check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
 check_function_exists(pipe2 HAVE_PIPE2)
-check_function_exists(strerrorname_np HAVE_STRERRORNAME_NP)
 
 check_cxx_source_compiles("
 #include <pthread_np.h>
@@ -367,21 +366,7 @@ int main()
 }" HAVE_WORKING_CLOCK_GETTIME)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
 
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_MONOTONIC)
-set(CMAKE_REQUIRED_LIBRARIES)
 
 check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
@@ -497,52 +482,6 @@ int main(void)
   exit(ret != 1);
 }" ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS)
 
-set(CMAKE_REQUIRED_LIBRARIES pthread)
-check_cxx_source_runs("
-#include <errno.h>
-#include <pthread.h>
-#include <stdlib.h>
-
-void *start_routine(void *param) { return NULL; }
-
-int main() {
-  int result;
-  pthread_t tid;
-
-  errno = 0;
-  result = pthread_create(&tid, NULL, start_routine, NULL);
-  if (result != 0) {
-    exit(1);
-  }
-  if (errno != 0) {
-    exit(0);
-  }
-  exit(1);
-}" PTHREAD_CREATE_MODIFIES_ERRNO)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES pthread)
-check_cxx_source_runs("
-#include <errno.h>
-#include <semaphore.h>
-#include <stdlib.h>
-
-int main() {
-  int result;
-  sem_t sema;
-
-  errno = 50;
-  result = sem_init(&sema, 0, 0);
-  if (result != 0)
-  {
-    exit(1);
-  }
-  if (errno != 50)
-  {
-    exit(0);
-  }
-  exit(1);
-}" SEM_INIT_MODIFIES_ERRNO)
-set(CMAKE_REQUIRED_LIBRARIES)
 check_cxx_source_runs("
 #include <fcntl.h>
 #include <stdlib.h>
@@ -566,7 +505,7 @@ int main(void) {
   }
   exit(0);
 }" HAVE_PROCFS_CTL)
-set(CMAKE_REQUIRED_LIBRARIES)
+
 check_cxx_source_runs("
 #include <fcntl.h>
 #include <stdlib.h>
@@ -592,21 +531,6 @@ int main(void) {
 }" HAVE_PROCFS_STAT)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-set(CMAKE_REQUIRED_LIBRARIES ${PTHREAD_LIBRARY})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <errno.h>
-#include <semaphore.h>
-
-int main() {
-  sem_t sema;
-  if (sem_init(&sema, 0, 0) == -1){
-    exit(1);
-  }
-  exit(0);
-}" HAS_POSIX_SEMAPHORES)
-set(CMAKE_REQUIRED_LIBRARIES)
-
 set(SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING 1)
 set(ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS 1)
 
@@ -625,7 +549,6 @@ int main(int argc, char **argv)
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
-check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
 check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
 check_symbol_exists(unw_get_proc_info_in_range libunwind.h HAVE_GET_PROC_INFO_IN_RANGE)
 
@@ -667,37 +590,31 @@ int main(int argc, char **argv)
 
 if(CLR_CMAKE_TARGET_APPLE)
   set(HAVE__NSGETENVIRON 1)
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 1)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 
-elseif(CLR_CMAKE_TARGET_FREEBSD)
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
+elseif(CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   if (CLR_CMAKE_HOST_ARCH_AMD64)
     set(BSD_REGS_STYLE "((reg).r_##rr)")
   elseif(CLR_CMAKE_HOST_ARCH_ARM64)
     set(BSD_REGS_STYLE "((reg).rr)")
   else()
-    message(FATAL_ERROR "Unknown FreeBSD architecture")
+    message(FATAL_ERROR "Unknown architecture")
   endif()
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CLR_CMAKE_TARGET_NETBSD)
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
   set(BSD_REGS_STYLE "((reg).regs[_REG_##RR])")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 
 elseif(CLR_CMAKE_TARGET_SUNOS)
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(SET_SCHEDPARAM_NEEDS_PRIVS 1)
 elseif(CLR_CMAKE_TARGET_HAIKU)
   # Haiku does not have ptrace.
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CLR_CMAKE_TARGET_BROWSER)
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 else() # Anything else is Linux
   # LTTNG is not available on Android, so don't error out
@@ -705,7 +622,6 @@ else() # Anything else is Linux
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)
     message(FATAL_ERROR "Cannot find liblttng-ust-dev. Try installing liblttng-ust-dev  (or the appropriate packages for your platform)")
   endif()
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 endif(CLR_CMAKE_TARGET_APPLE)
@@ -713,7 +629,7 @@ endif(CLR_CMAKE_TARGET_APPLE)
 check_struct_has_member(
     "struct statfs"
     f_fstypename
-    "sys/mount.h"
+    "sys/types.h;sys/mount.h"
     HAVE_STATFS_FSTYPENAME)
 
 check_struct_has_member(
@@ -733,7 +649,7 @@ check_prototype_definition(
     statfs
     "int statfs(const char *path, struct statfs *buf)"
     0
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_NON_LEGACY_STATFS)
 
 configure_file(${CMAKE_CURRENT_LIST_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

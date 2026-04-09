@@ -257,9 +257,10 @@ void Compiler::raMarkStkVars()
 
         noway_assert((varDsc->lvType != TYP_UNDEF) && (varDsc->lvType != TYP_VOID) && (varDsc->lvType != TYP_UNKNOWN));
 #if FEATURE_FIXED_OUT_ARGS
-        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || (lvaLclStackHomeSize(lclNum) != 0));
+        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || varTypeHasUnknownSize(varDsc) ||
+                     (lvaLclStackHomeSize(lclNum) != 0));
 #else  // FEATURE_FIXED_OUT_ARGS
-        noway_assert(lvaLclStackHomeSize(lclNum) != 0);
+        noway_assert(varTypeHasUnknownSize(varDsc) || lvaLclStackHomeSize(lclNum) != 0);
 #endif // FEATURE_FIXED_OUT_ARGS
 
         varDsc->lvOnFrame = true; // Our prediction is that the final home for this local variable will be in the
@@ -331,7 +332,7 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
     {
         return false;
     }
-    Compiler* compiler = GetCompiler();
+    Compiler* compiler = m_compiler;
     assert(compiler->compEnregLocals());
 
     if (!varDsc->lvTracked)
@@ -339,14 +340,14 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
         return false;
     }
 
-#if !defined(TARGET_64BIT)
+#if LOWER_DECOMPOSE_LONGS
     if (varDsc->lvType == TYP_LONG)
     {
         // Long variables should not be register candidates.
         // Lowering will have split any candidate lclVars into lo/hi vars.
         return false;
     }
-#endif // !defined(TARGET_64BIT)
+#endif // LOWER_DECOMPOSE_LONGS
 
     // If we have JMP, reg args must be put on the stack
 
@@ -411,7 +412,19 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
     if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
     {
         compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+        return false;
     }
+
+#if defined(TARGET_WASM)
+    // Wasm RA currently does not support EH write-thru, so any local live in or out
+    // of a handler must be located only on the stack.
+    //
+    if (varDsc->lvLiveInOutOfHndlr)
+    {
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+        return false;
+    }
+#endif // defined(TARGET_WASM)
 
     if (varDsc->lvDoNotEnregister)
     {
@@ -460,4 +473,40 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// IsContainableMemoryOp: Checks whether this is a memory op that can be contained.
+//
+// Arguments:
+//    node        - the node of interest.
+//
+// Return value:
+//    True if this will definitely be a memory reference that could be contained.
+//
+// Notes:
+//    This differs from the isMemoryOp() method on GenTree because it checks for
+//    the case of doNotEnregister local. This won't include locals that
+//    for some other reason do not become register candidates, nor those that get
+//    spilled.
+//    Also, because we usually call this before we redo dataflow, any new lclVars
+//    introduced after the last dataflow analysis will not yet be marked lvTracked,
+//    so we don't use that.
+//
+bool RegAllocImpl::isContainableMemoryOp(GenTree* node)
+{
+    if (node->isMemoryOp())
+    {
+        return true;
+    }
+    if (node->IsLocal())
+    {
+        if (!willEnregisterLocalVars())
+        {
+            return true;
+        }
+        const LclVarDsc* varDsc = m_compiler->lvaGetDesc(node->AsLclVar());
+        return varDsc->lvDoNotEnregister;
+    }
+    return false;
 }

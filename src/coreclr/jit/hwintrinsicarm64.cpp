@@ -112,13 +112,22 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
     }
     else if (className[0] == 'V')
     {
-        if (strncmp(className, "Vector64", 8) == 0)
+        if (strncmp(className, "Vector", 6) == 0)
         {
-            return InstructionSet_Vector64;
-        }
-        else if (strncmp(className, "Vector128", 9) == 0)
-        {
-            return InstructionSet_Vector128;
+            const char* suffix = className + 6;
+
+            if ((*suffix == '\0') || (strcmp(suffix, "`1") == 0))
+            {
+                return InstructionSet_VectorT;
+            }
+            else if (strncmp(suffix, "64", 2) == 0)
+            {
+                return InstructionSet_Vector64;
+            }
+            else if (strncmp(suffix, "128", 3) == 0)
+            {
+                return InstructionSet_Vector128;
+            }
         }
     }
 
@@ -1344,7 +1353,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = impSIMDPopStack();
 
                 retNode = gtNewSimdDotProdNode(simdType, op1, op2, simdBaseType, simdSize);
-                retNode = gtNewSimdGetElementNode(retType, retNode, gtNewIconNode(0), simdBaseType, simdSize);
+                retNode = gtNewSimdToScalarNode(retType, retNode, simdBaseType, simdSize);
             }
             break;
         }
@@ -3332,18 +3341,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             var_types               argType  = TYP_UNKNOWN;
             CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
 
-            argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-            op3                        = getArgForHWIntrinsic(argType, argClass);
-            argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-            op2                        = getArgForHWIntrinsic(argType, argClass);
-            CorInfoType op2BaseJitType = getBaseJitTypeOfSIMDType(argClass);
-            argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-            op1                        = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
 
             retNode = gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic);
 
             retNode->AsHWIntrinsic()->SetSimdBaseType(simdBaseType);
-            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op2BaseJitType);
             break;
         }
 
@@ -3361,11 +3368,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             var_types               argType  = TYP_UNKNOWN;
             CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
 
-            argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-            op2                        = getArgForHWIntrinsic(argType, argClass);
-            CorInfoType op2BaseJitType = getBaseJitTypeOfSIMDType(argClass);
-            argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-            op1                        = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
 
             retNode = gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic);
 
@@ -3468,6 +3474,30 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode                    = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
             retNode->AsHWIntrinsic()->SetSimdBaseType(simdBaseType);
             retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op1BaseJitType);
+            break;
+        }
+
+        case NI_Sve2_AddSaturate:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType != TYP_VOID);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            var_types   argType1       = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+            var_types   argType2       = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            CorInfoType op2BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+            assert(JitType2PreciseVarType(op1BaseJitType) == simdBaseType);
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+            retNode->AsHWIntrinsic()->SetSimdBaseType(simdBaseType);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op2BaseJitType);
             break;
         }
 

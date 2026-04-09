@@ -10,4 +10,7 @@
   <ItemGroup>
     <Compile Include="GetGCMemoryInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

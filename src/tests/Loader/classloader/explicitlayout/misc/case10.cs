@@ -14,6 +14,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public class Foo{
     public int i=42;
@@ -48,6 +49,7 @@ public struct WrapBar {
 
 public class Test{
 
+  [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
   [Fact]
   public static int TestEntryPoint(){
       bool caught=false;

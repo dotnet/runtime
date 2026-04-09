@@ -26,9 +26,8 @@ namespace ILCompiler.DependencyAnalysis
         }
 #endif
 
-        // TODO: (async) This should stay RO everywhere: https://github.com/dotnet/runtime/issues/121871
         public override ObjectNodeSection GetSection(NodeFactory factory)
-            => factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection;
+            => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool StaticDependenciesAreComputed => _data != null;
 

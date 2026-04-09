@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             }
         }
 
-        [ConditionalFact(nameof(ECDsa224Available))]
+        [ConditionalFact(typeof(EcDiffieHellmanOpenSslTests), nameof(ECDsa224Available))]
         public void CtorHandle224()
         {
             IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(ECDSA_P224_OID_VALUE);

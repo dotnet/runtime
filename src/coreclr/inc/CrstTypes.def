@@ -86,6 +86,10 @@ Crst AssemblyLoader
     AcquiredBefore DeadlockDetection UniqueStack DebuggerMutex
 End
 
+Crst AsyncContinuations
+    AcquiredBefore LeafLock
+End
+
 Crst AvailableClass
     AcquiredBefore LoaderHeap
 End
@@ -236,7 +240,7 @@ Crst IJWHash
 End
 
 Crst ILStubGen
-    AcquiredBefore DeadlockDetection UniqueStack
+    AcquiredBefore DeadlockDetection UniqueStack UnresolvedClassLock FusionAppCtx AssemblyLoader
 End
 
 Crst InstMethodHashTable
@@ -292,7 +296,7 @@ End
 
 Crst LoaderAllocatorReferences
     AcquiredBefore LoaderAllocator
-    AcquiredAfter PendingTypeLoadEntry InstMethodHashTable
+    AcquiredAfter PendingTypeLoadEntry InstMethodHashTable ILStubGen
 End
 
 Crst AssemblyList
@@ -388,8 +392,13 @@ Crst SingleUseLock
     AcquiredBefore LoaderHeap UniqueStack DebuggerJitInfo
 End
 
-Crst UnwindInfoTableLock
+Crst UnwindInfoTablePublishLock
     AcquiredAfter SingleUseLock
+    AcquiredBefore UnwindInfoTablePendingLock
+End
+
+Crst UnwindInfoTablePendingLock
+    AcquiredAfter UnwindInfoTablePublishLock
     AcquiredBefore StressLog
 End
 
@@ -454,7 +463,7 @@ Crst UnresolvedClassLock
 End
 
 Crst WrapperTemplate
-    AcquiredBefore ExecutableAllocatorLock
+    AcquiredBefore LoaderHeap
 End
 
 Crst UMEntryThunkCache

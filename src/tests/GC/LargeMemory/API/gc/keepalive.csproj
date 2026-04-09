@@ -14,6 +14,9 @@
     <Compile Include="keepalive.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../largeobject.csproj" />
     <ProjectReference Include="../../memcheck.csproj" />
   </ItemGroup>

@@ -92,17 +92,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Frame__m_Next
 
 #define               SIZEOF__Frame                 0x10
 
-#ifdef FEATURE_COMINTEROP
-#define               SIZEOF__ComPrestubMethodFrame                 0x20
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComPrestubMethodFrame
-                    == sizeof(ComPrestubMethodFrame));
-
-#define               SIZEOF__ComMethodFrame                        0x20
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame
-                    == sizeof(ComMethodFrame));
-
-#endif // FEATURE_COMINTEROP
-
 #define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x04
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_fPreemptiveGCDisabled
                     == offsetof(Thread, m_fPreemptiveGCDisabled));
@@ -570,15 +559,15 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod
 
 #ifdef TARGET_UNIX
 #ifdef _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xb00
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xaf8
 #else // _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0x298
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x290
 #endif // _DEBUG
 #else // TARGET_UNIX
 #ifdef _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xb58
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xb50
 #else // _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0x2e0
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x2d8
 #endif // _DEBUG
 #endif // TARGET_UNIX
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))

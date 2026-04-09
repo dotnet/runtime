@@ -1184,5 +1184,11 @@ namespace Microsoft.Extensions
             public IEnumerable<int>? IEnumerableProperty { get; set; }
             public string[] StringArray { get; set; }
         }
+
+        internal sealed record ContainingIEnumerable
+        {
+            public NestedWithIEnumerable? Source { get; set; }
+        }
+        internal sealed record NestedWithIEnumerable(string Name, IEnumerable<string> Addresses);
     }
 }

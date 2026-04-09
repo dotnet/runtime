@@ -1349,6 +1349,11 @@ namespace System.Net.WebSockets
                 // Consume the mask bytes
                 ConsumeFromBuffer(4);
             }
+            else if (_isServer)
+            {
+                resultHeader = default;
+                return SR.net_Websockets_ServerReceivedUnmaskedFrame;
+            }
 
             // Do basic validation of the header
             switch (header.Opcode)

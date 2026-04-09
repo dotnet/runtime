@@ -1272,7 +1272,7 @@ namespace ILCompiler
 
                         uint count = reader.ReadILUInt32();
                         int nextInstruction = reader.Offset + (int)(4 * count);
-                        if (target > count)
+                        if (target >= count)
                         {
                             reader.Seek(nextInstruction);
                         }
@@ -1381,18 +1381,21 @@ namespace ILCompiler
                         StackEntry value1 = stack.Pop();
                         StackEntry value2 = stack.Pop();
 
-                        if (value1.ValueKind == value2.ValueKind
-                            && Value.TryCompareEquality(value1.Value, value2.Value, out bool compareResult))
+                        bool compareResult;
+                        if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
                         {
-                            stack.Push(StackValueKind.Int32,
-                                compareResult
-                                ? ValueTypeValue.FromInt32(1)
-                                : ValueTypeValue.FromInt32(0));
+                            compareResult = value1.Value.AsDouble() == value2.Value.AsDouble();
                         }
-                        else
+                        else if (value1.ValueKind != value2.ValueKind
+                            || !Value.TryCompareEquality(value1.Value, value2.Value, out compareResult))
                         {
                             return Status.Fail(methodIL.OwningMethod, opcode);
                         }
+
+                        stack.Push(StackValueKind.Int32,
+                            compareResult
+                            ? ValueTypeValue.FromInt32(1)
+                            : ValueTypeValue.FromInt32(0));
                     }
                     break;
 
@@ -1434,6 +1437,10 @@ namespace ILCompiler
                             if (isDivRem && value2.Value.AsInt32() == 0)
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
 
+                            if ((opcode == ILOpcode.div || opcode == ILOpcode.rem)
+                                && value1.Value.AsInt32() == int.MinValue && value2.Value.AsInt32() == -1)
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Overflow");
+
                             int result = opcode switch
                             {
                                 ILOpcode.or => value1.Value.AsInt32() | value2.Value.AsInt32(),
@@ -1456,9 +1463,14 @@ namespace ILCompiler
                             if (isDivRem && value2.Value.AsInt64() == 0)
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
 
+                            if ((opcode == ILOpcode.div || opcode == ILOpcode.rem)
+                                && value1.Value.AsInt64() == long.MinValue && value2.Value.AsInt64() == -1)
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Overflow");
+
                             long result = opcode switch
                             {
                                 ILOpcode.or => value1.Value.AsInt64() | value2.Value.AsInt64(),
+                                ILOpcode.shl => value1.Value.AsInt64() << (int)value2.Value.AsInt64(),
                                 ILOpcode.add => value1.Value.AsInt64() + value2.Value.AsInt64(),
                                 ILOpcode.sub => value1.Value.AsInt64() - value2.Value.AsInt64(),
                                 ILOpcode.and => value1.Value.AsInt64() & value2.Value.AsInt64(),
@@ -3349,7 +3361,7 @@ namespace ILCompiler
 
             public bool TryLoadElement(int index, out Value value)
             {
-                if ((uint)index > (uint)Length)
+                if ((uint)index >= (uint)Length)
                 {
                     value = null;
                     return false;

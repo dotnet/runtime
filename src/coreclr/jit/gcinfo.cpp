@@ -34,7 +34,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 GCInfo::GCInfo(Compiler* theCompiler)
-    : compiler(theCompiler)
+    : m_compiler(theCompiler)
 {
     regSet         = nullptr;
     gcVarPtrList   = nullptr;
@@ -64,7 +64,7 @@ void GCInfo::gcResetForBB()
 {
     gcRegGCrefSetCur = RBM_NONE;
     gcRegByrefSetCur = RBM_NONE;
-    VarSetOps::AssignNoCopy(compiler, gcVarPtrSetCur, VarSetOps::MakeEmpty(compiler));
+    VarSetOps::AssignNoCopy(m_compiler, gcVarPtrSetCur, VarSetOps::MakeEmpty(m_compiler));
 }
 
 #ifdef DEBUG
@@ -76,7 +76,7 @@ void GCInfo::gcResetForBB()
 
 void GCInfo::gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool forceOutput))
 {
-    if (compiler->verbose)
+    if (m_compiler->verbose)
     {
         if (forceOutput || (gcRegGCrefSetCur != gcRegGCrefSetNew))
         {
@@ -88,11 +88,11 @@ void GCInfo::gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool force
             else
             {
                 printRegMaskInt(gcRegGCrefSetCur);
-                compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetCur);
+                m_compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetCur);
                 printf(" => ");
             }
             printRegMaskInt(gcRegGCrefSetNew);
-            compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetNew);
+            m_compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetNew);
             printf("\n");
         }
     }
@@ -105,7 +105,7 @@ void GCInfo::gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool force
 
 void GCInfo::gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUGARG(bool forceOutput))
 {
-    if (compiler->verbose)
+    if (m_compiler->verbose)
     {
         if (forceOutput || (gcRegByrefSetCur != gcRegByrefSetNew))
         {
@@ -117,11 +117,11 @@ void GCInfo::gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUGARG(bool force
             else
             {
                 printRegMaskInt(gcRegByrefSetCur);
-                compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetCur);
+                m_compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetCur);
                 printf(" => ");
             }
             printRegMaskInt(gcRegByrefSetNew);
-            compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetNew);
+            m_compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetNew);
             printf("\n");
         }
     }
@@ -362,7 +362,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
 
 void GCInfo::gcVarPtrSetInit()
 {
-    VarSetOps::AssignNoCopy(compiler, gcVarPtrSetCur, VarSetOps::MakeEmpty(compiler));
+    VarSetOps::AssignNoCopy(m_compiler, gcVarPtrSetCur, VarSetOps::MakeEmpty(m_compiler));
 
     /* Initialize the list of lifetime entries */
     gcVarPtrList = gcVarPtrLast = nullptr;
@@ -378,11 +378,11 @@ GCInfo::regPtrDsc* GCInfo::gcRegPtrAllocDsc()
 {
     regPtrDsc* regPtrNext;
 
-    assert(compiler->IsFullPtrRegMapRequired());
+    assert(m_compiler->IsFullPtrRegMapRequired());
 
     /* Allocate a new entry and initialize it */
 
-    regPtrNext = new (compiler, CMK_GC) regPtrDsc;
+    regPtrNext = new (m_compiler, CMK_GC) regPtrDsc;
 
     regPtrNext->rpdIsThis = false;
 
@@ -416,6 +416,7 @@ GCInfo::regPtrDsc* GCInfo::gcRegPtrAllocDsc()
 struct NoGCRegionCounter
 {
     unsigned noGCRegionCount;
+    unsigned lastEndOffs = -1;
 
     NoGCRegionCounter()
         : noGCRegionCount(0)
@@ -425,7 +426,11 @@ struct NoGCRegionCounter
     // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
     bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
     {
-        noGCRegionCount++;
+        if (lastEndOffs != igOffs)
+        {
+            noGCRegionCount++;
+        }
+        lastEndOffs = igOffs + igSize;
         return true;
     }
 };
@@ -446,9 +451,9 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
 
     // Count the untracked locals and non-enregistered args.
 
-    for (varNum = 0, varDsc = compiler->lvaTable; varNum < compiler->lvaCount; varNum++, varDsc++)
+    for (varNum = 0, varDsc = m_compiler->lvaTable; varNum < m_compiler->lvaCount; varNum++, varDsc++)
     {
-        if (compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+        if (m_compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
         {
             // Field local of a PROMOTION_TYPE_DEPENDENT struct must have been
             // reported through its parent local
@@ -463,12 +468,12 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
             }
 
 #ifdef DEBUG
-            if (compiler->verbose)
+            if (m_compiler->verbose)
             {
                 int offs = varDsc->GetStackOffset();
 
                 printf("GCINFO: untrckd %s lcl at [%s", varTypeGCstring(varDsc->TypeGet()),
-                       compiler->GetEmitter()->emitGetFrameReg());
+                       m_compiler->GetEmitter()->emitGetFrameReg());
 
                 if (offs < 0)
                 {
@@ -502,12 +507,12 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
         }
 
 #ifdef DEBUG
-        if (compiler->verbose)
+        if (m_compiler->verbose)
         {
             int offs = tempThis->tdTempOffs();
 
             printf("GCINFO: untrck %s Temp at [%s", varTypeGCstring(varDsc->TypeGet()),
-                   compiler->GetEmitter()->emitGetFrameReg());
+                   m_compiler->GetEmitter()->emitGetFrameReg());
 
             if (offs < 0)
             {
@@ -526,7 +531,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
     }
 
 #ifdef DEBUG
-    if (compiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("GCINFO: untrckVars = %u\n", untrackedCount);
     }
@@ -556,7 +561,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
     }
 
 #ifdef DEBUG
-    if (compiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("GCINFO: trackdLcls = %u\n", varPtrTableSize);
     }
@@ -568,10 +573,10 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
 
     unsigned int noGCRegionCount = 0;
 
-    if (compiler->codeGen->GetInterruptible())
+    if (m_compiler->codeGen->GetInterruptible())
     {
         NoGCRegionCounter counter;
-        compiler->GetEmitter()->emitGenNoGCLst(counter, /* skipMainPrologsAndEpilogs = */ true);
+        m_compiler->GetEmitter()->emitGenNoGCLst(counter, /* skipMainPrologsAndEpilogs = */ true);
         noGCRegionCount = counter.noGCRegionCount;
     }
 
@@ -591,9 +596,9 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
 //
 bool GCInfo::gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum)
 {
-    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+    LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
 
-    assert(!compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc));
+    assert(!m_compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc));
     assert(varTypeIsGC(varDsc->TypeGet()));
 
     // Do we have an argument or local variable?
@@ -618,7 +623,7 @@ bool GCInfo::gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum)
             // If a CEE_JMP has been used, then we need to report all the arguments even if they are enregistered, since
             // we will be using this value in JMP call.  Note that this is subtle as we require that argument offsets
             // are always fixed up properly even if lvRegister is set .
-            if (!compiler->compJmpOpUsed)
+            if (!m_compiler->compJmpOpUsed)
             {
                 return false;
             }
@@ -661,7 +666,7 @@ void GCInfo::gcRegPtrSetInit()
 {
     gcRegGCrefSetCur = gcRegByrefSetCur = 0;
 
-    if (compiler->IsFullPtrRegMapRequired())
+    if (m_compiler->IsFullPtrRegMapRequired())
     {
         gcRegPtrList = gcRegPtrLast = nullptr;
     }

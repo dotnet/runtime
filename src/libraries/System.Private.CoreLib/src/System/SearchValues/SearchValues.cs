@@ -301,6 +301,7 @@ namespace System.Buffers
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompHasFallback]
         internal static Vector128<byte> ShuffleNativeModified(Vector128<byte> vector, Vector128<byte> indices)
         {
             if (Ssse3.IsSupported)

@@ -7,11 +7,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
-using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -67,14 +67,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     return s.FullName;
                 }), StringComparer.Ordinal);
 
-                // Workaround for compiler injected attribute to describe the language version
-                linkedMembers.Remove("System.Void Microsoft.CodeAnalysis.EmbeddedAttribute::.ctor()");
-                linkedMembers.Remove("System.Int32 System.Runtime.CompilerServices.RefSafetyRulesAttribute::Version");
-                linkedMembers.Remove("System.Void System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(System.Int32)");
-
-                // Workaround for compiler injected attribute to describe the language version
-                verifiedGeneratedTypes.Add("Microsoft.CodeAnalysis.EmbeddedAttribute");
-                verifiedGeneratedTypes.Add("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
+                PrepareToVerifyAssembly(originalAssembly);
 
                 var membersToAssert = originalAssembly.MainModule.Types;
                 foreach (var originalMember in membersToAssert)
@@ -104,6 +97,25 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
         }
 
+        /// <summary>
+        /// An opportunity to adjust what has been verified.  Helpful for dealing with polyfills or compiler generated types
+        /// </summary>
+        /// <param name="original"></param>
+        protected virtual void PrepareToVerifyAssembly(AssemblyDefinition original)
+        {
+        }
+
+        /// <summary>
+        /// The type will not be verified
+        /// </summary>
+        /// <param name="type"></param>
+        protected void IgnoreGeneratedTypeAndItsMembers(TypeDefinition type)
+        {
+            verifiedGeneratedTypes.Add(type.FullName);
+            foreach (var member in type.AllMembers())
+                linkedMembers.Remove(member.FullName);
+        }
+
         static bool IsBackingField(FieldDefinition field) => field.Name.StartsWith("<") && field.Name.EndsWith(">k__BackingField");
 
         protected virtual IEnumerable<string> VerifyModule(ModuleDefinition original, ModuleDefinition linked)
@@ -114,13 +126,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             var expected = original.Assembly.MainModule.AllDefinedTypes()
                 .SelectMany(t => GetCustomAttributeCtorValues<string>(t, nameof(KeptModuleReferenceAttribute)))
-                .ToHashSet();
+                .ToArray();
 
             var actual = linked.ModuleReferences
                 .Select(name => name.Name)
-                .ToHashSet();
+                .ToArray();
 
-            if (!expected.SetEquals(actual))
+            if (!expected.SequenceEqual(actual))
                 yield return $"In module {original.FileName} Expected module references `{string.Join(", ", expected)}` but got `{string.Join(", ", actual)}`";
 
             foreach (var err in VerifyCustomAttributes(original, linked))
@@ -820,7 +832,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             if (src.CustomAttributes.Any(attr => attr.AttributeType.Name == expectModifiedAttributeName))
             {
-                if (linkedValues.ToHashSet().SetEquals(srcValues.ToHashSet()))
+                if (linkedValues.SequenceEqual(srcValues))
                 {
                     yield return $"Expected method `{src} to have it's {propertyDescription} modified, however, the {propertyDescription} were the same as the original\n{FormattingUtils.FormatSequenceCompareFailureMessage(linkedValues, srcValues)}";
                 }
@@ -828,14 +840,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
             else if (expectedSequenceAttribute != null)
             {
                 var expected = getExpectFromSequenceAttribute(expectedSequenceAttribute).ToArray();
-                if (!linkedValues.ToHashSet().SetEquals(expected.ToHashSet()))
+                if (!linkedValues.SequenceEqual(expected))
                 {
                     yield return $"Expected method `{src} to have it's {propertyDescription} modified, however, the sequence of {propertyDescription} does not match the expected value\n{FormattingUtils.FormatSequenceCompareFailureMessage2(linkedValues, expected, srcValues)}";
                 }
             }
             else
             {
-                if (!linkedValues.ToHashSet().SetEquals(srcValues.ToHashSet()))
+                if (!linkedValues.SequenceEqual(srcValues))
                 {
                     yield return $"Expected method `{src} to have it's {propertyDescription} unchanged, however, the {propertyDescription} differ from the original\n{FormattingUtils.FormatSequenceCompareFailureMessage(linkedValues, srcValues)}";
                 }
@@ -847,7 +859,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             var expected = original.MainModule.AllDefinedTypes()
                 .SelectMany(t => GetCustomAttributeCtorValues<string>(t, nameof(KeptReferenceAttribute)))
                 .Select(ReduceAssemblyFileNameOrNameToNameOnly)
-                .ToHashSet();
+                .ToArray();
 
             /*
              - The test case will always need to have at least 1 reference.
@@ -858,14 +870,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
              Once 1 kept reference attribute is used, the test will need to define all of of it's expected references
             */
-            if (expected.Count == 0)
+            if (expected.Length == 0)
                 yield break;
 
             var actual = linked.MainModule.AssemblyReferences
                 .Select(name => name.Name)
-                .ToHashSet();
+                .ToArray();
 
-            if (!expected.SetEquals(actual))
+            if (!expected.SequenceEqual(actual))
                 yield return $"Expected references `{string.Join(", ", expected)}` do not match actual references `{string.Join(", ", actual)}`";
         }
 
@@ -906,7 +918,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             var expectedTypes = original.MainModule.AllDefinedTypes()
                 .SelectMany(t => GetCustomAttributeCtorValues<TypeReference>(t, nameof(KeptExportedTypeAttribute)).Select(l => l.FullName));
 
-            if (!linked.MainModule.ExportedTypes.Select(l => l.FullName).ToHashSet().SetEquals(expectedTypes.ToHashSet()))
+            if (!linked.MainModule.ExportedTypes.Select(l => l.FullName).SequenceEqual(expectedTypes))
                 yield return $"Exported types do not match expected.";
         }
 
@@ -949,33 +961,54 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         protected virtual IEnumerable<string> VerifyCustomAttributes(ICustomAttributeProvider src, ICustomAttributeProvider linked)
         {
-            var expectedAttrs = GetExpectedAttributes(src).ToHashSet();
-            var linkedAttrs = FilterLinkedAttributes(linked).ToHashSet();
-            if (!linkedAttrs.SetEquals(expectedAttrs))
+            var expectedAttrs = GetExpectedAttributes(src).ToArray();
+            var linkedAttrs = FilterLinkedAttributes(linked).ToList();
+
+            var missingExpected = new List<ExpectedAttributeComparisonInfo>();
+            foreach (var attr in expectedAttrs)
             {
-                var missing = $"Missing: {string.Join(", ", expectedAttrs.Except(linkedAttrs))}";
-                var extra = $"Extra: {string.Join(", ", linkedAttrs.Except(expectedAttrs))}";
-                string name = src switch
+                var match = linkedAttrs.FirstOrDefault(l =>
+                {
+                    if (l.TypeFullName != attr.TypeFullName)
+                        return false;
+
+                    if (attr.CheckParameters)
+                        return attr.ParameterValues.SequenceEqual(l.ParameterValues);
+
+                    return true;
+                });
+                if (match != null)
+                    linkedAttrs.Remove(match);
+                else
+                    missingExpected.Add(attr);
+            }
+
+            if (missingExpected.Count > 0)
+                yield return $"Missing custom attributes on `{GetNameForSource()}`:\n{string.Join(Environment.NewLine, missingExpected.Select(a => $"    {a}").ToArray())}";
+
+            if (linkedAttrs.Count > 0)
+                yield return $"Extra custom attributes on `{GetNameForSource()}`:\n{string.Join(Environment.NewLine, linkedAttrs.Select(a => $"    {a}").ToArray())}";
+
+            string GetNameForSource()
+            {
+                return src switch
                 {
                     MethodReturnType m => $"return type of '{m.Method}'",
                     ParameterDefinition p => $"parameter '{p}' of method {p.Method}",
                     GenericParameter g => $"generic parameter '{g}' of {g.Owner}",
                     _ => src.ToString()
                 };
-
-                yield return string.Join(Environment.NewLine, $"Custom attributes on `{name}` are not matching:", missing, extra);
             }
         }
 
         protected virtual IEnumerable<string> VerifySecurityAttributes(ICustomAttributeProvider src, ISecurityDeclarationProvider linked)
         {
             var expectedAttrs = GetCustomAttributeCtorValues<object>(src, nameof(KeptSecurityAttribute))
-                .Select(attr => attr.ToString())
-                .ToHashSet();
+                .Select(attr => attr.ToString()).ToArray();
 
-            var linkedAttrs = FilterLinkedSecurityAttributes(linked).ToHashSet();
+            var linkedAttrs = FilterLinkedSecurityAttributes(linked).ToArray();
 
-            if (!linkedAttrs.SetEquals(expectedAttrs))
+            if (!linkedAttrs.SequenceEqual(expectedAttrs))
             {
                 var missing = $"Missing: {string.Join(", ", expectedAttrs.Except(linkedAttrs))}";
                 var extra = $"Extra: {string.Join(", ", linkedAttrs.Except(expectedAttrs))}";
@@ -1104,10 +1137,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return false;
         }
 
-        protected static IEnumerable<string> GetExpectedAttributes(ICustomAttributeProvider original)
+        protected static IEnumerable<ExpectedAttributeComparisonInfo> GetExpectedAttributes(ICustomAttributeProvider original)
         {
-            foreach (var expectedAttrs in GetCustomAttributeCtorValues<object>(original, nameof(KeptAttributeAttribute)))
-                yield return expectedAttrs.ToString();
+            foreach (var expectedAttrs in original.CustomAttributes.Where(w => w.AttributeType.Name == nameof(KeptAttributeAttribute)))
+            {
+                if (expectedAttrs.Constructor.Parameters.Count == 1)
+                    yield return new ExpectedAttributeComparisonInfo(false, (expectedAttrs.ConstructorArguments[0].Value as object).ToString(), Array.Empty<string>());
+                else if (expectedAttrs.Constructor.Parameters.Count == 2)
+                {
+                    var expectedParameters = ((CustomAttributeArgument[])expectedAttrs.ConstructorArguments[1].Value).Select(a =>
+                    {
+                        var arg = (CustomAttributeArgument)a.Value;
+                        if (arg.Value == null)
+                            return "null";
+                        return arg.Value.ToString();
+                    }).ToArray();
+                    yield return new ExpectedAttributeComparisonInfo(true, (expectedAttrs.ConstructorArguments[0].Value as object).ToString(), expectedParameters);
+                }
+                else
+                {
+                    throw new ArgumentException($"Unhandled {nameof(KeptAttributeAttribute)} constructor with {expectedAttrs.Constructor.Parameters.Count} parameters.");
+                }
+            }
 
             // The name of the generated fixed buffer type is a little tricky.
             // Some versions of csc name it `<fieldname>e__FixedBuffer0`
@@ -1120,7 +1171,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     Assert.Fail($"Could not locate original fixed field for {srcDefinition}");
 
                 foreach (var additionalExpectedAttributesFromFixedField in GetCustomAttributeCtorValues<object>(fixedField, nameof(KeptAttributeOnFixedBufferTypeAttribute)))
-                    yield return additionalExpectedAttributesFromFixedField.ToString();
+                    yield return new ExpectedAttributeComparisonInfo(false, additionalExpectedAttributesFromFixedField.ToString(), Array.Empty<string>());
             }
         }
 
@@ -1129,7 +1180,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         /// </summary>
         /// <param name="linked"></param>
         /// <returns></returns>
-        protected virtual IEnumerable<string> FilterLinkedAttributes(ICustomAttributeProvider linked)
+        protected virtual IEnumerable<ActualAttributeComparisonInfo> FilterLinkedAttributes(ICustomAttributeProvider linked)
         {
             foreach (var attr in linked.CustomAttributes)
             {
@@ -1161,7 +1212,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         break;
                 }
 
-                yield return attr.AttributeType.FullName;
+                yield return new ActualAttributeComparisonInfo(
+                    attr.AttributeType.FullName,
+                    GetCustomAttributeConstructorArgumentValues(attr).Select(p => p == null ? "null" : p.ToString()).ToArray());
             }
         }
 
@@ -1315,17 +1368,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             // C# doesn't have syntax for annotating generic parameter constraints with arbitrary attributes,
             // so expected attributes on generic parameter constraints are specified on the generic parameter itself.
-            HashSet<(string ConstraintType, string AttributeType)> expectedConstraintAttributes = src.CustomAttributes
+            (string ConstraintType, string AttributeType)[] expectedConstraintAttributes = src.CustomAttributes
                 .Where(a => IsKeptAttributeOnConstraint(a))
                 .Select(a => (a.ConstructorArguments[0].Value.ToString(), a.ConstructorArguments[1].Value.ToString()))
-                .ToHashSet();
+                .ToArray();
 
-            HashSet<(string ConstraintType, string AttributeType)> linkedConstraintAttributes = linked.Constraints
+            (string ConstraintType, string AttributeType)[] linkedConstraintAttributes = linked.Constraints
                 .Where(c => c.HasCustomAttributes)
                 .SelectMany(c => c.CustomAttributes.Select(a => (c.ConstraintType.FullName, a.AttributeType.FullName)))
-                .ToHashSet();
+                .ToArray();
 
-            if (!expectedConstraintAttributes.SetEquals(linkedConstraintAttributes))
+            if (!expectedConstraintAttributes.SequenceEqual(linkedConstraintAttributes))
             {
                 var missing = $"Missing: {string.Join(", ", expectedConstraintAttributes.Except(linkedConstraintAttributes).Select(c => $"{c.AttributeType} on {c.ConstraintType}"))}";
                 var extra = $"Extra: {string.Join(", ", linkedConstraintAttributes.Except(expectedConstraintAttributes).Select(c => $"{c.AttributeType} on {c.ConstraintType}"))}";
@@ -1479,6 +1532,67 @@ namespace Mono.Linker.Tests.TestCasesRunner
         protected static IEnumerable<string> GetStringArrayAttributeValue(CustomAttribute attribute)
         {
             return ((CustomAttributeArgument[])attribute.ConstructorArguments[0].Value)?.Select(arg => arg.Value.ToString());
+        }
+
+        protected static IEnumerable<object> GetCustomAttributeConstructorArgumentValues(CustomAttribute attribute)
+        {
+            foreach (var argument in attribute.ConstructorArguments)
+            {
+                if (argument.Value is CustomAttributeArgument nestedArgument)
+                    yield return nestedArgument.Value;
+                else
+                    yield return argument.Value;
+            }
+        }
+
+        protected class ExpectedAttributeComparisonInfo
+        {
+            public readonly bool CheckParameters;
+            public readonly string TypeFullName;
+            public readonly string[] ParameterValues;
+
+            public ExpectedAttributeComparisonInfo(bool checkParameters, string typeFullName, string[] parameterValues)
+            {
+                if (string.IsNullOrEmpty(typeFullName))
+                    throw new ArgumentNullException(nameof(typeFullName));
+                if (parameterValues == null)
+                    throw new ArgumentNullException(nameof(parameterValues));
+                CheckParameters = checkParameters;
+                TypeFullName = typeFullName;
+                ParameterValues = parameterValues;
+            }
+
+            public override string ToString()
+            {
+                if (ParameterValues.Length == 0)
+                    return TypeFullName;
+
+                return $"{TypeFullName}({string.Join(",", ParameterValues)})";
+            }
+        }
+
+        protected class ActualAttributeComparisonInfo
+        {
+            public readonly string TypeFullName;
+            public readonly string[] ParameterValues;
+
+            public ActualAttributeComparisonInfo(string typeFullName, string[] parameterValues)
+            {
+                if (string.IsNullOrEmpty(typeFullName))
+                    throw new ArgumentNullException(nameof(typeFullName));
+                if (parameterValues == null)
+                    throw new ArgumentNullException(nameof(parameterValues));
+                TypeFullName = typeFullName;
+                ParameterValues = parameterValues;
+            }
+
+            public override string ToString()
+            {
+                if (ParameterValues.Length == 0)
+                    return TypeFullName;
+
+                return $"{TypeFullName}({string.Join(",", ParameterValues)})";
+            }
         }
     }
 }

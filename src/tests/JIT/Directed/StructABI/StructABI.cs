@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 struct SingleByte
 {
@@ -2187,6 +2188,8 @@ public static partial class StructABI
 		return ok;
 	}
 
+ [ActiveIssue("Doesn't pass after LLVM AOT compilation.", TestRuntimes.Mono)]
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsNotWindows))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

@@ -130,11 +130,15 @@ static void KickOffThread_Worker(LPVOID ptr)
     }
     CONTRACTL_END;
 
+    OBJECTREF exposedObj = GetThread()->GetExposedObjectRaw();
+    GCPROTECT_BEGIN(exposedObj);
+
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__START_CALLBACK);
     DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(GetThread()->GetExposedObjectRaw());
-
+    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(exposedObj);
     CALL_MANAGED_METHOD_NORET(args);
+
+    GCPROTECT_END();
 }
 
 // When an exposed thread is started by Win32, this is where it starts.
@@ -855,7 +859,7 @@ FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj)
 {
     FCALL_CONTRACT;
 
-    return obj->GetHeader()->AcquireHeaderThinLock(GetThread()->GetThreadId());
+    return obj->GetHeader()->AcquireHeaderThinLock(GetThread());
 }
 FCIMPLEND
 
@@ -863,7 +867,7 @@ FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj)
 {
     FCALL_CONTRACT;
 
-    return obj->GetHeader()->ReleaseHeaderThinLock(GetThread()->GetThreadId());
+    return obj->GetHeader()->ReleaseHeaderThinLock(GetThread());
 }
 FCIMPLEND
 

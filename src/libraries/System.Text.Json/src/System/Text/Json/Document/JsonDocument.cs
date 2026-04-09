@@ -409,7 +409,7 @@ namespace System.Text.Json
                 return JsonReaderHelper.TryGetUnescapedBase64Bytes(segment, out value);
             }
 
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!segment.Contains(JsonConstants.BackSlash));
             return JsonReaderHelper.TryDecodeBase64(segment, out value);
         }
 

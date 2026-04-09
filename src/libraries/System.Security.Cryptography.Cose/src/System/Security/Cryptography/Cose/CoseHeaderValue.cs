@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Cose
 
             if (reader.BytesRemaining != 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid));
+                throw new InvalidOperationException(SR.CoseHeaderMapCborEncodedValueNotValid);
             }
 
             return retVal;
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography.Cose
 
             if (reader.BytesRemaining != 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid));
+                throw new InvalidOperationException(SR.CoseHeaderMapCborEncodedValueNotValid);
             }
 
             return retVal;
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Cose
 
             if (reader.BytesRemaining != 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid));
+                throw new InvalidOperationException(SR.CoseHeaderMapCborEncodedValueNotValid);
             }
 
             return retVal;
@@ -225,7 +225,7 @@ namespace System.Security.Cryptography.Cose
 
             if (reader.BytesRemaining != 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid));
+                throw new InvalidOperationException(SR.CoseHeaderMapCborEncodedValueNotValid);
             }
 
             return bytesWritten;
@@ -252,14 +252,7 @@ namespace System.Security.Cryptography.Cose
         public override int GetHashCode()
         {
             HashCode hashCode = default;
-#if NET
             hashCode.AddBytes(EncodedValue.Span);
-#else
-            foreach (byte b in EncodedValue.Span)
-            {
-                hashCode.Add(b);
-            }
-#endif
             return hashCode.ToHashCode();
         }
 

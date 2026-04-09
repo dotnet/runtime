@@ -4,6 +4,7 @@
 using Xunit;
 
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Moq;
 
@@ -24,11 +25,26 @@ public class ExecutionManagerTests
         return target;
     }
 
+    private static void LinkHeapIntoAllCodeHeaps(MockDescriptors.ExecutionManager emBuilder, TargetPointer heapAddr)
+    {
+        TargetPointer codeRangeStart = new(0x1000_0000);
+        uint codeRangeSize = 0x1000;
+        var nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart.Value, codeRangeSize);
+        TargetPointer nodeAddr = emBuilder.AddCodeHeapListNode(
+            next: TargetPointer.Null,
+            startAddress: codeRangeStart,
+            endAddress: codeRangeStart + codeRangeSize,
+            mapBase: codeRangeStart,
+            headerMap: nibBuilder.NibbleMapFragment.Address,
+            heap: heapAddr);
+        emBuilder.SetAllCodeHeaps(nodeAddr);
+    }
+
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeBlockHandle_Null(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new (version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -41,7 +57,7 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeBlockHandle_NoRangeSections(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new (version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -58,7 +74,7 @@ public class ExecutionManagerTests
         const uint codeRangeSize = 0xc000u; // arbitrary
         const uint methodSize = 0x450; // arbitrary
 
-        TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
+        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
 
         TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
 
@@ -105,7 +121,7 @@ public class ExecutionManagerTests
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
 
-        TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
+        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
 
         MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
@@ -142,7 +158,7 @@ public class ExecutionManagerTests
         const uint codeRangeSize = 0xc000u; // arbitrary
         const uint methodSize = 0x450; // arbitrary
 
-        TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
+        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
 
         MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
@@ -255,12 +271,12 @@ public class ExecutionManagerTests
         const uint codeRangeSize = 0xc000u; // arbitrary
         TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
 
-        TargetPointer[] methodDescAddresses = [ 0x0101_aaa0, 0x0201_aaa0];
+        TargetPointer[] methodDescAddresses = [0x0101_aaa0, 0x0201_aaa0];
 
         MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
-        uint[] runtimeFunctions = [ 0x100, 0xc00 ];
+        uint[] runtimeFunctions = [0x100, 0xc00];
 
         TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions, []);
         MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
@@ -396,13 +412,244 @@ public class ExecutionManagerTests
         Assert.Equal(new TargetPointer(codeRangeStart), actualBaseAddress);
     }
 
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetMethodDesc_CollectibleFragmentNext(int version, MockTarget.Architecture arch)
+    {
+        // Regression test: RangeSectionFragment.Next uses bit 0 as a collectible flag (see
+        // RangeSectionFragmentPointer in codeman.h). If the cDAC fails to strip this bit before
+        // following the pointer, it reads from a misaligned address and produces garbage data.
+        // This test creates a two-fragment chain where the head fragment (in the map) has an empty
+        // range and its Next pointer has the collectible tag bit set. The tail fragment (not in the
+        // map) covers the actual code range. The lookup must traverse the chain to find the method.
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const uint methodSize = 0x450;
+
+        TargetPointer jitManagerAddress = new(0x000b_ff00);
+        TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
+
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+
+        TargetCodePointer methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress);
+
+        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+        nibBuilder.AllocateCodeChunk(methodStart, methodSize);
+
+        TargetPointer codeHeapListNodeAddress = emBuilder.AddCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+        TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNodeAddress);
+
+        // Tail fragment: covers the real code range but is NOT in the range section map.
+        // It is only reachable by following the head fragment's Next pointer.
+        TargetPointer tailFragmentAddress = emBuilder.AddUnmappedRangeSectionFragment(jittedCode, rangeSectionAddress);
+
+        // Head fragment: inserted into the map with an empty range (Contains always returns false)
+        // and Next = tailFragmentAddress | 1 (collectible tag bit set).
+        _ = emBuilder.AddRangeSectionFragmentWithCollectibleNext(jittedCode, rangeSectionAddress, tailFragmentAddress);
+
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        Assert.NotNull(em);
+
+        var eeInfo = em.GetCodeBlockHandle(methodStart);
+        Assert.NotNull(eeInfo);
+        TargetPointer actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
+        Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetEEJitManagerInfo_ReturnsManagerAddress(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        Assert.NotNull(em);
+
+        JitManagerInfo info = em.GetEEJitManagerInfo();
+        Assert.Equal(emBuilder.EEJitManagerAddress, info.ManagerAddress);
+        Assert.Equal(0u, info.CodeType);
+        Assert.Equal(TargetPointer.Null, info.HeapListAddress);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetEEJitManagerInfo_WithCodeHeaps(int version, MockTarget.Architecture arch)
+    {
+        TargetPointer expectedHeapList = new(0x0099_aa00);
+
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange, allCodeHeaps: expectedHeapList);
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        Assert.NotNull(em);
+
+        JitManagerInfo info = em.GetEEJitManagerInfo();
+        Assert.Equal(emBuilder.EEJitManagerAddress, info.ManagerAddress);
+        Assert.Equal(0u, info.CodeType);
+        Assert.Equal(expectedHeapList, info.HeapListAddress);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapInfo_LoaderCodeHeap(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        TargetPointer heapAddr = emBuilder.AddLoaderCodeHeap();
+        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        ICodeHeapInfo info = em.GetCodeHeapInfos().Single();
+        Assert.IsType<LoaderCodeHeapInfo>(info);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapInfo_HostCodeHeap(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        TargetPointer baseAddr    = new(0x0001_0000);
+        TargetPointer currentAddr = new(0x0001_8000);
+        TargetPointer heapAddr = emBuilder.AddHostCodeHeap(baseAddr, currentAddr);
+        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        ICodeHeapInfo info = em.GetCodeHeapInfos().Single();
+        Assert.IsType<HostCodeHeapInfo>(info);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapInfo_LoaderCodeHeap_ReturnsLoaderHeapAddress(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        TargetPointer heapAddr = emBuilder.AddLoaderCodeHeap();
+        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        LoaderCodeHeapInfo loader = Assert.IsType<LoaderCodeHeapInfo>(em.GetCodeHeapInfos().Single());
+        ulong loaderHeapFieldOffset = (ulong)emBuilder.Types[DataType.LoaderCodeHeap].Fields[nameof(Data.LoaderCodeHeap.LoaderHeap)].Offset;
+        Assert.Equal(new TargetPointer(heapAddr.Value + loaderHeapFieldOffset), loader.LoaderHeapAddress);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapInfo_HostCodeHeap_ReturnsAddresses(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        TargetPointer expectedBase    = new(0x0002_0000);
+        TargetPointer expectedCurrent = new(0x0002_4000);
+        TargetPointer heapAddr = emBuilder.AddHostCodeHeap(expectedBase, expectedCurrent);
+        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        HostCodeHeapInfo host = Assert.IsType<HostCodeHeapInfo>(em.GetCodeHeapInfos().Single());
+        Assert.Equal(expectedBase, host.BaseAddress);
+        Assert.Equal(expectedCurrent, host.CurrentAddress);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapList_SingleNode(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+
+        TargetPointer heapAddr = emBuilder.AddLoaderCodeHeap();
+
+        TargetPointer codeRangeStart = new(0x1000_0000);
+        uint codeRangeSize = 0x1000;
+        var nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart.Value, codeRangeSize);
+
+        TargetPointer nodeAddr = emBuilder.AddCodeHeapListNode(
+            next: TargetPointer.Null,
+            startAddress: codeRangeStart,
+            endAddress: codeRangeStart + codeRangeSize,
+            mapBase: codeRangeStart,
+            headerMap: nibBuilder.NibbleMapFragment.Address,
+            heap: heapAddr);
+
+        emBuilder.SetAllCodeHeaps(nodeAddr);
+
+        var target = CreateTarget(emBuilder);
+        var em = target.Contracts.ExecutionManager;
+
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+        Assert.Single(heapInfos);
+        Assert.IsType<LoaderCodeHeapInfo>(heapInfos[0]);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapList_LinkedList_TwoNodes(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+
+        TargetPointer loaderHeap = emBuilder.AddLoaderCodeHeap();
+
+        TargetPointer baseAddr    = new(0x0003_0000);
+        TargetPointer currentAddr = new(0x0003_8000);
+        TargetPointer hostHeap = emBuilder.AddHostCodeHeap(baseAddr, currentAddr);
+
+        TargetPointer codeRangeStart1 = new(0x1000_0000);
+        TargetPointer codeRangeStart2 = new(0x2000_0000);
+        uint codeRangeSize = 0x1000;
+
+        var nib1 = emBuilder.CreateNibbleMap(codeRangeStart1.Value, codeRangeSize);
+        var nib2 = emBuilder.CreateNibbleMap(codeRangeStart2.Value, codeRangeSize);
+
+        // Build list: node2 -> null, node1 -> node2
+        TargetPointer node2 = emBuilder.AddCodeHeapListNode(
+            next: TargetPointer.Null,
+            startAddress: codeRangeStart2,
+            endAddress: codeRangeStart2 + codeRangeSize,
+            mapBase: codeRangeStart2,
+            headerMap: nib2.NibbleMapFragment.Address,
+            heap: hostHeap);
+
+        TargetPointer node1 = emBuilder.AddCodeHeapListNode(
+            next: node2,
+            startAddress: codeRangeStart1,
+            endAddress: codeRangeStart1 + codeRangeSize,
+            mapBase: codeRangeStart1,
+            headerMap: nib1.NibbleMapFragment.Address,
+            heap: loaderHeap);
+
+        emBuilder.SetAllCodeHeaps(node1);
+
+        var target = CreateTarget(emBuilder);
+        var em = target.Contracts.ExecutionManager;
+
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+        Assert.Equal(2, heapInfos.Count);
+
+        // First heap (from node1) is a LoaderCodeHeap
+        LoaderCodeHeapInfo loaderInfo = Assert.IsType<LoaderCodeHeapInfo>(heapInfos[0]);
+        Assert.Equal(loaderHeap, loaderInfo.HeapAddress);
+        ulong loaderHeapFieldOffset = (ulong)emBuilder.Types[DataType.LoaderCodeHeap].Fields[nameof(Data.LoaderCodeHeap.LoaderHeap)].Offset;
+        Assert.Equal(new TargetPointer(loaderHeap.Value + loaderHeapFieldOffset), loaderInfo.LoaderHeapAddress);
+
+        // Second heap (from node2) is a HostCodeHeap
+        HostCodeHeapInfo hostInfo = Assert.IsType<HostCodeHeapInfo>(heapInfos[1]);
+        Assert.Equal(hostHeap, hostInfo.HeapAddress);
+        Assert.Equal(baseAddr, hostInfo.BaseAddress);
+        Assert.Equal(currentAddr, hostInfo.CurrentAddress);
+    }
+
     public static IEnumerable<object[]> StdArchAllVersions()
     {
         const int highestVersion = 2;
-        foreach(object[] arr in new MockTarget.StdArch())
+        foreach (object[] arr in new MockTarget.StdArch())
         {
             MockTarget.Architecture arch = (MockTarget.Architecture)arr[0];
-            for(int version = 1; version <= highestVersion; version++){
+            for (int version = 1; version <= highestVersion; version++)
+            {
                 yield return new object[] { version, arch };
             }
         }

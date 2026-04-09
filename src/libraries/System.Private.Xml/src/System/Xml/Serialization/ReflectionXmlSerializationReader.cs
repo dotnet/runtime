@@ -59,7 +59,7 @@ namespace System.Xml.Serialization
                 return null;
 
             if (!xmlMapping.GenerateSerializer)
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, "xmlMapping"));
+                throw new ArgumentException(SR.XmlInternalError);
 
             if (xmlMapping is XmlTypeMapping xmlTypeMapping)
             {
@@ -71,7 +71,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, "xmlMapping"));
+                throw new ArgumentException(SR.XmlInternalError);
             }
         }
 

@@ -41,7 +41,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsFat32))]
+        [ConditionalTheory(typeof(FileStream_ctor_options), nameof(IsFat32))]
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.CreateNew)]
         public void WhenFileIsTooLargeTheErrorMessageContainsAllDetails(FileMode mode)

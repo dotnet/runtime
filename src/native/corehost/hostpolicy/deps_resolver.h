@@ -4,6 +4,7 @@
 #ifndef DEPS_RESOLVER_H
 #define DEPS_RESOLVER_H
 
+#include <utility>
 #include <vector>
 
 #include "pal.h"
@@ -24,14 +25,36 @@ struct probe_paths_t
     pal::string_t coreclr;
 };
 
+enum class probe_result_t
+{
+    not_found,
+    bundled,
+    serviced,
+    found
+};
+
 struct deps_resolved_asset_t
 {
-    deps_resolved_asset_t(const deps_asset_t& asset, const pal::string_t& resolved_path)
-        : asset(asset)
-        , resolved_path(resolved_path) { }
+    deps_resolved_asset_t(const deps_asset_t* asset, pal::string_t&& resolved_path)
+        : resolved_path(std::move(resolved_path))
+        , m_asset(asset) { }
 
-    deps_asset_t asset;
+    const version_t& assembly_version() const
+    {
+        return m_asset != nullptr ? m_asset->assembly_version : version_t::empty();
+    }
+
+    const version_t& file_version() const
+    {
+        return m_asset != nullptr ? m_asset->file_version : version_t::empty();
+    }
+
     pal::string_t resolved_path;
+
+private:
+    // Asset from a deps.json that was resolved to this path. This should outlive any deps_resolved_asset_t.
+    // If null, this entry is not from a deps.json (for example, there is no deps.json) and has no version information.
+    const deps_asset_t* m_asset;
 };
 
 typedef std::unordered_map<pal::string_t, deps_resolved_asset_t> name_to_resolved_asset_map_t;
@@ -218,12 +241,11 @@ private:
         std::unordered_set<pal::string_t>* breadcrumb);
 
     // Probe entry in probe configurations and deps dir.
-    bool probe_deps_entry(
+    probe_result_t probe_deps_entry(
         const deps_entry_t& entry,
         const pal::string_t& deps_dir,
         int fx_level,
-        pal::string_t* candidate,
-        bool &found_in_bundle);
+        pal::string_t* candidate);
 
 private:
     const fx_definition_vector_t& m_fx_definitions;

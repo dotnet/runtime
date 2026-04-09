@@ -16,37 +16,6 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
-        private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
-
-        private static volatile int s_disableTlsResume = -1;
-
-        internal static bool DisableTlsResume
-        {
-            get
-            {
-                int disableTlsResume = s_disableTlsResume;
-                if (disableTlsResume != -1)
-                {
-                    return disableTlsResume != 0;
-                }
-
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(DisableTlsResumeCtxSwitch, out bool value))
-                {
-                    s_disableTlsResume = value ? 1 : 0;
-                }
-                else
-                {
-                    // AppContext switch wasn't used. Check the environment variable.
-                    s_disableTlsResume =
-                        Environment.GetEnvironmentVariable(DisableTlsResumeEnvironmentVariable) is string envVar &&
-                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
-                }
-
-                return s_disableTlsResume != 0;
-            }
-        }
 
 
         private SafeFreeCredentials? _credentialsHandle;
@@ -1087,6 +1056,11 @@ namespace System.Net.Security
                         chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
                         chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 
+                        if (_sslAuthenticationOptions.IsServer && !LocalAppContextSwitches.EnableServerAiaDownloads)
+                        {
+                            chain.ChainPolicy.DisableCertificateDownloads = true;
+                        }
+
                         if (trust != null)
                         {
                             chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
@@ -1164,16 +1138,22 @@ namespace System.Net.Security
 
                 if (chain != null)
                 {
-                    // Dispose only the certificates that were added by GetRemoteCertificate
-                    for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
+                    // Only cleanup certificates if no user callback was provided.
+                    // When a callback is provided, users might add their own certificates to ExtraStore
+                    // or keep references to certificates from ChainElements.
+                    if (remoteCertValidationCallback == null)
                     {
-                        chain.ChainPolicy.ExtraStore[i].Dispose();
-                    }
+                        // Dispose only the certificates that were added by GetRemoteCertificate
+                        for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
+                        {
+                            chain.ChainPolicy.ExtraStore[i].Dispose();
+                        }
 
-                    int elementsCount = chain.ChainElements.Count;
-                    for (int i = 0; i < elementsCount; i++)
-                    {
-                        chain.ChainElements[i].Certificate.Dispose();
+                        int elementsCount = chain.ChainElements.Count;
+                        for (int i = 0; i < elementsCount; i++)
+                        {
+                            chain.ChainElements[i].Certificate.Dispose();
+                        }
                     }
 
                     chain.Dispose();

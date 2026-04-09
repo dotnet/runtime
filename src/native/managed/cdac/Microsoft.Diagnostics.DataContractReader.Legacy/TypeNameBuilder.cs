@@ -603,7 +603,7 @@ public struct TypeNameBuilder
 
     private static bool IsTypeNameReservedChar(char c)
     {
-        return TypeNameReservedChars().IndexOf(c) != -1;
+        return TypeNameReservedChars().Contains(c);
     }
 
     private void EscapeName(string name)

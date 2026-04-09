@@ -87,7 +87,7 @@ namespace System.Reflection
                 }
             }
 
-            return Helpers.CloneArray(_requiredModifiers);
+            return Helpers.CloneArray<Type>(_requiredModifiers);
         }
 
         public override Type[] GetOptionalCustomModifiers()
@@ -105,7 +105,7 @@ namespace System.Reflection
                 }
             }
 
-            return Helpers.CloneArray(_optionalModifiers);
+            return Helpers.CloneArray<Type>(_optionalModifiers);
         }
 
         public override Type UnderlyingSystemType => _unmodifiedType;
@@ -124,7 +124,7 @@ namespace System.Reflection
         public override bool IsGenericTypeDefinition => _unmodifiedType.IsGenericTypeDefinition;
         protected override bool HasElementTypeImpl() => _unmodifiedType.Call_HasElementTypeImpl();
         protected override bool IsArrayImpl() => _unmodifiedType.Call_IsArrayImpl();
-        public override bool IsSZArray => _unmodifiedType.IsSZArray();
+        public override bool IsSZArray => _unmodifiedType.IsSZArray;
         public override bool IsVariableBoundArray => _unmodifiedType.IsVariableBoundArray;
         protected override bool IsByRefImpl() => _unmodifiedType.Call_IsByRefImpl();
         protected override bool IsPointerImpl() => _unmodifiedType.Call_IsPointerImpl();

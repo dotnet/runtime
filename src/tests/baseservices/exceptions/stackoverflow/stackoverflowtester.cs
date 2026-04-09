@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
+using TestLibrary;
 
 namespace TestStackOverflow
 {
@@ -82,6 +83,9 @@ namespace TestStackOverflow
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
         [Fact]
         public static void TestStackOverflowSmallFrameMainThread()
         {
@@ -113,16 +117,19 @@ namespace TestStackOverflow
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
         [Fact]
         public static void TestStackOverflowLargeFrameMainThread()
         {
-            if (((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) || (RuntimeInformation.ProcessArchitecture == Architecture.RiscV64) ||
+            if (((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) || (RuntimeInformation.ProcessArchitecture == Architecture.X64) || (RuntimeInformation.ProcessArchitecture == Architecture.RiscV64) ||
                 (RuntimeInformation.ProcessArchitecture == Architecture.LoongArch64)) &&
                 ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX)))
             {
-                // Disabled on Unix RISCV64 and LoongArch64, similar to ARM64.
+                // Disabled on Unix ARM64, X64, RISCV64, and LoongArch64.
                 // LoongArch64 hit this issue on Alpine. TODO: implement stack probing using helpers.
-                // Disabled on Unix ARM64 due to https://github.com/dotnet/runtime/issues/13519
+                // ARM64 and X64 disabled due to https://github.com/dotnet/runtime/issues/13519
                 // The current stack probing doesn't move the stack pointer and so the runtime sometimes cannot
                 // recognize the underlying sigsegv as stack overflow when it probes too far from SP.
                 return;
@@ -156,6 +163,9 @@ namespace TestStackOverflow
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
         [Fact]
         public static void TestStackOverflowSmallFrameSecondaryThread()
         {
@@ -182,6 +192,9 @@ namespace TestStackOverflow
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
         [Fact]
         public static void TestStackOverflowLargeFrameSecondaryThread()
         {
@@ -221,6 +234,8 @@ namespace TestStackOverflow
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
         [Fact]
         public static void TestStackOverflow3()
         {

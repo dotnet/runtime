@@ -101,13 +101,18 @@ export function completeTask(holderGcHandle: GCHandle, error?: any, data?: any, 
         setArgType(arg1, MarshalerType.Object);
         setGcHandle(arg1, holderGcHandle);
         const arg2 = getArg(args, 3);
+        if (!error) {
+            try {
+                setArgType(arg2, MarshalerType.None);
+                const arg3 = getArg(args, 4);
+                dotnetAssert.check(resConverter, "resConverter missing");
+                resConverter(arg3, data);
+            } catch (e) {
+                error = e;
+            }
+        }
         if (error) {
             marshalExceptionToCs(arg2, error);
-        } else {
-            setArgType(arg2, MarshalerType.None);
-            const arg3 = getArg(args, 4);
-            dotnetAssert.check(resConverter, "resConverter missing");
-            resConverter(arg3, data);
         }
         dotnetInteropJSExports.SystemInteropJS_CompleteTask(args);
     } finally {

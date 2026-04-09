@@ -9,13 +9,14 @@
 #cmakedefine01 HAVE_FLOCK64
 #cmakedefine01 HAVE_F_DUPFD_CLOEXEC
 #cmakedefine01 HAVE_F_DUPFD
-#cmakedefine01 HAVE_F_FULLFSYNC
 #cmakedefine01 HAVE_O_CLOEXEC
 #cmakedefine01 HAVE_GETIFADDRS
 #cmakedefine01 HAVE_UTSNAME_DOMAINNAME
 #cmakedefine01 HAVE_STAT64
 #cmakedefine01 HAVE_FORK
 #cmakedefine01 HAVE_VFORK
+#cmakedefine01 HAVE_CLOSE_RANGE
+#cmakedefine01 HAVE_FDWALK
 #cmakedefine01 HAVE_CHMOD
 #cmakedefine01 HAVE_FCHMOD
 #cmakedefine01 HAVE_PIPE
@@ -32,6 +33,9 @@
 #cmakedefine01 HAVE_STATFS_FSTYPENAME
 #cmakedefine01 HAVE_STATVFS_FSTYPENAME
 #cmakedefine01 HAVE_STATVFS_BASETYPE
+#cmakedefine01 HAVE_GETFSSTAT_INT
+#cmakedefine01 HAVE_GETFSSTAT_SIZE_T
+#cmakedefine01 HAVE_GETFSSTAT_LONG
 #cmakedefine01 HAVE_NON_LEGACY_STATFS
 #cmakedefine01 HAVE_STRCPY_S
 #cmakedefine01 HAVE_STRLCPY
@@ -97,7 +101,6 @@
 #cmakedefine01 HAVE_LINUX_ERRQUEUE_H
 #cmakedefine01 HAVE_GETDOMAINNAME_SIZET
 #cmakedefine01 HAVE_INOTIFY
-#cmakedefine01 HAVE_CLOCK_MONOTONIC
 #cmakedefine01 HAVE_CLOCK_REALTIME
 #cmakedefine01 HAVE_CLOCK_GETTIME_NSEC_NP
 #cmakedefine01 HAVE_PTHREAD_CONDATTR_SETCLOCK
@@ -145,10 +148,6 @@
 #cmakedefine01 HAVE_MAKEDEV_SYSMACROSH
 #cmakedefine01 HAVE_GETGRGID_R
 #cmakedefine01 HAVE_TERMIOS2
-
-#ifndef HOST_WASI
-#cmakedefine01 HAVE_GETRUSAGE
-#endif
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

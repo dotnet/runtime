@@ -932,7 +932,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/54156", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "HTTP/1 trailers are not supported by most major browsers")]
     public sealed class SocketsHttpHandler_Http1_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
     {
         public SocketsHttpHandler_Http1_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
@@ -1351,6 +1351,16 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task SendAsync_UriWithNonDnsNonAsciiHost_Throws()
+        {
+            using HttpClient client = CreateHttpClient();
+
+            HttpRequestMessage request = CreateRequest(HttpMethod.Get, new Uri($"http://hőst{new string('a', 60)}"), UseVersion);
+
+            await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -2772,7 +2782,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()
         {
             const int MaxConcurrentStreams = 2;
@@ -2815,7 +2825,7 @@ namespace System.Net.Http.Functional.Tests
             await VerifySendTasks(sendTasks).ConfigureAwait(false);
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_ManyRequestsEnqueuedSimultaneously_SufficientConnectionsCreated()
         {
             // This is equal to Http2Connection.InitialMaxConcurrentStreams, which is the limit we impose before we have received the peer's initial SETTINGS frame.
@@ -2853,7 +2863,7 @@ namespace System.Net.Http.Functional.Tests
             await VerifySendTasks(sendTasks);
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemainingRequestsAreHandledByNewConnection()
         {
             const int MaxConcurrentStreams = 2;
@@ -2883,7 +2893,7 @@ namespace System.Net.Http.Functional.Tests
             await VerifySendTasks(sendTasks).ConfigureAwait(false);
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
             if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
@@ -2954,7 +2964,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         [OuterLoop("Incurs long delay")]
         public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
         {
@@ -3218,8 +3228,7 @@ namespace System.Net.Http.Functional.Tests
             await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
         }
 
-        [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/44183", TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(SocketsHttpHandlerTest_ConnectCallback), nameof(PlatformSupportsUnixDomainSockets))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)
@@ -3227,43 +3236,55 @@ namespace System.Net.Http.Functional.Tests
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
             string guid = $"{Guid.NewGuid():N}";
-            UnixDomainSocketEndPoint serverEP = new UnixDomainSocketEndPoint(Path.Combine(Path.GetTempPath(), guid));
-            Socket listenSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            string socketPath = Path.Combine(Path.GetTempPath(), guid);
+            UnixDomainSocketEndPoint serverEP = new UnixDomainSocketEndPoint(socketPath);
+            using Socket listenSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
             listenSocket.Bind(serverEP);
             listenSocket.Listen();
 
-            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
-            var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-            socketsHandler.ConnectCallback = async (context, token) =>
+            try
             {
-                string hostname = context.DnsEndPoint.Host;
-                UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(Path.GetTempPath(), hostname));
-
-                Socket clientSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-                await clientSocket.ConnectAsync(clientEP);
-
-                return new NetworkStream(clientSocket, ownsSocket: true);
-            };
-
-            using (HttpClient client = CreateHttpClient(handler))
-            {
-                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
-                Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
-
-                Socket serverSocket = await listenSocket.AcceptAsync();
-                await using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options))
+                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
+                var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                socketsHandler.ConnectCallback = async (context, token) =>
                 {
-                    await loopbackConnection.InitializeConnectionAsync();
+                    string hostname = context.DnsEndPoint.Host;
+                    UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(Path.GetTempPath(), hostname));
 
-                    HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
-                    Assert.Equal("/foo", requestData.Path);
+                    Socket clientSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                    await clientSocket.ConnectAsync(clientEP);
 
-                    await loopbackConnection.SendResponseAsync(content: "foo");
+                    return new NetworkStream(clientSocket, ownsSocket: true);
+                };
 
-                    string response = await clientTask;
-                    Assert.Equal("foo", response);
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                    Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
+
+                    Socket serverSocket = await listenSocket.AcceptAsync();
+                    await using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, new NetworkStream(serverSocket, ownsSocket: true), options))
+                    {
+                        await loopbackConnection.InitializeConnectionAsync();
+
+                        HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
+                        Assert.Equal("/foo", requestData.Path);
+
+                        await loopbackConnection.SendResponseAsync(content: "foo");
+
+                        string response = await clientTask;
+                        Assert.Equal("foo", response);
+
+                        // Dispose client before loopback connection to ensure clean HTTP/2 shutdown.
+                        client.Dispose();
+                        handler.Dispose();
+                    }
                 }
+            }
+            finally
+            {
+                try { File.Delete(socketPath); } catch { }
             }
         }
 

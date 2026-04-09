@@ -13,6 +13,9 @@
     <Compile Include="runtimecounters.cs" />
     <ProjectReference Include="../common/tracing_common.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 
   <!-- Hack to get NativeAOT assemblies into IlcReference
        In CoreCLR tests, these assemblies get copied to CORE_ROOT, which NativeAOT doesn't use

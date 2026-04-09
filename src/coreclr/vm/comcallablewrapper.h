@@ -235,8 +235,6 @@ public:
     // Sets up the class method table for the IClassX and also lays it out.
     static ComMethodTable *SetupComMethodTableForClass(MethodTable *pMT, BOOL bLayOutComMT);
 
-    MethodDesc * GetICustomQueryInterfaceGetInterfaceMD();
-
     BOOL HasInvisibleParent()
     {
         LIMITED_METHOD_CONTRACT;
@@ -328,23 +326,11 @@ private:
         enum_IsSafeTypeForMarshalling         = 0x2000, // The class can be safely marshalled out of process via DCOM
     };
     DWORD                                   m_flags;
-    MethodDesc*                             m_pICustomQueryInterfaceGetInterfaceMD;
     ULONG                                   m_cbInterfaces;
     SLOT*                                   m_rgpIPtr[1];
 };
 
-inline void ComCallWrapperTemplateRelease(ComCallWrapperTemplate *value)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (value)
-    {
-        value->Release();
-    }
-}
-
-typedef Wrapper<ComCallWrapperTemplate *, DoNothing<ComCallWrapperTemplate *>, ComCallWrapperTemplateRelease, 0> ComCallWrapperTemplateHolder;
-
+using ComCallWrapperTemplateHolder = ReleaseHolder<ComCallWrapperTemplate>;
 
 //--------------------------------------------------------------------------------
 // Header on top of Vtables that we create for COM callable interfaces
@@ -373,7 +359,7 @@ enum Masks
     enum_InterfaceTypeMask              = 0x00000003,
     enum_ClassInterfaceTypeMask         = 0x00000003,
     enum_ClassVtableMask                = 0x00000004,
-    enum_LayoutComplete                 = 0x00000010,
+    enum_LayoutComplete                 = 0x00000010, // [cDAC] [BuiltInCOM]: Contract depends on this value
     enum_ComVisible                     = 0x00000040,
     // enum_unused                      = 0x00000080,
     // enum_unused                      = 0x00000100,
@@ -410,8 +396,7 @@ struct ComMethodTable
     {
         LIMITED_METHOD_CONTRACT;
 
-        ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
-        return InterlockedIncrement(&comMTWriterHolder.GetRW()->m_cbRefCount);
+        return InterlockedIncrement(&m_cbRefCount);
     }
 
     LONG Release()
@@ -425,10 +410,8 @@ struct ComMethodTable
         }
         CONTRACTL_END;
 
-        ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
-        // use a different var here becuase cleanup will delete the object
         // so can no longer make member refs
-        LONG cbRef = InterlockedDecrement(&comMTWriterHolder.GetRW()->m_cbRefCount);
+        LONG cbRef = InterlockedDecrement(&m_cbRefCount);
         if (cbRef == 0)
             Cleanup();
 
@@ -606,8 +589,8 @@ struct ComMethodTable
 
             // Refer to ComMethodTable::LayOutClassMethodTable().
             ULONG cbSize     = *(ULONG *)m_pMDescr;
-            ULONG cbNewSlots = cbSize / (COMMETHOD_PREPAD + sizeof(ComCallMethodDesc));
-            _ASSERTE( (cbSize % (COMMETHOD_PREPAD + sizeof(ComCallMethodDesc))) == 0);
+            ULONG cbNewSlots = cbSize / sizeof(ComCallMethodDesc);
+            _ASSERTE( (cbSize % sizeof(ComCallMethodDesc)) == 0);
 
             // m_cbSlots is the total number of methods in addition to the ones from the
             // default interfaces.  cbNewSlots is the total number of methods introduced
@@ -670,9 +653,8 @@ struct ComMethodTable
         // Generate the IClassX IID if it hasn't been generated yet.
         if (!(m_Flags & enum_GuidGenerated))
         {
-            ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
-            GenerateClassItfGuid(TypeHandle(m_pMT), &comMTWriterHolder.GetRW()->m_IID);
-            comMTWriterHolder.GetRW()->m_Flags |= enum_GuidGenerated;
+            GenerateClassItfGuid(TypeHandle(m_pMT), &m_IID);
+            m_Flags |= enum_GuidGenerated;
         }
 
         return m_IID;
@@ -703,6 +685,21 @@ private:
     ITypeInfo*       m_pITypeInfo; // cached pointer to ITypeInfo
     DispatchInfo*    m_pDispatchInfo; // The dispatch info used to expose IDispatch to COM.
     IID              m_IID; // The IID of the interface.
+
+    // This data structure has the following trailing members in its allocated block:
+    // SLOT              m_slots[]; // vtable entries (m_cbSlots of them, plus the 3 or 7 from IUnk/IDisp)
+    // For interface COM method tables, an inline ComCallMethodDesc m_comCallMethodDesc[] array (m_cbSlots entries)
+    // may follow the slots. For class-interface layouts, the ComCallMethodDesc[] block is allocated separately and
+    // referenced via m_pMDescr. Basic COM method tables may have no ComCallMethodDesc descriptors at all.
+
+    friend struct ::cdac_data<ComMethodTable>;
+};
+
+template<>
+struct cdac_data<ComMethodTable>
+{
+    static constexpr size_t Flags = offsetof(ComMethodTable, m_Flags);
+    static constexpr size_t MethodTable = offsetof(ComMethodTable, m_pMT);
 };
 
 #pragma pack(pop)
@@ -744,7 +741,7 @@ private:
 #else
         enum_ThisMask = ~0x1f, // mask on IUnknown ** to get at the OBJECT-REF handle
 #endif
-        Slot_Basic = 0,
+        Slot_Basic = 0, // [cDAC] [BuiltInCOM]: Contract depends on this value
         Slot_IClassX = 1,
         Slot_FirstInterface = 2,
     };
@@ -1032,31 +1029,21 @@ private:
 
     // Pointer to the next wrapper.
     PTR_ComCallWrapper      m_pNext;
+    friend struct ::cdac_data<ComCallWrapper>;
 };
 
-FORCEINLINE void CCWRelease(ComCallWrapper* p)
+template<>
+struct cdac_data<ComCallWrapper>
 {
-    WRAPPER_NO_CONTRACT;
-
-    p->Release();
-}
-
-class CCWHolder : public Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>
-{
-public:
-    CCWHolder(ComCallWrapper* p = NULL)
-        : Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(ComCallWrapper* p)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>::operator=(p);
-    }
+    static constexpr size_t Handle = offsetof(ComCallWrapper, m_ppThis);
+    static constexpr size_t SimpleWrapper = offsetof(ComCallWrapper, m_pSimpleWrapper);
+    static constexpr size_t IPtr = offsetof(ComCallWrapper, m_rgpIPtr);
+    static constexpr size_t Next = offsetof(ComCallWrapper, m_pNext);
+    static constexpr uint32_t NumInterfaces = ComCallWrapper::NumVtablePtrs;
+    static constexpr uintptr_t ThisMask = (uintptr_t)ComCallWrapper::enum_ThisMask;
 };
+
+using CCWHolder = ReleaseHolder<ComCallWrapper>;
 //
 // Uncommonly used data on Simple CCW
 // Created on-demand
@@ -1099,9 +1086,9 @@ private:
 
     enum SimpleComCallWrapperFlags
     {
-        enum_IsAggregated                      = 0x1,
-        enum_IsExtendsCom                      = 0x2,
-        enum_IsHandleWeak                      = 0x4,
+        enum_IsAggregated                      = 0x1,  // [cDAC] [BuiltInCOM]: Contract depends on this value
+        enum_IsExtendsCom                      = 0x2,  // [cDAC] [BuiltInCOM]: Contract depends on this value
+        enum_IsHandleWeak                      = 0x4,  // [cDAC] [BuiltInCOM]: Contract depends on this value
         enum_IsComActivated                    = 0x8,
         // unused                              = 0x10,
         // unused                              = 0x80,
@@ -1113,6 +1100,7 @@ private:
 public :
     enum : LONGLONG
     {
+        // [cDAC] [BuiltInCOM] : Contract depends on the values of CLEANUP_SENTINEL and COM_REFCOUNT_MASK
         CLEANUP_SENTINEL        = 0x0000000080000000,       // Sentinel -> 1 bit
         COM_REFCOUNT_MASK       = 0x000000007FFFFFFF,       // COM -> 31 bits
         EXT_COM_REFCOUNT_MASK   = 0x00000000FFFFFFFF,       // For back-compat, preserve the higher-bit so that outside can observe it
@@ -1598,7 +1586,18 @@ private:
     // This maintains the 32-bit COM refcount in 64-bits
     // to enable also tracking the Cleanup sentinel. See code:CLEANUP_SENTINEL
     LONGLONG                        m_llRefCount;
- };
+    friend struct ::cdac_data<SimpleComCallWrapper>;
+};
+
+template<>
+struct cdac_data<SimpleComCallWrapper>
+{
+    static constexpr size_t OuterIUnknown = offsetof(SimpleComCallWrapper, m_pOuter);
+    static constexpr size_t RefCount = offsetof(SimpleComCallWrapper, m_llRefCount);
+    static constexpr size_t Flags = offsetof(SimpleComCallWrapper, m_flags);
+    static constexpr size_t MainWrapper = offsetof(SimpleComCallWrapper, m_pWrap);
+    static constexpr size_t VTablePtr = offsetof(SimpleComCallWrapper, m_rgpVtable);
+};
 
 //--------------------------------------------------------------------------------
 // ComCallWrapper* ComCallWrapper::InlineGetWrapper(OBJECTREF* ppObj)

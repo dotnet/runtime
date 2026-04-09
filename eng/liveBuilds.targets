@@ -24,7 +24,6 @@
   <!-- Set up artifact subpaths. -->
   <PropertyGroup>
     <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
-    <LibrariesSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(LibrariesNativeArtifactsPath)','sharedFramework'))</LibrariesSharedFrameworkDir>
     <HostSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(HostArtifactsPath)','sharedFramework'))</HostSharedFrameworkDir>
     <CoreCLRCoreHostDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'corehost'))</CoreCLRCoreHostDir>
     <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'ilc-published'))</CoreCLRILCompilerDir>
@@ -51,6 +50,7 @@
     <LibrariesSharedFrameworkBinArtifactsPath Condition="'$(LibrariesSharedFrameworkBinArtifactsPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</LibrariesSharedFrameworkBinArtifactsPath>
     <LibrariesAllBinArtifactsPath Condition="'$(LibrariesAllBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'runtime', '$(NetCoreAppCurrent)-$(LibrariesTargetOSConfigurationArchitecture)'))</LibrariesAllBinArtifactsPath>
     <LibrariesNativeArtifactsPath Condition="'$(LibrariesNativeArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'native', '$(NetCoreAppCurrent)-$(LibrariesTargetOSConfigurationArchitecture)'))</LibrariesNativeArtifactsPath>
+    <LibrariesSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(LibrariesNativeArtifactsPath)','sharedFramework'))</LibrariesSharedFrameworkDir>
 
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' != 'arm64'">x64</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>

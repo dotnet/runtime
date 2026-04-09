@@ -26,6 +26,7 @@
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
     <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultPackageReadmeFile>true</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <Target Name="_ComputePackRuntimeConfigFilePath">

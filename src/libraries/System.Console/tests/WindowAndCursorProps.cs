@@ -237,7 +237,7 @@ public class WindowAndCursorProps
 
     private static bool IsNotWindowsNanoServerAndNotServerCoreAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsNanoNorServerCore && RemoteExecutor.IsSupported;
 
-    [ConditionalTheory(nameof(IsNotWindowsNanoServerAndNotServerCoreAndRemoteExecutorSupported))] // Nano and Server Core currently ignore set title
+    [ConditionalTheory(typeof(WindowAndCursorProps), nameof(IsNotWindowsNanoServerAndNotServerCoreAndRemoteExecutorSupported))] // Nano and Server Core currently ignore set title
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34454", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [InlineData(0)]
     [InlineData(1)]
@@ -268,7 +268,7 @@ public class WindowAndCursorProps
         AssertExtensions.Throws<ArgumentNullException>("value", () => Console.Title = null);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     [OuterLoop] // makes noise, not very inner-loop friendly
     public static void Beep_Invoke_Success()
     {

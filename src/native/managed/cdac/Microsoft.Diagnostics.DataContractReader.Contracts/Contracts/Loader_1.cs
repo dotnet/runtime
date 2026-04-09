@@ -12,37 +12,29 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Loader_1 : ILoader
 {
-    private const uint ASSEMBLY_LEVEL_LOADED = 4; // Assembly Level required to be considered Loaded
+    private const string DefaultDomainFriendlyName = "DefaultDomain";
     private const uint ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED = 0x1; // Assembly Notify Flag for profiler notification
+    private const ushort MaxWebcilSections = 16; // Must stay in sync with native WEBCIL_MAX_SECTIONS.
 
     private enum ModuleFlags_1 : uint
     {
         Tenured = 0x1,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
-        ClassFreed = 0x4,
         EditAndContinue = 0x8, // Edit and Continue is enabled for this module
-
-        ProfilerNotified = 0x10,
-        EtwNotified = 0x20,
-
         ReflectionEmit = 0x40,    // Reflection.Emit was used to create this module
-        ProfilerDisableOptimizations = 0x80,
-        ProfilerDisableInlining = 0x100,
-
-        DebuggerUserOverridePriv = 0x400,
-        DebuggerAllowJitOptsPriv = 0x800,
-        DebuggerTrackJitInfoPriv = 0x1000,
-        DebuggerEnCEnabledPriv = 0x2000,
-        DebuggerPDBsCopied = 0x4000,
-        DebuggerIgnorePDbs = 0x8000,
-
-        IJWFixedUp = 0x80000,
-        BeingUnloaded = 0x100000,
     }
 
     private enum PEImageFlags : uint
     {
         FLAG_MAPPED = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
     };
+
+    // Must stay in sync with native PEImageLayout::ImageFormat values.
+    private enum ImageFormat : uint
+    {
+        PE = 0,
+        Webcil = 1,
+    }
+
     private readonly Target _target;
 
     internal Loader_1(Target target)
@@ -104,7 +96,7 @@ internal readonly struct Loader_1 : ILoader
                 // IncludeAvailableToProfilers contains some loaded AND loading
                 // assemblies.
             }
-            else if (assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */)
+            else if (assembly.IsLoaded)
             {
                 if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeLoaded))
                     continue; // skip loaded assemblies
@@ -153,7 +145,7 @@ internal readonly struct Loader_1 : ILoader
         Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
         return appDomain.FriendlyName != TargetPointer.Null
             ? _target.ReadUtf16String(appDomain.FriendlyName)
-            : string.Empty;
+            : DefaultDomainFriendlyName;
     }
 
     TargetPointer ILoader.GetModule(ModuleHandle handle)
@@ -234,6 +226,9 @@ internal readonly struct Loader_1 : ILoader
 
     private uint RvaToOffset(int rva, Data.PEImageLayout imageLayout)
     {
+        if (imageLayout.Format == (uint)ImageFormat.Webcil)
+            return WebcilRvaToOffset(rva, imageLayout);
+
         TargetPointer section = RvaToSection(rva, imageLayout);
         if (section == TargetPointer.Null)
             throw new InvalidOperationException("Failed to read from image.");
@@ -243,9 +238,44 @@ internal readonly struct Loader_1 : ILoader
         return offset;
     }
 
-    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
+    private uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
     {
-        if (rva == 0)
+        if (rva < 0)
+            throw new InvalidOperationException("Negative RVA in Webcil image.");
+
+        TargetPointer headerBase = imageLayout.Base;
+        Data.WebcilHeader webcilHeader = _target.ProcessedData.GetOrAdd<Data.WebcilHeader>(headerBase);
+
+        ushort numSections = webcilHeader.CoffSections;
+        if (numSections == 0 || numSections > MaxWebcilSections)
+            throw new InvalidOperationException("Invalid Webcil section count.");
+
+        if (webcilHeader.VersionMajor != 0 && webcilHeader.VersionMajor != 1)
+            throw new InvalidOperationException("Unsupported Webcil version.");
+        TargetPointer sectionTableBase = headerBase + webcilHeader.Size; // See docs/design/mono/webcil.md
+
+        for (int i = 0; i < numSections; i++)
+        {
+            TargetPointer sectionPtr = sectionTableBase + (uint)(i * (int)16); // See docs/design/mono/webcil.md
+            Data.WebcilSectionHeader section = _target.ProcessedData.GetOrAdd<Data.WebcilSectionHeader>(sectionPtr);
+
+            uint rvaUnsigned = (uint)rva;
+            if (rvaUnsigned >= section.VirtualAddress)
+            {
+                uint offset = rvaUnsigned - section.VirtualAddress;
+                if (offset < section.VirtualSize && offset < section.SizeOfRawData)
+                {
+                    return offset + section.PointerToRawData;
+                }
+            }
+        }
+
+        throw new InvalidOperationException("Failed to resolve RVA in Webcil image.");
+    }
+
+    private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNullOk)
+    {
+        if (rva == 0 && !isNullOk)
             return TargetPointer.Null;
         Data.PEAssembly assembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
         if (assembly.PEImage == TargetPointer.Null)
@@ -261,6 +291,10 @@ internal readonly struct Loader_1 : ILoader
             offset = RvaToOffset(rva, peImageLayout);
         return peImageLayout.Base + offset;
     }
+
+    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva) => GetRvaData(peAssemblyPtr, rva, false);
+
+    TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => GetRvaData(peAssemblyPtr, rva, true);
 
     bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
     {
@@ -328,36 +362,10 @@ internal readonly struct Loader_1 : ILoader
         ModuleFlags flags = default;
         if (runtimeFlags.HasFlag(ModuleFlags_1.Tenured))
             flags |= ModuleFlags.Tenured;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.ClassFreed))
-            flags |= ModuleFlags.ClassFreed;
         if (runtimeFlags.HasFlag(ModuleFlags_1.EditAndContinue))
             flags |= ModuleFlags.EditAndContinue;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerNotified))
-            flags |= ModuleFlags.ProfilerNotified;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.EtwNotified))
-            flags |= ModuleFlags.EtwNotified;
         if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
             flags |= ModuleFlags.ReflectionEmit;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerDisableOptimizations))
-            flags |= ModuleFlags.ProfilerDisableOptimizations;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerDisableInlining))
-            flags |= ModuleFlags.ProfilerDisableInlining;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerUserOverridePriv))
-            flags |= ModuleFlags.DebuggerUserOverridePriv;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerAllowJitOptsPriv))
-            flags |= ModuleFlags.DebuggerAllowJitOptsPriv;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerTrackJitInfoPriv))
-            flags |= ModuleFlags.DebuggerTrackJitInfoPriv;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerEnCEnabledPriv))
-            flags |= ModuleFlags.DebuggerEnCEnabledPriv;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerPDBsCopied))
-            flags |= ModuleFlags.DebuggerPDBsCopied;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerIgnorePDbs))
-            flags |= ModuleFlags.DebuggerIgnorePDbs;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.IJWFixedUp))
-            flags |= ModuleFlags.IJWFixedUp;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.BeingUnloaded))
-            flags |= ModuleFlags.BeingUnloaded;
 
         return flags;
     }
@@ -366,6 +374,25 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return GetFlags(module);
+    }
+
+    bool ILoader.IsReadyToRun(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.ReadyToRunInfo != TargetPointer.Null;
+    }
+
+    bool ILoader.TryGetSimpleName(ModuleHandle handle, out string simpleName)
+    {
+        simpleName = string.Empty;
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.SimpleName != TargetPointer.Null)
+        {
+            simpleName = _target.ReadUtf8String(module.SimpleName, strict: true);
+            return true;
+        }
+        else
+            return false;
     }
 
     string ILoader.GetPath(ModuleHandle handle)
@@ -496,7 +523,7 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
-        return assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */;
+        return assembly.IsLoaded;
     }
 
     TargetPointer ILoader.GetGlobalLoaderAllocator()
@@ -504,6 +531,13 @@ internal readonly struct Loader_1 : ILoader
         TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
         Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
         return systemDomain.GlobalLoaderAllocator;
+    }
+
+    TargetPointer ILoader.GetSystemAssembly()
+    {
+        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
+        return systemDomain.SystemAssembly;
     }
 
     TargetPointer ILoader.GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
@@ -588,5 +622,42 @@ internal readonly struct Loader_1 : ILoader
         DynamicILBlobTable dynamicILBlobTable = _target.ProcessedData.GetOrAdd<DynamicILBlobTable>(module.DynamicILBlobTable);
         ISHash shashContract = _target.Contracts.SHash;
         return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
+    }
+
+    IReadOnlyDictionary<string, TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        Target.TypeInfo laType = _target.GetTypeInfo(DataType.LoaderAllocator);
+
+        Dictionary<string, TargetPointer> heaps = new()
+        {
+            [nameof(Data.LoaderAllocator.LowFrequencyHeap)] = loaderAllocator.LowFrequencyHeap,
+            [nameof(Data.LoaderAllocator.HighFrequencyHeap)] = loaderAllocator.HighFrequencyHeap,
+            [nameof(Data.LoaderAllocator.StaticsHeap)] = loaderAllocator.StaticsHeap,
+            [nameof(Data.LoaderAllocator.StubHeap)] = loaderAllocator.StubHeap,
+            [nameof(Data.LoaderAllocator.ExecutableHeap)] = loaderAllocator.ExecutableHeap,
+        };
+
+        if (laType.Fields.ContainsKey(nameof(Data.LoaderAllocator.FixupPrecodeHeap)))
+            heaps[nameof(Data.LoaderAllocator.FixupPrecodeHeap)] = loaderAllocator.FixupPrecodeHeap!.Value;
+
+        if (laType.Fields.ContainsKey(nameof(Data.LoaderAllocator.NewStubPrecodeHeap)))
+            heaps[nameof(Data.LoaderAllocator.NewStubPrecodeHeap)] = loaderAllocator.NewStubPrecodeHeap!.Value;
+
+        if (laType.Fields.ContainsKey(nameof(Data.LoaderAllocator.DynamicHelpersStubHeap)))
+            heaps[nameof(Data.LoaderAllocator.DynamicHelpersStubHeap)] = loaderAllocator.DynamicHelpersStubHeap!.Value;
+
+        if (loaderAllocator.VirtualCallStubManager != TargetPointer.Null)
+        {
+            Data.VirtualCallStubManager vcsMgr = _target.ProcessedData.GetOrAdd<Data.VirtualCallStubManager>(loaderAllocator.VirtualCallStubManager);
+            Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
+
+            heaps[nameof(Data.VirtualCallStubManager.IndcellHeap)] = vcsMgr.IndcellHeap;
+
+            if (vcsType.Fields.ContainsKey(nameof(Data.VirtualCallStubManager.CacheEntryHeap)))
+                heaps[nameof(Data.VirtualCallStubManager.CacheEntryHeap)] = vcsMgr.CacheEntryHeap!.Value;
+        }
+
+        return heaps;
     }
 }

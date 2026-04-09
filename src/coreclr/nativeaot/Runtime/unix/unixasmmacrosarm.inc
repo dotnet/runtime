@@ -14,6 +14,7 @@
 #define PTFF_SAVE_R9 0x00000020
 #define PTFF_SAVE_SP 0x00000100
 #define PTFF_SAVE_R0 0x00000200
+#define PTFF_SAVE_R1 0x00000400
 #define PTFF_SAVE_R2 0x00000800
 #define PTFF_THREAD_HIJACK 0x00004000   // indicates that this is a frame for a hijacked call
 

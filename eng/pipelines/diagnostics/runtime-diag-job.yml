@@ -147,27 +147,7 @@ jobs:
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.hostedOs, 'windows')) }}:
-        - task: Bash@3
-          displayName: Setup Private Feeds Credentials
-          inputs:
-            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
-            arguments: $(Build.SourcesDirectory)/NuGet.config $Token
-          env:
-            Token: $(dn-bot-dnceng-artifact-feeds-rw)
-      - ${{ else }}:
-        - task: PowerShell@2
-          displayName: Setup Private Feeds Credentials
-          inputs:
-            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
-            arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
-          env:
-            Token: $(dn-bot-dnceng-artifact-feeds-rw)
-        # Run the NuGetAuthenticate task after the internal feeds are added to the nuget.config
-        # This ensures that creds are set appropriately for all feeds in the config, and that the
-        # credential provider is installed.
-        - task: NuGetAuthenticate@1
+    - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}

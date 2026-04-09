@@ -62,7 +62,7 @@ namespace System
             if (IsUtcAlias(id))
             {
                 _baseUtcOffset = TimeSpan.Zero;
-                _adjustmentRules = Array.Empty<AdjustmentRule>();
+                _adjustmentRules = [];
                 return;
             }
 
@@ -145,7 +145,7 @@ namespace System
         {
             if (_adjustmentRules == null)
             {
-                return Array.Empty<AdjustmentRule>();
+                return [];
             }
 
             // The rules we use in Unix care mostly about the start and end dates but don't fill the transition start and end info.

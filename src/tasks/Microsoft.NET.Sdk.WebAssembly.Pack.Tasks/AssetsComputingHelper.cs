@@ -53,6 +53,7 @@ public class AssetsComputingHelper
         bool enableThreads,
         bool enableDiagnostics,
         bool emitSourceMap,
+        bool emitSymbolMap,
         out string reason)
     {
         var extension = candidate.GetMetadata("Extension");
@@ -90,7 +91,7 @@ public class AssetsComputingHelper
             ".js" when assetType == "native" => $"{fileName}{extension} is not used by Blazor",
             ".mjs" when assetType == "native" && !(enableThreads && fileName == "dotnet.native.worker") => $"{fileName}{extension} is not used by Blazor",
             ".pdb" when !copySymbols => "copying symbols is disabled",
-            ".symbols" when fromMonoPackage => "extension .symbols is not required.",
+            ".symbols" when !emitSymbolMap => "emitting wasm symbol map is not enabled",
             _ => null
         };
 

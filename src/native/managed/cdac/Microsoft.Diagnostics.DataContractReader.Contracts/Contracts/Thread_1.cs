@@ -63,6 +63,7 @@ internal readonly struct Thread_1 : IThread
         }
 
         return new ThreadData(
+            threadPointer,
             thread.Id,
             thread.OSId,
             (ThreadState)thread.State,
@@ -74,6 +75,24 @@ internal readonly struct Thread_1 : IThread
             thread.TEB,
             thread.LastThrownObject.Handle,
             GetThreadFromLink(thread.LinkNext));
+    }
+
+    void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+
+        allocBytes = thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.AllocBytes ?? 0;
+        allocBytesLoh = thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.AllocBytesLoh ?? 0;
+    }
+
+    void IThread.GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
+
+        stackBase = thread.CachedStackBase;
+        stackLimit = thread.CachedStackLimit;
+        frameAddress = threadPointer + (ulong)type.Fields[nameof(Data.Thread.Frame)].Offset;
     }
 
     // happens inside critical section
@@ -155,15 +174,34 @@ internal readonly struct Thread_1 : IThread
         return threadLocalStaticBase;
     }
 
+    private (Data.Thread thread, Data.ExceptionInfo? exceptionInfo) GetThreadExceptionInfo(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        TargetPointer exceptionTrackerPtr = _target.ReadPointer(thread.ExceptionTracker);
+        Data.ExceptionInfo? exceptionInfo = (exceptionTrackerPtr == TargetPointer.Null) ? null : _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exceptionTrackerPtr);
+        return (thread, exceptionInfo);
+    }
+
+    TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
+    {
+        var (_, exceptionInfo) = GetThreadExceptionInfo(threadPointer);
+
+        if (exceptionInfo == null)
+            return TargetPointer.Null;
+
+        if (exceptionInfo.ThrownObjectHandle == TargetPointer.Null || _target.ReadPointer(exceptionInfo.ThrownObjectHandle) == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        return exceptionInfo.ThrownObjectHandle;
+    }
+
     byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
     {
         TargetPointer readFrom;
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-        TargetPointer ExceptionTrackerPtr = _target.ReadPointer(thread.ExceptionTracker);
-        if (ExceptionTrackerPtr == TargetPointer.Null)
+        var (thread, exceptionInfo) = GetThreadExceptionInfo(threadPointer);
+        if (exceptionInfo == null)
             return Array.Empty<byte>();
-        Data.ExceptionInfo exceptionTracker = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(ExceptionTrackerPtr);
-        Data.ObjectHandle throwableObject = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(exceptionTracker.ThrownObjectHandle);
+        Data.ObjectHandle throwableObject = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(exceptionInfo.ThrownObjectHandle);
         if (throwableObject.Object != TargetPointer.Null)
         {
             Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(throwableObject.Object);
@@ -176,7 +214,7 @@ internal readonly struct Thread_1 : IThread
                 readFrom = thread.UEWatsonBucketTrackerBuckets;
                 if (readFrom == TargetPointer.Null)
                 {
-                    readFrom = exceptionTracker.ExceptionWatsonBucketTrackerBuckets;
+                    readFrom = exceptionInfo.ExceptionWatsonBucketTrackerBuckets;
                 }
                 else
                 {

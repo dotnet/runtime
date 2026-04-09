@@ -252,6 +252,24 @@ PALAPI
 PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback);
 
+/// <summary>
+/// Callback invoked when a signal is received that will terminate the process.
+/// The callback should log the managed callstack for the signal.
+/// </summary>
+typedef VOID (*PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK)(LPCWSTR signalName);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetLogManagedCallstackForSignalCallback(
+    IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_EnableCrashReportBeforeSignalChaining(
+    void);
+
 PALIMPORT
 BOOL
 PALAPI
@@ -360,7 +378,7 @@ PALIMPORT
 int
 PALAPI
 // Log a method to the jitdump file.
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo);
+PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock);
 
 PALIMPORT
 int
@@ -2315,7 +2333,7 @@ PAL_GetCpuLimit(UINT* val);
 
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
 
-PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers);
+PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
 
 PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
 

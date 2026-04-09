@@ -3,6 +3,7 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -890,6 +891,7 @@ namespace System
         }
 
         // get 32-bit integer from at most 9 digits
+        [RequiresUnsafe]
         private static uint DigitsToUInt32(byte* p, int count)
         {
             Debug.Assert((1 <= count) && (count <= 9));
@@ -914,6 +916,7 @@ namespace System
         }
 
         // get 64-bit integer from at most 19 digits
+        [RequiresUnsafe]
         private static ulong DigitsToUInt64(byte* p, int count)
         {
             Debug.Assert((1 <= count) && (count <= 19));
@@ -942,6 +945,7 @@ namespace System
         /// https://lemire.me/blog/2022/01/21/swar-explained-parsing-eight-digits/
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static uint ParseEightDigitsUnrolled(byte* chars)
         {
             // let's take the following value (byte*) 12345678 and read it unaligned :
