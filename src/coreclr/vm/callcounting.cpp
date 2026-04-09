@@ -180,7 +180,9 @@ CallCountingManager::CallCountingInfo::CodeVersionHashTraits::Hash(const key_t &
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CallCountingManager::CallCountingStubAllocator
 
-CallCountingManager::CallCountingStubAllocator::CallCountingStubAllocator() : m_heap(nullptr)
+CallCountingManager::CallCountingStubAllocator::CallCountingStubAllocator()
+    : m_heap(nullptr),
+      m_heapRangeList(STUB_CODE_BLOCK_CALLCOUNTING, true /* collectible */)
 {
     WRAPPER_NO_CONTRACT;
 }
@@ -354,24 +356,6 @@ NOINLINE InterleavedLoaderHeap *CallCountingManager::CallCountingStubAllocator::
 }
 
 #endif // !DACCESS_COMPILE
-
-bool CallCountingManager::CallCountingStubAllocator::IsStub(TADDR entryPoint)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(entryPoint != (TADDR)NULL);
-
-    return !!m_heapRangeList.IsInRange(entryPoint);
-}
-
-#ifdef DACCESS_COMPILE
-
-void CallCountingManager::CallCountingStubAllocator::EnumerateHeapRanges(CLRDataEnumMemoryFlags flags)
-{
-    WRAPPER_NO_CONTRACT;
-    m_heapRangeList.EnumMemoryRegions(flags);
-}
-
-#endif // DACCESS_COMPILE
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CallCountingManager::MethodDescForwarderStubHashTraits
@@ -1161,39 +1145,6 @@ void CallCountingManager::TrimCollections()
 
 #endif // !DACCESS_COMPILE
 
-bool CallCountingManager::IsCallCountingStub(PCODE entryPoint)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    TADDR entryAddress = PCODEToPINSTR(entryPoint);
-    _ASSERTE(entryAddress != (PCODE)NULL);
-
-    CodeVersionManager::LockHolder codeVersioningLockHolder;
-
-    PTR_CallCountingManagerHash callCountingManagers = s_callCountingManagers;
-    if (callCountingManagers == NULL)
-    {
-        return false;
-    }
-
-    for (auto itEnd = callCountingManagers->End(), it = callCountingManagers->Begin(); it != itEnd; ++it)
-    {
-        PTR_CallCountingManager callCountingManager = *it;
-        if (callCountingManager->m_callCountingStubAllocator.IsStub(entryAddress))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
 PCODE CallCountingManager::GetTargetForMethod(PCODE callCountingStubEntryPoint)
 {
     CONTRACTL
@@ -1205,115 +1156,7 @@ PCODE CallCountingManager::GetTargetForMethod(PCODE callCountingStubEntryPoint)
     }
     CONTRACTL_END;
 
-    _ASSERTE(IsCallCountingStub(callCountingStubEntryPoint));
-
     return PTR_CallCountingStub(PCODEToPINSTR(callCountingStubEntryPoint))->GetTargetForMethod();
 }
-
-#ifdef DACCESS_COMPILE
-
-void CallCountingManager::DacEnumerateCallCountingStubHeapRanges(CLRDataEnumMemoryFlags flags)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    CodeVersionManager::LockHolder codeVersioningLockHolder;
-
-    PTR_CallCountingManagerHash callCountingManagers = s_callCountingManagers;
-    if (callCountingManagers == NULL)
-    {
-        return;
-    }
-
-    for (auto itEnd = callCountingManagers->End(), it = callCountingManagers->Begin(); it != itEnd; ++it)
-    {
-        PTR_CallCountingManager callCountingManager = *it;
-        callCountingManager->m_callCountingStubAllocator.EnumerateHeapRanges(flags);
-    }
-}
-
-#endif // DACCESS_COMPILE
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// CallCountingManager::CallCountingStubManager
-
-SPTR_IMPL(CallCountingStubManager, CallCountingStubManager, g_pManager);
-
-#ifndef DACCESS_COMPILE
-
-CallCountingStubManager::CallCountingStubManager()
-{
-    WRAPPER_NO_CONTRACT;
-}
-
-void CallCountingStubManager::Init()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    g_pManager = new CallCountingStubManager();
-    StubManager::AddStubManager(g_pManager);
-}
-
-#endif // !DACCESS_COMPILE
-
-#ifdef _DEBUG
-const char *CallCountingStubManager::DbgGetName()
-{
-    WRAPPER_NO_CONTRACT;
-    return "CallCountingStubManager";
-}
-#endif
-
-#ifdef DACCESS_COMPILE
-LPCWSTR CallCountingStubManager::GetStubManagerName(PCODE addr)
-{
-    WRAPPER_NO_CONTRACT;
-    return W("CallCountingStub");
-}
-#endif
-
-BOOL CallCountingStubManager::CheckIsStub_Internal(PCODE entryPoint)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    return CallCountingManager::IsCallCountingStub(entryPoint);
-}
-
-BOOL CallCountingStubManager::DoTraceStub(PCODE callCountingStubEntryPoint, TraceDestination *trace)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    _ASSERTE(trace != nullptr);
-
-    trace->InitForStub(CallCountingManager::GetTargetForMethod(callCountingStubEntryPoint));
-    return true;
-}
-
-#ifdef DACCESS_COMPILE
-void CallCountingStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    DAC_ENUM_VTHIS();
-    EMEM_OUT(("MEM: %p CallCountingStubManager\n", dac_cast<TADDR>(this)));
-    CallCountingManager::DacEnumerateCallCountingStubHeapRanges(flags);
-}
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif // FEATURE_TIERED_COMPILATION
