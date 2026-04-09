@@ -297,32 +297,10 @@ private:
     typedef SHash<MethodDescForwarderStubHashTraits> MethodDescForwarderStubHash;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // CallCountingManager::CallCountingManagerHashTraits
-
-private:
-    class CallCountingManagerHashTraits : public DefaultSHashTraits<PTR_CallCountingManager>
-    {
-    private:
-        typedef DefaultSHashTraits<PTR_CallCountingManager> Base;
-    public:
-        typedef Base::element_t element_t;
-        typedef Base::count_t count_t;
-        typedef PTR_CallCountingManager key_t;
-
-    public:
-        static key_t GetKey(const element_t &e);
-        static BOOL Equals(const key_t &k1, const key_t &k2);
-        static count_t Hash(const key_t &k);
-    };
-
-    typedef SHash<CallCountingManagerHashTraits> CallCountingManagerHash;
-    typedef DPTR(CallCountingManagerHash) PTR_CallCountingManagerHash;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CallCountingManager members
 
 private:
-    static PTR_CallCountingManagerHash s_callCountingManagers;
+    static CallCountingManager *s_callCountingManagers;
     static COUNT_T s_callCountingStubCount;
     static COUNT_T s_activeCallCountingStubCount;
     static COUNT_T s_completedCallCountingStubCount;
@@ -333,14 +311,12 @@ private:
     MethodDescForwarderStubHash m_methodDescForwarderStubHash;
     SArray<CallCountingInfo *> m_callCountingInfosPendingCompletion;
 
+    CallCountingManager **m_pPreviousManager = nullptr;
+    CallCountingManager *m_nextManager = nullptr;
+
 public:
     CallCountingManager();
     ~CallCountingManager();
-
-#ifndef DACCESS_COMPILE
-public:
-    static void StaticInitialize();
-#endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 public:
