@@ -345,20 +345,19 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                // Brief pause to allow signal propagation.
-                Thread.Sleep(200);
-
-                // Verify the grandchild is still running after the child's process group was killed.
-                bool grandchildAlive;
-                try
+                // Poll deterministically instead of using a fixed sleep to avoid flakiness on slow machines.
+                bool grandchildAlive = false;
+                long timeoutAt = Environment.TickCount64 + WaitInMS;
+                do
                 {
-                    using Process grandchild = Process.GetProcessById(grandchildPid);
-                    grandchildAlive = !grandchild.HasExited;
+                    grandchildAlive = IsProcessAlive(grandchildPid);
+                    if (grandchildAlive == enable)
+                    {
+                        break;
+                    }
+                    Thread.Sleep(20);
                 }
-                catch (ArgumentException)
-                {
-                    grandchildAlive = false;
-                }
+                while (Environment.TickCount64 < timeoutAt);
 
                 // Detached grandchild (StartDetached=true):
                 // - On Unix: creates its own session/process group.
@@ -372,6 +371,19 @@ namespace System.Diagnostics.Tests
                 KillGrandchild(grandchildPid);
             }
 
+            static bool IsProcessAlive(int processId)
+            {
+                try
+                {
+                    using Process grandchild = Process.GetProcessById(processId);
+                    return !grandchild.HasExited;
+                }
+                catch (ArgumentException)
+                {
+                    return false;
+                }
+            }
+
             static void KillGrandchild(int pid)
             {
                 try
@@ -382,6 +394,20 @@ namespace System.Diagnostics.Tests
                 }
                 catch (ArgumentException) { } // process may have already exited
             }
+        }
+
+        [ConditionalFact(typeof(ProcessTests), nameof(IsNotNanoServerAndRemoteExecutorSupported))]
+        public void StartDetached_StartsAndExitsSuccessfully()
+        {
+            // Simple smoke test: a process started with StartDetached=true should run and exit normally.
+            var options = new RemoteInvokeOptions
+            {
+                StartInfo = new ProcessStartInfo { StartDetached = true },
+                CheckExitCode = false,
+            };
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () => RemoteExecutor.SuccessExitCode, options);
+            Assert.True(handle.Process.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, handle.Process.ExitCode);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

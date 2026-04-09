@@ -82,6 +82,11 @@ namespace System.Diagnostics.Tests
         
         private static void SendSignal(PosixSignal signal, Process process, bool entireProcessGroup = false)
         {
+            // Windows console control events are delivered to console process groups via
+            // GenerateConsoleCtrlEvent; this implementation cannot distinguish between
+            // signaling only the process and signaling its entire process group.
+            _ = entireProcessGroup;
+
             uint dwCtrlEvent = signal switch
             {
                 PosixSignal.SIGINT => Interop.Kernel32.CTRL_C_EVENT,
