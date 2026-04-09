@@ -115,7 +115,6 @@ enum class AssociatedDataFlags : unsigned char
 {
     None = 0,
     HasUnboxingStubTarget = 1,
-    HasArm64PacHijackData = 2,
 };
 
 enum UnwindStackFrameFlags

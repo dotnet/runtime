@@ -30,7 +30,7 @@ BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pCo
 bool IsIPInProlog(EECodeInfo *pCodeInfo);
 bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSafeToInjectThreadAbort);
 #if defined(TARGET_ARM64)
-bool IsPacPresent(EECodeInfo *pCodeInfo);
+bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR retAddrLocation, TADDR *pSpForPacSign);
 #endif // TARGET_ARM64
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 

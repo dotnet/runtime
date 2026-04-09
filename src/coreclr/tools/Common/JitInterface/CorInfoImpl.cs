@@ -440,89 +440,6 @@ namespace Internal.JitInterface
 
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result);
 
-#if !READYTORUN
-        private const short Arm64DwarfLrRegister = 30;
-
-        private bool TryGetUnixPacRetAddrLocationToEntrySpDelta(FrameInfo[] frameInfos, out uint retAddrLocationToEntrySpDelta)
-        {
-            retAddrLocationToEntrySpDelta = 0;
-
-            var target = _compilation.TypeSystemContext.Target;
-            if (target.Architecture != TargetArchitecture.ARM64 || target.OperatingSystem != TargetOS.Linux)
-            {
-                return false;
-            }
-
-            if (frameInfos == null)
-            {
-                return false;
-            }
-
-            foreach (FrameInfo frameInfo in frameInfos)
-            {
-                if ((frameInfo.Flags & (FrameInfoFlags.Handler | FrameInfoFlags.Filter)) != 0)
-                {
-                    continue;
-                }
-
-                byte[] blobData = frameInfo.BlobData;
-                if (blobData == null || blobData.Length == 0 || (blobData.Length % 8) != 0)
-                {
-                    return false;
-                }
-
-                short cfaRegister = -1;
-                int cfaOffset = 0;
-                int lrOffset = int.MinValue;
-                bool hasPac = false;
-
-                for (int offset = 0; offset < blobData.Length; offset += 8)
-                {
-                    CFI_OPCODE opcode = (CFI_OPCODE)blobData[offset + 1];
-                    short dwarfReg = BitConverter.ToInt16(blobData, offset + 2);
-                    int cfiOffset = BitConverter.ToInt32(blobData, offset + 4);
-
-                    switch (opcode)
-                    {
-                        case CFI_OPCODE.CFI_DEF_CFA:
-                            cfaRegister = dwarfReg;
-                            cfaOffset = cfiOffset;
-                            break;
-
-                        case CFI_OPCODE.CFI_DEF_CFA_REGISTER:
-                            cfaRegister = dwarfReg;
-                            break;
-
-                        case CFI_OPCODE.CFI_ADJUST_CFA_OFFSET:
-                            cfaOffset += cfiOffset;
-                            break;
-
-                        case CFI_OPCODE.CFI_REL_OFFSET:
-                            if (dwarfReg == Arm64DwarfLrRegister)
-                            {
-                                lrOffset = cfiOffset;
-                            }
-                            break;
-
-                        case CFI_OPCODE.CFI_NEGATE_RA_STATE:
-                            hasPac = true;
-                            break;
-                    }
-                }
-
-                if (!hasPac || cfaRegister < 0 || cfaOffset < 0 || lrOffset == int.MinValue || cfaOffset < lrOffset)
-                {
-                    return false;
-                }
-
-                retAddrLocationToEntrySpDelta = checked((uint)(cfaOffset - lrOffset));
-                return true;
-            }
-
-            return false;
-        }
-#endif
-
         private void PublishCode()
         {
             var relocs = _codeRelocs.ToArray();
@@ -572,14 +489,7 @@ namespace Internal.JitInterface
                 _methodCodeNode.ColdCodeNode = _methodColdCodeNode;
             }
 #endif
-
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
-#if !READYTORUN
-            if (TryGetUnixPacRetAddrLocationToEntrySpDelta(_frameInfos, out uint PacRetAddrLocationToEntrySpDelta))
-            {
-                _methodCodeNode.InitializeArm64PacHijackInfo(PacRetAddrLocationToEntrySpDelta);
-            }
-#endif
 #if READYTORUN
             _methodCodeNode.InitializeColdFrameInfos(_coldFrameInfos);
 #endif

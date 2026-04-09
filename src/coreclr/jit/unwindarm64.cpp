@@ -644,13 +644,13 @@ void Compiler::unwindPacSignLR()
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        FuncInfoDsc*   func     = funCurrentFunc();
-        UNATIVE_OFFSET cbProlog = 0;
-        if (compGeneratingProlog)
+        // Emit NEGATE_RA_STATE opcode in prologs.
+        if (!compGeneratingProlog)
         {
-            cbProlog = unwindGetCurrentOffset(func);
+            return;
         }
-
+        FuncInfoDsc*   func     = funCurrentFunc();
+        UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
         // Maps to DW_CFA_AARCH64_negate_ra_state
         createCfiCode(func, cbProlog, CFI_NEGATE_RA_STATE, DWARF_REG_ILLEGAL);
 
@@ -658,7 +658,7 @@ void Compiler::unwindPacSignLR()
     }
 #endif // FEATURE_CFI_SUPPORT
 
-    // pac_sign_lr: 11111100: sign the return address in lr with paciaz
+    // pac_sign_lr: 11111100: sign the return address in lr with paciasp
     funCurrentFunc()->uwi.AddCode(0xFC);
 }
 
@@ -1110,7 +1110,7 @@ void DumpUnwindInfo(Compiler*         comp,
         }
         else if (b1 == 0xFC)
         {
-            // pac_sign_lr: 11111100 : sign the return address in lr with paciaz.
+            // pac_sign_lr: 11111100 : sign the return address in lr with paciasp.
 
             printf("    %02X          pac_sign_lr\n", b1);
         }

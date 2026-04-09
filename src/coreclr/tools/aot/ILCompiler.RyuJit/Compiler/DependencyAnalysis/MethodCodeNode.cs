@@ -15,15 +15,13 @@ using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.Depend
 namespace ILCompiler.DependencyAnalysis
 {
     [DebuggerTypeProxy(typeof(MethodCodeNodeDebugView))]
-    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, ISpecialUnboxThunkNode, IMethodCodeNodeWithTypeSignature, IArm64PacHijackInfoNode
+    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, ISpecialUnboxThunkNode, IMethodCodeNodeWithTypeSignature
     {
         private MethodDesc _method;
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
         private byte[] _gcInfo;
         private MethodExceptionHandlingInfoNode _ehInfo;
-        private bool _HasPacHijackInfo;
-        private uint _PacRetAddrLocationToEntrySpDelta;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
@@ -119,8 +117,6 @@ namespace ILCompiler.DependencyAnalysis
         public FrameInfo[] FrameInfos => _frameInfos;
         public byte[] GCInfo => _gcInfo;
         public MethodExceptionHandlingInfoNode EHInfo => _ehInfo;
-        public bool HasPacHijackInfo => _HasPacHijackInfo;
-        public uint PacRetAddrLocationToEntrySpDelta => _PacRetAddrLocationToEntrySpDelta;
 
         public ISymbolNode GetAssociatedDataNode(NodeFactory factory)
         {
@@ -140,13 +136,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(_gcInfo == null);
             _gcInfo = gcInfo;
-        }
-
-        public void InitializeArm64PacHijackInfo(uint retAddrLocationToEntrySpDelta)
-        {
-            Debug.Assert(!_HasPacHijackInfo);
-            _HasPacHijackInfo = true;
-            _PacRetAddrLocationToEntrySpDelta = retAddrLocationToEntrySpDelta;
         }
 
         public void InitializeEHInfo(ObjectData ehInfo)

@@ -6350,10 +6350,27 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
 }
 
 #if defined(TARGET_ARM64)
-// This function is used to check if Pointer Authentication (PAC) is enabled for this stack frame or not.
-bool IsPacPresent(EECodeInfo *pCodeInfo)
+// Read the PAC state for a managed ARM64 frame and, when PAC is enabled, recover the
+// SP value that was live when PACIASP signed the return address in LR.
+bool GetPacSignInfo(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, TADDR retAddrLocation, TADDR *pSpForPacSign)
 {
+    _ASSERTE(pContextToCheck != nullptr);
     _ASSERTE(pCodeInfo->IsValid());
+    _ASSERTE(pSpForPacSign != nullptr);
+
+    *pSpForPacSign = 0;
+
+    // In prolog or epilog while the current frame is still being established or torn down we cannot retrieve correct SP reliably.
+    if (IsIPInProlog(pCodeInfo))
+    {
+        return false;
+    }
+
+    BOOL unused = TRUE;
+    if (IsIPInEpilog(pContextToCheck, pCodeInfo, &unused))
+    {
+        return false;
+    }
 
     // Lookup the function entry for the IP
     PTR_RUNTIME_FUNCTION FunctionEntry = pCodeInfo->GetFunctionEntry();
@@ -6365,7 +6382,8 @@ bool IsPacPresent(EECodeInfo *pCodeInfo)
     _ASSERTE((FunctionEntry->UnwindData & 3) == 0); // Packed unwind data are not used with managed code
     ULONG_PTR UnwindDataPtr = (ULONG_PTR)(ImageBase + FunctionEntry->UnwindData);
 
-    // Read the header word. For unwind info layout details refer https://learn.microsoft.com/en-us/cpp/build/arm64-exception-handling?view=msvc-170#arm64-exception-handling-information
+    // For unwind info layout details refer https://learn.microsoft.com/en-us/cpp/build/arm64-exception-handling?view=msvc-170#arm64-exception-handling-information
+    // Read the header word.
     DWORD HeaderWord = *(DWORD*)UnwindDataPtr;
     UnwindDataPtr += 4;
 
@@ -6377,8 +6395,8 @@ bool IsPacPresent(EECodeInfo *pCodeInfo)
     {
         EpilogScopeCount = *(DWORD*)UnwindDataPtr;
         UnwindDataPtr += 4;
-        UnwindWords = (EpilogScopeCount >> 16) & 0xff;
-        EpilogScopeCount &= 0xffff;
+        UnwindWords = (EpilogScopeCount >> 16) & 0xFF;
+        EpilogScopeCount &= 0xFFFF;
     }
 
     if ((HeaderWord & (1 << 21)) != 0)
@@ -6389,26 +6407,15 @@ bool IsPacPresent(EECodeInfo *pCodeInfo)
     ULONG_PTR UnwindCodePtr = UnwindDataPtr + 4 * EpilogScopeCount;
     ULONG_PTR UnwindCodesEndPtr = UnwindCodePtr + 4 * UnwindWords;
 
-    while (UnwindCodePtr < UnwindCodesEndPtr)
+    auto GetUnwindOpSize = [](BYTE unwindCode) -> SIZE_T
     {
-        ULONG CurCode = *(BYTE*)UnwindCodePtr;
-        if ((CurCode & 0xfe) == 0xe4)   // The last unwind code
+        if (unwindCode < 0xC0)
         {
-            break;
+            return 1;
         }
-
-        if (CurCode == 0xFC) // Unwind code for PAC (pac_sign_lr)
+        else if (unwindCode < 0xE0)
         {
-            return true;
-        }
-
-        if (CurCode < 0xC0)
-        {
-            UnwindCodePtr += 1;
-        }
-        else if (CurCode < 0xE0)
-        {
-            UnwindCodePtr += 2;
+            return 2;
         }
         else
         {
@@ -6417,11 +6424,215 @@ bool IsPacPresent(EECodeInfo *pCodeInfo)
                 4,1,2,1,1,1,1,3, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 2,3,4,5,1,1,1,1
             };
 
-            UnwindCodePtr += UnwindCodeSizeTable[CurCode - 0xE0];
+            return UnwindCodeSizeTable[unwindCode - 0xE0];
         }
+    };
+
+    ULONG unwindOpCount = 0;
+    for (ULONG_PTR unwindOpPtr = UnwindCodePtr; unwindOpPtr < UnwindCodesEndPtr;)
+    {
+        BYTE curCode = *(BYTE*)unwindOpPtr;
+        if ((curCode & 0xFE) == 0xE4)   // end, end_c
+        {
+            break;
+        }
+
+        SIZE_T unwindOpSize = GetUnwindOpSize(curCode);
+        if ((unwindOpPtr + unwindOpSize) > UnwindCodesEndPtr)
+        {
+            return false;
+        }
+
+        unwindOpCount++;
+        unwindOpPtr += unwindOpSize;
     }
 
-    return false;
+    ULONG_PTR* unwindOpStarts = (ULONG_PTR*)_alloca(unwindOpCount * sizeof(ULONG_PTR));
+    ULONG      unwindOpIndex  = 0;
+    for (ULONG_PTR unwindOpPtr = UnwindCodePtr; unwindOpPtr < UnwindCodesEndPtr;)
+    {
+        BYTE curCode = *(BYTE*)unwindOpPtr;
+        if ((curCode & 0xFE) == 0xE4)   // end, end_c
+        {
+            break;
+        }
+
+        SIZE_T unwindOpSize = GetUnwindOpSize(curCode);
+        if ((unwindOpPtr + unwindOpSize) > UnwindCodesEndPtr)
+        {
+            return false;
+        }
+
+        unwindOpStarts[unwindOpIndex++] = unwindOpPtr;
+        unwindOpPtr += unwindOpSize;
+    }
+
+    SSIZE_T currentSpOffset = 0;
+    SSIZE_T pacSpOffset = SSIZE_T_MIN;
+    SSIZE_T lrSlotOffset = SSIZE_T_MIN;
+    constexpr SSIZE_T PtrSize = 8;
+
+    // ARM64 prolog unwind codes are stored in reverse prolog order. Replay them in prolog order so
+    // PACIASP captures the SP that was live when LR was originally signed.
+    while (unwindOpIndex != 0)
+    {
+        UnwindCodePtr = unwindOpStarts[--unwindOpIndex];
+        ULONG CurCode = *(BYTE*)UnwindCodePtr;
+
+        if ((CurCode & 0xE0) == 0x00) // alloc_s
+        {
+            currentSpOffset -= (CurCode & 0x1F) * 16;
+            continue;
+        }
+
+        if ((CurCode & 0xE0) == 0x20) // save_r19r20_x
+        {
+            currentSpOffset -= (CurCode & 0x1F) * 8;
+            continue;
+        }
+
+        if ((CurCode & 0xC0) == 0x40) // save_fplr
+        {
+            lrSlotOffset = currentSpOffset + ((CurCode & 0x3F) * 8) + PtrSize;
+            continue;
+        }
+
+        if ((CurCode & 0xC0) == 0x80) // save_fplr_x
+        {
+            currentSpOffset -= ((CurCode & 0x3F) + 1) * 8;
+            lrSlotOffset = currentSpOffset + PtrSize;
+            continue;
+        }
+
+        if ((CurCode & 0xF8) == 0xC0) // alloc_m
+        {
+            ULONG x = ((CurCode & 0x7) << 8) | *(BYTE*)(UnwindCodePtr + 1);
+            currentSpOffset -= x * 16;
+            continue;
+        }
+
+        if ((CurCode & 0xFC) == 0xC8) // save_regp
+        {
+            continue;
+        }
+
+        if ((CurCode & 0xFC) == 0xCC) // save_regp_x
+        {
+            ULONG z = *(BYTE*)(UnwindCodePtr + 1) & 0x3F;
+            currentSpOffset -= (z + 1) * 8;
+            continue;
+        }
+
+        if ((CurCode & 0xFC) == 0xD0) // save_reg
+        {
+            BYTE nextCode = *(BYTE*)(UnwindCodePtr + 1);
+            ULONG x = ((CurCode & 0x3) << 2) | (nextCode >> 6);
+            ULONG z = nextCode & 0x3F;
+            if (x == 11) // R30 / LR is the 12th GP register in the save_reg encodings
+            {
+                lrSlotOffset = currentSpOffset + z * 8;
+            }
+
+            continue;
+        }
+
+        if ((CurCode & 0xFE) == 0xD4) // save_reg_x
+        {
+            BYTE nextCode = *(BYTE*)(UnwindCodePtr + 1);
+            ULONG x = ((CurCode & 0x1) << 3) | (nextCode >> 5);
+            currentSpOffset -= ((nextCode & 0x1F) + 1) * 8;
+            if (x == 11) // R30 / LR is the 12th GP register in the save_reg encodings
+            {
+                lrSlotOffset = currentSpOffset;
+            }
+
+            continue;
+        }
+
+        if ((CurCode & 0xFE) == 0xD6) // save_lrpair
+        {
+            ULONG z = *(BYTE*)(UnwindCodePtr + 1) & 0x3F;
+            lrSlotOffset = currentSpOffset + z * 8 + PtrSize;
+            continue;
+        }
+
+        if ((CurCode & 0xFE) == 0xD8) // save_fregp
+        {
+            continue;
+        }
+
+        if ((CurCode & 0xFE) == 0xDA) // save_fregp_x
+        {
+            ULONG z = *(BYTE*)(UnwindCodePtr + 1) & 0x3F;
+            currentSpOffset -= (z + 1) * 8;
+            continue;
+        }
+
+        if ((CurCode & 0xFE) == 0xDC) // save_freg
+        {
+            continue;
+        }
+
+        if (CurCode == 0xDE) // save_freg_x
+        {
+            ULONG z = *(BYTE*)(UnwindCodePtr + 1) & 0x1F;
+            currentSpOffset -= (z + 1) * 8;
+            continue;
+        }
+
+        if (CurCode == 0xE0) // alloc_l
+        {
+            ULONG x = (*(BYTE*)(UnwindCodePtr + 1) << 16) | (*(BYTE*)(UnwindCodePtr + 2) << 8) | *(BYTE*)(UnwindCodePtr + 3);
+            currentSpOffset -= x * 16;
+            continue;
+        }
+
+        if (CurCode == 0xE1) // set_fp
+        {
+            continue;
+        }
+
+        if (CurCode == 0xE2) // add_fp
+        {
+            continue;
+        }
+
+        if (CurCode == 0xE3) // nop
+        {
+            continue;
+        }
+
+        if (CurCode == 0xE6) // save_next
+        {
+            continue;
+        }
+
+        if (CurCode == 0xFC) // pac_sign_lr
+        {
+            if (pacSpOffset == SSIZE_T_MIN)
+            {
+                // Snapshot the SP delta for the PACIASP in prolog.
+                pacSpOffset = currentSpOffset;
+            }
+
+            continue;
+        }
+
+        return false;
+    }
+
+    if (pacSpOffset == SSIZE_T_MIN)
+    {
+        return true;
+    }
+
+    if (lrSlotOffset == SSIZE_T_MIN)
+    {
+        return false;
+    }
+
+    *pSpForPacSign = (TADDR)((SSIZE_T)retAddrLocation + pacSpOffset - lrSlotOffset);
+    return true;
 }
 #endif // TARGET_ARM64
 

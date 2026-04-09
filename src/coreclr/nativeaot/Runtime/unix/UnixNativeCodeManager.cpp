@@ -82,7 +82,8 @@ static size_t readULEB(const uint8_t *&p, const uint8_t *end)
 {
     size_t result = 0;
     unsigned shift = 0;
-    while (p < end) {
+    while (p < end)
+    {
         uint8_t byte = *p++;
         result |= size_t(byte & 0x7F) << shift;
         if ((byte & 0x80) == 0) // clear top bit indicates the last by of the value
@@ -92,23 +93,158 @@ static size_t readULEB(const uint8_t *&p, const uint8_t *end)
     return result;
 }
 
-static bool TryGetSpForPacSigning(UnixNativeMethodInfo *pNativeMethodInfo,
-                                          PTR_PTR_VOID ppvRetAddrLocation,
-                                          uintptr_t *pSpForArm64PacSign)
+static ssize_t readSLEB(const uint8_t *&p, const uint8_t *end)
 {
-    PTR_uint8_t pAssociatedData = GetAssociatedData(pNativeMethodInfo->pMainLSDA);
-    if (pAssociatedData == NULL || ppvRetAddrLocation == NULL)
+    ssize_t result = 0;
+    unsigned shift = 0;
+    uint8_t byte = 0;
+
+    while (p < end)
+    {
+        byte = *p++;
+        result |= ssize_t(byte & 0x7F) << shift;
+        shift += 7;
+        if ((byte & 0x80) == 0) // clear top bit indicates the last by of the value
+        {
+            break;
+        }
+    }
+
+    if ((shift < (sizeof(result) * 8)) && ((byte & 0x40) != 0))
+    {
+        result |= -((ssize_t)1 << shift);
+    }
+
+    return result;
+}
+
+static bool TryGetSpForPacSigning(UnixNativeMethodInfo *pNativeMethodInfo,
+                                  PTR_PTR_VOID ppvRetAddrLocation,
+                                  uintptr_t *pSpForPacSign)
+{
+    if (ppvRetAddrLocation == NULL)
         return false;
 
-    AssociatedDataFlags flags = (AssociatedDataFlags)(*pAssociatedData++);
-    if ((static_cast<uint8_t>(flags) & static_cast<uint8_t>(AssociatedDataFlags::HasArm64PacHijackData)) == 0)
+    const uint8_t* p = (const uint8_t*)pNativeMethodInfo->unwind_info;
+    uint32_t fdeLength = *dac_cast<PTR_uint32_t>((uint8_t*)p);
+    const uint8_t* end = p + fdeLength;
+    p += sizeof(uint32_t); // FDE length
+
+    if (*dac_cast<PTR_uint32_t>((uint8_t*)p) == 0)
         return false;
 
-    if ((static_cast<uint8_t>(flags) & static_cast<uint8_t>(AssociatedDataFlags::HasUnboxingStubTarget)) != 0)
-        pAssociatedData += sizeof(int32_t);
+    p += sizeof(uint32_t); // CIE pointer
+    p += sizeof(uint32_t); // PC start
+    p += sizeof(uint32_t); // function length
 
-    uint32_t retAddrLocationToEntrySpDelta = *dac_cast<PTR_uint32_t>(pAssociatedData);
-    *pSpForArm64PacSign = dac_cast<TADDR>(ppvRetAddrLocation) + retAddrLocationToEntrySpDelta;
+    size_t augmentationLength = readULEB(p, end);
+    if ((size_t)(end - p) < augmentationLength)
+        return false;
+    p += augmentationLength;
+
+    constexpr int DataAlignFactor = -4;
+    constexpr uint8_t ReturnAddressRegister = 30;
+
+    int cfaOffset = 0;
+    int lrOffset = INT_MIN;
+    bool hasPac = false;
+
+    while (p < end)
+    {
+        uint8_t op = *p++;
+
+        if (op == DW_CFA_AARCH64_negate_ra_state)
+        {
+            hasPac = true;
+            continue;
+        }
+
+        if ((op & 0xC0) == DW_CFA_advance_loc)
+        {
+            continue;
+        }
+
+        if ((op & 0xC0) == DW_CFA_offset)
+        {
+            uint8_t dwarfReg = op & 0x3F;
+            ssize_t offsetFactor = (ssize_t)readULEB(p, end);
+            if (dwarfReg == ReturnAddressRegister)
+            {
+                lrOffset = cfaOffset + (int)(offsetFactor * DataAlignFactor);
+            }
+            continue;
+        }
+
+        switch (op)
+        {
+            case DW_CFA_nop:
+                break;
+
+            case DW_CFA_advance_loc1:
+                p += sizeof(uint8_t);
+                break;
+
+            case DW_CFA_advance_loc2:
+                p += sizeof(uint16_t);
+                break;
+
+            case DW_CFA_advance_loc4:
+                p += sizeof(uint32_t);
+                break;
+
+            case DW_CFA_offset_extended:
+            {
+                uint8_t dwarfReg = (uint8_t)readULEB(p, end);
+                ssize_t offsetFactor = (ssize_t)readULEB(p, end);
+                if (dwarfReg == ReturnAddressRegister)
+                {
+                    lrOffset = cfaOffset + (int)(offsetFactor * DataAlignFactor);
+                }
+                break;
+            }
+
+            case DW_CFA_offset_extended_sf:
+            {
+                uint8_t dwarfReg = (uint8_t)readULEB(p, end);
+                ssize_t offsetFactor = readSLEB(p, end);
+                if (dwarfReg == ReturnAddressRegister)
+                {
+                    lrOffset = cfaOffset + (int)(offsetFactor * DataAlignFactor);
+                }
+                break;
+            }
+
+            case DW_CFA_def_cfa:
+                readULEB(p, end); // register
+                cfaOffset = (int)readULEB(p, end);
+                break;
+
+            case DW_CFA_def_cfa_register:
+                readULEB(p, end); // register
+                break;
+
+            case DW_CFA_def_cfa_offset:
+                cfaOffset = (int)readULEB(p, end);
+                break;
+
+            case DW_CFA_def_cfa_sf:
+                readULEB(p, end); // register
+                cfaOffset = (int)(readSLEB(p, end) * DataAlignFactor);
+                break;
+
+            case DW_CFA_def_cfa_offset_sf:
+                cfaOffset = (int)(readSLEB(p, end) * DataAlignFactor);
+                break;
+
+            default:
+                return false;
+        }
+    }
+
+    if (!hasPac || lrOffset == INT_MIN || cfaOffset < lrOffset)
+        return false;
+
+    *pSpForPacSign = dac_cast<TADDR>(ppvRetAddrLocation) + (cfaOffset - lrOffset);
     return true;
 }
 

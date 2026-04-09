@@ -19,7 +19,6 @@
 
 // void* PacSignPtr(void *, void *);
 // This function sign the input pointer using zero as salt.
-// To avoid failing on non-PAC enabled machines, we use paciaz (instead of paciza) which signs lr explicitly.
 // Thus we need to move input in lr, sign it and then copy it back to the result register.
 .arch_extension pauth
     LEAF_ENTRY PacSignPtr, _TEXT

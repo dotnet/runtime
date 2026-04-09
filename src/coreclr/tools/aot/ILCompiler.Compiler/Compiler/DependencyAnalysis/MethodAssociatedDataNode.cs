@@ -14,7 +14,6 @@ namespace ILCompiler.DependencyAnalysis
     {
         None = 0,
         HasUnboxingStubTarget = 1,
-        HasArm64PacHijackData = 2,
     }
 
     /// <summary>
@@ -59,10 +58,6 @@ namespace ILCompiler.DependencyAnalysis
             if (unboxThunk != null && unboxThunk.IsSpecialUnboxingThunk)
                 return true;
 
-            IArm64PacHijackInfoNode arm64PacHijackInfoNode = methodNode as IArm64PacHijackInfoNode;
-            if (arm64PacHijackInfoNode != null && arm64PacHijackInfoNode.HasPacHijackInfo)
-                return true;
-
             return false;
         }
 
@@ -83,13 +78,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 flags |= AssociatedDataFlags.HasUnboxingStubTarget;
                 objData.EmitReloc(unboxThunkNode.GetUnboxingThunkTarget(factory), RelocType.IMAGE_REL_BASED_RELPTR32);
-            }
-
-            IArm64PacHijackInfoNode pacHijackInfoNode = _methodNode as IArm64PacHijackInfoNode;
-            if (pacHijackInfoNode != null && pacHijackInfoNode.HasPacHijackInfo)
-            {
-                flags |= AssociatedDataFlags.HasArm64PacHijackData;
-                objData.EmitUInt(pacHijackInfoNode.PacRetAddrLocationToEntrySpDelta);
             }
 
             objData.EmitByte(flagsReservation, (byte)flags);

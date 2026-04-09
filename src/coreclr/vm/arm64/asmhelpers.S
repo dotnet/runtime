@@ -168,7 +168,7 @@ NESTED_END OnHijackTripThread, _TEXT
 #endif // FEATURE_HIJACK
 
 // void* PacStripPtr(void *);
-// This function strips the pointer of PAC info that is passed as an agrument.
+// This function strips the pointer of PAC info that is passed as an argument.
 // To avoid failing on non-PAC enabled machines, we use xpaclri (instead of xpaci) which strips lr explicitly.
 // Thus we move need to move input in lr, strip it and copy it back to the result register.
 .arch_extension pauth
@@ -182,7 +182,7 @@ NESTED_END OnHijackTripThread, _TEXT
 
 // void* PacSignPtr(void *, void *);
 // This function sign the input pointer using zero as salt.
-// To avoid failing on non-PAC enabled machines, we use paciaz (instead of paciza) which signs lr explicitly.
+// To avoid failing on non-PAC enabled machines, we use pacia1716 which signs lr explicitly.
 // Thus we need to move input in lr, sign it and then copy it back to the result register.
 .arch_extension pauth
     LEAF_ENTRY PacSignPtr, _TEXT

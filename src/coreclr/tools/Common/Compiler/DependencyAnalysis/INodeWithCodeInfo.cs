@@ -65,10 +65,4 @@ namespace ILCompiler.DependencyAnalysis
             HandlerLength = handlerLength;
         }
     }
-
-    public interface IArm64PacHijackInfoNode
-    {
-        bool HasPacHijackInfo { get; }
-        uint PacRetAddrLocationToEntrySpDelta { get; }
-    }
 }
