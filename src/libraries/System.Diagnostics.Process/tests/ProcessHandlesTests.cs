@@ -547,27 +547,22 @@ namespace System.Diagnostics.Tests
             string path = Path.GetTempFileName();
             try
             {
-                // Create an inheritable SafeFileHandle pointing to a regular file.
-                using SafeFileHandle fileHandle = File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None);
+                // Open with exclusive access so no other process can open the same file.
+                using SafeFileHandle fileHandle = File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None, FileOptions.None);
 
                 // Verify the handle is valid in the parent process.
                 Assert.False(fileHandle.IsInvalid);
                 Assert.Equal(FileHandleType.RegularFile, fileHandle.Type);
                 nint rawHandle = fileHandle.DangerousGetHandle();
 
-                // Verify FileStream.Name returns the correct path when opened from a handle with a cached path.
-                using (FileStream parentFs = new(fileHandle, FileAccess.ReadWrite))
-                {
-                    Assert.Equal(path, parentFs.Name);
-                }
+                string id = GetSafeFileHandleId(fileHandle);
 
-                // Spawn a child process with InheritedHandles = [] (no handles inherited),
-                // passing the raw handle value and the file path.
+                // Spawn a child process with InheritedHandles = [] (no handles inherited).
                 RemoteInvokeOptions options = new() { CheckExitCode = true };
                 options.StartInfo.InheritedHandles = [];
 
                 using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
-                    static (string handleStr, string filePath) =>
+                    static (string handleStr, string fileId) =>
                     {
                         nint rawHandle = nint.Parse(handleStr);
                         using SafeFileHandle handle = new SafeFileHandle(rawHandle, ownsHandle: false);
@@ -582,13 +577,11 @@ namespace System.Diagnostics.Tests
                         // (the Operating System could reuse same value for a different file)
                         try
                         {
-                            using FileStream fs = new(handle, FileAccess.ReadWrite);
-                            string name = fs.Name;
+                            string childId = GetSafeFileHandleId(handle);
 
-                            // If we can get the name and it matches our path, the handle was incorrectly inherited.
-                            if (string.Equals(name, filePath, StringComparison.OrdinalIgnoreCase))
+                            // If the ID matches, the handle was incorrectly inherited.
+                            if (string.Equals(childId, fileId, StringComparison.OrdinalIgnoreCase))
                             {
-                                // The file handle was inherited — this is a test failure.
                                 return RemoteExecutor.SuccessExitCode - 1;
                             }
                         }
@@ -600,7 +593,7 @@ namespace System.Diagnostics.Tests
                         return RemoteExecutor.SuccessExitCode;
                     },
                     rawHandle.ToString(),
-                    path,
+                    id,
                     options);
             }
             finally
@@ -608,5 +601,7 @@ namespace System.Diagnostics.Tests
                 File.Delete(path);
             }
         }
+
+        private static partial string GetSafeFileHandleId(SafeFileHandle handle);
     }
 }

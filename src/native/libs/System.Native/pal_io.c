@@ -1327,48 +1327,6 @@ int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize
     return (int32_t)count;
 }
 
-int32_t SystemNative_GetFilePathFromHandle(intptr_t fd, char* buffer, int32_t bufferSize)
-{
-    assert(buffer != NULL && bufferSize > 0);
-
-#if HAVE_F_GETPATH
-    // Apple platforms, FreeBSD, and Solaris support F_GETPATH
-    if (bufferSize < MAXPATHLEN)
-    {
-        errno = ENAMETOOLONG;
-        return -1;
-    }
-    if (fcntl((int)fd, F_GETPATH, buffer) == -1)
-    {
-        return -1;
-    }
-    return 0;
-#elif defined(TARGET_LINUX)
-    // Linux: use /proc/self/fd/<fd> symlink
-    char procPath[32];
-    snprintf(procPath, sizeof(procPath), "/proc/self/fd/%d", (int)fd);
-    ssize_t count = readlink(procPath, buffer, (size_t)bufferSize);
-    if (count == -1)
-    {
-        return -1;
-    }
-    if (count >= bufferSize)
-    {
-        // Buffer too small; the path was truncated
-        errno = ENAMETOOLONG;
-        return -1;
-    }
-    buffer[count] = '\0';
-    return 0;
-#else
-    (void)fd;
-    (void)buffer;
-    (void)bufferSize;
-    errno = ENOTSUP;
-    return -1;
-#endif
-}
-
 int32_t SystemNative_Rename(const char* oldPath, const char* newPath)
 {
     int32_t result;

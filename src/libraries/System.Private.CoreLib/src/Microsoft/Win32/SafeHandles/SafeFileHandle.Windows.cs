@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -460,68 +459,6 @@ namespace Microsoft.Win32.SafeHandles
                 }
 
                 return storageReadCapacity.DiskLength;
-            }
-        }
-
-        internal unsafe string? GetPath()
-        {
-            const int InitialBufferSize =
-#if DEBUG
-                26; // use a small size in debug builds to ensure the buffer-growing path is exercised
-#else
-                4096;
-#endif
-            char[] buffer = ArrayPool<char>.Shared.Rent(InitialBufferSize);
-            try
-            {
-                uint result = GetFinalPathNameByHandleHelper(buffer);
-
-                // If the function fails because lpszFilePath is too small to hold the string plus the terminating null
-                // character, the return value is the required buffer size, in TCHARs, including the null character.
-                if (result > buffer.Length)
-                {
-                    char[] toReturn = buffer;
-                    buffer = ArrayPool<char>.Shared.Rent((int)result);
-                    ArrayPool<char>.Shared.Return(toReturn);
-
-                    result = GetFinalPathNameByHandleHelper(buffer);
-                }
-
-                // If the function fails for any other reason, the return value is zero.
-                if (result == 0)
-                {
-                    return null;
-                }
-
-                // GetFinalPathNameByHandle always returns with an extended DOS prefix.
-                // Trim the prefix to keep the result consistent with the path stored in _path.
-                // \\?\UNC\server\share -> \\server\share
-                // \\?\C:\foo          -> C:\foo
-                ReadOnlySpan<char> resultSpan = buffer.AsSpan(0, (int)result);
-                if (PathInternal.IsDeviceUNC(resultSpan))
-                {
-                    // \\?\UNC\ (8 chars) -> \\ (2 chars)
-                    return string.Concat(PathInternal.UncPathPrefix, resultSpan.Slice(PathInternal.UncExtendedPrefixLength));
-                }
-                else if (PathInternal.IsExtended(resultSpan))
-                {
-                    // \\?\ (4 chars) -> (empty)
-                    return new string(buffer, PathInternal.DevicePrefixLength, (int)result - PathInternal.DevicePrefixLength);
-                }
-
-                return new string(buffer, 0, (int)result);
-            }
-            finally
-            {
-                ArrayPool<char>.Shared.Return(buffer);
-            }
-
-            uint GetFinalPathNameByHandleHelper(char[] buf)
-            {
-                fixed (char* bufPtr = buf)
-                {
-                    return Interop.Kernel32.GetFinalPathNameByHandle(this, bufPtr, (uint)buf.Length, Interop.Kernel32.FILE_NAME_NORMALIZED);
-                }
             }
         }
     }

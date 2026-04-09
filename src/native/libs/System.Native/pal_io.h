@@ -805,14 +805,6 @@ PALEXPORT int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd);
 PALEXPORT char* SystemNative_RealPath(const char* path);
 
 /**
-* Attempts to get the path of the file associated with the provided file descriptor.
-*
-* Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
-* On platforms that do not support this operation, returns -1 with errno set to ENOTSUP.
-*/
-PALEXPORT int32_t SystemNative_GetFilePathFromHandle(intptr_t fd, char* buffer, int32_t bufferSize);
-
-/**
 * Attempts to retrieve the ID of the process at the end of the given socket
 *
 * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).

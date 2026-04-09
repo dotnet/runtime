@@ -152,11 +152,6 @@ check_symbol_exists(
     fcntl.h
     HAVE_F_DUPFD)
 
-check_symbol_exists(
-    F_GETPATH
-    fcntl.h
-    HAVE_F_GETPATH)
-
 check_function_exists(
     getifaddrs
     HAVE_GETIFADDRS)

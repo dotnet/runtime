@@ -38,7 +38,7 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(preexistingHandle);
         }
 
-        internal string? Path => _path ??= GetPath();
+        internal string? Path => _path;
 
         /// <summary>
         /// Gets the type of the file that this handle represents.

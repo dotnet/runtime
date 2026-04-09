@@ -107,7 +107,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Read)
     DllImportEntry(SystemNative_ReadFromNonblocking)
     DllImportEntry(SystemNative_ReadLink)
-    DllImportEntry(SystemNative_GetFilePathFromHandle)
     DllImportEntry(SystemNative_Rename)
     DllImportEntry(SystemNative_RmDir)
     DllImportEntry(SystemNative_Sync)
