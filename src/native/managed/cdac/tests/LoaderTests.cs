@@ -523,4 +523,57 @@ public unsafe class LoaderTests
         // RVA in second section: offset = (0x4500 - 0x4000) + 0x2200 = 0x2700
         Assert.Equal((TargetPointer)(imageBase + 0x2700u), contract.GetILAddr(peAssemblyAddr, 0x4500));
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetModuleForDomainAssembly_ReturnsCorrectModule(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+
+        // Create a module (AddModule also creates and links an Assembly with Assembly.Module set back to the module)
+        TargetPointer moduleAddr = loader.AddModule();
+
+        // Read the Assembly pointer from the module's memory via the memory context
+        Target.TypeInfo moduleTypeInfo = loader.Types[DataType.Module];
+        ulong assemblyFieldAddr = moduleAddr.Value + (ulong)moduleTypeInfo.Fields[nameof(Data.Module.Assembly)].Offset;
+        byte[] ptrBuf = new byte[helpers.PointerSize];
+        builder.GetMemoryContext().ReadFromTarget(assemblyFieldAddr, ptrBuf);
+        TargetPointer assemblyAddr = helpers.ReadPointer(ptrBuf);
+
+        // Create a DomainAssembly struct whose first pointer points to the Assembly
+        TargetPointer domainAssemblyAddr = loader.AddDomainAssembly(assemblyAddr);
+
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
+        Contracts.ILoader contract = target.Contracts.Loader;
+        Contracts.ModuleHandle handle = contract.GetModuleForDomainAssembly(domainAssemblyAddr);
+        Assert.Equal(moduleAddr.Value, contract.GetModule(handle).Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDomainAssemblyFromModule_ReturnsCorrectDomainAssembly(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+
+        // Create a module with a DomainAssembly back-pointer
+        TargetPointer domainAssemblyAddr = new TargetPointer(0xDADA_0000);
+        TargetPointer moduleAddr = loader.AddModule(domainAssembly: domainAssemblyAddr);
+
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
+        Contracts.ILoader contract = target.Contracts.Loader;
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        TargetPointer result = contract.GetDomainAssemblyFromModule(handle);
+        Assert.Equal(domainAssemblyAddr.Value, result.Value);
+    }
 }
+

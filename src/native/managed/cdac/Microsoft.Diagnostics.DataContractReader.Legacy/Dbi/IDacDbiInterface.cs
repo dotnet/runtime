@@ -214,13 +214,13 @@ public unsafe partial interface IDacDbiInterface
     int SetCompilerFlags(ulong vmDomainAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC);
 
     [PreserveSig]
-    int EnumerateAppDomains(nint fpCallback, nint pUserData);
+    int EnumerateAppDomains(delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
-    int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData);
+    int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
-    int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData);
+    int EnumerateModulesInAssembly(ulong vmAssembly, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int RequestSyncAtEvent();
@@ -238,7 +238,7 @@ public unsafe partial interface IDacDbiInterface
     int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr);
 
     [PreserveSig]
-    int EnumerateThreads(nint fpCallback, nint pUserData);
+    int EnumerateThreads(delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int IsThreadMarkedDead(ulong vmThread, Interop.BOOL* pResult);
@@ -605,7 +605,7 @@ public unsafe partial interface IDacDbiInterface
     int GetLoaderHeapMemoryRanges(nint pRanges);
 
     [PreserveSig]
-    int IsModuleMapped(ulong pModule, int* isModuleMapped);
+    int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);
 
     [PreserveSig]
     int MetadataUpdatesApplied(Interop.BOOL* pResult);

@@ -80,6 +80,10 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
 IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table);
 bool IsCollectible(ModuleHandle handle);
+bool IsDynamic(ModuleHandle handle);
+// Returns true if the module's loaded image layout is mapped (vs flat/raw disk layout).
+// Webcil images are never mapped.
+bool IsModuleMapped(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
 TargetPointer GetSystemAssembly();
@@ -90,6 +94,12 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
+// Gets the module handle for the module owned by the given DomainAssembly.
+// Assumes DomainAssembly layout: the first pointer-sized field is a pointer to Assembly,
+// and Assembly has a Module field pointing to the Module (1:1 Assembly-Module assumption).
+ModuleHandle GetModuleForDomainAssembly(TargetPointer domainAssemblyPointer);
+// Gets the DomainAssembly pointer for the module, using the Module's back-pointer field.
+TargetPointer GetDomainAssemblyFromModule(ModuleHandle handle);
 ```
 
 ## Version 1
@@ -106,6 +116,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
 | `Module` | `SimpleName` | Simple name of the Module (UTF-8, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
+| `Module` | `DomainAssembly` | Back-pointer to the DomainAssembly that owns this module |
 | `Module` | `AvailableTypeParams` | Pointer to an EETypeHashTable |
 | `Module` | `InstMethodHashTable` | Pointer to an InstMethodHashTable |
 | `Module` | `FieldDefToDescMap` | Mapping table |
@@ -384,6 +395,20 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
     return true;
 }
 
+bool IsModuleMapped(ModuleHandle handle)
+{
+    TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
+    TargetPointer peImage = target.ReadPointer(peAssembly + /* PEAssembly::PEImage offset */);
+    TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
+
+    uint format = target.Read<uint>(peImageLayout + /* PEImageLayout::Format offset */);
+    if (format == (uint)ImageFormat.Webcil)
+        return false; // webcil images are never mapped
+
+    uint flags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
+    return (flags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+}
+
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
 {
     return GetRvaData(peAssemblyPtr, rva, isNullOk: false);
@@ -409,8 +434,11 @@ private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNu
     // Get base address and flags from PEImageLayout
     TargetPointer baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
     uint imageFlags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
+    uint imageFormat = target.Read<uint>(peImageLayout + /* PEImageLayout::Format offset */);
 
-    bool isMapped = (imageFlags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+    // Webcil images are never mapped; for PE images check the FLAG_MAPPED flag
+    bool isMapped = imageFormat != (uint)ImageFormat.Webcil
+                    && (imageFlags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
 
     uint offset;
     if (isMapped)
@@ -816,6 +844,23 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
     SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
     Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
     return /* blob entry IL address */
+}
+
+ModuleHandle GetModuleForDomainAssembly(TargetPointer domainAssemblyPointer)
+{
+    // DomainAssembly layout assumption: the first pointer-sized field is a pointer to Assembly.
+    // This mirrors GetModuleHandles, which reads a pointer at each DomainAssembly address to get the Assembly.
+    // Assembly maps 1:1 to Module via the Assembly::Module field.
+    TargetPointer assemblyPointer = target.ReadPointer(domainAssemblyPointer);
+    Assembly assembly = // read Assembly object at assemblyPointer
+    return new ModuleHandle(assembly.Module);
+}
+
+TargetPointer GetDomainAssemblyFromModule(ModuleHandle handle)
+{
+    // Module has a back-pointer (m_pDomainAssembly) to its DomainAssembly, exposed via the
+    // Module::DomainAssembly data descriptor field.
+    return target.ReadPointer(handle.Address + /* Module::DomainAssembly offset */);
 }
 ```
 

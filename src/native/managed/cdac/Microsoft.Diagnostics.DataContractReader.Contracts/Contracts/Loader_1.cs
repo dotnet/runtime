@@ -61,6 +61,30 @@ internal readonly struct Loader_1 : ILoader
         return new ModuleHandle(assembly.Module);
     }
 
+    ModuleHandle ILoader.GetModuleForDomainAssembly(TargetPointer domainAssemblyPointer)
+    {
+        if (domainAssemblyPointer == TargetPointer.Null)
+            throw new ArgumentNullException(nameof(domainAssemblyPointer));
+
+        // DomainAssembly layout assumption: the first pointer-sized field is a pointer to Assembly.
+        // This mirrors GetModuleHandles, which reads a pointer at each DomainAssembly address to get the Assembly.
+        TargetPointer assemblyPointer = _target.ReadPointer(domainAssemblyPointer);
+        if (assemblyPointer == TargetPointer.Null)
+            throw new InvalidOperationException("DomainAssembly does not have an associated Assembly.");
+
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(assemblyPointer);
+        if (assembly.Module == TargetPointer.Null)
+            throw new InvalidOperationException("Assembly does not have a module associated with it.");
+
+        return new ModuleHandle(assembly.Module);
+    }
+
+    TargetPointer ILoader.GetDomainAssemblyFromModule(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.DomainAssembly;
+    }
+
     IEnumerable<ModuleHandle> ILoader.GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
     {
         if (appDomain == TargetPointer.Null)
@@ -196,7 +220,32 @@ internal readonly struct Loader_1 : ILoader
 
     private static bool IsMapped(Data.PEImageLayout peImageLayout)
     {
+        if (peImageLayout.Format == (uint)ImageFormat.Webcil)
+            return false;
+
         return (peImageLayout.Flags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+    }
+
+    bool ILoader.IsModuleMapped(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        if (module.PEAssembly == TargetPointer.Null)
+            return false;
+
+        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
+
+        if (peAssembly.PEImage == TargetPointer.Null)
+            return false;
+
+        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
+
+        if (peImage.LoadedImageLayout == TargetPointer.Null)
+            return false;
+
+        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+
+        return IsMapped(peImageLayout);
     }
 
     private TargetPointer FindNTHeaders(Data.PEImageLayout imageLayout)

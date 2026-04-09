@@ -66,6 +66,12 @@ public interface ILoader : IContract
     TargetPointer GetModule(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
+    // Gets the module handle from a DomainAssembly pointer.
+    // Assumes DomainAssembly layout: the first pointer-sized field is a pointer to Assembly,
+    // and Assembly has a Module field pointing to the Module. This mirrors the documented assumption in Loader_1.cs.
+    ModuleHandle GetModuleForDomainAssembly(TargetPointer domainAssemblyPointer) => throw new NotImplementedException();
+    // Gets the DomainAssembly pointer for a module using the Module's back-pointer field.
+    TargetPointer GetDomainAssemblyFromModule(ModuleHandle handle) => throw new NotImplementedException();
     bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags) => throw new NotImplementedException();
     TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
     TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
@@ -87,6 +93,7 @@ public interface ILoader : IContract
     IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
     bool IsDynamic(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsModuleMapped(ModuleHandle handle) => throw new NotImplementedException();
     bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
 
     TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();

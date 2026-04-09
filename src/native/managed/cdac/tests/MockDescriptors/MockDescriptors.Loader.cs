@@ -41,7 +41,7 @@ internal partial class MockDescriptors
                 ]);
         }
 
-        internal TargetPointer AddModule(string? path = null, string? fileName = null, string? simpleName = null, byte[]? simpleNameBytes = null)
+        internal TargetPointer AddModule(string? path = null, string? fileName = null, string? simpleName = null, byte[]? simpleNameBytes = null, TargetPointer domainAssembly = default)
         {
             TargetTestHelpers helpers = _builder.TargetTestHelpers;
             Target.TypeInfo typeInfo = Types[DataType.Module];
@@ -99,8 +99,32 @@ internal partial class MockDescriptors
             MockMemorySpace.HeapFragment assembly = _allocator.Allocate((ulong)helpers.SizeOfTypeInfo(Types[DataType.Assembly]), "Assembly");
             _builder.AddHeapFragment(assembly);
             helpers.WritePointer(module.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.Module.Assembly)].Offset, helpers.PointerSize), assembly.Address);
+            // Write Assembly.Module back-pointer (1:1 Assembly-Module assumption)
+            helpers.WritePointer(assembly.Data.AsSpan().Slice(Types[DataType.Assembly].Fields[nameof(Data.Assembly.Module)].Offset, helpers.PointerSize), module.Address);
+
+            // Write the DomainAssembly back-pointer if provided
+            if (domainAssembly != default)
+            {
+                helpers.WritePointer(
+                    module.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.Module.DomainAssembly)].Offset, helpers.PointerSize),
+                    domainAssembly);
+            }
 
             return module.Address;
+        }
+
+        /// <summary>
+        /// Allocates a fake DomainAssembly struct in mock memory whose first pointer field points to the given Assembly pointer.
+        /// Returns the address of the allocated DomainAssembly.
+        /// </summary>
+        internal TargetPointer AddDomainAssembly(TargetPointer assemblyPointer)
+        {
+            TargetTestHelpers helpers = _builder.TargetTestHelpers;
+            // DomainAssembly layout assumption: the first pointer-sized field is a pointer to Assembly.
+            MockMemorySpace.HeapFragment domainAssembly = _allocator.Allocate((ulong)helpers.PointerSize, "DomainAssembly");
+            _builder.AddHeapFragment(domainAssembly);
+            helpers.WritePointer(domainAssembly.Data.AsSpan().Slice(0, helpers.PointerSize), assemblyPointer);
+            return domainAssembly.Address;
         }
     }
 }
