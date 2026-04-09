@@ -17,7 +17,7 @@ internal partial class MockDescriptors
     {
         public const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
 
-        const int RealCodeHeaderSize = 0x28; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
+        const int RealCodeHeaderSize = 0x38; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
 
         public struct AllocationRange
         {
@@ -223,6 +223,45 @@ internal partial class MockDescriptors
                 new(nameof(Data.CodeHeapListNode.EndAddress), DataType.pointer),
                 new(nameof(Data.CodeHeapListNode.MapBase), DataType.pointer),
                 new(nameof(Data.CodeHeapListNode.HeaderMap), DataType.pointer),
+                new(nameof(Data.CodeHeapListNode.Heap), DataType.pointer),
+            ]
+        };
+
+        private static readonly MockDescriptors.TypeFields CodeHeapFields = new()
+        {
+            DataType = DataType.CodeHeap,
+            Fields =
+            [
+                // In the real runtime, m_heapType follows the vtable pointer (and any padding)
+                // at offset >= pointer_size inside CodeHeap.  To avoid overlapping with derived
+                // class fields (LoaderCodeHeap has 1 pointer at offset 0; HostCodeHeap has 2
+                // pointers at offsets 0 and pointer_size), we insert two pointer-sized padding
+                // fields here so that HeapType lands at offset 2*pointer_size — past the largest
+                // derived-class layout.  This keeps the mock layout self-consistent: both
+                // DataType.CodeHeap and the derived DataType can be read from the same base
+                // address without their fields overlapping.
+                new("_vtablePtr",    DataType.pointer),
+                new("_heapTypePad",  DataType.pointer),
+                new(nameof(Data.CodeHeap.HeapType), DataType.uint8),
+            ]
+        };
+
+        private static readonly MockDescriptors.TypeFields LoaderCodeHeapFields = new()
+        {
+            DataType = DataType.LoaderCodeHeap,
+            Fields =
+            [
+                new(nameof(Data.LoaderCodeHeap.LoaderHeap), DataType.pointer),
+            ]
+        };
+
+        private static readonly MockDescriptors.TypeFields HostCodeHeapFields = new()
+        {
+            DataType = DataType.HostCodeHeap,
+            Fields =
+            [
+                new(nameof(Data.HostCodeHeap.BaseAddress), DataType.pointer),
+                new(nameof(Data.HostCodeHeap.CurrentAddress), DataType.pointer),
             ]
         };
 
@@ -233,6 +272,7 @@ internal partial class MockDescriptors
             [
                 new(nameof(Data.RealCodeHeader.MethodDesc), DataType.pointer),
                 new(nameof(Data.RealCodeHeader.DebugInfo), DataType.pointer),
+                new(nameof(Data.RealCodeHeader.EHInfo), DataType.pointer),
                 new(nameof(Data.RealCodeHeader.GCInfo), DataType.pointer),
                 new(nameof(Data.RealCodeHeader.NumUnwindInfos), DataType.uint32),
                 new(nameof(Data.RealCodeHeader.UnwindInfos), DataType.pointer),
@@ -252,7 +292,10 @@ internal partial class MockDescriptors
                 new(nameof(Data.ReadyToRunInfo.HotColdMap), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.DelayLoadMethodCallThunks), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.DebugInfoSection), DataType.pointer),
+                new(nameof(Data.ReadyToRunInfo.ExceptionInfoSection), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap), DataType.Unknown, helpers.LayoutFields(MockDescriptors.HashMap.HashMapFields.Fields).Stride),
+                new(nameof(Data.ReadyToRunInfo.LoadedImageBase), DataType.pointer),
+                new(nameof(Data.ReadyToRunInfo.Composite), DataType.pointer),
             ]
         };
 
@@ -281,6 +324,14 @@ internal partial class MockDescriptors
 
         internal TargetPointer EEJitManagerAddress { get; }
 
+        public void SetAllCodeHeaps(TargetPointer headNode)
+        {
+            var jitManagerTypeInfo = Types[DataType.EEJitManager];
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+            Span<byte> jmData = Builder.BorrowAddressRange(EEJitManagerAddress, (int)jitManagerTypeInfo.Size.Value);
+            Builder.TargetTestHelpers.WritePointer(jmData.Slice(jitManagerTypeInfo.Fields[nameof(Data.EEJitManager.AllCodeHeaps)].Offset, pointerSize), headNode);
+        }
+
         internal ExecutionManager(int version, MockTarget.Architecture arch, AllocationRange allocationRange, TargetPointer allCodeHeaps = default)
             : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange, allCodeHeaps)
         { }
@@ -301,6 +352,9 @@ internal partial class MockDescriptors
                     RangeSectionFragmentFields,
                     RangeSectionFields,
                     CodeHeapListNodeFields,
+                    CodeHeapFields,
+                    LoaderCodeHeapFields,
+                    HostCodeHeapFields,
                     RealCodeHeaderFields,
                     ReadyToRunInfoFields(Builder.TargetTestHelpers),
                     MockDescriptors.ModuleFields,
@@ -461,7 +515,7 @@ internal partial class MockDescriptors
             return rangeSectionFragment.Address;
         }
 
-        public TargetPointer AddCodeHeapListNode(TargetPointer next, TargetPointer startAddress, TargetPointer endAddress, TargetPointer mapBase, TargetPointer headerMap)
+        public TargetPointer AddCodeHeapListNode(TargetPointer next, TargetPointer startAddress, TargetPointer endAddress, TargetPointer mapBase, TargetPointer headerMap, TargetPointer heap = default)
         {
             var tyInfo = Types[DataType.CodeHeapListNode];
             uint codeHeapListNodeSize = tyInfo.Size.Value;
@@ -474,7 +528,45 @@ internal partial class MockDescriptors
             Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.EndAddress)].Offset, pointerSize), endAddress);
             Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.MapBase)].Offset, pointerSize), mapBase);
             Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.HeaderMap)].Offset, pointerSize), headerMap);
+            Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.Heap)].Offset, pointerSize), heap);
             return codeHeapListNode.Address;
+        }
+
+        // Allocates a mock LoaderCodeHeap object and returns its address.
+        // The embedded loader heap address is heapAddress + LoaderHeap field offset.
+        public TargetPointer AddLoaderCodeHeap()
+        {
+            // The allocation must be large enough to hold fields from both DataType.CodeHeap
+            // (HeapType at 2*pointer_size) and DataType.LoaderCodeHeap (LoaderHeap at 0).
+            var codeHeapTyInfo = Types[DataType.CodeHeap];
+            var loaderTyInfo = Types[DataType.LoaderCodeHeap];
+            uint allocSize = Math.Max(codeHeapTyInfo.Size.Value, loaderTyInfo.Size.Value);
+            MockMemorySpace.HeapFragment heapFragment = _allocator.Allocate(allocSize, "LoaderCodeHeap");
+            Builder.AddHeapFragment(heapFragment);
+            Span<byte> data = Builder.BorrowAddressRange(heapFragment.Address, (int)allocSize);
+            data[codeHeapTyInfo.Fields[nameof(Data.CodeHeap.HeapType)].Offset] = 0; // LoaderCodeHeap (codeman.h)
+            // No pointer is written: LoaderCodeHeapInfo.LoaderHeapAddress returns heapAddress + LoaderHeap.Offset
+            // because m_LoaderHeap is an embedded struct, not a pointer.
+            return heapFragment.Address;
+        }
+
+        // Allocates a mock HostCodeHeap object and returns its address.
+        public TargetPointer AddHostCodeHeap(TargetPointer baseAddress, TargetPointer currentAddress)
+        {
+            // The allocation must be large enough to hold fields from both DataType.CodeHeap
+            // (HeapType at 2*pointer_size) and DataType.HostCodeHeap (two pointers at 0 and pointer_size).
+            var codeHeapTyInfo = Types[DataType.CodeHeap];
+            var hostTyInfo = Types[DataType.HostCodeHeap];
+            uint allocSize = Math.Max(codeHeapTyInfo.Size.Value, hostTyInfo.Size.Value);
+            MockMemorySpace.HeapFragment heapFragment = _allocator.Allocate(allocSize, "HostCodeHeap");
+            Builder.AddHeapFragment(heapFragment);
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+            Span<byte> data = Builder.BorrowAddressRange(heapFragment.Address, (int)allocSize);
+
+            data[codeHeapTyInfo.Fields[nameof(Data.CodeHeap.HeapType)].Offset] = 1; // HostCodeHeap (codeman.h)
+            Builder.TargetTestHelpers.WritePointer(data.Slice(hostTyInfo.Fields[nameof(Data.HostCodeHeap.BaseAddress)].Offset, pointerSize), baseAddress);
+            Builder.TargetTestHelpers.WritePointer(data.Slice(hostTyInfo.Fields[nameof(Data.HostCodeHeap.CurrentAddress)].Offset, pointerSize), currentAddress);
+            return heapFragment.Address;
         }
 
         private uint CodeHeaderSize => (uint)Builder.TargetTestHelpers.PointerSize;
@@ -510,6 +602,7 @@ internal partial class MockDescriptors
             Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.GCInfo)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);
             Builder.TargetTestHelpers.Write(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.NumUnwindInfos)].Offset, sizeof(uint)), 0u);
             Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.UnwindInfos)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);
+            Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.EHInfo)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);
 
             return codeStart;
         }

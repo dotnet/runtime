@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -47,6 +48,7 @@ namespace System.Threading
         // Points to the next-most-recent blocking info for the thread
         private ThreadBlockingInfo* _next; // may be used by debuggers
 
+        [RequiresUnsafe]
         private void Push(void* objectPtr, ObjectKind objectKind, int timeoutMs)
         {
             Debug.Assert(objectPtr != null);

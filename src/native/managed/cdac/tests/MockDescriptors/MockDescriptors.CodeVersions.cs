@@ -35,6 +35,7 @@ internal partial class MockDescriptors
                 new(nameof(Data.NativeCodeVersionNode.Flags), DataType.uint32),
                 new(nameof(Data.NativeCodeVersionNode.ILVersionId), DataType.nuint),
                 new(nameof(Data.NativeCodeVersionNode.GCCoverageInfo), DataType.pointer),
+                new(nameof(Data.NativeCodeVersionNode.OptimizationTier), DataType.uint32),
             ]
         };
 
@@ -119,7 +120,7 @@ internal partial class MockDescriptors
             return fragment.Address;
         }
 
-        public void FillNativeCodeVersionNode(TargetPointer dest, TargetPointer methodDesc, TargetCodePointer nativeCode, TargetPointer next, bool isActive, TargetNUInt ilVersionId, TargetPointer? gcCoverageInfo = null)
+        public void FillNativeCodeVersionNode(TargetPointer dest, TargetPointer methodDesc, TargetCodePointer nativeCode, TargetPointer next, bool isActive, TargetNUInt ilVersionId, TargetPointer? gcCoverageInfo = null, uint? optimizationTier = null)
         {
             Target.TypeInfo info = Types[DataType.NativeCodeVersionNode];
             Span<byte> ncvn = Builder.BorrowAddressRange(dest, (int)info.Size!);
@@ -129,6 +130,8 @@ internal partial class MockDescriptors
             Builder.TargetTestHelpers.Write(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.Flags)].Offset, sizeof(uint)), isActive ? (uint)CodeVersions_1.NativeCodeVersionNodeFlags.IsActiveChild : 0u);
             Builder.TargetTestHelpers.WriteNUInt(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.ILVersionId)].Offset, Builder.TargetTestHelpers.PointerSize), ilVersionId);
             Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.GCCoverageInfo)].Offset, Builder.TargetTestHelpers.PointerSize), gcCoverageInfo ?? TargetPointer.Null);
+            uint optimizationTierValue = optimizationTier ?? 0xFFFFFFFFu;
+            Builder.TargetTestHelpers.Write(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.OptimizationTier)].Offset, sizeof(uint)), optimizationTierValue);
         }
 
         public (TargetPointer First, TargetPointer Active) AddNativeCodeVersionNodesForMethod(TargetPointer methodDesc, int count, int activeIndex, TargetCodePointer activeNativeCode, TargetNUInt ilVersion, TargetPointer? firstNode = null)

@@ -208,6 +208,7 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
 void InvokeCalliStub(CalliStubParam* pParam);
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam);
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
 // Filter to ignore SEH exceptions representing C++ exceptions.
@@ -548,12 +549,12 @@ void InvokeCalliStub(CalliStubParam* pParam)
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
 }
 
-void* GetCookieForCalliSig(MetaSig metaSig)
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
     CallStubGenerator callStubGenerator;
-    return callStubGenerator.GenerateCallStubForSig(metaSig);
+    return callStubGenerator.GenerateCallStubForSig(metaSig, pContextMD);
 }
 
 // Create call stub for calling interpreted methods from JITted/AOTed code.
@@ -3015,6 +3016,7 @@ SWITCH_OPCODE:
 
                     if (flags & (int32_t)CalliFlags::PInvoke)
                     {
+                        frameNeedsTailcallUpdate = false;
                         if (flags & (int32_t)CalliFlags::SuppressGCTransition)
                         {
                             InvokeUnmanagedCalli(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress);
@@ -3037,16 +3039,20 @@ SWITCH_OPCODE:
                     else
                     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-                        // WASM-TODO: We may end up here with native JIT helper entrypoint without MethodDesc
-                        // that CALL_INTERP_METHOD is not able to handle. This is a potential problem for
-                        // interpreter<->native code stub generator.
-                        // https://github.com/dotnet/runtime/pull/119516#discussion_r2337631271
+                        // On portable entry point platforms, managed calli targets are portable
+                        // entry points and always have a MethodDesc.
+                        targetMethod = PortableEntryPoint::GetMethodDesc(calliFunctionPointer);
+                        // If the method has native code, call it via InvokeCalliStub without going
+                        // through CALL_INTERP_METHOD. It is a small optimization and also necessary
+                        // for correctness for Newobj allocator helpers where the MethodDesc does not
+                        // represent the actual entrypoint.
                         if (!PortableEntryPoint::HasNativeEntryPoint(calliFunctionPointer))
-                        {
-                            targetMethod = PortableEntryPoint::GetMethodDesc(calliFunctionPointer);
                             goto CALL_INTERP_METHOD;
-                        }
+
+                        MetaSig sig(targetMethod);
+                        cookie = GetCookieForCalliSig(sig, NULL);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
+                        frameNeedsTailcallUpdate = false;
                         CalliStubParam param = { calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr() };
                         InvokeCalliStub(&param);
                     }
@@ -3224,6 +3230,7 @@ SWITCH_OPCODE:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
+                    frameNeedsTailcallUpdate = false;
                     DelegateInvokeMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, targetAddress, pInterpreterFrame->GetContinuationPtr() };
                     InvokeDelegateInvokeMethod(&param);
                     break;
@@ -3260,6 +3267,7 @@ CALL_INTERP_METHOD:
                     {
                         // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                         // Interpreter-FIXME: Implement tailcall via helpers, see https://github.com/dotnet/runtime/blob/main/docs/design/features/tailcalls-with-helpers.md
+                        frameNeedsTailcallUpdate = false;
                         ManagedMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL, pInterpreterFrame->GetContinuationPtr() };
                         InvokeManagedMethod(&param);
                         break;
@@ -4248,22 +4256,17 @@ do                                                                      \
                     SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), executionContext);
                     continuation->SetFlags(pAsyncSuspendData->flags);
 
-                    if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT)
+                    PTR_OBJECTREF pContinuationContext = continuation->GetContinuationContextObjectStorageOrNull();
+                    if (pContinuationContext != nullptr)
                     {
                         MethodDesc *captureSyncContextMethod = pAsyncSuspendData->captureSyncContextMethod;
                         int32_t *flagsAddress = continuation->GetFlagsAddress();
-                        size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
-                        uint8_t *pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
-                        if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_EXCEPTION)
-                        {
-                            pContinuationData += sizeof(OBJECTREF);
-                        }
 
                         returnOffset = ip[1];
                         callArgsOffset = pMethod->allocaSize;
 
                         // Pass argument to the target method
-                        LOCAL_VAR(callArgsOffset, void*) = pContinuationData;
+                        LOCAL_VAR(callArgsOffset, void*) = pContinuationContext;
                         LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int32_t*) = flagsAddress;
                         targetMethod = captureSyncContextMethod;
                         ip += 4;
@@ -4421,10 +4424,11 @@ do                                                                      \
                         pCopyEntry++;
                     }
 
-                    if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_EXCEPTION)
+                    PTR_OBJECTREF pException = continuation->GetExceptionObjectStorageOrNull();
+                    if (pException != NULL)
                     {
                         // Throw exception if needed
-                        OBJECTREF exception = *continuation->GetExceptionObjectStorage();
+                        OBJECTREF exception = *pException;
 
                         if (exception != NULL)
                         {

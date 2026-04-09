@@ -34,7 +34,7 @@ namespace System.Net.NetworkInformation
         /// <returns>A new IPAddress created with the information in the native structure.</returns>
         public static unsafe IPAddress GetIPAddressFromNativeInfo(Interop.Sys.IpAddressInfo* addressInfo)
         {
-            IPAddress ipAddress = new IPAddress(new ReadOnlySpan<byte>(addressInfo->AddressBytes, addressInfo->NumAddressBytes));
+            IPAddress ipAddress = new IPAddress(((ReadOnlySpan<byte>)addressInfo->AddressBytes)[..addressInfo->NumAddressBytes]);
             return ipAddress;
         }
     }

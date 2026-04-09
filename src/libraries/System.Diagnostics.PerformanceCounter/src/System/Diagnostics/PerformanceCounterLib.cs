@@ -44,9 +44,9 @@ namespace System.Diagnostics
         private const string LanguageKeyword = "language";
         private const string DllName = "netfxperf.dll";
 
-        private static volatile string s_computerName;
-        private static volatile string s_iniFilePath;
-        private static volatile string s_symbolFilePath;
+        private static string s_computerName;
+        private static string s_iniFilePath;
+        private static string s_symbolFilePath;
 
         private static CultureInfo? s_englishCulture;
 
@@ -55,7 +55,7 @@ namespace System.Diagnostics
         private readonly string _perfLcid;
 
 
-        private static volatile Hashtable s_libraryTable;
+        private static Hashtable s_libraryTable;
         private Hashtable _customCategoryTable;
         private Hashtable _categoryTable;
         private Hashtable _nameTable;

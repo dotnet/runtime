@@ -4352,23 +4352,9 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         if ((lvaMonAcquired != BAD_VAR_NUM) && !opts.IsOSR())
         {
-            int offset = lvaTable[lvaMonAcquired].GetStackOffset() + delta;
+            int offset = lvaTable[lvaMonAcquired].GetStackOffset() + (compCalleeRegsPushed << 3);
             lvaTable[lvaMonAcquired].SetStackOffset(offset);
             delta += lvaLclStackHomeSize(lvaMonAcquired);
-        }
-
-        if ((lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !opts.IsOSR())
-        {
-            int offset = lvaTable[lvaAsyncExecutionContextVar].GetStackOffset() + delta;
-            lvaTable[lvaAsyncExecutionContextVar].SetStackOffset(offset);
-            delta += lvaLclStackHomeSize(lvaAsyncExecutionContextVar);
-        }
-
-        if ((lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !opts.IsOSR())
-        {
-            int offset = lvaTable[lvaAsyncSynchronizationContextVar].GetStackOffset() + delta;
-            lvaTable[lvaAsyncSynchronizationContextVar].SetStackOffset(offset);
-            delta += lvaLclStackHomeSize(lvaAsyncSynchronizationContextVar);
         }
 
         JITDUMP("--- delta bump %d for FP frame\n", delta);
@@ -6043,9 +6029,11 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
     offset = lvaFrameAddress(lclNum, compLocallocUsed, &baseReg, 0, /* isFloatUsage */ false);
 #else
     bool EBPbased;
-    offset  = lvaFrameAddress(lclNum, &EBPbased);
-    baseReg = EBPbased ? codeGen->GetFramePointerReg() : codeGen->GetStackPointerReg();
-#endif
+    offset = lvaFrameAddress(lclNum, &EBPbased);
+
+    // Use the sp/fp from the function region
+    baseReg = EBPbased ? codeGen->GetFramePointerReg(ROOT_FUNC_IDX) : codeGen->GetStackPointerReg(ROOT_FUNC_IDX);
+#endif // TARGET_ARM
 
     int printed =
         printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));

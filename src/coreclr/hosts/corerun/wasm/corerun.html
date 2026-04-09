@@ -46,32 +46,40 @@
                 "HelloWorld.dll"
             ],
             preRun: [ function (module) {
-                // Emscripten's --preload-file data is loaded by an async preRun
-                // callback (runWithFS). Our preRun runs in the same batch but
-                // the data fetch hasn't completed yet. Add a run dependency so
-                // main() is delayed until the preloaded files are available,
-                // then build the TPA list.
-                module.addRunDependency('app_assemblies');
-                var orig = module.monitorRunDependencies;
-                module.monitorRunDependencies = function (left) {
-                    orig?.call(module, left);
-                    // Check if all file preload dependencies ('fp ...') have resolved.
-                    // Our own 'app_assemblies' dependency will still be pending.
-                    if (left === 1) {
-                        module.monitorRunDependencies = orig;
-                        const path = "/";
-                        let tpaList = "";
-                        let files = module.FS.readdir(path);
-                        files.forEach(function(file) {
-                            if (file.endsWith(".dll")) {
-                                tpaList += (tpaList.length > 0 ? ":" : "") + path + file;
-                            }
-                        });
+                // Emscripten's --preload-file data is loaded by a runWithFS
+                // preRun callback. Due to addOnPreRun using unshift(),
+                // runWithFS runs BEFORE this callback, so the virtual FS
+                // may already be populated when we get here.
+                function buildTpaList() {
+                    const path = "/";
+                    let tpaList = "";
+                    let files = module.FS.readdir(path);
+                    files.forEach(function(file) {
+                        if (file.endsWith(".dll")) {
+                            tpaList += (tpaList.length > 0 ? ":" : "") + path + file;
+                        }
+                    });
+                    return tpaList;
+                }
 
-                        module.ENV["APP_ASSEMBLIES"] = tpaList;
-                        module.removeRunDependency('app_assemblies');
-                    }
-                };
+                let tpaList = buildTpaList();
+                if (tpaList.length > 0) {
+                    // Data already loaded by runWithFS — set TPA list now.
+                    module.ENV["APP_ASSEMBLIES"] = tpaList;
+                } else {
+                    // Data not yet fetched. Block main() until preload
+                    // dependencies resolve and the FS is populated.
+                    module.addRunDependency('app_assemblies');
+                    var orig = module.monitorRunDependencies;
+                    module.monitorRunDependencies = function (left) {
+                        orig?.call(module, left);
+                        if (left === 1) {
+                            module.monitorRunDependencies = orig;
+                            module.ENV["APP_ASSEMBLIES"] = buildTpaList();
+                            module.removeRunDependency('app_assemblies');
+                        }
+                    };
+                }
             } ],
             onExit: function (code) {
                 console.log("onExit, code: " + code);

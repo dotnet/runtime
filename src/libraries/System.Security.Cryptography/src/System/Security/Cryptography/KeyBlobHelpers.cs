@@ -9,14 +9,17 @@ namespace System.Security.Cryptography
     {
         internal static byte[] ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory, int length)
         {
-            if (memory.Length == length)
+            return ToUnsignedIntegerBytes(memory.Span, length);
+        }
+
+        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlySpan<byte> span, int length)
+        {
+            if (span.Length == length)
             {
-                return memory.ToArray();
+                return span.ToArray();
             }
 
-            ReadOnlySpan<byte> span = memory.Span;
-
-            if (memory.Length == length + 1)
+            if (span.Length == length + 1)
             {
                 if (span[0] == 0)
                 {

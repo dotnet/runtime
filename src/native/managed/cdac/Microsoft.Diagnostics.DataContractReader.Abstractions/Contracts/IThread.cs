@@ -29,6 +29,7 @@ public enum ThreadState
 }
 
 public record struct ThreadData(
+    TargetPointer ThreadAddress,
     uint Id,
     TargetNUInt OSId,
     ThreadState State,
@@ -53,6 +54,7 @@ public interface IThread : IContract
                            out TargetPointer stackLimit, out TargetPointer frameAddress) => throw new NotImplementedException();
     TargetPointer IdToThread(uint id) => throw new NotImplementedException();
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
+    TargetPointer GetCurrentExceptionHandle(TargetPointer threadPointer) => throw new NotImplementedException();
     TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
 }

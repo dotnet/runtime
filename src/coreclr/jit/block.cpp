@@ -524,7 +524,8 @@ void BasicBlock::dspFlags() const
         {BBF_NEEDS_GCPOLL, "gcpoll"},
         {BBF_HAS_VALUE_PROFILE, "val-prof"},
         {BBF_MAY_HAVE_BOUNDS_CHECKS, "bnds-chk"},
-        {BBF_ASYNC_RESUMPTION, "resume"},
+        {BBF_ASYNC_RESUMPTION, "a-resume"},
+        {BBF_CATCH_RESUMPTION, "c-resume"},
         {BBF_THROW_HELPER, "throw-hlpr"},
     };
 

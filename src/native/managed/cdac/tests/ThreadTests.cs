@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Moq;
 using Xunit;
 
@@ -194,5 +195,140 @@ public unsafe class ThreadTests
         Assert.Equal(stackBase, outStackBase);
         Assert.Equal(stackLimit, outStackLimit);
         Assert.Equal(expectedFrameAddr, outFrameAddress);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetCurrentExceptionHandle_NoException(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder);
+
+        TargetPointer addr = thread.AddThread(1, new TargetNUInt(1234));
+        Target target = CreateTarget(thread);
+        IThread contract = target.Contracts.Thread;
+        Assert.NotNull(contract);
+
+        TargetPointer thrownObjectHandle = contract.GetCurrentExceptionHandle(addr);
+        Assert.Equal(TargetPointer.Null, thrownObjectHandle);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetCurrentExceptionHandle_WithException(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder);
+
+        TargetPointer addr = thread.AddThread(1, new TargetNUInt(1234));
+        Target.TypeInfo threadType = thread.Types[DataType.Thread];
+        Target.TypeInfo exceptionInfoType = thread.Types[DataType.ExceptionInfo];
+
+        // Read the ExceptionInfo address from the thread's ExceptionTracker field
+        TargetPointer exceptionTrackerFieldAddr = addr + (ulong)threadType.Fields[nameof(Data.Thread.ExceptionTracker)].Offset;
+        Span<byte> exTrackerBytes = builder.BorrowAddressRange(exceptionTrackerFieldAddr, helpers.PointerSize);
+        TargetPointer exceptionInfoAddr = new TargetPointer(helpers.ReadPointer(exTrackerBytes));
+
+        var allocator = builder.CreateAllocator(0x1_0000, 0x2_0000);
+        MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
+        TargetPointer expectedObject = new TargetPointer(0xA001);
+        helpers.WritePointer(handleFragment.Data, expectedObject);
+        builder.AddHeapFragment(handleFragment);
+
+        // Write the handle's address into ExceptionInfo.ThrownObjectHandle
+        int thrownObjectHandleOffset = exceptionInfoType.Fields[nameof(Data.ExceptionInfo.ThrownObjectHandle)].Offset;
+        helpers.WritePointer(
+            builder.BorrowAddressRange(exceptionInfoAddr + (ulong)thrownObjectHandleOffset, helpers.PointerSize),
+            handleFragment.Address);
+
+        Target target = CreateTarget(thread);
+        IThread contract = target.Contracts.Thread;
+        Assert.NotNull(contract);
+
+        TargetPointer thrownObjectHandle = contract.GetCurrentExceptionHandle(addr);
+        Assert.Equal(new TargetPointer(handleFragment.Address), thrownObjectHandle);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetCurrentExceptionHandle_NullExceptionTracker(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder);
+
+        TargetPointer addr = thread.AddThread(1, new TargetNUInt(1234));
+        Target.TypeInfo threadType = thread.Types[DataType.Thread];
+
+        TargetPointer exceptionTrackerFieldAddr = addr + (ulong)threadType.Fields[nameof(Data.Thread.ExceptionTracker)].Offset;
+        helpers.WritePointer(
+            builder.BorrowAddressRange(exceptionTrackerFieldAddr, helpers.PointerSize),
+            TargetPointer.Null);
+
+        Target target = CreateTarget(thread);
+        IThread contract = target.Contracts.Thread;
+        Assert.NotNull(contract);
+
+        TargetPointer thrownObjectHandle = contract.GetCurrentExceptionHandle(addr);
+        Assert.Equal(TargetPointer.Null, thrownObjectHandle);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetCurrentExceptionHandle_HandlePointsToNull(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder);
+
+        TargetPointer addr = thread.AddThread(1, new TargetNUInt(1234));
+        Target.TypeInfo threadType = thread.Types[DataType.Thread];
+        Target.TypeInfo exceptionInfoType = thread.Types[DataType.ExceptionInfo];
+
+        TargetPointer exceptionTrackerFieldAddr = addr + (ulong)threadType.Fields[nameof(Data.Thread.ExceptionTracker)].Offset;
+        Span<byte> exTrackerBytes = builder.BorrowAddressRange(exceptionTrackerFieldAddr, helpers.PointerSize);
+        TargetPointer exceptionInfoAddr = new TargetPointer(helpers.ReadPointer(exTrackerBytes));
+
+        var allocator = builder.CreateAllocator(0x1_0000, 0x2_0000);
+        MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
+        helpers.WritePointer(handleFragment.Data, TargetPointer.Null);
+        builder.AddHeapFragment(handleFragment);
+
+        int thrownObjectHandleOffset = exceptionInfoType.Fields[nameof(Data.ExceptionInfo.ThrownObjectHandle)].Offset;
+        helpers.WritePointer(
+            builder.BorrowAddressRange(exceptionInfoAddr + (ulong)thrownObjectHandleOffset, helpers.PointerSize),
+            handleFragment.Address);
+
+        Target target = CreateTarget(thread);
+        IThread contract = target.Contracts.Thread;
+        Assert.NotNull(contract);
+
+        TargetPointer thrownObjectHandle = contract.GetCurrentExceptionHandle(addr);
+        Assert.Equal(TargetPointer.Null, thrownObjectHandle);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadData_NoProfilerFilterContext(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder, hasProfilingSupport: false);
+
+        uint id = 1;
+        TargetNUInt osId = new TargetNUInt(1234);
+
+        TargetPointer addr = thread.AddThread(id, osId);
+
+        Target target = CreateTarget(thread);
+
+        IThread contract = target.Contracts.Thread;
+        Assert.NotNull(contract);
+
+        ThreadData data = contract.GetThreadData(addr);
+        Assert.Equal(id, data.Id);
+        Assert.Equal(osId, data.OSId);
     }
 }

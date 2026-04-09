@@ -1027,9 +1027,6 @@ public:
     CorIfaceAttr    GetComInterfaceType();
     void SetComInterfaceType(CorIfaceAttr ItfType);
 
-    OBJECTHANDLE GetOHDelegate();
-    void SetOHDelegate (OBJECTHANDLE _ohDelegate);
-
     CorClassIfaceAttr GetComClassInterfaceType();
     TypeHandle GetDefItfForComClassItf();
 
@@ -1061,9 +1058,6 @@ public:
     ClassFactoryBase       *GetComClassFactory();
     BOOL                    SetComClassFactory(ClassFactoryBase *pFactory);
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
-    OBJECTREF GetObjCreateDelegate();
-    void SetObjCreateDelegate(OBJECTREF orDelegate);
 
 private:
     // This is for COM Interop backwards compatibility
@@ -1811,8 +1805,10 @@ public:
     // Returns MethodTable that GetRestoredSlot get its values from
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
-    // Used to map methods on the same slot between instantiations.
-    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD, AsyncVariantLookup asyncVariantLookup = (AsyncVariantLookup)0);
+    // Used to map to "the same" method between instantiations. 
+    MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD);
+    // Maps methods between instantiations + filters/adjusts the result according to the lookup.
+    MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantLookup asyncVariantLookup);
 
     //-------------------------------------------------------------------
     // BoxedEntryPoint MethodDescs.

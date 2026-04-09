@@ -507,11 +507,6 @@
         <target state="translated">'[In]' および '[Out]' 属性は、配列パラメーターでのみサポートされます。パラメーターを変更可能にするには、'ref' キーワードを使用することを検討してください。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">属性の[In]と[Out]</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">アンマネージからマネージドへの呼び出しで VARIANT から 'in' パラメーターとしてマーシャリングされたオブジェクトは、VARIANT が VT_BYREF バリアントであっても、更新された結果に反映されません。更新された値を呼び出し元に反映するには、'in' パラメーターの代わりに 'ref' パラメーターを使用してください。</target>
