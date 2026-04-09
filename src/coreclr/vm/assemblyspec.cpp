@@ -962,8 +962,10 @@ BOOL AssemblySpecBindingCache::StorePEAssembly(AssemblySpec *pSpec, PEAssembly *
             // OK if this is a duplicate
             if (entry->GetFile() != NULL
                 && pPEAssembly->Equals(entry->GetFile()))
+            {
                 _ASSERTE(UnsafeContains(this, pSpec) && UnsafeVerifyLookupFile(this, pSpec, pPEAssembly));
                 return TRUE;
+            }
         }
         else
         if (entry->IsPostBindError())
