@@ -77,7 +77,6 @@ namespace System.Text.Json
         /// </summary>
         public Task? PendingTask;
 
-
         /// <summary>
         /// The amount of bytes to write before the underlying Stream should be flushed and the
         /// current buffer adjusted to remove the processed bytes.

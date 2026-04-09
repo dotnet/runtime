@@ -514,7 +514,7 @@ namespace System.Text.Json.Serialization.Tests
                     events.Add($"{id}:Disposed");
                     if (asyncDisposal)
                     {
-                        return new ValueTask(Task.CompletedTask);
+                        return new ValueTask(Task.Delay(1));
                     }
                     return default;
                 }
