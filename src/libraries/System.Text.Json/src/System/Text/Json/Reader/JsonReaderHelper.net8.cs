@@ -51,7 +51,8 @@ namespace System.Text.Json
                     return BitOperations.TrailingZeroCount(mask);
             }
 
-            return IndexOfQuoteOrAnyControlOrBackSlash_Fallback(span.Slice(16));
+            int fallbackIndex = IndexOfQuoteOrAnyControlOrBackSlash_Fallback(span.Slice(16));
+            return fallbackIndex >= 0 ? fallbackIndex + 16 : fallbackIndex;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
