@@ -367,6 +367,182 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task WriteSequentialNestedAsyncEnumerables_EachEnumeratorDisposedBeforeNextStarts(bool asyncDisposal)
+        {
+            if (StreamingSerializer?.IsAsyncSerializer != true)
+            {
+                return;
+            }
+
+            var events = new List<string>();
+            var enumerable1 = new DisposalTrackingAsyncEnumerable<int>(
+                new[] { 1, 2, 3 }, "A", events, asyncDisposal);
+            var enumerable2 = new DisposalTrackingAsyncEnumerable<int>(
+                new[] { 4, 5, 6 }, "B", events, asyncDisposal);
+
+            using var stream = new Utf8MemoryStream();
+            await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDtoWithTwoProperties<int>
+            {
+                Data1 = enumerable1,
+                Data2 = enumerable2,
+            });
+
+            JsonTestHelper.AssertJsonEqual("""{"Data1":[1,2,3],"Data2":[4,5,6]}""", stream.AsString());
+
+            int disposeAIndex = events.IndexOf("A:Disposed");
+            int startBIndex = events.IndexOf("B:MoveNext");
+            Assert.True(disposeAIndex >= 0, "A should have been disposed");
+            Assert.True(startBIndex >= 0, "B should have started enumeration");
+            Assert.True(disposeAIndex < startBIndex,
+                $"A should be disposed before B starts enumeration. Events: [{string.Join(", ", events)}]");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task WriteNestedAsyncEnumerableInsideAsyncEnumerable_InnerEnumeratorsDisposedPromptly(bool asyncDisposal)
+        {
+            if (StreamingSerializer?.IsAsyncSerializer != true)
+            {
+                return;
+            }
+
+            // This test requires reflection to serialize custom IAsyncEnumerable types;
+            // skip in source-gen contexts where reflection is disabled.
+            if (!JsonSerializer.IsReflectionEnabledByDefault)
+            {
+                return;
+            }
+
+            var events = new List<string>();
+            var inner1 = new DisposalTrackingAsyncEnumerable<int>(
+                new[] { 1, 2 }, "Inner1", events, asyncDisposal);
+            var inner2 = new DisposalTrackingAsyncEnumerable<int>(
+                new[] { 3, 4 }, "Inner2", events, asyncDisposal);
+
+            var outer = new DisposalTrackingAsyncEnumerable<IAsyncEnumerable<int>>(
+                new IAsyncEnumerable<int>[] { inner1, inner2 }, "Outer", events, asyncDisposal);
+
+            using var stream = new Utf8MemoryStream();
+            await JsonSerializer.SerializeAsync<IAsyncEnumerable<IAsyncEnumerable<int>>>(stream, outer);
+
+            JsonTestHelper.AssertJsonEqual("[[1,2],[3,4]]", stream.AsString());
+
+            Assert.Contains("Inner1:Disposed", events);
+            Assert.Contains("Inner2:Disposed", events);
+            Assert.Contains("Outer:Disposed", events);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task WriteEmptyNestedAsyncEnumerables_AllDisposed(bool asyncDisposal)
+        {
+            if (StreamingSerializer?.IsAsyncSerializer != true)
+            {
+                return;
+            }
+
+            var events = new List<string>();
+            var enumerable1 = new DisposalTrackingAsyncEnumerable<int>(
+                Array.Empty<int>(), "A", events, asyncDisposal);
+            var enumerable2 = new DisposalTrackingAsyncEnumerable<int>(
+                Array.Empty<int>(), "B", events, asyncDisposal);
+
+            using var stream = new Utf8MemoryStream();
+            await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDtoWithTwoProperties<int>
+            {
+                Data1 = enumerable1,
+                Data2 = enumerable2,
+            });
+
+            JsonTestHelper.AssertJsonEqual("""{"Data1":[],"Data2":[]}""", stream.AsString());
+
+            int disposeAIndex = events.IndexOf("A:Disposed");
+            int startBIndex = events.IndexOf("B:MoveNext");
+            Assert.True(disposeAIndex >= 0, "A should have been disposed");
+            Assert.True(startBIndex >= 0, "B should have started enumeration");
+            Assert.True(disposeAIndex < startBIndex,
+                $"A should be disposed before B starts enumeration. Events: [{string.Join(", ", events)}]");
+        }
+
+        [Fact]
+        public async Task WriteAsyncEnumerable_DisposeAsyncThrows_ExceptionPropagated()
+        {
+            if (StreamingSerializer?.IsAsyncSerializer != true)
+            {
+                return;
+            }
+
+            using var stream = new Utf8MemoryStream();
+            var enumerable = new ThrowingDisposeAsyncEnumerable<int>(new[] { 1, 2 });
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await StreamingSerializer.SerializeWrapper(stream, new AsyncEnumerableDto<int> { Data = enumerable }));
+        }
+
+        private sealed class DisposalTrackingAsyncEnumerable<TElement>(
+            IEnumerable<TElement> source,
+            string id,
+            List<string> events,
+            bool asyncDisposal) : IAsyncEnumerable<TElement>
+        {
+            public IAsyncEnumerator<TElement> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+                => new Enumerator(source.GetEnumerator(), id, events, asyncDisposal);
+
+            private sealed class Enumerator(
+                IEnumerator<TElement> inner,
+                string id,
+                List<string> events,
+                bool asyncDisposal) : IAsyncEnumerator<TElement>
+            {
+                public TElement Current => inner.Current;
+
+                public ValueTask<bool> MoveNextAsync()
+                {
+                    bool result = inner.MoveNext();
+                    events.Add($"{id}:MoveNext");
+                    return new ValueTask<bool>(result);
+                }
+
+                public ValueTask DisposeAsync()
+                {
+                    inner.Dispose();
+                    events.Add($"{id}:Disposed");
+                    if (asyncDisposal)
+                    {
+                        return new ValueTask(Task.CompletedTask);
+                    }
+                    return default;
+                }
+            }
+        }
+
+        private sealed class ThrowingDisposeAsyncEnumerable<TElement>(IEnumerable<TElement> source) : IAsyncEnumerable<TElement>
+        {
+            public IAsyncEnumerator<TElement> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+                => new Enumerator(source.GetEnumerator());
+
+            private sealed class Enumerator(IEnumerator<TElement> inner) : IAsyncEnumerator<TElement>
+            {
+                public TElement Current => inner.Current;
+                public ValueTask<bool> MoveNextAsync()
+                {
+                    bool result = inner.MoveNext();
+                    return new ValueTask<bool>(result);
+                }
+
+                public ValueTask DisposeAsync()
+                {
+                    inner.Dispose();
+                    throw new InvalidOperationException("DisposeAsync failed");
+                }
+            }
+        }
+
         public class MockedAsyncEnumerable<TElement> : IAsyncEnumerable<TElement>, IEnumerable<TElement>
         {
             private readonly IEnumerable<TElement> _source;
