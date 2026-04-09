@@ -113,31 +113,7 @@ namespace System.Threading.RateLimiting
 
         protected override void Dispose(bool disposing)
         {
-            if (!disposing)
-            {
-                return;
-            }
-
-            if (_disposed)
-            {
-                return;
-            }
-
             _disposed = true;
-            ChainedRateLimiterShared.DisposeLimiters(_limiters);
-            base.Dispose(disposing);
-        }
-
-        protected override async ValueTask DisposeAsyncCore()
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            await ChainedRateLimiterShared.DisposeLimitersAsync(_limiters).ConfigureAwait(false);
-            await base.DisposeAsyncCore().ConfigureAwait(false);
         }
 
         private void ThrowIfDisposed()

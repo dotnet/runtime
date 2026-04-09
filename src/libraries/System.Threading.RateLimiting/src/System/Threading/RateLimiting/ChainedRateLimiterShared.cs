@@ -179,50 +179,5 @@ namespace System.Threading.RateLimiting
             return null;
         }
 
-        internal static void DisposeLimiters(RateLimiter[] limiters)
-        {
-            List<Exception>? exceptions = null;
-
-            foreach (RateLimiter limiter in limiters)
-            {
-                try
-                {
-                    limiter.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    exceptions ??= [];
-                    exceptions.Add(ex);
-                }
-            }
-
-            if (exceptions is not null)
-            {
-                throw new AggregateException(exceptions);
-            }
-        }
-
-        internal static async ValueTask DisposeLimitersAsync(RateLimiter[] limiters)
-        {
-            List<Exception>? exceptions = null;
-
-            foreach (RateLimiter limiter in limiters)
-            {
-                try
-                {
-                    await limiter.DisposeAsync().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    exceptions ??= [];
-                    exceptions.Add(ex);
-                }
-            }
-
-            if (exceptions is not null)
-            {
-                throw new AggregateException(exceptions);
-            }
-        }
     }
 }

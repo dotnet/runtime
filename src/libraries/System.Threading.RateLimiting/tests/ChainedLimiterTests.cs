@@ -1233,5 +1233,65 @@ namespace System.Threading.RateLimiting.Tests
             Assert.True(lease.TryGetMetadata("3", out obj));
             Assert.IsType<List<int>>(obj);
         }
+
+        [Fact]
+        public void DisposeDoesNotDisposeInnerLimiters()
+        {
+            var limiter1 = new TrackingRateLimiter();
+            var limiter2 = new TrackingRateLimiter();
+            var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            chainedLimiter.Dispose();
+
+            Assert.Equal(0, limiter1.DisposeCallCount);
+            Assert.Equal(0, limiter2.DisposeCallCount);
+        }
+
+        [Fact]
+        public async Task DisposeAsyncDoesNotDisposeInnerLimiters()
+        {
+            var limiter1 = new TrackingRateLimiter();
+            var limiter2 = new TrackingRateLimiter();
+            var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            await chainedLimiter.DisposeAsync();
+
+            Assert.Equal(0, limiter1.DisposeCallCount);
+            Assert.Equal(0, limiter1.DisposeAsyncCallCount);
+            Assert.Equal(0, limiter2.DisposeCallCount);
+            Assert.Equal(0, limiter2.DisposeAsyncCallCount);
+        }
+
+        [Fact]
+        public void DisposeDoesNotDisposeInnerReplenishingLimiters()
+        {
+            var limiter1 = new CustomizableReplenishingLimiter { ReplenishmentPeriodImpl = () => TimeSpan.FromSeconds(1) };
+            var limiter2 = new CustomizableReplenishingLimiter { ReplenishmentPeriodImpl = () => TimeSpan.FromSeconds(2) };
+            var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            Assert.IsAssignableFrom<ReplenishingRateLimiter>(chainedLimiter);
+
+            chainedLimiter.Dispose();
+
+            // Inner limiters should still be usable after chained limiter is disposed
+            Assert.NotNull(limiter1.AttemptAcquire());
+            Assert.NotNull(limiter2.AttemptAcquire());
+        }
+
+        [Fact]
+        public async Task DisposeAsyncDoesNotDisposeInnerReplenishingLimiters()
+        {
+            var limiter1 = new CustomizableReplenishingLimiter { ReplenishmentPeriodImpl = () => TimeSpan.FromSeconds(1) };
+            var limiter2 = new CustomizableReplenishingLimiter { ReplenishmentPeriodImpl = () => TimeSpan.FromSeconds(2) };
+            var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            Assert.IsAssignableFrom<ReplenishingRateLimiter>(chainedLimiter);
+
+            await chainedLimiter.DisposeAsync();
+
+            // Inner limiters should still be usable after chained limiter is disposed
+            Assert.NotNull(limiter1.AttemptAcquire());
+            Assert.NotNull(limiter2.AttemptAcquire());
+        }
     }
 }
