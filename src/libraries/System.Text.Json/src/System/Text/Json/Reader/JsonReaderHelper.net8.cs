@@ -29,6 +29,37 @@ namespace System.Text.Json
             if (!Vector128.IsHardwareAccelerated || !BitConverter.IsLittleEndian || span.Length < Vector128<byte>.Count)
                 return IndexOfQuoteOrAnyControlOrBackSlash_Fallback(span);
 
+#pragma warning disable SYSLIB5003 // SVE is experimental
+            if (Sve.IsSupported)
+            {
+                // SVE: Use predicated comparisons + brkb + cntp to find the index.
+                // The result flows through predicate registers directly to a scalar cntp —
+                // no SIMD-to-GP transfer (UMOV) is needed at all.
+                // On V2: cmpeq(4cy) + cmplo(4cy) + orr(1cy) + brkb(2cy) + cntp(2cy)
+                ref byte searchSpace = ref MemoryMarshal.GetReference(span);
+                unsafe
+                {
+                    fixed (byte* ptr = &searchSpace)
+                    {
+                        Vector<byte> mask16 = Sve.CreateTrueMaskByte(SveMaskPattern.VectorCount16);
+                        Vector<byte> data = Sve.LoadVector(mask16, ptr);
+
+                        Vector<byte> combined = Sve.CompareEqual(data, new Vector<byte>((byte)'"'))
+                                              | Sve.CompareEqual(data, new Vector<byte>((byte)'\\'))
+                                              | Sve.CompareLessThan(data, new Vector<byte>((byte)0x20));
+
+                        if (Sve.TestAnyTrue(mask16, combined))
+                        {
+                            // brkb: sets predicate bits BEFORE the first match
+                            // cntp: counts those bits = index of first match
+                            Vector<byte> beforeFirst = Sve.CreateBreakBeforeMask(mask16, combined);
+                            return (int)Sve.GetActiveElementCount(mask16, beforeFirst);
+                        }
+                    }
+                }
+            }
+#pragma warning restore SYSLIB5003 // SVE is experimental
+
             Vector128<byte> vec = Vector128.Create(span);
 
             // Any control character (i.e. 0 to 31) or '"' or '\'
