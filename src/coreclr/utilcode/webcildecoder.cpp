@@ -158,7 +158,7 @@ BOOL WebcilDecoder::HasWebcilHeaders() const
     }
 
     if (m_size < headerSize)
-        RETURN FALSE;
+        return FALSE;
 
     COUNT_T headerEnd = headerSize + (COUNT_T)pHeader->CoffSections * sizeof(WebcilSectionHeader);
     if (m_size < headerEnd)
@@ -405,7 +405,7 @@ IMAGE_COR20_HEADER *WebcilDecoder::GetCorHeader() const
     CONTRACTL_END;
 
     if (m_pCorHeader != NULL)
-        RETURN m_pCorHeader;
+        return m_pCorHeader;
 
     FindCorHeader();
     return m_pCorHeader;
