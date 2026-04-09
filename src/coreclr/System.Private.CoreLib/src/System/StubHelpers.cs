@@ -592,7 +592,7 @@ namespace System.StubHelpers
         }
     }
 
-    internal static class DateMarshaler : IArrayElementMarshaler<DateTime>
+    internal sealed class DateMarshaler : IArrayElementMarshaler<DateTime>
     {
         internal static double ConvertToNative(DateTime managedDate)
         {
@@ -748,84 +748,6 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ClearNativeContents")]
         internal static partial void ClearNativeContents(IntPtr pMarshalState, IntPtr pNativeHome, int cElements);
     }  // class MngdNativeArrayMarshaler
-
-    internal static partial class MngdFixedArrayMarshaler
-    {
-        // Needs to match exactly with MngdFixedArrayMarshaler in ilmarshalers.h
-        private struct MarshalerState
-        {
-#pragma warning disable CA1823, IDE0044 // not used by managed code
-            internal IntPtr m_pElementMT;
-            internal IntPtr m_Array;
-            internal int m_BestFitMap;
-            internal int m_ThrowOnUnmappableChar;
-            internal ushort m_vt;
-            internal uint m_cElements;
-#pragma warning restore CA1823, IDE0044
-        }
-
-        internal static unsafe void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, int cElements)
-        {
-            MarshalerState* pState = (MarshalerState*)pMarshalState;
-            pState->m_pElementMT = pMT;
-            pState->m_Array = default;
-            pState->m_BestFitMap = (byte)(dwFlags >> 16);
-            pState->m_ThrowOnUnmappableChar = (byte)(dwFlags >> 24);
-            pState->m_vt = (ushort)dwFlags;
-            pState->m_cElements = (uint)cElements;
-        }
-
-        internal static unsafe void ConvertSpaceToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
-        {
-            // We don't actually need to allocate native space here as the space is inline in the native layout.
-            // However, we need to validate that we can fit the contents of the managed array in the native space.
-            Array arr = (Array)pManagedHome;
-            MarshalerState* pState = (MarshalerState*)pMarshalState;
-
-            if (arr is not null && (uint)arr.Length < pState->m_cElements)
-            {
-                throw new ArgumentException(SR.Argument_WrongSizeArrayInNativeStruct);
-            }
-        }
-
-        internal static void ConvertContentsToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
-        {
-            object managedHome = pManagedHome;
-            ConvertContentsToNative(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ConvertContentsToNative")]
-        private static partial void ConvertContentsToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
-
-        internal static void ConvertSpaceToManaged(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome)
-        {
-            object managedHome = pManagedHome;
-            ConvertSpaceToManaged(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
-            pManagedHome = managedHome;
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ConvertSpaceToManaged")]
-        private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
-
-        internal static void ConvertContentsToManaged(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
-        {
-            object managedHome = pManagedHome;
-            ConvertContentsToManaged(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ConvertContentsToManaged")]
-        private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
-
-#pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
-        internal static void ClearNativeContents(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
-        {
-            ClearNativeContents(pMarshalState, pNativeHome);
-        }
-#pragma warning restore IDE0060
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ClearNativeContents")]
-        private static partial void ClearNativeContents(IntPtr pMarshalState, IntPtr pNativeHome);
-    }  // class MngdFixedArrayMarshaler
 
 #if FEATURE_COMINTEROP
     internal static partial class MngdSafeArrayMarshaler
@@ -2484,6 +2406,11 @@ namespace System.StubHelpers
                 FreeArrayContents<T, TMarshaler>(pNativeHome, cElements);
                 Marshal.FreeCoTaskMem((IntPtr)pNativeHome);
             }
+        }
+
+        internal static void ThrowWrongSizeArrayInNativeStruct()
+        {
+            throw new ArgumentException(SR.Argument_WrongSizeArrayInNativeStruct);
         }
 
         private static readonly MemberInfo StructureMarshalerConvertToUnmanaged = typeof(StructureMarshaler<>).GetMethod(nameof(StructureMarshaler<>.ConvertToUnmanaged))!;

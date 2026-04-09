@@ -4199,7 +4199,7 @@ void ILNativeArrayMarshaler::EmitLoadNativeSize(ILCodeStream* pslILEmit)
     }
 }
 
-void ILNativeArrayMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
+void ILArrayMarshalerBase::EmitClearNativeContents(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
@@ -4388,7 +4388,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativ
     END_QCALL;
 }
 
-MethodTable* ILNativeArrayMarshaler::GetMarshalerMT()
+MethodTable* ILArrayMarshalerBase::GetMarshalerMT()
 {
     STANDARD_VM_CONTRACT;
 
@@ -4542,13 +4542,13 @@ MethodTable* ILNativeArrayMarshaler::GetMarshalerMT()
     }
 
     default:
-        _ASSERTE(!"Unsupported VT for ILNativeArrayMarshaler");
+        _ASSERTE(!"Unsupported VT for ILArrayMarshalerBase");
         COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
         return NULL;
     }
 }
 
-MethodDesc* ILNativeArrayMarshaler::GetInstantiatedArrayMethod(BinderMethodID methodId)
+MethodDesc* ILArrayMarshalerBase::GetInstantiatedArrayMethod(BinderMethodID methodId)
 {
     STANDARD_VM_CONTRACT;
 
@@ -4575,7 +4575,7 @@ MethodDesc* ILNativeArrayMarshaler::GetInstantiatedArrayMethod(BinderMethodID me
     return pInstMD;
 }
 
-void ILNativeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
+void ILArrayMarshalerBase::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
@@ -4586,7 +4586,7 @@ void ILNativeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 0);
 }
 
-void ILNativeArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
+void ILArrayMarshalerBase::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
@@ -4597,181 +4597,62 @@ void ILNativeArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
     pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 0);
 }
 
-void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
+// ==================== ILFixedArrayMarshaler ====================
+
+void ILFixedArrayMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
-
-    pslILEmit->EmitLDC(sizeof(MngdFixedArrayMarshaler));
-    pslILEmit->EmitLOCALLOC();
-    pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
-
+    // For fixed arrays, the native space is inline in the struct.
+    // Validate that the managed array (if non-null) has enough elements.
     CREATE_MARSHALER_CARRAY_OPERANDS mops;
     m_pargs->m_pMarshalInfo->GetMops(&mops);
 
-    pslILEmit->EmitLDLOC(m_dwMngdMarshalerLocalNum);
+    ILCodeLabel* pDoneLabel = pslILEmit->NewCodeLabel();
 
-    pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(mops.methodTable));
-    pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__TO_INTPTR, 1, 1);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitBRFALSE(pDoneLabel);
 
-    DWORD dwFlags = mops.elementType;
-    dwFlags |= (((DWORD)mops.bestfitmapping) << 16);
-    dwFlags |= (((DWORD)mops.throwonunmappablechar) << 24);
-
-    pslILEmit->EmitLDC(dwFlags);
-
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitLDLEN();
     pslILEmit->EmitLDC(mops.additive);
+    pslILEmit->EmitBGE_UN(pDoneLabel);
 
-    pslILEmit->EmitCALL(METHOD__MNGD_FIXED_ARRAY_MARSHALER__CREATE_MARSHALER, 4, 0);
+    // Array too small for the fixed-size native layout - throw
+    pslILEmit->EmitCALL(METHOD__STUBHELPERS__THROW_WRONG_SIZE_ARRAY_IN_NSTRUCT, 0, 0);
+
+    pslILEmit->EmitLabel(pDoneLabel);
 }
 
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
+void ILFixedArrayMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit)
 {
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
+    STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
+    // Allocate the managed array with the fixed element count.
+    CREATE_MARSHALER_CARRAY_OPERANDS mops;
+    m_pargs->m_pMarshalInfo->GetMops(&mops);
 
-    BASEARRAYREF arrayRef = NULL;
-    GCPROTECT_BEGIN(arrayRef);
-    arrayRef = (BASEARRAYREF)pManagedHome.Get();
-
-    if (pThis->m_vt == VTHACK_ANSICHAR)
-    {
-        SIZE_T nativeSize = sizeof(CHAR) * pThis->m_cElements;
-
-        if (arrayRef == NULL)
-        {
-            FillMemory(pNativeHome, nativeSize, 0);
-        }
-        else
-        {
-            InternalWideToAnsi((const WCHAR*)arrayRef->GetDataPtr(),
-                pThis->m_cElements,
-                (CHAR*)pNativeHome,
-                (int)nativeSize,
-                pThis->m_BestFitMap,
-                pThis->m_ThrowOnUnmappableChar);
-        }
-    }
-    else
-    {
-        SIZE_T cbElement = OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT);
-        SIZE_T nativeSize = cbElement * pThis->m_cElements;
-
-        if (arrayRef == NULL)
-        {
-            FillMemory(pNativeHome, nativeSize, 0);
-        }
-        else
-        {
-
-            const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, TRUE);
-            SIZE_T cElements = arrayRef->GetNumComponents();
-            if (pMarshaler == NULL || pMarshaler->ComToOleArray == NULL)
-            {
-                _ASSERTE(!OleVariant::GetTypeHandleForVarType(pThis->m_vt).GetMethodTable()->ContainsGCPointers());
-                memcpyNoGCRefs(pNativeHome, arrayRef->GetDataPtr(), nativeSize);
-            }
-            else
-            {
-                pMarshaler->ComToOleArray(&arrayRef, pNativeHome, pThis->m_pElementMT, pThis->m_BestFitMap,
-                    pThis->m_ThrowOnUnmappableChar, FALSE, pThis->m_cElements);
-            }
-        }
-    }
-
-    GCPROTECT_END();
-    END_QCALL;
+    // new T[cElements]
+    pslILEmit->EmitLDC(mops.additive);
+    pslILEmit->EmitNEWARR(pslILEmit->GetToken(mops.methodTable));
+    EmitStoreManagedValue(pslILEmit);
 }
 
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToManaged(MngdFixedArrayMarshaler* pThis,
-    QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
+void ILFixedArrayMarshaler::EmitLoadNativeSize(ILCodeStream* pslILEmit)
 {
-    QCALL_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    // <TODO>@todo: lookup this class before marshal time</TODO>
-    if (pThis->m_Array.IsNull())
-    {
-        // Get proper array class name & type
-        pThis->m_Array = OleVariant::GetArrayForVarType(pThis->m_vt, TypeHandle(pThis->m_pElementMT));
-        if (pThis->m_Array.IsNull())
-            COMPlusThrow(kTypeLoadException);
-    }
-    //
-    // Allocate array
-    //
-
-    OBJECTREF arrayRef = AllocateSzArray(pThis->m_Array, pThis->m_cElements);
-    pManagedHome.Set(arrayRef);
-
-    END_QCALL;
+    CREATE_MARSHALER_CARRAY_OPERANDS mops;
+    m_pargs->m_pMarshalInfo->GetMops(&mops);
+    pslILEmit->EmitLDC(mops.additive);
 }
 
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
+void ILFixedArrayMarshaler::EmitClearNative(ILCodeStream* pslILEmit)
 {
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
+    STANDARD_VM_CONTRACT;
 
-    GCX_COOP();
-
-    BASEARRAYREF arrayRef = NULL;
-
-    GCPROTECT_BEGIN(arrayRef);
-    arrayRef = (BASEARRAYREF)pManagedHome.Get();
-
-    if (pThis->m_vt == VTHACK_ANSICHAR)
-    {
-        MultiByteToWideChar(CP_ACP,
-            MB_PRECOMPOSED,
-            (const CHAR*)pNativeHome,
-            pThis->m_cElements * sizeof(CHAR), // size, in bytes, of in buffer
-            (WCHAR*)(arrayRef->GetDataPtr()),
-            pThis->m_cElements);               // size, in WCHAR's of outbuffer
-    }
-    else
-    {
-        const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, TRUE);
-
-        SIZE_T cbElement = OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT);
-        SIZE_T nativeSize = cbElement * pThis->m_cElements;
-
-
-        if (pMarshaler == NULL || pMarshaler->OleToComArray == NULL)
-        {
-            // If we are copying variants, strings, etc, we need to use write barrier
-            _ASSERTE(!OleVariant::GetTypeHandleForVarType(pThis->m_vt).GetMethodTable()->ContainsGCPointers());
-            memcpyNoGCRefs(arrayRef->GetDataPtr(), pNativeHome, nativeSize);
-        }
-        else
-        {
-            pMarshaler->OleToComArray(pNativeHome, &arrayRef, pThis->m_pElementMT);
-        }
-    }
-
-    GCPROTECT_END();
-    END_QCALL;
-}
-
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ClearNativeContents(MngdFixedArrayMarshaler* pThis, void* pNativeHome)
-{
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-    GCX_COOP();
-
-    const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, FALSE);
-
-    if (pMarshaler != NULL && pMarshaler->ClearOleArray != NULL)
-    {
-        pMarshaler->ClearOleArray(pNativeHome, pThis->m_cElements, pThis->m_pElementMT);
-    }
-
-    END_QCALL;
+    // For fixed arrays, native space is inline - just clear element contents, don't free a buffer.
+    EmitClearNativeContents(pslILEmit);
 }
 
 #ifdef FEATURE_COMINTEROP

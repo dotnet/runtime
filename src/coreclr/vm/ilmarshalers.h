@@ -3268,7 +3268,46 @@ protected:
     const BinderMethodID m_idClearManaged;
 };
 
-class ILNativeArrayMarshaler : public ILMarshaler
+// Base class for array marshalers that use managed IArrayElementMarshaler<T> implementations
+// for element-by-element conversion. Provides shared VT-to-marshaler-type resolution and
+// generic method instantiation for ConvertArrayContents/FreeArrayContents helpers.
+class ILArrayMarshalerBase : public ILMarshaler
+{
+protected:
+    LocalDesc GetNativeType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_I);
+    }
+
+    LocalDesc GetManagedType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_OBJECT);
+    }
+
+    bool NeedsClearNative() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return true;
+    }
+
+    void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
+    void EmitClearNativeContents(ILCodeStream* pslILEmit) override;
+
+    // Resolve the managed marshaler MethodTable for the given VT/element type.
+    MethodTable* GetMarshalerMT();
+
+    // Instantiate one of the generic StubHelpers array methods with the element type and marshaler type.
+    MethodDesc* GetInstantiatedArrayMethod(BinderMethodID methodId);
+
+    // Load the native element count onto the evaluation stack.
+    // Subclasses implement this differently (dynamic size param vs. fixed count).
+    virtual void EmitLoadNativeSize(ILCodeStream* pslILEmit) = 0;
+};
+
+class ILNativeArrayMarshaler : public ILArrayMarshalerBase
 {
 public:
     enum
@@ -3287,18 +3326,9 @@ public:
 
     void EmitMarshalViaPinning(ILCodeStream* pslILEmit) override;
     void EmitSetupArgumentForMarshalling(ILCodeStream* pslILEmit) override;
-    void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
-    void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
     void EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit) override;
     void EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitClearNative(ILCodeStream* pslILEmit) override;
-    void EmitClearNativeContents(ILCodeStream* pslILEmit) override;
-
-    bool NeedsClearNative() override
-    {
-        LIMITED_METHOD_CONTRACT;
-        return true;
-    }
 
     bool SupportsFieldMarshal(UINT* pErrorResID) override
     {
@@ -3307,34 +3337,16 @@ public:
     }
 
 protected:
-    LocalDesc GetNativeType() override
-    {
-        LIMITED_METHOD_CONTRACT;
-        return LocalDesc(ELEMENT_TYPE_I);
-    }
-
-    LocalDesc GetManagedType() override
-    {
-        LIMITED_METHOD_CONTRACT;
-        return LocalDesc(ELEMENT_TYPE_OBJECT);
-    }
 
     BOOL CheckSizeParamIndexArg(const CREATE_MARSHALER_CARRAY_OPERANDS &mops, CorElementType *pElementType);
 
     // Calculate element count and load it on evaluation stack
     void EmitLoadElementCount(ILCodeStream* pslILEmit);
 
-    void EmitLoadNativeSize(ILCodeStream* pslILEmit);
+    void EmitLoadNativeSize(ILCodeStream* pslILEmit) override;
     void EmitNewSavedSizeArgLocal(ILCodeStream* pslILEmit);
 
     DWORD m_dwSavedSizeArg;
-
-private:
-    // Resolve the managed marshaler MethodTable for the given VT/element type.
-    MethodTable* GetMarshalerMT();
-
-    // Instantiate one of the generic StubHelpers array methods with the element type and marshaler type.
-    MethodDesc* GetInstantiatedArrayMethod(BinderMethodID methodId);
 };
 
 struct MngdNativeArrayMarshaler
@@ -3353,7 +3365,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToManaged(MngdNat
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
 extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativeArrayMarshaler* pThis, void** pNativeHome, INT32 cElements);
 
-class ILFixedArrayMarshaler : public ILMngdMarshaler
+class ILFixedArrayMarshaler : public ILArrayMarshalerBase
 {
 public:
     enum
@@ -3361,20 +3373,6 @@ public:
         c_nativeSize = VARIABLESIZE,
         c_fInOnly = FALSE
     };
-
-    ILFixedArrayMarshaler() :
-        ILMngdMarshaler(
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CONVERT_SPACE_TO_MANAGED,
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_MANAGED,
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CONVERT_SPACE_TO_NATIVE,
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_NATIVE,
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CLEAR_NATIVE_CONTENTS,
-            METHOD__MNGD_FIXED_ARRAY_MARSHALER__CLEAR_NATIVE_CONTENTS,
-            METHOD__NIL
-        )
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
 
     bool SupportsArgumentMarshal(DWORD dwMarshalFlags, UINT* pErrorResID) override
     {
@@ -3390,23 +3388,11 @@ public:
 
 protected:
 
-    void EmitCreateMngdMarshaler(ILCodeStream* pslILEmit) override;
+    void EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit) override;
+    void EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit) override;
+    void EmitLoadNativeSize(ILCodeStream* pslILEmit) override;
+    void EmitClearNative(ILCodeStream* pslILEmit) override;
 };
-
-struct MngdFixedArrayMarshaler
-{
-    MethodTable* m_pElementMT;
-    TypeHandle   m_Array;
-    BOOL         m_BestFitMap;
-    BOOL         m_ThrowOnUnmappableChar;
-    VARTYPE      m_vt;
-    UINT32       m_cElements;
-};
-
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertSpaceToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome);
-extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ClearNativeContents(MngdFixedArrayMarshaler* pThis, void* pNativeHome);
 
 #ifdef FEATURE_COMINTEROP
 class ILSafeArrayMarshaler : public ILMngdMarshaler
