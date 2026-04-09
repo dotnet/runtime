@@ -571,33 +571,21 @@ namespace System.Diagnostics.Tests
                         nint rawHandle = nint.Parse(handleStr);
                         using SafeFileHandle handle = new SafeFileHandle(rawHandle, ownsHandle: false);
 
-                        if (handle.IsInvalid)
-                        {
-                            // Handle is invalid in the child: only acceptable when not inherited.
-                            return shouldBeInherited ? RemoteExecutor.SuccessExitCode - 1 : RemoteExecutor.SuccessExitCode;
-                        }
+                        // Check whether it points to our file (the Operating System could reuse same value for a different file).
+                        string? childId = null;
 
-                        // If the handle appears valid, check whether it points to our file.
-                        // (the Operating System could reuse same value for a different file)
                         try
                         {
-                            string childId = GetSafeFileHandleId(handle);
-
-                            if (childId == fileId)
-                            {
-                                // Handle points to our file — correct only when inherited.
-                                return shouldBeInherited ? RemoteExecutor.SuccessExitCode : RemoteExecutor.SuccessExitCode - 1;
-                            }
+                            childId = GetSafeFileHandleId(handle);
                         }
-                        catch
+                        catch (Exception) when (!shouldBeInherited)
                         {
                             // Handle is not a valid file handle in this process.
-                            return shouldBeInherited ? RemoteExecutor.SuccessExitCode - 1 : RemoteExecutor.SuccessExitCode;
+                            return RemoteExecutor.SuccessExitCode;
                         }
 
-                        // Handle value was reused for a different file.
-                        // This is only acceptable when the handle was not expected to be inherited.
-                        return shouldBeInherited ? RemoteExecutor.SuccessExitCode - 1 : RemoteExecutor.SuccessExitCode;
+                        Assert.Equal(shouldBeInherited, childId == fileId);
+                        return RemoteExecutor.SuccessExitCode;
                     },
                     rawHandle.ToString(),
                     id,
