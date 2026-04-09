@@ -131,7 +131,6 @@ inline SBuffer::SBuffer(SBuffer &&buffer)
 
     buffer.InitializeInstance();
 
-    _ASSERTE(Check());
     CONSISTENCY_CHECK(Check());
 }
 
