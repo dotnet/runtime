@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
         WASM_TABLE_INDEX_I32       = 0x207,  // Wasm: a table index encoded as a 4-byte uint32, e.g. for storing the "address" of a function into linear memory
         WASM_TABLE_INDEX_I64       = 0x208,  // Wasm: a table index encoded as a 8-byte uint64, e.g. for storing the "address" of a function into linear memory
-        WASM_MEMORY_ADDR_REL_LEB   = 0x209,  // Wasm: a relative linear memory index encoded as a 5-byte varint32. Used as the immediate argument of a load or store instruction,
+        WASM_MEMORY_ADDR_REL_LEB   = 0x209,  // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                                        // e.g. in R2R scenarios as an offset from __image_base
 
         //

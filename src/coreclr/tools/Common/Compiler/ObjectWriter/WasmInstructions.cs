@@ -295,9 +295,9 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    struct WasmEncodableULong : IWasmEncodable
+    readonly struct WasmEncodableULong : IWasmEncodable
     {
-        private ulong _value;
+        private readonly ulong _value;
         public WasmEncodableULong(ulong value)
         {
             _value = value;
@@ -314,10 +314,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         public int EncodeRelocations(Span<Relocation> buffer) => 0;
     }
 
-    struct WasmEncodableSymbol : IWasmEncodable
+    readonly struct WasmEncodableSymbol : IWasmEncodable
     {
-        private ISymbolNode _symbol;
-        private RelocType _relocType;
+        private readonly ISymbolNode _symbol;
+        private readonly RelocType _relocType;
 
         public WasmEncodableSymbol(ISymbolNode symbol, RelocType relocType)
         {
@@ -368,7 +368,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     class WasmMemoryArgInstruction<TOffset> : WasmExpr where TOffset : IWasmEncodable
     {
         readonly uint _align;
-        TOffset _offset;
+        readonly TOffset _offset;
 
         public WasmMemoryArgInstruction(WasmExprKind kind, uint align, TOffset offset) : base(kind)
         {
