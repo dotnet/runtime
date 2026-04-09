@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 case AsyncEnumeratorState.PendingDisposal:
                     // Converter was previously suspended due to a pending DisposeAsync() task.
-                    Debug.Assert(state.Current.AsyncDisposable is null);
+                    Debug.Assert(state.Current.AsyncEnumerator is null);
                     Debug.Assert(state.PendingTask is not null && state.PendingTask.IsCompleted);
                     state.PendingTask.GetAwaiter().GetResult();
                     state.Current.AsyncEnumeratorState = AsyncEnumeratorState.None;
@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Converters
                     enumerator = value.GetAsyncEnumerator(state.CancellationToken);
                     // async enumerators can only be disposed asynchronously;
                     // store in the WriteStack for disposal on exception.
-                    state.Current.AsyncDisposable = enumerator;
+                    state.Current.AsyncEnumerator = enumerator;
                     state.Current.AsyncEnumeratorState = AsyncEnumeratorState.Enumerating;
                     // enumerator.MoveNextAsync() calls can throw,
                     // ensure the enumerator already is stored
@@ -83,8 +83,8 @@ namespace System.Text.Json.Serialization.Converters
                     break;
 
                 case AsyncEnumeratorState.PendingMoveNext:
-                    Debug.Assert(state.Current.AsyncDisposable is IAsyncEnumerator<TElement>);
-                    enumerator = (IAsyncEnumerator<TElement>)state.Current.AsyncDisposable;
+                    Debug.Assert(state.Current.AsyncEnumerator is IAsyncEnumerator<TElement>);
+                    enumerator = (IAsyncEnumerator<TElement>)state.Current.AsyncEnumerator;
 
                     // converter was previously suspended due to a pending MoveNextAsync() task
                     Debug.Assert(state.PendingTask is Task<bool> && state.PendingTask.IsCompleted);
@@ -95,8 +95,8 @@ namespace System.Text.Json.Serialization.Converters
 
                 default:
                     Debug.Assert(state.Current.AsyncEnumeratorState == AsyncEnumeratorState.Enumerating);
-                    Debug.Assert(state.Current.AsyncDisposable is IAsyncEnumerator<TElement>);
-                    enumerator = (IAsyncEnumerator<TElement>)state.Current.AsyncDisposable;
+                    Debug.Assert(state.Current.AsyncEnumerator is IAsyncEnumerator<TElement>);
+                    enumerator = (IAsyncEnumerator<TElement>)state.Current.AsyncEnumerator;
 
                     // converter was suspended for a different reason;
                     // the last MoveNextAsync() call can only have completed with 'true'.
@@ -114,7 +114,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     // Enumeration complete, dispose the enumerator inline.
                     // Clear from the stack first to prevent double disposal on exception.
-                    state.Current.AsyncDisposable = null;
+                    state.Current.AsyncEnumerator = null;
                     state.Current.AsyncEnumeratorState = AsyncEnumeratorState.None;
                     ValueTask disposeTask = enumerator.DisposeAsync();
                     if (!disposeTask.IsCompleted)

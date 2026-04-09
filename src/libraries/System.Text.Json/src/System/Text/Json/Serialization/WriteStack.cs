@@ -279,7 +279,7 @@ namespace System.Text.Json
         {
             Exception? exception = null;
 
-            Debug.Assert(Current.AsyncDisposable is null);
+            Debug.Assert(Current.AsyncEnumerator is null);
             DisposeFrame(Current.CollectionEnumerator, ref exception);
 
             if (_stack is not null)
@@ -288,7 +288,7 @@ namespace System.Text.Json
                 int stackSize = Math.Max(currentIndex, _continuationCount);
                 for (int i = 0; i < stackSize; i++)
                 {
-                    Debug.Assert(_stack[i].AsyncDisposable is null);
+                    Debug.Assert(_stack[i].AsyncEnumerator is null);
 
                     if (i == currentIndex)
                     {
@@ -330,7 +330,7 @@ namespace System.Text.Json
         {
             Exception? exception = null;
 
-            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncDisposable, exception).ConfigureAwait(false);
+            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncEnumerator, exception).ConfigureAwait(false);
 
             if (_stack is not null)
             {
@@ -343,11 +343,11 @@ namespace System.Text.Json
                     {
                         // Matches the entry in Current, skip to avoid double disposal.
                         Debug.Assert(_stack[i].CollectionEnumerator is null || ReferenceEquals(Current.CollectionEnumerator, _stack[i].CollectionEnumerator));
-                        Debug.Assert(_stack[i].AsyncDisposable is null || ReferenceEquals(Current.AsyncDisposable, _stack[i].AsyncDisposable));
+                        Debug.Assert(_stack[i].AsyncEnumerator is null || ReferenceEquals(Current.AsyncEnumerator, _stack[i].AsyncEnumerator));
                         continue;
                     }
 
-                    exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncDisposable, exception).ConfigureAwait(false);
+                    exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncEnumerator, exception).ConfigureAwait(false);
                 }
             }
 
@@ -356,9 +356,9 @@ namespace System.Text.Json
                 ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
-            static async ValueTask<Exception?> DisposeFrame(IEnumerator? collectionEnumerator, IAsyncDisposable? asyncDisposable, Exception? exception)
+            static async ValueTask<Exception?> DisposeFrame(IEnumerator? collectionEnumerator, object? asyncEnumerator, Exception? exception)
             {
-                Debug.Assert(!(collectionEnumerator is not null && asyncDisposable is not null));
+                Debug.Assert(!(collectionEnumerator is not null && asyncEnumerator is not null));
 
                 try
                 {
@@ -366,7 +366,7 @@ namespace System.Text.Json
                     {
                         disposable.Dispose();
                     }
-                    else if (asyncDisposable is not null)
+                    else if (asyncEnumerator is IAsyncDisposable asyncDisposable)
                     {
                         await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                     }
