@@ -40,11 +40,9 @@ namespace System.Text.Json
             // but that is not currently optimized in JIT for ARM64, so we do it manually here.
             if (AdvSimd.IsSupported)
             {
-                if (cmp != Vector128<byte>.Zero)
-                {
-                    ulong mask = AdvSimd.ShiftRightLogicalNarrowingLower(cmp.AsUInt16(), 4).AsUInt64().ToScalar();
+                ulong mask = AdvSimd.ShiftRightLogicalNarrowingLower(cmp.AsUInt16(), 4).AsUInt64().ToScalar();
+                if (mask != 0)
                     return BitOperations.TrailingZeroCount(mask) >> 2;
-                }
             }
             else
             {
