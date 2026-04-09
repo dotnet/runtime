@@ -155,9 +155,7 @@ namespace Internal.IL
         {
             bool regularCrossModuleInlineable = (!_compilationModuleGroup.VersionsWithMethodBody(method)
                     && _compilationModuleGroup.CrossModuleInlineable(method));
-            // bool requiredCrossModuleInliningForAsync = (NeedsTaskReturningThunk(method) || NeedsAsyncThunk(method) || method is AsyncResumptionStub)
-            //          && !_compilationModuleGroup.VersionsWithModule(method.Context.SystemModule);
-            if ((regularCrossModuleInlineable) // || requiredCrossModuleInliningForAsync)
+            if ((regularCrossModuleInlineable)
                 && !_manifestModuleWrappedMethods.ContainsKey(method))
             {
                 return true;
