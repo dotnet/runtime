@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Text;
@@ -87,7 +88,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             {
                 activityTraceId = activity.TraceId.ToHexString();
                 activitySpanId = activity.SpanId.ToHexString();
-                activityTraceFlags = ((int)activity.ActivityTraceFlags).ToString();
+                activityTraceFlags = ((int)activity.ActivityTraceFlags).ToString(CultureInfo.InvariantCulture);
             }
             else
             {
