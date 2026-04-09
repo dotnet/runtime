@@ -115,7 +115,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Write<T>(this IBufferWriter<T> writer, ReadOnlySpan<T> value)
         {
-            Span<T> destination = writer.GetSpan();
+            Span<T> destination = writer.GetSpan(value.Length);
 
             // Fast path, try copying to the available memory directly
             if (value.Length <= destination.Length)
@@ -140,7 +140,7 @@ namespace System.Buffers
                 input = input.Slice(writeSize);
                 if (input.Length > 0)
                 {
-                    destination = writer.GetSpan();
+                    destination = writer.GetSpan(input.Length);
 
                     if (destination.IsEmpty)
                     {
