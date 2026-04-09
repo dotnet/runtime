@@ -3154,6 +3154,18 @@ PhaseStatus Compiler::fgCreateFunclets()
     // Setup the root FuncInfoDsc and prepare to start associating
     // FuncInfoDsc's with their corresponding EH region
     memset((void*)funcInfo, 0, funcCnt * sizeof(FuncInfoDsc));
+#if !HAS_FIXED_REGISTER_SET || defined(TARGET_WASM)
+    for (unsigned i = 0; i < funcCnt; i++)
+    {
+#if !HAS_FIXED_REGISTER_SET
+        funcInfo[i].funStackPointerReg = REG_NA;
+        funcInfo[i].funFramePointerReg = REG_NA;
+#endif
+#ifdef TARGET_WASM
+        funcInfo[i].funWasmLocalDecls = nullptr;
+#endif
+    }
+#endif
     assert(funcInfo[0].funKind == FUNC_ROOT);
     funcIdx = 1;
 

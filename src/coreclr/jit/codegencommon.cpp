@@ -58,11 +58,55 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 #endif // JIT32_GCENCODER
 }
 
+#if HAS_FIXED_REGISTER_SET
+regNumber CodeGenInterface::GetStackPointerReg(unsigned) const
+{
+    return REG_SPBASE;
+}
+regNumber CodeGenInterface::GetFramePointerReg(unsigned) const
+{
+    return REG_FPBASE;
+}
+#else
+void CodeGenInterface::SetStackPointerReg(unsigned funcletIndex, regNumber reg)
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    assert(reg != REG_NA);
+    m_compiler->compFuncInfos[funcletIndex].funStackPointerReg = reg;
+}
+
+void CodeGenInterface::SetFramePointerReg(unsigned funcletIndex, regNumber reg)
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    assert(reg != REG_NA);
+    m_compiler->compFuncInfos[funcletIndex].funFramePointerReg = reg;
+}
+
+regNumber CodeGenInterface::GetStackPointerReg(unsigned funcletIndex) const
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    return m_compiler->compFuncInfos[funcletIndex].funStackPointerReg;
+}
+
+regNumber CodeGenInterface::GetFramePointerReg(unsigned funcletIndex) const
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    return m_compiler->compFuncInfos[funcletIndex].funFramePointerReg;
+}
+#endif // !HAS_FIXED_REGISTER_SET
+
 CodeGenInterface* getCodeGenerator(Compiler* comp)
 {
     return new (comp, CMK_Codegen) CodeGen(comp);
 }
 
+//------------------------------------------------------------------------
+// NodeInternalRegisters::NodeInternalRegisters: construct the
+//    internal registers tracking data
+//
+// Arguments:
+//    comp -- compiler instance
+//
 NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
     : m_table(comp->getAllocator(CMK_LSRA))
 {
@@ -336,9 +380,6 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
     , internalRegisters(theCompiler)
     , m_compiler(theCompiler)
     , treeLifeUpdater(nullptr)
-#ifdef TARGET_WASM
-    , WasmLocalsDecls(theCompiler->getAllocator(CMK_Codegen))
-#endif
 {
 }
 
