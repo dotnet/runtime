@@ -628,7 +628,7 @@ namespace System.Text.RegularExpressions.Tests
                         }
                     };
 
-                    // ExpressionConditional with only a yes-branch (no no-branch) inside a loop (empty matches differ on .NET Framework)
+                    // ExpressionConditional with only a yes-branch (no no-branch) inside a loop (empty matches differ on .NET Framework: https://github.com/dotnet/runtime/issues/24894)
                     yield return new object[]
                     {
                         engine, @"(?((?'-1'))(?'1'.)+)+(?!(?'-1'))", "abc", RegexOptions.None, new[]
