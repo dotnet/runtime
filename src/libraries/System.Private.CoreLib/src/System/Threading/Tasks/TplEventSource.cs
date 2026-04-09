@@ -35,20 +35,25 @@ namespace System.Threading.Tasks
             Debug = IsEnabled(EventLevel.Informational, Keywords.Debug);
             DebugActivityId = IsEnabled(EventLevel.Informational, Keywords.DebugActivityId);
 
-            AsyncInstrumentation.Flags tplFlags = AsyncInstrumentation.Flags.Disabled;
+            // Until debugger explicitly set the AsyncInstrumentation keyword, we enable async instrumentation when
+            // Tasks, AsyncCausalitySynchronousWork, AsyncCausalityOperation and TasksFlowActivityIds keywords are enabled.
+            bool asyncInstrumentationEnabled = IsEnabled(EventLevel.Informational, Keywords.AsyncInstrumentation);
+            if (!asyncInstrumentationEnabled)
+            {
+                asyncInstrumentationEnabled = IsEnabled(EventLevel.Informational, Keywords.Tasks);
+                asyncInstrumentationEnabled &= IsEnabled(EventLevel.Informational, Keywords.AsyncCausalityOperation);
+                asyncInstrumentationEnabled &= IsEnabled(EventLevel.Informational, Keywords.AsyncCausalitySynchronousWork);
+                asyncInstrumentationEnabled &= IsEnabled(EventLevel.Informational, Keywords.TasksFlowActivityIds);
+            }
 
-            tplFlags |= IsEnabled(EventLevel.Informational, Keywords.AsyncCausalitySynchronousWork) ?
-                AsyncInstrumentation.Flags.ResumeAsyncContext |
-                AsyncInstrumentation.Flags.SuspendAsyncContext |
-                AsyncInstrumentation.Flags.CompleteAsyncContext |
-                AsyncInstrumentation.Flags.UnwindAsyncException : AsyncInstrumentation.Flags.Disabled;
-
-            tplFlags |= IsEnabled(EventLevel.Informational, Keywords.AsyncCausalityOperation) ?
-                AsyncInstrumentation.Flags.CreateAsyncContext |
-                AsyncInstrumentation.Flags.CompleteAsyncContext |
-                AsyncInstrumentation.Flags.UnwindAsyncException : AsyncInstrumentation.Flags.Disabled;
-
-            AsyncInstrumentation.UpdateTplFlags(tplFlags);
+            if (asyncInstrumentationEnabled)
+            {
+                AsyncInstrumentation.UpdateAsyncDebuggerFlags(AsyncInstrumentation.DefaultFlags);
+            }
+            else
+            {
+                AsyncInstrumentation.UpdateAsyncDebuggerFlags(AsyncInstrumentation.Flags.Disabled);
+            }
         }
 
         /// <summary>
@@ -143,6 +148,11 @@ namespace System.Threading.Tasks
             /// Relatively Verbose logging meant for debugging the Task library itself.  Will probably be removed in the future
             /// </summary>
             public const EventKeywords DebugActivityId = (EventKeywords)0x40000;
+            /// <summary>
+            /// Enable async instrumentation to track async operations across await/async method boundaries.
+            /// Mainly used by debugger to track task and continuation chain execution.
+            /// </summary>
+            public const EventKeywords AsyncInstrumentation = (EventKeywords)0x80000;
         }
 
         //-----------------------------------------------------------------------------------

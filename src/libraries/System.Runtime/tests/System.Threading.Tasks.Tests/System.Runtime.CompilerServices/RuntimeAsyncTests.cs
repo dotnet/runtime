@@ -24,8 +24,8 @@ namespace System.Threading.Tasks.Tests
         private static readonly object s_debuggerLock = new object();
         private static TestEventListener? s_debuggerTplInstance;
 
-        // Tpl(0x20000) | Debugger(0x40000) | all event flags(0x7F)
-        private const uint EnabledInstrumentationFlags = 0x6007F;
+        // AsyncDebugger(0x2000000) | all event flags(0x7F)
+        private const uint EnabledInstrumentationFlags = 0x200007F;
         private const uint DisabledInstrumentationFlags = 0x0;
         private const uint UninitializedInstrumentationFlags = 0x80000000;
 
@@ -514,6 +514,8 @@ namespace System.Threading.Tasks.Tests
                 const int TraceSynchronousWorkBeginId = 17;
                 const int TraceSynchronousWorkEndId = 18;
 
+                AttachDebugger();
+
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
                 using (var listener = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose))
                 {
@@ -530,6 +532,44 @@ namespace System.Threading.Tasks.Tests
                 Assert.Contains(events, e => e.EventId == TraceOperationEndId);
                 Assert.Contains(events, e => e.EventId == TraceSynchronousWorkBeginId);
                 Assert.Contains(events, e => e.EventId == TraceSynchronousWorkEndId);
+
+                DetachDebugger();
+
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
+        public void RuntimeAsync_NoTplEventsWithoutDebugger()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                const int TraceOperationBeginId = 14;
+                const string RuntimeAsyncTaskOperationName = "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask";
+
+                // Enable TplEventSource WITHOUT setting s_asyncDebuggingEnabled.
+                // The AsyncDebugger guard should prevent the V2 async instrumentation
+                // from emitting any TPL causality events.
+                var events = new ConcurrentQueue<EventWrittenEventArgs>();
+                using (var listener = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose))
+                {
+                    listener.RunWithCallback(events.Enqueue, () =>
+                    {
+                        for (int i = 0; i < 10; i++)
+                        {
+                            Func().GetAwaiter().GetResult();
+                        }
+                    });
+                }
+
+                // TraceOperationBegin with the RuntimeAsyncTask operation name is uniquely
+                // emitted by V2 async instrumentation. It must not appear without a debugger.
+                Assert.DoesNotContain(events, e =>
+                    e.EventId == TraceOperationBeginId &&
+                    e.Payload?.Count > 1 &&
+                    e.Payload[1] is string name &&
+                    name == RuntimeAsyncTaskOperationName);
+
             }).Dispose();
         }
     }
