@@ -136,7 +136,8 @@ namespace System.Diagnostics
         /// On Unix, the process is started as a leader of a new session.
         /// </para>
         /// <para>
-        /// This property cannot be used together with <see cref="UseShellExecute"/> set to <see langword="true"/>.
+        /// This property cannot be used together with <see cref="UseShellExecute"/> or <see cref="CreateNoWindow"/>
+        /// set to <see langword="true"/>.
         /// </para>
         /// </remarks>
         public bool StartDetached { get; set; }
