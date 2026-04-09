@@ -107,8 +107,8 @@ namespace System.Reflection.Context
         /// </summary>
         /// <param name="propertyType">The type of the property to create.</param>
         /// <param name="name">The name of the property to create.</param>
-        /// <param name="getter">An object that represents the property's <see langword="get"/> accessor.</param>
-        /// <param name="setter">An object that represents the property's <see langword="set"/> accessor.</param>
+        /// <param name="getter">A delegate that represents the property's <see langword="get"/> accessor.</param>
+        /// <param name="setter">A delegate that represents the property's <see langword="set"/> accessor.</param>
         /// <returns>An object that represents the property.</returns>
         /// <remarks>
         /// Objects that are returned by this method are not complete <see cref="PropertyInfo"/> objects, and should be used only in the context of the <see cref="AddProperties(Type)"/> method.
@@ -135,8 +135,8 @@ namespace System.Reflection.Context
         /// </summary>
         /// <param name="propertyType">The type of the property to create.</param>
         /// <param name="name">The name of the property to create.</param>
-        /// <param name="getter">An object that represents the property's <see langword="get"/> accessor.</param>
-        /// <param name="setter">An object that represents the property's <see langword="set"/> accessor.</param>
+        /// <param name="getter">A delegate that represents the property's <see langword="get"/> accessor.</param>
+        /// <param name="setter">A delegate that represents the property's <see langword="set"/> accessor.</param>
         /// <param name="propertyCustomAttributes">A collection of custom attributes to apply to the property.</param>
         /// <param name="getterCustomAttributes">A collection of custom attributes to apply to the property's <see langword="get"/> accessor.</param>
         /// <param name="setterCustomAttributes">A collection of custom attributes to apply to the property's <see langword="set"/> accessor.</param>
