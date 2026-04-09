@@ -348,12 +348,6 @@ namespace System.Formats.Tar
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
 
             string name = ArchivingUtils.SanitizeEntryFilePath(Name, preserveDriveRoot: true);
-            // On Windows, reject rooted but not fully qualified paths ("\Windows\win.ini", "C:foo").
-            // They resolve ambiguously based on the current drive or working directory.
-            if (OperatingSystem.IsWindows() && Path.IsPathRooted(name) && !Path.IsPathFullyQualified(name))
-            {
-                throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
-            }
             string? fileDestinationPath = GetFullDestinationPath(
                                                 destinationDirectoryPath,
                                                 Path.IsPathFullyQualified(name) ? name : Path.Join(destinationDirectoryPath, name));
@@ -368,6 +362,9 @@ namespace System.Formats.Tar
                 // LinkName is an absolute path, or path relative to the fileDestinationPath directory.
                 // We don't check if the LinkName is empty. In that case, creation of the link will fail because link targets can't be empty.
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
+                // On Windows, reject rooted-but-not-fully-qualified symlink targets (e.g., "\Windows\win.ini").
+                // Unlike files, symlink targets are resolved at access time, not extraction time,
+                // so Path.GetFullPath here cannot reliably predict what drive the OS will resolve them against.
                 if (OperatingSystem.IsWindows() && Path.IsPathRooted(linkName) && !Path.IsPathFullyQualified(linkName))
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
@@ -387,10 +384,6 @@ namespace System.Formats.Tar
                 // LinkName is path relative to the destinationDirectoryPath.
                 // We don't check if the LinkName is empty. In that case, creation of the link will fail because a hard link can't target a directory.
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: false);
-                if (OperatingSystem.IsWindows() && Path.IsPathRooted(linkName) && !Path.IsPathFullyQualified(linkName))
-                {
-                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
-                }
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.Join(destinationDirectoryPath, linkName));
