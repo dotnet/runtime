@@ -40,7 +40,7 @@
   -->
   <Target Name="HotReloadDeltaGeneratorComputeScriptInputsOutputs"
       Condition="'$(_HotReloadDeltaGeneratorShouldRun)' == 'true'">
-    <HotReloadDeltaGeneratorComputeScriptOutputs BaseAssemblyName="$(TargetPath)" DeltaScript="$(DeltaScript)">
+    <HotReloadDeltaGeneratorComputeScriptOutputs BaseAssemblyName="$(TargetPath)" DeltaScript="$(_HotReloadDeltaGeneratorDeltaScript)">
       <Output TaskParameter="DeltaOutputs" ItemName="_HotReloadDeltaGeneratorOutputs" />
       <Output TaskParameter="DeltaSources" ItemName="_HotReloadDeltaGeneratorInputs" />
     </HotReloadDeltaGeneratorComputeScriptOutputs>
