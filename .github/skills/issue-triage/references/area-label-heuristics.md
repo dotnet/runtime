@@ -56,8 +56,7 @@ with the authoritative [`docs/area-owners.md`](../../../../docs/area-owners.md).
 | Crossgen2, R2R, ReadyToRun | `area-crossgen` |
 | Assembly loading, AssemblyLoadContext | `area-AssemblyLoader-coreclr` |
 | Interop, COM, P/Invoke, marshalling (runtime) | `area-Interop-coreclr` |
-| Host, `dotnet` executable, hostfxr, hostpolicy | `area-Host` |
-| Single-file deployment | `area-Single-File` |
+| Host, `dotnet` executable, hostfxr, hostpolicy, single-file deployment | `area-Host` |
 | Exception handling (runtime-level) | `area-ExceptionHandling-coreclr` |
 | Debugger, debugging support | `area-Diagnostics-coreclr` |
 | `System.ComponentModel`, component model base types | `area-System.ComponentModel` |
