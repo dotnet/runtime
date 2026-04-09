@@ -201,6 +201,17 @@ check_symbol_exists(
     unistd.h
     HAVE_PIPE2)
 
+# close_range is available as a function on FreeBSD 12.2+ and Linux (glibc >= 2.34).
+# On Linux with older glibc it is still accessible via the __NR_close_range syscall number.
+check_function_exists(
+    close_range
+    HAVE_CLOSE_RANGE)
+
+# fdwalk is available on Illumos/Solaris and is used as a fallback when close_range is not available.
+check_function_exists(
+    fdwalk
+    HAVE_FDWALK)
+
 check_symbol_exists(
     getmntinfo
     "sys/types.h;sys/mount.h"

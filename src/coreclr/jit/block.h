@@ -1768,6 +1768,10 @@ public:
         return StatementList(FirstNonPhiDef());
     }
 
+    // True if any non-phi statement/node in the block has side effects.
+    //
+    bool hasSideEffects() const;
+
     // Simple "size" estimates
     //
     unsigned StatementCount();
