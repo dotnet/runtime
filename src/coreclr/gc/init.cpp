@@ -1261,6 +1261,11 @@ size_t gc_heap::get_gen0_min_size()
     return gen0size;
 }
 
+#ifndef HOST_64BIT
+// Max size of heap hard limit (2^31) to be able to be aligned and rounded up on power of 2 and not overflow
+const size_t max_heap_hard_limit = (size_t)2 * (size_t)1024 * (size_t)1024 * (size_t)1024;
+#endif //!HOST_64BIT
+
 bool gc_heap::compute_hard_limit_from_heap_limits()
 {
 #ifndef HOST_64BIT

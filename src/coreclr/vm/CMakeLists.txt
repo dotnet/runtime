@@ -1043,9 +1043,6 @@ convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})
 
-set(GC_CPP_OBJECTS_WKS
-    $<TARGET_OBJECTS:vm_gc_wks>)
-
 set(GC_WKS_SVR_SOURCES
     ../gc/gcee.cpp
     ../gc/gc.cpp
@@ -1080,8 +1077,6 @@ if(FEATURE_SVR_GC)
     target_precompile_headers(vm_gc_svr PRIVATE [["common.h"]])
     target_compile_definitions(vm_gc_svr PRIVATE GC_DESCRIPTOR SERVER_GC)
     add_dependencies(vm_gc_svr eventing_headers)
-    list(APPEND GC_CPP_OBJECTS_WKS
-        $<TARGET_OBJECTS:vm_gc_svr>)
 endif()
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)

@@ -44,7 +44,7 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   add_library(Runtime.VxsortDisabled STATIC ${DUMMY_VXSORT_SOURCES})
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
-target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
+target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC -DSERVER_GC)
 
 if (CLR_CMAKE_TARGET_WIN32)
   set_target_properties(aotminipal PROPERTIES
