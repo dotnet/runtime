@@ -2012,16 +2012,10 @@ void emitter::emitCheckIGList()
 
 void emitter::emitBegProlog()
 {
-    assert(m_compiler->compGeneratingProlog);
-
 #if EMIT_TRACK_STACK_DEPTH
-
     /* Don't measure stack depth inside the prolog, it's misleading */
-
     emitCntStackDepth = 0;
-
     assert(emitCurStackLvl == 0);
-
 #endif
 
     emitNoGCRequestCount = 1;
@@ -2045,12 +2039,13 @@ void emitter::emitBegProlog()
 /*****************************************************************************
  *
  *  Mark the code offset of the current location as the end of the prolog,
- *  so it can be used later to compute the actual size of the prolog.
+ *  so it can be used later to compute the actual size of the prolog for
+ *  GCInfo purposes. We may still generate more code into "prolog" IGs.
  */
 
 void emitter::emitMarkPrologEnd()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(emitGeneratingPrologOrFuncletProlog());
     emitPrologEndPos.CaptureLocation(this);
 }
 
@@ -2061,7 +2056,7 @@ void emitter::emitMarkPrologEnd()
 
 void emitter::emitEndProlog()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(emitGeneratingPrologOrFuncletProlog());
 
     emitNoGCRequestCount = 0;
     emitNoGCIG           = false;
@@ -2366,6 +2361,16 @@ void emitter::emitFinishPrologEpilogGeneration()
     emitCurIG = nullptr;
 }
 
+bool emitter::emitGeneratingPrologOrFuncletProlog() const
+{
+    return emitIGisInProlog(emitCurIG) || emitIGisInFuncletProlog(emitCurIG);
+}
+
+bool emitter::emitGeneratingEpilogOrFuncletEpilog() const
+{
+    return emitIGisInEpilog(emitCurIG) || emitIGisInFuncletEpilog(emitCurIG);
+}
+
 /*****************************************************************************
  *
  *  Common code for prolog / epilog beginning. Convert the placeholder group to actual code IG,
@@ -2612,7 +2617,7 @@ bool emitter::emitHasEpilogEnd()
 
 void emitter::emitStartExitSeq()
 {
-    assert(m_compiler->compGeneratingEpilog);
+    assert(emitGeneratingEpilogOrFuncletEpilog());
 
     emitExitSeqBegLoc.CaptureLocation(this);
 }
@@ -2631,7 +2636,7 @@ void emitter::emitStartExitSeq()
 
 void emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(emitGeneratingPrologOrFuncletProlog());
     assert(offsHi > offsLo);
 
 #ifdef DEBUG
