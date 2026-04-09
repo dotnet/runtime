@@ -53,7 +53,7 @@ with the authoritative [`docs/area-owners.md`](../../../../docs/area-owners.md).
 | GC, garbage collection, memory pressure | `area-GC-coreclr` or `area-GC-mono` |
 | JIT, code generation, inlining, tiered compilation | `area-CodeGen-coreclr` |
 | NativeAOT, ahead-of-time compilation | `area-NativeAOT-coreclr` |
-| Crossgen2, R2R, ReadyToRun | `area-crossgen2-coreclr` |
+| Crossgen2, R2R, ReadyToRun | `area-crossgen` |
 | Assembly loading, AssemblyLoadContext | `area-AssemblyLoader-coreclr` |
 | Interop, COM, P/Invoke, marshalling (runtime) | `area-Interop-coreclr` |
 | Host, `dotnet` executable, hostfxr, hostpolicy | `area-Host` |
