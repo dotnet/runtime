@@ -316,6 +316,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 //
 void CodeGen::genFuncletEpilog(BasicBlock* block)
 {
+    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
+
     if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
     {
         instGen(INS_end);
