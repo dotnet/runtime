@@ -32,9 +32,9 @@ namespace System.Text.Json
             Vector128<byte> vec = Vector128.Create(span);
 
             // Any control character (i.e. 0 to 31) or '"' or '\'
-            Vector128<byte> cmp = Vector128.LessThan(vec, Vector128.Create((byte)32)) |
-                                  Vector128.Equals(vec, Vector128.Create((byte)'"')) |
-                                  Vector128.Equals(vec, Vector128.Create((byte)'\\'));
+            Vector128<byte> cmp = Vector128.LessThan(vec, Vector128.Create(JsonConstants.Space)) |
+                                  Vector128.Equals(vec, Vector128.Create(JsonConstants.Quote)) |
+                                  Vector128.Equals(vec, Vector128.Create(JsonConstants.BackSlash));
 
             // TODO: this really should be just Vector128.IndexOfWhereAllBitsSet
             // but that is not currently optimized in JIT for ARM64, so we do it manually here.
