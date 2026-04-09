@@ -284,8 +284,182 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            bool             isJump /* = false */,
                            bool             noSafePoint /* = false */)
 {
-    //TODO POWERPC64 vikas
-    _ASSERTE(!"NYI POWERPC64");
+    /* Sanity check the arguments depending on callType */
+
+    assert(callType < EC_COUNT);
+    assert((callType != EC_FUNC_TOKEN) || (addr != nullptr && ireg == REG_NA));
+    assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT));
+
+    // PPC64LE never uses xreg, xmul, disp
+    assert(xreg == REG_NA && xmul == 0 && disp == 0);
+
+    // Our stack level should be always greater than the bytes of arguments we push. Just
+    // a sanity test.
+    assert((unsigned)std::abs(argSize) <= codeGen->genStackLevel);
+
+    // Trim out any callee-trashed registers from the live set.
+    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
+    gcrefRegs &= savedSet;
+    byrefRegs &= savedSet;
+
+#ifdef DEBUG
+    if (EMIT_GC_VERBOSE)
+    {
+        printf("Call: GCvars=%s ", VarSetOps::ToString(emitComp, ptrVars));
+        dumpConvertedVarSet(emitComp, ptrVars);
+        printf(", gcrefRegs=");
+        printRegMaskInt(gcrefRegs);
+        emitDispRegSet(gcrefRegs);
+        printf(", byrefRegs=");
+        printRegMaskInt(byrefRegs);
+        emitDispRegSet(byrefRegs);
+        printf("\n");
+    }
+#endif
+
+    /* Managed RetVal: emit sequence point for the call */
+    if (emitComp->opts.compDbgInfo && di.GetLocation().IsValid())
+    {
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
+    }
+
+    /*
+        We need to allocate the appropriate instruction descriptor based
+        on whether this is a direct/indirect call, and whether we need to
+        record an updated set of live GC variables.
+     */
+    instrDesc* id;
+
+    assert(argSize % REGSIZE_BYTES == 0);
+    int argCnt = (int)(argSize / (int)REGSIZE_BYTES);
+
+    if (callType == EC_INDIR_R)
+    {
+        /* Indirect call, virtual calls */
+
+        id = emitNewInstrCallInd(argCnt, 0 /* disp */, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+    }
+    else
+    {
+        /* Helper/static/nonvirtual/function calls (direct or through handle),
+           and calls to an absolute addr. */
+
+        assert(callType == EC_FUNC_TOKEN);
+
+        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+    }
+
+    /* Update the emitter's live GC ref sets */
+
+    // If the method returns a GC ref, mark RBM_INTRET appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET;
+    }
+
+    // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
+    if (secondRetSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET_1;
+    }
+    else if (secondRetSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET_1;
+    }
+
+    VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
+    emitThisGCrefRegs = gcrefRegs;
+    emitThisByrefRegs = byrefRegs;
+
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
+
+    /* Set the instruction - special case jumping a function */
+    instruction ins;
+
+    /* Record the address: method, indirection, or funcptr */
+
+    if (callType == EC_INDIR_R)
+    {
+        /* This is an indirect call (either a virtual call or func ptr call) */
+
+        // PPC64LE uses:
+        // - bctr for tail calls (branch to count register)
+        // - bctrl for regular calls (branch to count register and link)
+        // The target address is loaded into the count register (CTR) before the call
+        if (isJump)
+        {
+            ins = INS_bctr; // Branch to count register (tail call)
+        }
+        else
+        {
+            ins = INS_bctrl; // Branch to count register and link (regular call)
+        }
+
+        id->idIns(ins);
+        id->idSetIsCallRegPtr();
+
+        assert(xreg == REG_NA);
+    }
+    else
+    {
+        /* This is a simple direct call: "call helper/method/addr" */
+
+        assert(callType == EC_FUNC_TOKEN);
+
+        assert(addr != NULL);
+
+        // PPC64LE uses:
+        // - b for tail calls (branch)
+        // - bl for regular calls (branch and link)
+        if (isJump)
+        {
+            ins = INS_b; // Branch for tail call
+        }
+        else
+        {
+            ins = INS_bl; // Branch and link for regular call
+        }
+
+        id->idIns(ins);
+
+        id->idAddr()->iiaAddr = (BYTE*)addr;
+
+        if (emitComp->opts.compReloc)
+        {
+            id->idSetIsDspReloc();
+        }
+    }
+
+#ifdef DEBUG
+    if (EMIT_GC_VERBOSE)
+    {
+        if (id->idIsLargeCall())
+        {
+            printf("[%02u] Rec call GC vars = %s\n", id->idDebugOnlyInfo()->idNum,
+                   VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
+        }
+    }
+#endif
+
+    if (m_debugInfoSize > 0)
+    {
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
+    }
+
+#ifdef LATE_DISASM
+    if (addr != nullptr)
+    {
+        codeGen->getDisAssembler().disSetMethod((size_t)addr, methHnd);
+    }
+#endif // LATE_DISASM
+
+    appendToCurIG(id);
 }
 
 // emitIns_valid_imm_for_li: Check if immediate fits in li instruction
