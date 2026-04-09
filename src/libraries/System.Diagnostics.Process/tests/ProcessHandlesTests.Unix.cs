@@ -8,7 +8,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessHandlesTests
     {
-        private static partial string GetSafeFileHandleId(SafeFileHandle handle)
+        private static string GetSafeFileHandleId(SafeFileHandle handle)
         {
             if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus status) != 0)
             {

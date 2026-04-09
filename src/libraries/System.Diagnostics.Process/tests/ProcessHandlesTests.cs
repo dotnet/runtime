@@ -608,7 +608,5 @@ namespace System.Diagnostics.Tests
                 File.Delete(path);
             }
         }
-
-        private static partial string GetSafeFileHandleId(SafeFileHandle handle);
     }
 }
