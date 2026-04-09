@@ -2079,7 +2079,15 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
 }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-PCODE ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Worker(PCODE portableEntrypoint, int8_t* args, size_t argsSize)
+// In this case, we're using this entrypoint like the prestub.
+// We need to run DoPrestub to have the runtime either compile the interpreter code, or find the R2R implementation
+// then we need to dispatch onwards to the correct target.
+// Continuing on from here for interpreter targets is straightforward, but for R2R targets we need to dispatch back
+// to WebAssembly code. To avoid needing all of the R2R to interpreter thunks have logic for tail-calling onto more
+// R2R functions, we utilize the InvokeManagedMethod path which will utilize an Interpreter to R2R thunk for this call.
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, int8_t* args, size_t argsSize, int8_t* retBuff);
+
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableEntrypoint, int8_t* args, size_t argsSize, int8_t* retBuff)
 {
     MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(portableEntrypoint);
     InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
@@ -2089,27 +2097,36 @@ PCODE ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Worker(PCODE portableE
         GCX_PREEMP();
         (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
         targetIp = pMethod->GetInterpreterCode();
+
+        if (targetIp == NULL)
+        {
+            _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
+            ManagedMethodParam param = { pMethod, args, retBuff, (PCODE)targetIp, nullptr /* WASM-TODO, handle RuntimeAsync */};
+            return InvokeManagedMethod(&param);
+        }
+
         GCPROTECT_END();
     }
 
     _ASSERTE((PCODE)targetIp == (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint));
-
-    return (PCODE)targetIp;
+    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)&ExecuteInterpretedMethodWithArgs_PortableEntryPoint);
+    return;
 }
 
-void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, int8_t* args, size_t argsSize, void* retBuff)
+void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, int8_t* args, size_t argsSize, int8_t* retBuff)
 {
     PCODE targetIp;
 
     if (!PortableEntryPoint::HasInterpreterData(portableEntrypoint))
     {
-        targetIp = ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Worker(portableEntrypoint, args, argsSize);
+        // In this case, we're using this entrypoint like the prestub.
+        ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(portableEntrypoint, args, argsSize, retBuff);
     }
     else
     {
         targetIp = (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint);
+        ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)&ExecuteInterpretedMethodWithArgs_PortableEntryPoint);
     }
-    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)&ExecuteInterpretedMethodWithArgs_PortableEntryPoint);
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 

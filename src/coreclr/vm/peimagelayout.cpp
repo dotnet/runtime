@@ -431,7 +431,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
         dirPos += fixupsSize;
     }
-    _ASSERTE(dirSize == dirPos);
+    _ASSERTE(dirSize == dirPos || !IsPEFormat());
 
     if (dwOldProtection != 0)
     {
