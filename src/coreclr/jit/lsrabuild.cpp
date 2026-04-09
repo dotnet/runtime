@@ -254,6 +254,13 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
 {
     assert(!interval->isLocalVar);
 
+    RefPosition*     useRefPosition   = defRefPosition->nextRefPosition;
+    SingleTypeRegSet useRegAssignment = useRefPosition->registerAssignment;
+    regMaskTP        inUse            = regsBusyUntilKill | regsInUseThisLocation;
+    bool             useRegConflict = (useRegAssignment & ~inUse.GetRegSetForType(interval->registerType)) == RBM_NONE;
+
+    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CONFLICT));
+
     if (defRefPosition->treeNode->IsMultiRegNode())
     {
         // If the defRefPosition is multireg then we cannot change any of its
@@ -261,70 +268,65 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
         // assignment during codegen that could have cycles in it. For example,
         // x64 DivRem always defines into RAX and RDX, so it would be a problem
         // to change the register assignments to RDX and RAX respectively.
-        return;
     }
-
-    RefPosition*     useRefPosition   = defRefPosition->nextRefPosition;
-    SingleTypeRegSet useRegAssignment = useRefPosition->registerAssignment;
-    regMaskTP        inUse            = regsBusyUntilKill | regsInUseThisLocation;
-    bool             useRegConflict = (useRegAssignment & ~inUse.GetRegSetForType(interval->registerType)) == RBM_NONE;
-
-    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CONFLICT));
-    if (useRefPosition->isFixedRegRef)
+    else
     {
-        regNumber useReg = useRefPosition->assignedReg();
-
-        LsraLocation nextRegLoc = getNextFixedRef(useReg, useRefPosition->getRegisterType());
-
-        // We know that useRefPosition is a fixed use, so there is a next reference.
-        assert(nextRegLoc <= useRefPosition->nodeLocation);
-
-        // First, check to see if there are any conflicting FixedReg references between the def and use.
-        if (nextRegLoc == useRefPosition->nodeLocation)
-        {
-            // OK, no conflicting FixedReg references.
-            // Now, check to see whether it is currently in use.
-            RegRecord* useRegRecord = getRegisterRecord(useReg);
-            if (!useRegConflict && (useRegRecord->assignedInterval != nullptr))
-            {
-                RefPosition* possiblyConflictingRef         = useRegRecord->assignedInterval->recentRefPosition;
-                LsraLocation possiblyConflictingRefLocation = possiblyConflictingRef->getRefEndLocation();
-                if (possiblyConflictingRefLocation >= defRefPosition->nodeLocation)
-                {
-                    useRegConflict = true;
-                }
-            }
-            if (!useRegConflict)
-            {
-                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_DEF_IN_FIXED_USE, interval));
-                defRefPosition->registerAssignment = useRegAssignment;
-                return;
-            }
-        }
-        else
-        {
-            useRegConflict = true;
-        }
-    }
-    if (defRefPosition->isFixedRegRef)
-    {
-        if (!useRegConflict)
-        {
-            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_DEF_IN_USE, interval));
-            defRefPosition->registerAssignment = useRegAssignment;
-            defRefPosition->isFixedRegRef      = false;
-            return;
-        }
         if (useRefPosition->isFixedRegRef)
         {
-            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_ANY_DEF, interval));
-            RegisterType regType = interval->registerType;
-            assert((getRegisterType(interval, defRefPosition) == regType) &&
-                   (getRegisterType(interval, useRefPosition) == regType));
-            SingleTypeRegSet candidates        = allRegs(regType);
-            defRefPosition->registerAssignment = candidates;
-            defRefPosition->isFixedRegRef      = false;
-            return;
+            regNumber useReg = useRefPosition->assignedReg();
+
+            LsraLocation nextRegLoc = getNextFixedRef(useReg, useRefPosition->getRegisterType());
+
+            // We know that useRefPosition is a fixed use, so there is a next reference.
+            assert(nextRegLoc <= useRefPosition->nodeLocation);
+
+            // First, check to see if there are any conflicting FixedReg references between the def and use.
+            if (nextRegLoc == useRefPosition->nodeLocation)
+            {
+                // OK, no conflicting FixedReg references.
+                // Now, check to see whether it is currently in use.
+                RegRecord* useRegRecord = getRegisterRecord(useReg);
+                if (!useRegConflict && (useRegRecord->assignedInterval != nullptr))
+                {
+                    RefPosition* possiblyConflictingRef         = useRegRecord->assignedInterval->recentRefPosition;
+                    LsraLocation possiblyConflictingRefLocation = possiblyConflictingRef->getRefEndLocation();
+                    if (possiblyConflictingRefLocation >= defRefPosition->nodeLocation)
+                    {
+                        useRegConflict = true;
+                    }
+                }
+                if (!useRegConflict)
+                {
+                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_DEF_IN_FIXED_USE, interval));
+                    defRefPosition->registerAssignment = useRegAssignment;
+                    return;
+                }
+            }
+            else
+            {
+                useRegConflict = true;
+            }
+        }
+        if (defRefPosition->isFixedRegRef)
+        {
+            if (!useRegConflict)
+            {
+                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_DEF_IN_USE, interval));
+                defRefPosition->registerAssignment = useRegAssignment;
+                defRefPosition->isFixedRegRef      = false;
+                return;
+            }
+            if (useRefPosition->isFixedRegRef)
+            {
+                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_ANY_DEF, interval));
+                RegisterType regType = interval->registerType;
+                assert((getRegisterType(interval, defRefPosition) == regType) &&
+                       (getRegisterType(interval, useRefPosition) == regType));
+                SingleTypeRegSet candidates        = allRegs(regType);
+                defRefPosition->registerAssignment = candidates;
+                defRefPosition->isFixedRegRef      = false;
+                return;
+            }
         }
     }
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_COPY, interval));

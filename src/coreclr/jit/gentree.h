@@ -6443,13 +6443,13 @@ public:
     //
     regNumber GetRegNumByIdx(unsigned idx) const
     {
-#ifdef TARGET_ARM64
-        assert(idx < MAX_MULTIREG_COUNT);
-
         if (idx == 0)
         {
             return GetRegNum();
         }
+
+#ifdef TARGET_ARM64
+        assert(idx < MAX_MULTIREG_COUNT);
 
         if (NeedsConsecutiveRegisters())
         {
