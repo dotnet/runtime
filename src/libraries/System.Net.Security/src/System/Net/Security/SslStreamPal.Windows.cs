@@ -197,13 +197,6 @@ namespace System.Net.Security
 
             token.Status = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
 
-            consumed = inputBuffer.Length;
-            if (inputBuffers._item1.Type == SecurityBufferType.SECBUFFER_EXTRA)
-            {
-                // not all data were consumed
-                consumed -= inputBuffers._item1.Token.Length;
-            }
-
             bool allowTlsResume = sslAuthenticationOptions.AllowTlsResume && !LocalAppContextSwitches.DisableTlsResume;
 
             if (!allowTlsResume && newContext && context != null)
@@ -225,20 +218,13 @@ namespace System.Net.Security
                     // resumable entry and embeds the session ID in the ClientHello before
                     // ApplyControlToken can expire it. Deleting the context and retrying ISC
                     // ensures the new ClientHello is generated without a stale session ID.
+                    // We can reuse inputBuffers since this only runs on the very first ISC call
+                    // (newContext == true) where the input is empty.
                     context?.Dispose();
                     context = null;
                     token.ReleasePayload();
                     token = default;
                     token.RentBuffer = true;
-
-                    scoped InputSecurityBuffers retryInputBuffers = default;
-                    retryInputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
-                    retryInputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
-                    if (sslAuthenticationOptions.ApplicationProtocols is { Count: > 0 })
-                    {
-                        Span<byte> retryLocalBuffer = stackalloc byte[64];
-                        SetAlpn(ref retryInputBuffers, sslAuthenticationOptions.ApplicationProtocols, retryLocalBuffer);
-                    }
 
                     errorCode = SSPIWrapper.InitializeSecurityContext(
                                     GlobalSSPI.SSPISecureChannel,
@@ -247,18 +233,19 @@ namespace System.Net.Security
                                     targetName,
                                     RequiredFlags | Interop.SspiCli.ContextFlags.InitManualCredValidation,
                                     Interop.SspiCli.Endianness.SECURITY_NATIVE_DREP,
-                                    ref retryInputBuffers,
+                                    ref inputBuffers,
                                     ref token,
                                     ref unusedAttributes);
 
                     token.Status = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
-
-                    consumed = inputBuffer.Length;
-                    if (retryInputBuffers._item1.Type == SecurityBufferType.SECBUFFER_EXTRA)
-                    {
-                        consumed -= retryInputBuffers._item1.Token.Length;
-                    }
                 }
+            }
+
+            consumed = inputBuffer.Length;
+            if (inputBuffers._item1.Type == SecurityBufferType.SECBUFFER_EXTRA)
+            {
+                // not all data were consumed
+                consumed -= inputBuffers._item1.Token.Length;
             }
 
             return token;
