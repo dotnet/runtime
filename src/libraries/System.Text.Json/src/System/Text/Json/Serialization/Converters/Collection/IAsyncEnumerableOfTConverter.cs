@@ -51,15 +51,6 @@ namespace System.Text.Json.Serialization.Converters
 
             switch (state.Current.AsyncEnumeratorState)
             {
-                case AsyncEnumeratorState.PendingDisposal:
-                    // Converter was previously suspended due to a pending DisposeAsync() task.
-                    Debug.Assert(state.Current.AsyncEnumerator is null);
-                    Debug.Assert(state.PendingTask is not null && state.PendingTask.IsCompleted);
-                    state.PendingTask.GetAwaiter().GetResult();
-                    state.Current.AsyncEnumeratorState = AsyncEnumeratorState.None;
-                    state.PendingTask = null;
-                    return true;
-
                 case AsyncEnumeratorState.None:
                     enumerator = value.GetAsyncEnumerator(state.CancellationToken);
                     // async enumerators can only be disposed asynchronously;
@@ -92,6 +83,15 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.AsyncEnumeratorState = AsyncEnumeratorState.Enumerating;
                     state.PendingTask = null;
                     break;
+
+                case AsyncEnumeratorState.PendingDisposal:
+                    // Converter was previously suspended due to a pending DisposeAsync() task.
+                    Debug.Assert(state.Current.AsyncEnumerator is null);
+                    Debug.Assert(state.PendingTask is not null && state.PendingTask.IsCompleted);
+                    state.PendingTask.GetAwaiter().GetResult();
+                    state.Current.AsyncEnumeratorState = AsyncEnumeratorState.None;
+                    state.PendingTask = null;
+                    return true;
 
                 default:
                     Debug.Assert(state.Current.AsyncEnumeratorState == AsyncEnumeratorState.Enumerating);
