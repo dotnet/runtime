@@ -278,47 +278,24 @@ namespace Microsoft.Win32.SafeHandles
                 }
 
                 if (!IsInvalidHandle(processInfo.hProcess))
+                {
                     Marshal.InitHandle(procSH, processInfo.hProcess);
+
+                    // When the process was started suspended for KillOnParentExit with CreateProcessWithLogonW,
+                    // assign it to the job object and then resume the thread.
+                    if (killOnParentExit && !string.IsNullOrEmpty(startInfo.UserName))
+                    {
+                        AssignJobAndResumeThread(processInfo, procSH);
+                    }
+                }
 
                 if (!retVal)
                 {
-                    if (!IsInvalidHandle(processInfo.hThread))
-                        Interop.Kernel32.CloseHandle(processInfo.hThread);
-
                     string nativeErrorMessage = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
                         ? SR.InvalidApplication
                         : Interop.Kernel32.GetMessage(errorCode);
 
                     throw ProcessUtils.CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, workingDirectory);
-                }
-
-                // When the process was started suspended for KillOnParentExit with CreateProcessWithLogonW,
-                // assign it to the job object and then resume the thread.
-                if (killOnParentExit && !string.IsNullOrEmpty(startInfo.UserName))
-                {
-                    Debug.Assert(!IsInvalidHandle(processInfo.hThread), "Thread handle must be valid for suspended process.");
-                    try
-                    {
-                        if (!Interop.Kernel32.AssignProcessToJobObject(s_killOnParentExitJob.Value, processInfo.hProcess))
-                        {
-                            throw new Win32Exception(Marshal.GetLastWin32Error());
-                        }
-                        Interop.Kernel32.ResumeThread(processInfo.hThread);
-                    }
-                    catch
-                    {
-                        // If we fail to assign to the job, terminate the suspended process.
-                        Interop.Kernel32.TerminateProcess(procSH, -1);
-                        throw;
-                    }
-                    finally
-                    {
-                        Interop.Kernel32.CloseHandle(processInfo.hThread);
-                    }
-                }
-                else if (!IsInvalidHandle(processInfo.hThread))
-                {
-                    Interop.Kernel32.CloseHandle(processInfo.hThread);
                 }
             }
             catch
@@ -328,6 +305,9 @@ namespace Microsoft.Win32.SafeHandles
             }
             finally
             {
+                if (!IsInvalidHandle(processInfo.hThread))
+                    Interop.Kernel32.CloseHandle(processInfo.hThread);
+
                 // If the provided handle was inheritable, just release the reference we added.
                 // Otherwise if we created a valid duplicate, close it.
 
@@ -611,6 +591,27 @@ namespace Microsoft.Win32.SafeHandles
                 bool success = Interop.Kernel32.SetHandleInformation(safeHandle.DangerousGetHandle(), Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT, 0);
                 Debug.Assert(success);
                 safeHandle.DangerousRelease();
+            }
+        }
+
+        private static void AssignJobAndResumeThread(Interop.Kernel32.PROCESS_INFORMATION processInfo, SafeProcessHandle procSH)
+        {
+            Debug.Assert(!IsInvalidHandle(processInfo.hThread), "Thread handle must be valid for suspended process.");
+
+            try
+            {
+                if (!Interop.Kernel32.AssignProcessToJobObject(s_killOnParentExitJob.Value, processInfo.hProcess))
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+
+                Interop.Kernel32.ResumeThread(processInfo.hThread);
+            }
+            catch
+            {
+                // If we fail to assign to the job, terminate the suspended process.
+                Interop.Kernel32.TerminateProcess(procSH, -1);
+                throw;
             }
         }
 
