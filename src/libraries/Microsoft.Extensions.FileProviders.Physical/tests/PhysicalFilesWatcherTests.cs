@@ -54,8 +54,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             try
             {
-            if (withTimeout)
-            {
+                if (withTimeout)
+                {
                     await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
                 }
                 else
@@ -136,6 +136,23 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             File.WriteAllText(Path.Combine(subDir, "file.txt"), string.Empty);
 
             await subFileChanged;
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public void Constructor_RejectsFswWithUnrelatedPath()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+
+            string dir = Path.Combine(root.Path, "dir");
+            string siblingDir = Path.Combine(root.Path, "dir-sibling");
+
+            Directory.CreateDirectory(dir);
+            Directory.CreateDirectory(siblingDir);
+
+            using var fsw = new FileSystemWatcher(siblingDir);
+            Assert.Throws<ArgumentException>(() =>
+                new PhysicalFilesWatcher(dir, fsw, pollForChanges: false));
         }
 
         [Fact]
