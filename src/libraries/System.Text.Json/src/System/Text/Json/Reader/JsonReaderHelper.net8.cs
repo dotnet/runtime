@@ -24,50 +24,30 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span)
         {
-            // Per requirements: focus on first 32 bytes
-            if (!AdvSimd.IsSupported || span.Length < 32)
+            // Fast path for " in the first 16 bytes
+            if (Vector128.IsHardwareAccelerated && span.Length >= 16)
             {
-                return span.IndexOfAny(s_controlQuoteBackslash);
+                ref byte ptr = ref MemoryMarshal.GetReference(span);
+                Vector128<byte> matches = Vector128.Equals(Vector128.LoadUnsafe(ref ptr), Vector128.Create((byte)'"'));
+                if (AdvSimd.IsSupported)
+                {
+                    // TODO: use Vector128.IndexOf for both AdvSimd and Sse2 once
+                    ulong mask = AdvSimd.ShiftRightLogicalNarrowingLower(matches.AsUInt16(), 4).AsUInt64().ToScalar();
+                    if (mask != 0)
+                    {
+                        return BitOperations.TrailingZeroCount(mask) >> 2;
+                    }
+                }
+                else
+                {
+                    uint mask = matches.ExtractMostSignificantBits();
+                    if (mask != 0)
+                    {
+                        return BitOperations.TrailingZeroCount(mask);
+                    }
+                }
             }
-
-            Vector128<byte> ControlBound = Vector128.Create((byte)32);
-            Vector128<byte> VecQuote = Vector128.Create((byte)'"');
-            Vector128<byte> VecBackslash = Vector128.Create((byte)'\\');
-
-            ref byte ptr = ref MemoryMarshal.GetReference(span);
-
-            // --- BLOCK 1 (Likely Hit) ---
-            Vector128<byte> v1 = Vector128.LoadUnsafe(ref ptr);
-
-            // Combine all checks into one mask
-            Vector128<byte> m1 = Vector128.LessThan(v1, ControlBound) |
-                                 Vector128.Equals(v1, VecQuote) |
-                                 Vector128.Equals(v1, VecBackslash);
-
-            // Narrow to 64-bit scalar: Each 4 bits in 'mask1' represents 1 byte in 'v1'
-            ulong mask1 = AdvSimd.ShiftRightLogicalNarrowingLower(m1.AsUInt16(), 4).AsUInt64().ToScalar();
-
-            // Single scalar branch (CBNZ on ARM64)
-            if (mask1 != 0)
-            {
-                // TrailingZeroCount / 4 gives the byte index (0-15)
-                return BitOperations.TrailingZeroCount(mask1) >> 2;
-            }
-
-            // --- BLOCK 2 ---
-            Vector128<byte> v2 = Vector128.LoadUnsafe(ref ptr, 16);
-            Vector128<byte> m2 = Vector128.LessThan(v2, ControlBound) |
-                                 Vector128.Equals(v2, VecQuote) |
-                                 Vector128.Equals(v2, VecBackslash);
-
-            ulong mask2 = AdvSimd.ShiftRightLogicalNarrowingLower(m2.AsUInt16(), 4).AsUInt64().ToScalar();
-
-            if (mask2 != 0)
-            {
-                return 16 + (BitOperations.TrailingZeroCount(mask2) >> 2);
-            }
-
-            return span.Slice(32).IndexOfAny(s_controlQuoteBackslash);
+            return span.IndexOfAny(s_controlQuoteBackslash);
         }
     }
 }
