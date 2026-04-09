@@ -1055,13 +1055,17 @@ struct JumpThreadInfo
 // optJumpThreadCheck: see if block is suitable for jump threading.
 //
 // Arguments:
-//   block - block in question
-//   domBlock - dom block used in inferencing (if any)
+//   block              - block in question
+//   domBlock           - dom block used in inferencing (if any)
+//   pHasGlobalPhiUse   - optional output; when non-null, global phi uses
+//                         are reported here instead of causing an immediate bail-out,
+//                         letting the caller decide (e.g. allow threading when every
+//                         predecessor is fully classified).
 //
 // Returns:
 //   True if the block is suitable for jump threading.
 //
-bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock)
+bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock, bool* pHasGlobalPhiUse)
 {
     // If the block is the first block of try-region, then skip jump threading
     if (bbIsTryBeg(block))
@@ -1121,27 +1125,42 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
                 unsigned const             ssaNum = phiDef->GetSsaNum();
                 LclVarDsc* const           varDsc = lvaGetDesc(lclNum);
 
+                bool isProblematicPhi = false;
+
                 // We do not put implicit uses of promoted local fields into SSA.
                 // So assume the worst here, that there is some implicit use of this ssa
                 // def we don't know about.
                 //
                 if (varDsc->lvIsStructField)
                 {
-                    JITDUMP(FMT_BB " has phi for promoted field V%02u.%u; no phi-based threading\n", block->bbNum,
-                            lclNum, ssaNum);
-                    return false;
+                    isProblematicPhi = true;
+                }
+                else
+                {
+                    LclSsaVarDsc* const ssaVarDsc = varDsc->GetPerSsaData(ssaNum);
+
+                    // Bypassing a global use might require SSA updates.
+                    // Note a phi use is ok if it's local (self loop)
+                    //
+                    if (ssaVarDsc->HasGlobalUse())
+                    {
+                        isProblematicPhi = true;
+                    }
                 }
 
-                LclSsaVarDsc* const ssaVarDsc = varDsc->GetPerSsaData(ssaNum);
-
-                // Bypassing a global use might require SSA updates.
-                // Note a phi use is ok if it's local (self loop)
-                //
-                if (ssaVarDsc->HasGlobalUse())
+                if (isProblematicPhi)
                 {
-                    JITDUMP(FMT_BB " has global phi for V%02u.%u; no phi-based threading\n", block->bbNum, lclNum,
-                            ssaNum);
-                    return false;
+                    if (pHasGlobalPhiUse != nullptr)
+                    {
+                        // Caller will decide whether to bail based on pred classification.
+                        *pHasGlobalPhiUse = true;
+                    }
+                    else
+                    {
+                        JITDUMP(FMT_BB " has global/promoted phi for V%02u.%u; no phi-based threading\n",
+                                block->bbNum, lclNum, ssaNum);
+                        return false;
+                    }
                 }
             }
 
@@ -1395,8 +1414,11 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
 bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeNormVN)
 {
     // First see if block is eligible for threading.
+    // Defer the global-phi bail-out: when every predecessor is fully classified
+    // the block becomes unreachable after threading, so global phi uses are safe.
     //
-    const bool check = optJumpThreadCheck(block, /* domBlock*/ nullptr);
+    bool hasGlobalPhiUse = false;
+    const bool check = optJumpThreadCheck(block, /* domBlock*/ nullptr, &hasGlobalPhiUse);
     if (!check)
     {
         return false;
@@ -1623,6 +1645,20 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
 
             continue;
         }
+    }
+
+    // If there are ambiguous predecessors and a global phi use, we cannot
+    // safely thread because the block would remain reachable (from the
+    // ambiguous preds) with a broken PHI.
+    //
+    // When there are NO ambiguous preds, all preds are redirected,
+    // the block becomes unreachable, and global phi uses are harmless.
+    //
+    if (hasGlobalPhiUse && (jti.m_numAmbiguousPreds > 0))
+    {
+        JITDUMP(FMT_BB " has global phi and %u ambiguous pred(s); no phi-based threading\n",
+                block->bbNum, jti.m_numAmbiguousPreds);
+        return false;
     }
 
     // Do the optimization.

@@ -7839,7 +7839,8 @@ public:
     bool        optRedundantBranch(BasicBlock* const block);
     bool        optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool        optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
-    bool        optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
+    bool        optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock,
+                                   bool* pHasGlobalPhiUse = nullptr);
     bool        optJumpThreadCore(JumpThreadInfo& jti);
 
     enum class ReachabilityResult
