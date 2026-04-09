@@ -483,6 +483,5 @@ namespace System.IO.Compression
                 }
             }
         }
-
     }
 }

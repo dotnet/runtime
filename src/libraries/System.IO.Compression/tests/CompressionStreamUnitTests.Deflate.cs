@@ -251,6 +251,5 @@ namespace System.IO.Compression
                 }
             }
         }
-
     }
 }
