@@ -85,6 +85,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+    <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
   <!-- Assembly attributes -->

@@ -3,8 +3,13 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.Metadata;
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -59,6 +64,122 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         return CustomQueryInterfaceResult.NotHandled;
     }
 
+    internal sealed class EnumMethodDefinitions : IEnum<uint>
+    {
+        private readonly uint _flags;
+        private readonly MetadataReader _reader;
+        private TypeDefinitionHandle? _typeHandle;
+        private string? _methodName;
+        public IEnumerator<uint> Enumerator { get; set; } = Enumerable.Empty<uint>().GetEnumerator();
+        public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
+
+        public EnumMethodDefinitions(MetadataReader reader, uint flags, TargetPointer legacyHandle)
+        {
+            _reader = reader;
+            _flags = flags;
+            LegacyHandle = legacyHandle;
+        }
+
+        public void Start(string fullName)
+        {
+            // start: find the type.
+            int parenIndex = fullName.IndexOf('(');
+            if (parenIndex >= 0)
+                fullName = fullName[..parenIndex];
+
+            int lastNestingSep = Math.Max(fullName.LastIndexOf('+'), fullName.LastIndexOf('/'));
+            int searchFrom = fullName.Length - 1;
+
+            while (searchFrom > 0)
+            {
+                int dotPos = fullName.LastIndexOf('.', searchFrom);
+                if (dotPos <= 0)
+                    break;
+
+                while (dotPos > 0 && fullName[dotPos - 1] == '.')
+                    dotPos--;
+
+                if (dotPos <= lastNestingSep || dotPos <= 0)
+                    break;
+
+                string typePortion = fullName[..dotPos];
+                string methodName = fullName[Math.Min(dotPos + 1, fullName.Length - 1)..];
+
+                _typeHandle = ResolveType(_reader, typePortion);
+                if (_typeHandle != null)
+                {
+                    _methodName = methodName;
+                    break;
+                }
+
+                searchFrom = dotPos - 1;
+            }
+
+            if (_typeHandle == null)
+                throw new ArgumentException();
+            Enumerator = IterateMethodDefinitions().GetEnumerator();
+        }
+
+        private bool StringEquals(string a, string b)
+        {
+            StringComparison comparison = (_flags & (uint)CLRDataByNameFlag.CLRDATA_BYNAME_CASE_INSENSITIVE) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            return string.Equals(a, b, comparison);
+        }
+
+        private IEnumerable<uint> IterateMethodDefinitions()
+        {
+            foreach (MethodDefinitionHandle mh in _reader.GetTypeDefinition(_typeHandle!.Value).GetMethods())
+            {
+                if (StringEquals(_reader.GetString(_reader.GetMethodDefinition(mh).Name), _methodName!))
+                    yield return (uint)MetadataTokens.GetToken(mh);
+            }
+            yield break;
+        }
+
+        private TypeDefinitionHandle? ResolveType(MetadataReader reader, string typeFullName)
+        {
+            string[] nestingParts = typeFullName.Split('+', '/');
+
+            string firstPart = nestingParts[0];
+            int lastDot = firstPart.LastIndexOf('.');
+
+            string ns = lastDot >= 0 ? firstPart[..lastDot] : "";
+            string outerName = lastDot >= 0 ? firstPart[(lastDot + 1)..] : firstPart;
+
+            TypeDefinitionHandle? current = FindTopLevelType(reader, ns, outerName);
+
+            for (int i = 1; i < nestingParts.Length && current != null; i++)
+                current = FindNestedType(reader, current.Value, nestingParts[i]);
+
+            return current;
+        }
+
+        private TypeDefinitionHandle? FindTopLevelType(MetadataReader reader, string @namespace, string name)
+        {
+            foreach (TypeDefinitionHandle handle in reader.TypeDefinitions)
+            {
+                TypeDefinition td = reader.GetTypeDefinition(handle);
+                if (td.IsNested)
+                    continue;
+
+                if ((string.IsNullOrEmpty(@namespace) || StringEquals(reader.GetString(td.Namespace), @namespace)) &&
+                    StringEquals(reader.GetString(td.Name), name))
+                    return handle;
+            }
+            return null;
+        }
+
+        private TypeDefinitionHandle? FindNestedType(MetadataReader reader, TypeDefinitionHandle enclosing, string name)
+        {
+            foreach (TypeDefinitionHandle nh in reader.GetTypeDefinition(enclosing).GetNestedTypes())
+            {
+                if (StringEquals(reader.GetString(reader.GetTypeDefinition(nh).Name), name))
+                    return nh;
+            }
+            return null;
+        }
+    }
+
     int IXCLRDataModule.StartEnumAssemblies(ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumAssemblies(handle) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumAssembly(ulong* handle, DacComNullableByRef<IXCLRDataAssembly> assembly)
@@ -98,12 +219,132 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         => _legacyModule is not null ? _legacyModule.GetTypeDefinitionByToken(token, typeDefinition) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumMethodDefinitionsByName(char* name, uint flags, ulong* handle)
-        => _legacyModule is not null ? _legacyModule.StartEnumMethodDefinitionsByName(name, flags, handle) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EnumMethodDefinitionByName(ulong* handle, DacComNullableByRef<IXCLRDataMethodDefinition> method)
-        => _legacyModule is not null ? _legacyModule.EnumMethodDefinitionByName(handle, method) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EndEnumMethodDefinitionsByName(ulong handle)
-        => _legacyModule is not null ? _legacyModule.EndEnumMethodDefinitionsByName(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        *handle = 0;
 
+        // Start the legacy enumeration to keep it in sync with the cDAC enumeration.
+        ulong handleLocal = default;
+        int hrLocal = default;
+        try
+        {
+            if (_legacyModule is not null)
+            {
+                hrLocal = _legacyModule.StartEnumMethodDefinitionsByName(name, flags, &handleLocal);
+            }
+            if (name == null || *name == '\0')
+                throw new ArgumentException();
+            if ((flags & ~((uint)CLRDataByNameFlag.CLRDATA_BYNAME_CASE_SENSITIVE | (uint)CLRDataByNameFlag.CLRDATA_BYNAME_CASE_INSENSITIVE)) != 0)
+                throw new ArgumentException();
+            string fullName = new string(name);
+
+            // start: find the type.
+            ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_address);
+            MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+
+            EnumMethodDefinitions emd = new(reader, flags, handleLocal);
+            emd.Start(fullName);
+            *handle = (ulong)((IEnum<uint>)emd).GetHandle();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
+
+    int IXCLRDataModule.EnumMethodDefinitionByName(ulong* handle, DacComNullableByRef<IXCLRDataMethodDefinition> method)
+    {
+        int hr = HResults.S_OK;
+        EnumMethodDefinitions emd;
+        try
+        {
+            if (method.IsNullRef)
+                throw new NullReferenceException();
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+            if (gcHandle.Target is not EnumMethodDefinitions emdLocal)
+                throw new ArgumentException();
+
+            emd = emdLocal;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        // Advance the legacy enumeration to keep it in sync with the cDAC enumeration.
+        IXCLRDataMethodDefinition? legacyMethod = null;
+        int hrLocal = HResults.S_OK;
+        if (_legacyModule is not null)
+        {
+            ulong legacyHandle = emd.LegacyHandle;
+            DacComNullableByRef<IXCLRDataMethodDefinition> legacyMethodOut = new(isNullRef: false);
+            hrLocal = _legacyModule.EnumMethodDefinitionByName(&legacyHandle, legacyMethodOut);
+            legacyMethod = legacyMethodOut.Interface;
+            emd.LegacyHandle = legacyHandle;
+        }
+
+        try
+        {
+            if (emd.Enumerator.MoveNext())
+            {
+                uint token = emd.Enumerator.Current;
+                method.Interface = new ClrDataMethodDefinition(_target, _address, token, legacyMethod);
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
+    int IXCLRDataModule.EndEnumMethodDefinitionsByName(ulong handle)
+    {
+        int hr = HResults.S_OK;
+        EnumMethodDefinitions emd;
+        try
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+            if (gcHandle.Target is not EnumMethodDefinitions emdLocal)
+                throw new ArgumentException();
+            emd = emdLocal;
+            ((IEnum<uint>)emd).Dispose();
+            gcHandle.Free();
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        if (_legacyModule != null && emd.LegacyHandle != TargetPointer.Null)
+        {
+            int hrLocal = _legacyModule.EndEnumMethodDefinitionsByName(emd.LegacyHandle);
+            if (hrLocal < 0)
+                return hrLocal;
+        }
+
+        return hr;
+    }
     int IXCLRDataModule.StartEnumMethodInstancesByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumMethodInstancesByName(name, flags, appDomain, handle) : HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, DacComNullableByRef<IXCLRDataMethodInstance> method)
