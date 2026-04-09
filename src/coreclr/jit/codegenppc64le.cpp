@@ -524,10 +524,125 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 //
 void CodeGen::genCall(GenTreeCall* call)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    genCallPlaceRegArgs(call);
+
+    // Insert a null check on "this" pointer if asked.
+    if (call->NeedsNullCheck())
+    {
+        const regNumber regThis = genGetThisArgReg(call);
+
+        // Load word from "this" pointer to trigger null check
+        // Using lwz (load word and zero) with R0 as destination (discarded)
+        GetEmitter()->emitIns_R_R_I(INS_lwz, EA_4BYTE, REG_R0, regThis, 0);
+    }
+
+    // If fast tail call, then we are done here, we just have to load the call
+    // target into the right registers. We ensure in RA that target is loaded
+    // into a volatile register that won't be restored by epilog sequence.
+    if (call->IsFastTailCall())
+    {
+        GenTree* target = getCallTarget(call, nullptr);
+
+        if (target != nullptr)
+        {
+            // Indirect fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
+            genConsumeReg(target);
+        }
+#ifdef FEATURE_READYTORUN
+        else if (call->IsR2ROrVirtualStubRelativeIndir())
+        {
+            assert((call->IsR2RRelativeIndir() && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
+                   (call->IsVirtualStubRelativeIndir() && (call->gtEntryPoint.accessType == IAT_VALUE)));
+            assert(call->gtControlExpr == nullptr);
+
+            regNumber tmpReg = internalRegisters.GetSingle(call);
+            // Register where we save call address in should not be overridden by epilog.
+            // Note: PPC64LE doesn't have a dedicated link register constant like ARM's RBM_LR,
+            // but the link register is implicitly used by branch-and-link instructions.
+            assert((genRegMask(tmpReg) & RBM_INT_CALLEE_TRASH) == genRegMask(tmpReg));
+
+            regNumber callAddrReg =
+                call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
+            GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg, 0);
+            // We will use this again when emitting the jump in genCallInstruction in the epilog
+            internalRegisters.Add(call, genRegMask(tmpReg));
+        }
+#endif
+
+        return;
+    }
+
+    // For a pinvoke to unmanaged code we emit a label to clear
+    // the GC pointer state before the callsite.
+    // We can't utilize the typical lazy killing of GC pointers
+    // at (or inside) the callsite.
+    if (compiler->killGCRefs(call))
+    {
+        genDefineTempLabel(genCreateTempLabel());
+    }
+
+    genCallInstruction(call);
+
+    genDefinePendingCallLabel(call);
+
+#ifdef DEBUG
+    // We should not have GC pointers in killed registers live around the call.
+    // GC info for arg registers were cleared when consuming arg nodes above
+    // and LSRA should ensure it for other trashed registers.
+    regMaskTP killMask = RBM_CALLEE_TRASH;
+    if (call->IsHelperCall())
+    {
+        CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
+        killMask                 = compiler->compHelperCallKillSet(helpFunc);
+    }
+
+    assert((gcInfo.gcRegGCrefSetCur & killMask) == 0);
+    assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
+#endif // DEBUG
+
+    var_types returnType = call->TypeGet();
+    if (returnType != TYP_VOID)
+    {
+        regNumber returnReg;
+
+        if (call->HasMultiRegRetVal())
+        {
+            const ReturnTypeDesc* pRetTypeDesc = call->GetReturnTypeDesc();
+            assert(pRetTypeDesc != nullptr);
+            unsigned regCount = pRetTypeDesc->GetReturnRegCount();
+
+            // If regs allocated to call node are different from ABI return
+            // regs in which the call has returned its result, move the result
+            // to regs allocated to call node.
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                var_types regType      = pRetTypeDesc->GetReturnRegType(i);
+                returnReg              = pRetTypeDesc->GetABIReturnReg(i, call->GetUnmanagedCallConv());
+                regNumber allocatedReg = call->GetRegNumByIdx(i);
+                inst_Mov(regType, allocatedReg, returnReg, /* canSkip */ true);
+            }
+        }
+        else
+        {
+            if (varTypeUsesFloatReg(returnType))
+            {
+                returnReg = REG_FLOATRET;
+            }
+            else
+            {
+                returnReg = REG_INTRET;
+            }
+
+            if (call->GetRegNum() != returnReg)
+            {
+                inst_Mov(returnType, call->GetRegNum(), returnReg, /* canSkip */ false);
+            }
+        }
+
+        genProduceReg(call);
+    }
 }
-    
+
 //------------------------------------------------------------------------
 // genCallInstruction - Generate instructions necessary to transfer control to the call.
 //
@@ -539,8 +654,213 @@ void CodeGen::genCall(GenTreeCall* call)
 //
 void CodeGen::genCallInstruction(GenTreeCall* call)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    // Determine return value size(s).
+    const ReturnTypeDesc* pRetTypeDesc  = call->GetReturnTypeDesc();
+    emitAttr              retSize       = EA_PTRSIZE;
+    emitAttr              secondRetSize = EA_UNKNOWN;
+
+    // unused values are of no interest to GC.
+    if (!call->IsUnusedValue())
+    {
+        if (call->HasMultiRegRetVal())
+        {
+            retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
+            secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
+        }
+        else
+        {
+            assert(call->gtType != TYP_STRUCT);
+
+            if (call->gtType == TYP_REF)
+            {
+                retSize = EA_GCREF;
+            }
+            else if (call->gtType == TYP_BYREF)
+            {
+                retSize = EA_BYREF;
+            }
+        }
+    }
+
+    DebugInfo di;
+    // We need to propagate the debug information to the call instruction, so we can emit
+    // an IL to native mapping record for the call, to support managed return value debugging.
+    // We don't want tail call helper calls that were converted from normal calls to get a record,
+    // so we skip this hash table lookup logic in that case.
+    if (compiler->opts.compDbgInfo && compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
+    {
+        (void)compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
+    }
+
+    CORINFO_SIG_INFO* sigInfo = nullptr;
+#ifdef DEBUG
+    // Pass the call signature information down into the emitter so the emitter can associate
+    // native call sites with the signatures they were generated from.
+    if (!call->IsHelperCall())
+    {
+        sigInfo = call->callSig;
+    }
+
+    if (call->IsFastTailCall())
+    {
+        regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
+
+        // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
+        // non-standard args that may be trash if this is a tailcall.
+        if (compiler->getNeedsGSSecurityCookie())
+        {
+            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
+            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
+        }
+
+        for (CallArg& arg : call->gtArgs.Args())
+        {
+            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
+                {
+                    JITDUMP("Tail call node:\n");
+                    DISPTREE(call);
+                    JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
+                    assert(!"Argument to tailcall may be trashed by epilog");
+                }
+            }
+        }
+    }
+#endif // DEBUG
+    CORINFO_METHOD_HANDLE methHnd;
+    GenTree*              target = getCallTarget(call, &methHnd);
+
+    if (target != nullptr)
+    {
+        // A call target can not be a contained indirection
+        assert(!target->isContainedIndir());
+
+        // For fast tailcall we have already consumed the target. We ensure in
+        // RA that the target was allocated into a volatile register that will
+        // not be messed up by epilog sequence.
+        if (!call->IsFastTailCall())
+        {
+            genConsumeReg(target);
+        }
+
+        // We have already generated code for gtControlExpr evaluating it into a register.
+        // We just need to emit "call reg" in this case.
+        //
+        assert(genIsValidIntReg(target->GetRegNum()));
+
+        // clang-format off
+        genEmitCall(emitter::EC_INDIR_R,
+                    methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo)
+                    nullptr, // addr
+                    retSize
+                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    di,
+                    target->GetRegNum(),
+                    call->IsFastTailCall());
+        // clang-format on
+    }
+    else
+    {
+        // If we have no target and this is a call with indirection cell then
+        // we do an optimization where we load the call address directly from
+        // the indirection cell instead of duplicating the tree. In BuildCall
+        // we ensure that get an extra register for the purpose. Note that for
+        // CFG the call might have changed to
+        // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
+        // indirection cell but we should not try to optimize.
+        regNumber callThroughIndirReg = REG_NA;
+        if (!call->IsHelperCall(compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        {
+            callThroughIndirReg = getCallIndirectionCellReg(call);
+        }
+
+        if (callThroughIndirReg != REG_NA)
+        {
+            assert(call->IsR2ROrVirtualStubRelativeIndir());
+            regNumber targetAddrReg;
+            // For fast tailcalls we have already loaded the call target when processing the call node.
+            if (!call->IsFastTailCall())
+            {
+                // For PPC64LE, allocate an internal register to load the target into.
+                // Similar to ARM32 approach - we use an internal register for the load.
+                targetAddrReg = internalRegisters.GetSingle(call);
+
+                GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
+                                            callThroughIndirReg, 0);
+            }
+            else
+            {
+                targetAddrReg = internalRegisters.GetSingle(call);
+                // Register where we save call address in should not be overridden by epilog.
+                // PPC64LE uses link register implicitly for branch-and-link instructions.
+                // Ensure the target register is in the callee-trash set (volatile registers).
+                assert((genRegMask(targetAddrReg) & RBM_INT_CALLEE_TRASH) == genRegMask(targetAddrReg));
+            }
+
+            // We have now generated code loading the target address from the indirection cell into `targetAddrReg`.
+            // We just need to emit "bl targetAddrReg" (branch and link) in this case.
+            //
+            assert(genIsValidIntReg(targetAddrReg));
+
+            // clang-format off
+            genEmitCall(emitter::EC_INDIR_R,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        nullptr, // addr
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        di,
+                        targetAddrReg,
+                        call->IsFastTailCall());
+            // clang-format on
+        }
+        else
+        {
+            // Generate a direct call to a non-virtual user defined or helper method
+            assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
+
+            void* addr = nullptr;
+#ifdef FEATURE_READYTORUN
+            if (call->gtEntryPoint.addr != NULL)
+            {
+                assert(call->gtEntryPoint.accessType == IAT_VALUE);
+                addr = call->gtEntryPoint.addr;
+            }
+            else
+#endif // FEATURE_READYTORUN
+                if (call->IsHelperCall())
+                {
+                    CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
+                    noway_assert(helperNum != CORINFO_HELP_UNDEF);
+
+                    void* pAddr = nullptr;
+                    addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
+                    assert(pAddr == nullptr);
+                }
+                else
+                {
+                    // Direct call to a non-virtual user function.
+                    addr = call->gtDirectCallAddress;
+                }
+
+            assert(addr != nullptr);
+
+            // clang-format off
+            genEmitCall(emitter::EC_FUNC_TOKEN,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        addr,
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        di,
+                        REG_NA,
+                        call->IsFastTailCall());
+            // clang-format on
+        }
+    }
 }
 
 //------------------------------------------------------------------------

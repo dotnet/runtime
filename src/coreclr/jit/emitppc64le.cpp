@@ -350,6 +350,46 @@ void emitter::emitIns_R_R(instruction     ins,
 
 }
 
+/*****************************************************************************
+ *
+ *  Add an instruction referencing two registers and a constant.
+ */
+
+void emitter::emitIns_R_R_I(instruction ins,
+                            emitAttr    attr,
+                            regNumber   reg1,
+                            regNumber   reg2,
+                            ssize_t     imm,
+                            insOpts     opt /* = INS_OPTS_NONE */)
+{
+    // Validate registers
+    assert(isGeneralRegister(reg1));
+    assert(isGeneralRegister(reg2));
+
+    // Validate immediate range based on instruction type
+    // D-form instructions use 16-bit signed immediate
+    // DS-form instructions use 14-bit aligned immediate
+    if (ins == INS_ld || ins == INS_lwa)
+    {
+        // DS-form: must be 4-byte aligned
+        assert((imm & 0x3) == 0);
+        assert(imm >= -32768 && imm <= 32764);
+    }
+    else
+    {
+        // D-form: 16-bit signed
+        assert(imm >= -32768 && imm <= 32767);
+    }
+
+    // Create instruction descriptor with immediate value
+    instrDesc* id = emitNewInstrCns(attr, imm);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+
+    appendToCurIG(id);
+}
 
 void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
 {
