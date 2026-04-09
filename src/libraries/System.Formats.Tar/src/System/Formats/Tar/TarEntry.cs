@@ -348,9 +348,15 @@ namespace System.Formats.Tar
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
 
             string name = ArchivingUtils.SanitizeEntryFilePath(Name, preserveDriveRoot: true);
+            // On Windows, reject rooted but not fully qualified paths ("\Windows\win.ini", "C:foo").
+            // They resolve ambiguously based on the current drive or working directory.
+            if (OperatingSystem.IsWindows() && Path.IsPathRooted(name) && !Path.IsPathFullyQualified(name))
+            {
+                throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
+            }
             string? fileDestinationPath = GetFullDestinationPath(
                                                 destinationDirectoryPath,
-                                                Path.IsPathRooted(name) ? Path.GetFullPath(name) : Path.Join(destinationDirectoryPath, name));
+                                                Path.IsPathFullyQualified(name) ? name : Path.Join(destinationDirectoryPath, name));
             if (fileDestinationPath == null)
             {
                 throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
@@ -362,22 +368,29 @@ namespace System.Formats.Tar
                 // LinkName is an absolute path, or path relative to the fileDestinationPath directory.
                 // We don't check if the LinkName is empty. In that case, creation of the link will fail because link targets can't be empty.
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
-                bool isRooted = Path.IsPathRooted(linkName);
+                if (OperatingSystem.IsWindows() && Path.IsPathRooted(linkName) && !Path.IsPathFullyQualified(linkName))
+                {
+                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
+                }
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
-                                            isRooted ? Path.GetFullPath(linkName) : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
+                                            Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
                 if (linkDestination is null)
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
-                // For rooted targets, use the fully-resolved path so the created symlink points to exactly the path that was validated otherwise preserve the original relative path
-                linkTargetPath = isRooted ? linkDestination : linkName;
+                // Use the linkName for creating the symbolic link.
+                linkTargetPath = linkName;
             }
             else if (EntryType is TarEntryType.HardLink)
             {
                 // LinkName is path relative to the destinationDirectoryPath.
                 // We don't check if the LinkName is empty. In that case, creation of the link will fail because a hard link can't target a directory.
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: false);
+                if (OperatingSystem.IsWindows() && Path.IsPathRooted(linkName) && !Path.IsPathFullyQualified(linkName))
+                {
+                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
+                }
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.Join(destinationDirectoryPath, linkName));
@@ -592,10 +605,10 @@ namespace System.Formats.Tar
 
             if (!OperatingSystem.IsWindows())
             {
-                 const UnixFileMode OwnershipPermissions =
-                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                    UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
-                    UnixFileMode.OtherRead | UnixFileMode.OtherWrite |  UnixFileMode.OtherExecute;
+                const UnixFileMode OwnershipPermissions =
+                   UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                   UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                   UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
 
                 // Restore permissions.
                 // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
