@@ -2137,12 +2137,6 @@ FileLoadLock::FileLoadLock(PEFileListLock* pLock, PEAssembly* pPEAssembly)
     pPEAssembly->AddRef();
 }
 
-void FileLoadLock::HolderLeave(FileLoadLock *pThis)
-{
-    LIMITED_METHOD_CONTRACT;
-    pThis->Leave();
-}
-
 
 //
 // Assembly loading:
@@ -2650,7 +2644,7 @@ void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& 
     // This is factored out so we don't call EX_TRY in a loop (EX_TRY can _alloca)
 
     BOOL released = FALSE;
-    FileLoadLock* pLoadLock = lockHolder.GetValue();
+    FileLoadLock* pLoadLock = lockHolder;
     Assembly* pAssembly = pLoadLock->GetAssembly();
 
     EX_TRY
@@ -2691,7 +2685,7 @@ void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& 
         if (pLoadLock->CompleteLoadLevel(workLevel, success) &&
             pLoadLock->GetLoadLevel()==FILE_LOAD_DELIVER_EVENTS)
         {
-            lockHolder.Release();
+            lockHolder.Free();
             released = TRUE;
             pAssembly->DeliverAsyncEvents();
         };

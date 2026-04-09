@@ -722,7 +722,7 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 
     SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
     pImage->SetLayout(IMAGE_FLAT,pLayout);
-    return dac_cast<PTR_PEImage>(pImage.Extract());
+    return dac_cast<PTR_PEImage>(pImage.Detach());
 }
 
 #ifndef TARGET_UNIX
@@ -755,7 +755,7 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 
     _ASSERTE(pImage->m_pLayouts[IMAGE_FLAT] != NULL);
     _ASSERTE(pImage->HasLoadedLayout());
-    return dac_cast<PTR_PEImage>(pImage.Extract());
+    return dac_cast<PTR_PEImage>(pImage.Detach());
 }
 #endif // !TARGET_UNIX
 

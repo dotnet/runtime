@@ -338,43 +338,29 @@ extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
     return pStub;
 }
 
-FORCEINLINE void CPListRelease(CQuickArray<ConnectionPoint*>* value)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (value)
-    {
-        // Delete all the connection points.
-        for (UINT i = 0; i < value->Size(); i++)
-            delete (*value)[i];
-
-        // Delete the list itself.
-        delete value;
-    }
-}
-
 typedef CQuickArray<ConnectionPoint*> CPArray;
 
-FORCEINLINE void CPListDoNothing(CPArray*)
+struct CPListHolderTraits final
 {
-    LIMITED_METHOD_CONTRACT;
-}
-
-class CPListHolder : public Wrapper<CPArray*, CPListDoNothing, CPListRelease, 0>
-{
-public:
-    CPListHolder(CPArray* p = NULL)
-        : Wrapper<CPArray*, CPListDoNothing, CPListRelease, 0>(p)
+    using Type = CPArray*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
     {
         WRAPPER_NO_CONTRACT;
-    }
 
-    FORCEINLINE void operator=(CPArray* p)
-    {
-        WRAPPER_NO_CONTRACT;
-        Wrapper<CPArray*, CPListDoNothing, CPListRelease, 0>::operator=(p);
+        if (value != NULL)
+        {
+            // Delete all the connection points.
+            for (UINT i = 0; i < value->Size(); i++)
+                delete (*value)[i];
+
+            // Delete the list itself.
+            delete value;
+        }
     }
 };
+
+using CPListHolder = LifetimeHolder<CPListHolderTraits>;
 
 NOINLINE void LogCCWRefCountChange_BREAKPOINT(ComCallWrapper *pCCW)
 {
@@ -816,7 +802,7 @@ void SimpleComCallWrapper::SetUpCPListHelper(MethodTable **apSrcItfMTs, int cSrc
     }
     CONTRACTL_END;
 
-    CPListHolder pCPList = NULL;
+    CPListHolder pCPList;
     ComCallWrapper *pWrap = GetMainWrapper();
     int NumCPs = 0;
 
@@ -844,8 +830,8 @@ void SimpleComCallWrapper::SetUpCPListHelper(MethodTable **apSrcItfMTs, int cSrc
     // Finally, we set the connection point list in the simple wrapper. If
     // no other thread already set it, we set pCPList to NULL to indicate
     // that ownership has been transferred to the simple wrapper.
-    if (InterlockedCompareExchangeT(&m_pCPList, pCPList.GetValue(), NULL) == NULL)
-        pCPList.SuppressRelease();
+    if (InterlockedCompareExchangeT(&m_pCPList, static_cast<CPArray*>(pCPList), NULL) == NULL)
+        pCPList.Detach();
 }
 
 ConnectionPoint *SimpleComCallWrapper::TryCreateConnectionPoint(ComCallWrapper *pWrap, MethodTable *pEventMT)

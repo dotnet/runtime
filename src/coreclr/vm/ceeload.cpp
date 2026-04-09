@@ -622,7 +622,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
 
     _ASSERTE(pModuleSafe->GetAssembly() == pAssembly);
     _ASSERTE(pModuleSafe->GetPEAssembly() == pPEAssembly);
-    return pModuleSafe.Extract();
+    return pModuleSafe.Detach();
 }
 
 void Module::ApplyMetaData()
@@ -3805,7 +3805,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
     pModule->DoInit(pamTracker, szName);
     pModule->SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules();
 
-    return pModule.Extract();
+    return pModule.Detach();
 }
 
 

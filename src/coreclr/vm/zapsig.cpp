@@ -917,7 +917,7 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
 
 
     // This must be called even if nargs == 0, in order to create an instantiating
-    // stub for static methods in generic classees if needed, also for BoxedEntryPointStubs
+    // stub for static methods in generic classes if needed, also for BoxedEntryPointStubs
     // in non-generic structs.
     BOOL isInstantiatingStub = (methodFlags & ENCODE_METHOD_SIG_InstantiatingStub);
     BOOL isUnboxingStub = (methodFlags & ENCODE_METHOD_SIG_UnboxingStub);
@@ -927,9 +927,9 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
                                                             isUnboxingStub,
                                                             inst,
                                                             !(isInstantiatingStub || isUnboxingStub) && !actualOwnerRequired,
+                                                            isAsyncVariant ? AsyncVariantLookup::Async : AsyncVariantLookup::Ordinary,
                                                             actualOwnerRequired,
-                                                            TRUE,
-                                                            isAsyncVariant == pMethod->IsAsyncVariantMethod() ? AsyncVariantLookup::MatchingAsyncVariant : AsyncVariantLookup::AsyncOtherVariant);
+                                                            TRUE);
 
     if (methodFlags & ENCODE_METHOD_SIG_Constrained)
     {

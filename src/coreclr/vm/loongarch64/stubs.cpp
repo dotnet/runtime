@@ -307,10 +307,10 @@ void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, 
     UINT64 *pCalleeSavedFloats = (UINT64*)((BYTE*)pTransitionBlock - 128);
 
     // LoongArch CONTEXT::F has 4 slots per register for LASX support.
-    // Each scalar double value is stored in the first slot.
+    // Scalar double value is stored in the first 8 * 32.
     for (int i = 0; i < 8; i++)
     {
-        memcpy(&pRD->pCurrentContext->F[(24 + i) * 4], &pCalleeSavedFloats[i], sizeof(double));
+        memcpy(&pRD->pCurrentContext->F[24 + i], &pCalleeSavedFloats[i], sizeof(double));
     }
 }
 #endif // DACCESS_COMPILE
