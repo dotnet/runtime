@@ -254,6 +254,16 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
 {
     assert(!interval->isLocalVar);
 
+    if (defRefPosition->treeNode->IsMultiRegNode())
+    {
+        // If the defRefPosition is multireg then we cannot change any of its
+        // register assignments. That could cause us to require a parallel
+        // assignment during codegen that could have cycles in it. For example,
+        // x64 DivRem always defines into RAX and RDX, so it would be a problem
+        // to change the register assignments to RDX and RAX respectively.
+        return;
+    }
+
     RefPosition*     useRefPosition   = defRefPosition->nextRefPosition;
     SingleTypeRegSet useRegAssignment = useRefPosition->registerAssignment;
     regMaskTP        inUse            = regsBusyUntilKill | regsInUseThisLocation;
