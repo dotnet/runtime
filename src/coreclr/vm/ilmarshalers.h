@@ -3349,22 +3349,6 @@ protected:
     DWORD m_dwSavedSizeArg;
 };
 
-struct MngdNativeArrayMarshaler
-{
-    MethodTable*            m_pElementMT;
-    TypeHandle              m_Array;
-    BOOL                    m_NativeDataValid;
-    BOOL                    m_BestFitMap;
-    BOOL                    m_ThrowOnUnmappableChar;
-    VARTYPE                 m_vt;
-};
-
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToNative(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, INT32 cElements);
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(MngdNativeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome);
-extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativeArrayMarshaler* pThis, void** pNativeHome, INT32 cElements);
-
 class ILFixedArrayMarshaler : public ILArrayMarshalerBase
 {
 public:
