@@ -26,7 +26,7 @@ namespace System.Text.Json
         {
             // For most inputs, we have a large span and we typically find a match within the first 16 bytes
             // Usually, it's a quote in a property name.
-            if (!Vector128.IsHardwareAccelerated || span.Length < 16)
+            if (!Vector128.IsHardwareAccelerated || !BitConverter.IsLittleEndian || span.Length < Vector128<byte>.Count)
                 return IndexOfQuoteOrAnyControlOrBackSlash_Fallback(span);
 
             Vector128<byte> vec = Vector128.Create(span);
