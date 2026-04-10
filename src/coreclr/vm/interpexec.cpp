@@ -3449,6 +3449,9 @@ CALL_INTERP_METHOD:
                     }
 
                     pInterpreterFrame->SetIsFaulting(true);
+                    // Record the current interpreter IP in the frame so the
+                    // EH dispatch can find it during stack walking.
+                    pFrame->ip = ip;
                     DispatchManagedException(throwable);
                     UNREACHABLE();
                     break;
