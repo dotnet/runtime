@@ -2475,9 +2475,13 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                                     JITDUMP("Removing dead store data:\n");
                                     DISPNODE(data);
                                     if (next == data)
+                                    {
                                         next = data->gtPrev;
+                                    }
                                     if (end == data)
+                                    {
                                         end = data->gtNext;
+                                    }
                                     blockRange.Delete(m_compiler, block, data);
                                     // fgStmtRemoved was already set by TryRemoveDeadStoreLIR
                                 }
