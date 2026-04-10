@@ -2415,9 +2415,13 @@ namespace System.Text.RegularExpressions
                         // Find the node that follows the literal in the tree and check whether
                         // the loop would be atomic with respect to it. If nothing follows (end of
                         // pattern), we can't reduce — earlier positions could still succeed.
+                        // We must not iterate past nullable nodes to the end of the pattern: if the
+                        // entire post-literal sequence is nullable, any backtrack position could
+                        // succeed (the nullable part matches empty and the branch completes), so
+                        // reducing to a single position would be incorrect.
                         return
                             FindNextNodeInSequence(literal, out _) is RegexNode afterLiteral &&
-                            CanBeMadeAtomic(loopNode, afterLiteral, iterateNullableSubsequent: true, allowLazy: false);
+                            CanBeMadeAtomic(loopNode, afterLiteral, iterateNullableSubsequent: false, allowLazy: false);
 
                     case RegexNodeKind.Multi when CharInLoopSet(loopNode, literal.Str![0]) && !CharInLoopSet(loopNode, literal.Str[1]):
                         // For a multi-character literal (e.g. \d+0x), treat it as two single characters:

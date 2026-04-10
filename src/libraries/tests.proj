@@ -295,7 +295,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles\tests\System.IO.MemoryMappedFiles.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Numerics\tests\System.Runtime.Numerics.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
 
     <!--
       Test apps that are too large and take too long to build
@@ -360,6 +359,8 @@
 
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and ('$(RuntimeFlavor)' == 'Mono' or '$(UseNativeAOTRuntime)' == 'true') and '$(RunDisablediOSTests)' != 'true'">
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR\*.Test.csproj" />
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/125723 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' != 'true'">
@@ -697,6 +698,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.HttpListener\tests\System.Net.HttpListener.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+
+    <!-- Not supported on Apple mobile -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.TraceSource\tests\System.Diagnostics.TraceSource.Config.Tests\System.Diagnostics.TraceSource.Config.Tests.csproj" />
   </ItemGroup>
 
   <!-- https://github.com/dotnet/runtime/issues/124044 -->
@@ -785,8 +789,8 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos') and '$(UseNativeAOTRuntime)' == 'true'">
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj"
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetsAppleMobile)' == 'true' and '$(UseNativeAOTRuntime)' == 'true'">
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj"
                     Exclude="@(ProjectExclusions)"
                     BuildInParallel="false" />
   </ItemGroup>

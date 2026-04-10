@@ -22,7 +22,6 @@
     <Compile Include="System\Diagnostics\Process.cs" />
     <Compile Include="System\Diagnostics\ProcessExitStatus.cs" />
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.cs" />
     <Compile Include="System\Diagnostics\ProcessModule.cs" />
     <Compile Include="System\Diagnostics\ProcessModuleCollection.cs" />
     <Compile Include="System\Diagnostics\ProcessPriorityClass.cs" />
@@ -154,8 +153,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetPriorityClass.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetPriorityClass.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SetPriorityClass.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeFileHandle.cs"
-             Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeFileHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_IntPtr.cs"
+             Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs"
              Link="Common\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeWaitHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ProcessWaitHandle.cs"
@@ -226,6 +225,8 @@
     <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
     <Compile Include="System\Diagnostics\ProcessUtils.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.ShellExecuteExW.cs"
+             Link="Common\Interop\Windows\Shell32\Interop.ShellExecuteExW.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
@@ -263,6 +264,8 @@
              Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Kill.cs"
              Link="Common\Interop\Unix\Interop.Kill.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs"
+             Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"
              Link="Common\Interop\Unix\Interop.ReadLink.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RegisterForSigChld.cs"
@@ -298,11 +301,11 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsiOSLike)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs"
              Link="Common\Interop\Unix\Interop.ConfigureTerminalForChildProcess.cs" />
-    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.Unix.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.ConfigureTerminalForChildProcesses.Unix.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsiOSLike)' == 'true'">
-    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.iOS.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.ConfigureTerminalForChildProcesses.iOS.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux'">
@@ -345,14 +348,6 @@
              Link="Common\Interop\OSX\Interop.Interop.libSystem.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.ShellExecuteExW.cs"
-             Link="Common\Interop\Windows\Shell32\Interop.ShellExecuteExW.cs" />
-    <Compile Include="System\Diagnostics\Process.Win32.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.Win32.cs" />
-    <Compile Include="System\Diagnostics\ProcessStartInfo.Win32.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'tvos'">
