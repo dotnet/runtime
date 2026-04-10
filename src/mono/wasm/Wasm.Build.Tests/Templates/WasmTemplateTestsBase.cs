@@ -28,9 +28,6 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected readonly BuildOptions _defaultBuildOptions;
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
 
-    private static bool s_wasmTemplatesInstalled;
-    private static readonly object s_wasmTemplatesLock = new();
-
     public WasmTemplateTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, ProjectProviderBase? provider = null)
         : base(provider ?? new WasmSdkBasedProjectProvider(output, DefaultTargetFramework), output, buildContext)
     {
@@ -86,8 +83,6 @@ public class WasmTemplateTestsBase : BuildTestBase
 
             extraArgs += $" -f {defaultTarget}";
         }
-
-        EnsureWasmTemplatesInstalled();
 
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
         CommandResult result = cmd.WithWorkingDirectory(_projectDir)
@@ -178,63 +173,6 @@ public class WasmTemplateTestsBase : BuildTestBase
                 </ItemGroup>
             </Target>
         """;
-    }
-
-    /// <summary>
-    /// Installs the WASM browser/console templates from the built nugets path
-    /// using <c>dotnet new install</c> if needed. This is a no-op when
-    /// the workload is already installed (templates come with the workload).
-    /// </summary>
-    private static void EnsureWasmTemplatesInstalled()
-    {
-        if (s_buildEnv.IsWorkload)
-            return;
-
-        if (s_wasmTemplatesInstalled)
-            return;
-
-        lock (s_wasmTemplatesLock)
-        {
-            if (s_wasmTemplatesInstalled)
-                return;
-
-            string? templateNupkg = Directory.GetFiles(s_buildEnv.BuiltNuGetsPath, "Microsoft.NET.Runtime.WebAssembly.Templates.*.nupkg")
-                .Where(f => !f.EndsWith(".symbols.nupkg", StringComparison.OrdinalIgnoreCase))
-                .FirstOrDefault();
-
-            if (templateNupkg is null)
-                throw new InvalidOperationException(
-                    $"Could not find WebAssembly template nupkg in '{s_buildEnv.BuiltNuGetsPath}'");
-
-            Console.WriteLine($"[templates] Installing WASM templates from {templateNupkg} using {s_buildEnv.DotNet}");
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = s_buildEnv.DotNet,
-                Arguments = $"new install \"{templateNupkg}\" --force",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false
-            };
-            psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
-
-            using var process = Process.Start(psi)
-                ?? throw new InvalidOperationException("Failed to start 'dotnet new install' process");
-
-            var stdoutTask = process.StandardOutput.ReadToEndAsync();
-            var stderrTask = process.StandardError.ReadToEndAsync();
-            process.WaitForExit();
-
-            string stdout = stdoutTask.Result;
-            string stderr = stderrTask.Result;
-
-            if (process.ExitCode != 0)
-                throw new InvalidOperationException(
-                    $"'dotnet new install' failed with exit code {process.ExitCode}.\nStdout: {stdout}\nStderr: {stderr}");
-
-            Console.WriteLine($"[templates] WASM template install completed successfully");
-            s_wasmTemplatesInstalled = true;
-        }
     }
 
     public virtual (string projectDir, string buildOutput) PublishProject(
