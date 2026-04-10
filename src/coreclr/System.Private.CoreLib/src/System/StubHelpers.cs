@@ -1457,10 +1457,9 @@ namespace System.StubHelpers
 
         public static void Free(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
-            FreeCore(ref managed, unmanaged, ref cleanupWorkList);
-
             if (unmanaged != null)
             {
+                FreeCore(ref managed, unmanaged, ref cleanupWorkList);
                 NativeMemory.Clear(unmanaged, (nuint)nativeSize);
             }
         }
@@ -1601,10 +1600,9 @@ namespace System.StubHelpers
 
         public static void Free(T? managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
-            FreeCore(managed, unmanaged, ref cleanupWorkList);
-
             if (unmanaged != null)
             {
+                FreeCore(managed, unmanaged, ref cleanupWorkList);
                 NativeMemory.Clear(unmanaged, (nuint)nativeSize);
             }
         }

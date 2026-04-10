@@ -320,7 +320,16 @@ namespace System.Runtime.InteropServices
             if (type.IsGenericType)
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
 
-            LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
+            LayoutTypeMarshalerMethods methods;
+            try
+            {
+                methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
+            }
+            catch (ArgumentException e)
+            {
+                // COMPAT: preserve legacy ParamName for non-marshalable structure values.
+                throw new ArgumentException(e.Message, nameof(structure), e);
+            }
 
             if (fDeleteOld)
             {
@@ -340,7 +349,16 @@ namespace System.Runtime.InteropServices
             if (!allowValueClasses && type.IsValueType)
                 throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
 
-            LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
+            LayoutTypeMarshalerMethods methods;
+            try
+            {
+                methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
+            }
+            catch (ArgumentException e)
+            {
+                // COMPAT: preserve legacy ParamName for non-marshalable structure values.
+                throw new ArgumentException(e.Message, nameof(structure), e);
+            }
 
             methods.ConvertToManaged(structure, (byte*)ptr);
         }
