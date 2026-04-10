@@ -366,8 +366,6 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
 
             entriesToWrite = new(_entries.Count);
 
-            ComputeEntryEndOffsets();
-
             for (int i = 0; i < _entries.Count; i++)
             {
                 ZipArchiveEntry entry = _entries[i];

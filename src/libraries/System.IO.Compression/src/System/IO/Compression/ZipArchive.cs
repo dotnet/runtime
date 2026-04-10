@@ -590,6 +590,16 @@ namespace System.IO.Compression
             if (Mode == ZipArchiveMode.Update)
             {
                 _entries.Sort(ZipArchiveEntry.LocalHeaderOffsetComparer.Instance);
+
+                // Precompute EndOfLocalEntryData for each entry. At read time every entry is original
+                // and sorted by offset, so entry[i]'s end is entry[i+1]'s start (or the central directory
+                // for the last entry). This correctly includes any trailing data descriptor bytes.
+                for (int i = 0; i < _entries.Count; i++)
+                {
+                    _entries[i].EndOfLocalEntryData = i < _entries.Count - 1
+                        ? _entries[i + 1].OffsetOfLocalHeader
+                        : _centralDirectoryStart;
+                }
             }
         }
 
@@ -793,27 +803,6 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>
-        /// Precompute <see cref="ZipArchiveEntry.EndOfLocalEntryData"/> for each originally-in-archive entry
-        /// in a single reverse pass. The end of each original entry is the start of the next original
-        /// entry (or the central directory for the last one). This correctly includes any trailing
-        /// data descriptor bytes, without needing to seek or read the archive stream.
-        /// </summary>
-        private void ComputeEntryEndOffsets()
-        {
-            long nextOriginalOffset = _centralDirectoryStart;
-            for (int i = _entries.Count - 1; i >= 0; i--)
-            {
-                if (_entries[i].OriginallyInArchive)
-                {
-                    Debug.Assert(nextOriginalOffset >= _entries[i].OffsetOfLocalHeader,
-                        "Original entries are expected in ascending offset order");
-                    _entries[i].EndOfLocalEntryData = nextOriginalOffset;
-                    nextOriginalOffset = _entries[i].OffsetOfLocalHeader;
-                }
-            }
-        }
-
         private void WriteFileUpdateModeFinalWork(long startingOffset, long nextFileOffset)
         {
             // If the offset of entries to write from is still at long.MaxValue, then we know that nothing has been deleted,
@@ -854,8 +843,6 @@ namespace System.IO.Compression
                 long nextFileOffset = 0;
                 completeRewriteStartingOffset = startingOffset;
                 entriesToWrite = new(_entries.Count);
-
-                ComputeEntryEndOffsets();
 
                 for (int i = 0; i < _entries.Count; i++)
                 {
