@@ -2911,26 +2911,6 @@ void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* range_low, 
 }
 #endif //USE_VXSORT
 
-#ifdef MULTIPLE_HEAPS
-
-#ifdef _DEBUG
-
-#if !defined(_MSC_VER)
-#if !defined(__cdecl)
-#if defined(__i386__)
-#define __cdecl __attribute__((cdecl))
-#else
-#define __cdecl
-#endif
-#endif
-#endif
-
-#endif // _DEBUG
-
-#else
-
-#endif //MULTIPLE_HEAPS
-
 #ifdef WRITE_WATCH
 uint8_t* g_addresses [array_size+2]; // to get around the bug in GetWriteWatch
 
