@@ -163,31 +163,8 @@ namespace Mono.Linker.Dataflow
                     Debug.Assert(!isStateMachineMember);
                 }
 
-                // Discover state machine types via attributes such as [AsyncStateMachineAttribute].
-                // This is done before scanning the body so that if the attribute and the body scan
-                // both find the same type, the attribute-based registration takes precedence and
-                // the body scan's TryAdd is a no-op (preventing spurious duplicate warnings).
-                if (TryGetStateMachineType(method, out TypeDefinition? stateMachineType))
-                {
-                    Debug.Assert(stateMachineType.DeclaringType == type ||
-                        CompilerGeneratedNames.IsStateMachineOrDisplayClass(stateMachineType.DeclaringType.Name) &&
-                         stateMachineType.DeclaringType.DeclaringType == type);
-                    callGraph.TrackCall(method, stateMachineType);
-
-                    if (!_compilerGeneratedTypeToUserCodeMethod.TryAdd(stateMachineType, method))
-                    {
-                        var alreadyAssociatedMethod = _compilerGeneratedTypeToUserCodeMethod[stateMachineType];
-                        AddWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithStateMachine, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), stateMachineType.GetDisplayName());
-                    }
-                    // Already warned above if multiple methods map to the same type
-                    // Fill in null for argument providers now, the real providers will be filled in later
-                    generatedTypeToTypeArgs[stateMachineType] = new TypeArgumentInfo(method, null);
-                }
-
                 // Discover calls or references to lambdas or local functions. This includes
                 // calls to local functions, and lambda assignments (which use ldftn).
-                // Also detect state machine types that are missing [AsyncStateMachineAttribute]
-                // (e.g., async partial methods, where Roslyn does not emit the attribute).
                 if (method.Body != null)
                 {
                     foreach (var instruction in method.Body.Instructions(_context))
@@ -204,31 +181,16 @@ namespace Mono.Linker.Dataflow
                                 if (referencedMethod.IsConstructor &&
                                     referencedMethod.DeclaringType is var generatedType &&
                                     // Don't consider calls in the same/nested type, like inside a static constructor
-                                    !IsSameOrNestedType(method.DeclaringType, generatedType))
+                                    !IsSameOrNestedType(method.DeclaringType, generatedType) &&
+                                    CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
                                 {
-                                    if (CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
+                                    // fill in null for now, attribute providers will be filled in later
+                                    if (!generatedTypeToTypeArgs.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
                                     {
-                                        // fill in null for now, attribute providers will be filled in later
-                                        if (!generatedTypeToTypeArgs.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
-                                        {
-                                            var alreadyAssociatedMethod = generatedTypeToTypeArgs[generatedType].CreatingMethod;
-                                            AddWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
-                                        }
-                                        continue;
+                                        var alreadyAssociatedMethod = generatedTypeToTypeArgs[generatedType].CreatingMethod;
+                                        AddWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
                                     }
-
-                                    // Detect class-based state machines (e.g. async partial methods in older codegen)
-                                    // via newobj of the state machine constructor. TryAdd is used because the state
-                                    // machine may already have been registered via TryGetStateMachineType above.
-                                    if (CompilerGeneratedNames.IsStateMachineType(generatedType.Name))
-                                    {
-                                        if (generatedTypeToTypeArgs.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
-                                        {
-                                            _compilerGeneratedTypeToUserCodeMethod.TryAdd(generatedType, method);
-                                            callGraph.TrackCall(method, generatedType);
-                                        }
-                                        continue;
-                                    }
+                                    continue;
                                 }
 
                                 if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(referencedMethod.Name))
@@ -271,32 +233,25 @@ namespace Mono.Linker.Dataflow
                                 }
                             }
                             break;
-
-                            case OperandType.InlineType:
-                            {
-                                // Detect struct-based state machines via initobj (the common case in modern .NET).
-                                // Roslyn does not emit [AsyncStateMachineAttribute] on async partial methods, so
-                                // TryGetStateMachineType above will miss them. We fall back to detecting the state
-                                // machine type from the initobj instruction in the method body.
-                                // TryAdd is used because the state machine may already have been registered via
-                                // TryGetStateMachineType (for non-partial async methods that do have the attribute).
-                                if (!isStateMachineMember &&
-                                    instruction.OpCode.Code == Code.Initobj &&
-                                    instruction.Operand is TypeReference typeRef &&
-                                    CompilerGeneratedNames.IsStateMachineType(typeRef.Name) &&
-                                    _context.TryResolve(typeRef) is TypeDefinition smTypeDef &&
-                                    !IsSameOrNestedType(method.DeclaringType, smTypeDef))
-                                {
-                                    if (generatedTypeToTypeArgs.TryAdd(smTypeDef, new TypeArgumentInfo(method, null)))
-                                    {
-                                        _compilerGeneratedTypeToUserCodeMethod.TryAdd(smTypeDef, method);
-                                        callGraph.TrackCall(method, smTypeDef);
-                                    }
-                                }
-                            }
-                            break;
                         }
                     }
+                }
+
+                if (TryGetStateMachineType(method, out TypeDefinition? stateMachineType))
+                {
+                    Debug.Assert(stateMachineType.DeclaringType == type ||
+                        CompilerGeneratedNames.IsStateMachineOrDisplayClass(stateMachineType.DeclaringType.Name) &&
+                         stateMachineType.DeclaringType.DeclaringType == type);
+                    callGraph.TrackCall(method, stateMachineType);
+
+                    if (!_compilerGeneratedTypeToUserCodeMethod.TryAdd(stateMachineType, method))
+                    {
+                        var alreadyAssociatedMethod = _compilerGeneratedTypeToUserCodeMethod[stateMachineType];
+                        AddWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithStateMachine, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), stateMachineType.GetDisplayName());
+                    }
+                    // Already warned above if multiple methods map to the same type
+                    // Fill in null for argument providers now, the real providers will be filled in later
+                    generatedTypeToTypeArgs[stateMachineType] = new TypeArgumentInfo(method, null);
                 }
 
                 static bool IsSameOrNestedType(TypeDefinition type, TypeDefinition potentialOuterType)

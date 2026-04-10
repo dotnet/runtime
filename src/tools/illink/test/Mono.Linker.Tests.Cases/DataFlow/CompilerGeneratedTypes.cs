@@ -438,8 +438,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // Regression test for https://github.com/dotnet/runtime/issues/122800
-        // Roslyn does not emit [AsyncStateMachineAttribute] on async partial methods,
-        // so ILLink must detect the state machine type from the method body instead.
+        // Roslyn does not emit [AsyncStateMachineAttribute] on async partial methods.
         partial class PartialAsyncMethodWithLambda
         {
             public static void Test()
