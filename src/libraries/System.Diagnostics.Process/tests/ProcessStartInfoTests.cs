@@ -1445,6 +1445,17 @@ namespace System.Diagnostics.Tests
             });
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Process.Start is not supported on iOS, tvOS, and MacCatalyst.")]
+        public void UserNameCantBeCombinedWithInheritedHandles()
+        {
+            using Process longRunning = CreateProcessLong();
+            longRunning.StartInfo.UserName = nameof(ProcessStartInfo.UserName);
+            longRunning.StartInfo.InheritedHandles = [];
+
+            Assert.Throws<InvalidOperationException>(() => longRunning.Start());
+        }
+
         private static TestProcessState CreateUserAndExecute(
             Process process,
             Action<string, string> additionalSetup = null,
