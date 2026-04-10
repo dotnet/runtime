@@ -2331,7 +2331,6 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 {
     noway_assert(VarSetOps::IsSubset(m_compiler, keepAliveVars, life));
 
-    GenTree*    mostRecentLocalVarOrField = nullptr;
     LIR::Range& blockRange                = LIR::AsRange(block);
     GenTree*    firstNode                 = blockRange.FirstNode();
     if (firstNode == nullptr)
@@ -2395,7 +2394,6 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             {
                 GenTreeLclVarCommon* const lclVarNode = node->AsLclVarCommon();
                 LclVarDsc&                 varDsc     = m_compiler->lvaTable[lclVarNode->GetLclNum()];
-                mostRecentLocalVarOrField             = node;
 
                 if (TLiveness::EliminateDeadCode && node->IsUnusedValue())
                 {
@@ -2454,6 +2452,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 
                             if (TryRemoveDeadStoreLIR(store, node->AsLclVarCommon(), block))
                             {
+
                                 JITDUMP("Removing dead LclVar address:\n");
                                 DISPNODE(node);
                                 blockRange.Remove(node);
@@ -2465,7 +2464,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                                 {
                                     Lowering::TransformUnusedIndirection(data->AsIndir(), m_compiler, block);
                                 }
-                                else if (data == mostRecentLocalVarOrField)
+                                else if (data->OperIs(GT_LCL_VAR, GT_LCL_FLD))
                                 {
                                     // The unused lcl_var or lcl_field on the rhs of a removed block store may be a
                                     // struct which cannot always be loaded onto the Wasm evaluation stack or into
@@ -2476,6 +2475,10 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                                     // crashes in emit.
                                     JITDUMP("Removing dead store data:\n");
                                     DISPNODE(data);
+                                    if (next == data)
+                                        next = data->gtPrev;
+                                    if (end == data)
+                                        end = data->gtNext;
                                     blockRange.Remove(data);
                                 }
                             }
