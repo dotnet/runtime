@@ -1690,25 +1690,6 @@ namespace System.StubHelpers
         static unsafe nuint IArrayElementMarshaler<string?>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
-    internal sealed class CurrencyArrayElementMarshaler : IArrayElementMarshaler<decimal>
-    {
-        public static unsafe void ConvertToUnmanaged(ref decimal managed, byte* unmanaged)
-        {
-            *(Currency*)unmanaged = new Currency(managed);
-        }
-
-        public static unsafe void ConvertToManaged(ref decimal managed, byte* unmanaged)
-        {
-            managed = new decimal(*(Currency*)unmanaged);
-        }
-
-        public static unsafe void Free(byte* unmanaged)
-        {
-        }
-
-        static unsafe nuint IArrayElementMarshaler<decimal>.UnmanagedSize => (nuint)sizeof(Currency);
-    }
-
     internal sealed class BSTRArrayElementMarshaler : IArrayElementMarshaler<string?>
     {
         public static unsafe void ConvertToUnmanaged(ref string? managed, byte* unmanaged)
@@ -1731,6 +1712,26 @@ namespace System.StubHelpers
         }
 
         static unsafe nuint IArrayElementMarshaler<string?>.UnmanagedSize => (nuint)sizeof(IntPtr);
+    }
+
+#if FEATURE_COMINTEROP
+    internal sealed class CurrencyArrayElementMarshaler : IArrayElementMarshaler<decimal>
+    {
+        public static unsafe void ConvertToUnmanaged(ref decimal managed, byte* unmanaged)
+        {
+            *(Currency*)unmanaged = new Currency(managed);
+        }
+
+        public static unsafe void ConvertToManaged(ref decimal managed, byte* unmanaged)
+        {
+            managed = new decimal(*(Currency*)unmanaged);
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+        }
+
+        static unsafe nuint IArrayElementMarshaler<decimal>.UnmanagedSize => (nuint)sizeof(Currency);
     }
 
     [SupportedOSPlatform("windows")]
@@ -1881,6 +1882,7 @@ namespace System.StubHelpers
 
         static unsafe nuint IArrayElementMarshaler<object?>.UnmanagedSize => (nuint)sizeof(ComVariant);
     }
+#endif // FEATURE_COMINTEROP
 
     internal interface IMarshalerOption
     {
@@ -2336,105 +2338,6 @@ namespace System.StubHelpers
         internal static void ThrowWrongSizeArrayInNativeStruct()
         {
             throw new ArgumentException(SR.Argument_WrongSizeArrayInNativeStruct);
-        }
-
-        private static readonly MemberInfo StructureMarshalerConvertToUnmanaged = typeof(StructureMarshaler<>).GetMethod(nameof(StructureMarshaler<>.ConvertToUnmanaged))!;
-        private static readonly MemberInfo StructureMarshalerConvertToManaged = typeof(StructureMarshaler<>).GetMethod(nameof(StructureMarshaler<>.ConvertToManaged))!;
-        private static readonly MemberInfo StructureMarshalerFree = typeof(StructureMarshaler<>).GetMethod(nameof(StructureMarshaler<>.Free))!;
-
-        private sealed unsafe class StructureMarshalInfo
-        {
-            public delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> ConvertToUnmanaged;
-            public delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToManaged;
-            public delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> Free;
-
-            public int ManagedSize;
-        }
-
-        private static readonly ConditionalWeakTable<Type, StructureMarshalInfo> s_structureMarshalInfoCache = [];
-
-        private static unsafe StructureMarshalInfo GetStructureMarshalMethods(Type structureType)
-        {
-            return s_structureMarshalInfoCache.GetOrAdd(structureType, static structureType =>
-            {
-                Type structureMarshalerType = typeof(StructureMarshaler<>).MakeGenericType(structureType);
-                var convertToUnmanagedMethodInfo = (MethodInfo)structureMarshalerType.GetMemberWithSameMetadataDefinitionAs(StructureMarshalerConvertToUnmanaged)!;
-                var convertToManagedMethodInfo = (MethodInfo)structureMarshalerType.GetMemberWithSameMetadataDefinitionAs(StructureMarshalerConvertToManaged)!;
-                var freeMethodInfo = (MethodInfo)structureMarshalerType.GetMemberWithSameMetadataDefinitionAs(StructureMarshalerFree)!;
-
-                return new StructureMarshalInfo
-                {
-                    ConvertToUnmanaged = (delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void>)convertToUnmanagedMethodInfo.MethodHandle.GetFunctionPointer(),
-                    ConvertToManaged = (delegate*<ref byte, byte*, ref CleanupWorkListElement?, void>)convertToManagedMethodInfo.MethodHandle.GetFunctionPointer(),
-                    Free = (delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void>)freeMethodInfo.MethodHandle.GetFunctionPointer(),
-                    ManagedSize = RuntimeHelpers.SizeOf(structureType.TypeHandle)
-                };
-            });
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe void NonBlittableStructureArrayConvertToUnmanaged(Array* managedArray, byte* pNative, MethodTable* pInterfaceMT, int nativeSize, Exception* pException)
-        {
-            try
-            {
-                StructureMarshalInfo marshalInfo = GetStructureMarshalMethods(RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pInterfaceMT));
-
-                nint length = (nint)managedArray->Length * (nint)marshalInfo.ManagedSize;
-
-                for (ref byte managedElement = ref MemoryMarshal.GetArrayDataReference(*managedArray), end = ref Unsafe.AddByteOffset(ref managedElement, length);
-                    Unsafe.IsAddressLessThan(ref managedElement, ref end);
-                    managedElement = ref Unsafe.AddByteOffset(ref managedElement, marshalInfo.ManagedSize))
-                {
-                    marshalInfo.ConvertToUnmanaged(ref managedElement, pNative, nativeSize, ref Unsafe.NullRef<CleanupWorkListElement?>());
-                    pNative += nativeSize;
-                }
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe void NonBlittableStructureArrayConvertToManaged(Array* managedArray, byte* pNative, MethodTable* pInterfaceMT, int nativeSize, Exception* pException)
-        {
-            try
-            {
-                StructureMarshalInfo marshalInfo = GetStructureMarshalMethods(RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pInterfaceMT));
-
-                nint length = (nint)managedArray->Length * (nint)marshalInfo.ManagedSize;
-
-                for (ref byte managedElement = ref MemoryMarshal.GetArrayDataReference(*managedArray), end = ref Unsafe.AddByteOffset(ref managedElement, length);
-                    Unsafe.IsAddressLessThan(ref managedElement, ref end);
-                    managedElement = ref Unsafe.AddByteOffset(ref managedElement, marshalInfo.ManagedSize))
-                {
-                    marshalInfo.ConvertToManaged(ref managedElement, pNative, ref Unsafe.NullRef<CleanupWorkListElement?>());
-                    pNative += nativeSize;
-                }
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe void NonBlittableStructureArrayFree(byte* pArray, nuint numElements, MethodTable* pInterfaceMT, int nativeSize, Exception* pException)
-        {
-            try
-            {
-                StructureMarshalInfo marshalInfo = GetStructureMarshalMethods(RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pInterfaceMT));
-
-                for (nuint i = 0; i < numElements; i++)
-                {
-                    marshalInfo.Free(ref Unsafe.NullRef<byte>(), pArray, nativeSize, ref Unsafe.NullRef<CleanupWorkListElement?>());
-                    pArray += nativeSize;
-                }
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]

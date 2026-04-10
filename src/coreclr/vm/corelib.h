@@ -1072,10 +1072,6 @@ DEFINE_METHOD(STUBHELPERS,          CHECK_STRING_LENGTH,    CheckStringLength,  
 DEFINE_METHOD(STUBHELPERS,          LAYOUT_TYPE_CONVERT_TO_UNMANAGED, LayoutTypeConvertToUnmanaged, SM_PtrObj_PtrByte_PtrException_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          LAYOUT_TYPE_CONVERT_TO_MANAGED, LayoutTypeConvertToManaged, SM_PtrObj_PtrByte_PtrException_RetVoid)
 
-DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_UNMANAGED, NonBlittableStructureArrayConvertToUnmanaged, NoSig)
-DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_MANAGED,   NonBlittableStructureArrayConvertToManaged, NoSig)
-DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_FREE,                 NonBlittableStructureArrayFree, NoSig)
-
 DEFINE_METHOD(STUBHELPERS,          CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, ConvertArrayContentsToUnmanaged, NoSig)
 DEFINE_METHOD(STUBHELPERS,          CONVERT_ARRAY_CONTENTS_TO_MANAGED,   ConvertArrayContentsToManaged,   NoSig)
 DEFINE_METHOD(STUBHELPERS,          FREE_ARRAY_CONTENTS,                 FreeArrayContents,               NoSig)
@@ -1246,9 +1242,9 @@ DEFINE_CLASS(BOOL_MARSHALER,        StubHelpers,            BoolMarshaler`1)
 DEFINE_CLASS(LPWSTR_MARSHALER,      StubHelpers,            LPWSTRMarshaler)
 DEFINE_CLASS(ANSICHAR_ARRAY_ELEMENT_MARSHALER, StubHelpers,  AnsiCharArrayElementMarshaler`2)
 DEFINE_CLASS(LPSTR_ARRAY_ELEMENT_MARSHALER,    StubHelpers,  LPSTRArrayElementMarshaler`2)
+DEFINE_CLASS(BSTR_ARRAY_ELEMENT_MARSHALER,     StubHelpers,  BSTRArrayElementMarshaler)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(CURRENCY_ARRAY_ELEMENT_MARSHALER, StubHelpers,  CurrencyArrayElementMarshaler)
-DEFINE_CLASS(BSTR_ARRAY_ELEMENT_MARSHALER,     StubHelpers,  BSTRArrayElementMarshaler)
 DEFINE_CLASS(INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, InterfaceArrayElementMarshaler`1)
 DEFINE_CLASS(TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, TypedInterfaceArrayElementMarshaler`1)
 DEFINE_CLASS(HETEROGENEOUS_INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, HeterogeneousInterfaceArrayElementMarshaler)

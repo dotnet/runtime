@@ -4378,12 +4378,12 @@ MethodTable* ILArrayMarshalerBase::GetMarshalerMT()
         return TypeHandle(CoreLibBinder::GetClass(CLASS__LPSTR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
     }
 
+    case VT_BSTR:
+        return CoreLibBinder::GetClass(CLASS__BSTR_ARRAY_ELEMENT_MARSHALER);
+
 #ifdef FEATURE_COMINTEROP
     case VT_CY:
         return CoreLibBinder::GetClass(CLASS__CURRENCY_ARRAY_ELEMENT_MARSHALER);
-
-    case VT_BSTR:
-        return CoreLibBinder::GetClass(CLASS__BSTR_ARRAY_ELEMENT_MARSHALER);
 
     case VT_UNKNOWN:
     case VT_DISPATCH:
