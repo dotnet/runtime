@@ -79,6 +79,8 @@
     <Compile Include="ProcessHandlesTests.Unix.cs" />
     <Compile Include="ProcessTests.Unix.cs" />
     <Compile Include="ProcessThreadTests.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Kill.cs"
+             Link="Common\Interop\Unix\Interop.Kill.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.cs"

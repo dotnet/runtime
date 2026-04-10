@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -16,19 +15,13 @@ public class RuntimeInfoTests
         (string Name, string Value)[] globalStrings,
         (string Name, ulong Value)[]? globals = null)
     {
-        MockMemorySpace.Builder builder = new(new TargetTestHelpers(arch));
-        TestPlaceholderTarget target = new(
-            arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            [],
-            globals,
-            globalStrings);
-
-        IContractFactory<IRuntimeInfo> runtimeInfoFactory = new RuntimeInfoFactory();
-        ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.RuntimeInfo == runtimeInfoFactory.CreateContract(target, 1));
-        target.SetContracts(reg);
-        return target;
+        var builder = new TestPlaceholderTarget.Builder(arch);
+        if (globals is not null)
+            builder.AddGlobals(globals);
+        return builder
+            .AddGlobalStrings(globalStrings)
+            .AddContract<IRuntimeInfo>(version: 1)
+            .Build();
     }
 
     public static IEnumerable<object[]> StdArchAllTargetArchitectures()

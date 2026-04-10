@@ -121,6 +121,7 @@ namespace Microsoft.Win32.SafeHandles
                 int creationFlags = 0;
                 if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
                 if (startInfo.CreateNewProcessGroup) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NEW_PROCESS_GROUP;
+                if (startInfo.StartDetached) creationFlags |= Interop.Advapi32.StartupInfoOptions.DETACHED_PROCESS;
 
                 // set up the environment block parameter
                 string? environmentBlock = null;

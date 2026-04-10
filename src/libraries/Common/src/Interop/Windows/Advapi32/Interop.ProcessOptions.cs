@@ -45,6 +45,7 @@ internal static partial class Interop
             internal const int CREATE_NO_WINDOW = 0x08000000;
             internal const int CREATE_NEW_PROCESS_GROUP = 0x00000200;
             internal const int CREATE_SUSPENDED = 0x00000004;
+            internal const int DETACHED_PROCESS = 0x00000008;
         }
     }
 }
