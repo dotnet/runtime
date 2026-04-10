@@ -19,20 +19,9 @@ internal static partial class Interop
 
         static NetSecurityNative()
         {
-            GssInitializer.Initialize();
-
-            if (GssInitializer.InitResult != 0)
+            if (EnsureGssInitialized() != 0)
             {
                 throw new DllNotFoundException(GssApiLibraryName);
-            }
-        }
-
-        internal static class GssInitializer
-        {
-            internal static readonly int InitResult = EnsureGssInitialized();
-
-            internal static void Initialize()
-            {
             }
         }
     }

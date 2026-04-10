@@ -16,6 +16,7 @@ namespace System.Net
             private string _package;
             private string? _targetName;
             private NegotiateAuthenticationStatusCode _statusCode;
+            private Exception? _exception;
 
             public override bool IsAuthenticated => false;
             public override bool IsSigned => false;
@@ -26,17 +27,19 @@ namespace System.Net
             public override IIdentity RemoteIdentity => throw new InvalidOperationException();
             public override System.Security.Principal.TokenImpersonationLevel ImpersonationLevel => System.Security.Principal.TokenImpersonationLevel.Impersonation;
 
-            public UnsupportedNegotiateAuthenticationPal(NegotiateAuthenticationClientOptions clientOptions, NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported)
+            public UnsupportedNegotiateAuthenticationPal(NegotiateAuthenticationClientOptions clientOptions, NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported, Exception? innerException = null)
             {
                 _package = clientOptions.Package;
                 _targetName = clientOptions.TargetName;
                 _statusCode = statusCode;
+                _exception = innerException;
             }
 
-            public UnsupportedNegotiateAuthenticationPal(NegotiateAuthenticationServerOptions serverOptions, NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported)
+            public UnsupportedNegotiateAuthenticationPal(NegotiateAuthenticationServerOptions serverOptions, NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported, Exception? innerException = null)
             {
                 _package = serverOptions.Package;
                 _statusCode = statusCode;
+                _exception = innerException;
             }
 
             public override void Dispose()
