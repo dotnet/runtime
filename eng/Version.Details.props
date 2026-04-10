@@ -45,8 +45,6 @@ This file should be imported by eng/Versions.props
     <SystemReflectionMetadataPackageVersion>11.0.0-preview.4.26203.108</SystemReflectionMetadataPackageVersion>
     <SystemReflectionMetadataLoadContextPackageVersion>11.0.0-preview.4.26203.108</SystemReflectionMetadataLoadContextPackageVersion>
     <SystemTextJsonPackageVersion>11.0.0-preview.4.26203.108</SystemTextJsonPackageVersion>
-    <!-- dotnet-hotreload-utils dependencies -->
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>11.0.0-alpha.0.26173.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>
     <!-- dotnet-icu dependencies -->
     <MicrosoftNETCoreRuntimeICUTransportPackageVersion>11.0.0-alpha.1.26181.1</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
     <!-- dotnet-llvm-project dependencies -->
@@ -159,8 +157,6 @@ This file should be imported by eng/Versions.props
     <SystemReflectionMetadataVersion>$(SystemReflectionMetadataPackageVersion)</SystemReflectionMetadataVersion>
     <SystemReflectionMetadataLoadContextVersion>$(SystemReflectionMetadataLoadContextPackageVersion)</SystemReflectionMetadataLoadContextVersion>
     <SystemTextJsonVersion>$(SystemTextJsonPackageVersion)</SystemTextJsonVersion>
-    <!-- dotnet-hotreload-utils dependencies -->
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>$(MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion)</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <!-- dotnet-icu dependencies -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>$(MicrosoftNETCoreRuntimeICUTransportPackageVersion)</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- dotnet-llvm-project dependencies -->

@@ -12,17 +12,17 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ExceptionInfo);
 
-        PreviousNestedInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PreviousNestedInfo)].Offset);
-        ThrownObjectHandle = target.ReadPointer(address + (ulong)type.Fields[nameof(ThrownObjectHandle)].Offset);
-        ExceptionFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(ExceptionFlags)].Offset);
-        StackLowBound = target.ReadPointer(address + (ulong)type.Fields[nameof(StackLowBound)].Offset);
-        StackHighBound = target.ReadPointer(address + (ulong)type.Fields[nameof(StackHighBound)].Offset);
+        PreviousNestedInfo = target.ReadPointerField(address, type, nameof(PreviousNestedInfo));
+        ThrownObjectHandle = target.ReadPointerField(address, type, nameof(ThrownObjectHandle));
         if (type.Fields.ContainsKey(nameof(ExceptionWatsonBucketTrackerBuckets)))
-            ExceptionWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(ExceptionWatsonBucketTrackerBuckets)].Offset);
-        PassNumber = target.Read<byte>(address + (ulong)type.Fields[nameof(PassNumber)].Offset);
-        CSFEHClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEHClause)].Offset);
-        CSFEnclosingClause = target.ReadPointer(address + (ulong)type.Fields[nameof(CSFEnclosingClause)].Offset);
-        CallerOfActualHandlerFrame = target.ReadPointer(address + (ulong)type.Fields[nameof(CallerOfActualHandlerFrame)].Offset);
+            ExceptionWatsonBucketTrackerBuckets = target.ReadPointerField(address, type, nameof(ExceptionWatsonBucketTrackerBuckets));
+        ExceptionFlags = target.ReadField<uint>(address, type, nameof(ExceptionFlags));
+        StackLowBound = target.ReadPointerField(address, type, nameof(StackLowBound));
+        StackHighBound = target.ReadPointerField(address, type, nameof(StackHighBound));
+        PassNumber = target.ReadField<byte>(address, type, nameof(PassNumber));
+        CSFEHClause = target.ReadPointerField(address, type, nameof(CSFEHClause));
+        CSFEnclosingClause = target.ReadPointerField(address, type, nameof(CSFEnclosingClause));
+        CallerOfActualHandlerFrame = target.ReadPointerField(address, type, nameof(CallerOfActualHandlerFrame));
     }
 
     public TargetPointer PreviousNestedInfo { get; }
