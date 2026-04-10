@@ -689,10 +689,10 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    IDS_BINDING_FAILED_TO_OPEN_FILE            "Failed to open file '%1'. HRESULT: 0x%2"
-    IDS_BINDING_EXCEPTION_OPENING_FILE         "Exception opening '%1': %2. HRESULT: 0x%3"
-    IDS_BINDING_FAILED_TO_INIT_ASSEMBLY        "Failed to initialize assembly from '%1'. HRESULT: 0x%2"
-    IDS_BINDING_CACHED_FAILURE_PREFIX           "(Cached) %1"
+    IDS_BINDING_FAILED_TO_OPEN_FILE            "Failed to open file '%s'. HRESULT: 0x%08x"
+    IDS_BINDING_EXCEPTION_OPENING_FILE         "Exception opening '%s': %s. HRESULT: 0x%08x"
+    IDS_BINDING_FAILED_TO_INIT_ASSEMBLY        "Failed to initialize assembly from '%s'. HRESULT: 0x%08x"
+    IDS_BINDING_CACHED_FAILURE_PREFIX          "[cached failure] %s"
 END
 
 //

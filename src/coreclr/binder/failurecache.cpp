@@ -71,7 +71,7 @@ namespace BINDER_SPACE
             {
                 StackSString format;
                 format.LoadResource(IDS_BINDING_CACHED_FAILURE_PREFIX);
-                pDiagnosticInfo->FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, pFailureCachEntry->GetDiagnosticInfo());
+                pDiagnosticInfo->AppendPrintf(format.GetUTF8(), pFailureCachEntry->GetDiagnosticInfo().GetUTF8());
             }
         }
 

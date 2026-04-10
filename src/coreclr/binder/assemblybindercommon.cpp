@@ -1024,13 +1024,11 @@ namespace BINDER_SPACE
         {
             hr = HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
         }
-        else if (FAILED(hr) && pDiagnosticInfo != NULL && pDiagnosticInfo->IsEmpty())
+        else if (FAILED(hr) && pDiagnosticInfo != NULL)
         {
             StackSString format;
             format.LoadResource(IDS_BINDING_FAILED_TO_INIT_ASSEMBLY);
-            StackSString hrString;
-            hrString.Printf("%08x", hr);
-            pDiagnosticInfo->FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, assemblyPath, hrString);
+            pDiagnosticInfo->AppendPrintf(format.GetUTF8(), assemblyPath.GetUTF8(), hr);
         }
 
         return hr;
