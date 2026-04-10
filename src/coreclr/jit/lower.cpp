@@ -5936,19 +5936,30 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         {
             // Spill to a local if sizes don't match so we can avoid the "load more than requested"
             // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
-            if (
-                (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size()) &&
-                // Ensure that the retval is actually a struct - otherwise the ReplaceWithLclVar below
-                // will fail due to assigning a non-struct to a struct local
-                (retVal->TypeGet() == TYP_STRUCT)
-            )
+            if (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size())
             {
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
-                unsigned tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
-                m_compiler->lvaSetStruct(tmpNum, m_compiler->info.compMethodInfo->args.retTypeClass, false);
 
-                ReplaceWithLclVar(retValUse, tmpNum);
-                LowerRetSingleRegStructLclVar(ret);
+                // Ensure that the retval is actually a struct - otherwise the ReplaceWithLclVar below
+                // will fail due to assigning a non-struct to a struct local
+                if (retVal->TypeGet() == TYP_STRUCT)
+                {
+                    unsigned tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
+                    m_compiler->lvaSetStruct(tmpNum, m_compiler->info.compMethodInfo->args.retTypeClass, false);
+
+                    ReplaceWithLclVar(retValUse, tmpNum);
+                    LowerRetSingleRegStructLclVar(ret);
+                }
+                else
+                {
+                    // We have a non-struct return value that needs to be widened, but we can't widen the
+                    // indirection safely since that could cause the read to overrun the end of a buffer.
+                    // Instead, wrap the indirection in a cast to zero extend it.
+                    GenTreeCast* cast = m_compiler->gtNewCastNode(nativeReturnType, retVal, true, varTypeToUnsigned(nativeReturnType));
+                    BlockRange().InsertBefore(ret, cast);
+                    ContainCheckCast(cast);
+                    retValUse.ReplaceWith(cast);
+                }
                 break;
             }
 
