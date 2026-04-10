@@ -9863,72 +9863,104 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 #ifdef TARGET_AMD64
 
-//------------------------------------------------------------------------
-// genOSRRecordTier0CalleeSavedRegistersAndFrame: for OSR methods, record the
-//  subset of callee saves already saved by the Tier0 method, and the frame
-//  created by Tier0.
-//
-void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
+template<typename TFunctor>
+static void EnumerateOsrLocalGCSlots(Compiler* compiler, unsigned tier0LocalFrameSize, TFunctor func)
 {
-    assert(m_compiler->compGeneratingProlog);
-    assert(m_compiler->opts.IsOSR());
-    assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
-
-#if ETW_EBP_FRAMED
-    if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
+    for (unsigned varNum = 0; varNum < compiler->lvaCount; varNum++)
     {
-        noway_assert(!"Used register RBM_FPBASE as a scratch register!");
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+
+        if (!compiler->lvaIsOSRLocal(varNum) || varDsc->lvIsStructField)
+        {
+            continue;
+        }
+
+        int offset = compiler->lvaOSRLocalTier0FrameOffset(varNum);
+        offset += (int)tier0LocalFrameSize;
+        assert(offset >= 0);
+
+        if (varDsc->TypeIs(TYP_STRUCT) && (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
+        {
+            unsigned numSlots = compiler->lvaLclStackHomeSize(varNum) / REGSIZE_BYTES;
+            ClassLayout* layout = varDsc->GetLayout();
+            for (unsigned i = 0; i < numSlots; i++)
+            {
+                if (layout->IsGCPtr(i))
+                {
+                    func((unsigned)offset + i * REGSIZE_BYTES);
+                }
+            }
+        }
+        else if (varDsc->TypeIs(TYP_REF, TYP_BYREF))
+        {
+            func((unsigned)offset);
+        }
     }
-#endif
+}
 
-    // Figure out which set of int callee saves was already saved by Tier0.
-    // Emit appropriate unwind.
-    //
-    PatchpointInfo* const patchpointInfo             = m_compiler->info.compPatchpointInfo;
-    regMaskTP const       tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
-    regMaskTP             tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
-    int const             tier0IntCalleeSaveUsedSize = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
+//------------------------------------------------------------------------
+// genDuplicateTier0Prolog:
+//   For OSR methods, emit a prolog that does the same as the tier0 prolog does.
+//
+void CodeGen::genDuplicateTier0Prolog()
+{
+    inst_RV(INS_push, REG_FPBASE, TYP_REF);
+    m_compiler->unwindPush(REG_FPBASE);
 
-    JITDUMP("--OSR--- tier0 has already saved ");
-    JITDUMPEXEC(dspRegMask(tier0IntCalleeSaves));
-    JITDUMP("\n");
+    PatchpointInfo* ppi = m_compiler->info.compPatchpointInfo;
+    regMaskTP tier0CalleeSaves = (regMaskTP)ppi->CalleeSaveRegisters();
+    // On x64 only integer registers are part of this set.
+    // TODO: Isn't this a bug? How does the OSR method restore float registers saved by tier0?
+    assert((tier0CalleeSaves & RBM_ALLINT) == tier0CalleeSaves);
+    regMaskTP rsPushRegs = tier0CalleeSaves;
+    rsPushRegs &= ~RBM_FPBASE;
 
-    // We must account for the Tier0 callee saves.
-    //
-    // These have already happened at method entry; all these
-    // unwind records should be at offset 0.
-    //
-    // RBP is always aved by Tier0 and always pushed first.
-    //
-    assert((tier0IntCalleeSaves & RBM_FPBASE) == RBM_FPBASE);
-    m_compiler->unwindPush(REG_RBP);
-    tier0IntCalleeSaves &= ~RBM_FPBASE;
-
-    // Now the rest of the Tier0 callee saves.
-    //
-    for (regNumber reg = get_REG_INT_LAST(); tier0IntCalleeSaves != RBM_NONE; reg = REG_PREV(reg))
+    // Push backwards so we match the order we will pop them in the epilog
+    // and all the other code that expects it to be in this order.
+    for (regNumber reg = get_REG_INT_LAST(); rsPushRegs != RBM_NONE; reg = REG_PREV(reg))
     {
         regMaskTP regBit = genRegMask(reg);
 
-        if ((regBit & tier0IntCalleeSaves) != 0)
+        if ((regBit & rsPushRegs) != 0)
         {
+            inst_RV(INS_push, reg, TYP_REF);
             m_compiler->unwindPush(reg);
+            rsPushRegs &= ~regBit;
         }
-        tier0IntCalleeSaves &= ~regBit;
     }
 
-    // We must account for the post-callee-saves push SP movement
-    // done by the Tier0 frame and by the OSR transition.
-    //
-    // tier0FrameSize is the Tier0 FP-SP delta plus the fake call slot added by
-    // JIT_Patchpoint. We add one slot to account for the saved FP.
-    //
-    // We then need to subtract off the size the Tier0 callee saves as SP
-    // adjusts for those will have been modelled by the unwind pushes above.
-    //
-    int const tier0FrameSize = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
-    int const tier0NetSize   = tier0FrameSize - tier0IntCalleeSaveUsedSize;
-    m_compiler->unwindAllocStack(tier0NetSize);
+    unsigned totalFrameSize = (unsigned)m_compiler->info.compPatchpointInfo->TotalFrameSize();
+    unsigned localFrameSize = totalFrameSize - genCountBits(tier0CalleeSaves) * REGSIZE_BYTES;
+    bool initRegZeroed = false;
+    genAllocLclFrame(localFrameSize, REG_SCRATCH, &initRegZeroed, RBM_NONE);
+
+    // Now zero all GC pointers in OSR locals.
+    // TODO-CQ: Not all OSR locals need to have their frame slot zero
+    // inited, only if it's needed for GC purposes while resuming for
+    // runtime async.
+
+    unsigned numStkSlotsToInit = 0;
+    unsigned zeroLow = UINT_MAX;
+    unsigned zeroHigh = 0; 
+    auto checkSlot = [&](unsigned offset) {
+        numStkSlotsToInit++;
+        zeroLow = std::min(zeroLow, offset);
+        zeroHigh = std::max(zeroHigh, offset + REGSIZE_BYTES);
+        };
+    EnumerateOsrLocalGCSlots(m_compiler, localFrameSize, checkSlot);
+
+    if (numStkSlotsToInit > 4)
+    {
+        genZeroInitFrameUsingBlockInit(REG_ESP, zeroHigh, zeroLow, REG_SCRATCH, &initRegZeroed);
+    }
+    else
+    {
+        auto zeroSlot = [&](unsigned offset) {
+            GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, genGetZeroReg(REG_SCRATCH, &initRegZeroed), REG_ESP, (int)offset);
+            };
+
+        EnumerateOsrLocalGCSlots(m_compiler, localFrameSize, zeroSlot);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -11033,6 +11065,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 // `genUseBlockInit` is set.
 //
 // Arguments:
+//    baseReg        - Register base for the following offsets
 //    untrLclHi      - (Untracked locals High-Offset)  The upper bound offset at which the zero init
 //                                                     code will end initializing memory (not inclusive).
 //    untrLclLo      - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
@@ -11041,14 +11074,12 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 //    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 //
-void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genZeroInitFrameUsingBlockInit(regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     assert(m_compiler->compGeneratingProlog);
-    assert(genUseBlockInit);
     assert(untrLclHi > untrLclLo);
 
     emitter*  emit        = GetEmitter();
-    regNumber frameReg    = genFramePointerReg();
     regNumber zeroReg     = REG_NA;
     int       blkSize     = untrLclHi - untrLclLo;
     int       minSimdSize = XMM_REGSIZE_BYTES;
@@ -11083,13 +11114,13 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         int i = 0;
         for (; i + REGSIZE_BYTES <= blkSize; i += REGSIZE_BYTES)
         {
-            emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
+            emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, baseReg, untrLclLo + i);
         }
 #if defined(TARGET_AMD64)
         assert((i == blkSize) || (i + (int)sizeof(int) == blkSize));
         if (i != blkSize)
         {
-            emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
+            emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, baseReg, untrLclLo + i);
             i += sizeof(int);
         }
 #endif // defined(TARGET_AMD64)
@@ -11144,12 +11175,12 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             int i = 0;
             for (; i + REGSIZE_BYTES <= alignmentLoBlkSize; i += REGSIZE_BYTES)
             {
-                emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
+                emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, baseReg, untrLclLo + i);
             }
             assert((i == alignmentLoBlkSize) || (i + (int)sizeof(int) == alignmentLoBlkSize));
             if (i != alignmentLoBlkSize)
             {
-                emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
+                emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, baseReg, untrLclLo + i);
                 i += sizeof(int);
             }
 
@@ -11210,10 +11241,10 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
                 regSize = (int)m_compiler->roundDownSIMDSize(lenRemaining);
                 assert(regSize >= XMM_REGSIZE_BYTES);
 
-                // frameReg is definitely not known to be 32B/64B aligned -> switch to unaligned movs
+                // baseReg is definitely not known to be 32B/64B aligned -> switch to unaligned movs
                 instruction ins    = regSize > XMM_REGSIZE_BYTES ? simdUnalignedMovIns() : simdMov;
                 const int   offset = blkSize - lenRemaining;
-                emit->emitIns_AR_R(ins, EA_ATTR(regSize), zeroSIMDReg, frameReg, alignedLclLo + offset);
+                emit->emitIns_AR_R(ins, EA_ATTR(regSize), zeroSIMDReg, baseReg, alignedLclLo + offset);
 
                 lenRemaining -= regSize;
             }
@@ -11241,12 +11272,12 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             {
                 blkSize -= XMM_REGSIZE_BYTES;
                 // Not a multiple of 3 so add stores at low end of block
-                emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo);
+                emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, baseReg, alignedLclLo);
                 if (extraSimd == 2)
                 {
                     blkSize -= XMM_REGSIZE_BYTES;
                     // one more store needed
-                    emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg,
+                    emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, baseReg,
                                        alignedLclLo + XMM_REGSIZE_BYTES);
                 }
             }
@@ -11267,10 +11298,10 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             // Set loop counter
             emit->emitIns_R_I(INS_mov, EA_PTRSIZE, initReg, -(ssize_t)blkSize);
             // Loop start
-            emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1, alignedLclHi);
-            emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
+            emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, baseReg, initReg, 1, alignedLclHi);
+            emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, baseReg, initReg, 1,
                                 alignedLclHi + XMM_REGSIZE_BYTES);
-            emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
+            emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, baseReg, initReg, 1,
                                 alignedLclHi + 2 * XMM_REGSIZE_BYTES);
 
             emit->emitIns_R_I(INS_add, EA_PTRSIZE, initReg, XMM_REGSIZE_BYTES * 3);
@@ -11292,13 +11323,13 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             int i = 0;
             for (; i + REGSIZE_BYTES <= alignmentHiBlkSize; i += REGSIZE_BYTES)
             {
-                emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, alignedLclHi + i);
+                emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, baseReg, alignedLclHi + i);
             }
 #if defined(TARGET_AMD64)
             assert((i == alignmentHiBlkSize) || (i + (int)sizeof(int) == alignmentHiBlkSize));
             if (i != alignmentHiBlkSize)
             {
-                emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, alignedLclHi + i);
+                emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, baseReg, alignedLclHi + i);
                 i += sizeof(int);
             }
 #endif // defined(TARGET_AMD64)

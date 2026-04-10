@@ -4584,7 +4584,7 @@ void MethodContext::recGetOSRInfo(PatchpointInfo* patchpointInfo, unsigned* ilOf
 
     value.index = (DWORD)GetOSRInfo->AddBuffer((const unsigned char*) patchpointInfo, patchpointInfo->PatchpointInfoSize());
     value.ilOffset = *ilOffset;
-
+    
     // use 0 for key
     DWORD key = 0;
     GetOSRInfo->Add(key, value);

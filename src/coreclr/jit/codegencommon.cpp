@@ -4025,7 +4025,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
     if (genUseBlockInit)
     {
-        genZeroInitFrameUsingBlockInit(untrLclHi, untrLclLo, initReg, pInitRegZeroed);
+        genZeroInitFrameUsingBlockInit(genFramePointerReg(), untrLclHi, untrLclLo, initReg, pInitRegZeroed);
     }
     else if (genInitStkLclCnt > 0)
     {
@@ -5056,7 +5056,12 @@ void CodeGen::genFnProlog()
         // SP is tier0 method's SP.
         m_compiler->unwindAllocStack(tier0FrameSize);
     }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_AMD64)
+    if (m_compiler->opts.IsOSR())
+    {
+        genDuplicateTier0Prolog();
+    }
+#endif
 
 #ifdef DEBUG
 
@@ -5412,10 +5417,6 @@ void CodeGen::genFnProlog()
 #ifdef TARGET_AMD64
     if (isOSRx64Root)
     {
-        // Account for the Tier0 callee saves
-        //
-        genOSRRecordTier0CalleeSavedRegistersAndFrame();
-
         // We don't actually push any callee saves on the OSR frame,
         // but we still reserve space, so account for this when
         // allocating the local frame.

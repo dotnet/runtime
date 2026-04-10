@@ -449,8 +449,8 @@ protected:
     void genPushCalleeSavedRegisters();
 #endif
 
+    void genDuplicateTier0Prolog();
 #if defined(TARGET_AMD64)
-    void genOSRRecordTier0CalleeSavedRegistersAndFrame();
     void genOSRSaveRemainingCalleeSavedRegisters();
 #endif // TARGET_AMD64
 
@@ -556,7 +556,7 @@ protected:
     regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
 
     void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
-    void genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
+    void genZeroInitFrameUsingBlockInit(regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
 
     void genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed);
 

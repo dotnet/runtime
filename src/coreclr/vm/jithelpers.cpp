@@ -1262,7 +1262,17 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, const EECodeInfo& codeInfo, in
     return osrVariant;
 }
 
-static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
+static PCODE GetOSRTransitionAddress(EECodeInfo& codeInfo, PCODE entryPoint)
+{
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    printf("Size of prolog: %u\n", codeInfo.GetSizeOfProlog());
+    return entryPoint + codeInfo.GetSizeOfProlog();
+#else
+    return entryPoint;
+#endif
+}
+
+static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, EECodeInfo& codeInfo, bool *pIsNewMethod)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1434,6 +1444,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
             }
             else
             {
+                osrMethodCode = GetOSRTransitionAddress(codeInfo, osrMethodCode);
                 *pIsNewMethod = true;
                 ppInfo->m_osrMethodCode = osrMethodCode;
             }
@@ -1450,7 +1461,7 @@ DONE:
     return (PCODE)NULL;
 }
 
-static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
+static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, EECodeInfo& codeInfo, bool *pIsNewMethod)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1546,7 +1557,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
             // We've successfully created the osr method; make it available.
             _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
-            ppInfo->m_osrMethodCode = newMethodCode;
+            ppInfo->m_osrMethodCode = GetOSRTransitionAddress(codeInfo, newMethodCode);
             *pIsNewMethod = true;
         }
     }

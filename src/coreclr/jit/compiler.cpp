@@ -451,7 +451,6 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
     info.compCode         = methodInfo->ILCode;
     info.compILCodeSize   = methodInfo->ILCodeSize;
-    info.compILImportSize = 0;
 
     info.compHasNextCallRetAddr    = false;
     info.compIsVarArgs             = false;
@@ -5908,8 +5907,6 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
     if (compIsForInlining())
     {
         compileFlags->Clear(JitFlags::JIT_FLAG_OSR);
-        info.compILEntry        = 0;
-        info.compPatchpointInfo = nullptr;
     }
     else if (compileFlags->IsSet(JitFlags::JIT_FLAG_OSR))
     {
