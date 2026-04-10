@@ -179,3 +179,24 @@ The above layout is achieved via the following item declaration in the project f
                           buildTransitive\$(NetCoreAppMinimum)\" />
 </ItemGroup>
 ```
+
+### DependencyOnlyTargetFrameworks
+
+`DependencyOnlyTargetFrameworks` is a semicolon-separated list of target frameworks that the project restores and builds for, solely to emit a NuGet dependency group for each listed TFM. No `lib/` or `ref/` assembly is included in the package for these TFMs — consumers fall back to the nearest compatible `lib/` entry for the assembly, but NuGet selects the dependency group that best matches their TFM when resolving package dependencies.
+
+Use this when a compatible framework has inbox assemblies that make a package dependency unnecessary. For example, `net471` has `System.ValueTuple` built in, so a package that depends on `System.ValueTuple` for `net462` consumers should add an empty `net471` dependency group so that `net471` consumers do not see a `System.ValueTuple` dependency at all.
+
+```xml
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+  <!-- Emit an empty net471 dependency group so net471 consumers don't pull in System.ValueTuple,
+       which is inbox on net471. No lib/net471 assembly is shipped; lib/net462 is the fallback. -->
+  <DependencyOnlyTargetFrameworks>$(NetFrameworkWithValueTuple)</DependencyOnlyTargetFrameworks>
+</PropertyGroup>
+```
+
+The infrastructure in `eng/packaging.targets` handles this automatically when `DependencyOnlyTargetFrameworks` is set:
+
+- The listed TFMs are appended to `TargetFrameworks` so the SDK runs inner builds and generates dependency groups in the nuspec.
+- `IncludeBuildOutput` is set to `false` for those inner builds, so no `lib/` entry is added to the package.
+- NuGet warning `NU5128` (dependency group TFM has no matching `lib/` entry) is suppressed, since the mismatch is intentional.
