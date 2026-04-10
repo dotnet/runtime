@@ -177,6 +177,9 @@ build_native()
             echo "Error: Unknown tvOS architecture $__TargetArch."
             exit 1
         fi
+    elif [[ "$targetOS" == wasi ]]; then
+        # Don't try to set CC/CXX in init-compiler.sh - it's handled in wasi-sdk-p2.cmake already
+        __Compiler="default"
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then
