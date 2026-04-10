@@ -43,6 +43,7 @@ struct PatchpointInfo
         m_tier0Version            = 0;
         m_totalFrameSize          = totalFrameSize;
         m_numberOfLocals          = localCount;
+        m_transitionPrologOffset  = -1;
         m_genericContextArgOffset = -1;
         m_keptAliveThisOffset     = -1;
         m_securityCookieOffset    = -1;
@@ -54,6 +55,7 @@ struct PatchpointInfo
     {
         m_calleeSaveRegisters = original->m_calleeSaveRegisters;
         m_tier0Version = original->m_tier0Version;
+        m_transitionPrologOffset = original->m_transitionPrologOffset;
         m_genericContextArgOffset = original->m_genericContextArgOffset;
         m_keptAliveThisOffset = original->m_keptAliveThisOffset;
         m_securityCookieOffset = original->m_securityCookieOffset;
@@ -83,7 +85,16 @@ struct PatchpointInfo
         return m_numberOfLocals;
     }
 
-    // Original method caller SP offset for generic context arg
+    int32_t TransitionPrologOffset() const
+    {
+        return m_transitionPrologOffset;
+    }
+
+    void SetTransitionPrologOffset(int32_t offset)
+    {
+        m_transitionPrologOffset = offset;
+    }
+
     int32_t GenericContextArgOffset() const
     {
         return m_genericContextArgOffset;
@@ -231,6 +242,7 @@ private:
     PCODE    m_tier0Version;
     uint32_t m_numberOfLocals;
     int32_t      m_totalFrameSize;
+    int32_t      m_transitionPrologOffset;
     int32_t      m_genericContextArgOffset;
     int32_t      m_keptAliveThisOffset;
     int32_t      m_securityCookieOffset;

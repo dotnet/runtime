@@ -1262,14 +1262,39 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, const EECodeInfo& codeInfo, in
     return osrVariant;
 }
 
-static PCODE GetOSRTransitionAddress(EECodeInfo& codeInfo, PCODE entryPoint)
+// OSR methods duplicate the tier0 prolog at the beginning for unwinding
+// reasons, and also to allow runtime async suspension directly in the OSR
+// method. However, this means that when transitioning from the tier 0 method
+// to the OSR method we should skip the duplicated prolog. The JIT records the
+// offset in a PatchpointInfo allocated for each OSR method. This helper
+// fetches the information and computes the final transition address.
+static PCODE GetOSRTransitionAddress(PCODE entryPoint)
 {
+    if (entryPoint == NULL)
+    {
+        return NULL;
+    }
+
+    int offset = 0;
+
+    EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
+    CodeHeader* codeHdr = jitMgr->GetCodeHeaderFromStartAddress(entryPoint);
+    PTR_BYTE debugInfo = codeHdr->GetDebugInfo();
+    PatchpointInfo* patchpointInfo = CompressDebugInfo::RestorePatchpointInfo(debugInfo);
+
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    printf("Size of prolog: %u\n", codeInfo.GetSizeOfProlog());
-    return entryPoint + 25;
-#else
-    return entryPoint;
+    if (patchpointInfo == NULL)
+    {
+        return NULL;
+    }
+
+    if (patchpointInfo->TransitionPrologOffset() != -1)
+    {
+        offset = patchpointInfo->TransitionPrologOffset();
+    }
 #endif
+
+    return entryPoint + offset;
 }
 
 static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, EECodeInfo& codeInfo, bool *pIsNewMethod)
@@ -1432,6 +1457,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
 
             // Invoke the helper to build the OSR method
             osrMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
+            osrMethodCode = GetOSRTransitionAddress(osrMethodCode);
 
             // If that failed, mark the patchpoint as invalid.
             if (osrMethodCode == (PCODE)NULL)
@@ -1444,7 +1470,6 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
             }
             else
             {
-                osrMethodCode = GetOSRTransitionAddress(codeInfo, osrMethodCode);
                 *pIsNewMethod = true;
                 ppInfo->m_osrMethodCode = osrMethodCode;
             }
@@ -1543,6 +1568,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointRequiredPolicy: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
             PCODE newMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
 
+            newMethodCode = GetOSRTransitionAddress(newMethodCode);
             // If that failed, mark the patchpoint as invalid.
             // This is fatal, for partial compilation patchpoints
             //
@@ -1557,7 +1583,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
             // We've successfully created the osr method; make it available.
             _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
-            ppInfo->m_osrMethodCode = GetOSRTransitionAddress(codeInfo, newMethodCode);
+            ppInfo->m_osrMethodCode = newMethodCode;
             *pIsNewMethod = true;
         }
     }

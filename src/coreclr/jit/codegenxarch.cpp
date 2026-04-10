@@ -9864,7 +9864,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #ifdef TARGET_AMD64
 
 template<typename TFunctor>
-static void EnumerateOsrLocalGCSlots(Compiler* compiler, unsigned tier0LocalFrameSize, TFunctor func)
+static void EnumerateOSRLocalGCSlots(Compiler* compiler, unsigned tier0LocalFrameSize, TFunctor func)
 {
     for (unsigned varNum = 0; varNum < compiler->lvaCount; varNum++)
     {
@@ -9947,7 +9947,7 @@ void CodeGen::genDuplicateTier0Prolog()
         zeroLow = std::min(zeroLow, offset);
         zeroHigh = std::max(zeroHigh, offset + REGSIZE_BYTES);
         };
-    EnumerateOsrLocalGCSlots(m_compiler, localFrameSize, checkSlot);
+    EnumerateOSRLocalGCSlots(m_compiler, localFrameSize, checkSlot);
 
     if (numStkSlotsToInit > 4)
     {
@@ -9959,8 +9959,18 @@ void CodeGen::genDuplicateTier0Prolog()
             GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, genGetZeroReg(REG_SCRATCH, &initRegZeroed), REG_ESP, (int)offset);
             };
 
-        EnumerateOsrLocalGCSlots(m_compiler, localFrameSize, zeroSlot);
+        EnumerateOSRLocalGCSlots(m_compiler, localFrameSize, zeroSlot);
     }
+
+    // We save this offset in a PatchpointInfo allocated for the OSR method.
+    // The VM uses this on OSR transitions to know how to skip this duplicate
+    // prolog.
+    unsigned int          osrTransitionOffset = GetEmitter()->emitGetPrologOffsetEstimate();
+    const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(0);
+    PatchpointInfo* const patchpointInfo     = (PatchpointInfo*)m_compiler->info.compCompHnd->allocateArray(patchpointInfoSize);
+    patchpointInfo->Initialize(0, 0);
+    patchpointInfo->SetTransitionPrologOffset((int)osrTransitionOffset);
+    m_compiler->info.compCompHnd->setPatchpointInfo(patchpointInfo);
 }
 
 //------------------------------------------------------------------------
