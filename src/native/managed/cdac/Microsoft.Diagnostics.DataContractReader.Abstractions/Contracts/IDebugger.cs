@@ -13,6 +13,8 @@ public interface IDebugger : IContract
 
     bool TryGetDebuggerData(out DebuggerData data) => throw new NotImplementedException();
     int GetAttachStateFlags() => throw new NotImplementedException();
+    void MarkDebuggerAttachPending() => throw new NotImplementedException();
+    void MarkDebuggerAttached(bool fAttached) => throw new NotImplementedException();
     bool MetadataUpdatesApplied() => throw new NotImplementedException();
 }
 

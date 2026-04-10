@@ -41,8 +41,8 @@ enum DebuggerControlFlag
 //    DBCF_ACTIVATE_REMOTE_DEBUGGING  = 0x0040,  Deprecated.  DO NOT USE
 
     DBCF_INTERNAL_MASK              = 0xFF00,
-    DBCF_PENDING_ATTACH             = 0x0100,
-    DBCF_ATTACHED                   = 0x0200,
+    DBCF_PENDING_ATTACH             = 0x0100, // [cDAC] [Debugger] : Contract depends on this value.
+    DBCF_ATTACHED                   = 0x0200, // [cDAC] [Debugger] : Contract depends on this value.
     DBCF_FIBERMODE                  = 0x0400
 };
 

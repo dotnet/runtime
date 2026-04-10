@@ -11,6 +11,8 @@ record struct DebuggerData(uint DefinesBitField, uint MDStructuresVersion);
 ```csharp
 bool TryGetDebuggerData(out DebuggerData data);
 int GetAttachStateFlags();
+void MarkDebuggerAttachPending();
+void MarkDebuggerAttached(bool fAttached);
 bool MetadataUpdatesApplied();
 ```
 
@@ -22,6 +24,7 @@ The contract depends on the following globals
 | --- | --- | --- |
 | `Debugger` | TargetPointer | Address of the pointer to the Debugger instance (`&g_pDebugger`) |
 | `CLRJitAttachState` | TargetPointer | Pointer to the CLR JIT attach state flags |
+| `CORDebuggerControlFlags` | TargetPointer | Pointer to `g_CORDebuggerControlFlags` |
 | `MetadataUpdatesApplied` | TargetPointer | Pointer to the g_metadataUpdatesApplied flag |
 
 The contract additionally depends on these data descriptors
@@ -33,6 +36,13 @@ The contract additionally depends on these data descriptors
 | `Debugger` | `MDStructuresVersion` | Version of metadata data structures |
 
 ```csharp
+
+private enum DebuggerControlFlag_1 : uint
+{
+    PendingAttach = 0x0100,
+    Attached = 0x0200,
+}
+
 bool TryGetDebuggerData(out DebuggerData data)
 {
     data = default;
@@ -57,6 +67,17 @@ int GetAttachStateFlags()
 {
     TargetPointer addr = target.ReadGlobalPointer("CLRJitAttachState");
     return (int)target.Read<uint>(addr);
+}
+
+void MarkDebuggerAttachPending()
+{
+    /* OR global "CORDebuggerControlFlags" with PendingAttach flag */;
+}
+
+void MarkDebuggerAttached(bool fAttached)
+{
+    // if fAttached is true, OR global "CORDebuggerControlFlags" with Attached flag
+    // otherwise clear both Attached and PendingAttach flags
 }
 
 bool MetadataUpdatesApplied()
