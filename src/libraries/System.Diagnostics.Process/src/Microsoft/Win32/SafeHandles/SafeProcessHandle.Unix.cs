@@ -82,7 +82,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new Win32Exception();
             }
 
-            return new SafeProcessHandle(pidfd, processId);
+            return new SafeProcessHandle(pidfd != -1 ? pidfd : int.MinValue, processId);
         }
 
         private bool SignalCore(PosixSignal signal)

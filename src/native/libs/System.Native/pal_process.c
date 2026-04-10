@@ -375,13 +375,10 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 {
 #if HAVE_FORK || defined(TARGET_OSX)
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
-            (groupsLength == 0 || groups != NULL) && "null argument.");
+            outPidfd != NULL && (groupsLength == 0 || groups != NULL) && "null argument.");
 
     *childPid = -1;
-    if (outPidfd != NULL)
-    {
-        *outPidfd = -1;
-    }
+    *outPidfd = -1;
 
     // Make sure we can find and access the executable. exec will do this, of course, but at that point it's already
     // in the child process, at which point it'll translate to the child process' exit code rather than to failing
@@ -510,10 +507,6 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         }
 
         *childPid = spawnedPid;
-        if (outPidfd != NULL)
-        {
-            *outPidfd = -1;
-        }
         return 0;
     }
 #endif
@@ -738,7 +731,7 @@ done:;
 
     free(getGroupsBuffer);
 
-    if (success && outPidfd != NULL)
+    if (success)
     {
         *outPidfd = TryOpenPidfd(*childPid);
     }
