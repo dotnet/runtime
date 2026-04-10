@@ -570,21 +570,8 @@ void CleanupCGroup()
     CGroup::Cleanup();
 }
 
-#else // !(TARGET_LINUX || TARGET_ANDROID)
-
-void InitializeCGroup()
-{
-}
-
-void CleanupCGroup()
-{
-}
-
-#endif // TARGET_LINUX || TARGET_ANDROID
-
 size_t GetRestrictedPhysicalMemoryLimit()
 {
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     uint64_t physical_memory_limit = 0;
 
     if (!CGroup::GetPhysicalMemoryLimit(&physical_memory_limit))
@@ -630,9 +617,6 @@ size_t GetRestrictedPhysicalMemoryLimit()
     {
         return (size_t)physical_memory_limit;
     }
-#else
-    return 0;
-#endif // TARGET_LINUX || TARGET_ANDROID
 }
 
 bool GetPhysicalMemoryUsed(size_t* val)
@@ -640,7 +624,6 @@ bool GetPhysicalMemoryUsed(size_t* val)
     if (val == nullptr)
         return false;
 
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     bool result = false;
     size_t linelen;
     char* line = nullptr;
@@ -674,7 +657,26 @@ bool GetPhysicalMemoryUsed(size_t* val)
         fclose(file);
     free(line);
     return result;
-#else
-    return false;
-#endif // TARGET_LINUX || TARGET_ANDROID
 }
+
+#else // !(TARGET_LINUX || TARGET_ANDROID)
+
+void InitializeCGroup()
+{
+}
+
+void CleanupCGroup()
+{
+}
+
+size_t GetRestrictedPhysicalMemoryLimit()
+{
+    return 0;
+}
+
+bool GetPhysicalMemoryUsed(size_t* val)
+{
+    return false;
+}
+
+#endif // TARGET_LINUX || TARGET_ANDROID
