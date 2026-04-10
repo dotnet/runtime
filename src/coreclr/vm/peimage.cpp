@@ -813,7 +813,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
     if (dwLastError != 0)
         return HRESULT_FROM_WIN32(dwLastError);
 
-    return HRESULT_FROM_WIN32(ERROR_OPEN_FAILED);
+    return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 }
 
 #endif // !DACCESS_COMPILE
