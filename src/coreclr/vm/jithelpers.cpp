@@ -1266,7 +1266,7 @@ static PCODE GetOSRTransitionAddress(EECodeInfo& codeInfo, PCODE entryPoint)
 {
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     printf("Size of prolog: %u\n", codeInfo.GetSizeOfProlog());
-    return entryPoint + codeInfo.GetSizeOfProlog();
+    return entryPoint + 25;
 #else
     return entryPoint;
 #endif
