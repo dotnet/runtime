@@ -128,6 +128,8 @@ namespace System.Diagnostics.Tests
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
             remoteInvokeOptions.StartInfo.RedirectStandardError = true;
             remoteInvokeOptions.StartInfo.RedirectStandardInput = true;
+            // Don't create (and upload) a memory dump for this test, as AV is intentional and expected.
+            remoteInvokeOptions.StartInfo.Environment["HELIX_WORKITEM_UPLOAD_ROOT"] = null;
 
             using RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(
                 (enabledStr, limitInherianceStr) =>
