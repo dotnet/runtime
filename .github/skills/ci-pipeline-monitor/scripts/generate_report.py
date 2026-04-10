@@ -169,9 +169,10 @@ class ReportGenerator:
 
         # Skipped pipelines (private/intentional opt-out — never fetched)
         for p in cur.execute(
-            "SELECT name FROM pipelines WHERE result = 'skipped' ORDER BY name"
+            "SELECT name, skip_reason FROM pipelines WHERE result = 'skipped' ORDER BY name"
         ):
-            out.append(f"  ⏭️ {p['name']}: SKIPPED (private)")
+            reason = p["skip_reason"] or "unknown"
+            out.append(f"  ⏭️ {p['name']}: SKIPPED ({reason})")
 
         out.append("")
         out.append("Notes:")

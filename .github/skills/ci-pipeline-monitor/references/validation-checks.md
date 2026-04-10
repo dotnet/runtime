@@ -23,7 +23,7 @@ managed .NET exception not native debugger output (catches extracting
 from wrong section of log), NEW failures do not share the same error
 pattern (error_message + first stack_trace line) as failures already
 matched to a GitHub issue (catches missed issue matches), NEW failures
-are verified against GitHub Search API (via `gh api`) using the full
+are verified against GitHub Search API (unauthenticated, via urllib) using the full
 test name to confirm no matching issue exists, every line in
 error_message and stack_trace appears as a complete line in the console
 log (catches mid-line truncation).
