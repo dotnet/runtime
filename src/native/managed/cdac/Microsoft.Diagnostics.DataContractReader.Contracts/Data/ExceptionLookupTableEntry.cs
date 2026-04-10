@@ -9,8 +9,8 @@ internal sealed class ExceptionLookupTableEntry : IData<ExceptionLookupTableEntr
     public ExceptionLookupTableEntry(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ExceptionLookupTableEntry);
-        MethodStartRVA = target.Read<uint>(address + (ulong)type.Fields[nameof(MethodStartRVA)].Offset);
-        ExceptionInfoRVA = target.Read<uint>(address + (ulong)type.Fields[nameof(ExceptionInfoRVA)].Offset);
+        MethodStartRVA = target.ReadField<uint>(address, type, nameof(MethodStartRVA));
+        ExceptionInfoRVA = target.ReadField<uint>(address, type, nameof(ExceptionInfoRVA));
     }
 
     public uint MethodStartRVA { get; init; }
