@@ -2471,15 +2471,15 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                                     // native registers, so we need to make sure to remove the node. In some cases the
                                     // node is after us in the iteration order and will be automatically removed, but we
                                     // may have already iterated over it without removing it, so it's necessary to clean
-                                    // up here. Removing the unused lcl_var/lcl_fld before iterating over it causes
-                                    // crashes in emit.
+                                    // up here.
                                     JITDUMP("Removing dead store data:\n");
                                     DISPNODE(data);
                                     if (next == data)
                                         next = data->gtPrev;
                                     if (end == data)
                                         end = data->gtNext;
-                                    blockRange.Remove(data);
+                                    blockRange.Delete(m_compiler, block, data);
+                                    // fgStmtRemoved was already set by TryRemoveDeadStoreLIR
                                 }
                             }
                         }
