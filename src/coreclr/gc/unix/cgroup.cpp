@@ -10,9 +10,10 @@ Module Name:
 Abstract:
     Read the memory limit for the current process
 --*/
-#ifdef __FreeBSD__
-#define _WITH_GETLINE
-#endif
+#include "cgroup.h"
+#include <cstddef>
+
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 
 #include <cstdint>
 #include <cassert>
@@ -21,24 +22,15 @@ Abstract:
 #include <stdio.h>
 #include <string.h>
 #include <sys/resource.h>
-#if defined(__APPLE__) || defined(__FreeBSD__)
-#include <sys/param.h>
-#include <sys/mount.h>
-#elif !defined(__HAIKU__)
 #include <sys/vfs.h>
-#endif
 #include <errno.h>
 #include <limits>
 
 #include "config.gc.h"
 
-#include "cgroup.h"
-
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX (~(size_t)0)
 #endif
-
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 
 #define CGROUP2_SUPER_MAGIC 0x63677270
 
@@ -124,10 +116,6 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
-#if !HAVE_NON_LEGACY_STATFS || TARGET_WASM
-        return 0;
-#else
-
         struct statfs stats;
         int result = statfs("/sys/fs/cgroup", &stats);
         if (result != 0)
@@ -144,7 +132,6 @@ private:
             // been seen in the wild.
             return 1;
         }
-#endif
     }
 
     static bool IsCGroup1MemorySubsystem(const char *strTok){
