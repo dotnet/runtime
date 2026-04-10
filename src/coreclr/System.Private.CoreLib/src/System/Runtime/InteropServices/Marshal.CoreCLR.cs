@@ -366,7 +366,7 @@ namespace System.Runtime.InteropServices
             {
                 LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(rt);
 
-                methods.Free((byte*)ptr);   
+                methods.Free((byte*)ptr);
             }
             catch (ArgumentException)
             {

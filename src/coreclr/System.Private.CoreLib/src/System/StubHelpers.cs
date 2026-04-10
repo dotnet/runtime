@@ -1461,7 +1461,7 @@ namespace System.StubHelpers
 
             if (unmanaged != null)
             {
-                NativeMemory.Clear(unmanaged, (nuint)nativeSize);   
+                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
             }
         }
     }
@@ -1605,7 +1605,7 @@ namespace System.StubHelpers
 
             if (unmanaged != null)
             {
-                NativeMemory.Clear(unmanaged, (nuint)nativeSize);   
+                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
             }
         }
     }
