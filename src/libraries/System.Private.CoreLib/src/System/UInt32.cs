@@ -295,6 +295,35 @@ namespace System
         [Intrinsic]
         public static uint LeadingZeroCount(uint value) => (uint)BitOperations.LeadingZeroCount(value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Log10(uint value)
+        {
+            // Use Log2 to get approximate Log10 via the relationship:
+            // log10(x) ≈ (log2(x) + 1) * 1233 >> 12
+            // Then correct with a powers-of-10 lookup table.
+            // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10
+            value |= 1;
+            uint log2 = (uint)BitOperations.Log2(value) + 1;
+            uint approx = (log2 * 1233) >> 12;
+            return value < PowersOf10[(int)approx] ? approx - 1 : approx;
+        }
+
+        // Lookup table for power-of-10 boundaries corrections
+        private static ReadOnlySpan<uint> PowersOf10 =>
+        [
+            1,
+            10,
+            100,
+            1_000,
+            10_000,
+            100_000,
+            1_000_000,
+            10_000_000,
+            100_000_000,
+            1_000_000_000,
+        ];
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         [Intrinsic]
         public static uint PopCount(uint value) => (uint)BitOperations.PopCount(value);

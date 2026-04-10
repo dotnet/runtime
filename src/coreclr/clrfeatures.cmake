@@ -10,6 +10,7 @@ endif()
 if (FEATURE_DYNAMIC_CODE_COMPILED)
   set(FEATURE_TIERED_COMPILATION 1)
   set(FEATURE_REJIT 1)
+  set(FEATURE_PGO 1)
 endif()
 
 # On desktop, if dynamic code compiled is false, we still enable static linking so we don't have to add platform manifest entries
@@ -52,7 +53,8 @@ if(NOT DEFINED FEATURE_CORPROFILER)
     # AND NOT CLR_CMAKE_TARGET_ANDROID
     # AND NOT CLR_CMAKE_TARGET_MACCATALYST
     # AND NOT CLR_CMAKE_TARGET_IOS
-    AND NOT CLR_CMAKE_TARGET_TVOS)
+    # AND NOT CLR_CMAKE_TARGET_TVOS
+    )
     set(FEATURE_CORPROFILER 1)
   endif()
 endif()

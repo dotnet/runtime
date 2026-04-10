@@ -722,9 +722,6 @@ void SystemDomain::Attach()
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeStubManager::Init();
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-    JumpStubStubManager::Init();
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
     RangeSectionStubManager::Init();
     ILStubManager::Init();
     PInvokeStubManager::Init();
@@ -732,9 +729,6 @@ void SystemDomain::Attach()
     StubLinkStubManager::Init();
     TailCallStubManager::Init();
     AsyncThunkStubManager::Init();
-#ifdef FEATURE_TIERED_COMPILATION
-    CallCountingStubManager::Init();
-#endif
 
     m_SystemDomainCrst.Init(CrstSystemDomain, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
     m_DelayedUnloadCrst.Init(CrstSystemDomainDelayedUnloadList, CRST_UNSAFE_COOPGC);
