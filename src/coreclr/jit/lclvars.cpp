@@ -7011,7 +7011,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 #if !defined(TARGET_S390X)
         // Note that stack offsets are negative or equal to zero except for s390x
         assert(stkOffs <= 0);
-#elif
+#else
         assert(stkOffs >= 0);
 #endif
 
@@ -7052,7 +7052,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         lvaIncrementFrameSize(pad);
 #if defined(TARGET_S390X)
         stkOffs += pad;
-#elif
+#else
         stkOffs -= pad;
 #endif
 
