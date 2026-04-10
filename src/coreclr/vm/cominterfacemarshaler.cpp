@@ -129,8 +129,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
     pSB->SetPrecious();
     DWORD dwSyncBlockIndex = pSB->GetSyncBlockIndex();
 
-    NewRCWHolder pNewRCW;
-    pNewRCW = RCW::CreateRCW(m_pUnknown, dwSyncBlockIndex, m_flags, m_typeHandle.GetMethodTable());
+    NewRCWHolder pNewRCW(RCW::CreateRCW(m_pUnknown, dwSyncBlockIndex, m_flags, m_typeHandle.GetMethodTable()));
 
     if (fDuplicate)
     {

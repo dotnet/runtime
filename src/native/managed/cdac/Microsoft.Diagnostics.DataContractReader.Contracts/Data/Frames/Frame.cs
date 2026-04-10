@@ -12,7 +12,7 @@ internal sealed class Frame : IData<Frame>
     {
         Address = address;
         Target.TypeInfo type = target.GetTypeInfo(DataType.Frame);
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
+        Next = target.ReadPointerField(address, type, nameof(Next));
         Identifier = target.ReadPointer(address);
     }
 

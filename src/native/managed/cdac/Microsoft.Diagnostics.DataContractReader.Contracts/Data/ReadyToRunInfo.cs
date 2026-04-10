@@ -14,28 +14,29 @@ internal sealed class ReadyToRunInfo : IData<ReadyToRunInfo>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunInfo);
 
-        CompositeInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(CompositeInfo)].Offset);
+        CompositeInfo = target.ReadPointerField(address, type, nameof(CompositeInfo));
 
-        ReadyToRunHeader = target.ReadPointer(address + (ulong)type.Fields[nameof(ReadyToRunHeader)].Offset);
+        ReadyToRunHeader = target.ReadPointerField(address, type, nameof(ReadyToRunHeader));
 
-        NumRuntimeFunctions = target.Read<uint>(address + (ulong)type.Fields[nameof(NumRuntimeFunctions)].Offset);
+        NumRuntimeFunctions = target.ReadField<uint>(address, type, nameof(NumRuntimeFunctions));
         RuntimeFunctions = NumRuntimeFunctions > 0
-            ? target.ReadPointer(address + (ulong)type.Fields[nameof(RuntimeFunctions)].Offset)
+            ? target.ReadPointerField(address, type, nameof(RuntimeFunctions))
             : TargetPointer.Null;
 
-        NumHotColdMap = target.Read<uint>(address + (ulong)type.Fields[nameof(NumHotColdMap)].Offset);
+        NumHotColdMap = target.ReadField<uint>(address, type, nameof(NumHotColdMap));
         Debug.Assert(NumHotColdMap % 2 == 0, "Hot/cold map should have an even number of entries (pairs of hot/cold runtime function indexes)");
         HotColdMap = NumHotColdMap > 0
-            ? target.ReadPointer(address + (ulong)type.Fields[nameof(HotColdMap)].Offset)
+            ? target.ReadPointerField(address, type, nameof(HotColdMap))
             : TargetPointer.Null;
 
-        DelayLoadMethodCallThunks = target.ReadPointer(address + (ulong)type.Fields[nameof(DelayLoadMethodCallThunks)].Offset);
-        DebugInfoSection = target.ReadPointer(address + (ulong)type.Fields[nameof(DebugInfoSection)].Offset);
+        DelayLoadMethodCallThunks = target.ReadPointerField(address, type, nameof(DelayLoadMethodCallThunks));
+        DebugInfoSection = target.ReadPointerField(address, type, nameof(DebugInfoSection));
+        ExceptionInfoSection = target.ReadPointerField(address, type, nameof(ExceptionInfoSection));
 
         // Map is from the composite info pointer (set to itself for non-multi-assembly composite images)
         EntryPointToMethodDescMap = CompositeInfo + (ulong)type.Fields[nameof(EntryPointToMethodDescMap)].Offset;
-        LoadedImageBase = target.ReadPointer(address + (ulong)type.Fields[nameof(LoadedImageBase)].Offset);
-        Composite = target.ReadPointer(address + (ulong)type.Fields[nameof(Composite)].Offset);
+        LoadedImageBase = target.ReadPointerField(address, type, nameof(LoadedImageBase));
+        Composite = target.ReadPointerField(address, type, nameof(Composite));
     }
 
     internal TargetPointer CompositeInfo { get; }
@@ -50,6 +51,7 @@ internal sealed class ReadyToRunInfo : IData<ReadyToRunInfo>
 
     public TargetPointer DelayLoadMethodCallThunks { get; }
     public TargetPointer DebugInfoSection { get; }
+    public TargetPointer ExceptionInfoSection { get; }
     public TargetPointer EntryPointToMethodDescMap { get; }
     public TargetPointer LoadedImageBase { get; }
     public TargetPointer Composite { get; }

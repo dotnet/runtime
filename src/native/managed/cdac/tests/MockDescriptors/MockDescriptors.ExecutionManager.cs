@@ -3,573 +3,838 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
-
-using InteriorMapValue = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.RangeSectionMap.InteriorMapValue;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-internal partial class MockDescriptors
+internal sealed class MockRangeSectionMap : TypedView
 {
-    internal class ExecutionManager
+    private const string TopLevelDataFieldName = "TopLevelData";
+
+    public static Layout<MockRangeSectionMap> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("RangeSectionMap", architecture)
+            .AddPointerField(TopLevelDataFieldName)
+            .Build<MockRangeSectionMap>();
+}
+
+internal sealed class MockRangeSectionMapLevel : TypedView
+{
+    public const int EntriesPerMapLevel = 256;
+
+    public static Layout<MockRangeSectionMapLevel> CreateLayout(MockTarget.Architecture architecture)
     {
-        public const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
-
-        const int RealCodeHeaderSize = 0x30; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
-
-        public struct AllocationRange
+        // Map levels are fixed-size arrays of pointers rather than named struct fields, so use
+        // LayoutBuilder directly and access entries by index through the typed view helpers below.
+        LayoutBuilder layoutBuilder = new("RangeSectionMapLevel", architecture)
         {
-            // elements of the range section map are allocated in this range
-            public ulong RangeSectionMapStart;
-            public ulong RangeSectionMapEnd;
-            // nibble maps for various range section fragments are allocated in this range
-            public ulong NibbleMapStart;
-            public ulong NibbleMapEnd;
-            // "RealCodeHeader" objects for jitted methods and the module, info, runtime functions
-            // and hot/cold map for R2R are allocated in this range
-            public ulong ExecutionManagerStart;
-            public ulong ExecutionManagerEnd;
+            Size = checked(EntriesPerMapLevel * (architecture.Is64Bit ? sizeof(ulong) : sizeof(uint))),
+        };
+
+        return layoutBuilder.Build<MockRangeSectionMapLevel>();
+    }
+
+    public ulong GetPointer(int index)
+        => ReadPointer(GetEntrySlice(index));
+
+    public void SetPointer(int index, ulong value)
+        => WritePointer(GetEntrySlice(index), value);
+
+    private Span<byte> GetEntrySlice(int index)
+        => Memory.Span.Slice(GetEntryOffset(index), Architecture.Is64Bit ? sizeof(ulong) : sizeof(uint));
+
+    private int GetEntryOffset(int index)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, EntriesPerMapLevel);
+        return checked(index * (Architecture.Is64Bit ? sizeof(ulong) : sizeof(uint)));
+    }
+}
+
+internal sealed class MockRangeSectionFragment : TypedView
+{
+    private const string RangeBeginFieldName = "RangeBegin";
+    private const string RangeEndOpenFieldName = "RangeEndOpen";
+    private const string RangeSectionFieldName = "RangeSection";
+    private const string NextFieldName = "Next";
+
+    public static Layout<MockRangeSectionFragment> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("RangeSectionFragment", architecture)
+            .AddPointerField(RangeBeginFieldName)
+            .AddPointerField(RangeEndOpenFieldName)
+            .AddPointerField(RangeSectionFieldName)
+            .AddPointerField(NextFieldName)
+            .Build<MockRangeSectionFragment>();
+
+    public ulong RangeBegin
+    {
+        get => ReadPointerField(RangeBeginFieldName);
+        set => WritePointerField(RangeBeginFieldName, value);
+    }
+
+    public ulong RangeEndOpen
+    {
+        get => ReadPointerField(RangeEndOpenFieldName);
+        set => WritePointerField(RangeEndOpenFieldName, value);
+    }
+
+    public ulong RangeSection
+    {
+        get => ReadPointerField(RangeSectionFieldName);
+        set => WritePointerField(RangeSectionFieldName, value);
+    }
+
+    public ulong Next
+    {
+        get => ReadPointerField(NextFieldName);
+        set => WritePointerField(NextFieldName, value);
+    }
+}
+
+internal sealed class MockRangeSection : TypedView
+{
+    private const string RangeBeginFieldName = "RangeBegin";
+    private const string RangeEndOpenFieldName = "RangeEndOpen";
+    private const string NextForDeleteFieldName = "NextForDelete";
+    private const string JitManagerFieldName = "JitManager";
+    private const string FlagsFieldName = "Flags";
+    private const string HeapListFieldName = "HeapList";
+    private const string R2RModuleFieldName = "R2RModule";
+
+    public static Layout<MockRangeSection> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("RangeSection", architecture)
+            .AddPointerField(RangeBeginFieldName)
+            .AddPointerField(RangeEndOpenFieldName)
+            .AddPointerField(NextForDeleteFieldName)
+            .AddPointerField(JitManagerFieldName)
+            .AddUInt32Field(FlagsFieldName)
+            .AddPointerField(HeapListFieldName)
+            .AddPointerField(R2RModuleFieldName)
+            .Build<MockRangeSection>();
+
+    public ulong RangeBegin
+    {
+        get => ReadPointerField(RangeBeginFieldName);
+        set => WritePointerField(RangeBeginFieldName, value);
+    }
+
+    public ulong RangeEndOpen
+    {
+        get => ReadPointerField(RangeEndOpenFieldName);
+        set => WritePointerField(RangeEndOpenFieldName, value);
+    }
+
+    public ulong JitManager
+    {
+        get => ReadPointerField(JitManagerFieldName);
+        set => WritePointerField(JitManagerFieldName, value);
+    }
+
+    public uint Flags
+    {
+        get => ReadUInt32Field(FlagsFieldName);
+        set => WriteUInt32Field(FlagsFieldName, value);
+    }
+
+    public ulong HeapList
+    {
+        get => ReadPointerField(HeapListFieldName);
+        set => WritePointerField(HeapListFieldName, value);
+    }
+
+    public ulong R2RModule
+    {
+        get => ReadPointerField(R2RModuleFieldName);
+        set => WritePointerField(R2RModuleFieldName, value);
+    }
+}
+
+internal sealed class MockCodeHeapListNode : TypedView
+{
+    private const string NextFieldName = "Next";
+    private const string StartAddressFieldName = "StartAddress";
+    private const string EndAddressFieldName = "EndAddress";
+    private const string MapBaseFieldName = "MapBase";
+    private const string HeaderMapFieldName = "HeaderMap";
+    private const string HeapFieldName = "Heap";
+
+    public static Layout<MockCodeHeapListNode> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("CodeHeapListNode", architecture)
+            .AddPointerField(NextFieldName)
+            .AddPointerField(StartAddressFieldName)
+            .AddPointerField(EndAddressFieldName)
+            .AddPointerField(MapBaseFieldName)
+            .AddPointerField(HeaderMapFieldName)
+            .AddPointerField(HeapFieldName)
+            .Build<MockCodeHeapListNode>();
+
+    public ulong Next
+    {
+        get => ReadPointerField(NextFieldName);
+        set => WritePointerField(NextFieldName, value);
+    }
+
+    public ulong StartAddress
+    {
+        get => ReadPointerField(StartAddressFieldName);
+        set => WritePointerField(StartAddressFieldName, value);
+    }
+
+    public ulong EndAddress
+    {
+        get => ReadPointerField(EndAddressFieldName);
+        set => WritePointerField(EndAddressFieldName, value);
+    }
+
+    public ulong MapBase
+    {
+        get => ReadPointerField(MapBaseFieldName);
+        set => WritePointerField(MapBaseFieldName, value);
+    }
+
+    public ulong HeaderMap
+    {
+        get => ReadPointerField(HeaderMapFieldName);
+        set => WritePointerField(HeaderMapFieldName, value);
+    }
+
+    public ulong Heap
+    {
+        get => ReadPointerField(HeapFieldName);
+        set => WritePointerField(HeapFieldName, value);
+    }
+}
+
+internal sealed class MockCodeHeap : TypedView
+{
+    private const string VtablePtrFieldName = "VtablePtr";
+    private const string HeapTypePaddingFieldName = "HeapTypePadding";
+    private const string HeapTypeFieldName = "HeapType";
+
+    public static Layout<MockCodeHeap> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("CodeHeap", architecture)
+            .AddPointerField(VtablePtrFieldName)
+            .AddPointerField(HeapTypePaddingFieldName)
+            .AddField(HeapTypeFieldName, sizeof(byte))
+            .Build<MockCodeHeap>();
+
+    public byte HeapType
+    {
+        get => ReadByteField(HeapTypeFieldName);
+        set => WriteByteField(HeapTypeFieldName, value);
+    }
+}
+
+internal sealed class MockLoaderCodeHeap : TypedView
+{
+    private const string LoaderHeapFieldName = "LoaderHeap";
+
+    public static Layout<MockLoaderCodeHeap> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("LoaderCodeHeap", architecture)
+            .AddPointerField(LoaderHeapFieldName)
+            .Build<MockLoaderCodeHeap>();
+
+    public ulong LoaderHeapAddress => GetFieldAddress(LoaderHeapFieldName);
+}
+
+internal sealed class MockHostCodeHeap : TypedView
+{
+    private const string BaseAddressFieldName = "BaseAddress";
+    private const string CurrentAddressFieldName = "CurrentAddress";
+
+    public static Layout<MockHostCodeHeap> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("HostCodeHeap", architecture)
+            .AddPointerField(BaseAddressFieldName)
+            .AddPointerField(CurrentAddressFieldName)
+            .Build<MockHostCodeHeap>();
+
+    public ulong BaseAddress
+    {
+        get => ReadPointerField(BaseAddressFieldName);
+        set => WritePointerField(BaseAddressFieldName, value);
+    }
+
+    public ulong CurrentAddress
+    {
+        get => ReadPointerField(CurrentAddressFieldName);
+        set => WritePointerField(CurrentAddressFieldName, value);
+    }
+}
+
+internal sealed class MockRealCodeHeader : TypedView
+{
+    private const string MethodDescFieldName = "MethodDesc";
+    private const string DebugInfoFieldName = "DebugInfo";
+    private const string EHInfoFieldName = "EHInfo";
+    private const string GCInfoFieldName = "GCInfo";
+    private const string NumUnwindInfosFieldName = "NumUnwindInfos";
+    private const string UnwindInfosFieldName = "UnwindInfos";
+
+    public static Layout<MockRealCodeHeader> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("RealCodeHeader", architecture)
+            .AddPointerField(MethodDescFieldName)
+            .AddPointerField(DebugInfoFieldName)
+            .AddPointerField(EHInfoFieldName)
+            .AddPointerField(GCInfoFieldName)
+            .AddUInt32Field(NumUnwindInfosFieldName)
+            .AddPointerField(UnwindInfosFieldName)
+            .Build<MockRealCodeHeader>();
+
+    public ulong MethodDesc
+    {
+        get => ReadPointerField(MethodDescFieldName);
+        set => WritePointerField(MethodDescFieldName, value);
+    }
+
+    public ulong DebugInfo
+    {
+        get => ReadPointerField(DebugInfoFieldName);
+        set => WritePointerField(DebugInfoFieldName, value);
+    }
+
+    public ulong EHInfo
+    {
+        get => ReadPointerField(EHInfoFieldName);
+        set => WritePointerField(EHInfoFieldName, value);
+    }
+
+    public ulong GCInfo
+    {
+        get => ReadPointerField(GCInfoFieldName);
+        set => WritePointerField(GCInfoFieldName, value);
+    }
+
+    public uint NumUnwindInfos
+    {
+        get => ReadUInt32Field(NumUnwindInfosFieldName);
+        set => WriteUInt32Field(NumUnwindInfosFieldName, value);
+    }
+
+    public ulong UnwindInfos
+    {
+        get => ReadPointerField(UnwindInfosFieldName);
+        set => WritePointerField(UnwindInfosFieldName, value);
+    }
+}
+
+internal sealed class MockReadyToRunInfo : TypedView
+{
+    private const string ReadyToRunHeaderFieldName = "ReadyToRunHeader";
+    private const string CompositeInfoFieldName = "CompositeInfo";
+    private const string NumRuntimeFunctionsFieldName = "NumRuntimeFunctions";
+    private const string RuntimeFunctionsFieldName = "RuntimeFunctions";
+    private const string NumHotColdMapFieldName = "NumHotColdMap";
+    private const string HotColdMapFieldName = "HotColdMap";
+    private const string DelayLoadMethodCallThunksFieldName = "DelayLoadMethodCallThunks";
+    private const string DebugInfoSectionFieldName = "DebugInfoSection";
+    private const string ExceptionInfoSectionFieldName = "ExceptionInfoSection";
+    private const string EntryPointToMethodDescMapFieldName = "EntryPointToMethodDescMap";
+    private const string LoadedImageBaseFieldName = "LoadedImageBase";
+    private const string CompositeFieldName = "Composite";
+
+    public static Layout<MockReadyToRunInfo> CreateLayout(MockTarget.Architecture architecture, int hashMapStride)
+        => new SequentialLayoutBuilder("ReadyToRunInfo", architecture)
+            .AddPointerField(ReadyToRunHeaderFieldName)
+            .AddPointerField(CompositeInfoFieldName)
+            .AddUInt32Field(NumRuntimeFunctionsFieldName)
+            .AddPointerField(RuntimeFunctionsFieldName)
+            .AddUInt32Field(NumHotColdMapFieldName)
+            .AddPointerField(HotColdMapFieldName)
+            .AddPointerField(DelayLoadMethodCallThunksFieldName)
+            .AddPointerField(DebugInfoSectionFieldName)
+            .AddPointerField(ExceptionInfoSectionFieldName)
+            .AddField(EntryPointToMethodDescMapFieldName, hashMapStride)
+            .AddPointerField(LoadedImageBaseFieldName)
+            .AddPointerField(CompositeFieldName)
+            .Build<MockReadyToRunInfo>();
+
+    public ulong CompositeInfo
+    {
+        get => ReadPointerField(CompositeInfoFieldName);
+        set => WritePointerField(CompositeInfoFieldName, value);
+    }
+
+    public uint NumRuntimeFunctions
+    {
+        get => ReadUInt32Field(NumRuntimeFunctionsFieldName);
+        set => WriteUInt32Field(NumRuntimeFunctionsFieldName, value);
+    }
+
+    public ulong RuntimeFunctions
+    {
+        get => ReadPointerField(RuntimeFunctionsFieldName);
+        set => WritePointerField(RuntimeFunctionsFieldName, value);
+    }
+
+    public uint NumHotColdMap
+    {
+        get => ReadUInt32Field(NumHotColdMapFieldName);
+        set => WriteUInt32Field(NumHotColdMapFieldName, value);
+    }
+
+    public ulong HotColdMap
+    {
+        get => ReadPointerField(HotColdMapFieldName);
+        set => WritePointerField(HotColdMapFieldName, value);
+    }
+
+    public ulong ExceptionInfoSection
+    {
+        get => ReadPointerField(ExceptionInfoSectionFieldName);
+        set => WritePointerField(ExceptionInfoSectionFieldName, value);
+    }
+
+    public ulong EntryPointToMethodDescMapAddress => GetFieldAddress(EntryPointToMethodDescMapFieldName);
+}
+
+internal sealed class MockEEJitManager : TypedView
+{
+    private const string StoreRichDebugInfoFieldName = "StoreRichDebugInfo";
+    private const string AllCodeHeapsFieldName = "AllCodeHeaps";
+
+    public static Layout<MockEEJitManager> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("EEJitManager", architecture)
+            .AddField(StoreRichDebugInfoFieldName, sizeof(byte))
+            .AddPointerField(AllCodeHeapsFieldName)
+            .Build<MockEEJitManager>();
+
+    public byte StoreRichDebugInfo
+    {
+        get => ReadByteField(StoreRichDebugInfoFieldName);
+        set => WriteByteField(StoreRichDebugInfoFieldName, value);
+    }
+
+    public ulong AllCodeHeaps
+    {
+        get => ReadPointerField(AllCodeHeapsFieldName);
+        set => WritePointerField(AllCodeHeapsFieldName, value);
+    }
+}
+
+internal sealed class MockJittedMethod : TypedView
+{
+    private const string CodeHeaderFieldName = "CodeHeader";
+    private const string CodeBytesFieldName = "CodeBytes";
+
+    public static Layout<MockJittedMethod> CreateLayout(MockTarget.Architecture architecture, int codeSize)
+        => new SequentialLayoutBuilder("JittedMethod", architecture)
+            .AddPointerField(CodeHeaderFieldName)
+            .AddField(CodeBytesFieldName, codeSize)
+            .Build<MockJittedMethod>();
+
+    public ulong CodeHeader
+    {
+        get => ReadPointerField(CodeHeaderFieldName);
+        set => WritePointerField(CodeHeaderFieldName, value);
+    }
+
+    public ulong CodeAddress => GetFieldAddress(CodeBytesFieldName);
+
+    public Memory<byte> CodeBytes
+    {
+        get
+        {
+            LayoutField codeBytesField = Layout.GetField(CodeBytesFieldName);
+            return Memory.Slice(codeBytesField.Offset, codeBytesField.Size);
+        }
+    }
+}
+
+internal sealed class MockExecutionManagerBuilder
+{
+    private const uint CodeHeapRangeSectionFlag = 0x02;
+    private const string EEJitManagerGlobalName = "EEJitManagerGlobalPointer";
+    private const int RangeSectionMapBitsPerLevel = 8;
+
+    public readonly struct AllocationRange
+    {
+        public ulong RangeSectionMapStart { get; init; }
+        public ulong RangeSectionMapEnd { get; init; }
+        public ulong NibbleMapStart { get; init; }
+        public ulong NibbleMapEnd { get; init; }
+        public ulong ExecutionManagerStart { get; init; }
+        public ulong ExecutionManagerEnd { get; init; }
+    }
+
+    public static readonly AllocationRange DefaultAllocationRange = new()
+    {
+        RangeSectionMapStart = 0x00dd_0000,
+        RangeSectionMapEnd = 0x00de_0000,
+        NibbleMapStart = 0x00ee_0000,
+        NibbleMapEnd = 0x00ef_0000,
+        ExecutionManagerStart = 0x0033_4000,
+        ExecutionManagerEnd = 0x0033_5000,
+    };
+
+    private readonly struct RangeSectionMapCursor
+    {
+        public RangeSectionMapCursor(MockRangeSectionMapLevel levelMap, int level, int index)
+        {
+            LevelMap = levelMap;
+            Level = level;
+            Index = index;
         }
 
-        public static readonly AllocationRange DefaultAllocationRange = new AllocationRange
+        public MockRangeSectionMapLevel LevelMap { get; }
+        public int Level { get; }
+        public int Index { get; }
+        public bool IsLeaf => Level == 1;
+    }
+
+    internal readonly struct JittedCodeRange
+    {
+        public MockMemorySpace.BumpAllocator Allocator { get; init; }
+        public ulong RangeStart => Allocator.RangeStart;
+        public ulong RangeEnd => Allocator.RangeEnd;
+        public ulong RangeSize => RangeEnd - RangeStart;
+    }
+
+    internal int Version { get; }
+    internal MockMemorySpace.Builder Builder { get; }
+    internal Layout<MockRangeSectionMap> RangeSectionMapLayout { get; }
+    internal Layout<MockRangeSectionFragment> RangeSectionFragmentLayout { get; }
+    internal Layout<MockRangeSection> RangeSectionLayout { get; }
+    internal Layout<MockCodeHeapListNode> CodeHeapListNodeLayout { get; }
+    internal Layout<MockCodeHeap> CodeHeapLayout { get; }
+    internal Layout<MockLoaderCodeHeap> LoaderCodeHeapLayout { get; }
+    internal Layout<MockHostCodeHeap> HostCodeHeapLayout { get; }
+    internal Layout<MockRealCodeHeader> RealCodeHeaderLayout { get; }
+    internal Layout<MockReadyToRunInfo> ReadyToRunInfoLayout { get; }
+    internal Layout<MockEEJitManager> EEJitManagerLayout { get; }
+    internal Layout<MockLoaderModule> ModuleLayout { get; }
+    internal Layout<MockRuntimeFunction> RuntimeFunctionLayout => _runtimeFunctions.RuntimeFunctionLayout;
+    internal Layout<MockUnwindInfo> UnwindInfoLayout => _runtimeFunctions.UnwindInfoLayout;
+    internal (string Name, ulong Value)[] Globals { get; }
+    internal ulong EEJitManagerAddress { get; }
+    internal ulong RangeSectionMapTopLevelAddress => _rangeSectionMapTopLevelAddress;
+
+    private readonly MockRuntimeFunctionsBuilder _runtimeFunctions;
+    private readonly MockMemorySpace.BumpAllocator _rangeSectionMapAllocator;
+    private readonly MockMemorySpace.BumpAllocator _nibbleMapAllocator;
+    private readonly MockMemorySpace.BumpAllocator _allocator;
+    private readonly MockEEJitManager _eeJitManager;
+    private readonly Layout<MockRangeSectionMapLevel> _rangeSectionMapLevelLayout;
+    private readonly Dictionary<ulong, MockRangeSectionMapLevel> _rangeSectionMapLevels;
+    private readonly ulong _rangeSectionMapTopLevelAddress;
+    private readonly int _rangeSectionMapLevelsCount;
+    private readonly int _rangeSectionMapMaxSetBit;
+
+    internal MockExecutionManagerBuilder(int version, MockTarget.Architecture arch, AllocationRange allocationRange, ulong allCodeHeaps = 0)
+        : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange, allCodeHeaps)
+    {
+    }
+
+    internal MockExecutionManagerBuilder(int version, MockMemorySpace.Builder builder, AllocationRange allocationRange, ulong allCodeHeaps = 0)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        Version = version;
+        Builder = builder;
+        _runtimeFunctions = new MockRuntimeFunctionsBuilder(builder);
+        _rangeSectionMapAllocator = Builder.CreateAllocator(allocationRange.RangeSectionMapStart, allocationRange.RangeSectionMapEnd);
+        _nibbleMapAllocator = Builder.CreateAllocator(allocationRange.NibbleMapStart, allocationRange.NibbleMapEnd);
+        _allocator = Builder.CreateAllocator(allocationRange.ExecutionManagerStart, allocationRange.ExecutionManagerEnd);
+
+        MockTarget.Architecture architecture = Builder.TargetTestHelpers.Arch;
+        _rangeSectionMapLevelLayout = MockRangeSectionMapLevel.CreateLayout(architecture);
+        _rangeSectionMapLevels = [];
+        _rangeSectionMapLevelsCount = architecture.Is64Bit ? 5 : 2;
+        _rangeSectionMapMaxSetBit = architecture.Is64Bit ? 56 : 31;
+        MockMemorySpace.HeapFragment topRangeSectionMapLevel = _rangeSectionMapAllocator.Allocate((ulong)_rangeSectionMapLevelLayout.Size, $"Map Level {_rangeSectionMapLevelsCount}");
+        Builder.AddHeapFragment(topRangeSectionMapLevel);
+        _rangeSectionMapTopLevelAddress = topRangeSectionMapLevel.Address;
+        _rangeSectionMapLevels[_rangeSectionMapTopLevelAddress] = _rangeSectionMapLevelLayout.Create(topRangeSectionMapLevel);
+
+        int hashMapStride = MockHashMap.CreateLayout(architecture).Size;
+        RangeSectionMapLayout = MockRangeSectionMap.CreateLayout(architecture);
+        RangeSectionFragmentLayout = MockRangeSectionFragment.CreateLayout(architecture);
+        RangeSectionLayout = MockRangeSection.CreateLayout(architecture);
+        CodeHeapListNodeLayout = MockCodeHeapListNode.CreateLayout(architecture);
+        CodeHeapLayout = MockCodeHeap.CreateLayout(architecture);
+        LoaderCodeHeapLayout = MockLoaderCodeHeap.CreateLayout(architecture);
+        HostCodeHeapLayout = MockHostCodeHeap.CreateLayout(architecture);
+        RealCodeHeaderLayout = MockRealCodeHeader.CreateLayout(architecture);
+        ReadyToRunInfoLayout = MockReadyToRunInfo.CreateLayout(architecture, hashMapStride);
+        EEJitManagerLayout = MockEEJitManager.CreateLayout(architecture);
+        ModuleLayout = MockLoaderModule.CreateLayout(architecture);
+
+        _eeJitManager = AllocateAndCreate(EEJitManagerLayout, "EEJitManager");
+        _eeJitManager.AllCodeHeaps = allCodeHeaps;
+        EEJitManagerAddress = _eeJitManager.Address;
+
+        ulong eeJitManagerGlobalAddress = AddPointerGlobal(EEJitManagerAddress, EEJitManagerGlobalName);
+        var globals = new List<(string Name, ulong Value)>
         {
-            RangeSectionMapStart = 0x00dd_0000,
-            RangeSectionMapEnd = 0x00de_0000,
-            NibbleMapStart = 0x00ee_0000,
-            NibbleMapEnd = 0x00ef_0000,
-            ExecutionManagerStart = 0x0033_4000,
-            ExecutionManagerEnd = 0x0033_5000,
+            (nameof(Constants.Globals.ExecutionManagerCodeRangeMapAddress), _rangeSectionMapTopLevelAddress),
+            (nameof(Constants.Globals.StubCodeBlockLast), 0x0F),
+            (nameof(Constants.Globals.EEJitManagerAddress), eeJitManagerGlobalAddress),
         };
-        internal class RangeSectionMapTestBuilder
+        globals.Add((nameof(Constants.Globals.HashMapSlotsPerBucket), MockHashMapBucket.SlotsPerBucket));
+        globals.Add((nameof(Constants.Globals.HashMapValueMask), Builder.TargetTestHelpers.MaxSignedTargetAddress));
+        Globals = [.. globals];
+    }
+
+    public void SetAllCodeHeaps(ulong headNodeAddress)
+        => _eeJitManager.AllCodeHeaps = headNodeAddress;
+
+    internal NibbleMapTestBuilderBase CreateNibbleMap(ulong codeRangeStart, uint codeRangeSize)
+    {
+        NibbleMapTestBuilderBase nibBuilder = Version switch
         {
-            const ulong DefaultTopLevelAddress = 0x0000_1000u; // arbitrary
-            const int EntriesPerMapLevel = 256; // for now its fixed at 256, see codeman.h RangeSectionMap::entriesPerMapLevel
-            const int BitsPerLevel = 8;
+            1 => new NibbleMapTestBuilder_1(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
+            2 => new NibbleMapTestBuilder_2(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
+            _ => throw new InvalidOperationException("Unknown version"),
+        };
 
-            private readonly TargetPointer _topLevelAddress;
-            private readonly MockMemorySpace.Builder _builder;
-            private readonly TargetTestHelpers _targetTestHelpers;
-            private readonly int _levels;
-            private readonly int _maxSetBit;
-            private ulong _nextMapAddress;
-            public RangeSectionMapTestBuilder(MockTarget.Architecture arch) : this(DefaultTopLevelAddress, new MockMemorySpace.Builder(new TargetTestHelpers(arch)))
+        Builder.AddHeapFragment(nibBuilder.NibbleMapFragment);
+        return nibBuilder;
+    }
+
+    public JittedCodeRange AllocateJittedCodeRange(ulong codeRangeStart, uint codeRangeSize)
+    {
+        MockMemorySpace.BumpAllocator allocator = Builder.CreateAllocator(codeRangeStart, codeRangeStart + codeRangeSize, minAlign: 1);
+        return new JittedCodeRange { Allocator = allocator };
+    }
+
+    public MockRangeSection AddRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, ulong codeHeapListNodeAddress)
+    {
+        MockRangeSection rangeSection = AllocateAndCreate(RangeSectionLayout, "RangeSection", _rangeSectionMapAllocator);
+        rangeSection.RangeBegin = jittedCodeRange.RangeStart;
+        rangeSection.RangeEndOpen = jittedCodeRange.RangeEnd;
+        rangeSection.Flags = CodeHeapRangeSectionFlag;
+        rangeSection.HeapList = codeHeapListNodeAddress;
+        rangeSection.JitManager = jitManagerAddress;
+        return rangeSection;
+    }
+
+    public MockRangeSection AddReadyToRunRangeSection(JittedCodeRange jittedCodeRange, ulong jitManagerAddress, ulong r2rModuleAddress)
+    {
+        MockRangeSection rangeSection = AllocateAndCreate(RangeSectionLayout, "RangeSection", _rangeSectionMapAllocator);
+        rangeSection.RangeBegin = jittedCodeRange.RangeStart;
+        rangeSection.RangeEndOpen = jittedCodeRange.RangeEnd;
+        rangeSection.R2RModule = r2rModuleAddress;
+        rangeSection.JitManager = jitManagerAddress;
+        return rangeSection;
+    }
+
+    public MockRangeSectionFragment AddRangeSectionFragment(JittedCodeRange jittedCodeRange, ulong rangeSectionAddress)
+        => AddRangeSectionFragment(jittedCodeRange, rangeSectionAddress, insertIntoMap: true);
+
+    public MockRangeSectionFragment AddUnmappedRangeSectionFragment(JittedCodeRange jittedCodeRange, ulong rangeSectionAddress)
+        => AddRangeSectionFragment(jittedCodeRange, rangeSectionAddress, insertIntoMap: false);
+
+    public MockRangeSectionFragment AddRangeSectionFragmentWithCollectibleNext(JittedCodeRange mapCodeRange, ulong rangeSectionAddress, ulong nextFragmentAddress)
+    {
+        MockRangeSectionFragment rangeSectionFragment = AllocateAndCreate(
+            RangeSectionFragmentLayout,
+            "RangeSectionFragment (collectible head)",
+            _rangeSectionMapAllocator);
+        InsertMappedRange(mapCodeRange.RangeStart, (uint)mapCodeRange.RangeSize, rangeSectionFragment.Address);
+        rangeSectionFragment.RangeSection = rangeSectionAddress;
+        rangeSectionFragment.Next = nextFragmentAddress | 1;
+        return rangeSectionFragment;
+    }
+
+    public MockCodeHeapListNode AddCodeHeapListNode(ulong next, ulong startAddress, ulong endAddress, ulong mapBase, ulong headerMap, ulong heap = 0)
+    {
+        MockCodeHeapListNode codeHeapListNode = AllocateAndCreate(CodeHeapListNodeLayout, "CodeHeapListNode", _rangeSectionMapAllocator);
+        codeHeapListNode.Next = next;
+        codeHeapListNode.StartAddress = startAddress;
+        codeHeapListNode.EndAddress = endAddress;
+        codeHeapListNode.MapBase = mapBase;
+        codeHeapListNode.HeaderMap = headerMap;
+        codeHeapListNode.Heap = heap;
+        return codeHeapListNode;
+    }
+
+    public MockLoaderCodeHeap AddLoaderCodeHeap()
+    {
+        ulong allocationSize = (ulong)Math.Max(CodeHeapLayout.Size, LoaderCodeHeapLayout.Size);
+        MockMemorySpace.HeapFragment heapFragment = AllocateAndAdd(allocationSize, "LoaderCodeHeap");
+        MockLoaderCodeHeap loaderCodeHeap = LoaderCodeHeapLayout.Create(heapFragment);
+        MockCodeHeap codeHeap = CodeHeapLayout.Create(
+            heapFragment.Data.AsMemory(0, CodeHeapLayout.Size),
+            heapFragment.Address);
+        codeHeap.HeapType = 0;
+        return loaderCodeHeap;
+    }
+
+    public MockHostCodeHeap AddHostCodeHeap(ulong baseAddress, ulong currentAddress)
+    {
+        ulong allocationSize = (ulong)Math.Max(CodeHeapLayout.Size, HostCodeHeapLayout.Size);
+        MockMemorySpace.HeapFragment heapFragment = AllocateAndAdd(allocationSize, "HostCodeHeap");
+        MockHostCodeHeap hostCodeHeap = HostCodeHeapLayout.Create(heapFragment);
+        MockCodeHeap codeHeap = CodeHeapLayout.Create(
+            heapFragment.Data.AsMemory(0, CodeHeapLayout.Size),
+            heapFragment.Address);
+        codeHeap.HeapType = 1;
+        hostCodeHeap.BaseAddress = baseAddress;
+        hostCodeHeap.CurrentAddress = currentAddress;
+        return hostCodeHeap;
+    }
+
+    public MockJittedMethod AddJittedMethod(JittedCodeRange jittedCodeRange, uint codeSize, ulong methodDescAddress)
+    {
+        MockJittedMethod jittedMethod = AllocateJittedMethod(jittedCodeRange, codeSize);
+        MockRealCodeHeader codeHeader = AllocateAndCreate(RealCodeHeaderLayout, "RealCodeHeader");
+        jittedMethod.CodeHeader = codeHeader.Address;
+
+        codeHeader.MethodDesc = methodDescAddress;
+        codeHeader.DebugInfo = 0;
+        codeHeader.EHInfo = 0;
+        codeHeader.GCInfo = 0;
+        codeHeader.NumUnwindInfos = 0;
+        codeHeader.UnwindInfos = 0;
+
+        return jittedMethod;
+    }
+
+    public MockReadyToRunInfo AddReadyToRunInfo(uint[] runtimeFunctions, uint[] hotColdMap)
+    {
+        ulong runtimeFunctionsAddress = _runtimeFunctions.AddRuntimeFunctions(runtimeFunctions);
+        ulong hotColdMapAddress = 0;
+        if (hotColdMap.Length > 0)
+        {
+            MockMemorySpace.HeapFragment hotColdMapFragment = AllocateAndAdd((ulong)hotColdMap.Length * sizeof(uint), $"HotColdMap[{hotColdMap.Length}]");
+            hotColdMapAddress = hotColdMapFragment.Address;
+            for (uint i = 0; i < hotColdMap.Length; i++)
             {
+                Span<byte> span = Builder.BorrowAddressRange(hotColdMapFragment.Address + i * sizeof(uint), sizeof(uint));
+                Builder.TargetTestHelpers.Write(span, hotColdMap[i]);
             }
+        }
 
-            public RangeSectionMapTestBuilder(TargetPointer topLevelAddress, MockMemorySpace.Builder builder)
+        MockReadyToRunInfo readyToRunInfo = AllocateAndCreate(ReadyToRunInfoLayout, "ReadyToRunInfo");
+        readyToRunInfo.CompositeInfo = readyToRunInfo.Address;
+        readyToRunInfo.NumRuntimeFunctions = checked((uint)runtimeFunctions.Length);
+        readyToRunInfo.RuntimeFunctions = runtimeFunctionsAddress;
+        readyToRunInfo.NumHotColdMap = checked((uint)hotColdMap.Length);
+        readyToRunInfo.HotColdMap = hotColdMapAddress;
+        return readyToRunInfo;
+    }
+
+    public MockLoaderModule AddReadyToRunModule(ulong readyToRunInfoAddress)
+    {
+        MockLoaderModule module = AllocateAndCreate(ModuleLayout, "R2R Module");
+        module.ReadyToRunInfo = readyToRunInfoAddress;
+        return module;
+    }
+
+    private MockRangeSectionFragment AddRangeSectionFragment(JittedCodeRange jittedCodeRange, ulong rangeSectionAddress, bool insertIntoMap)
+    {
+        MockRangeSectionFragment rangeSectionFragment = AllocateAndCreate(RangeSectionFragmentLayout, "RangeSectionFragment", _rangeSectionMapAllocator);
+        if (insertIntoMap)
+        {
+            InsertMappedRange(jittedCodeRange.RangeStart, (uint)jittedCodeRange.RangeSize, rangeSectionFragment.Address);
+        }
+
+        rangeSectionFragment.RangeBegin = jittedCodeRange.RangeStart;
+        rangeSectionFragment.RangeEndOpen = jittedCodeRange.RangeEnd;
+        rangeSectionFragment.RangeSection = rangeSectionAddress;
+        return rangeSectionFragment;
+    }
+
+    private void InsertMappedRange(ulong rangeStart, uint rangeSize, ulong value)
+        => InsertRangeSectionMapAddressRange(rangeStart, rangeSize, value);
+
+    internal void InsertRangeSectionMapAddressRange(ulong start, uint length, ulong value, bool collectible = false)
+    {
+        if (length == 0)
+        {
+            return;
+        }
+
+        ulong current = start;
+        ulong end = start + length;
+        do
+        {
+            RangeSectionMapCursor lastCursor = EnsureRangeSectionMapLevelsForAddress(current, collectible);
+            lastCursor.LevelMap.SetPointer(lastCursor.Index, value);
+            current += (ulong)RangeSectionMapBytesAtLastLevel;
+        }
+        while (current < end);
+    }
+
+    private MockJittedMethod AllocateJittedMethod(JittedCodeRange jittedCodeRange, uint codeSize, string name = "Method Header & Code")
+    {
+        Layout<MockJittedMethod> jittedMethodLayout = MockJittedMethod.CreateLayout(Builder.TargetTestHelpers.Arch, checked((int)codeSize));
+        MockMemorySpace.HeapFragment methodFragment = jittedCodeRange.Allocator.Allocate((ulong)jittedMethodLayout.Size, name);
+        Builder.AddHeapFragment(methodFragment);
+        return jittedMethodLayout.Create(methodFragment);
+    }
+
+    private ulong AddPointerGlobal(ulong value, string name)
+    {
+        MockMemorySpace.HeapFragment fragment = AllocateAndAdd((ulong)Builder.TargetTestHelpers.PointerSize, name);
+        Builder.TargetTestHelpers.WritePointer(fragment.Data, value);
+        return fragment.Address;
+    }
+
+    private TView AllocateAndCreate<TView>(Layout<TView> layout, string name, MockMemorySpace.BumpAllocator? allocator = null)
+        where TView : TypedView, new()
+        => layout.Create(AllocateAndAdd((ulong)layout.Size, name, allocator));
+
+    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name, MockMemorySpace.BumpAllocator? allocator = null)
+    {
+        MockMemorySpace.HeapFragment fragment = (allocator ?? _allocator).Allocate(size, name);
+        Builder.AddHeapFragment(fragment);
+        return fragment;
+    }
+
+    private int RangeSectionMapBitsAtLastLevel => _rangeSectionMapMaxSetBit - RangeSectionMapBitsPerLevel * _rangeSectionMapLevelsCount + 1;
+
+    private int RangeSectionMapBytesAtLastLevel => checked(1 << RangeSectionMapBitsAtLastLevel);
+
+    private int GetRangeSectionMapIndexForLevel(ulong address, int level)
+    {
+        ulong addressBitsUsedInMap = address >> _rangeSectionMapMaxSetBit + 1 - _rangeSectionMapLevelsCount * RangeSectionMapBitsPerLevel;
+        ulong addressBitsShifted = addressBitsUsedInMap >> (level - 1) * RangeSectionMapBitsPerLevel;
+        return checked((int)(MockRangeSectionMapLevel.EntriesPerMapLevel - 1 & addressBitsShifted));
+    }
+
+    private MockMemorySpace.HeapFragment CreateRangeSectionMapLevelAtAddress(ulong address, string name)
+    {
+        MockMemorySpace.HeapFragment mapLevel = new()
+        {
+            Address = address,
+            Data = new byte[_rangeSectionMapLevelLayout.Size],
+            Name = name
+        };
+        Builder.AddHeapFragment(mapLevel);
+        _rangeSectionMapLevels[address] = _rangeSectionMapLevelLayout.Create(mapLevel);
+        return mapLevel;
+    }
+
+    private MockRangeSectionMapLevel AllocateRangeSectionMapLevel(int level)
+    {
+        MockMemorySpace.HeapFragment mapLevel = _rangeSectionMapAllocator.Allocate((ulong)_rangeSectionMapLevelLayout.Size, $"Map Level {level}");
+        Builder.AddHeapFragment(mapLevel);
+        _rangeSectionMapLevels[mapLevel.Address] = _rangeSectionMapLevelLayout.Create(mapLevel);
+        return _rangeSectionMapLevels[mapLevel.Address];
+    }
+
+    private RangeSectionMapCursor EnsureRangeSectionMapLevelsForAddress(ulong address, bool collectible)
+    {
+        int topIndex = GetRangeSectionMapIndexForLevel(address, _rangeSectionMapLevelsCount);
+        RangeSectionMapCursor cursor = new(_rangeSectionMapLevels[_rangeSectionMapTopLevelAddress], _rangeSectionMapLevelsCount, topIndex);
+        while (!cursor.IsLeaf)
+        {
+            int nextLevel = cursor.Level - 1;
+            int nextIndex = GetRangeSectionMapIndexForLevel(address, nextLevel);
+            ulong nextLevelMap = cursor.LevelMap.GetPointer(cursor.Index);
+            if (nextLevelMap == 0)
             {
-                _topLevelAddress = topLevelAddress;
-                _builder = builder;
-                _targetTestHelpers = builder.TargetTestHelpers;
-                var arch = _targetTestHelpers.Arch;
-                _levels = arch.Is64Bit ? 5 : 2;
-                _maxSetBit = arch.Is64Bit ? 56 : 31; // 0 indexed
-                MockMemorySpace.HeapFragment top = new MockMemorySpace.HeapFragment
+                nextLevelMap = AllocateRangeSectionMapLevel(nextLevel).Address;
+                if (collectible)
                 {
-                    Address = topLevelAddress,
-                    Data = new byte[EntriesPerMapLevel * _targetTestHelpers.PointerSize],
-                    Name = $"Map Level {_levels}"
-                };
-                _nextMapAddress = topLevelAddress + (ulong)top.Data.Length;
-                _builder.AddHeapFragment(top);
-            }
-
-            public TargetPointer TopLevel => _topLevelAddress;
-
-            private int EffectiveBitsForLevel(ulong address, int level)
-            {
-                ulong addressBitsUsedInMap = address >> _maxSetBit + 1 - _levels * BitsPerLevel;
-                ulong addressBitsShifted = addressBitsUsedInMap >> (level - 1) * BitsPerLevel;
-                int addressBitsUsedInLevel = checked((int)(EntriesPerMapLevel - 1 & addressBitsShifted));
-                return addressBitsUsedInLevel;
-            }
-
-            // This is how much of the address space is covered by each entry in the last level of the map
-            private int BytesAtLastLevel => checked(1 << BitsAtLastLevel);
-            private int BitsAtLastLevel => _maxSetBit - BitsPerLevel * _levels + 1;
-
-            private TargetPointer CursorAddress(RangeSectionMap.Cursor cursor)
-            {
-                return cursor.LevelMap + (ulong)(cursor.Index * _targetTestHelpers.PointerSize);
-            }
-
-            private void WritePointer(RangeSectionMap.Cursor cursor, InteriorMapValue value)
-            {
-                TargetPointer address = CursorAddress(cursor);
-                Span<byte> dest = _builder.BorrowAddressRange(address, _targetTestHelpers.PointerSize);
-                _targetTestHelpers.WritePointer(dest, value.RawValue);
-            }
-
-            private InteriorMapValue LoadCursorValue(RangeSectionMap.Cursor cursor)
-            {
-                TargetPointer address = CursorAddress(cursor);
-                ReadOnlySpan<byte> src = _builder.BorrowAddressRange(address, _targetTestHelpers.PointerSize);
-                return new InteriorMapValue(_targetTestHelpers.ReadPointer(src));
-            }
-
-            private MockMemorySpace.HeapFragment AllocateMapLevel(int level)
-            {
-                MockMemorySpace.HeapFragment mapLevel = new MockMemorySpace.HeapFragment
-                {
-                    Address = new TargetPointer(_nextMapAddress),
-                    Data = new byte[EntriesPerMapLevel * _targetTestHelpers.PointerSize],
-                    Name = $"Map Level {level}"
-                };
-                _nextMapAddress += (ulong)mapLevel.Data.Length;
-                _builder.AddHeapFragment(mapLevel);
-                return mapLevel;
-            }
-
-
-            // computes the cursor for the next level down from the given cursor
-            // if the slot for the next level does not exist, it is created
-            private RangeSectionMap.Cursor GetOrAddLevelSlot(TargetCodePointer address, RangeSectionMap.Cursor cursor, bool collectible = false)
-            {
-                int nextLevel = cursor.Level - 1;
-                int nextIndex = EffectiveBitsForLevel(address, nextLevel);
-                InteriorMapValue nextLevelMap = LoadCursorValue(cursor);
-                if (nextLevelMap.IsNull)
-                {
-                    nextLevelMap = new(AllocateMapLevel(nextLevel).Address);
-                    if (collectible)
-                    {
-                        nextLevelMap = new(nextLevelMap.RawValue | 1);
-                    }
-                    WritePointer(cursor, nextLevelMap);
+                    nextLevelMap |= 1;
                 }
-                return new RangeSectionMap.Cursor(nextLevelMap.Address, nextLevel, nextIndex);
+
+                cursor.LevelMap.SetPointer(cursor.Index, nextLevelMap);
             }
 
-            // ensures that the maps for all the levels for the given address are allocated.
-            // returns the address of the slot in the last level that corresponds to the given address
-            RangeSectionMap.Cursor EnsureLevelsForAddress(TargetCodePointer address, bool collectible = false)
-            {
-                int topIndex = EffectiveBitsForLevel(address, _levels);
-                RangeSectionMap.Cursor cursor = new RangeSectionMap.Cursor(TopLevel, _levels, topIndex);
-                while (!cursor.IsLeaf)
-                {
-                    cursor = GetOrAddLevelSlot(address, cursor, collectible);
-                }
-                return cursor;
-            }
-            public void InsertAddressRange(TargetCodePointer start, uint length, ulong value, bool collectible = false)
-            {
-                TargetCodePointer cur = start;
-                ulong end = start.Value + length;
-                do
-                {
-                    RangeSectionMap.Cursor lastCursor = EnsureLevelsForAddress(cur, collectible);
-                    WritePointer(lastCursor, new InteriorMapValue(value));
-                    cur = new TargetCodePointer(cur.Value + (ulong)BytesAtLastLevel); // FIXME: round ?
-                } while (cur.Value < end);
-            }
-
-            public MockMemorySpace.MemoryContext GetMemoryContext()
-            {
-                return _builder.GetMemoryContext();
-            }
+            cursor = new(_rangeSectionMapLevels[nextLevelMap & ~1UL], nextLevel, nextIndex);
         }
 
-        public static RangeSectionMapTestBuilder CreateRangeSection(MockTarget.Architecture arch)
-        {
-            return new RangeSectionMapTestBuilder(arch);
-        }
-
-        private static readonly MockDescriptors.TypeFields RangeSectionMapFields = new()
-        {
-            DataType = DataType.RangeSectionMap,
-            Fields =
-            [
-                new(nameof(Data.RangeSectionMap.TopLevelData), DataType.pointer),
-            ]
-        };
-
-        private static readonly MockDescriptors.TypeFields RangeSectionFragmentFields = new()
-        {
-            DataType = DataType.RangeSectionFragment,
-            Fields =
-            [
-                new(nameof(Data.RangeSectionFragment.RangeBegin), DataType.pointer),
-                new(nameof(Data.RangeSectionFragment.RangeEndOpen), DataType.pointer),
-                new(nameof(Data.RangeSectionFragment.RangeSection), DataType.pointer),
-                new(nameof(Data.RangeSectionFragment.Next), DataType.pointer)
-            ]
-        };
-
-        private static readonly MockDescriptors.TypeFields RangeSectionFields = new()
-        {
-            DataType = DataType.RangeSection,
-            Fields =
-            [
-                new(nameof(Data.RangeSection.RangeBegin), DataType.pointer),
-                new(nameof(Data.RangeSection.RangeEndOpen), DataType.pointer),
-                new(nameof(Data.RangeSection.NextForDelete), DataType.pointer),
-                new(nameof(Data.RangeSection.JitManager), DataType.pointer),
-                new(nameof(Data.RangeSection.Flags), DataType.int32),
-                new(nameof(Data.RangeSection.HeapList), DataType.pointer),
-                new(nameof(Data.RangeSection.R2RModule), DataType.pointer),
-            ]
-        };
-
-        private static readonly MockDescriptors.TypeFields CodeHeapListNodeFields = new()
-        {
-            DataType = DataType.CodeHeapListNode,
-            Fields =
-            [
-                new(nameof(Data.CodeHeapListNode.Next), DataType.pointer),
-                new(nameof(Data.CodeHeapListNode.StartAddress), DataType.pointer),
-                new(nameof(Data.CodeHeapListNode.EndAddress), DataType.pointer),
-                new(nameof(Data.CodeHeapListNode.MapBase), DataType.pointer),
-                new(nameof(Data.CodeHeapListNode.HeaderMap), DataType.pointer),
-            ]
-        };
-
-        private static readonly MockDescriptors.TypeFields RealCodeHeaderFields = new()
-        {
-            DataType = DataType.RealCodeHeader,
-            Fields =
-            [
-                new(nameof(Data.RealCodeHeader.MethodDesc), DataType.pointer),
-                new(nameof(Data.RealCodeHeader.DebugInfo), DataType.pointer),
-                new(nameof(Data.RealCodeHeader.GCInfo), DataType.pointer),
-                new(nameof(Data.RealCodeHeader.NumUnwindInfos), DataType.uint32),
-                new(nameof(Data.RealCodeHeader.UnwindInfos), DataType.pointer),
-                new(nameof(Data.RealCodeHeader.JitEHInfo), DataType.pointer),
-            ]
-        };
-
-        private static MockDescriptors.TypeFields ReadyToRunInfoFields(TargetTestHelpers helpers) => new()
-        {
-            DataType = DataType.ReadyToRunInfo,
-            Fields =
-            [
-                new(nameof(Data.ReadyToRunInfo.ReadyToRunHeader), DataType.pointer),
-                new(nameof(Data.ReadyToRunInfo.CompositeInfo), DataType.pointer),
-                new(nameof(Data.ReadyToRunInfo.NumRuntimeFunctions), DataType.uint32),
-                new(nameof(Data.ReadyToRunInfo.RuntimeFunctions), DataType.pointer),
-                new(nameof(Data.ReadyToRunInfo.NumHotColdMap), DataType.uint32),
-                new(nameof(Data.ReadyToRunInfo.HotColdMap), DataType.pointer),
-                new(nameof(Data.ReadyToRunInfo.DelayLoadMethodCallThunks), DataType.pointer),
-                new(nameof(Data.ReadyToRunInfo.DebugInfoSection), DataType.pointer),
-                new(nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap), DataType.Unknown, helpers.LayoutFields(MockDescriptors.HashMap.HashMapFields.Fields).Stride),
-                new(nameof(Data.ReadyToRunInfo.LoadedImageBase), DataType.pointer),
-                new(nameof(Data.ReadyToRunInfo.Composite), DataType.pointer),
-            ]
-        };
-
-        private static readonly MockDescriptors.TypeFields EEJitManagerFields = new()
-        {
-            DataType = DataType.EEJitManager,
-            Fields =
-            [
-                new(nameof(Data.EEJitManager.StoreRichDebugInfo), DataType.uint8),
-                new(nameof(Data.EEJitManager.AllCodeHeaps), DataType.pointer),
-            ]
-        };
-
-        internal int Version { get; }
-
-        internal MockMemorySpace.Builder Builder { get; }
-        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
-        internal (string Name, ulong Value)[] Globals { get; }
-
-        private readonly RangeSectionMapTestBuilder _rsmBuilder;
-        private readonly RuntimeFunctions _rfBuilder;
-
-        private readonly MockMemorySpace.BumpAllocator _rangeSectionMapAllocator;
-        private readonly MockMemorySpace.BumpAllocator _nibbleMapAllocator;
-        private readonly MockMemorySpace.BumpAllocator _allocator;
-
-        internal TargetPointer EEJitManagerAddress { get; }
-
-        internal ExecutionManager(int version, MockTarget.Architecture arch, AllocationRange allocationRange, TargetPointer allCodeHeaps = default)
-            : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange, allCodeHeaps)
-        { }
-
-        internal ExecutionManager(int version, MockMemorySpace.Builder builder, AllocationRange allocationRange, TargetPointer allCodeHeaps = default)
-        {
-            Version = version;
-            Builder = builder;
-            _rsmBuilder = new RangeSectionMapTestBuilder(ExecutionManagerCodeRangeMapAddress, builder);
-            _rfBuilder = new RuntimeFunctions(builder);
-            _rangeSectionMapAllocator = Builder.CreateAllocator(allocationRange.RangeSectionMapStart, allocationRange.RangeSectionMapEnd);
-            _nibbleMapAllocator = Builder.CreateAllocator(allocationRange.NibbleMapStart, allocationRange.NibbleMapEnd);
-            _allocator = Builder.CreateAllocator(allocationRange.ExecutionManagerStart, allocationRange.ExecutionManagerEnd);
-            Types = MockDescriptors.GetTypesForTypeFields(
-                Builder.TargetTestHelpers,
-                [
-                    RangeSectionMapFields,
-                    RangeSectionFragmentFields,
-                    RangeSectionFields,
-                    CodeHeapListNodeFields,
-                    RealCodeHeaderFields,
-                    ReadyToRunInfoFields(Builder.TargetTestHelpers),
-                    MockDescriptors.ModuleFields,
-                    EEJitManagerFields,
-                ]).Concat(MockDescriptors.HashMap.GetTypes(Builder.TargetTestHelpers))
-                .Concat(_rfBuilder.Types)
-                .ToDictionary();
-
-            // Allocate and populate the EEJitManager instance
-            var jitManagerTypeInfo = Types[DataType.EEJitManager];
-            MockMemorySpace.HeapFragment eeJitManagerFragment = _allocator.Allocate(jitManagerTypeInfo.Size.Value, "EEJitManager");
-            Builder.AddHeapFragment(eeJitManagerFragment);
-            EEJitManagerAddress = eeJitManagerFragment.Address;
-            int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> jmData = Builder.BorrowAddressRange(eeJitManagerFragment.Address, (int)jitManagerTypeInfo.Size.Value);
-            Builder.TargetTestHelpers.WritePointer(jmData.Slice(jitManagerTypeInfo.Fields[nameof(Data.EEJitManager.AllCodeHeaps)].Offset, pointerSize), allCodeHeaps);
-
-            // Allocate the global pointer that holds the EEJitManager address
-            MockMemorySpace.HeapFragment eeJitManagerGlobalPointer = _allocator.Allocate((ulong)pointerSize, "EEJitManagerGlobalPointer");
-            Builder.AddHeapFragment(eeJitManagerGlobalPointer);
-            Builder.TargetTestHelpers.WritePointer(eeJitManagerGlobalPointer.Data, EEJitManagerAddress);
-
-            Globals =
-            [
-                (nameof(Constants.Globals.ExecutionManagerCodeRangeMapAddress), ExecutionManagerCodeRangeMapAddress),
-                (nameof(Constants.Globals.StubCodeBlockLast), 0x0Fu),
-                (nameof(Constants.Globals.EEJitManagerAddress), eeJitManagerGlobalPointer.Address),
-            ];
-            Globals = Globals
-                .Concat(MockDescriptors.HashMap.GetGlobals(Builder.TargetTestHelpers))
-                .ToArray();
-        }
-
-        internal NibbleMapTestBuilderBase CreateNibbleMap(ulong codeRangeStart, uint codeRangeSize)
-        {
-            NibbleMapTestBuilderBase nibBuilder = Version switch
-            {
-                1 => new NibbleMapTestBuilder_1(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
-
-                // The nibblemap algorithm was changed in version 2
-                2 => new NibbleMapTestBuilder_2(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
-                _ => throw new InvalidOperationException("Unknown version"),
-            };
-
-            Builder.AddHeapFragment(nibBuilder.NibbleMapFragment);
-            return nibBuilder;
-        }
-
-        internal readonly struct JittedCodeRange
-        {
-            public MockMemorySpace.BumpAllocator Allocator { get; init; }
-            public ulong RangeStart => Allocator.RangeStart;
-            public ulong RangeEnd => Allocator.RangeEnd;
-            public ulong RangeSize => RangeEnd - RangeStart;
-        }
-
-        public JittedCodeRange AllocateJittedCodeRange(ulong codeRangeStart, uint codeRangeSize)
-        {
-            MockMemorySpace.BumpAllocator allocator = Builder.CreateAllocator(codeRangeStart, codeRangeStart + codeRangeSize, minAlign: 1);
-            return new JittedCodeRange { Allocator = allocator };
-        }
-
-        public TargetPointer AddRangeSection(JittedCodeRange jittedCodeRange, TargetPointer jitManagerAddress, TargetPointer codeHeapListNodeAddress)
-        {
-            var tyInfo = Types[DataType.RangeSection];
-            uint rangeSectionSize = tyInfo.Size.Value;
-            MockMemorySpace.HeapFragment rangeSection = _rangeSectionMapAllocator.Allocate(rangeSectionSize, "RangeSection");
-            Builder.AddHeapFragment(rangeSection);
-            int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> rs = Builder.BorrowAddressRange(rangeSection.Address, (int)rangeSectionSize);
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeBegin)].Offset, pointerSize), jittedCodeRange.RangeStart);
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeEndOpen)].Offset, pointerSize), jittedCodeRange.RangeEnd);
-            // 0x02 = RangeSectionFlags.CodeHeap
-            Builder.TargetTestHelpers.Write(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.Flags)].Offset, sizeof(uint)), (uint)0x02);
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.HeapList)].Offset, pointerSize), codeHeapListNodeAddress);
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.JitManager)].Offset, pointerSize), jitManagerAddress);
-            // FIXME: other fields
-
-            return rangeSection.Address;
-        }
-
-        public TargetPointer AddReadyToRunRangeSection(JittedCodeRange jittedCodeRange, TargetPointer jitManagerAddress, TargetPointer r2rModule)
-        {
-            var tyInfo = Types[DataType.RangeSection];
-            uint rangeSectionSize = tyInfo.Size.Value;
-            MockMemorySpace.HeapFragment rangeSection = _rangeSectionMapAllocator.Allocate(rangeSectionSize, "RangeSection");
-            Builder.AddHeapFragment(rangeSection);
-            int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> rs = Builder.BorrowAddressRange(rangeSection.Address, (int)rangeSectionSize);
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeBegin)].Offset, pointerSize), jittedCodeRange.RangeStart);
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeEndOpen)].Offset, pointerSize), jittedCodeRange.RangeEnd);
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.R2RModule)].Offset, pointerSize), r2rModule);
-            Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.JitManager)].Offset, pointerSize), jitManagerAddress);
-            return rangeSection.Address;
-        }
-
-        public TargetPointer AddRangeSectionFragment(JittedCodeRange jittedCodeRange, TargetPointer rangeSectionAddress)
-        {
-            return AddRangeSectionFragment(jittedCodeRange, rangeSectionAddress, insertIntoMap: true);
-        }
-
-        /// <summary>
-        /// Creates a range section fragment in memory without inserting it into the range section map.
-        /// Use this for fragments that should only be reachable via another fragment's <c>Next</c> pointer
-        /// (e.g., the tail of a collectible fragment chain).
-        /// </summary>
-        public TargetPointer AddUnmappedRangeSectionFragment(JittedCodeRange jittedCodeRange, TargetPointer rangeSectionAddress)
-        {
-            return AddRangeSectionFragment(jittedCodeRange, rangeSectionAddress, insertIntoMap: false);
-        }
-
-        private TargetPointer AddRangeSectionFragment(JittedCodeRange jittedCodeRange, TargetPointer rangeSectionAddress, bool insertIntoMap)
-        {
-            var tyInfo = Types[DataType.RangeSectionFragment];
-            uint rangeSectionFragmentSize = tyInfo.Size.Value;
-            MockMemorySpace.HeapFragment rangeSectionFragment = _rangeSectionMapAllocator.Allocate(rangeSectionFragmentSize, "RangeSectionFragment");
-            if (insertIntoMap)
-            {
-                // FIXME: this shouldn't really be called InsertAddressRange, but maybe InsertRangeSectionFragment?
-                _rsmBuilder.InsertAddressRange(jittedCodeRange.RangeStart, (uint)jittedCodeRange.RangeSize, rangeSectionFragment.Address);
-            }
-            Builder.AddHeapFragment(rangeSectionFragment);
-            int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> rsf = Builder.BorrowAddressRange(rangeSectionFragment.Address, (int)rangeSectionFragmentSize);
-            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeBegin)].Offset, pointerSize), jittedCodeRange.RangeStart);
-            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeEndOpen)].Offset, pointerSize), jittedCodeRange.RangeEnd);
-            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeSection)].Offset, pointerSize), rangeSectionAddress);
-            /* Next = nullptr */
-            return rangeSectionFragment.Address;
-        }
-
-        /// <summary>
-        /// Adds a range section fragment whose <c>Next</c> pointer has bit 0 set (the collectible tag).
-        /// In the native runtime, <c>RangeSectionFragmentPointer</c> (see codeman.h) uses bit 0 to mark
-        /// fragments belonging to collectible assembly load contexts. The cDAC must strip this bit before
-        /// dereferencing <c>Next</c>; failing to do so causes reads at a misaligned address, producing
-        /// garbage field values. This helper enables testing that the tag bit is correctly stripped.
-        /// </summary>
-        /// <param name="mapCodeRange">The code range whose map entries should point to this fragment.</param>
-        /// <param name="rangeSectionAddress">The <c>RangeSection</c> this fragment belongs to.</param>
-        /// <param name="nextFragmentAddress">The actual address of the next fragment in the linked list
-        /// (the collectible tag bit will be OR'd onto this value).</param>
-        /// <returns>The address of the newly created head fragment.</returns>
-        public TargetPointer AddRangeSectionFragmentWithCollectibleNext(JittedCodeRange mapCodeRange, TargetPointer rangeSectionAddress, TargetPointer nextFragmentAddress)
-        {
-            var tyInfo = Types[DataType.RangeSectionFragment];
-            uint rangeSectionFragmentSize = tyInfo.Size.Value;
-            MockMemorySpace.HeapFragment rangeSectionFragment = _rangeSectionMapAllocator.Allocate(rangeSectionFragmentSize, "RangeSectionFragment (collectible head)");
-            // Insert this fragment into the map, overriding any existing entry for the range
-            _rsmBuilder.InsertAddressRange(mapCodeRange.RangeStart, (uint)mapCodeRange.RangeSize, rangeSectionFragment.Address);
-            Builder.AddHeapFragment(rangeSectionFragment);
-            int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> rsf = Builder.BorrowAddressRange(rangeSectionFragment.Address, (int)rangeSectionFragmentSize);
-            // RangeBegin and RangeEndOpen are zero-initialized (empty range, Contains always returns false)
-            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeSection)].Offset, pointerSize), rangeSectionAddress);
-            // Write Next with the collectible tag bit (bit 0) set
-            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.Next)].Offset, pointerSize), nextFragmentAddress.Value | 1);
-            return rangeSectionFragment.Address;
-        }
-
-        public TargetPointer AddCodeHeapListNode(TargetPointer next, TargetPointer startAddress, TargetPointer endAddress, TargetPointer mapBase, TargetPointer headerMap)
-        {
-            var tyInfo = Types[DataType.CodeHeapListNode];
-            uint codeHeapListNodeSize = tyInfo.Size.Value;
-            MockMemorySpace.HeapFragment codeHeapListNode = _rangeSectionMapAllocator.Allocate(codeHeapListNodeSize, "CodeHeapListNode");
-            Builder.AddHeapFragment(codeHeapListNode);
-            int pointerSize = Builder.TargetTestHelpers.PointerSize;
-            Span<byte> chln = Builder.BorrowAddressRange(codeHeapListNode.Address, (int)codeHeapListNodeSize);
-            Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.Next)].Offset, pointerSize), next);
-            Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.StartAddress)].Offset, pointerSize), startAddress);
-            Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.EndAddress)].Offset, pointerSize), endAddress);
-            Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.MapBase)].Offset, pointerSize), mapBase);
-            Builder.TargetTestHelpers.WritePointer(chln.Slice(tyInfo.Fields[nameof(Data.CodeHeapListNode.HeaderMap)].Offset, pointerSize), headerMap);
-            return codeHeapListNode.Address;
-        }
-
-        private uint CodeHeaderSize => (uint)Builder.TargetTestHelpers.PointerSize;
-
-        // offset from the start of the code
-        private uint CodeHeaderOffset => CodeHeaderSize;
-
-        private (MockMemorySpace.HeapFragment fragment, TargetCodePointer codeStart) AllocateJittedMethod(JittedCodeRange jittedCodeRange, uint codeSize, string name = "Method Header & Code")
-        {
-            ulong size = codeSize + CodeHeaderOffset;
-            MockMemorySpace.HeapFragment methodFragment = jittedCodeRange.Allocator.Allocate(size, name);
-            Builder.AddHeapFragment(methodFragment);
-            TargetCodePointer codeStart = methodFragment.Address + CodeHeaderOffset;
-            return (methodFragment, codeStart);
-        }
-
-        public TargetCodePointer AddJittedMethod(JittedCodeRange jittedCodeRange, uint codeSize, TargetPointer methodDescAddress)
-        {
-            (MockMemorySpace.HeapFragment methodFragment, TargetCodePointer codeStart) = AllocateJittedMethod(jittedCodeRange, codeSize);
-
-            MockMemorySpace.HeapFragment codeHeaderFragment = _allocator.Allocate(RealCodeHeaderSize, "RealCodeHeader");
-            Builder.AddHeapFragment(codeHeaderFragment);
-
-            Span<byte> mfPtr = Builder.BorrowAddressRange(methodFragment.Address, (int)CodeHeaderSize);
-            Builder.TargetTestHelpers.WritePointer(mfPtr.Slice(0, Builder.TargetTestHelpers.PointerSize), codeHeaderFragment.Address);
-
-            Span<byte> chf = Builder.BorrowAddressRange(codeHeaderFragment.Address, RealCodeHeaderSize);
-            var tyInfo = Types[DataType.RealCodeHeader];
-            Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDescAddress);
-
-            // fields are not used in the test, but we still need to write them
-            Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.DebugInfo)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);
-            Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.GCInfo)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);
-            Builder.TargetTestHelpers.Write(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.NumUnwindInfos)].Offset, sizeof(uint)), 0u);
-            Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.UnwindInfos)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);
-            Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.JitEHInfo)].Offset, Builder.TargetTestHelpers.PointerSize), TargetPointer.Null);
-
-            return codeStart;
-        }
-
-        public TargetPointer AddReadyToRunInfo(uint[] runtimeFunctions, uint[] hotColdMap)
-        {
-            TargetTestHelpers helpers = Builder.TargetTestHelpers;
-
-            // Add the array of runtime functions
-            uint numRuntimeFunctions = (uint)runtimeFunctions.Length;
-            TargetPointer runtimeFunctionsAddr = _rfBuilder.AddRuntimeFunctions(runtimeFunctions);
-
-            // Add the hot/cold map
-            TargetPointer hotColdMapAddr = TargetPointer.Null;
-            if (hotColdMap.Length > 0)
-            {
-                MockMemorySpace.HeapFragment hotColdMapFragment = _allocator.Allocate((ulong)hotColdMap.Length * sizeof(uint), $"HotColdMap[{hotColdMap.Length}]");
-                Builder.AddHeapFragment(hotColdMapFragment);
-                hotColdMapAddr = hotColdMapFragment.Address;
-                for (uint i = 0; i < hotColdMap.Length; i++)
-                {
-                    Span<byte> span = Builder.BorrowAddressRange(hotColdMapFragment.Address + i * sizeof(uint), sizeof(uint));
-                    helpers.Write(span, hotColdMap[i]);
-                }
-            }
-
-            // Add ReadyToRunInfo
-            Target.TypeInfo r2rInfoType = Types[DataType.ReadyToRunInfo];
-            MockMemorySpace.HeapFragment r2rInfo = _allocator.Allocate(r2rInfoType.Size.Value, "ReadyToRunInfo");
-            Builder.AddHeapFragment(r2rInfo);
-            Span<byte> data = r2rInfo.Data;
-
-            // Point composite info at itself
-            helpers.WritePointer(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.CompositeInfo)].Offset, helpers.PointerSize), r2rInfo.Address);
-
-            // Point at the runtime functions
-            helpers.Write(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.NumRuntimeFunctions)].Offset, sizeof(uint)), numRuntimeFunctions);
-            helpers.WritePointer(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.RuntimeFunctions)].Offset, helpers.PointerSize), runtimeFunctionsAddr);
-
-            // Point at the hot/cold map
-            helpers.Write(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.NumHotColdMap)].Offset, sizeof(uint)), hotColdMap.Length);
-            helpers.WritePointer(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.HotColdMap)].Offset, helpers.PointerSize), hotColdMapAddr);
-
-            return r2rInfo.Address;
-        }
-
-        public TargetPointer AddReadyToRunModule(TargetPointer r2rInfo)
-        {
-            TargetTestHelpers helpers = Builder.TargetTestHelpers;
-
-            Target.TypeInfo moduleType = Types[DataType.Module];
-            MockMemorySpace.HeapFragment r2rModule = _allocator.Allocate(moduleType.Size.Value, "R2R Module");
-            Builder.AddHeapFragment(r2rModule);
-            helpers.WritePointer(r2rModule.Data.AsSpan().Slice(moduleType.Fields[nameof(Data.Module.ReadyToRunInfo)].Offset, helpers.PointerSize), r2rInfo);
-
-            return r2rModule.Address;
-        }
+        return cursor;
     }
 }

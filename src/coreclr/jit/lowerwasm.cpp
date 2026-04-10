@@ -22,8 +22,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "lower.h"
 
-static void SetMultiplyUsed(GenTree* node)
+static void SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason))
 {
+    JITDUMP("Setting [%06u] as multiply-used: %s\n", Compiler::dspTreeID(node), reason);
     assert(varTypeIsEnregisterable(node));
     assert(!node->isContained());
     node->gtLIRFlags |= LIR::Flags::MultiplyUsed;
@@ -91,7 +92,7 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
     if ((node->gtFlags & GTF_IND_NONFAULTING) == 0)
     {
         // We need to be able to null check the address, and that requires multiple uses of the address operand.
-        SetMultiplyUsed(node->Addr());
+        SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir faulting Addr"));
     }
 
     ContainCheckStoreIndir(node);
@@ -182,8 +183,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     if (binOp->gtOverflowEx())
     {
-        SetMultiplyUsed(binOp->gtGetOp1());
-        SetMultiplyUsed(binOp->gtGetOp2());
+        SetMultiplyUsed(binOp->gtGetOp1() DEBUGARG("LowerBinaryArithmetic op1 (overflow exception)"));
+        SetMultiplyUsed(binOp->gtGetOp2() DEBUGARG("LowerBinaryArithmetic op2 (overflow exception)"));
     }
 
     return binOp->gtNext;
@@ -202,12 +203,12 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
     ExceptionSetFlags exSetFlags = divMod->OperExceptions(m_compiler);
     if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
     {
-        SetMultiplyUsed(divMod->gtGetOp1());
-        SetMultiplyUsed(divMod->gtGetOp2());
+        SetMultiplyUsed(divMod->gtGetOp1() DEBUGARG("LowerDivOrMod op1 (arithmetic exception)"));
+        SetMultiplyUsed(divMod->gtGetOp2() DEBUGARG("LowerDivOrMod op2 (arithmetic exception)"));
     }
     else if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
     {
-        SetMultiplyUsed(divMod->gtGetOp2());
+        SetMultiplyUsed(divMod->gtGetOp2() DEBUGARG("LowerDivOrMod op2 (divide by zero exception)"));
     }
 
     ContainCheckDivOrMod(divMod);
@@ -275,11 +276,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
-            SetMultiplyUsed(dstAddr);
-            if (src->OperIs(GT_IND))
-            {
-                SetMultiplyUsed(src->gtGetOp1());
-            }
         }
         else
         {
@@ -287,6 +283,22 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // memory.copy
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
         }
+
+        if (src->OperIs(GT_IND))
+        {
+            GenTree* srcAddr = src->gtGetOp1();
+            if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
+                ((src->gtFlags & GTF_IND_NONFAULTING) == 0))
+            {
+                SetMultiplyUsed(srcAddr DEBUGARG("LowerBlockStore source address (indirection)"));
+            }
+        }
+    }
+
+    if (((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
+         ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0)))
+    {
+        SetMultiplyUsed(dstAddr DEBUGARG("LowerBlockStore destination address"));
     }
 }
 
@@ -316,7 +328,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     if (tree->gtOverflow())
     {
-        SetMultiplyUsed(tree->gtGetOp1());
+        SetMultiplyUsed(tree->gtGetOp1() DEBUGARG("LowerCast op1 (overflow exception)"));
     }
     ContainCheckCast(tree->AsCast());
 }
@@ -333,6 +345,23 @@ void Lowering::LowerCast(GenTree* tree)
 void Lowering::LowerRotate(GenTree* tree)
 {
     ContainCheckShiftRotate(tree->AsOp());
+}
+
+//------------------------------------------------------------------------
+// LowerIndexAddr: Lowers a GT_INDEX_ADDR node
+//
+// Mark operands that need multiple uses for exception-inducing checks.
+//
+// Arguments:
+//    indexAddr - the node to be lowered
+//
+void Lowering::LowerIndexAddr(GenTreeIndexAddr* indexAddr)
+{
+    if (indexAddr->IsBoundsChecked())
+    {
+        SetMultiplyUsed(indexAddr->Arr() DEBUGARG("LowerIndexAddr Arr"));
+        SetMultiplyUsed(indexAddr->Index() DEBUGARG("LowerIndexAddr Index"));
+    }
 }
 
 //------------------------------------------------------------------------
@@ -490,9 +519,9 @@ void Lowering::AfterLowerBlocks()
         Compiler*             m_compiler;
         ArrayStack<GenTree**> m_stack;
         unsigned              m_minimumTempLclNum;
-        Temporary*            m_availableTemps[static_cast<unsigned>(WasmValueType::Count)] = {};
-        Temporary*            m_unusedTempNodes                                             = nullptr;
-        bool                  m_anyChanges                                                  = false;
+        Temporary*            m_availableTemps[TYP_COUNT] = {};
+        Temporary*            m_unusedTempNodes           = nullptr;
+        bool                  m_anyChanges                = false;
 
     public:
         Stackifier(Lowering* lower)
@@ -630,6 +659,14 @@ void Lowering::AfterLowerBlocks()
             JITDUMP("Replaced [%06u] with a temporary:\n", Compiler::dspTreeID(node));
             DISPNODE(node);
             DISPNODE(lclNode);
+
+            if ((node->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::MultiplyUsed)
+            {
+                JITDUMP("Transferring multiply-used flag from old node to new temporary.\n");
+                node->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+                SetMultiplyUsed(lclNode DEBUGARG("Transferred flag during stackification"));
+            }
+
             return lclNode;
         }
 
@@ -638,7 +675,7 @@ void Lowering::AfterLowerBlocks()
             assert(varTypeIsEnregisterable(type));
 
             unsigned   lclNum;
-            Temporary* local = Remove(&m_availableTemps[static_cast<unsigned>(ActualTypeToWasmValueType(type))]);
+            Temporary* local = Remove(&m_availableTemps[genActualType(type)]);
             if (local != nullptr)
             {
                 lclNum = local->LclNum;
@@ -682,7 +719,7 @@ void Lowering::AfterLowerBlocks()
             local->LclNum = lclNum;
 
             JITDUMP("Temporary V%02u is now free and can be re-used\n", lclNum);
-            Append(&m_availableTemps[static_cast<unsigned>(ActualTypeToWasmValueType(node->TypeGet()))], local);
+            Append(&m_availableTemps[genActualType(node->TypeGet())], local);
         }
 
         Temporary* Remove(Temporary** pTemps)
@@ -721,6 +758,6 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
     {
         // Prepare for explicit null check
         CallArg* thisArg = call->gtArgs.GetThisArg();
-        SetMultiplyUsed(thisArg->GetNode());
+        SetMultiplyUsed(thisArg->GetNode() DEBUGARG("AfterLowerArgsForCall thisArg (null check)"));
     }
 }

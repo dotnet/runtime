@@ -31,6 +31,12 @@
 #include "request_common.h"
 #include "conditionalweaktable.h"
 
+#ifndef USE_DAC_TABLE_RVA
+extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+#include <clrconfignocache.h>
+#define CAN_USE_CDAC
+#endif
+
 //-----------------------------------------------------------------------------
 // Have standard enter and leave macros at the DacDbi boundary to enforce
 // standard behavior.
@@ -274,14 +280,60 @@ DacDbiInterfaceInstance(
 
     HRESULT hrStatus = pDac->Initialize();
 
-    if (SUCCEEDED(hrStatus))
-    {
-        *ppInterface = pDac;
-    }
-    else
+    if (FAILED(hrStatus))
     {
         delete pDac;
+        return hrStatus;
     }
+
+#ifdef CAN_USE_CDAC
+    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
+    if (enable.IsSet())
+    {
+        DWORD val;
+        if (enable.TryAsInteger(10, val) && val == 1)
+        {
+            uint64_t contractDescriptorAddr = 0;
+            if (TryGetSymbol(pDac->m_pTarget, pDac->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            {
+                IUnknown* legacyImpl;
+                HRESULT qiRes = pDac->QueryInterface(IID_IUnknown, (void**)&legacyImpl);
+                _ASSERTE(SUCCEEDED(qiRes));
+
+                CDAC& cdac = pDac->m_cdac;
+                cdac = CDAC::Create(contractDescriptorAddr, pDac->m_pTarget, legacyImpl);
+                if (cdac.IsValid())
+                {
+                    ReleaseHolder<IUnknown> cdacInterface = nullptr;
+                    cdac.CreateDacDbiInterface(&cdacInterface);
+                    if (cdacInterface != nullptr)
+                    {
+                        IDacDbiInterface* pCDacDbi = nullptr;
+                        HRESULT hr = cdacInterface->QueryInterface(__uuidof(IDacDbiInterface), (void**)&pCDacDbi);
+                        if (SUCCEEDED(hr))
+                        {
+                            // Lifetime is now managed by cDAC implementation
+                            pDac->Release();
+                            // Release the AddRef from the QI for legacyImpl
+                            pDac->Release();
+                            *ppInterface = pCDacDbi;
+                            return S_OK;
+                        }
+                    }
+                }
+
+                // Release the AddRef from the QI for legacyImpl
+                pDac->Release();
+            }
+
+            // If we requested to use the cDAC, but failed to create the cDAC interface, return failure
+            pDac->Release();
+            return E_FAIL;
+        }
+    }
+#endif
+
+    *ppInterface = pDac;
     return hrStatus;
 }
 
@@ -1029,11 +1081,6 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
 // Function Data
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-// Workaround for https://developercommunity.visualstudio.com/t/C-compiling-hangs-building-checked-bui/10974056 . Delete
-// once MSVC compiler with a fix is released.
-#ifdef _MSC_VER
-#pragma optimize("", off)
-#endif
 
 // GetILCodeAndSig returns the function's ILCode and SigToken given
 // a module and a token. The info will come from a MethodDesc, if
@@ -1098,10 +1145,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainAssem
     EX_CATCH_HRESULT(hr);
     return hr;
 }
-
-#ifdef _MSC_VER
-#pragma optimize("", on)
-#endif
 
 //---------------------------------------------------------------------------------------
 //
@@ -1218,7 +1261,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMP
                                                                 wszFilePath,
                                                                 cchFilePath);
 
-        pStrFilename->AssignCopy(wszFilePath);
+        IfFailThrow(pStrFilename->AssignCopy(wszFilePath));
         *pResult = ret;
         }
     }
@@ -1300,7 +1343,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAss
         MethodDesc* pMethodDesc = FindLoadedMethodRefOrDef(pModule, functionToken);
         if (pMethodDesc != NULL && pMethodDesc->IsAsyncThunkMethod())
         {
-            MethodDesc* pAsyncVariant = pMethodDesc->GetAsyncOtherVariantNoCreate();
+            MethodDesc* pAsyncVariant = pMethodDesc->GetAsyncVariantNoCreate();
             if (pAsyncVariant != NULL)
             {
                 pMethodDesc = pAsyncVariant;
@@ -6127,7 +6170,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread,
 
                 // Going through thread Frames and looking for first (deepest one) one that
                 // that has context available for stackwalking (SP and PC)
-                // For example: RedirectedThreadFrame, InlinedCallFrame, DynamicHelperFrame, CLRToCOMMethodFrame
+                // For example: RedirectedThreadFrame, InlinedCallFrame, DynamicHelperFrame
                 Frame *frame = pThread->GetFrame();
 
                 while (frame != NULL && frame != FRAME_TOP)
