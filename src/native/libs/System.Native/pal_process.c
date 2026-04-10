@@ -338,7 +338,8 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t stdoutFd,
                                       int32_t stderrFd,
                                       int32_t* inheritedFds,
-                                      int32_t inheritedFdCount)
+                                      int32_t inheritedFdCount,
+                                      int32_t startDetached)
 {
 #if HAVE_FORK || defined(TARGET_OSX)
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
@@ -414,6 +415,12 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         if (inheritedFdCount >= 0)
         {
             flags |= POSIX_SPAWN_CLOEXEC_DEFAULT;
+        }
+
+        // When startDetached is set, create a new session so the child is detached from the parent.
+        if (startDetached)
+        {
+            flags |= POSIX_SPAWN_SETSID;
         }
 
         if ((result = posix_spawnattr_setflags(&attr, flags)) != 0
@@ -608,6 +615,13 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
         }
 
+        // Start the child in a new session when startDetached is set, making it independent
+        // of the parent's process group and terminal.
+        if (startDetached && setsid() == -1)
+        {
+            ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
+        }
+
         if (setCredentials)
         {
             if (SetGroups(groups, groupsLength, getGroupsBuffer) == -1 ||
@@ -715,6 +729,7 @@ done:;
     (void)stderrFd;
     (void)inheritedFds;
     (void)inheritedFdCount;
+    (void)startDetached;
     return -1;
 #endif
 }
