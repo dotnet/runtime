@@ -12,6 +12,7 @@
 struct JitInterfaceCallbacks
 {
     bool (* isIntrinsic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
+    bool (* tryGetMethodILSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, uint32_t* pILSize, bool* pIsAggressiveInline);
     bool (* notifyMethodInfoUsage)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
     uint32_t (* getMethodAttribs)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn);
     void (* setMethodAttribs)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs);
@@ -211,6 +212,17 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->isIntrinsic(_thisHandle, &pException, ftn);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool tryGetMethodILSize(
+          CORINFO_METHOD_HANDLE ftn,
+          uint32_t* pILSize,
+          bool* pIsAggressiveInline)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->tryGetMethodILSize(_thisHandle, &pException, ftn, pILSize, pIsAggressiveInline);
     if (pException != nullptr) throw pException;
     return temp;
 }

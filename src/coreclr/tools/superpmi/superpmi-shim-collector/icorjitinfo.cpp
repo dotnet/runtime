@@ -28,6 +28,20 @@ bool interceptor_ICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return temp;
 }
 
+bool interceptor_ICJI::tryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t* pILSize, bool* pIsAggressiveInline)
+{
+    mc->cr->AddCall("tryGetMethodILSize");
+    uint32_t localILSize = 0;
+    bool     localIsAggressiveInline = false;
+    bool     result = original_ICorJitInfo->tryGetMethodILSize(ftn, &localILSize, &localIsAggressiveInline);
+    mc->recTryGetMethodILSize(ftn, localILSize, localIsAggressiveInline, result);
+    if (pILSize != nullptr)
+        *pILSize = localILSize;
+    if (pIsAggressiveInline != nullptr)
+        *pIsAggressiveInline = localIsAggressiveInline;
+    return result;
+}
+
 bool interceptor_ICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     mc->cr->AddCall("notifyMethodInfoUsage");

@@ -24,6 +24,11 @@ public:
 bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
+bool tryGetMethodILSize(
+          CORINFO_METHOD_HANDLE ftn,
+          uint32_t* pILSize,
+          bool* pIsAggressiveInline) override;
+
 bool notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn) override;
 

@@ -72,6 +72,12 @@ bool Compiler::eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
 }
 
 FORCEINLINE
+bool Compiler::eeTryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t* pILSize, bool* pIsAggressiveInline)
+{
+    return info.compCompHnd->tryGetMethodILSize(ftn, pILSize, pIsAggressiveInline);
+}
+
+FORCEINLINE
 bool Compiler::eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {
     return info.compCompHnd->isFieldStatic(fldHnd);

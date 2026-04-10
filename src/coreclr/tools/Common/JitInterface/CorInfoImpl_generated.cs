@@ -21,6 +21,7 @@ namespace Internal.JitInterface
             static ICorJitInfoCallbacks()
             {
                 s_callbacks.isIntrinsic = &_isIntrinsic;
+                s_callbacks.tryGetMethodILSize = &_tryGetMethodILSize;
                 s_callbacks.notifyMethodInfoUsage = &_notifyMethodInfoUsage;
                 s_callbacks.getMethodAttribs = &_getMethodAttribs;
                 s_callbacks.setMethodAttribs = &_setMethodAttribs;
@@ -203,6 +204,7 @@ namespace Internal.JitInterface
             }
 
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> isIntrinsic;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, bool*, byte> tryGetMethodILSize;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> notifyMethodInfoUsage;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint> getMethodAttribs;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CorInfoMethodRuntimeFlags, void> setMethodAttribs;
@@ -396,6 +398,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.isIntrinsic(ftn) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _tryGetMethodILSize(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, uint* pILSize, bool* pIsAggressiveInline)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.tryGetMethodILSize(ftn, ref *pILSize, ref *pIsAggressiveInline) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {

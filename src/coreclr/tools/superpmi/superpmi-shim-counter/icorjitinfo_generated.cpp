@@ -19,6 +19,15 @@ bool interceptor_ICJI::isIntrinsic(
     return original_ICorJitInfo->isIntrinsic(ftn);
 }
 
+bool interceptor_ICJI::tryGetMethodILSize(
+          CORINFO_METHOD_HANDLE ftn,
+          uint32_t* pILSize,
+          bool* pIsAggressiveInline)
+{
+    mcs->AddCall("tryGetMethodILSize");
+    return original_ICorJitInfo->tryGetMethodILSize(ftn, pILSize, pIsAggressiveInline);
+}
+
 bool interceptor_ICJI::notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn)
 {
