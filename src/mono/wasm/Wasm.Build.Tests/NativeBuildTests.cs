@@ -22,6 +22,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("coreclr-native")]
         public async Task SimpleNativeBuild(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -40,6 +41,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true)]
+        [TestCategory("coreclr-native")]
         public void AOTNotSupportedWithNoTrimming(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -58,6 +60,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("coreclr-native")]
         public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(Configuration config, bool aot)
         {
             string printFileTypeTarget = @"
@@ -90,6 +93,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("coreclr-native")]
         public void NativeBuildIsRequired(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -104,6 +108,7 @@ namespace Wasm.Build.Tests
         }
 
         [Fact]
+        [TestCategory("coreclr-native")]
         public async Task ZipArchiveInteropTest()
         {
             Configuration config = Configuration.Debug;
