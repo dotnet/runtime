@@ -362,9 +362,17 @@ namespace System.Runtime.InteropServices
             if (rt.IsGenericType)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
 
-            LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(rt);
+            try
+            {
+                LayoutTypeMarshalerMethods methods = LayoutTypeMarshalerMethods.GetMarshalMethodsForType(rt);
 
-            methods.Free((byte*)ptr);
+                methods.Free((byte*)ptr);   
+            }
+            catch (ArgumentException)
+            {
+                // COMPAT: rethrow the argument exception with the correct argument name.
+                throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structuretype));
+            }
         }
 
         // Note: Callers are required to keep obj alive
