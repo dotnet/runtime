@@ -44,6 +44,7 @@
     <!-- https://github.com/dotnet/dotnet/issues/5640 -->
     <NoWarn>$(NoWarn);CS9368</NoWarn>
     <Nullable>enable</Nullable>
+    <Features>$(Features);runtime-async=on</Features>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
     <DefineConstants>CORECLR;NETCOREAPP;SYSTEM_PRIVATE_CORELIB</DefineConstants>

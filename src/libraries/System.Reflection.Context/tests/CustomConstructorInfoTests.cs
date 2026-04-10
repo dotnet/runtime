@@ -155,7 +155,7 @@ namespace System.Reflection.Context.Tests
             Assert.NotNull(body);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public void GetMethodImplementationFlags_ReturnsIL()
         {
             MethodImplAttributes flags = _customConstructor.GetMethodImplementationFlags();

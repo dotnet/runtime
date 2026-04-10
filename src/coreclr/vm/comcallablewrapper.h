@@ -330,18 +330,7 @@ private:
     SLOT*                                   m_rgpIPtr[1];
 };
 
-inline void ComCallWrapperTemplateRelease(ComCallWrapperTemplate *value)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (value)
-    {
-        value->Release();
-    }
-}
-
-typedef Wrapper<ComCallWrapperTemplate *, DoNothing<ComCallWrapperTemplate *>, ComCallWrapperTemplateRelease, 0> ComCallWrapperTemplateHolder;
-
+using ComCallWrapperTemplateHolder = ReleaseHolder<ComCallWrapperTemplate>;
 
 //--------------------------------------------------------------------------------
 // Header on top of Vtables that we create for COM callable interfaces
@@ -1054,29 +1043,7 @@ struct cdac_data<ComCallWrapper>
     static constexpr uintptr_t ThisMask = (uintptr_t)ComCallWrapper::enum_ThisMask;
 };
 
-FORCEINLINE void CCWRelease(ComCallWrapper* p)
-{
-    WRAPPER_NO_CONTRACT;
-
-    p->Release();
-}
-
-class CCWHolder : public Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>
-{
-public:
-    CCWHolder(ComCallWrapper* p = NULL)
-        : Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(ComCallWrapper* p)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>::operator=(p);
-    }
-};
+using CCWHolder = ReleaseHolder<ComCallWrapper>;
 //
 // Uncommonly used data on Simple CCW
 // Created on-demand
