@@ -557,6 +557,11 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(FileHandleType.RegularFile, fileHandle.Type);
                 nint rawHandle = fileHandle.DangerousGetHandle();
 
+                // When we start a process and limit handle inheritance, it's hard to reliably check that
+                // a given file handle/descriptor was not inherited, because the OS can simply re-use the
+                // exact same number for a different pipe/file/device. The idea here is to get something
+                // that can help us identify the given file handle and just compare the ID that the parent
+                // and child processes have obtained.
                 string id = GetSafeFileHandleId(fileHandle);
 
                 RemoteInvokeOptions options = new() { CheckExitCode = true };
@@ -578,7 +583,7 @@ namespace System.Diagnostics.Tests
                         {
                             childId = GetSafeFileHandleId(handle);
                         }
-                        catch (Exception) when (!shouldBeInherited)
+                        catch (Win32Exception) when (!shouldBeInherited)
                         {
                             // Handle is not a valid file handle in this process.
                             return RemoteExecutor.SuccessExitCode;
