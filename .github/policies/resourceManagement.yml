@@ -175,8 +175,6 @@ configuration:
         - labelAdded:
             label: area-Host
         - labelAdded:
-            label: area-HostModel
-        - labelAdded:
             label: area-ILTools-coreclr
         - labelAdded:
             label: area-Tools-ILVerification
@@ -202,8 +200,6 @@ configuration:
             label: area-Microsoft.Win32
         - labelAdded:
             label: area-NativeAOT-coreclr
-        - labelAdded:
-            label: area-Single-File
         - labelAdded:
             label: area-System.Buffers
         - labelAdded:
@@ -669,19 +665,6 @@ configuration:
             assignMentionees: False
       - if:
         - hasLabel:
-            label: area-HostModel
-        then:
-        - mentionUsers:
-            mentionees:
-            - agocke
-            - elinor-fung
-            replyTemplate: >-
-              Tagging subscribers to this area: ${mentionees}
-
-              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
-            assignMentionees: False
-      - if:
-        - hasLabel:
             label: area-ILTools-coreclr
         then:
         - mentionUsers:
@@ -827,20 +810,6 @@ configuration:
             mentionees:
             - agocke
             - dotnet/ilc-contrib
-            replyTemplate: >-
-              Tagging subscribers to this area: ${mentionees}
-
-              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
-            assignMentionees: False
-      - if:
-        - hasLabel:
-            label: area-Single-File
-        then:
-        - mentionUsers:
-            mentionees:
-            - agocke
-            - elinor-fung
-            - vsadov
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
