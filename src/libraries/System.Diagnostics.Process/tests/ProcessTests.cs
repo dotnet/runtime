@@ -349,7 +349,8 @@ namespace System.Diagnostics.Tests
                     SendSignal(signal, childHandle.Process, entireProcessGroup: true);
 
                     Assert.True(childHandle.Process.WaitForExit(WaitInMS));
-                    Assert.Equal(enable, !grandchild.WaitForExit(300));
+                    // Use shorter wait time when the process is expected to survive
+                    Assert.Equal(enable, !grandchild.WaitForExit(enable ? 300 : WaitInMS));
                 }
                 finally
                 {

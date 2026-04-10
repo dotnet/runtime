@@ -130,8 +130,8 @@ namespace System.Diagnostics
         /// <see cref="StandardInputHandle"/>, <see cref="StandardOutputHandle"/>, or <see cref="StandardErrorHandle"/>.
         /// </para>
         /// <para>
-        /// On Windows, the process is started with the <c>DETACHED_PROCESS</c> creation flag
-        /// (see <see href="https://learn.microsoft.com/windows/win32/procthread/process-creation-flags#flags"/>).
+        /// On Windows, the process is started with the
+        /// <see href="https://learn.microsoft.com/windows/win32/procthread/process-creation-flags">DETACHED_PROCESS</see> flag.
         /// </para>
         /// <para>
         /// On Unix, the process is started as a leader of a new session.
