@@ -902,6 +902,13 @@ public:
     // we fire the AllocationTick event. It's only for tooling purpose.
     TypeHandle m_thAllocContextObj;
 
+#ifdef FEATURE_INTERPRETER
+public:
+    InterpThreadContext *m_pInterpThreadContext;
+    InterpThreadContext* GetInterpThreadContext();
+    InterpThreadContext* GetOrCreateInterpThreadContext();
+#endif // FEATURE_INTERPRETER
+
 #ifndef TARGET_UNIX
 private:
     _NT_TIB *m_pTEB;
@@ -3750,13 +3757,6 @@ private:
     bool m_hasPendingActivation;
 
     friend struct ::cdac_data<Thread>;
-
-#ifdef FEATURE_INTERPRETER
-public:
-    InterpThreadContext *m_pInterpThreadContext;
-    InterpThreadContext* GetInterpThreadContext();
-    InterpThreadContext* GetOrCreateInterpThreadContext();
-#endif // FEATURE_INTERPRETER
 };
 
 template<>
