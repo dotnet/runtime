@@ -448,7 +448,7 @@ namespace System.IO
         // From https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-readfilescatter:
         // "The file handle must be created with [...] the FILE_FLAG_OVERLAPPED and FILE_FLAG_NO_BUFFERING flags."
         private static bool CanUseScatterGatherWindowsAPIs(SafeFileHandle handle)
-            => handle.IsAsync && ((handle.GetFileOptions() & SafeFileHandle.NoBuffering) != 0);
+            => handle.IsAsync && ((handle.GetFileOptions() & FileStreamHelpers.NoBuffering) != 0);
 
         // From the same source:
         // "Each buffer must be at least the size of a system memory page and must be aligned on a system

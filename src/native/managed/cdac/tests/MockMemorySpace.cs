@@ -53,6 +53,16 @@ internal unsafe static partial class MockMemorySpace
             throw new InvalidOperationException($"No fragment includes addresses from 0x{address:x} with length {length}");
         }
 
+        internal Memory<byte> BorrowAddressRangeMemory(ulong address, int length)
+        {
+            foreach (var fragment in _heapFragments)
+            {
+                if (address >= fragment.Address && address + (ulong)length <= fragment.Address + (ulong)fragment.Data.Length)
+                    return fragment.Data.AsMemory((int)(address - fragment.Address), length);
+            }
+            throw new InvalidOperationException($"No fragment includes addresses from 0x{address:x} with length {length}");
+        }
+
         public Builder AddHeapFragment(HeapFragment fragment)
         {
             if (fragment.Data is null || fragment.Data.Length == 0)

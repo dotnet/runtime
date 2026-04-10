@@ -85,6 +85,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static async Task CrlDiskCacheRecovers()
         {
@@ -130,25 +131,31 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 X509Certificate2 getDotNetCert = null;
 
-                SocketsHttpHandler handler = new SocketsHttpHandler
+                await RetryHelper.ExecuteAsync(async () =>
                 {
-                    SslOptions =
-                    {
-                        RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
-                        {
-                            getDotNetCert = X509CertificateLoader.LoadCertificate(certificate.Export(X509ContentType.Cert));
-                            Assert.NotNull(getDotNetCert.Subject);
-                            return errors == SslPolicyErrors.None;
-                        }
-                    }
-                };
+                    getDotNetCert?.Dispose();
+                    getDotNetCert = null;
 
-                using (HttpClient client = new HttpClient(handler))
-                using (CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
-                {
-                    using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Head, "https://get.dot.net/");
-                    using HttpResponseMessage response = await client.SendAsync(req, cts.Token).ConfigureAwait(false);
-                }
+                    SocketsHttpHandler handler = new SocketsHttpHandler
+                    {
+                        SslOptions =
+                        {
+                            RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
+                            {
+                                getDotNetCert = X509CertificateLoader.LoadCertificate(certificate.Export(X509ContentType.Cert));
+                                Assert.NotNull(getDotNetCert.Subject);
+                                return errors == SslPolicyErrors.None;
+                            }
+                        }
+                    };
+
+                    using (HttpClient client = new HttpClient(handler))
+                    using (CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(60)))
+                    {
+                        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Head, "https://get.dot.net/");
+                        using HttpResponseMessage response = await client.SendAsync(req, cts.Token).ConfigureAwait(false);
+                    }
+                }, maxAttempts: 3).ConfigureAwait(false);
 
                 Assert.NotNull(getDotNetCert);
                 Assert.NotNull(getDotNetCert.Subject);

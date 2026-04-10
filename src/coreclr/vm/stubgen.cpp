@@ -8,6 +8,7 @@
 
 
 #include "common.h"
+#include <limits>
 
 #include "stubgen.h"
 #include "jitinterface.h"
@@ -963,10 +964,18 @@ BYTE* ILStubLinker::GenerateCodeWorker(BYTE* pbBuffer, ILInstruction* pInstrBuff
                 case 8:
                     {
                         UINT64 uVal = pInstrBuffer[i].uArg;
-#ifndef TARGET_64BIT  // We don't have room on 32-bit platforms to store the CLR_NAN_64 value, so
-                // we use a special value to represent CLR_NAN_64 and then recreate it here.
+#ifndef TARGET_64BIT  // We don't have room on 32-bit platforms to store the 64-bit NaN value, so
+                // we use a special value to represent NaN and then recreate it here.
                         if ((instr == ILCodeStream::CEE_LDC_R8) && (((UINT32)uVal) == ILCodeStream::SPECIAL_VALUE_NAN_64_ON_32))
-                            uVal = CLR_NAN_64;
+                        {
+                            union
+                            {
+                                UINT64 u;
+                                double d;
+                            } value;
+                            value.d = -std::numeric_limits<double>::quiet_NaN();
+                            uVal = value.u;
+                        }
 #endif // TARGET_64BIT
                         SET_UNALIGNED_VAL64(pbBuffer, uVal);
                     }
@@ -1441,23 +1450,43 @@ void ILCodeStream::EmitLDC(DWORD_PTR uConst)
 #endif
         , 1, uConst);
 }
-void ILCodeStream::EmitLDC_R4(UINT32 uConst)
+void ILCodeStream::EmitLDC_R4(float fConst)
 {
     WRAPPER_NO_CONTRACT;
-    Emit(CEE_LDC_R4, 1, uConst);
+
+    union
+    {
+        float f;
+        uint32_t u;
+    } value;
+
+    value.f = fConst;
+
+    Emit(CEE_LDC_R4, 1, value.u);
 }
-void ILCodeStream::EmitLDC_R8(UINT64 uConst)
+void ILCodeStream::EmitLDC_R8(double dConst)
 {
     STANDARD_VM_CONTRACT;
-#ifndef TARGET_64BIT  // We don't have room on 32-bit platforms to stor the CLR_NAN_64 value, so
-                // we use a special value to represent CLR_NAN_64 and then recreate it later.
-    CONSISTENCY_CHECK(((UINT32)uConst) != SPECIAL_VALUE_NAN_64_ON_32);
-    if (uConst == CLR_NAN_64)
-        uConst = SPECIAL_VALUE_NAN_64_ON_32;
+
+    union
+    {
+        double d;
+        UINT64 u;
+    } value;
+
+    value.d = dConst;
+#ifndef TARGET_64BIT
+    // We don't have room on 32-bit platforms to store a full 64-bit NaN value,
+    // so we use a special value to represent it and then check for it here and recreate the NaN if we see it.
+    if (std::isnan(dConst))
+        value.u = SPECIAL_VALUE_NAN_64_ON_32;
     else
-        CONSISTENCY_CHECK(FitsInU4(uConst));
+    {
+        value.d = dConst;
+        CONSISTENCY_CHECK(FitsInU4(value.u));
+    }
 #endif // TARGET_64BIT
-    Emit(CEE_LDC_R8, 1, (UINT_PTR)uConst);
+    Emit(CEE_LDC_R8, 1, (UINT_PTR)value.u);
 }
 void ILCodeStream::EmitLDELEMA(int token)
 {
@@ -1636,6 +1665,11 @@ void ILCodeStream::EmitLDSFLDA(int token)
     WRAPPER_NO_CONTRACT;
     Emit(CEE_LDSFLDA, 1, token);
 }
+void ILCodeStream::EmitLDSTR(SString str)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_LDSTR, 1, m_pOwner->GetUserStringToken(std::move(str)));
+}
 void ILCodeStream::EmitLDTOKEN(int token)
 {
     WRAPPER_NO_CONTRACT;
@@ -1666,6 +1700,11 @@ void ILCodeStream::EmitNEWOBJ(int token, int numInArgs)
     WRAPPER_NO_CONTRACT;
     Emit(CEE_NEWOBJ, (INT16)(1 - numInArgs), token);
 }
+void ILCodeStream::EmitNEWARR(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_NEWARR, 0, token);
+}
 
 void ILCodeStream::EmitNOP(LPCSTR pszNopComment)
 {
@@ -1693,6 +1732,16 @@ void ILCodeStream::EmitSTARG(unsigned uArgIdx)
 {
     WRAPPER_NO_CONTRACT;
     Emit(CEE_STARG, -1, uArgIdx);
+}
+void ILCodeStream::EmitSTELEM_I1()
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_STELEM_I1, -3, 0);
+}
+void ILCodeStream::EmitSTELEM_I4()
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_STELEM_I4, -3, 0);
 }
 void ILCodeStream::EmitSTELEM_REF()
 {
@@ -3256,6 +3305,12 @@ int ILStubLinker::GetToken(FieldDesc* pFD, mdToken typeSignature)
 {
     STANDARD_VM_CONTRACT;
     return m_tokenMap.GetToken(pFD, typeSignature);
+}
+
+int ILStubLinker::GetUserStringToken(SString s)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetUserStringToken(std::move(s));
 }
 
 int ILStubLinker::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)

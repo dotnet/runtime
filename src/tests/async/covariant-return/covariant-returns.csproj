@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- https://github.com/dotnet/runtime/issues/126685 -->
+    <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

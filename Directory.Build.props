@@ -150,6 +150,7 @@
     <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
     <TestExclusionListTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'TestExclusionListTasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)'))</TestExclusionListTasksDir>
     <InstallerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', '$(TasksConfiguration)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
+    <HelixTestTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'HelixTestTasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)', 'HelixTestTasks.dll'))</HelixTestTasksAssemblyPath>
     <Crossgen2SdkOverridePropsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', 'Microsoft.NET.CrossGen.props'))</Crossgen2SdkOverridePropsPath>
     <Crossgen2SdkOverrideTargetsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', 'Microsoft.NET.CrossGen.targets'))</Crossgen2SdkOverrideTargetsPath>
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>

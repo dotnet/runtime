@@ -104,6 +104,28 @@ public:
     bool IsGeneric(mdMethodDef input, bool *foundResult) const;
 };
 
+struct StringWithLength
+{
+    LPCUTF8 str;
+    uint32_t length;
+};
+
+class VersionResilientStringHash : public NoRemoveSHashTraits<DefaultSHashTraits<StringWithLength>>
+{
+public:
+    using key_t = StringWithLength;
+    static const key_t GetKey(_In_ const element_t& e) { return e; }
+    static count_t Hash(_In_ key_t key)
+    {
+        return ComputeNameHashCode(key.str, key.length);
+    }
+    static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return strncmp(lhs.str, rhs.str, min(lhs.length, rhs.length)) == 0 && lhs.length == rhs.length; }
+    static bool IsNull(_In_ const element_t& e) { return e.str == nullptr; }
+    static const element_t Null() { return {}; }
+};
+
+using ExternalTypeNameHash = SHash<VersionResilientStringHash>;
+
 class ReadyToRunInfo
 {
     friend class ReadyToRunJitManager;
@@ -129,6 +151,7 @@ class ReadyToRunInfo
 
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDebugInfo;
+    PTR_IMAGE_DATA_DIRECTORY        m_pSectionExceptionInfo;
 
     PTR_READYTORUN_IMPORT_SECTION   m_pImportSections;
     DWORD                           m_nImportSections;
@@ -149,6 +172,10 @@ class ReadyToRunInfo
 
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
     PTR_PersistentInlineTrackingMapR2R m_pCrossModulePersistentInlineTrackingMap;
+
+    NativeFormat::NativeHashtable   m_externalTypeMaps;
+    NativeFormat::NativeHashtable   m_proxyTypeMaps;
+    NativeFormat::NativeHashtable   m_typeMapAssemblyTargets;
 
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
     TADDR                           m_pLoadedImageBase;
@@ -172,6 +199,7 @@ public:
     PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
 
     PTR_IMAGE_DATA_DIRECTORY GetDelayMethodCallThunksSection() const { return m_pSectionDelayLoadMethodCallThunks; }
+    PTR_IMAGE_DATA_DIRECTORY GetExceptionInfoSection() const { return m_pSectionExceptionInfo; }
 
     PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }
 
@@ -340,6 +368,18 @@ public:
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();
 
+    bool HasPrecachedExternalTypeMap(MethodTable* pGroupType);
+    TypeHandle FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey);
+
+    bool CheckForUniqueExternalTypeMapKeys(MethodTable* pGroupType, ExternalTypeNameHash *pHash);
+
+    bool HasPrecachedProxyTypeMap(MethodTable* pGroupType);
+    TypeHandle FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key);
+
+    bool HasTypeMapAssemblyTargets(MethodTable* pGroupType, COUNT_T* pCount);
+
+    COUNT_T GetTypeMapAssemblyTargets(MethodTable* pGroupType, Module** pTargetModules, COUNT_T count);
+
     BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
 private:
     BOOL GetTypeNameFromToken(IMDInternalImport * pImport, mdToken mdType, LPCUTF8 * ppszName, LPCUTF8 * ppszNameSpace);
@@ -365,6 +405,7 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t HotColdMap = offsetof(ReadyToRunInfo, m_pHotColdMap);
     static constexpr size_t DelayLoadMethodCallThunks = offsetof(ReadyToRunInfo, m_pSectionDelayLoadMethodCallThunks);
     static constexpr size_t DebugInfoSection = offsetof(ReadyToRunInfo, m_pSectionDebugInfo);
+    static constexpr size_t ExceptionInfoSection = offsetof(ReadyToRunInfo, m_pSectionExceptionInfo);
     static constexpr size_t EntryPointToMethodDescMap = offsetof(ReadyToRunInfo, m_entryPointToMethodDescMap);
     static constexpr size_t LoadedImageBase = offsetof(ReadyToRunInfo, m_pLoadedImageBase);
     static constexpr size_t Composite = offsetof(ReadyToRunInfo, m_pComposite);

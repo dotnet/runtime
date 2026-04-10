@@ -74,6 +74,7 @@ namespace System.Text
 
         // Set the above values
         // This can't be part of the constructor because DecoderFallbacks would have to know how to implement these.
+        [RequiresUnsafe]
         internal unsafe void InternalInitialize(byte* byteStart, char* charEnd)
         {
             this.byteStart = byteStart;
@@ -104,6 +105,7 @@ namespace System.Text
         // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
         // array, and we might need the index, hence the byte*
         // Don't touch ref chars unless we succeed
+        [RequiresUnsafe]
         internal unsafe bool InternalFallback(byte[] bytes, byte* pBytes, ref char* chars)
         {
             Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
@@ -157,6 +159,7 @@ namespace System.Text
         }
 
         // This version just counts the fallback and doesn't actually copy anything.
+        [RequiresUnsafe]
         internal virtual unsafe int InternalFallback(byte[] bytes, byte* pBytes)
         // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
         // array, and we might need the index, hence the byte*

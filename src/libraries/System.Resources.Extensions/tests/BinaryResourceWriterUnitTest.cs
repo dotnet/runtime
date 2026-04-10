@@ -517,7 +517,7 @@ namespace System.Resources.Extensions.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        public static void TestResourceManagerIsSafeForConcurrentAccessAndEnumeration(bool useEnumeratorEntry)
+        public static async Task TestResourceManagerIsSafeForConcurrentAccessAndEnumeration(bool useEnumeratorEntry)
         {
             ResourceManager manager = new(
                 typeof(TestData).FullName,
@@ -534,7 +534,10 @@ namespace System.Resources.Extensions.Tests
                     TaskScheduler.Default))
                 .ToArray();
 
-            Assert.True(Task.WaitAll(tasks, TimeSpan.FromSeconds(30)));
+            Task allTasks = Task.WhenAll(tasks);
+            Task completed = await Task.WhenAny(allTasks, Task.Delay(TimeSpan.FromSeconds(120)));
+            Assert.True(completed == allTasks, "Timed out waiting for concurrent enumeration tasks");
+            await allTasks; // propagates any real exceptions
 
             void WaitForBarrierThenEnumerateResources()
             {

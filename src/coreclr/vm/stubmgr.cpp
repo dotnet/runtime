@@ -10,6 +10,7 @@
 #include "asmconstants.h"
 #ifdef FEATURE_COMINTEROP
 #include "olecontexthelpers.h"
+#include "clrtocomcall.h"
 #endif
 
 #ifdef LOGGING
@@ -1433,57 +1434,6 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
 
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-// -------------------------------------------------------
-// JumpStub stubs
-//
-// Stub manager for jump stubs created by ExecutionManager::jumpStub()
-// These are currently used only on the 64-bit targets IA64 and AMD64
-//
-// -------------------------------------------------------
-
-SPTR_IMPL(JumpStubStubManager, JumpStubStubManager, g_pManager);
-
-#ifndef DACCESS_COMPILE
-/* static */
-void JumpStubStubManager::Init()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    g_pManager = new JumpStubStubManager();
-    StubManager::AddStubManager(g_pManager);
-}
-#endif // #ifndef DACCESS_COMPILE
-
-BOOL JumpStubStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    // Forwarded to from RangeSectionStubManager
-    return FALSE;
-}
-
-BOOL JumpStubStubManager::DoTraceStub(PCODE stubStartAddress,
-                                     TraceDestination *trace)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PCODE jumpTarget = decodeBackToBackJump(stubStartAddress);
-    trace->InitForStub(jumpTarget);
-
-    LOG_TRACE_DESTINATION(trace, stubStartAddress, "JumpStubStubManager::DoTraceStub");
-
-    return TRUE;
-}
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
-
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
 // stub manager, or handles the query itself.
@@ -1518,6 +1468,9 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     case STUB_CODE_BLOCK_JUMPSTUB:
     case STUB_CODE_BLOCK_STUBLINK:
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+#endif // FEATURE_TIERED_COMPILATION
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
     case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
@@ -1548,11 +1501,22 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
     {
 #ifdef FEATURE_DYNAMIC_CODE_COMPILED
     case STUB_CODE_BLOCK_JUMPSTUB:
-        return JumpStubStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
+    {
+        PCODE jumpTarget = decodeBackToBackJump(stubStartAddress);
+        trace->InitForStub(jumpTarget);
+        return TRUE;
+    }
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
 
     case STUB_CODE_BLOCK_STUBLINK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+    {
+        trace->InitForStub(CallCountingManager::GetTargetForMethod(stubStartAddress));
+        return TRUE;
+    }
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
@@ -1592,6 +1556,10 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
 
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return W("MethodCallThunk");
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return W("CallCountingStub");
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
@@ -1723,6 +1691,38 @@ static PCODE GetCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCallInfo)
     PCODE target = (PCODE)lpVtbl[pCLRToCOMCallInfo->m_cachedComSlot];
     return target;
 }
+
+static PCODE GetLateBoundCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCallInfo)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // calculate the target interface pointer
+    SafeComHolder<IUnknown> pUnk;
+
+    OBJECTREF oref = ObjectToOBJECTREF(pThis);
+    GCPROTECT_BEGIN(oref);
+    pUnk = ComObject::GetComIPFromRCWThrowing(&oref, pCLRToCOMCallInfo->m_pInterfaceMT);
+    GCPROTECT_END();
+
+    LPVOID *lpVtbl = *(LPVOID **)(IUnknown *)pUnk;
+
+#ifdef _DEBUG
+    // Make sure that our underlying RCW really has some IDispatch support.
+    // We don't use this pointer as we don't want the "default" IDispatch interface.
+    // We want the IDispatch pointer that corresponds to the actual interface we're calling on, which may not be the default IDispatch.
+    SafeComHolder<IDispatch> pDisp;
+    _ASSERTE(SUCCEEDED(((IUnknown *)pUnk)->QueryInterface(IID_IDispatch, (void**)&pDisp)));
+#endif
+
+    PCODE target = (PCODE)lpVtbl[6]; // IDispatch::Invoke's slot
+    return target;
+}
 #endif // FEATURE_COMINTEROP
 
 BOOL ILStubManager::TraceManager(Thread *thread,
@@ -1748,24 +1748,24 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         _ASSERTE(!"We should never get here. Multicast Delegates should not invoke TraceManager.");
         return FALSE;
     }
-    else if (pStubMD->IsReversePInvokeStub())
+    else if (pStubMD->IsReversePInvokeStub() || pStubMD->IsCOMToCLRStub())
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         UNREACHABLE_MSG("Reverse P/Invoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS.");
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
-        // This is reverse P/Invoke stub, the argument is UMEntryThunkData
+        // This is reverse P/Invoke or COM-to-CLR stub, the argument is UMEntryThunkData
         UMEntryThunkData *pEntryThunk = (UMEntryThunkData*)arg;
         target = pEntryThunk->GetManagedTarget();
-        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke case %p\n", target));
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke or COM-to-CLR case %p\n", target));
+
+        if (target == (PCODE)NULL)
+        {
+            LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: No managed target for reverse P/Invoke or COM-to-CLR stub (such as field access stub)\n"));
+            return FALSE;
+        }
+
         trace->InitForManaged(target);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
-    }
-    else if (pStubMD->IsCOMToCLRStub())
-    {
-        // This is COM-to-CLR stub, the argument is the target
-        target = (PCODE)arg;
-        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: COM-to-CLR case %p\n", target));
-        trace->InitForManaged(target);
     }
     else if (pStubMD->IsPInvokeDelegateStub())
     {
@@ -1825,12 +1825,14 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         {
             LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Stub is CLR-to-COM\n"));
             _ASSERTE(pMD->IsCLRToCOMCall());
-            CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)pMD;
-            _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
+            _ASSERTE(!pMD->IsStatic() && !pMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
+
+            DWORD dwStubFlags;
+            CLRToCOMCallInfo* pInfo = CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(pMD, &dwStubFlags);
 
             if (pThis != NULL)
             {
-                target = GetCOMTarget(pThis, pCMD->m_pCLRToCOMCallInfo);
+                target = SF_IsCOMLateBoundStub(dwStubFlags) ? GetLateBoundCOMTarget(pThis, pInfo) : GetCOMTarget(pThis, pInfo);
                 LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM case %p\n", target));
                 trace->InitForUnmanaged(target);
             }
@@ -1930,7 +1932,7 @@ BOOL PInvokeStubManager::DoTraceStub(PCODE stubStartAddress,
 #endif // !DACCESS_COMPILE
 }
 
-// This is used to recognize GenericCLRToCOMCallStub, VarargPInvokeStub, and GenericPInvokeCalliHelper.
+// This is used to recognize VarargPInvokeStub, and GenericPInvokeCalliHelper.
 
 #ifndef DACCESS_COMPILE
 
@@ -1949,8 +1951,6 @@ void InteropDispatchStubManager::Init()
 }
 
 #endif // #ifndef DACCESS_COMPILE
-
-PCODE TheGenericCLRToCOMCallStub(); // clrtocomcall.cpp
 
 #ifndef DACCESS_COMPILE
 static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
@@ -1975,13 +1975,6 @@ BOOL InteropDispatchStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     //@dbgtodo dharvey implement DAC support
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_COMINTEROP
-    if (stubStartAddress == GetEEFuncEntryPoint(GenericCLRToCOMCallStub))
-    {
-        return true;
-    }
-#endif // FEATURE_COMINTEROP
-
     if (IsVarargPInvokeStub(stubStartAddress))
     {
         return true;
@@ -2065,41 +2058,6 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
         trace->InitForUnmanaged(target);
 #endif //defined(TARGET_ARM64) && defined(__APPLE__)
     }
-#ifdef FEATURE_COMINTEROP
-    else
-    {
-        CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)arg;
-        _ASSERTE(pCMD->IsCLRToCOMCall());
-
-        Object * pThis = StubManagerHelpers::GetThisPtr(pContext);
-
-        {
-            if (!pCMD->m_pCLRToCOMCallInfo->m_pInterfaceMT->IsComEventItfType() && (pCMD->m_pCLRToCOMCallInfo->m_pILStub != NULL))
-            {
-                // Early-bound CLR->COM call - continue in the IL stub
-                trace->InitForStub(pCMD->m_pCLRToCOMCallInfo->m_pILStub);
-            }
-            else
-            {
-                // Late-bound CLR->COM call - continue in target's IDispatch::Invoke
-                OBJECTREF oref = ObjectToOBJECTREF(pThis);
-                GCPROTECT_BEGIN(oref);
-
-                MethodTable *pItfMT = pCMD->m_pCLRToCOMCallInfo->m_pInterfaceMT;
-                _ASSERTE(pItfMT->GetComInterfaceType() == ifDispatch);
-
-                SafeComHolder<IUnknown> pUnk = ComObject::GetComIPFromRCWThrowing(&oref, pItfMT);
-                LPVOID *lpVtbl = *(LPVOID **)(IUnknown *)pUnk;
-
-                PCODE target = (PCODE)lpVtbl[6]; // DISPATCH_INVOKE_SLOT;
-                LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: CLR-to-COM late-bound case %p\n", target));
-                trace->InitForUnmanaged(target);
-
-                GCPROTECT_END();
-            }
-        }
-    }
-#endif // FEATURE_COMINTEROP
 
     return TRUE;
 }
@@ -2290,8 +2248,17 @@ BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
     MethodDesc* pMD = NonVirtualEntry2MethodDesc(stubIP);
     if (pMD->IsAsyncThunkMethod())
     {
-        MethodDesc* pOtherMD = pMD->GetAsyncOtherVariant();
-        _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk has no non-thunk variant to step through to");
+        MethodDesc* pOtherMD = pMD->GetOrdinaryVariant();
+        _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk does not have non-async variant");
+
+        // An ordinary variant may be a thunk in a rare case when we start from ReturnDroppingThunk.
+        // In such case the regular async variant must not be a thunk.
+        if (pOtherMD->IsAsyncThunkMethod())
+        {
+            pOtherMD = pMD->GetAsyncVariant();
+            _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk has no non-thunk variant to step through to");
+            _ASSERTE(!pOtherMD->IsAsyncThunkMethod());
+        }
 
         LOG((LF_CORDB, LL_INFO1000, "ATSM::TraceManager: Step through async thunk to target - %p\n", pOtherMD));
         PCODE target = GetStubTarget(pOtherMD);
@@ -2330,17 +2297,6 @@ StubLinkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     EMEM_OUT(("MEM: %p StubLinkStubManager\n", dac_cast<TADDR>(this)));
     GetRangeList()->EnumMemoryRegions(flags);
 }
-
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-void
-JumpStubStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-    WRAPPER_NO_CONTRACT;
-    DAC_ENUM_VTHIS();
-    EMEM_OUT(("MEM: %p JumpStubStubManager\n", dac_cast<TADDR>(this)));
-}
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 void
 RangeSectionStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)

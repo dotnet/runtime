@@ -326,8 +326,10 @@ bool MayUsePrecompiledILStub()
     if (g_pConfig->InteropValidatePinnedObjects())
         return false;
 
+#ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackTransitions())
         return false;
+#endif // PROFILING_SUPPORTED
 
     if (g_pConfig->InteropLogArguments())
         return false;
@@ -2037,7 +2039,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_ARM)
         pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-    #elif defined(TARGET_RISCV64)
+    #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_WASM)
         // We do not yet have an ABI for WebAssembly native code to handle here.
@@ -2211,7 +2213,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 #ifdef FEATURE_COMINTEROP
     /**************************   INTEROP   *************************/
     /*-----------------------------------------------------------------
-    // Some method descriptors are COMPLUS-to-COM call descriptors
+    // Some method descriptors are CLR-to-COM call descriptors
     // they are not your every day method descriptors, for example
     // they don't have an IL or code.
     */
