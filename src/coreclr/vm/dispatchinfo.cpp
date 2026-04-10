@@ -1636,7 +1636,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
             {
                 // VarArg scenario
                 // Here we only unmarshal the object whose corresponding VARIANT is VarArg
-                OleVariant::MarshalVariantArrayComToOle((BASEARRAYREF*)&pObjs->TmpObj, (void *)(aByrefArgOleVariant[i]), NULL, TRUE, FALSE, TRUE, TRUE, -1);
+                OleVariant::MarshalVarArgVariantArrayToOle((PTRARRAYREF*)&pObjs->TmpObj, (aByrefArgOleVariant[i]));
             }
             else
             {
