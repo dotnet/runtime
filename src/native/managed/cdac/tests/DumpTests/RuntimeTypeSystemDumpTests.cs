@@ -316,13 +316,14 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeTypeSystem_GenericTypeDefinitionContainsGenericVariables(TestConfiguration config)
     {
-        InitializeDumpTest(config);
+        // TODO: use default debuggee as soon as heap dumps are fixed
+        InitializeDumpTest(config, "LocalVariables", "full");
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         ILoader loader = Target.Contracts.Loader;
 
         // Look up the generic type definition List<> in System.Private.CoreLib.
-        // The debuggee instantiates List<Animal>, so the runtime has loaded
-        // both the closed List<Animal> MT and the open List<T> type definition MT.
+        // The debuggee instantiates List<int>, so the runtime has loaded
+        // both the closed List<int> MT and the open List<T> type definition MT.
         TargetPointer systemAssembly = loader.GetSystemAssembly();
         ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
         TypeHandle listTypeDef = rts.GetTypeByNameAndModule(
