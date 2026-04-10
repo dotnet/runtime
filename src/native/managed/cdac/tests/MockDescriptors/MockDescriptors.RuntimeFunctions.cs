@@ -2,114 +2,170 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-internal partial class MockDescriptors
+internal sealed class MockRuntimeFunction : TypedView
 {
-    internal class RuntimeFunctions
+    private const string BeginAddressFieldName = "BeginAddress";
+    private const string UnwindDataFieldName = "UnwindData";
+    private const string EndAddressFieldName = "EndAddress";
+
+    public static Layout<MockRuntimeFunction> CreateLayout(MockTarget.Architecture architecture, bool includeEndAddress)
     {
-        private static TypeFields RuntimeFunctionFields(bool includeEndAddress)
-        {
-            TargetTestHelpers.Field[] fields = [
-                new(nameof(Data.RuntimeFunction.BeginAddress), DataType.uint32),
-                new(nameof(Data.RuntimeFunction.UnwindData), DataType.uint32),
-            ];
-            if (includeEndAddress)
-                fields = fields.Append(new(nameof(Data.RuntimeFunction.EndAddress), DataType.uint32)).ToArray();
+        SequentialLayoutBuilder builder = new SequentialLayoutBuilder("RuntimeFunction", architecture)
+            .AddUInt32Field(BeginAddressFieldName)
+            .AddUInt32Field(UnwindDataFieldName);
 
-            return new()
-            {
-                DataType = DataType.RuntimeFunction,
-                Fields = fields
-            };
+        if (includeEndAddress)
+        {
+            builder.AddUInt32Field(EndAddressFieldName);
         }
 
-        private static TypeFields UnwindInfoFields(bool isFunctionLength) => new()
+        return builder.Build<MockRuntimeFunction>();
+    }
+
+    public uint BeginAddress
+    {
+        get => ReadUInt32Field(BeginAddressFieldName);
+        set => WriteUInt32Field(BeginAddressFieldName, value);
+    }
+
+    public uint UnwindData
+    {
+        get => ReadUInt32Field(UnwindDataFieldName);
+        set => WriteUInt32Field(UnwindDataFieldName, value);
+    }
+
+    public uint EndAddress
+    {
+        get => ReadUInt32Field(EndAddressFieldName);
+        set => WriteUInt32Field(EndAddressFieldName, value);
+    }
+}
+
+internal sealed class MockUnwindInfo : TypedView
+{
+    private const string FunctionLengthFieldName = "FunctionLength";
+    private const string HeaderFieldName = "Header";
+
+    public static Layout<MockUnwindInfo> CreateLayout(MockTarget.Architecture architecture, bool isFunctionLength)
+    {
+        SequentialLayoutBuilder builder = new SequentialLayoutBuilder("UnwindInfo", architecture);
+        builder.AddUInt32Field(isFunctionLength ? FunctionLengthFieldName : HeaderFieldName);
+        return builder.Build<MockUnwindInfo>();
+    }
+
+    public uint FunctionLength
+    {
+        get => ReadUInt32Field(FunctionLengthFieldName);
+        set => WriteUInt32Field(FunctionLengthFieldName, value);
+    }
+
+    public uint Header
+    {
+        get => ReadUInt32Field(HeaderFieldName);
+        set => WriteUInt32Field(HeaderFieldName, value);
+    }
+}
+
+internal sealed class MockRuntimeFunctionsBuilder
+{
+    private const ulong DefaultAllocationRangeStart = 0x0004_0000;
+    private const ulong DefaultAllocationRangeEnd = 0x0005_0000;
+
+    internal const uint DefaultFunctionLength = 0x100;
+
+    internal MockMemorySpace.Builder Builder { get; }
+    internal Layout<MockRuntimeFunction> RuntimeFunctionLayout { get; }
+    internal Layout<MockUnwindInfo> UnwindInfoLayout { get; }
+    private readonly MockMemorySpace.BumpAllocator _allocator;
+
+    public MockRuntimeFunctionsBuilder(MockMemorySpace.Builder builder, bool includeEndAddress = true, bool unwindInfoIsFunctionLength = false)
+        : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), includeEndAddress, unwindInfoIsFunctionLength)
+    {
+    }
+
+    public MockRuntimeFunctionsBuilder(
+        MockMemorySpace.Builder builder,
+        (ulong Start, ulong End) allocationRange,
+        bool includeEndAddress,
+        bool unwindInfoIsFunctionLength)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        Builder = builder;
+        _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
+        RuntimeFunctionLayout = MockRuntimeFunction.CreateLayout(builder.TargetTestHelpers.Arch, includeEndAddress);
+        UnwindInfoLayout = MockUnwindInfo.CreateLayout(builder.TargetTestHelpers.Arch, unwindInfoIsFunctionLength);
+    }
+
+    public ulong AddRuntimeFunctions(uint[] runtimeFunctions)
+    {
+        ArgumentNullException.ThrowIfNull(runtimeFunctions);
+
+        uint numRuntimeFunctions = checked((uint)runtimeFunctions.Length);
+        uint runtimeFunctionSize = checked((uint)RuntimeFunctionLayout.Size);
+        MockMemorySpace.HeapFragment runtimeFunctionsFragment = AllocateAndAdd(
+            checked((numRuntimeFunctions + 1) * runtimeFunctionSize),
+            $"RuntimeFunctions[{numRuntimeFunctions}]");
+
+        for (uint i = 0; i < numRuntimeFunctions; i++)
         {
-            DataType = DataType.UnwindInfo,
-            Fields = isFunctionLength
-                ? [new(nameof(Data.UnwindInfo.FunctionLength), DataType.uint32)]
-                : [new(nameof(Data.UnwindInfo.Header), DataType.uint32)]
-        };
+            ulong functionAddress = runtimeFunctionsFragment.Address + i * runtimeFunctionSize;
+            MockRuntimeFunction runtimeFunction = RuntimeFunctionLayout.Create(
+                runtimeFunctionsFragment.Data.AsMemory(checked((int)(i * runtimeFunctionSize)), RuntimeFunctionLayout.Size),
+                functionAddress);
 
-        internal MockMemorySpace.Builder Builder { get; }
-        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
+            uint functionLength = i < numRuntimeFunctions - 1
+                ? Math.Min(runtimeFunctions[i + 1] - runtimeFunctions[i], DefaultFunctionLength)
+                : DefaultFunctionLength;
 
-        private const ulong DefaultAllocationRangeStart = 0x0004_0000;
-        private const ulong DefaultAllocationRangeEnd = 0x0005_0000;
-
-        internal const uint DefaultFunctionLength = 0x100;
-
-        private readonly MockMemorySpace.BumpAllocator _allocator;
-
-        public RuntimeFunctions(MockMemorySpace.Builder builder, bool includeEndAddress = true, bool unwindInfoIsFunctionLength = false)
-            : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), includeEndAddress, unwindInfoIsFunctionLength)
-        { }
-
-        public RuntimeFunctions(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool includeEndAddress, bool unwindInfoIsFunctionLength)
-        {
-            Builder = builder;
-            _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
-            Types = GetTypesForTypeFields(
-                Builder.TargetTestHelpers,
-                [
-                    RuntimeFunctionFields(includeEndAddress),
-                    UnwindInfoFields(unwindInfoIsFunctionLength)
-                ]);
-        }
-
-        public TargetPointer AddRuntimeFunctions(uint[] runtimeFunctions)
-        {
-            TargetTestHelpers helpers = Builder.TargetTestHelpers;
-
-            // Add the array of runtime functions
-            uint numRuntimeFunctions = (uint)runtimeFunctions.Length;
-            Target.TypeInfo runtimeFunctionType = Types[DataType.RuntimeFunction];
-            uint runtimeFunctionSize = runtimeFunctionType.Size.Value;
-            Target.TypeInfo unwindInfoType = Types[DataType.UnwindInfo];
-            MockMemorySpace.HeapFragment runtimeFunctionsFragment = _allocator.Allocate((numRuntimeFunctions + 1) * runtimeFunctionSize, $"RuntimeFunctions[{numRuntimeFunctions}]");
-            Builder.AddHeapFragment(runtimeFunctionsFragment);
-            for (uint i = 0; i < numRuntimeFunctions; i++)
+            runtimeFunction.BeginAddress = runtimeFunctions[i];
+            if (HasEndAddress())
             {
-                Span<byte> func = Builder.BorrowAddressRange(runtimeFunctionsFragment.Address + i * runtimeFunctionSize, (int)runtimeFunctionSize);
-                helpers.Write(func.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), runtimeFunctions[i]);
-
-                // Set the function length to the default function length or up to the next function start
-                uint functionLength = i < numRuntimeFunctions - 1
-                    ? Math.Min(runtimeFunctions[i + 1] - runtimeFunctions[i], DefaultFunctionLength)
-                    : DefaultFunctionLength;
-                if (runtimeFunctionType.Fields.ContainsKey(nameof(Data.RuntimeFunction.EndAddress)))
-                    helpers.Write(func.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.EndAddress)].Offset, sizeof(uint)), runtimeFunctions[i] + functionLength);
-
-                // Add the unwindInfo
-                MockMemorySpace.HeapFragment unwindInfoFragment = _allocator.Allocate(unwindInfoType.Size.Value, $"UnwindInfo for RuntimeFunction {runtimeFunctions[i]}");
-                Builder.AddHeapFragment(unwindInfoFragment);
-                Span<byte> unwindInfo = unwindInfoFragment.Data.AsSpan();
-                if (Types[DataType.UnwindInfo].Fields.ContainsKey(nameof(Data.UnwindInfo.FunctionLength)))
-                {
-                    helpers.Write(unwindInfo.Slice(unwindInfoType.Fields[nameof(Data.UnwindInfo.FunctionLength)].Offset, sizeof(uint)), functionLength);
-                }
-                else
-                {
-                    // First 18 bits of the header are function length / (pointer size / 2) 
-                    uint headerBits = (uint)(functionLength / (helpers.PointerSize / 2));
-                    if (headerBits > 1 << 18 - 1)
-                        throw new InvalidOperationException("Function length is too long ");
-
-                    helpers.Write(unwindInfo.Slice(unwindInfoType.Fields[nameof(Data.UnwindInfo.Header)].Offset, sizeof(uint)), headerBits);
-                }
-
-                helpers.Write(func.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindInfoFragment.Address);
+                runtimeFunction.EndAddress = runtimeFunctions[i] + functionLength;
             }
 
-            // Runtime function entries are terminated by a sentinel value of -1
-            Span<byte> sentinel = Builder.BorrowAddressRange(runtimeFunctionsFragment.Address + numRuntimeFunctions * runtimeFunctionSize, (int)runtimeFunctionSize);
-            helpers.Write(sentinel.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), ~0u);
+            MockUnwindInfo unwindInfo = UnwindInfoLayout.Create(
+                AllocateAndAdd((ulong)UnwindInfoLayout.Size, $"UnwindInfo for RuntimeFunction {runtimeFunctions[i]}"));
 
-            return runtimeFunctionsFragment.Address;
+            if (HasFunctionLength())
+            {
+                unwindInfo.FunctionLength = functionLength;
+            }
+            else
+            {
+                // First 18 bits of the header are function length / (pointer size / 2)
+                uint headerBits = (uint)(functionLength / (Builder.TargetTestHelpers.PointerSize / 2));
+                if (headerBits > (1 << 18) - 1)
+                {
+                    throw new InvalidOperationException("Function length is too long.");
+                }
+
+                unwindInfo.Header = headerBits;
+            }
+
+            runtimeFunction.UnwindData = checked((uint)unwindInfo.Address);
         }
+
+        MockRuntimeFunction sentinel = RuntimeFunctionLayout.Create(
+            runtimeFunctionsFragment.Data.AsMemory(checked((int)(numRuntimeFunctions * runtimeFunctionSize)), RuntimeFunctionLayout.Size),
+            runtimeFunctionsFragment.Address + numRuntimeFunctions * runtimeFunctionSize);
+        sentinel.BeginAddress = uint.MaxValue;
+
+        return runtimeFunctionsFragment.Address;
+    }
+
+    private bool HasEndAddress()
+        => Array.Exists(RuntimeFunctionLayout.Fields, static field => field.Name == "EndAddress");
+
+    private bool HasFunctionLength()
+        => Array.Exists(UnwindInfoLayout.Fields, static field => field.Name == "FunctionLength");
+
+    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name)
+    {
+        MockMemorySpace.HeapFragment fragment = _allocator.Allocate(size, name);
+        Builder.AddHeapFragment(fragment);
+        return fragment;
     }
 }

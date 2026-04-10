@@ -29,6 +29,7 @@ namespace System.Threading
         public int OffsetHigh { get { throw null; } set { } }
         public int OffsetLow { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe static void Free(System.Threading.NativeOverlapped* nativeOverlappedPtr) { }
         [System.CLSCompliantAttribute(false)]
         [System.ObsoleteAttribute("This overload is not safe and has been deprecated. Use Pack(IOCompletionCallback?, object?) instead.")]
@@ -36,6 +37,7 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public unsafe System.Threading.NativeOverlapped* Pack(System.Threading.IOCompletionCallback? iocb, object? userData) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe static System.Threading.Overlapped Unpack(System.Threading.NativeOverlapped* nativeOverlappedPtr) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.ObsoleteAttribute("This overload is not safe and has been deprecated. Use UnsafePack(IOCompletionCallback?, object?) instead.")]

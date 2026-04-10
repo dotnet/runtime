@@ -107,13 +107,16 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 8,
     STUB_CODE_BLOCK_VSD_VTABLE_STUB = 9,
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    STUB_CODE_BLOCK_CALLCOUNTING = 0xA,
+#endif // FEATURE_TIERED_COMPILATION
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholders returned by code:GetStubCodeBlockKind
     STUB_CODE_BLOCK_NOCODE = 0x10,
     STUB_CODE_BLOCK_MANAGED = 0x11,
     STUB_CODE_BLOCK_STUBLINK = 0x12,
-    // Placeholdes used by ReadyToRun images
+    // Placeholder used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK = 0x13,
 };
 
@@ -129,6 +132,10 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
         return "Managed";
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return "MethodCallThunk";
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return "CallCountingStub";
+#endif
     case STUB_CODE_BLOCK_DYNAMICHELPER:
         return "MethodCallThunk";
     case STUB_CODE_BLOCK_FIXUPPRECODE:
@@ -473,7 +480,17 @@ class CodeHeap
 {
     VPTR_BASE_VTABLE_CLASS(CodeHeap)
 
+    friend struct ::cdac_data<CodeHeap>;
+
 public:
+    // [cDAC] [ExecutionManager] : Contract depends on these values.
+    enum class CodeHeapType : uint8_t
+    {
+        LoaderCodeHeap  = 0,
+        HostCodeHeap    = 1,
+        UnknownCodeHeap = 0xff,
+    };
+
     CodeHeap() = default;
 
     // virtual dtor. Clean up heap
@@ -486,6 +503,9 @@ public:
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
 #endif
+
+protected:
+    CodeHeapType m_heapType = CodeHeapType::UnknownCodeHeap;
 };
 
 //-----------------------------------------------------------------------------
@@ -550,6 +570,8 @@ class LoaderCodeHeap final : public CodeHeap
 #endif
 
     VPTR_VTABLE_CLASS(LoaderCodeHeap, CodeHeap)
+
+    friend struct ::cdac_data<LoaderCodeHeap>;
 
 private:
     ExplicitControlLoaderHeap m_LoaderHeap;
@@ -2275,6 +2297,18 @@ struct cdac_data<EEJitManager>
 {
     static constexpr size_t StoreRichDebugInfo = offsetof(EEJitManager, m_storeRichDebugInfo);
     static constexpr size_t AllCodeHeaps = offsetof(EEJitManager, m_pAllCodeHeaps);
+};
+
+template<>
+struct cdac_data<CodeHeap>
+{
+    static constexpr size_t HeapType = offsetof(CodeHeap, m_heapType);
+};
+
+template<>
+struct cdac_data<LoaderCodeHeap>
+{
+    static constexpr size_t LoaderHeap = offsetof(LoaderCodeHeap, m_LoaderHeap);
 };
 
 
