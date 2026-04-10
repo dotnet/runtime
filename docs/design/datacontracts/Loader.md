@@ -91,8 +91,29 @@ TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
 
-uint GetDebuggerInfoBits(ModuleHandle handle);
-void SetDebuggerInfoBits(ModuleHandle handle, uint newBits);
+DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle);
+void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits);
+```
+
+The `DebuggerAssemblyControlFlags` enum is defined as:
+```csharp
+[Flags]
+enum DebuggerAssemblyControlFlags : uint
+{
+    DACF_NONE = 0x00,
+    DACF_ALLOW_JIT_OPTS = 0x02,
+    DACF_ENC_ENABLED = 0x08,
+}
+```
+
+The `ClrModifiableAssemblies` enum (from `EEConfig::ModifiableAssemblies`) is defined as:
+```csharp
+enum ClrModifiableAssemblies : uint
+{
+    Unset = 0,
+    None = 1,
+    Debug = 2,
+}
 ```
 
 ## Version 1
@@ -181,6 +202,7 @@ void SetDebuggerInfoBits(ModuleHandle handle, uint newBits);
 | `WebcilSectionHeader` | `VirtualAddress` | RVA of the section |
 | `WebcilSectionHeader` | `SizeOfRawData` | Size of the section's raw data |
 | `WebcilSectionHeader` | `PointerToRawData` | File offset to the section's raw data |
+| `EEConfig` | `ModifiableAssemblies` | Controls Edit and Continue support (ClrModifiableAssemblies enum) |
 
 
 
@@ -189,6 +211,7 @@ void SetDebuggerInfoBits(ModuleHandle handle, uint newBits);
 | --- | --- | --- |
 | `AppDomain` | TargetPointer | Pointer to the global AppDomain |
 | `SystemDomain` | TargetPointer | Pointer to the global SystemDomain |
+| `EEConfig` | TargetPointer | Pointer to the global EEConfig (runtime configuration) |
 
 
 ### Contract Constants:
@@ -199,6 +222,11 @@ void SetDebuggerInfoBits(ModuleHandle handle, uint newBits);
 | `MaxWebcilSections` | ushort | Maximum number of COFF sections supported in a Webcil image (must stay in sync with native `WEBCIL_MAX_SECTIONS`) | `16` |
 | `DebuggerInfoMask` | uint | Mask for the debugger info bits within the Module's transient flags | `0x0000Fc00` |
 | `DebuggerInfoShift` | int | Bit shift for the debugger info bits within the Module's transient flags | `10` |
+| `IS_JIT_OPTIMIZATION_DISABLED` | uint | Cached flag: JIT optimizations are disabled | `0x00000002` |
+| `IS_EDIT_AND_CONTINUE` | uint | Flag: EnC is enabled for this module | `0x00000008` |
+| `PROF_DISABLE_OPTIMIZATIONS` | uint | Profiler disabled JIT optimizations | `0x00000080` |
+| `IS_ENC_CAPABLE` | uint | Cached flag: module is Edit and Continue capable | `0x00000200` |
+| `DEBUGGER_ALLOW_JIT_OPTS_PRIV` | uint | Debugger allows JIT optimizations (shifted in transient flags) | `0x00000800` |
 
 Contracts used:
 | Contract Name |
@@ -827,17 +855,34 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
     return /* blob entry IL address */
 }
 
-uint GetDebuggerInfoBits(ModuleHandle handle)
+DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle)
 {
-    uint flags = // read Module::Flags (uint32) at handle.Address + Flags offset
-    return (flags & DebuggerInfoMask) >> DebuggerInfoShift;
+    uint flags = // read Module::Flags at handle.Address + Flags offset
+    return (DebuggerAssemblyControlFlags)((flags & DebuggerInfoMask) >> DebuggerInfoShift);
 }
 
-void SetDebuggerInfoBits(ModuleHandle handle, uint newBits)
+void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits)
 {
-    uint currentFlags = // read Module::Flags (uint32) at handle.Address + Flags offset
-    uint updated = (currentFlags & ~DebuggerInfoMask) | (newBits << DebuggerInfoShift);
-    // write updated uint32 back to handle.Address + Flags offset
+    uint currentFlags = // read Module::Flags at handle.Address + Flags offset
+    uint debuggerInfoBitsMask = DebuggerInfoMask >> DebuggerInfoShift;
+    uint updated = (currentFlags & ~DebuggerInfoMask) | (((uint)newBits & debuggerInfoBitsMask) << DebuggerInfoShift);
+
+    bool jitOptDisabled = (updated & DEBUGGER_ALLOW_JIT_OPTS_PRIV) == 0 || (updated & PROF_DISABLE_OPTIMIZATIONS) != 0;
+    // Set or clear IS_JIT_OPTIMIZATION_DISABLED accordingly.
+
+    if ((updated & IS_ENC_CAPABLE) != 0)
+    {
+        ClrModifiableAssemblies modifiable = // read EEConfig::ModifiableAssemblies from g_pConfig
+        if (modifiable != None)
+        {
+            bool encRequested = (newBits & DACF_ENC_ENABLED) != 0;
+            bool setEnC = encRequested || (modifiable == Debug && jitOptDisabled);
+            if (setEnC)
+                updated |= IS_EDIT_AND_CONTINUE;
+        }
+    }
+
+    // Write updated flags back to handle.Address + Flags offset
 }
 ```
 

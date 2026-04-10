@@ -489,18 +489,14 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(_address);
 
             bool allowJitOpts = (flags & CORDEBUG_JIT_DISABLE_OPTIMIZATION) != CORDEBUG_JIT_DISABLE_OPTIMIZATION;
-            uint bits = loader.GetDebuggerInfoBits(handle)
-                & ~((uint)DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS
-                    | (uint)DebuggerAssemblyControlFlags.DACF_ENC_ENABLED);
-            bits &= (uint)DebuggerAssemblyControlFlags.DACF_CONTROL_FLAGS_MASK;
+            DebuggerAssemblyControlFlags bits = loader.GetDebuggerInfoBits(handle)
+                & ~(DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS | DebuggerAssemblyControlFlags.DACF_ENC_ENABLED);
+            bits &= DebuggerAssemblyControlFlags.DACF_CONTROL_FLAGS_MASK;
 
             if (allowJitOpts)
             {
-                bits |= (uint)DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS;
+                bits |= DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS;
             }
-
-            // Settings from the debugger take precedence over all other settings.
-            bits |= (uint)DebuggerAssemblyControlFlags.DACF_USER_OVERRIDE;
 
             loader.SetDebuggerInfoBits(handle, bits);
         }

@@ -38,7 +38,23 @@ internal partial class MockDescriptors
                 [
                     ModuleFields,
                     AssemblyFields,
+                    EEConfigFields,
                 ]);
+        }
+
+        internal TargetPointer AddEEConfig(uint modifiableAssemblies)
+        {
+            TargetTestHelpers helpers = _builder.TargetTestHelpers;
+            Target.TypeInfo typeInfo = Types[DataType.EEConfig];
+            uint size = typeInfo.Size.Value;
+            MockMemorySpace.HeapFragment config = _allocator.Allocate(size, "EEConfig");
+            _builder.AddHeapFragment(config);
+
+            helpers.Write(
+                config.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.EEConfig.ModifiableAssemblies)].Offset, sizeof(uint)),
+                modifiableAssemblies);
+
+            return config.Address;
         }
 
         internal TargetPointer AddModule(string? path = null, string? fileName = null, string? simpleName = null, byte[]? simpleNameBytes = null, uint flags = 0)

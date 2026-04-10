@@ -25,6 +25,22 @@ public enum ModuleFlags
 }
 
 [Flags]
+public enum DebuggerAssemblyControlFlags : uint
+{
+    DACF_NONE = 0x00,
+    DACF_ALLOW_JIT_OPTS = 0x02,
+    DACF_ENC_ENABLED = 0x08,
+    DACF_CONTROL_FLAGS_MASK = 0x2E,
+}
+
+public enum ClrModifiableAssemblies : uint
+{
+    Unset = 0,
+    None = 1,
+    Debug = 2,
+}
+
+[Flags]
 public enum AssemblyIterationFlags
 {
     // load status flags
@@ -99,8 +115,8 @@ public interface ILoader : IContract
     TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
     IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 
-    uint GetDebuggerInfoBits(ModuleHandle handle) => throw new NotImplementedException();
-    void SetDebuggerInfoBits(ModuleHandle handle, uint newBits) => throw new NotImplementedException();
+    DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle) => throw new NotImplementedException();
+    void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

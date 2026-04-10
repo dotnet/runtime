@@ -183,6 +183,15 @@ internal partial class MockDescriptors
         ]
     };
 
+    internal static readonly TypeFields EEConfigFields = new TypeFields()
+    {
+        DataType = DataType.EEConfig,
+        Fields =
+        [
+            new(nameof(Data.EEConfig.ModifiableAssemblies), DataType.uint32),
+        ]
+    };
+
     private static readonly TypeFields ExceptionInfoFields = new TypeFields()
     {
         DataType = DataType.ExceptionInfo,

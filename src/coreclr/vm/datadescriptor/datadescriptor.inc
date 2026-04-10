@@ -1294,6 +1294,11 @@ CDAC_TYPE_FIELD(AuxiliarySymbolInfo, T_POINTER, Address, offsetof(VMAUXILIARYSYM
 CDAC_TYPE_FIELD(AuxiliarySymbolInfo, T_POINTER, Name, offsetof(VMAUXILIARYSYMBOLDEF, name))
 CDAC_TYPE_END(AuxiliarySymbolInfo)
 
+CDAC_TYPE_BEGIN(EEConfig)
+CDAC_TYPE_INDETERMINATE(EEConfig)
+CDAC_TYPE_FIELD(EEConfig, T_UINT32, ModifiableAssemblies, cdac_data<EEConfig>::ModifiableAssemblies)
+CDAC_TYPE_END(EEConfig)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -1344,6 +1349,7 @@ CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomainPtr)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
+CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)

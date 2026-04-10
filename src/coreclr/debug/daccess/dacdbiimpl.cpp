@@ -879,8 +879,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_DomainAsse
             hr = CORDBG_S_NOT_ALL_BITS_SET;
         }
     }
-    // Settings from the debugger take precedence over all other settings.
-    dwBits |= DACF_USER_OVERRIDE;
 
     // set flags. This will write back to the target
     pModule->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)dwBits);
