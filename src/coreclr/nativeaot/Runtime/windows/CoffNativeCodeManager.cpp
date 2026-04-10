@@ -830,6 +830,7 @@ bool CoffNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     return true;
 }
 
+#if defined(TARGET_ARM64)
 static bool HasPacInUnwindInfo(PTR_VOID pUnwindDataBlob, size_t unwindDataBlobSize)
 {
     PTR_uint8_t UnwindCodePtr = dac_cast<PTR_uint8_t>(pUnwindDataBlob);
