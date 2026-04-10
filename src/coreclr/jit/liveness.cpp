@@ -2331,8 +2331,8 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 {
     noway_assert(VarSetOps::IsSubset(m_compiler, keepAliveVars, life));
 
-    LIR::Range& blockRange                = LIR::AsRange(block);
-    GenTree*    firstNode                 = blockRange.FirstNode();
+    LIR::Range& blockRange = LIR::AsRange(block);
+    GenTree*    firstNode  = blockRange.FirstNode();
     if (firstNode == nullptr)
     {
         return;
