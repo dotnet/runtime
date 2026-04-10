@@ -755,6 +755,7 @@ void SHash<TRAITS>::AddOrReplace(element_t *table, count_t tableSize, const elem
             table[index] = element;
             m_tableCount++;
             m_tableOccupied++;
+            return;
         }
         else if (TRAITS::Equals(key, TRAITS::GetKey(current)))
         {
@@ -764,6 +765,7 @@ void SHash<TRAITS>::AddOrReplace(element_t *table, count_t tableSize, const elem
             }
 
             table[index] = element;
+            return;
         }
 
         if (increment == 0)

@@ -4293,7 +4293,6 @@ Label_MarkThreadAsSynced:
     // The CLR is not yet synced. We release the threadstore lock and return false.
     hldSuspendRuntimeInProgress.Release();
 
-    _ASSERTE(ThreadStore::HoldingThreadStore());
     return false;
 }
 

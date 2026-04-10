@@ -150,6 +150,7 @@ void InteropSyncBlockInfo::SetRawRCW(RCW* pRCW)
             {
                 // the RCW never existed or has been released
                 VolatileStore(&m_pRCW, (RCW *)0x1);
+                return;
             }
 
             if (((size_t)pOldRCW & 0x1) == 0x0)
@@ -158,6 +159,7 @@ void InteropSyncBlockInfo::SetRawRCW(RCW* pRCW)
                 if (InterlockedCompareExchangeT(&m_pRCW, (RCW *)0x1, pOldRCW) == pOldRCW)
                 {
                     // we made it
+                    return;
                 }
             }
 
