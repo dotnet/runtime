@@ -592,7 +592,7 @@ namespace System.StubHelpers
         }
     }
 
-    internal sealed class DateMarshaler : IArrayElementMarshaler<DateTime>
+    internal sealed class DateMarshaler : IArrayElementMarshaler<DateTime, DateMarshaler>
     {
         internal static double ConvertToNative(DateTime managedDate)
         {
@@ -604,21 +604,21 @@ namespace System.StubHelpers
             return DateTime.DoubleDateToTicks(nativeDate);
         }
 
-        static unsafe void IArrayElementMarshaler<DateTime>.ConvertToUnmanaged(ref DateTime managed, byte* unmanaged)
+        static unsafe void IArrayElementMarshaler<DateTime, DateMarshaler>.ConvertToUnmanaged(ref DateTime managed, byte* unmanaged)
         {
             Unsafe.WriteUnaligned(unmanaged, ConvertToNative(managed));
         }
 
-        static unsafe void IArrayElementMarshaler<DateTime>.ConvertToManaged(ref DateTime managed, byte* unmanaged)
+        static unsafe void IArrayElementMarshaler<DateTime, DateMarshaler>.ConvertToManaged(ref DateTime managed, byte* unmanaged)
         {
             managed = new DateTime(ConvertToManaged(Unsafe.ReadUnaligned<double>(unmanaged)));
         }
 
-        static unsafe void IArrayElementMarshaler<DateTime>.Free(byte* unmanaged)
+        static unsafe void IArrayElementMarshaler<DateTime, DateMarshaler>.Free(byte* unmanaged)
         {
         }
 
-        static unsafe nuint IArrayElementMarshaler<DateTime>.UnmanagedSize => (nuint)sizeof(double);
+        static unsafe nuint IArrayElementMarshaler<DateTime, DateMarshaler>.UnmanagedSize => (nuint)sizeof(double);
     }  // class DateMarshaler
 
 #if FEATURE_COMINTEROP
@@ -944,7 +944,7 @@ namespace System.StubHelpers
                 or TypeCode.Single
                 or TypeCode.Double => [elementType, typeof(StructureMarshaler<>).MakeGenericType(elementType)],
                 TypeCode.Object when elementType == typeof(nint) || elementType == typeof(nuint) => [elementType, typeof(StructureMarshaler<>).MakeGenericType(elementType)],
-                TypeCode.Char when !IsAnsi(dwFlags) => [typeof(char), typeof(StructureMarshaler<char>)],
+                TypeCode.Char when !IsAnsi(dwFlags) => [typeof(char), typeof(UnicodeCharArrayElementMarshaler)],
                 TypeCode.Char when IsAnsi(dwFlags) => [
                     typeof(char),
                     typeof(AnsiCharArrayElementMarshaler<,>).MakeGenericType([
@@ -985,7 +985,7 @@ namespace System.StubHelpers
 
             if (IsIn(dwFlags))
             {
-                arrayMarshalerMethods.convertContentsToNative.Invoke(pManagedHome, Pointer.Box(pNativeHome, typeof(byte*)));
+                arrayMarshalerMethods.convertContentsToNative.Invoke(null, pManagedHome, Pointer.Box(pNativeHome, typeof(byte*)));
             }
 
             if (IsOut(dwFlags))
@@ -1178,7 +1178,7 @@ namespace System.StubHelpers
             {
                 case BackPropAction.Array:
                     {
-                        arrayMarshalerMethods.convertContentsToManaged.Invoke(pManagedHome, pNativeHome);
+                        arrayMarshalerMethods.convertContentsToManaged.Invoke(null, pManagedHome, pNativeHome);
                         break;
                     }
 
@@ -1239,13 +1239,19 @@ namespace System.StubHelpers
         }
     }  // struct AsAnyMarshaler
 
-    internal interface IArrayElementMarshaler<T>
+    internal interface IArrayElementMarshaler<T, TSelf> where TSelf : IArrayElementMarshaler<T, TSelf>
     {
         static abstract unsafe void ConvertToUnmanaged(ref T managed, byte* unmanaged);
         static abstract unsafe void ConvertToManaged(ref T managed, byte* unmanaged);
         static abstract unsafe void Free(byte* unmanaged);
 
         static abstract nuint UnmanagedSize { get; }
+
+        // Space to allocate per element. Defaults to UnmanagedSize but may be larger
+        // when conversion can produce more bytes than the final native layout (e.g.
+        // ANSI char needs SystemMaxDBCSCharSize bytes during conversion but only
+        // occupies 1 byte in the native struct).
+        static virtual nuint AllocationSize => TSelf.UnmanagedSize;
     }
 
     // Constants for direction argument of struct marshalling stub.
@@ -1256,24 +1262,24 @@ namespace System.StubHelpers
         internal const int Free = 2;
     }
 
-    internal sealed unsafe class StructureMarshaler<T> : IArrayElementMarshaler<T> where T : notnull
+    internal sealed unsafe class StructureMarshaler<T> : IArrayElementMarshaler<T, StructureMarshaler<T>> where T : notnull
     {
-        static unsafe void IArrayElementMarshaler<T>.ConvertToManaged(ref T managed, byte* unmanaged)
+        static unsafe void IArrayElementMarshaler<T, StructureMarshaler<T>>.ConvertToManaged(ref T managed, byte* unmanaged)
         {
             ConvertToManaged(ref managed, unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
 
-        static unsafe void IArrayElementMarshaler<T>.ConvertToUnmanaged(ref T managed, byte* unmanaged)
+        static unsafe void IArrayElementMarshaler<T, StructureMarshaler<T>>.ConvertToUnmanaged(ref T managed, byte* unmanaged)
         {
             ConvertToUnmanaged(ref managed, unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
 
-        static unsafe void IArrayElementMarshaler<T>.Free(byte* unmanaged)
+        static unsafe void IArrayElementMarshaler<T, StructureMarshaler<T>>.Free(byte* unmanaged)
         {
             Free(ref Unsafe.NullRef<T>(), unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
 
-        static nuint IArrayElementMarshaler<T>.UnmanagedSize => (nuint)s_nativeSize;
+        static nuint IArrayElementMarshaler<T, StructureMarshaler<T>>.UnmanagedSize => (nuint)s_nativeSize;
 
         private static readonly int s_nativeSize;
 
@@ -1343,7 +1349,7 @@ namespace System.StubHelpers
         }
     }
 
-    internal sealed unsafe class LayoutClassMarshaler<T> : IArrayElementMarshaler<T> where T : notnull
+    internal sealed unsafe class LayoutClassMarshaler<T> : IArrayElementMarshaler<T, LayoutClassMarshaler<T>> where T : notnull
     {
         // We use a nested Methods class with properties that unwrap the TypeInitializationException
         // to ensure that users see a TypeLoadException if the type has a recursive native layout.
@@ -1486,25 +1492,37 @@ namespace System.StubHelpers
         private static nuint NativeSize
         {
             [MethodImpl(MethodImplOptions.NoInlining)]
-            get => Methods.NativeSize;
+            get
+            {
+                try
+                {
+                    return Methods.NativeSize;
+                }
+                catch (TypeInitializationException ex)
+                {
+                    ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
+                    // Unreachable
+                    return 0;
+                }
+            }
         }
 
-        static unsafe void IArrayElementMarshaler<T>.ConvertToManaged(ref T managed, byte* unmanaged)
+        static unsafe void IArrayElementMarshaler<T, LayoutClassMarshaler<T>>.ConvertToManaged(ref T managed, byte* unmanaged)
         {
             ConvertToManaged(managed, unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
 
-        static unsafe void IArrayElementMarshaler<T>.ConvertToUnmanaged(ref T managed, byte* unmanaged)
+        static unsafe void IArrayElementMarshaler<T, LayoutClassMarshaler<T>>.ConvertToUnmanaged(ref T managed, byte* unmanaged)
         {
             ConvertToUnmanaged(managed, unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
 
-        static unsafe void IArrayElementMarshaler<T>.Free(byte* unmanaged)
+        static unsafe void IArrayElementMarshaler<T, LayoutClassMarshaler<T>>.Free(byte* unmanaged)
         {
             Free(default, unmanaged, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
 
-        static nuint IArrayElementMarshaler<T>.UnmanagedSize => NativeSize;
+        static nuint IArrayElementMarshaler<T, LayoutClassMarshaler<T>>.UnmanagedSize => NativeSize;
     }
 
     // Marshaller for layout classes and boxed structs.
@@ -1554,7 +1572,7 @@ namespace System.StubHelpers
         }
     }
 
-    internal sealed class VariantBoolMarshaler : IArrayElementMarshaler<bool>
+    internal sealed class VariantBoolMarshaler : IArrayElementMarshaler<bool, VariantBoolMarshaler>
     {
         private const ushort VARIANT_TRUE = unchecked((ushort)-1);
         private const ushort VARIANT_FALSE = 0;
@@ -1574,10 +1592,10 @@ namespace System.StubHelpers
             // Nothing to free for VARIANT_BOOL.
         }
 
-        static nuint IArrayElementMarshaler<bool>.UnmanagedSize => (nuint)sizeof(short);
+        static nuint IArrayElementMarshaler<bool, VariantBoolMarshaler>.UnmanagedSize => (nuint)sizeof(short);
     }
 
-    internal sealed class BoolMarshaler<TUnmanaged> : IArrayElementMarshaler<bool> where TUnmanaged : unmanaged, INumberBase<TUnmanaged>
+    internal sealed class BoolMarshaler<TUnmanaged> : IArrayElementMarshaler<bool, BoolMarshaler<TUnmanaged>> where TUnmanaged : unmanaged, INumberBase<TUnmanaged>
     {
         public static unsafe void ConvertToUnmanaged(ref bool managed, byte* unmanaged)
         {
@@ -1597,10 +1615,10 @@ namespace System.StubHelpers
             // Nothing to free for boolean values.
         }
 
-        static unsafe nuint IArrayElementMarshaler<bool>.UnmanagedSize => (nuint)sizeof(TUnmanaged);
+        static unsafe nuint IArrayElementMarshaler<bool, BoolMarshaler<TUnmanaged>>.UnmanagedSize => (nuint)sizeof(TUnmanaged);
     }
 
-    internal sealed class LPWSTRMarshaler : IArrayElementMarshaler<string?>
+    internal sealed class LPWSTRMarshaler : IArrayElementMarshaler<string?, LPWSTRMarshaler>
     {
         public static unsafe void ConvertToUnmanaged(ref string? managed, byte* unmanaged)
         {
@@ -1639,10 +1657,10 @@ namespace System.StubHelpers
             }
         }
 
-        static unsafe nuint IArrayElementMarshaler<string?>.UnmanagedSize => (nuint)sizeof(IntPtr);
+        static unsafe nuint IArrayElementMarshaler<string?, LPWSTRMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
-    internal sealed class AnsiCharArrayElementMarshaler<TBestFit, TThrowOnUnmappable> : IArrayElementMarshaler<char>
+    internal sealed class AnsiCharArrayElementMarshaler<TBestFit, TThrowOnUnmappable> : IArrayElementMarshaler<char, AnsiCharArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>
         where TBestFit : IMarshalerOption
         where TThrowOnUnmappable : IMarshalerOption
     {
@@ -1660,10 +1678,31 @@ namespace System.StubHelpers
         {
         }
 
-        static nuint IArrayElementMarshaler<char>.UnmanagedSize => (nuint)Marshal.SystemMaxDBCSCharSize;
+        static nuint IArrayElementMarshaler<char, AnsiCharArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>.UnmanagedSize => sizeof(byte);
+
+        static nuint IArrayElementMarshaler<char, AnsiCharArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>.AllocationSize => (nuint)Marshal.SystemMaxDBCSCharSize;
     }
 
-    internal sealed class LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable> : IArrayElementMarshaler<string?>
+    internal sealed class UnicodeCharArrayElementMarshaler : IArrayElementMarshaler<char, UnicodeCharArrayElementMarshaler>
+    {
+        public static unsafe void ConvertToUnmanaged(ref char managed, byte* unmanaged)
+        {
+            *(char*)unmanaged = managed;
+        }
+
+        public static unsafe void ConvertToManaged(ref char managed, byte* unmanaged)
+        {
+            managed = *(char*)unmanaged;
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+        }
+
+        static nuint IArrayElementMarshaler<char, UnicodeCharArrayElementMarshaler>.UnmanagedSize => sizeof(char);
+    }
+
+    internal sealed class LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable> : IArrayElementMarshaler<string?, LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>
         where TBestFit : IMarshalerOption
         where TThrowOnUnmappable : IMarshalerOption
     {
@@ -1687,10 +1726,10 @@ namespace System.StubHelpers
             }
         }
 
-        static unsafe nuint IArrayElementMarshaler<string?>.UnmanagedSize => (nuint)sizeof(IntPtr);
+        static unsafe nuint IArrayElementMarshaler<string?, LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
-    internal sealed class BSTRArrayElementMarshaler : IArrayElementMarshaler<string?>
+    internal sealed class BSTRArrayElementMarshaler : IArrayElementMarshaler<string?, BSTRArrayElementMarshaler>
     {
         public static unsafe void ConvertToUnmanaged(ref string? managed, byte* unmanaged)
         {
@@ -1711,11 +1750,11 @@ namespace System.StubHelpers
             }
         }
 
-        static unsafe nuint IArrayElementMarshaler<string?>.UnmanagedSize => (nuint)sizeof(IntPtr);
+        static unsafe nuint IArrayElementMarshaler<string?, BSTRArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
 #if FEATURE_COMINTEROP
-    internal sealed class CurrencyArrayElementMarshaler : IArrayElementMarshaler<decimal>
+    internal sealed class CurrencyArrayElementMarshaler : IArrayElementMarshaler<decimal, CurrencyArrayElementMarshaler>
     {
         public static unsafe void ConvertToUnmanaged(ref decimal managed, byte* unmanaged)
         {
@@ -1731,11 +1770,11 @@ namespace System.StubHelpers
         {
         }
 
-        static unsafe nuint IArrayElementMarshaler<decimal>.UnmanagedSize => (nuint)sizeof(Currency);
+        static unsafe nuint IArrayElementMarshaler<decimal, CurrencyArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(Currency);
     }
 
     [SupportedOSPlatform("windows")]
-    internal sealed class InterfaceArrayElementMarshaler<TIsDispatch> : IArrayElementMarshaler<object?>
+    internal sealed class InterfaceArrayElementMarshaler<TIsDispatch> : IArrayElementMarshaler<object?, InterfaceArrayElementMarshaler<TIsDispatch>>
         where TIsDispatch : IMarshalerOption
     {
         public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
@@ -1776,11 +1815,11 @@ namespace System.StubHelpers
             }
         }
 
-        static unsafe nuint IArrayElementMarshaler<object?>.UnmanagedSize => (nuint)sizeof(IntPtr);
+        static unsafe nuint IArrayElementMarshaler<object?, InterfaceArrayElementMarshaler<TIsDispatch>>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
     [SupportedOSPlatform("windows")]
-    internal sealed class TypedInterfaceArrayElementMarshaler<T> : IArrayElementMarshaler<T?>
+    internal sealed class TypedInterfaceArrayElementMarshaler<T> : IArrayElementMarshaler<T?, TypedInterfaceArrayElementMarshaler<T>>
         where T : class
     {
         public static unsafe void ConvertToUnmanaged(ref T? managed, byte* unmanaged)
@@ -1817,11 +1856,11 @@ namespace System.StubHelpers
             }
         }
 
-        static unsafe nuint IArrayElementMarshaler<T?>.UnmanagedSize => (nuint)sizeof(IntPtr);
+        static unsafe nuint IArrayElementMarshaler<T?, TypedInterfaceArrayElementMarshaler<T>>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
     [SupportedOSPlatform("windows")]
-    internal sealed class HeterogeneousInterfaceArrayElementMarshaler : IArrayElementMarshaler<object?>
+    internal sealed class HeterogeneousInterfaceArrayElementMarshaler : IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>
     {
         public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
         {
@@ -1860,10 +1899,10 @@ namespace System.StubHelpers
             }
         }
 
-        static unsafe nuint IArrayElementMarshaler<object?>.UnmanagedSize => (nuint)sizeof(IntPtr);
+        static unsafe nuint IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
-    internal sealed class VariantArrayElementMarshaler : IArrayElementMarshaler<object?>
+    internal sealed class VariantArrayElementMarshaler : IArrayElementMarshaler<object?, VariantArrayElementMarshaler>
     {
         public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
         {
@@ -1880,7 +1919,7 @@ namespace System.StubHelpers
             ObjectMarshaler.ClearNative((IntPtr)unmanaged);
         }
 
-        static unsafe nuint IArrayElementMarshaler<object?>.UnmanagedSize => (nuint)sizeof(ComVariant);
+        static unsafe nuint IArrayElementMarshaler<object?, VariantArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(ComVariant);
     }
 #endif // FEATURE_COMINTEROP
 
@@ -2255,7 +2294,7 @@ namespace System.StubHelpers
             }
         }
 
-        public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(T[] managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T>
+        public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(T[] managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
         {
             for (int i = 0; i < managed.Length; i++)
             {
@@ -2264,7 +2303,7 @@ namespace System.StubHelpers
             }
         }
 
-        public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(T[] managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T>
+        public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(T[] managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
         {
             for (int i = 0; i < managed.Length; i++)
             {
@@ -2290,7 +2329,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void FreeArrayContents<T, TMarshaler>(byte* pNative, int length) where TMarshaler : IArrayElementMarshaler<T>
+        internal static unsafe void FreeArrayContents<T, TMarshaler>(byte* pNative, int length) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
         {
             for (int i = 0; i < length; i++)
             {
@@ -2299,8 +2338,8 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe byte* ConvertArraySpaceToNative<T, TMarshaler>(T[]? managed)
-            where TMarshaler : IArrayElementMarshaler<T>
+        public static unsafe byte* ConvertArraySpaceToNative<T, TMarshaler>(T[]? managed)
+            where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
         {
             if (managed is null)
             {
@@ -2308,12 +2347,15 @@ namespace System.StubHelpers
             }
             else
             {
-                return (byte*)Marshal.AllocCoTaskMem(checked(managed.Length * (int)TMarshaler.UnmanagedSize));
+                int nativeBytes = checked(managed.Length * (int)TMarshaler.AllocationSize);
+                byte* pNative = (byte*)Marshal.AllocCoTaskMem(nativeBytes);
+                NativeMemory.Clear(pNative, (nuint)nativeBytes);
+                return pNative;
             }
         }
 
         internal static unsafe T[]? ConvertArraySpaceToManaged<T, TMarshaler>(byte* pNativeHome, int cElements)
-            where TMarshaler : IArrayElementMarshaler<T>
+            where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
         {
             if (pNativeHome == null)
             {
@@ -2326,7 +2368,7 @@ namespace System.StubHelpers
         }
 
         internal static unsafe void ClearArrayNative<T, TMarshaler>(byte* pNativeHome, int cElements)
-            where TMarshaler : IArrayElementMarshaler<T>
+            where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
         {
             if (pNativeHome != null)
             {

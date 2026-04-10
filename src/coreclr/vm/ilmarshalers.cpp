@@ -1115,11 +1115,9 @@ void ILValueClassMarshaler::EmitClearNative(ILCodeStream * pslILEmit)
 
     EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__FREE, m_pargs->m_pMT)), 3, 0);
 }
 
 
@@ -1131,7 +1129,7 @@ void ILValueClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 3, 0);
 }
 
 void ILValueClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -2328,10 +2326,9 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 3, 0);
 
     if (emittedTypeCheck)
     {
@@ -2387,10 +2384,9 @@ void ILLayoutClassPtrMarshaler::EmitClearNativeContents(ILCodeStream * pslILEmit
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE, m_pargs->m_pMT)), 3, 0);
 
     if (emittedTypeCheck)
     {
@@ -2536,7 +2532,7 @@ void ILLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 3, 0);
 
     pslILEmit->EmitLabel(pNullRefLabel);
 }
@@ -2568,7 +2564,7 @@ void ILLayoutClassMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshalingMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE, m_pargs->m_pMT)), 3, 0);
 }
 
 
@@ -4136,7 +4132,7 @@ void ILNativeArrayMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit
 
     MethodDesc* pMD = GetInstantiatedArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_SPACE_TO_MANAGED);
 
-    EmitLoadNativeHomeAddr(pslILEmit);
+    EmitLoadNativeValue(pslILEmit);
 
     // Dynamically calculate element count using SizeParamIndex argument
     EmitLoadElementCount(pslILEmit);
@@ -4175,9 +4171,9 @@ void ILNativeArrayMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit
 
     MethodDesc* pMD = GetInstantiatedArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_SPACE_TO_NATIVE);
 
-    EmitLoadManagedHomeAddr(pslILEmit);
-    EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 0);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 1, 1);
+    EmitStoreNativeValue(pslILEmit);
 }
 
 void ILNativeArrayMarshaler::EmitClearNative(ILCodeStream* pslILEmit)
@@ -4186,7 +4182,7 @@ void ILNativeArrayMarshaler::EmitClearNative(ILCodeStream* pslILEmit)
 
     MethodDesc* pMD = GetInstantiatedArrayMethod(METHOD__STUBHELPERS__CLEAR_ARRAY_NATIVE);
 
-    EmitLoadNativeHomeAddr(pslILEmit);
+    EmitLoadNativeValue(pslILEmit);
     EmitLoadNativeSize(pslILEmit);
     pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 0);
 }
@@ -4212,6 +4208,39 @@ void ILNativeArrayMarshaler::EmitLoadNativeSize(ILCodeStream* pslILEmit)
         pslILEmit->EmitCONV_OVF_I4();
         pslILEmit->EmitLabel(pManagedHomeIsNull);   // Keep the 0 on the stack
     }
+}
+
+void ILNativeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc* pMD = GetInstantiatedArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED);
+
+    EmitLoadManagedValue(pslILEmit);
+    EmitLoadNativeValue(pslILEmit);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 0);
+}
+
+void ILNativeArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc* pMD = GetInstantiatedArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED);
+
+    EmitLoadManagedValue(pslILEmit);
+    EmitLoadNativeValue(pslILEmit);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 0);
+}
+
+void ILNativeArrayMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc* pMD = GetInstantiatedArrayMethod(METHOD__STUBHELPERS__FREE_ARRAY_CONTENTS);
+
+    EmitLoadNativeValue(pslILEmit);
+    EmitLoadNativeSize(pslILEmit);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 0);
 }
 
 void ILArrayMarshalerBase::EmitClearNativeContents(ILCodeStream* pslILEmit)
@@ -4243,7 +4272,7 @@ void ILNativeArrayMarshaler::EmitNewSavedSizeArgLocal(ILCodeStream* pslILEmit)
     pslILEmit->EmitSTLOC(m_dwSavedSizeArg);
 }
 
-MethodTable* ILArrayMarshalerBase::GetMarshalerMT()
+void ILArrayMarshalerBase::GetMarshalerAndElementTypes(MethodTable** ppMarshalerMT, TypeHandle* pElementType)
 {
     STANDARD_VM_CONTRACT;
 
@@ -4253,12 +4282,24 @@ MethodTable* ILArrayMarshalerBase::GetMarshalerMT()
     bool bestFit = mops.bestfitmapping != 0;
     bool throwOnUnmappable = mops.throwonunmappablechar != 0;
 
+    // Start from the managed element type - this is the authoritative source.
+    MethodTable* pElementMT = mops.methodTable;
+
+    // Enums marshal as their underlying primitive type.
+    if (pElementMT->IsEnum())
+    {
+        pElementMT = CoreLibBinder::GetElementType(pElementMT->GetInternalCorElementType());
+    }
+
+    TypeHandle thElement(pElementMT);
+
     MethodTable* pEnabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_ENABLED);
     MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
     MethodTable* pBestFitMT = bestFit ? pEnabledMT : pDisabledMT;
     MethodTable* pThrowOnUnmappableMT = throwOnUnmappable ? pEnabledMT : pDisabledMT;
 
-    // Handle non-VARTYPE marshalers identified by CorNativeType.
+    // Handle explicit CorNativeType overrides first. These override the default
+    // marshaling for the element type (e.g. bool as NATIVE_TYPE_BOOLEAN vs VT_BOOL).
     CorNativeType nt = mops.elementNativeType;
     if (nt != NATIVE_TYPE_DEFAULT)
     {
@@ -4266,124 +4307,122 @@ MethodTable* ILArrayMarshalerBase::GetMarshalerMT()
         {
         case NATIVE_TYPE_BOOLEAN:
         {
-            _ASSERTE(m_pargs->m_pMarshalInfo->GetArrayElementTypeHandle() == TypeHandle(CoreLibBinder::GetClass(CLASS__BOOLEAN)));
+            _ASSERTE(thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__BOOLEAN)));
             TypeHandle thInt32 = CoreLibBinder::GetClass(CLASS__INT32);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__BOOL_MARSHALER)).Instantiate(Instantiation(&thInt32, 1)).AsMethodTable();
+            *pElementType = thElement;
+            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__BOOL_MARSHALER)).Instantiate(Instantiation(&thInt32, 1)).AsMethodTable();
+            return;
         }
 
         case NATIVE_TYPE_I1:
         {
-            _ASSERTE(m_pargs->m_pMarshalInfo->GetArrayElementTypeHandle() == TypeHandle(CoreLibBinder::GetClass(CLASS__BOOLEAN)));
+            _ASSERTE(thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__BOOLEAN)));
             TypeHandle thByte = CoreLibBinder::GetClass(CLASS__BYTE);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__BOOL_MARSHALER)).Instantiate(Instantiation(&thByte, 1)).AsMethodTable();
+            *pElementType = thElement;
+            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__BOOL_MARSHALER)).Instantiate(Instantiation(&thByte, 1)).AsMethodTable();
+            return;
         }
 
         case NATIVE_TYPE_U1:
         {
-            _ASSERTE(m_pargs->m_pMarshalInfo->GetArrayElementTypeHandle() == TypeHandle(CoreLibBinder::GetClass(CLASS__CHAR)));
+            _ASSERTE(thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__CHAR)));
             TypeHandle thArgs[2] = { TypeHandle(pBestFitMT), TypeHandle(pThrowOnUnmappableMT) };
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__ANSICHAR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
+            *pElementType = thElement;
+            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__ANSICHAR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
+            return;
         }
 
         default:
             _ASSERTE(!"Unsupported CorNativeType for ILArrayMarshalerBase");
             COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-            return NULL;
+            return;
         }
     }
 
+    // Use the VT only to select the marshaler pattern; element type comes from the
+    // managed side so enums, char, etc. are handled naturally.
     switch (vt)
     {
     case VT_I1:
-    {
-        TypeHandle thElement = CoreLibBinder::GetClass(CLASS__SBYTE);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
-    }
-
     case VT_UI1:
-    {
-        TypeHandle thElement = CoreLibBinder::GetClass(CLASS__BYTE);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
-    }
-
     case VT_I2:
+    case VT_I4:
+    case VT_INT:
+    case VT_UI4:
+    case VT_UINT:
+    case VT_ERROR:
+    case VT_I8:
+    case VT_UI8:
+    case VT_R4:
+    case VT_R8:
+    case VT_DECIMAL:
     {
-        TypeHandle thElement = CoreLibBinder::GetClass(CLASS__INT16);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+        *pElementType = thElement;
+        *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+        return;
     }
 
     case VT_UI2:
     {
-        TypeHandle thElement = CoreLibBinder::GetClass(CLASS__UINT16);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
-    }
-
-    case VT_I4:
-    case VT_INT:
-    {
-        TypeHandle thElement = CoreLibBinder::GetClass(CLASS__INT32);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
-    }
-
-    case VT_UI4:
-    case VT_UINT:
-    case VT_ERROR:
-    {
-        TypeHandle thElement = CoreLibBinder::GetClass(CLASS__UINT32);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
-    }
-
-    case VT_I8:
-    {
-        TypeHandle thElement = CoreLibBinder::GetClass(CLASS__INT64);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
-    }
-
-    case VT_UI8:
-    {
-        TypeHandle thElement = CoreLibBinder::GetClass(CLASS__UINT64);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
-    }
-
-    case VT_R4:
-    {
-        TypeHandle thElement = CoreLibBinder::GetClass(CLASS__SINGLE);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
-    }
-
-    case VT_R8:
-    {
-        TypeHandle thElement = CoreLibBinder::GetClass(CLASS__DOUBLE);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
-    }
-
-    case VT_DECIMAL:
-    {
-        TypeHandle thElement = CoreLibBinder::GetClass(CLASS__DECIMAL);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+        // System.Char arrays use a dedicated marshaler; other VT_UI2 types (UInt16)
+        // use the standard StructureMarshaler.
+        if (thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__CHAR)))
+        {
+            *pElementType = thElement;
+            *ppMarshalerMT = CoreLibBinder::GetClass(CLASS__UNICODECHAR_ARRAY_ELEMENT_MARSHALER);
+        }
+        else
+        {
+            *pElementType = thElement;
+            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+        }
+        return;
     }
 
     case VT_BOOL:
-        return CoreLibBinder::GetClass(CLASS__VARIANT_BOOL_MARSHALER);
+    {
+        _ASSERTE(thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__BOOLEAN)));
+        *pElementType = thElement;
+        *ppMarshalerMT = CoreLibBinder::GetClass(CLASS__VARIANT_BOOL_MARSHALER);
+        return;
+    }
 
     case VT_DATE:
-        return CoreLibBinder::GetClass(CLASS__DATEMARSHALER);
+    {
+        *pElementType = thElement;
+        *ppMarshalerMT = CoreLibBinder::GetClass(CLASS__DATEMARSHALER);
+        return;
+    }
 
     case VT_LPWSTR:
-        return CoreLibBinder::GetClass(CLASS__LPWSTR_MARSHALER);
+    {
+        *pElementType = thElement;
+        *ppMarshalerMT = CoreLibBinder::GetClass(CLASS__LPWSTR_MARSHALER);
+        return;
+    }
 
     case VT_LPSTR:
     {
         TypeHandle thArgs[2] = { TypeHandle(pBestFitMT), TypeHandle(pThrowOnUnmappableMT) };
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__LPSTR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
+        *pElementType = thElement;
+        *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__LPSTR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
+        return;
     }
 
     case VT_BSTR:
-        return CoreLibBinder::GetClass(CLASS__BSTR_ARRAY_ELEMENT_MARSHALER);
+    {
+        *pElementType = thElement;
+        *ppMarshalerMT = CoreLibBinder::GetClass(CLASS__BSTR_ARRAY_ELEMENT_MARSHALER);
+        return;
+    }
 
 #ifdef FEATURE_COMINTEROP
     case VT_CY:
-        return CoreLibBinder::GetClass(CLASS__CURRENCY_ARRAY_ELEMENT_MARSHALER);
+    {
+        *pElementType = thElement;
+        *ppMarshalerMT = CoreLibBinder::GetClass(CLASS__CURRENCY_ARRAY_ELEMENT_MARSHALER);
+        return;
+    }
 
     case VT_UNKNOWN:
     case VT_DISPATCH:
@@ -4392,30 +4431,39 @@ MethodTable* ILArrayMarshalerBase::GetMarshalerMT()
         if (arrayElementTypeHandle == TypeHandle(g_pObjectClass))
         {
             TypeHandle thDispatch(vt == VT_DISPATCH ? pEnabledMT : pDisabledMT);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDispatch, 1)).AsMethodTable();
+            *pElementType = TypeHandle(g_pObjectClass);
+            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDispatch, 1)).AsMethodTable();
         }
         else
         {
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&arrayElementTypeHandle, 1)).AsMethodTable();
+            *pElementType = arrayElementTypeHandle;
+            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&arrayElementTypeHandle, 1)).AsMethodTable();
         }
+        return;
     }
 
     case VT_VARIANT:
-        return CoreLibBinder::GetClass(CLASS__VARIANT_ARRAY_ELEMENT_MARSHALER);
+    {
+        *pElementType = TypeHandle(g_pObjectClass);
+        *ppMarshalerMT = CoreLibBinder::GetClass(CLASS__VARIANT_ARRAY_ELEMENT_MARSHALER);
+        return;
+    }
 #endif // FEATURE_COMINTEROP
 
     case VT_RECORD:
     {
-        TypeHandle thElement(mops.methodTable);
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+        *pElementType = thElement;
+        *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+        return;
     }
 
     default:
         _ASSERTE(!"Unsupported VT for ILArrayMarshalerBase");
         COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-        return NULL;
+        return;
     }
 }
+
 
 MethodDesc* ILArrayMarshalerBase::GetInstantiatedArrayMethod(BinderMethodID methodId)
 {
@@ -4423,15 +4471,13 @@ MethodDesc* ILArrayMarshalerBase::GetInstantiatedArrayMethod(BinderMethodID meth
 
     MethodDesc* pGenericMD = CoreLibBinder::GetMethod(methodId);
 
-    CREATE_MARSHALER_CARRAY_OPERANDS mops;
-    m_pargs->m_pMarshalInfo->GetMops(&mops);
+    // Get both the element type and marshaler type from a single source
+    // to guarantee they are consistent (e.g. enums map to their underlying type).
+    TypeHandle thElementType;
+    MethodTable* pMarshalerMT;
+    GetMarshalerAndElementTypes(&pMarshalerMT, &thElementType);
 
-    // Determine the managed element type T from the array's element MethodTable.
-    TypeHandle thElementType(mops.methodTable);
-
-    // Determine the marshaler type TMarshaler.
-    TypeHandle thMarshalerType(GetMarshalerMT());
-
+    TypeHandle thMarshalerType(pMarshalerMT);
     TypeHandle thArgs[2] = { thElementType, thMarshalerType };
 
     MethodDesc* pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
