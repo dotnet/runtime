@@ -1776,6 +1776,8 @@ HCIMPLEND
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
+#ifdef FEATURE_PGO
+
 static unsigned HandleHistogramProfileRand()
 {
     // Generate a random number (xorshift32)
@@ -2178,6 +2180,8 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
     InterlockedAdd64(pCounter, delta);
 }
 HCIMPLEND
+
+#endif // FEATURE_PGO
 
 //========================================================================
 //
