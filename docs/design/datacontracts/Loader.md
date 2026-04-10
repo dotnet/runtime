@@ -197,11 +197,6 @@ enum ClrModifiableAssemblies : uint
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
 | `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
 | `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
-| `WebcilHeader` | `CoffSections` | Number of COFF sections in the Webcil image |
-| `WebcilSectionHeader` | `VirtualSize` | Virtual size of the section |
-| `WebcilSectionHeader` | `VirtualAddress` | RVA of the section |
-| `WebcilSectionHeader` | `SizeOfRawData` | Size of the section's raw data |
-| `WebcilSectionHeader` | `PointerToRawData` | File offset to the section's raw data |
 | `EEConfig` | `ModifiableAssemblies` | Controls Edit and Continue support (ClrModifiableAssemblies enum) |
 
 
@@ -514,9 +509,10 @@ uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
         throw new InvalidOperationException("Negative RVA in Webcil image.");
 
     TargetPointer headerBase = imageLayout.Base;
+    // The webcil specification is found at docs/design/mono/webcil.md
     Data.WebcilHeader webcilHeader = // read WebcilHeader at headerBase
-    uint webcilHeaderSize = /* sizeof(WebcilHeader) from type info */;
-    uint webcilSectionSize = /* sizeof(WebcilSectionHeader) from type info */;
+    uint webcilHeaderSize = /* sizeof(WebcilHeader) + 4 if the VersionMajor of the header is 1 or greater */; // Size is defined in webcil spec
+    uint webcilSectionSize = /* sizeof(WebcilSectionHeader) */; // Size is defined in webcil spec
 
     ushort numSections = webcilHeader.CoffSections;
     if (numSections == 0 || numSections > MaxWebcilSections)

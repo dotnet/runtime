@@ -12,7 +12,7 @@ internal sealed class Array : IData<Array>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Array);
 
-        NumComponents = target.Read<uint>(address + (ulong)type.Fields[Constants.FieldNames.Array.NumComponents].Offset);
+        NumComponents = target.ReadField<uint>(address, type, Constants.FieldNames.Array.NumComponents);
         DataPointer = address + type.Size!.Value;
     }
 

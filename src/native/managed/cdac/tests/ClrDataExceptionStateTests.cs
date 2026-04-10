@@ -18,16 +18,14 @@ public unsafe class ExceptionStateTests
     {
         TargetPointer exceptionObjectAddr = new TargetPointer(0x5000);
         TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        var allocator = builder.CreateAllocator(0x1_0000, 0x2_0000);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        var allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x1_0000, 0x2_0000);
 
         MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
         helpers.WritePointer(handleFragment.Data, exceptionObjectAddr);
-        builder.AddHeapFragment(handleFragment);
+        targetBuilder.MemoryBuilder.AddHeapFragment(handleFragment);
 
         TargetPointer thrownObjectHandle = new TargetPointer(handleFragment.Address);
-
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget);
 
         var mockException = new Mock<IException>();
         mockException.Setup(e => e.GetExceptionData(exceptionObjectAddr)).Returns(new ExceptionData(
@@ -44,9 +42,10 @@ public unsafe class ExceptionStateTests
         if (messageAddr != TargetPointer.Null && messageString is not null)
             mockObject.Setup(o => o.GetStringValue(messageAddr)).Returns(messageString);
 
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.Exception == mockException.Object
-                && c.Object == mockObject.Object));
+        var target = targetBuilder
+            .AddMockContract(mockException)
+            .AddMockContract(mockObject)
+            .Build();
 
         return (target, thrownObjectHandle);
     }
@@ -90,8 +89,10 @@ public unsafe class ExceptionStateTests
             LastThrownObjectHandle: lastThrownObjectHandle,
             NextThread: TargetPointer.Null));
 
-        var target = new TestPlaceholderTarget(arch, (ulong _, Span<byte> _) => -1);
-        target.SetContracts(Mock.Of<ContractRegistry>(c => c.Thread == mockThread.Object));
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((ulong _, Span<byte> _) => -1)
+            .AddMockContract(mockThread)
+            .Build();
 
         IXCLRDataTask task = new ClrDataTask(threadAddr, target, null);
         return (target, task);
@@ -365,8 +366,10 @@ public unsafe class ExceptionStateTests
         var mockException = new Mock<IException>();
         SetupGetNestedExceptionInfo(mockException, previousExInfoAddr, nextNestedException, prevThrownObjectHandle);
 
-        var target = new TestPlaceholderTarget(arch, (ulong _, Span<byte> _) => -1);
-        target.SetContracts(Mock.Of<ContractRegistry>(c => c.Exception == mockException.Object));
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((ulong _, Span<byte> _) => -1)
+            .AddMockContract(mockException)
+            .Build();
 
         IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
             target,
@@ -398,8 +401,10 @@ public unsafe class ExceptionStateTests
         SetupGetNestedExceptionInfo(mockException, firstNestedAddr, secondNestedAddr, firstHandle);
         SetupGetNestedExceptionInfo(mockException, secondNestedAddr, TargetPointer.Null, secondHandle);
 
-        var target = new TestPlaceholderTarget(arch, (ulong _, Span<byte> _) => -1);
-        target.SetContracts(Mock.Of<ContractRegistry>(c => c.Exception == mockException.Object));
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((ulong _, Span<byte> _) => -1)
+            .AddMockContract(mockException)
+            .Build();
 
         IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
             target,
@@ -440,15 +445,14 @@ public unsafe class ExceptionStateTests
         TargetPointer threadAddr = new TargetPointer(0x1000);
 
         TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        var allocator = builder.CreateAllocator(0x1_0000, 0x2_0000);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        var allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x1_0000, 0x2_0000);
 
         MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "LastThrownObjectHandle");
         helpers.WritePointer(handleFragment.Data, exceptionObjectAddr);
-        builder.AddHeapFragment(handleFragment);
+        targetBuilder.MemoryBuilder.AddHeapFragment(handleFragment);
         TargetPointer lastThrownObjectHandle = new TargetPointer(handleFragment.Address);
 
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget);
         var mockThread = new Mock<IThread>();
         mockThread.Setup(t => t.GetThreadData(threadAddr)).Returns(new ThreadData(
             ThreadAddress: threadAddr,
@@ -477,10 +481,11 @@ public unsafe class ExceptionStateTests
 
         var mockObject = new Mock<IObject>();
         mockObject.Setup(o => o.GetStringValue(messageAddr)).Returns(expectedMessage);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.Thread == mockThread.Object
-                && c.Exception == mockException.Object
-                && c.Object == mockObject.Object));
+        var target = targetBuilder
+            .AddMockContract(mockThread)
+            .AddMockContract(mockException)
+            .AddMockContract(mockObject)
+            .Build();
 
         IXCLRDataTask task = new ClrDataTask(threadAddr, target, null);
         return (task, expectedMessage);

@@ -333,10 +333,20 @@ private:
 
     FileLoadLock(PEFileListLock* pLock, PEAssembly* pPEAssembly);
 
-    static void HolderLeave(FileLoadLock *pThis);
-
 public:
-    typedef Wrapper<FileLoadLock *, DoNothing, FileLoadLock::HolderLeave> Holder;
+    struct HolderTraits final
+    {
+        using Type = FileLoadLock*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type pThis)
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (pThis != NULL)
+                pThis->Leave();
+        }
+    };
+
+    using Holder = LifetimeHolder<HolderTraits>;
 
 };
 
