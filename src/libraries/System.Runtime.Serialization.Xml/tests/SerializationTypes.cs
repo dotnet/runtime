@@ -1766,3 +1766,9 @@ public class DateTimeOffsetIXmlSerializableContainer : IXmlSerializable
         reader.ReadEndElement();
     }
 }
+
+public class TypeWithXmlElementMemberAndSibling
+{
+    public XmlElement Description { get; set; }
+    public string Name { get; set; }
+}

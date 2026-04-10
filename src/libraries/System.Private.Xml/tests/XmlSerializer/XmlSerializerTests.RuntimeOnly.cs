@@ -3666,4 +3666,15 @@ public static partial class XmlSerializerTests
         var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\"?><PrimiveAttributeTestDerived xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">5</PrimiveAttributeTestDerived>");
         Assert.Equal(value.Number, actual.Number);
     }
+
+    [Theory]
+    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description><p>text</p></Description><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test")]
+    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description /><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test")]
+    [InlineData(@"<TypeWithXmlElementMemberAndSibling xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Description/><Name>Test</Name></TypeWithXmlElementMemberAndSibling>", "Test")]
+    public static void Xml_XmlElementMember_EmptyElement_SiblingNotConsumed(string xml, string expectedName)
+    {
+        var serializer = new XmlSerializer(typeof(TypeWithXmlElementMemberAndSibling));
+        TypeWithXmlElementMemberAndSibling obj = (TypeWithXmlElementMemberAndSibling)serializer.Deserialize(new StringReader(xml));
+        Assert.Equal(expectedName, obj.Name);
+    }
 }
