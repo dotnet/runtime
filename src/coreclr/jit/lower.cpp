@@ -10420,6 +10420,51 @@ static bool IsStoreCoalescingInvariantNode(Compiler* compiler, GenTree* node, bo
 }
 
 //------------------------------------------------------------------------
+// TryGetStoreCoalescingConstantBits: get the raw bits for a constant used by store
+//    coalescing.
+//
+// Arguments:
+//    value - the constant node
+//    bits  - [out] the raw constant bits
+//
+// Return Value:
+//    true if the constant can participate in store coalescing; otherwise false.
+//
+static bool TryGetStoreCoalescingConstantBits(GenTree* value, size_t* bits)
+{
+    assert(bits != nullptr);
+    *bits = 0;
+
+    if (value->IsCnsIntOrI())
+    {
+        *bits = static_cast<size_t>(value->AsIntCon()->IconValue());
+        return true;
+    }
+
+    if (value->IsCnsFltOrDbl())
+    {
+        if (value->TypeIs(TYP_FLOAT))
+        {
+            float floatCns = static_cast<float>(value->AsDblCon()->DconValue());
+            memcpy(bits, &floatCns, sizeof(floatCns));
+            return true;
+        }
+
+#ifdef TARGET_64BIT
+        // This helper returns bits through size_t, so only 64-bit targets can carry the full payload of a double.
+        // That also matches the current coalescing surface: double-to-integer store retyping only matters when the
+        // resulting 8-byte integer store is supported.
+        assert(value->TypeIs(TYP_DOUBLE));
+        double doubleCns = value->AsDblCon()->DconValue();
+        memcpy(bits, &doubleCns, sizeof(doubleCns));
+        return true;
+#endif
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // GetLoadStoreCoalescingData: given a STOREIND/IND node, get the data needed to perform
 //    store/load coalescing including pointer to the previous node.
 //
@@ -10733,7 +10778,11 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         }
 
         bool const allowOverlapOptimization = node->OperIs(GT_STORE_LCL_FLD);
-        bool const sameLocation = currData.IsAddressEqual(prevData, /*ignoreOffset*/ true, allowOverlapOptimization);
+        int const  prevEndOffset            = prevData.offset + static_cast<int>(prevData.accessSize);
+        int const  currEndOffset            = currData.offset + static_cast<int>(currData.accessSize);
+        bool const storesOverlap            = (currData.offset < prevEndOffset) && (prevData.offset < currEndOffset);
+        bool const sameLocation =
+            currData.IsAddressEqual(prevData, /*ignoreOffset*/ true, allowOverlapOptimization && storesOverlap);
 
         if (!sameLocation)
         {
@@ -10791,8 +10840,6 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         var_types  newType             = TYP_UNDEF;
         bool       tryReusingPrevValue = false;
         int const  minOffset           = min(prevData.offset, currData.offset);
-        int const  prevEndOffset       = prevData.offset + static_cast<int>(prevData.accessSize);
-        int const  currEndOffset       = currData.offset + static_cast<int>(currData.accessSize);
         int const  maxEndOffset        = max(prevEndOffset, currEndOffset);
         int const  combinedSize        = maxEndOffset - minOffset;
         bool const prevContainsCurr    = (prevData.offset <= currData.offset) && (prevEndOffset >= currEndOffset);
@@ -10983,6 +11030,11 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         // Only on x64 since ARM64 has no options above SIMD16.
         if (varTypeIsSIMD(oldType))
         {
+            if (!prevData.value->OperIs(GT_CNS_VEC) || !currData.value->OperIs(GT_CNS_VEC))
+            {
+                return;
+            }
+
             int8_t* lowerCns = prevData.value->AsVecCon()->gtSimdVal.i8;
             int8_t* upperCns = currData.value->AsVecCon()->gtSimdVal.i8;
 
@@ -11003,8 +11055,13 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
 
         // The integer path below places each constant according to its byte offset, so it doesn't need to swap the
         // values first. Only the SIMD packing paths above need to normalize lower/upper order explicitly.
-        size_t lowerCns = static_cast<size_t>(prevData.value->AsIntCon()->IconValue());
-        size_t upperCns = static_cast<size_t>(currData.value->AsIntCon()->IconValue());
+        size_t lowerCns = 0;
+        size_t upperCns = 0;
+        if (!TryGetStoreCoalescingConstantBits(prevData.value, &lowerCns) ||
+            !TryGetStoreCoalescingConstantBits(currData.value, &upperCns))
+        {
+            return;
+        }
 
 #if defined(TARGET_64BIT) && defined(FEATURE_HW_INTRINSICS)
         if (varTypeIsSIMD(newType))

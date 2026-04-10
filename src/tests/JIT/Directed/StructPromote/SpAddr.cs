@@ -20,6 +20,12 @@ public class SpAddr
         public int B;
     }
 
+    struct FloatPair
+    {
+        public float A;
+        public float B;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Foo(S s0, S s1)
     {
@@ -41,6 +47,10 @@ public class SpAddr
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static long Consume(Pair p) => ((long)p.B << 32) | (uint)p.A;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static long Consume(FloatPair p) =>
+        ((long)(uint)BitConverter.SingleToInt32Bits(p.B) << 32) | (uint)BitConverter.SingleToInt32Bits(p.A);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Expose(ref Pair p)
@@ -75,6 +85,15 @@ public class SpAddr
         return p.A;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static long AdjacentFloatNonZeroThenZero()
+    {
+        FloatPair p = default;
+        p.A = 1.0f;
+        p.B = 0.0f;
+        return Consume(p);
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -83,11 +102,13 @@ public class SpAddr
         long nonAddressExposed = NonAddressExposed(0x11223344, 0x55667788);
         long addressExposed    = AddressExposed(0x10203040, 0x50607080);
         int  overlapping       = OverlappingNonZeroThenShort();
+        long floatPair         = AdjacentFloatNonZeroThenZero();
 
         if ((res == 10) &&
             (nonAddressExposed == 0x5566778811223344L) &&
             (addressExposed == 0x5060708010203040L) &&
-            (overlapping == unchecked((int)0xDEAD0000)))
+            (overlapping == unchecked((int)0xDEAD0000)) &&
+            (floatPair == 0x000000003F800000L))
             return 100;
         else
             return 99;
