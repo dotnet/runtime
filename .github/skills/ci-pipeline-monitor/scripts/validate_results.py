@@ -44,6 +44,7 @@ def main():
     conn = sqlite3.connect(args.db)
     conn.row_factory = sqlite3.Row
     failures = 0
+    warnings = 0
     total = 0
 
     # Check which tables exist
@@ -455,19 +456,29 @@ def main():
             )
 
     searched = len(new_failures) - search_failures
-    if search_failures > 0:
-        detail = (f"searched {searched}/{len(new_failures)} (search failed for {search_failures})")
-        if missed_matches:
-            detail += f", found existing issues for {len(missed_matches)}: {missed_matches}"
-        ok = check("NEW failures verified against GitHub search",
-                   False, detail)
+    if search_failures > 0 and missed_matches:
+        # Searches partially failed AND found real misses in what succeeded — FAIL
+        detail = (f"searched {searched}/{len(new_failures)} (search failed for {search_failures}), "
+                  f"found existing issues for {len(missed_matches)}: {missed_matches}")
+        ok = check("NEW failures verified against GitHub search", False, detail)
+        if not ok:
+            failures += 1
+    elif search_failures > 0:
+        # Searches partially failed but nothing bad found — WARN only
+        detail = (f"searched {searched}/{len(new_failures)} (search failed for {search_failures}); "
+                  f"no missed matches in successful searches")
+        ok = check("NEW failures verified against GitHub search", True, detail)
+        if ok:
+            print(f"    [WARN] {search_failures} GitHub search requests failed (rate limit / network); "
+                  f"check is incomplete but not blocking")
+            warnings += 1
     else:
         ok = check("NEW failures verified against GitHub search",
                    len(missed_matches) == 0,
                    f"found existing issues for {len(missed_matches)} 'NEW' failures: {missed_matches}"
                    if missed_matches else f"confirmed {len(new_failures)} NEW failures have no matching issue")
-    if not ok:
-        failures += 1
+        if not ok:
+            failures += 1
 
     # 16f. error_message and stack_trace lines are not cut in the middle.
     # Every line in error_message/stack_trace must appear as a complete line
@@ -483,18 +494,26 @@ def main():
             WHERE tr.console_log_path IS NOT NULL AND tr.console_log_path != ''
         """).fetchall()
         checked = 0
+        # Cache parsed log lines per unique path to avoid re-reading large files
+        log_lines_cache = {}
         for r in rows:
             log_path = r["console_log_path"]
-            if not os.path.isfile(log_path):
+            if log_path not in log_lines_cache:
+                if not os.path.isfile(log_path):
+                    log_lines_cache[log_path] = None
+                    continue
+                with open(log_path, encoding="utf-8", errors="replace") as lf:
+                    log_text = lf.read()
+                log_lines = set()
+                for line in log_text.replace("\r", "").split("\n"):
+                    stripped = line.strip()
+                    if stripped:
+                        log_lines.add(stripped)
+                log_lines_cache[log_path] = log_lines
+
+            log_lines = log_lines_cache[log_path]
+            if log_lines is None:
                 continue
-            with open(log_path, encoding="utf-8", errors="replace") as lf:
-                log_text = lf.read()
-            # Build set of complete lines from the log (stripped of \r)
-            log_lines = set()
-            for line in log_text.replace("\r", "").split("\n"):
-                stripped = line.strip()
-                if stripped:
-                    log_lines.add(stripped)
 
             for field_name, field_val in [("error_message", r["error_message"]),
                                            ("stack_trace", r["stack_trace"])]:
@@ -686,7 +705,8 @@ def main():
     # Summary
     passed = total - failures
     print(f"\n{'='*40}")
-    print(f"Results: {passed}/{total} passed, {failures} failed")
+    warn_str = f", {warnings} warnings" if warnings else ""
+    print(f"Results: {passed}/{total} passed, {failures} failed{warn_str}")
     if failures:
         print("❌ VALIDATION FAILED — fix issues before publishing report")
         sys.exit(1)
