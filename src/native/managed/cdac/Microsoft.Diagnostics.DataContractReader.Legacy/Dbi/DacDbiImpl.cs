@@ -741,7 +741,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     *pRetVal = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, metadataToken, out var _).Value;
                     break;
                 default:
-                    throw Marshal.GetExceptionForHR(CorDbgHResults.CLASS_NOT_LOADED)!;
+                    throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
             }
         }
         catch (System.Exception ex)
