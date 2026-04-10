@@ -45,7 +45,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void KillOnParentExit_ProcessStartsAndExitsNormally()
         {
-            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             process.StartInfo.KillOnParentExit = true;
             process.Start();
 
@@ -94,11 +94,11 @@ namespace System.Diagnostics.Tests
             remoteInvokeOptions.StartInfo.RedirectStandardInput = true;
 
             using RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(
-                (enabledStr, limitInherianceStr) =>
+                (enabledStr, limitInheritanceStr) =>
                 {
                     using Process grandChild = CreateProcessLong();
                     grandChild.StartInfo.KillOnParentExit = bool.Parse(enabledStr);
-                    grandChild.StartInfo.InheritedHandles = bool.Parse(limitInherianceStr) ? [] : null;
+                    grandChild.StartInfo.InheritedHandles = bool.Parse(limitInheritanceStr) ? [] : null;
 
                     grandChild.Start();
                     Console.WriteLine(grandChild.Id);
@@ -132,11 +132,11 @@ namespace System.Diagnostics.Tests
             remoteInvokeOptions.StartInfo.Environment["HELIX_WORKITEM_UPLOAD_ROOT"] = null;
 
             using RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(
-                (enabledStr, limitInherianceStr) =>
+                (enabledStr, limitInheritanceStr) =>
                 {
                     using Process grandChild = CreateProcessLong();
                     grandChild.StartInfo.KillOnParentExit = bool.Parse(enabledStr);
-                    grandChild.StartInfo.InheritedHandles = bool.Parse(limitInherianceStr) ? [] : null;
+                    grandChild.StartInfo.InheritedHandles = bool.Parse(limitInheritanceStr) ? [] : null;
 
                     grandChild.Start();
                     Console.WriteLine(grandChild.Id);
