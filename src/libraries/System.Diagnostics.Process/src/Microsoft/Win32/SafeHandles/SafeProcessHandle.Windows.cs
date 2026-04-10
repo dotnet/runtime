@@ -76,11 +76,10 @@ namespace Microsoft.Win32.SafeHandles
             bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
             bool restrictInheritedHandles = inheritedHandles is not null;
             bool killOnParentExit = startInfo.KillOnParentExit;
-            // We need extended startup info when we have inherited handles or when we need to pass
-            // a job list via PROC_THREAD_ATTRIBUTE_JOB_LIST (only for CreateProcess, not CreateProcessWithLogonW).
-            bool useExtendedStartupInfo = restrictInheritedHandles || (killOnParentExit && string.IsNullOrEmpty(startInfo.UserName));
+            bool logon = !string.IsNullOrEmpty(startInfo.UserName);
 
-            // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance.
+            // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance
+            // or pass bInheritHandles=false when there are no valid handles to inherit.
             // For that, we need a reader lock (concurrent starts with different explicit lists are safe).
             // When InheritedHandles is not set, we use the existing approach with a writer lock.
             if (restrictInheritedHandles)
@@ -103,7 +102,7 @@ namespace Microsoft.Win32.SafeHandles
 
             try
             {
-                startupInfoEx.StartupInfo.cb = useExtendedStartupInfo ? sizeof(Interop.Kernel32.STARTUPINFOEX) : sizeof(Interop.Kernel32.STARTUPINFO);
+                startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
 
                 ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref startupInfoEx.StartupInfo.hStdInput, ref stdinRefAdded);
                 ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref startupInfoEx.StartupInfo.hStdOutput, ref stdoutRefAdded);
@@ -119,7 +118,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
 
                 // set up the creation flags parameter
-                int creationFlags = useExtendedStartupInfo ? Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT : 0;
+                int creationFlags = 0;
                 if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
                 if (startInfo.CreateNewProcessGroup) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NEW_PROCESS_GROUP;
 
@@ -137,54 +136,22 @@ namespace Microsoft.Win32.SafeHandles
                     workingDirectory = null;
                 }
 
-                // When InheritedHandles is set, build a PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict
-                // inheritance to only the explicitly specified handles.
-                int handleCount = 0;
-                if (restrictInheritedHandles)
+                // By default, all handles are inherited.
+                bool bInheritHandles = true;
+
+                // Extended Startup Info can be configured only for the non-logon path
+                if (!logon)
                 {
-                    int maxHandleCount = 3 + inheritedHandles!.Length;
-                    handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
-                    Span<nint> handlesToInheritSpan = new Span<nint>(handlesToInherit, maxHandleCount);
-
-                    // Add valid effective stdio handles (already made inheritable via DuplicateAsInheritableIfNeeded)
-                    AddToInheritListIfValid(startupInfoEx.StartupInfo.hStdInput, handlesToInheritSpan, ref handleCount);
-                    AddToInheritListIfValid(startupInfoEx.StartupInfo.hStdOutput, handlesToInheritSpan, ref handleCount);
-                    AddToInheritListIfValid(startupInfoEx.StartupInfo.hStdError, handlesToInheritSpan, ref handleCount);
-
-                    EnableInheritanceAndAddRef(inheritedHandles, handlesToInheritSpan, ref handleCount, ref handlesToRelease);
-                }
-
-                if (useExtendedStartupInfo)
-                {
-                    // Determine the number of attributes we need to set in the proc thread attribute list.
-                    int attributeCount = 0;
-
-                    // When InheritedHandles is set but handleCount is 0 (all standard handles are invalid),
-                    // we pass bInheritHandles=false to CreateProcess and there is no need to use PROC_THREAD_ATTRIBUTE_HANDLE_LIST.
-                    if (restrictInheritedHandles && handleCount > 0)
-                    {
-                        attributeCount++; // PROC_THREAD_ATTRIBUTE_HANDLE_LIST
-                    }
-                    if (killOnParentExit)
-                    {
-                        attributeCount++; // PROC_THREAD_ATTRIBUTE_JOB_LIST
-                    }
-
-                    BuildProcThreadAttributeList(
-                        handlesToInherit,
-                        handleCount,
-                        killOnParentExit,
-                        attributeCount,
-                        ref attributeListBuffer,
+                    ConfigureExtendedStartupInfo(inheritedHandles, killOnParentExit,
+                        ref startupInfoEx, ref creationFlags, ref attributeListBuffer,
+                        ref handlesToInherit, ref handlesToRelease, ref bInheritHandles,
                         ref jobHandles);
                 }
-
-                startupInfoEx.lpAttributeList = attributeListBuffer;
 
                 bool retVal;
                 int errorCode = 0;
 
-                if (startInfo.UserName.Length != 0)
+                if (logon)
                 {
                     if (startInfo.Password != null && startInfo.PasswordInClearText != null)
                     {
@@ -210,6 +177,7 @@ namespace Microsoft.Win32.SafeHandles
                     // CreateProcessAsUserW supports both, but it's too restrictive and simply different than CreateProcessWithLogonW in many ways.
                     Debug.Assert(!restrictInheritedHandles, "Inheriting handles is not supported when starting with alternate credentials.");
                     Debug.Assert(startupInfoEx.StartupInfo.cb == sizeof(Interop.Kernel32.STARTUPINFO));
+                    Debug.Assert((creationFlags & Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT) == 0);
 
                     // When KillOnParentExit is set and we use CreateProcessWithLogonW (which doesn't support
                     // PROC_THREAD_ATTRIBUTE_JOB_LIST), we create the process suspended, assign it to the job,
@@ -260,10 +228,6 @@ namespace Microsoft.Win32.SafeHandles
                     fixed (char* environmentBlockPtr = environmentBlock)
                     fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
                     {
-                        // When InheritedHandles is set but handleCount is 0 (e.g. empty list, no stdio),
-                        // pass false to prevent all inheritable handles from leaking to the child.
-                        bool bInheritHandles = !restrictInheritedHandles || handleCount > 0;
-
                         retVal = Interop.Kernel32.CreateProcess(
                             null,                // we don't need this since all the info is in commandLine
                             commandLinePtr,      // pointer to the command line string
@@ -287,7 +251,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     // When the process was started suspended for KillOnParentExit with CreateProcessWithLogonW,
                     // assign it to the job object and then resume the thread.
-                    if (killOnParentExit && !string.IsNullOrEmpty(startInfo.UserName))
+                    if (killOnParentExit && logon)
                     {
                         AssignJobAndResumeThread(processInfo, procSH);
                     }
@@ -496,21 +460,61 @@ namespace Microsoft.Win32.SafeHandles
             handlesToInherit[handleCount++] = handle;
         }
 
-        /// <summary>
-        /// Creates and populates a PROC_THREAD_ATTRIBUTE_LIST with optional PROC_THREAD_ATTRIBUTE_HANDLE_LIST
-        /// and PROC_THREAD_ATTRIBUTE_JOB_LIST entries.
-        /// </summary>
-        private static unsafe void BuildProcThreadAttributeList(
-            IntPtr* handlesToInherit,
-            int handleCount,
-            bool killOnParentExit,
-            int attributeCount,
-            ref void* attributeListBuffer,
-            ref IntPtr* jobHandles)
+        private static unsafe void ConfigureExtendedStartupInfo(SafeHandle[]? inheritedHandles, bool killOnParentExit,
+            ref Interop.Kernel32.STARTUPINFOEX startupInfoEx, ref int creationFlags, ref void* attributeListBuffer,
+            ref nint* handlesToInherit, ref SafeHandle?[]? handlesToRelease, ref bool bInheritHandles,
+            ref nint* jobHandles)
         {
+            if (inheritedHandles is null && !killOnParentExit)
+            {
+                return;
+            }
+
+            // Determine the number of attributes we need to set in the proc thread attribute list.
+            int attributeCount = 0;
+
+            int handleCount = 0;
+            if (inheritedHandles is not null)
+            {
+                int maxHandleCount = 3 + inheritedHandles.Length;
+                handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
+                Span<nint> handlesToInheritSpan = new Span<nint>(handlesToInherit, maxHandleCount);
+
+                // Add valid effective stdio handles (already made inheritable via DuplicateAsInheritableIfNeeded)
+                AddToInheritListIfValid(startupInfoEx.StartupInfo.hStdInput, handlesToInheritSpan, ref handleCount);
+                AddToInheritListIfValid(startupInfoEx.StartupInfo.hStdOutput, handlesToInheritSpan, ref handleCount);
+                AddToInheritListIfValid(startupInfoEx.StartupInfo.hStdError, handlesToInheritSpan, ref handleCount);
+
+                EnableInheritanceAndAddRef(inheritedHandles, handlesToInheritSpan, ref handleCount, ref handlesToRelease);
+
+                if (handleCount == 0)
+                {
+                    // When InheritedHandles is set but handleCount is 0 (e.g. all standard handles are invalid),
+                    // pass false to prevent all inheritable handles from leaking to the child.
+                    bInheritHandles = false;
+                }
+                else
+                {
+                    attributeCount++; // PROC_THREAD_ATTRIBUTE_HANDLE_LIST
+                }
+            }
+
+            if (killOnParentExit)
+            {
+                jobHandles = (IntPtr*)NativeMemory.Alloc(1, (nuint)sizeof(IntPtr));
+                jobHandles[0] = s_killOnParentExitJob.Value.DangerousGetHandle();
+
+                attributeCount++; // PROC_THREAD_ATTRIBUTE_JOB_LIST
+            }
+
+            if (attributeCount == 0)
+            {
+                Debug.Assert(!bInheritHandles);
+                return;
+            }
+
             nuint size = 0;
             Interop.Kernel32.InitializeProcThreadAttributeList(null, attributeCount, 0, ref size);
-
             attributeListBuffer = NativeMemory.Alloc(size);
 
             if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeListBuffer, attributeCount, 0, ref size))
@@ -530,23 +534,21 @@ namespace Microsoft.Win32.SafeHandles
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
 
-            if (killOnParentExit)
+            if (killOnParentExit && !Interop.Kernel32.UpdateProcThreadAttribute(
+                attributeListBuffer,
+                0,
+                (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_JOB_LIST,
+                jobHandles,
+                (nuint)sizeof(IntPtr),
+                null,
+                null))
             {
-                jobHandles = (IntPtr*)NativeMemory.Alloc(1, (nuint)sizeof(IntPtr));
-                jobHandles[0] = s_killOnParentExitJob.Value.DangerousGetHandle();
-
-                if (!Interop.Kernel32.UpdateProcThreadAttribute(
-                    attributeListBuffer,
-                    0,
-                    (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_JOB_LIST,
-                    jobHandles,
-                    (nuint)sizeof(IntPtr),
-                    null,
-                    null))
-                {
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
-                }
+                throw new Win32Exception(Marshal.GetLastWin32Error());
             }
+
+            creationFlags |= Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT;
+            startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
+            startupInfoEx.lpAttributeList = attributeListBuffer;
         }
 
         private static void EnableInheritanceAndAddRef(
