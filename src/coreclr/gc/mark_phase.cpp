@@ -112,24 +112,6 @@ size_t gc_heap::deque_pinned_plug ()
 }
 
 inline
-mark* gc_heap::pinned_plug_of (size_t bos)
-{
-    return &mark_stack_array [ bos ];
-}
-
-inline
-mark* gc_heap::oldest_pin ()
-{
-    return pinned_plug_of (mark_stack_bos);
-}
-
-inline
-BOOL gc_heap::pinned_plug_que_empty_p ()
-{
-    return (mark_stack_bos == mark_stack_tos);
-}
-
-inline
 mark* gc_heap::before_oldest_pin()
 {
     if (mark_stack_bos >= 1)
@@ -994,7 +976,7 @@ void gc_heap::bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 
 #endif //BACKGROUND_GC
 
-inline
+/*inline*/
 size_t gc_heap::get_promoted_bytes()
 {
 #ifdef USE_REGIONS
@@ -1453,24 +1435,6 @@ BOOL gc_heap::gc_mark1 (uint8_t* o)
 #endif //USE_REGIONS && _DEBUG
     return marked;
 }
-
-#ifdef USE_REGIONS
-inline bool gc_heap::is_in_gc_range (uint8_t* o)
-{
-#ifdef FEATURE_BASICFREEZE
-    // we may have frozen objects in read only segments
-    // outside of the reserved address range of the gc heap
-    assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
-        (o == nullptr) || (ro_segment_lookup (o) != nullptr));
-#else //FEATURE_BASICFREEZE
-    // without frozen objects, every non-null pointer must be
-    // within the heap
-    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-#endif //FEATURE_BASICFREEZE
-    return ((gc_low <= o) && (o < gc_high));
-}
-
-#endif //USE_REGIONS
 
 inline
 BOOL gc_heap::gc_mark (uint8_t* o, uint8_t* low, uint8_t* high, int condemned_gen)
@@ -2848,24 +2812,6 @@ void gc_heap::fire_mark_event (int root_type, size_t& current_promoted_bytes, si
 #endif // FEATURE_EVENT_TRACE
 }
 
-#ifdef FEATURE_EVENT_TRACE
-inline
-void gc_heap::record_mark_time (uint64_t& mark_time,
-                                uint64_t& current_mark_time,
-                                uint64_t& last_mark_time)
-{
-    if (informational_event_enabled_p)
-    {
-        current_mark_time = GetHighPrecisionTimeStamp();
-        mark_time = limit_time_to_uint32 (current_mark_time - last_mark_time);
-        dprintf (3, ("%zd - %zd = %zd",
-            current_mark_time, last_mark_time, (current_mark_time - last_mark_time)));
-        last_mark_time = current_mark_time;
-    }
-}
-
-#endif //FEATURE_EVENT_TRACE
-
 void gc_heap::mark_phase (int condemned_gen_number)
 {
     assert (settings.concurrent == FALSE);
@@ -3689,7 +3635,7 @@ void gc_heap::grow_mark_list_piece()
 // if the child object's region is <= condemned_gen.
 // cg_pointers_found means it's pointing into a lower generation so it's incremented
 // if the child object's region is < current_gen.
-inline void
+/*inline*/ void
 gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
                                     size_t& cg_pointers_found,
                                     card_fn fn, uint8_t* nhigh,

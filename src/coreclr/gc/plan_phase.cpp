@@ -2077,12 +2077,6 @@ retry:
 
 #endif //!USE_REGIONS
 #ifdef FEATURE_LOH_COMPACTION
-inline
-BOOL gc_heap::loh_pinned_plug_que_empty_p()
-{
-    return (loh_pinned_queue_bos == loh_pinned_queue_tos);
-}
-
 void gc_heap::loh_set_allocator_next_pin()
 {
     if (!(loh_pinned_plug_que_empty_p()))
@@ -2106,12 +2100,6 @@ size_t gc_heap::loh_deque_pinned_plug ()
     size_t m = loh_pinned_queue_bos;
     loh_pinned_queue_bos++;
     return m;
-}
-
-inline
-mark* gc_heap::loh_pinned_plug_of (size_t bos)
-{
-    return &loh_pinned_queue[bos];
 }
 
 inline

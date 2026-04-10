@@ -2718,14 +2718,6 @@ uint8_t* mark_bit_address (size_t mark_bit)
     return (uint8_t*)(mark_bit*mark_bit_pitch);
 }
 
-inline
-size_t size_mark_array_of (uint8_t* from, uint8_t* end)
-{
-    assert (((size_t)from & ((mark_word_size)-1)) == 0);
-    assert (((size_t)end  & ((mark_word_size)-1)) == 0);
-    return sizeof (uint32_t)*(((end - from) / mark_word_size));
-}
-
 //In order to eliminate the lowest_address in the mark array
 //computations (mark_word_of, etc) mark_array is offset
 // according to the lowest_address.
@@ -4871,17 +4863,6 @@ size_t gc_heap::get_generation_start_size (int gen_number)
                   get_alignment_constant (gen_number <= max_generation));
 #endif //!USE_REGIONS
 }
-
-inline
-int gc_heap::get_num_heaps()
-{
-#ifdef MULTIPLE_HEAPS
-    return n_heaps;
-#else
-    return 1;
-#endif //MULTIPLE_HEAPS
-}
-
 
 void stomp_write_barrier_resize(bool is_runtime_suspended, bool requires_upper_bounds_check)
 {

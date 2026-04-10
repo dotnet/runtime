@@ -140,96 +140,11 @@ BOOL gc_heap::card_bundles_enabled ()
 
 #endif //CARD_BUNDLE
 
-inline
-size_t gc_heap::brick_of (uint8_t* add)
-{
-    return (size_t)(add - lowest_address) / brick_size;
-}
-
-inline
-uint8_t* gc_heap::brick_address (size_t brick)
-{
-    return lowest_address + (brick_size * brick);
-}
-
 void gc_heap::clear_brick_table (uint8_t* from, uint8_t* end)
 {
     size_t from_brick = brick_of (from);
     size_t end_brick = brick_of (end);
     memset (&brick_table[from_brick], 0, sizeof(brick_table[from_brick])*(end_brick-from_brick));
-}
-
-//codes for the brick entries:
-//entry == 0 -> not assigned
-//entry >0 offset is entry-1
-//entry <0 jump back entry bricks
-inline
-void gc_heap::set_brick (size_t index, ptrdiff_t val)
-{
-    if (val < -32767)
-    {
-        val = -32767;
-    }
-    assert (val < 32767);
-    if (val >= 0)
-        brick_table [index] = (short)val+1;
-    else
-        brick_table [index] = (short)val;
-
-    dprintf (3, ("set brick[%zx] to %d\n", index, (short)val));
-}
-
-inline
-int gc_heap::get_brick_entry (size_t index)
-{
-#ifdef MULTIPLE_HEAPS
-    return VolatileLoadWithoutBarrier(&brick_table [index]);
-#else
-    return brick_table[index];
-#endif
-}
-
-inline
-uint8_t* gc_heap::card_address (size_t card)
-{
-    return  (uint8_t*) (card_size * card);
-}
-
-inline
-size_t gc_heap::card_of ( uint8_t* object)
-{
-    return (size_t)(object) / card_size;
-}
-
-inline
-void gc_heap::clear_card (size_t card)
-{
-    card_table [card_word (card)] =
-        (card_table [card_word (card)] & ~(1 << card_bit (card)));
-    dprintf (3,("Cleared card %zx [%zx, %zx[", card, (size_t)card_address (card),
-              (size_t)card_address (card+1)));
-}
-
-inline
-void gc_heap::set_card (size_t card)
-{
-    size_t word = card_word (card);
-    card_table[word] = (card_table [word] | (1 << card_bit (card)));
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    // Also set the card bundle that corresponds to the card
-    size_t bundle_to_set = cardw_card_bundle(word);
-
-    card_bundle_set(bundle_to_set);
-
-    dprintf (3,("Set card %zx [%zx, %zx[ and bundle %zx", card, (size_t)card_address (card), (size_t)card_address (card+1), bundle_to_set));
-#endif
-}
-
-inline
-BOOL  gc_heap::card_set_p (size_t card)
-{
-    return ( card_table [ card_word (card) ] & (1 << card_bit (card)));
 }
 
 void gc_heap::destroy_card_table_helper (uint32_t* c_table)
