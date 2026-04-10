@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration.Test;
 using Microsoft.Extensions.FileProviders;
 using Moq;
@@ -110,6 +112,56 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
 
             var exception = Assert.Throws<DirectoryNotFoundException>(() => provider.Load());
             Assert.Contains(physicalPath, exception.Message);
+        }
+
+        [Fact]
+        public async Task ResolveFileProvider_WithMissingParentDirectory_WatchTokenFiresWhenFileCreated()
+        {
+            // Verify the fix for https://github.com/dotnet/runtime/issues/116713:
+            // When the parent of the config file does not yet exist, Watch() should return a change token
+            // that fires when the target file is created (via a non-recursive pending watcher),
+            // rather than adding recursive watches on the entire ancestor directory tree.
+            using var rootDir = new TempDirectory(Path.Combine(Path.GetTempPath(), $"pfp_cfg_test_{Guid.NewGuid():N}"));
+            string missingSubDir = Path.Combine(rootDir.Path, "subdir");
+            string configFilePath = Path.Combine(missingSubDir, "appsettings.json");
+
+            var source = new FileConfigurationSourceImpl
+            {
+                Path = configFilePath,
+                Optional = true,
+                ReloadOnChange = true,
+                ReloadDelay = 0,
+            };
+
+            // ResolveFileProvider sets FileProvider to the directory containing the file path,
+            // even if that directory does not yet exist on disk.
+            source.ResolveFileProvider();
+
+            Assert.NotNull(source.FileProvider);
+            using var physicalProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+            Assert.Equal(missingSubDir + Path.DirectorySeparatorChar, physicalProvider.Root);
+
+            // The configuration Path is reduced to the file name relative to the provider root.
+            // Verify that the intermediate directory name is not part of Path.
+            Assert.DoesNotContain("subdir", source.Path, StringComparison.OrdinalIgnoreCase);
+
+            // Watch() must return a valid (non-null) change token even though the directory is missing.
+            var token = source.FileProvider.Watch(source.Path);
+            Assert.NotNull(token);
+
+            // The token should fire only when the target file is created, not when just the directory appears.
+            var tcs = new TaskCompletionSource<bool>();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            cts.Token.Register(() => tcs.TrySetCanceled());
+            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+
+            Directory.CreateDirectory(missingSubDir);
+            await Task.Delay(500);
+            Assert.False(tcs.Task.IsCompleted, "Token must not fire when only the directory is created.");
+
+            File.WriteAllText(configFilePath, "{}");
+
+            Assert.True(await tcs.Task, "Change token did not fire after the target file was created.");
         }
 
         public class FileInfoImpl : IFileInfo

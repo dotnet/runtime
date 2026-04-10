@@ -542,43 +542,41 @@ PhaseStatus Compiler::TransformAsync()
 PhaseStatus AsyncTransformation::Run()
 {
     PhaseStatus             result = PhaseStatus::MODIFIED_NOTHING;
-    ArrayStack<BasicBlock*> worklist(m_compiler->getAllocator(CMK_Async));
+    ArrayStack<BasicBlock*> blocksWithNormalAwaits(m_compiler->getAllocator(CMK_Async));
+    ArrayStack<BasicBlock*> blocksWithTailAwaits(m_compiler->getAllocator(CMK_Async));
+    int                     numNormalAwaits = 0;
+    int                     numTailAwaits   = 0;
+    FindAwaits(blocksWithNormalAwaits, blocksWithTailAwaits, &numNormalAwaits, &numTailAwaits);
 
-    // First find all basic blocks with awaits in them. We have to walk all IR
-    // in these basic blocks for our analyses so it does not help to record the
-    // calls ahead of time.
-    BasicBlock* nextBlock;
-    for (BasicBlock* block = m_compiler->fgFirstBB; block != nullptr; block = nextBlock)
+    if (numNormalAwaits + numTailAwaits > 1)
     {
-        bool hasAwait = false;
-        nextBlock     = block->Next();
-        for (GenTree* tree : LIR::AsRange(block))
-        {
-            if (!tree->IsCall() || !tree->AsCall()->IsAsync() || tree->AsCall()->IsTailCall())
-            {
-                continue;
-            }
-
-            if (tree->AsCall()->GetAsyncInfo().IsTailAwait)
-            {
-                TransformTailAwait(block, tree->AsCall(), &nextBlock);
-                result = PhaseStatus::MODIFIED_EVERYTHING;
-                break;
-            }
-
-            JITDUMP(FMT_BB " contains await(s)\n", block->bbNum);
-            hasAwait = true;
-        }
-
-        if (hasAwait)
-        {
-            worklist.Push(block);
-        }
+        CreateSharedReturnBB();
     }
 
-    JITDUMP("Found %d blocks with awaits\n", worklist.Height());
+    // Transform all tail awaits first. They will not require running all of
+    // our analyses.
+    if (numTailAwaits > 0)
+    {
+        JITDUMP("Found %d tail awaits in %d blocks\n", numTailAwaits, blocksWithTailAwaits.Height());
+        TransformTailAwaits(blocksWithTailAwaits);
+        m_compiler->fgInvalidateDfsTree();
 
-    if (worklist.Height() <= 0)
+        if (numNormalAwaits > 0)
+        {
+            // This may have changed blocks, so refind the normal awaits.
+            blocksWithNormalAwaits.Reset();
+            blocksWithTailAwaits.Reset();
+            numNormalAwaits = 0;
+            numTailAwaits   = 0;
+            FindAwaits(blocksWithNormalAwaits, blocksWithTailAwaits, &numNormalAwaits, &numTailAwaits);
+        }
+
+        result = PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    JITDUMP("Found %d awaits in %d blocks\n", numNormalAwaits, blocksWithNormalAwaits.Height());
+
+    if (numNormalAwaits <= 0)
     {
         return result;
     }
@@ -589,9 +587,6 @@ PhaseStatus AsyncTransformation::Run()
         jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>(m_compiler->getAllocator(CMK_Async));
 
     m_asyncInfo = m_compiler->eeGetAsyncInfo();
-
-    // Create the shared return BB now to put it in the right place in the block order.
-    GetSharedReturnBB();
 
     // Compute liveness to be used for determining what must be captured on
     // suspension.
@@ -611,7 +606,7 @@ PhaseStatus AsyncTransformation::Run()
 
     // Compute locals unchanged if we reuse a continuation
     PreservedValueAnalysis preservedValues(m_compiler);
-    preservedValues.Run(worklist);
+    preservedValues.Run(blocksWithNormalAwaits);
 
     AsyncAnalysis analyses(m_compiler, defaultValues, preservedValues);
 
@@ -621,11 +616,11 @@ PhaseStatus AsyncTransformation::Run()
     // spilled.
     jitstd::vector<GenTree*> defs(m_compiler->getAllocator(CMK_Async));
 
-    for (int i = 0; i < worklist.Height(); i++)
+    for (int i = 0; i < blocksWithNormalAwaits.Height(); i++)
     {
         assert(defs.size() == 0);
 
-        BasicBlock* block = worklist.Bottom(i);
+        BasicBlock* block = blocksWithNormalAwaits.Bottom(i);
         analyses.StartBlock(block);
 
         bool any;
@@ -653,14 +648,18 @@ PhaseStatus AsyncTransformation::Run()
                     return GenTree::VisitResult::Continue;
                 });
 
-                if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall())
+                if (tree->IsCall())
                 {
-                    // Transform call; continue with the remainder block.
-                    // Transform takes care to update the analyses.
-                    Transform(block, tree->AsCall(), defs, analyses, &block);
-                    defs.clear();
-                    any = true;
-                    break;
+                    GenTreeCall* call = tree->AsCall();
+                    if (call->IsAsync() && !call->IsTailCall() && !call->GetAsyncInfo().IsTailAwait)
+                    {
+                        // Transform call; continue with the remainder block.
+                        // Transform takes care to update analyses.
+                        Transform(block, tree->AsCall(), defs, analyses, &block);
+                        defs.clear();
+                        any = true;
+                        break;
+                    }
                 }
 
                 // Update analyses to reflect state after this node.
@@ -727,6 +726,88 @@ PhaseStatus AsyncTransformation::Run()
 }
 
 //------------------------------------------------------------------------
+// AsyncTransformation::FindAwaits:
+//   Find the blocks that have awaits in them and do some accounting of how
+//   many awaits there are.
+//
+// Parameters:
+//   blocksWithNormalAwaits - [out] Blocks with normal awaits are pushed onto this stack
+//   blocksWithTailAwaits   - [out] Blocks with tail awaits are pushed onto this stack
+//   numNormalAwaits        - [out] Number of normal awaits found
+//   numTailAwaits          - [out] Number of tail awaits found
+//
+void AsyncTransformation::FindAwaits(ArrayStack<BasicBlock*>& blocksWithNormalAwaits,
+                                     ArrayStack<BasicBlock*>& blocksWithTailAwaits,
+                                     int*                     numNormalAwaits,
+                                     int*                     numTailAwaits)
+{
+    for (BasicBlock* block : m_compiler->Blocks())
+    {
+        bool hasNormalAwait = false;
+        bool hasTailAwait   = false;
+        for (GenTree* tree : LIR::AsRange(block))
+        {
+            if (!tree->IsCall() || !tree->AsCall()->IsAsync() || tree->AsCall()->IsTailCall())
+            {
+                continue;
+            }
+
+            if (tree->AsCall()->GetAsyncInfo().IsTailAwait)
+            {
+                hasTailAwait = true;
+                (*numTailAwaits)++;
+            }
+            else
+            {
+                hasNormalAwait = true;
+                (*numNormalAwaits)++;
+            }
+        }
+
+        if (hasNormalAwait)
+        {
+            blocksWithNormalAwaits.Push(block);
+        }
+
+        if (hasTailAwait)
+        {
+            blocksWithTailAwaits.Push(block);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::TransformTailAwaits:
+//   Transform all tail awaits in the specified blocks.
+//
+// Parameters:
+//   blocksWithTailAwaits   - Blocks containing tail awaits
+//
+void AsyncTransformation::TransformTailAwaits(ArrayStack<BasicBlock*>& blocksWithTailAwaits)
+{
+    for (int i = 0; i < blocksWithTailAwaits.Height(); i++)
+    {
+        BasicBlock* block = blocksWithTailAwaits.Bottom(i);
+
+        bool any;
+        do
+        {
+            any = false;
+            for (GenTree* tree : LIR::AsRange(block))
+            {
+                if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall() &&
+                    tree->AsCall()->GetAsyncInfo().IsTailAwait)
+                {
+                    TransformTailAwait(block, tree->AsCall(), &block);
+                    any = true;
+                    break;
+                }
+            }
+        } while (any);
+    }
+}
+
+//------------------------------------------------------------------------
 // AsyncTransformation::TransformTailAwait:
 //   Transform an await that was marked as a tail await.
 //
@@ -760,7 +841,7 @@ void AsyncTransformation::TransformTailAwait(BasicBlock* block, GenTreeCall* cal
 //
 BasicBlock* AsyncTransformation::CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call)
 {
-    BasicBlock* sharedReturnBB = GetSharedReturnBB();
+    BasicBlock* sharedReturnBB = m_sharedReturnBB;
 
     if (m_lastSuspensionBB == nullptr)
     {
@@ -2676,21 +2757,11 @@ unsigned AsyncTransformation::GetExceptionVar()
 }
 
 //------------------------------------------------------------------------
-// AsyncTransformation::GetSharedReturnBB:
-//   Create the shared return BB, if one is needed.
+// AsyncTransformation::CreateSharedReturnBB:
+//   Create the shared return BB.
 //
-// Returns:
-//   Basic block or nullptr.
-//
-BasicBlock* AsyncTransformation::GetSharedReturnBB()
+void AsyncTransformation::CreateSharedReturnBB()
 {
-#ifdef JIT32_GCENCODER
-    if (m_sharedReturnBB != nullptr)
-    {
-        return m_sharedReturnBB;
-    }
-
-    // Due to a hard cap on epilogs we need a shared return here.
     m_sharedReturnBB = m_compiler->fgNewBBafter(BBJ_RETURN, m_compiler->fgLastBBInMainFunction(), false);
     m_sharedReturnBB->bbSetRunRarely();
     m_sharedReturnBB->clearTryIndex();
@@ -2710,10 +2781,6 @@ BasicBlock* AsyncTransformation::GetSharedReturnBB()
     JITDUMP("Created shared return BB " FMT_BB "\n", m_sharedReturnBB->bbNum);
 
     DISPRANGE(LIR::AsRange(m_sharedReturnBB));
-    return m_sharedReturnBB;
-#else
-    return nullptr;
-#endif
 }
 
 //------------------------------------------------------------------------

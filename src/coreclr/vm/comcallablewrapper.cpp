@@ -286,10 +286,6 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
     RETURN pMarshInfo->GetComCallMethodDesc();
 }
 
-#ifdef FEATURE_INTERPRETER
-extern PLATFORM_THREAD_LOCAL UMEntryThunkData * t_MostRecentUMEntryThunkData;
-#endif
-
 //--------------------------------------------------------------------------
 // This routine is called anytime a com method is invoked for the first time.
 // It is responsible for generating the real stub.
@@ -314,12 +310,8 @@ extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
 #ifdef FEATURE_INTERPRETER
-    PCODE pInterpreterTarget = pEntryThunk->GetInterpreterTarget();
-    if (pInterpreterTarget != (PCODE)0)
-    {
-        t_MostRecentUMEntryThunkData = pEntryThunk;
-        return pInterpreterTarget;
-    }
+    // If we add support for COM interop on interpreter, this will need to update t_MostRecentUMEntryThunkData
+    _ASSERTE(pEntryThunk->GetInterpreterTarget() == (PCODE)0);
 #endif // FEATURE_INTERPRETER
 
     if (pThread->PreemptiveGCDisabled())
