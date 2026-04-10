@@ -22,11 +22,27 @@ if (CLR_CMAKE_TARGET_WIN32)
   endif()
 endif (CLR_CMAKE_TARGET_WIN32)
 
-add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
+add_library(Runtime.GC.Workstation OBJECT ${GC_WKS_SVR_SOURCES})
+add_dependencies(Runtime.GC.Workstation aot_eventing_headers)
+
+add_library(Runtime.GC.Server OBJECT ${GC_WKS_SVR_SOURCES})
+add_dependencies(Runtime.GC.Server aot_eventing_headers)
+target_compile_definitions(Runtime.GC.Server PRIVATE FEATURE_SVR_GC SERVER_GC)
+
+add_library(Runtime.WorkstationGC STATIC
+    ${COMMON_RUNTIME_SOURCES}
+    ${FULL_RUNTIME_SOURCES}
+    ${RUNTIME_ARCH_ASM_OBJECTS}
+    $<TARGET_OBJECTS:Runtime.GC.Workstation>)
 add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
 target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal)
 
-add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
+add_library(Runtime.ServerGC STATIC
+    ${COMMON_RUNTIME_SOURCES}
+    ${FULL_RUNTIME_SOURCES}
+    ${RUNTIME_ARCH_ASM_OBJECTS}
+    $<TARGET_OBJECTS:Runtime.GC.Workstation>
+    $<TARGET_OBJECTS:Runtime.GC.Server>)
 add_dependencies(Runtime.ServerGC aot_eventing_headers)
 target_link_libraries(Runtime.ServerGC PRIVATE aotminipal)
 
@@ -44,7 +60,7 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   add_library(Runtime.VxsortDisabled STATIC ${DUMMY_VXSORT_SOURCES})
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
-target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC -DSERVER_GC)
+target_compile_definitions(Runtime.ServerGC PRIVATE FEATURE_SVR_GC)
 
 if (CLR_CMAKE_TARGET_WIN32)
   set_target_properties(aotminipal PROPERTIES

@@ -3352,11 +3352,13 @@ void gc_heap::update_oldest_pinned_plug()
     oldest_pinned_plug = (pinned_plug_que_empty_p() ? 0 : pinned_plug (oldest_pin()));
 }
 
-#if !defined(_MSC_VER) && !defined(__cdecl) && defined(TARGET_X86)
+#if !defined(_MSC_VER) && !defined(__cdecl)
+#if defined(TARGET_X86)
 #define __cdecl __attribute__((cdecl))
-#else
+#else // TARGET_X86
 #define __cdecl
-#endif
+#endif // TARGET_X86
+#endif // !_MSC_VER && !__cdecl
 
 #ifdef FEATURE_STRUCTALIGN
 #if defined (TARGET_AMD64)
