@@ -19,10 +19,25 @@
     <SuppressDependenciesWhenPacking Condition="'$(PackageUsePlatformTargeting)' != 'true' and '$(TargetPlatformIdentifier)' != '' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</SuppressDependenciesWhenPacking>
     <!-- Don't treat the TPM as an input to APICompat PackageValidation's reference assembly calculation. -->
     <ApiCompatIgnoreTargetPlatformMoniker Condition="'$(SuppressDependenciesWhenPacking)' == 'true'">true</ApiCompatIgnoreTargetPlatformMoniker>
-    <!-- For the net471 TFM (which has System.ValueTuple built in), include it in TargetFrameworks
-         to produce a net471 dependency group with no System.ValueTuple dependency, but don't
-         ship the lib assembly — lib/net462 is a fully compatible fallback for net471 consumers. -->
-    <IncludeBuildOutput Condition="'$(NetFrameworkWithValueTuple)' != '' and '$(TargetFramework)' == '$(NetFrameworkWithValueTuple)'">false</IncludeBuildOutput>
+    <!--
+      DependencyOnlyTargetFrameworks: a semicolon-separated list of additional target frameworks
+      that the project restores and builds for, solely to emit a NuGet dependency group in the
+      package for each listed TFM.  No lib/ or ref/ assembly is included in the package for
+      these TFMs — consumers fall back to the nearest compatible lib/ entry.
+
+      Use this when a compatible framework has inbox assemblies (e.g. net471 has System.ValueTuple
+      built in) and you want NuGet to select an empty dependency group for that TFM rather than
+      pulling in the package dependency that was only required for the older compatible TFM.
+
+      Contrast with the regular TargetFrameworks list, where every built TFM ships a lib/ assembly.
+    -->
+    <!-- Append DependencyOnlyTargetFrameworks to TargetFrameworks so the inner builds run. -->
+    <TargetFrameworks Condition="'$(DependencyOnlyTargetFrameworks)' != '' and '$(TargetFrameworks)' != ''">$(TargetFrameworks);$(DependencyOnlyTargetFrameworks)</TargetFrameworks>
+    <!-- Suppress build output for these TFMs so no lib/ entry is added to the package. -->
+    <IncludeBuildOutput Condition="'$(DependencyOnlyTargetFrameworks)' != '' and $(DependencyOnlyTargetFrameworks.Contains('$(TargetFramework)'))">false</IncludeBuildOutput>
+    <!-- NU5128: NuGet warns when a dependency group TFM has no matching lib/ entry; suppress it
+         since the absence of a lib/ entry is intentional for DependencyOnlyTargetFrameworks. -->
+    <NoWarn Condition="'$(DependencyOnlyTargetFrameworks)' != ''">$(NoWarn);NU5128</NoWarn>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
 
     <!-- PackageReadmeFile specifies the package readme file name in the package. PackageReadmeFilePath points to the package readme file on disk. -->
@@ -45,8 +60,6 @@
   <ItemGroup>
     <PackageValidationBaselineFrameworkToIgnore Include="net8.0" />
     <PackageValidationBaselineFrameworkToIgnore Include="net9.0" />
-    <!-- net471 is new to packages via NetFrameworkWithValueTuple and won't exist in baselines. -->
-    <PackageValidationBaselineFrameworkToIgnore Include="$(NetFrameworkWithValueTuple)" Condition="'$(NetFrameworkWithValueTuple)' != ''" />
   </ItemGroup>
 
   <!-- Flow these properties to consuming projects. Used by i.e. Microsoft.Internal.Runtime.WindowsDesktop.Transport. -->
@@ -104,13 +117,6 @@
                            $(BuildOutputTargetFolder)\xamarinwatchos10\"
               Condition="'$(AddXamarinPlaceholderFilesToPackage)' == 'true'" />
       </ItemGroup>
-    </When>
-    <When Condition="'$(NetFrameworkWithValueTuple)' != '' and $(TargetFrameworks.Contains('$(NetFrameworkWithValueTuple)'))">
-      <PropertyGroup>
-        <!-- The net471 TFM is included for dependency group generation only; no lib assembly is
-             shipped, so NuGet's NU5128 (mismatched lib/dependency groups) warning is expected. -->
-        <NoWarn>$(NoWarn);NU5128</NoWarn>
-      </PropertyGroup>
     </When>
   </Choose>
 

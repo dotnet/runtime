@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);$(NetFrameworkWithValueTuple);$(NetCoreAppMinimum)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);$(NetCoreAppMinimum)</TargetFrameworks>
+    <DependencyOnlyTargetFrameworks>$(NetFrameworkWithValueTuple)</DependencyOnlyTargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for system time abstraction primitives for .NET Framework and .NET Standard.</PackageDescription>
   </PropertyGroup>
