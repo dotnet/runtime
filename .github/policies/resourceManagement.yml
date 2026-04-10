@@ -626,7 +626,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - agocke
+            - JulieLeeMSFT
             - dotnet/gc
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1341,6 +1341,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - steveisok
             - dotnet/area-system-reflection
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1353,6 +1354,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - steveisok
             - dotnet/area-system-reflection-emit
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1523,7 +1525,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - agocke
+            - JulieLeeMSFT
             - vsadov
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
