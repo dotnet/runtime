@@ -83,7 +83,7 @@ int32_t mono_wasi_load_icu_data(const void* pData)
 static int32_t load_icu_data(const void* pData)
 {
 
-    UErrorCode status = 0;
+    UErrorCode status = U_ZERO_ERROR;
     udata_setCommonData(pData, &status);
 
     if (U_FAILURE(status))
@@ -108,6 +108,7 @@ static const char *
 cstdlib_load_icu_data(const char *path)
 {
     char *file_buf = NULL;
+    long file_buf_size = 0;
     FILE *fp = fopen(path, "rb");
 
     if (fp == NULL)
@@ -122,7 +123,7 @@ cstdlib_load_icu_data(const char *path)
         goto error;
     }
 
-    long file_buf_size = ftell(fp);
+    file_buf_size = ftell(fp);
 
     if (file_buf_size == -1)
     {
@@ -130,7 +131,7 @@ cstdlib_load_icu_data(const char *path)
         goto error;
     }
 
-    file_buf = malloc(sizeof(char) * (unsigned long)(file_buf_size + 1));
+    file_buf = (char*)malloc(sizeof(char) * (unsigned long)(file_buf_size + 1));
 
     if (file_buf == NULL)
     {
@@ -223,7 +224,7 @@ int32_t GlobalizationNative_LoadICU(void)
     }
 #endif
 
-    UErrorCode status = 0;
+    UErrorCode status = U_ZERO_ERROR;
     UVersionInfo version;
     // Request the CLDR version to perform basic ICU initialization and find out
     // whether it worked.

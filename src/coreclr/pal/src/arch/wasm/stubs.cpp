@@ -59,15 +59,10 @@ extern "C" void PALAPI OutputDebugStringW(LPCWSTR lpOutputString)
     (void)lpOutputString;
 }
 
-extern "C" int __cxa_thread_atexit(void (*dtor)(void *), void *obj, void *dso_symbol)
-{
-    (void)dtor; (void)obj; (void)dso_symbol;
-    return 0;
-}
+// __cxa_thread_atexit is provided by libc++abi in WASI SDK 32+
 
 extern "C" void *__cxa_allocate_exception(size_t thrown_size)
 {
-    // WASI doesn't support C++ exceptions; allocate a dummy buffer
     return malloc(thrown_size);
 }
 
