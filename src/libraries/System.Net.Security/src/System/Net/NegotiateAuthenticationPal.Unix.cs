@@ -40,7 +40,7 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(clientOptions);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is Interop.NetSecurityNative.GssApiException or TypeInitializationException)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
                 NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported;
@@ -64,7 +64,7 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(serverOptions);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is Interop.NetSecurityNative.GssApiException or TypeInitializationException)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
 
