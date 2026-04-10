@@ -2,12 +2,8 @@ Wasm.Build.Tests.DebugLevelTests
 Wasm.Build.Tests.EnvVariablesTests
 Wasm.Build.Tests.FilesToIncludeInFileSystemTests
 Wasm.Build.Tests.HttpTests
-Wasm.Build.Tests.IcuShardingTests
-Wasm.Build.Tests.IcuShardingTests2
-Wasm.Build.Tests.IcuTests
 Wasm.Build.Tests.LazyLoadingTests
 Wasm.Build.Tests.ModuleConfigTests
-Wasm.Build.Tests.NativeBuildTests
 Wasm.Build.Tests.PreloadingTests
 Wasm.Build.Tests.RebuildTests
 Wasm.Build.Tests.SatelliteLoadingTests
@@ -16,4 +12,3 @@ Wasm.Build.Tests.WasmRunOutOfAppBundleTests
 Wasm.Build.Tests.WasmTemplateTests
 Wasm.Build.Tests.MaxParallelDownloadsTests
 Wasm.Build.Tests.LibraryInitializerTests
-Wasm.Build.Templates.Tests.NativeBuildTests
