@@ -5281,7 +5281,7 @@ BOOL Thread::HandledJITCase()
 #if defined(TARGET_ARM64)
                 if (!GetPacSignInfo(&ctx, &codeInfo, dac_cast<TADDR>(esb.m_ppvRetAddrPtr), &spForPacSign))
                 {
-                    continue;
+                    return FALSE;
                 }
 
                 esb.m_pSpForPacSign = (PVOID)spForPacSign;
