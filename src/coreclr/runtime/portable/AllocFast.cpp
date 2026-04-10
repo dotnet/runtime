@@ -141,7 +141,7 @@ EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size)
 {
     WRAPPER_NO_CONTRACT;
     // Since we know the implementation of RhpNewArrayFast is native we don't need to actually
-    // pass a stack poitner or portable entry point context, so we can just specify 0 for those parameters.
+    // pass a stack pointer or portable entry point context, so we can just specify 0 for those parameters.
     return RhpNewArrayFast(0 /* stack_pointer */, pMT, size, 0 /* portableEntryPointContext */);
 }
 
