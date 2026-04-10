@@ -877,19 +877,20 @@ internal static partial class Interop
         [UnmanagedCallersOnly]
         internal static Interop.Crypto.X509VerifyStatusCodeUniversal CertVerifyCallback(IntPtr ssl, IntPtr store)
         {
+            SafeSslHandle? sslHandle = null;
             try
             {
                 IntPtr data = Ssl.SslGetData(ssl);
                 Debug.Assert(data != IntPtr.Zero, "Expected non-null data pointer from SslGetData");
                 GCHandle gch = GCHandle.FromIntPtr(data);
                 SslAuthenticationOptions options = (SslAuthenticationOptions)gch.Target!;
+                sslHandle = (SafeSslHandle)options.SslStream!._securityContext!;
 
                 using SafeX509StoreCtxHandle storeHandle = new(store, ownsHandle: false);
 
                 // the chain will get properly disposed inside the VerifyRemoteCertificate call
                 X509Chain chain = new X509Chain();
                 X509Certificate2? certificate = null;
-                SafeSslHandle sslHandle = (SafeSslHandle)options.SslStream!._securityContext!;
 
                 using (SafeSharedX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetSharedUntrusted(storeHandle))
                 {
@@ -968,7 +969,7 @@ internal static partial class Interop
             }
             catch (Exception ex)
             {
-                sslHandle.CertificateValidationException = ex;
+                sslHandle?.CertificateValidationException = ex;
 
                 return Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_UNSPECIFIED;
             }
