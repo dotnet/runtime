@@ -751,7 +751,13 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- remove the original assemblies -->
       <ResolvedFileToPublish Remove="@(WasmAssembliesToBundle)" />
-      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" />
+      <!-- Exclude items marked CopyToPublishDirectory=Never. These are build-only assets
+           (e.g., HotReload dll) that should not participate in publish. Without this filter,
+           ComputeWasmPublishAssets matches them by filename and replaces Framework-materialized
+           per-project assets with the raw SDK-path original, causing duplicate Identity crashes
+           in multi-client hosted publish scenarios. -->
+      <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)"
+        Condition="'%(ResolvedFileToPublish.CopyToPublishDirectory)' != 'Never'" />
     </ItemGroup>
 
     <ComputeWasmPublishAssets

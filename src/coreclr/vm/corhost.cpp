@@ -335,7 +335,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions))
         {
             EX_TRY
-                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */);
+                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, true /* captureException */);
                 if (pReturnValue)
                 {
                     *pReturnValue = retval;
@@ -344,7 +344,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         }
         else
         {
-            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */);
+            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, false /* captureException */);
             if (pReturnValue)
             {
                 *pReturnValue = retval;
@@ -428,25 +428,18 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
         {
             GCX_COOP();
 
-            MethodDescCallSite method(pMethodMD);
+            UnmanagedCallersOnlyCaller executeInDefaultAppDomain(METHOD__ENVIRONMENT__EXECUTE_IN_DEFAULT_APP_DOMAIN);
+            pMethodMD->EnsureActive();
+            PCODE entryPoint = pMethodMD->GetSingleCallableAddrOfCode();
 
-            STRINGREF sref = NULL;
-            GCPROTECT_BEGIN(sref);
+            INT32 retval = executeInDefaultAppDomain.InvokeThrowing_Ret<INT32>(
+                static_cast<INT_PTR>(entryPoint),
+                pwzArgument);
 
-            if (pwzArgument)
-                sref = StringObject::NewString(pwzArgument);
-
-            ARG_SLOT MethodArgs[] =
-            {
-                ObjToArgSlot(sref)
-            };
-            DWORD retval = method.Call_RetI4(MethodArgs);
             if (pReturnValue)
             {
                 *pReturnValue = retval;
             }
-
-            GCPROTECT_END();
         }
     }
     EX_CATCH_HRESULT(hr);
