@@ -47,7 +47,7 @@ namespace Microsoft.Interop.Analyzers
 
         public override void Initialize(AnalysisContext context)
         {
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
             context.EnableConcurrentExecution();
             context.RegisterCompilationStartAction(context =>
             {
