@@ -31,6 +31,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
         public void KillOnParentExit_WithUseShellExecute_Throws()
         {
             ProcessStartInfo startInfo = new("dummy")
@@ -61,8 +62,9 @@ namespace System.Diagnostics.Tests
         {
             RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false };
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
+            remoteInvokeOptions.StartInfo.RedirectStandardInput = true;
 
-            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+            using RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(
                 (enabledStr, limitInheritanceStr) =>
                 {
                     using Process grandChild = CreateProcessLong();
@@ -71,16 +73,31 @@ namespace System.Diagnostics.Tests
 
                     grandChild.Start();
                     Console.WriteLine(grandChild.Id);
+
+                    // This will block the child until parent provides input.
+                    _ = Console.ReadLine();
                 },
                 enabled.ToString(),
                 restrictInheritance.ToString(),
                 remoteInvokeOptions);
 
-            string firstLine = remoteHandle.Process.StandardOutput.ReadLine();
-            int grandChildPid = int.Parse(firstLine);
-            remoteHandle.Process.WaitForExit();
+            int grandChildPid = int.Parse(childHandle.Process.StandardOutput.ReadLine());
 
-            VerifyProcessIsRunning(enabled, grandChildPid);
+            // Obtain a Process instance before the child exits to avoid PID reuse issues.
+            using Process grandchild = Process.GetProcessById(grandChildPid);
+
+            try
+            {
+                childHandle.Process.StandardInput.WriteLine("You can exit now.");
+
+                Assert.True(childHandle.Process.WaitForExit(WaitInMS));
+                // Use shorter wait time when the process is expected to survive
+                Assert.Equal(enabled, grandchild.WaitForExit(enabled ? WaitInMS : 300));
+            }
+            finally
+            {
+                grandchild.Kill();
+            }
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -110,12 +127,24 @@ namespace System.Diagnostics.Tests
                 restrictInheritance.ToString(),
                 remoteInvokeOptions);
 
-            string firstLine = childHandle.Process.StandardOutput.ReadLine();
-            int grandChildPid = int.Parse(firstLine);
-            childHandle.Process.Kill();
-            childHandle.Process.WaitForExit();
+            int grandChildPid = int.Parse(childHandle.Process.StandardOutput.ReadLine());
 
-            VerifyProcessIsRunning(enabled, grandChildPid);
+            // Obtain a Process instance before the child is killed to avoid PID reuse issues.
+            using Process grandchild = Process.GetProcessById(grandChildPid);
+
+            try
+            {
+                childHandle.Process.Kill();
+
+                Assert.True(childHandle.Process.WaitForExit(WaitInMS));
+                Assert.NotEqual(0, childHandle.Process.ExitCode);
+                // Use shorter wait time when the process is expected to survive
+                Assert.Equal(enabled, grandchild.WaitForExit(enabled ? WaitInMS : 300));
+            }
+            finally
+            {
+                grandchild.Kill();
+            }
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -151,60 +180,23 @@ namespace System.Diagnostics.Tests
                 restrictInheritance.ToString(),
                 remoteInvokeOptions);
 
-            string firstLine = childHandle.Process.StandardOutput.ReadLine();
-            int grandChildPid = int.Parse(firstLine);
-            childHandle.Process.StandardInput.WriteLine("One AccessViolationException please.");
-            childHandle.Process.WaitForExit();
-            Assert.NotEqual(0, childHandle.Process.ExitCode);
+            int grandChildPid = int.Parse(childHandle.Process.StandardOutput.ReadLine());
 
-            VerifyProcessIsRunning(enabled, grandChildPid);
-        }
+            // Obtain a Process instance before the child crashes to avoid PID reuse issues.
+            using Process grandchild = Process.GetProcessById(grandChildPid);
 
-        private static void VerifyProcessIsRunning(bool shouldBeKilled, int processId)
-        {
-            if (shouldBeKilled)
+            try
             {
-                const int timeoutMilliseconds = 10_000;
-                long deadline = Environment.TickCount64 + timeoutMilliseconds;
+                childHandle.Process.StandardInput.WriteLine("One AccessViolationException please.");
 
-                while (Environment.TickCount64 < deadline)
-                {
-                    try
-                    {
-                        using Process process = Process.GetProcessById(processId);
-                        if (process.HasExited || process.WaitForExit(100))
-                        {
-                            return;
-                        }
-                    }
-                    catch (ArgumentException)
-                    {
-                        return;
-                    }
-
-                    Thread.Sleep(100);
-                }
-
-                using Process finalCheck = Process.GetProcessById(processId);
-                Assert.True(finalCheck.HasExited || finalCheck.WaitForExit(0),
-                    $"Process {processId} was expected to exit within {timeoutMilliseconds}ms.");
+                Assert.True(childHandle.Process.WaitForExit(WaitInMS));
+                Assert.NotEqual(0, childHandle.Process.ExitCode);
+                // Use shorter wait time when the process is expected to survive
+                Assert.Equal(enabled, grandchild.WaitForExit(enabled ? WaitInMS : 300));
             }
-            else
+            finally
             {
-                // Give the OS a moment to clean up
-                Thread.Sleep(500);
-
-                // When KillOnParentExit is disabled, the process should still be running.
-                using Process process = Process.GetProcessById(processId);
-                try
-                {
-                    Assert.False(process.HasExited);
-                }
-                finally
-                {
-                    process.Kill();
-                    process.WaitForExit();
-                }
+                grandchild.Kill();
             }
         }
     }
