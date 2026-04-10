@@ -518,6 +518,16 @@ void CleanupCGroup()
     CGroup::Cleanup();
 }
 
+BOOL
+PALAPI
+PAL_GetCpuLimit(UINT* val)
+{
+    if (val == nullptr)
+        return FALSE;
+
+    return CGroup::GetCpuLimit(val);
+}
+
 #else // !(TARGET_LINUX || TARGET_ANDROID)
 
 void InitializeCGroup()
@@ -528,18 +538,11 @@ void CleanupCGroup()
 {
 }
 
-#endif // TARGET_LINUX || TARGET_ANDROID
-
 BOOL
 PALAPI
 PAL_GetCpuLimit(UINT* val)
 {
-    if (val == nullptr)
-        return FALSE;
-
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
-    return CGroup::GetCpuLimit(val);
-#else
     return FALSE;
-#endif // TARGET_LINUX || TARGET_ANDROID
 }
+
+#endif // TARGET_LINUX || TARGET_ANDROID
