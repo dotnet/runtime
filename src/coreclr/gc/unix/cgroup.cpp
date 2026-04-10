@@ -608,12 +608,12 @@ size_t GetRestrictedPhysicalMemoryLimit()
 
 bool GetPhysicalMemoryUsed(size_t* val)
 {
-    if (val == nullptr)
-        return false;
-
     bool result = false;
     size_t linelen;
     char* line = nullptr;
+
+    if (val == nullptr)
+        return false;
 
     // Linux uses cgroup usage to trigger oom kills.
     if (CGroup::GetPhysicalMemoryUsage(val))
