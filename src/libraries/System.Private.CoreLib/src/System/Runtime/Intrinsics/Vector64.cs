@@ -4417,7 +4417,7 @@ namespace System.Runtime.Intrinsics
             // * 0xFF_00 - 0xF0
             // * 0xFF_FF - 0xFF
             //
-            // This allows us to extract the full metadata as a 32-bit scalar which can be then
+            // This allows us to extract the full metadata as a 32-bit scalar which can then
             // be consumed by bit-counting APIs, such as PopCount, LeadingZeroCount, or TrailingZeroCount,
             // and then adjusted by AdvSimdFixupBitCount to get the actual count of elements
             // that were masked.
@@ -4435,7 +4435,7 @@ namespace System.Runtime.Intrinsics
             }
 
             // This API is meant to be consumed alongside AdvSimdExtractBitMask and will
-            // not produce correct results for arbitary inputs. It adjusts the bit count
+            // not produce correct results for arbitrary inputs. It adjusts the bit count
             // assuming that sequences of 1 or 0 were in groups of 4 bits per byte.
 
             unsafe
