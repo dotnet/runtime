@@ -1330,27 +1330,6 @@ bool gc_heap::new_allocation_allowed (int gen_number)
     return TRUE;
 }
 
-inline
-ptrdiff_t gc_heap::get_desired_allocation (int gen_number)
-{
-    return dd_desired_allocation (dynamic_data_of (gen_number));
-}
-
-inline
-ptrdiff_t  gc_heap::get_new_allocation (int gen_number)
-{
-    return dd_new_allocation (dynamic_data_of (gen_number));
-}
-
-//return the amount allocated so far in gen_number
-inline
-ptrdiff_t  gc_heap::get_allocation (int gen_number)
-{
-    dynamic_data* dd = dynamic_data_of (gen_number);
-
-    return dd_desired_allocation (dd) - dd_new_allocation (dd);
-}
-
 #ifdef SHORT_PLUGS
 inline
 void set_padding_in_expand (uint8_t* old_loc,
@@ -5367,15 +5346,6 @@ generation*  gc_heap::ensure_ephemeral_heap_segment (generation* consing_gen)
 }
 
 #endif //!USE_REGIONS
-
-inline
-void gc_heap::init_alloc_info (generation* gen, heap_segment* seg)
-{
-    generation_allocation_segment (gen) = seg;
-    generation_allocation_pointer (gen) = heap_segment_mem (seg);
-    generation_allocation_limit (gen) = generation_allocation_pointer (gen);
-    generation_allocation_context_start_region (gen) = generation_allocation_pointer (gen);
-}
 
 inline
 heap_segment* gc_heap::get_next_alloc_seg (generation* gen)

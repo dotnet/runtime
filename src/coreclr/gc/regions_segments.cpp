@@ -1124,7 +1124,7 @@ bool gc_heap::is_region_demoted (uint8_t* obj)
 static GCSpinLock write_barrier_spin_lock;
 #endif //USE_REGIONS
 
-inline
+/*inline*/
 void gc_heap::set_region_gen_num (heap_segment* region, int gen_num)
 {
     assert (gen_num < (1 << (sizeof (uint8_t) * 8)));

@@ -1053,12 +1053,6 @@ void gc_heap::relocate_survivors_in_brick (uint8_t* tree, relocate_args* args)
     }
 }
 
-inline
-void gc_heap::update_oldest_pinned_plug()
-{
-    oldest_pinned_plug = (pinned_plug_que_empty_p() ? 0 : pinned_plug (oldest_pin()));
-}
-
 heap_segment* gc_heap::get_start_segment (generation* gen)
 {
     heap_segment* start_heap_segment = heap_segment_rw (generation_start_segment (gen));

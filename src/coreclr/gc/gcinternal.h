@@ -3081,6 +3081,277 @@ gc_history_per_heap* gc_heap::get_gc_data_per_heap()
 #endif //BACKGROUND_GC
 }
 
+inline
+size_t gc_heap::brick_of (uint8_t* add)
+{
+    return (size_t)(add - lowest_address) / brick_size;
+}
+
+inline
+uint8_t* gc_heap::brick_address (size_t brick)
+{
+    return lowest_address + (brick_size * brick);
+}
+
+//codes for the brick entries:
+//entry == 0 -> not assigned
+//entry >0 offset is entry-1
+//entry <0 jump back entry bricks
+inline
+void gc_heap::set_brick (size_t index, ptrdiff_t val)
+{
+    if (val < -32767)
+    {
+        val = -32767;
+    }
+    assert (val < 32767);
+    if (val >= 0)
+        brick_table [index] = (short)val+1;
+    else
+        brick_table [index] = (short)val;
+
+    dprintf (3, ("set brick[%zx] to %d\n", index, (short)val));
+}
+
+inline
+int gc_heap::get_brick_entry (size_t index)
+{
+#ifdef MULTIPLE_HEAPS
+    return VolatileLoadWithoutBarrier(&brick_table [index]);
+#else
+    return brick_table[index];
+#endif
+}
+
+inline
+uint8_t* gc_heap::card_address (size_t card)
+{
+    return  (uint8_t*) (card_size * card);
+}
+
+inline
+size_t gc_heap::card_of ( uint8_t* object)
+{
+    return (size_t)(object) / card_size;
+}
+
+inline
+void gc_heap::clear_card (size_t card)
+{
+    card_table [card_word (card)] =
+        (card_table [card_word (card)] & ~(1 << card_bit (card)));
+    dprintf (3,("Cleared card %zx [%zx, %zx[", card, (size_t)card_address (card),
+              (size_t)card_address (card+1)));
+}
+
+inline
+void gc_heap::set_card (size_t card)
+{
+    size_t word = card_word (card);
+    card_table[word] = (card_table [word] | (1 << card_bit (card)));
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    // Also set the card bundle that corresponds to the card
+    size_t bundle_to_set = cardw_card_bundle(word);
+
+    card_bundle_set(bundle_to_set);
+
+    dprintf (3,("Set card %zx [%zx, %zx[ and bundle %zx", card, (size_t)card_address (card), (size_t)card_address (card+1), bundle_to_set));
+#endif
+}
+
+inline
+BOOL  gc_heap::card_set_p (size_t card)
+{
+    return ( card_table [ card_word (card) ] & (1 << card_bit (card)));
+}
+
+inline
+int gc_heap::get_num_heaps()
+{
+#ifdef MULTIPLE_HEAPS
+    return n_heaps;
+#else
+    return 1;
+#endif //MULTIPLE_HEAPS
+}
+
+inline
+ptrdiff_t gc_heap::get_desired_allocation (int gen_number)
+{
+    return dd_desired_allocation (dynamic_data_of (gen_number));
+}
+
+inline
+ptrdiff_t  gc_heap::get_new_allocation (int gen_number)
+{
+    return dd_new_allocation (dynamic_data_of (gen_number));
+}
+
+//return the amount allocated so far in gen_number
+inline
+ptrdiff_t  gc_heap::get_allocation (int gen_number)
+{
+    dynamic_data* dd = dynamic_data_of (gen_number);
+
+    return dd_desired_allocation (dd) - dd_new_allocation (dd);
+}
+
+#ifdef BACKGROUND_GC
+inline
+BOOL gc_heap::background_marked (uint8_t* o)
+{
+    return mark_array_marked (o);
+}
+
+inline
+BOOL gc_heap::background_mark1 (uint8_t* o)
+{
+    BOOL to_mark = !mark_array_marked (o);
+
+    dprintf (3, ("b*%zx*b(%d)", (size_t)o, (to_mark ? 1 : 0)));
+    if (to_mark)
+    {
+        mark_array_set_marked (o);
+        dprintf (4, ("n*%zx*n", (size_t)o));
+        return TRUE;
+    }
+    else
+        return FALSE;
+}
+
+// TODO: we could consider filtering out NULL's here instead of going to
+// look for it on other heaps
+inline
+BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
+{
+    BOOL marked = FALSE;
+    if ((o >= low) && (o < high))
+        marked = background_mark1 (o);
+#ifdef MULTIPLE_HEAPS
+    else if (o)
+    {
+        gc_heap* hp = heap_of (o);
+        assert (hp);
+        if ((o >= hp->background_saved_lowest_address) && (o < hp->background_saved_highest_address))
+            marked = background_mark1 (o);
+    }
+#endif //MULTIPLE_HEAPS
+    return marked;
+}
+
+#endif //BACKGROUND_GC
+
+inline
+size_t size_mark_array_of (uint8_t* from, uint8_t* end)
+{
+    assert (((size_t)from & ((mark_word_size)-1)) == 0);
+    assert (((size_t)end  & ((mark_word_size)-1)) == 0);
+    return sizeof (uint32_t)*(((end - from) / mark_word_size));
+}
+
+inline
+mark* gc_heap::pinned_plug_of (size_t bos)
+{
+    return &mark_stack_array [ bos ];
+}
+
+inline
+mark* gc_heap::oldest_pin ()
+{
+    return pinned_plug_of (mark_stack_bos);
+}
+
+inline
+BOOL gc_heap::pinned_plug_que_empty_p ()
+{
+    return (mark_stack_bos == mark_stack_tos);
+}
+
+#ifdef FEATURE_LOH_COMPACTION
+inline
+BOOL gc_heap::loh_pinned_plug_que_empty_p()
+{
+    return (loh_pinned_queue_bos == loh_pinned_queue_tos);
+}
+#endif // FEATURE_LOH_COMPACTION
+
+inline
+mark* gc_heap::loh_pinned_plug_of (size_t bos)
+{
+    return &loh_pinned_queue[bos];
+}
+
+#ifdef USE_REGIONS
+inline bool gc_heap::is_in_gc_range (uint8_t* o)
+{
+#ifdef FEATURE_BASICFREEZE
+    // we may have frozen objects in read only segments
+    // outside of the reserved address range of the gc heap
+    assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
+        (o == nullptr) || (ro_segment_lookup (o) != nullptr));
+#else //FEATURE_BASICFREEZE
+    // without frozen objects, every non-null pointer must be
+    // within the heap
+    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
+#endif //FEATURE_BASICFREEZE
+    return ((gc_low <= o) && (o < gc_high));
+}
+#endif //USE_REGIONS
+
+#ifdef FEATURE_EVENT_TRACE
+inline
+void gc_heap::record_mark_time (uint64_t& mark_time,
+                                uint64_t& current_mark_time,
+                                uint64_t& last_mark_time)
+{
+    if (informational_event_enabled_p)
+    {
+        current_mark_time = GetHighPrecisionTimeStamp();
+        mark_time = limit_time_to_uint32 (current_mark_time - last_mark_time);
+        dprintf (3, ("%zd - %zd = %zd",
+            current_mark_time, last_mark_time, (current_mark_time - last_mark_time)));
+        last_mark_time = current_mark_time;
+    }
+}
+#endif //FEATURE_EVENT_TRACE
+
+inline
+void gc_heap::init_alloc_info (generation* gen, heap_segment* seg)
+{
+    generation_allocation_segment (gen) = seg;
+    generation_allocation_pointer (gen) = heap_segment_mem (seg);
+    generation_allocation_limit (gen) = generation_allocation_pointer (gen);
+    generation_allocation_context_start_region (gen) = generation_allocation_pointer (gen);
+}
+
+inline
+uint8_t* pinned_plug (mark* m)
+{
+   return m->first;
+}
+
+inline
+size_t& pinned_len (mark* m)
+{
+    return m->len;
+}
+
+inline
+void set_new_pin_info (mark* m, uint8_t* pin_free_space_start)
+{
+    m->len = pinned_plug (m) - pin_free_space_start;
+#ifdef SHORT_PLUGS
+    m->allocation_context_start_region = pin_free_space_start;
+#endif //SHORT_PLUGS
+}
+
+inline
+void gc_heap::update_oldest_pinned_plug()
+{
+    oldest_pinned_plug = (pinned_plug_que_empty_p() ? 0 : pinned_plug (oldest_pin()));
+}
+
 #ifdef FEATURE_STRUCTALIGN
 #if defined (TARGET_AMD64)
 #define brick_bits (12)
@@ -3555,27 +3826,6 @@ BOOL is_plug_padded (uint8_t* node)
     return FALSE;
 }
 #endif //SHORT_PLUGS
-
-inline
-uint8_t* pinned_plug (mark* m)
-{
-   return m->first;
-}
-
-inline
-size_t& pinned_len (mark* m)
-{
-    return m->len;
-}
-
-inline
-void set_new_pin_info (mark* m, uint8_t* pin_free_space_start)
-{
-    m->len = pinned_plug (m) - pin_free_space_start;
-#ifdef SHORT_PLUGS
-    m->allocation_context_start_region = pin_free_space_start;
-#endif //SHORT_PLUGS
-}
 
 #ifdef SHORT_PLUGS
 inline

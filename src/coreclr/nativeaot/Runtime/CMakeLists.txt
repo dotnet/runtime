@@ -1,5 +1,29 @@
 set(GC_DIR ../../gc)
 
+set(GC_WKS_SVR_SOURCES
+    ${GC_DIR}/gc.cpp
+    ${GC_DIR}/init.cpp
+    ${GC_DIR}/no_gc.cpp
+    ${GC_DIR}/finalization.cpp
+    ${GC_DIR}/dynamic_tuning.cpp
+    ${GC_DIR}/region_free_list.cpp
+    ${GC_DIR}/region_allocator.cpp
+    ${GC_DIR}/memory.cpp
+    ${GC_DIR}/sweep.cpp
+    ${GC_DIR}/collect.cpp
+    ${GC_DIR}/diagnostics.cpp
+    ${GC_DIR}/dynamic_heap_count.cpp
+    ${GC_DIR}/card_table.cpp
+    ${GC_DIR}/relocate_compact.cpp
+    ${GC_DIR}/mark_phase.cpp
+    ${GC_DIR}/background.cpp
+    ${GC_DIR}/interface.cpp
+    ${GC_DIR}/allocation.cpp
+    ${GC_DIR}/plan_phase.cpp
+    ${GC_DIR}/regions_segments.cpp
+    ${GC_DIR}/gcee.cpp
+)
+
 set(COMMON_RUNTIME_SOURCES
     rhassert.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
@@ -35,33 +59,13 @@ set(COMMON_RUNTIME_SOURCES
     UniversalTransitionHelpers.cpp
     yieldprocessornormalized.cpp
 
+    ${GC_WKS_SVR_SOURCES}
     ${GC_DIR}/gceventstatus.cpp
     ${GC_DIR}/gcbridge.cpp
     ${GC_DIR}/gcload.cpp
     ${GC_DIR}/gcconfig.cpp
     ${GC_DIR}/gchandletable.cpp
     ${GC_DIR}/gccommon.cpp
-    ${GC_DIR}/gc.cpp
-    ${GC_DIR}/init.cpp
-    ${GC_DIR}/no_gc.cpp
-    ${GC_DIR}/finalization.cpp
-    ${GC_DIR}/dynamic_tuning.cpp
-    ${GC_DIR}/region_free_list.cpp
-    ${GC_DIR}/region_allocator.cpp
-    ${GC_DIR}/memory.cpp
-    ${GC_DIR}/sweep.cpp
-    ${GC_DIR}/collect.cpp
-    ${GC_DIR}/diagnostics.cpp
-    ${GC_DIR}/dynamic_heap_count.cpp
-    ${GC_DIR}/card_table.cpp
-    ${GC_DIR}/relocate_compact.cpp
-    ${GC_DIR}/mark_phase.cpp
-    ${GC_DIR}/background.cpp
-    ${GC_DIR}/interface.cpp
-    ${GC_DIR}/allocation.cpp
-    ${GC_DIR}/plan_phase.cpp
-    ${GC_DIR}/regions_segments.cpp
-    ${GC_DIR}/gcee.cpp
     ${GC_DIR}/gcscan.cpp
     ${GC_DIR}/handletable.cpp
     ${GC_DIR}/handletablecache.cpp
@@ -79,7 +83,7 @@ if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 endif()
 
 set(SERVER_GC_SOURCES
-    ${GC_DIR}/gcee.cpp
+    ${GC_WKS_SVR_SOURCES}
 )
 
 set(STANDALONEGC_DISABLED_SOURCES
