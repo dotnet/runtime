@@ -23,7 +23,7 @@ enum ThreadState
     Hijacked            = 0x00000080,    // Return address has been hijacked
     Background          = 0x00000200,    // Thread is a background thread
     Unstarted           = 0x00000400,    // Thread has never been started
-    ReportDead          = 0x00000800,    // Thread has started to shut down
+    Stopped             = 0x00010000,    // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,    // is this a threadpool worker thread?
 }
 
