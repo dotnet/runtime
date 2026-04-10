@@ -417,14 +417,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
-    internal RuntimeTypeSystem_1(Target target, TypeValidation typeValidation, MethodValidation methodValidation, TargetPointer freeObjectMethodTablePointer, TargetPointer continuationMethodTablePointer, ulong methodDescAlignment)
+    internal RuntimeTypeSystem_1(Target target)
     {
         _target = target;
-        _freeObjectMethodTablePointer = freeObjectMethodTablePointer;
-        _continuationMethodTablePointer = continuationMethodTablePointer;
-        _methodDescAlignment = methodDescAlignment;
-        _typeValidation = typeValidation;
-        _methodValidation = methodValidation;
+        _freeObjectMethodTablePointer = target.ReadPointer(
+            target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable));
+        _continuationMethodTablePointer = target.ReadPointer(
+            target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
+        _methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
+        _typeValidation = new TypeValidation(target, _continuationMethodTablePointer);
+        _methodValidation = new MethodValidation(target, _methodDescAlignment);
         _methodValidation.SetMethodTableQueries(new NonValidatedMethodTableQueries(this));
     }
 

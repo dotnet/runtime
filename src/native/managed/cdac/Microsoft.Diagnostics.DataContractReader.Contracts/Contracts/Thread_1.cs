@@ -19,10 +19,10 @@ internal readonly struct Thread_1 : IThread
         DirectOnThreadLocalData = 2, // IndexOffset for this form of TLS index is an offset into the ThreadLocalData structure itself. This is used for very high performance scenarios, and scenario where the runtime native code needs to hold a TLS pointer to a managed TLS slot. Each one of these is hand-opted into this model.
     };
 
-    internal Thread_1(Target target, TargetPointer threadStore)
+    internal Thread_1(Target target)
     {
         _target = target;
-        _threadStoreAddr = threadStore;
+        _threadStoreAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore));
 
         // Get the offset into Thread of the SLink. We use this to find the actual
         // first thread from the linked list node contained by the first thread.
