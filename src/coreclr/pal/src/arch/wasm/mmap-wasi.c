@@ -39,13 +39,16 @@ static void ensure_arena(void) {
 // Allocate from the bump arena with alignment. Never reuses freed addresses.
 static void *arena_alloc(size_t length, size_t align) {
     ensure_arena();
-    // Align up
-    size_t aligned = (s_arena_offset + align - 1) & ~(align - 1);
-    if (aligned + length > ANON_ARENA_SIZE) {
+    // Align the absolute address, not just the offset
+    uintptr_t base = (uintptr_t)s_arena_base;
+    uintptr_t current = base + s_arena_offset;
+    uintptr_t aligned_addr = (current + align - 1) & ~(align - 1);
+    size_t aligned_offset = aligned_addr - base;
+    if (aligned_offset + length > ANON_ARENA_SIZE) {
         return NULL;
     }
-    void *ptr = s_arena_base + aligned;
-    s_arena_offset = aligned + length;
+    void *ptr = (void *)aligned_addr;
+    s_arena_offset = aligned_offset + length;
     return ptr;
 }
 

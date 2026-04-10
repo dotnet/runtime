@@ -13,8 +13,17 @@ bool minipal_mutex_init(minipal_mutex* mtx)
     return true;
 #else
 #ifdef TARGET_WASI
-    // WASI single-threaded: simple mutex init without recursive attribute
-    int st = pthread_mutex_init(&mtx->_impl, NULL);
+    // WASI: use recursive mutex to match other platforms.
+    // Even though WASI is single-threaded, the runtime may re-enter locks
+    // (e.g., handle table lock during exception handling).
+    pthread_mutexattr_t mutexAttributes;
+    int st = pthread_mutexattr_init(&mutexAttributes);
+    if (st != 0)
+        return false;
+    st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
+    if (st == 0)
+        st = pthread_mutex_init(&mtx->_impl, &mutexAttributes);
+    pthread_mutexattr_destroy(&mutexAttributes);
     return (st == 0);
 #else
     pthread_mutexattr_t mutexAttributes;
