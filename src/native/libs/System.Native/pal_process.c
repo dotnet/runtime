@@ -358,8 +358,18 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 #endif
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_MACCATALYST)
+    // posix_spawn_file_actions_addchdir_np is not available on MacCatalyst, so changing the working
+    // directory is not supported. Credential changes via setuid/setgid are also not supported.
+    if (setCredentials || cwd != NULL)
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
     // Use posix_spawn on macOS/MacCatalyst when credentials don't need to be set,
     // since macOS does not support setuid/setgid with posix_spawn.
+    // On MacCatalyst, setCredentials and cwd are guaranteed to be false/NULL by the check above.
     if (!setCredentials)
     {
         pid_t spawnedPid;
@@ -431,7 +441,12 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         if ((stdinFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdinFd, STDIN_FILENO)) != 0)
             || (stdoutFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdoutFd, STDOUT_FILENO)) != 0)
             || (stderrFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stderrFd, STDERR_FILENO)) != 0)
-            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0)) // Change working directory if specified
+#if !defined(TARGET_MACCATALYST)
+            // posix_spawn_file_actions_addchdir_np is not available on MacCatalyst;
+            // cwd is guaranteed NULL at this point due to the early return above.
+            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0)
+#endif
+            ) // Change working directory if specified
         {
             int saved_errno = result;
             posix_spawn_file_actions_destroy(&file_actions);
