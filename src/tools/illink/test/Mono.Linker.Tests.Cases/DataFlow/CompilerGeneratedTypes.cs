@@ -50,6 +50,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             NestedAsyncLambda.Test<int>();
             NestedAsyncLocalFunction.Test<int>();
             NestedStaticLambda.Test<int>();
+
+            // Partial methods
+            PartialAsyncMethodWithLambda.Test();
         }
 
         private static void UseIterator()
@@ -431,6 +434,34 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public static void Test<T>()
             {
                 Container<T>.NestedLambda((T t) => t)(default(T));
+            }
+        }
+
+        // Regression test for https://github.com/dotnet/runtime/issues/122800
+        // Roslyn does not emit [AsyncStateMachineAttribute] on async partial methods,
+        // so ILLink must detect the state machine type from the method body instead.
+        partial class PartialAsyncMethodWithLambda
+        {
+            public static void Test()
+            {
+                new PartialAsyncMethodWithLambda().GetData<int>();
+            }
+
+            public partial Task<T> GetData<T>() where T : new();
+        }
+
+        partial class PartialAsyncMethodWithLambda
+        {
+            public async partial Task<T> GetData<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() where T : new()
+            {
+                var tcs = new TaskCompletionSource<T>();
+                Action<T> callback = (result) =>
+                {
+                    _ = typeof(T).GetMethods();
+                    tcs.TrySetResult(result);
+                };
+                callback(new T());
+                return await tcs.Task;
             }
         }
     }
