@@ -53,10 +53,11 @@ with the authoritative [`docs/area-owners.md`](../../../../docs/area-owners.md).
 | GC, garbage collection, memory pressure | `area-GC-coreclr` or `area-GC-mono` |
 | JIT, code generation, inlining, tiered compilation | `area-CodeGen-coreclr` |
 | NativeAOT, ahead-of-time compilation | `area-NativeAOT-coreclr` |
-| Crossgen2, R2R, ReadyToRun | `area-crossgen2-coreclr` |
-| Assembly loading, AssemblyLoadContext | `area-assemblyloading` |
+| Crossgen2, R2R, ReadyToRun, R2RDump | `area-crossgen2-coreclr` |
+| Assembly loading, AssemblyLoadContext, host, hostfxr, hostpolicy, HostModel | `area-assemblyloading` |
 | Interop, COM, P/Invoke, marshalling (runtime) | `area-Interop-coreclr` |
 | Single-file deployment | `area-Single-File` |
+| Exception handling (runtime-level), PAL, platform abstraction layer | `area-vm-coreclr` |
 | Debugger, debugging support | `area-Diagnostics-coreclr` |
 | `System.ComponentModel`, component model base types | `area-System.ComponentModel` |
 | `System.ComponentModel.DataAnnotations`, validation attributes | `area-System.ComponentModel.DataAnnotations` |
