@@ -323,6 +323,8 @@ configuration:
         - labelAdded:
             label: area-System.Xml
         - labelAdded:
+            label: area-TieredCompilation-coreclr
+        - labelAdded:
             label: area-Tools-ILLink
         - labelAdded:
             label: area-vm-coreclr
@@ -386,6 +388,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - JulieLeeMSFT
             - brzvlad
             - janvorli
             - kg
@@ -1576,6 +1579,19 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-system-xml
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-TieredCompilation-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - JulieLeeMSFT
+            - EgorBo
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
