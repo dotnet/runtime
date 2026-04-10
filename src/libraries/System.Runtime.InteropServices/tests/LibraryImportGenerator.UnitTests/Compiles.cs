@@ -732,10 +732,18 @@ namespace LibraryImportGenerator.UnitTests
                     .SelectMany(al => al.Attributes)
                     .Single(a => a.Name.ToString().Contains("DllImport"));
 
-                bool hasCharSet = dllImportAttr.ArgumentList!.Arguments
-                    .Any(a => a.NameEquals?.Name.Identifier.Text == nameof(DllImportAttribute.CharSet));
+                AttributeArgumentSyntax? charSetArgument = dllImportAttr.ArgumentList!.Arguments
+                    .SingleOrDefault(a => a.NameEquals?.Name.Identifier.Text == nameof(DllImportAttribute.CharSet));
 
-                Assert.Equal(_expectCharSetUnicode, hasCharSet);
+                if (_expectCharSetUnicode)
+                {
+                    Assert.NotNull(charSetArgument);
+                    Assert.Equal($"{nameof(CharSet)}.{nameof(CharSet.Unicode)}", charSetArgument.Expression.ToString());
+                }
+                else
+                {
+                    Assert.Null(charSetArgument);
+                }
             }
         }
 
