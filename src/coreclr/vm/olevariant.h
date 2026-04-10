@@ -40,12 +40,14 @@ class OleVariant
                                             SAFEARRAY* pSafeArray,
                                             VARTYPE vt,
                                             MethodTable* pInterfaceMT,
+                                            PCODE pConvertContentsCode,
                                             BOOL fSafeArrayIsValid = TRUE);
 
     static void MarshalArrayRefForSafeArray(SAFEARRAY* pSafeArray,
                                             BASEARRAYREF* pArrayRef,
                                             VARTYPE vt,
-                                            MethodTable* pInterfaceMT);
+                                            MethodTable* pInterfaceMT,
+                                            PCODE pConvertContentsCode);
 
     // Helper function to convert a boxed value class to an OLE variant.
     static void ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT *pOleVariant);
@@ -244,6 +246,11 @@ private:
 #endif
 #endif // FEATURE_COMINTEROP
 };
+
+// Returns the instantiated MethodDesc for a StubHelpers array marshalling method
+// (e.g. ConvertArrayContentsToUnmanaged/ConvertArrayContentsToManaged) for a given
+// SAFEARRAY VARTYPE and element MethodTable.
+MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous);
 
 extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT* pOle);
 

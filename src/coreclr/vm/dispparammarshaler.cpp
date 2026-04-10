@@ -212,6 +212,27 @@ void DispParamInterfaceMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VAR
     V_VT(pDestVar) = static_cast<VARTYPE>(m_bDispatch ? VT_DISPATCH : VT_UNKNOWN);
 }
 
+DispParamArrayMarshaler::DispParamArrayMarshaler(VARTYPE ElementVT, MethodTable *pElementMT) :
+    m_ElementVT(ElementVT),
+    m_pElementMT(pElementMT),
+    m_pConvertContentsToManagedCode(NULL),
+    m_pConvertContentsToUnmanagedCode(NULL)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (ElementVT != VT_EMPTY && pElementMT != NULL)
+    {
+        m_pConvertContentsToManagedCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, ElementVT, pElementMT, FALSE)->GetMultiCallableAddrOfCode();
+        m_pConvertContentsToUnmanagedCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, ElementVT, pElementMT, FALSE)->GetMultiCallableAddrOfCode();
+    }
+}
+
 void DispParamArrayMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF *pDestObj)
 {
     CONTRACTL
@@ -251,7 +272,10 @@ void DispParamArrayMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF
     *(BASEARRAYREF*)pDestObj = OleVariant::CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
 
     // Convert the contents of the SAFEARRAY.
-    OleVariant::MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF*)pDestObj, vt, pElemMT);
+    PCODE pConvertCode = m_pConvertContentsToManagedCode;
+    if (pConvertCode == NULL)
+        pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+    OleVariant::MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF*)pDestObj, vt, pElemMT, pConvertCode);
 }
 
 void DispParamArrayMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT *pDestVar)
@@ -290,7 +314,10 @@ void DispParamArrayMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT
         _ASSERTE(pSafeArray);
 
         // Marshal the contents of the SAFEARRAY.
-        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF*)pSrcObj, pSafeArray, vt, pElemMT);
+        PCODE pConvertCode = m_pConvertContentsToUnmanagedCode;
+        if (pConvertCode == NULL)
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF*)pSrcObj, pSafeArray, vt, pElemMT, pConvertCode);
     }
 
     // Store the resulting SAFEARRAY in the destination VARIANT.

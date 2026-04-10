@@ -4541,7 +4541,19 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     pslILEmit->EmitLDC(m_pargs->m_pMarshalInfo->GetArrayRank());
     pslILEmit->EmitLDC(dwFlags);
 
-    pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CREATE_MARSHALER, 4, 0);
+    // Resolve the instantiated content conversion methods at stub generation time
+    // and emit ldftn to pass their entry points to CreateMarshaler.
+    MethodDesc* pConvertToNativeMD = GetInstantiatedSafeArrayMethod(
+        METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED,
+        mops.elementType, mops.methodTable, FALSE);
+    pslILEmit->EmitLDFTN(pslILEmit->GetToken(pConvertToNativeMD));
+
+    MethodDesc* pConvertToManagedMD = GetInstantiatedSafeArrayMethod(
+        METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED,
+        mops.elementType, mops.methodTable, FALSE);
+    pslILEmit->EmitLDFTN(pslILEmit->GetToken(pConvertToManagedMD));
+
+    pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CREATE_MARSHALER, 6, 0);
 }
 
 void ILSafeArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -4578,7 +4590,7 @@ void ILSafeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmi
     pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_NATIVE, 4, 0);
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pConvertToNative, PCODE pConvertToManaged)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
@@ -4587,6 +4599,8 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMa
     pThis->m_vt            = (VARTYPE)dwFlags;
     pThis->m_fStatic       = (BYTE)(dwFlags >> 16);
     pThis->m_nolowerbounds = (BYTE)(dwFlags >> 24);
+    pThis->m_pConvertContentsToNativeCode = pConvertToNative;
+    pThis->m_pConvertContentsToManagedCode = pConvertToManaged;
 }
 
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
@@ -4660,6 +4674,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSaf
                                                 (SAFEARRAY*)*pNativeHome,
                                                 pThis->m_vt,
                                                 pThis->m_pElementMT,
+                                                pThis->m_pConvertContentsToNativeCode,
                                                 (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_NativeDataValid));
     }
 
@@ -4753,7 +4768,8 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSa
         OleVariant::MarshalArrayRefForSafeArray(pNative,
                                                 &arrayRef,
                                                 pThis->m_vt,
-                                                pThis->m_pElementMT);
+                                                pThis->m_pElementMT,
+                                                pThis->m_pConvertContentsToManagedCode);
     }
 
     GCPROTECT_END();

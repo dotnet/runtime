@@ -3131,7 +3131,8 @@ void OleVariant::MarshalArrayVariantOleToObject(const VARIANT* pOleVariant,
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
         SetObjectReference(pObj, pArrayRef);
-        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT);
+        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE);
+        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT, pConvertMD->GetMultiCallableAddrOfCode());
     }
     else
     {
@@ -3168,7 +3169,8 @@ void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
     if (*pArrayRef != NULL)
     {
         pSafeArray = CreateSafeArrayForArrayRef(pArrayRef, vt, pElemMT);
-        MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT);
+        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, vt, pElemMT, FALSE);
+        MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT, pConvertMD->GetMultiCallableAddrOfCode());
     }
     V_ARRAY(pOleVariant) = pSafeArray;
     pSafeArray.SuppressRelease();
@@ -3200,7 +3202,8 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
         SetObjectReference(pObj, pArrayRef);
-        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT);
+        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE);
+        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT, pConvertMD->GetMultiCallableAddrOfCode());
     }
     else
     {
@@ -3467,6 +3470,201 @@ BASEARRAYREF OleVariant::CreateArrayRefForSafeArray(SAFEARRAY *pSafeArray, VARTY
  * Safearray marshaling
  * ------------------------------------------------------------------------- */
 
+namespace
+{
+    // Returns the managed IArrayElementMarshaler<T> MethodTable for a given VARTYPE.
+    // This mirrors the logic in ILArrayMarshalerBase::GetMarshalerMT for SAFEARRAY-compatible types.
+    MethodTable* GetMarshalerMTForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous)
+    {
+        STANDARD_VM_CONTRACT;
+
+        switch (vt)
+        {
+        case VT_I1:
+        {
+            TypeHandle th = CoreLibBinder::GetClass(CLASS__SBYTE);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+        }
+        case VT_UI1:
+        {
+            TypeHandle th = CoreLibBinder::GetClass(CLASS__BYTE);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+        }
+        case VT_I2:
+        {
+            TypeHandle th = CoreLibBinder::GetClass(CLASS__INT16);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+        }
+        case VT_UI2:
+        {
+            TypeHandle th = CoreLibBinder::GetClass(CLASS__UINT16);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+        }
+        case VT_I4:
+        case VT_INT:
+        {
+            TypeHandle th = CoreLibBinder::GetClass(CLASS__INT32);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+        }
+        case VT_UI4:
+        case VT_UINT:
+        case VT_ERROR:
+        {
+            TypeHandle th = CoreLibBinder::GetClass(CLASS__UINT32);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+        }
+        case VT_I8:
+        {
+            TypeHandle th = CoreLibBinder::GetClass(CLASS__INT64);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+        }
+        case VT_UI8:
+        {
+            TypeHandle th = CoreLibBinder::GetClass(CLASS__UINT64);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+        }
+        case VT_R4:
+        {
+            TypeHandle th = CoreLibBinder::GetClass(CLASS__SINGLE);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+        }
+        case VT_R8:
+        {
+            TypeHandle th = CoreLibBinder::GetClass(CLASS__DOUBLE);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+        }
+        case VT_DECIMAL:
+        {
+            TypeHandle th = CoreLibBinder::GetClass(CLASS__DECIMAL);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+        }
+        case VT_BOOL:
+            return CoreLibBinder::GetClass(CLASS__VARIANT_BOOL_MARSHALER);
+
+        case VT_DATE:
+            return CoreLibBinder::GetClass(CLASS__DATEMARSHALER);
+
+        case VT_LPWSTR:
+            return CoreLibBinder::GetClass(CLASS__LPWSTR_MARSHALER);
+
+        case VT_LPSTR:
+        {
+            // SAFEARRAY LPSTR marshalling always uses default best-fit/throw-on-unmappable.
+            MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
+            TypeHandle thArgs[2] = { TypeHandle(pDisabledMT), TypeHandle(pDisabledMT) };
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__LPSTR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
+        }
+
+#ifdef FEATURE_COMINTEROP
+        case VT_CY:
+            return CoreLibBinder::GetClass(CLASS__CURRENCY_ARRAY_ELEMENT_MARSHALER);
+
+        case VT_BSTR:
+            return CoreLibBinder::GetClass(CLASS__BSTR_ARRAY_ELEMENT_MARSHALER);
+
+        case VT_UNKNOWN:
+        case VT_DISPATCH:
+        {
+            if (pElementMT == NULL || pElementMT == g_pObjectClass)
+            {
+                if (bHeterogeneous)
+                {
+                    return CoreLibBinder::GetClass(CLASS__HETEROGENEOUS_INTERFACE_ARRAY_ELEMENT_MARSHALER);
+                }
+                MethodTable* pEnabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_ENABLED);
+                MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
+                TypeHandle thDispatch(vt == VT_DISPATCH ? pEnabledMT : pDisabledMT);
+                return TypeHandle(CoreLibBinder::GetClass(CLASS__INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDispatch, 1)).AsMethodTable();
+            }
+            else
+            {
+                TypeHandle thElement(pElementMT);
+                return TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+            }
+        }
+
+        case VT_VARIANT:
+            return CoreLibBinder::GetClass(CLASS__VARIANT_ARRAY_ELEMENT_MARSHALER);
+#endif // FEATURE_COMINTEROP
+
+        case VT_RECORD:
+        {
+            _ASSERTE(pElementMT != NULL);
+            TypeHandle thElement(pElementMT);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+        }
+
+        default:
+            _ASSERTE(!"Unsupported VT for SafeArray marshaler");
+            COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
+            return NULL;
+        }
+    }
+
+    // Returns the element TypeHandle for a given VARTYPE and element MethodTable.
+    TypeHandle GetElementTypeForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT)
+    {
+        STANDARD_VM_CONTRACT;
+
+        switch (vt)
+        {
+        case VT_BOOL:       return TypeHandle(CoreLibBinder::GetClass(CLASS__BOOLEAN));
+        case VT_I1:         return TypeHandle(CoreLibBinder::GetClass(CLASS__SBYTE));
+        case VT_UI1:        return TypeHandle(CoreLibBinder::GetClass(CLASS__BYTE));
+        case VT_I2:         return TypeHandle(CoreLibBinder::GetClass(CLASS__INT16));
+        case VT_UI2:        return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT16));
+        case VT_I4:
+        case VT_INT:        return TypeHandle(CoreLibBinder::GetClass(CLASS__INT32));
+        case VT_UI4:
+        case VT_UINT:
+        case VT_ERROR:      return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT32));
+        case VT_I8:         return TypeHandle(CoreLibBinder::GetClass(CLASS__INT64));
+        case VT_UI8:        return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT64));
+        case VT_R4:         return TypeHandle(CoreLibBinder::GetClass(CLASS__SINGLE));
+        case VT_R8:         return TypeHandle(CoreLibBinder::GetClass(CLASS__DOUBLE));
+        case VT_DECIMAL:    return TypeHandle(CoreLibBinder::GetClass(CLASS__DECIMAL));
+        case VT_DATE:       return TypeHandle(CoreLibBinder::GetClass(CLASS__DATE_TIME));
+        case VT_BSTR:
+        case VT_LPWSTR:
+        case VT_LPSTR:      return TypeHandle(g_pStringClass);
+#ifdef FEATURE_COMINTEROP
+        case VT_CY:         return TypeHandle(CoreLibBinder::GetClass(CLASS__DECIMAL));
+        case VT_VARIANT:    return TypeHandle(g_pObjectClass);
+        case VT_UNKNOWN:
+        case VT_DISPATCH:
+            if (pElementMT == NULL || pElementMT == g_pObjectClass)
+                return TypeHandle(g_pObjectClass);
+            return TypeHandle(pElementMT);
+#endif // FEATURE_COMINTEROP
+        case VT_RECORD:
+            _ASSERTE(pElementMT != NULL);
+            return TypeHandle(pElementMT);
+        default:
+            COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
+            return TypeHandle();
+        }
+    }
+}
+
+MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous)
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc* pGenericMD = CoreLibBinder::GetMethod(methodId);
+
+    TypeHandle thElementType = GetElementTypeForSafeArrayVarType(vt, pElementMT);
+    TypeHandle thMarshalerType(GetMarshalerMTForSafeArrayVarType(vt, pElementMT, bHeterogeneous));
+
+    TypeHandle thArgs[2] = { thElementType, thMarshalerType };
+
+    return MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pGenericMD,
+        pGenericMD->GetMethodTable(),
+        FALSE,
+        Instantiation(thArgs, 2),
+        FALSE);
+}
+
 //
 // MarshalSafeArrayForArrayRef marshals the contents of the array ref into the given
 // safe array. It is assumed that the type & dimensions of the arrays are compatible.
@@ -3475,6 +3673,7 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
                                              SAFEARRAY *pSafeArray,
                                              VARTYPE vt,
                                              MethodTable *pInterfaceMT,
+                                             PCODE pConvertContentsCode,
                                              BOOL fSafeArrayIsValid /*= TRUE*/)
 {
     CONTRACTL
@@ -3498,12 +3697,9 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
 
     GCPROTECT_BEGIN(Array)
     {
-        // Retrieve the marshaler to use to convert the contents.
-        const Marshaler *marshal = GetMarshalerForVarType(vt, TRUE);
-
         // If the array is an array of wrappers, then we need to extract the objects
         // being wrapped and create an array of those.
-        BOOL bArrayOfInterfaceWrappers;
+        BOOL bArrayOfInterfaceWrappers = FALSE;
         if (IsArrayOfWrappers(pArrayRef, &bArrayOfInterfaceWrappers))
         {
             Array = ExtractWrappedObjectsFromArray(pArrayRef);
@@ -3513,41 +3709,15 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
             Array = *pArrayRef;
         }
 
-        if (marshal == NULL || marshal->ComToOleArray == NULL)
+        // Use managed IArrayElementMarshaler<T> implementations for content conversion.
+        UnmanagedCallersOnlyCaller invoker(METHOD__STUBHELPERS__INVOKE_ARRAY_CONTENTS_CONVERTER);
+        invoker.InvokeThrowing(&Array, pSafeArray->pvData, (void*)pConvertContentsCode);
+
+        if (pSafeArray->cDims != 1)
         {
-            if (pSafeArray->cDims == 1)
-            {
-                // If the array is single dimensionnal then we can simply copy it over.
-                memcpyNoGCRefs(pSafeArray->pvData, Array->GetDataPtr(), dwNumComponents * dwComponentSize);
-            }
-            else
-            {
-                // Copy and transpose the data.
-                TransposeArrayData((BYTE*)pSafeArray->pvData, Array->GetDataPtr(), dwNumComponents, dwComponentSize, pSafeArray, FALSE);
-            }
+            // The array is multidimensional - transpose the data in place.
+            TransposeArrayData((BYTE*)pSafeArray->pvData, (BYTE*)pSafeArray->pvData, dwNumComponents, dwComponentSize, pSafeArray, FALSE);
         }
-        else
-        {
-            {
-                PinningHandleHolder handle = GetAppDomain()->CreatePinningHandle((OBJECTREF)Array);
-
-                if (bArrayOfInterfaceWrappers)
-                {
-                    _ASSERTE(vt == VT_UNKNOWN || vt == VT_DISPATCH);
-                    // Signal to code:OleVariant::MarshalInterfaceArrayComToOleHelper that this was an array
-                    // of UnknownWrapper or DispatchWrapper. It shall use a different logic and marshal each
-                    // element according to its specific default interface.
-                    pInterfaceMT = NULL;
-                }
-                marshal->ComToOleArray(&Array, pSafeArray->pvData, pInterfaceMT, TRUE, FALSE, fSafeArrayIsValid, dwNumComponents);
-            }
-
-            if (pSafeArray->cDims != 1)
-            {
-                // The array is multidimensionnal we need to transpose it.
-                TransposeArrayData((BYTE*)pSafeArray->pvData, (BYTE*)pSafeArray->pvData, dwNumComponents, dwComponentSize, pSafeArray, FALSE);
-            }
-         }
     }
     GCPROTECT_END();
 }
@@ -3560,7 +3730,8 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
 void OleVariant::MarshalArrayRefForSafeArray(SAFEARRAY *pSafeArray,
                                              BASEARRAYREF *pArrayRef,
                                              VARTYPE vt,
-                                             MethodTable *pInterfaceMT)
+                                             MethodTable *pInterfaceMT,
+                                             PCODE pConvertContentsCode)
 {
     CONTRACTL
     {
@@ -3578,59 +3749,26 @@ void OleVariant::MarshalArrayRefForSafeArray(SAFEARRAY *pSafeArray,
 
     // Retrieve the number of components.
     SIZE_T dwNumComponents = (*pArrayRef)->GetNumComponents();
+    SIZE_T dwNativeComponentSize = GetElementSizeForVarType(vt, pInterfaceMT);
 
-    // Retrieve the marshaler to use to convert the contents.
-    const Marshaler *marshal = GetMarshalerForVarType(vt, TRUE);
+    CQuickArray<BYTE> TmpArray;
+    BYTE* pSrcData = NULL;
 
-    if (marshal == NULL || marshal->OleToComArray == NULL)
+    if (pSafeArray->cDims != 1)
     {
-        SIZE_T dwManagedComponentSize = (*pArrayRef)->GetComponentSize();
-
-#ifdef _DEBUG
-        {
-            // If we're blasting bits, this better be a primitive type.  Currency is
-            // an I8 on managed & unmanaged, so it's good enough.
-            TypeHandle  th = (*pArrayRef)->GetArrayElementTypeHandle();
-
-            if (!CorTypeInfo::IsPrimitiveType(th.GetInternalCorElementType()))
-            {
-                _ASSERTE(!strcmp(th.AsMethodTable()->GetDebugClassName(), "System.Currency")
-                        || !strcmp(th.AsMethodTable()->GetDebugClassName(), "System.Decimal"));
-            }
-        }
-#endif
-        if (pSafeArray->cDims == 1)
-        {
-            // If the array is single dimensionnal then we can simply copy it over.
-            memcpyNoGCRefs((*pArrayRef)->GetDataPtr(), pSafeArray->pvData, dwNumComponents * dwManagedComponentSize);
-        }
-        else
-        {
-            // Copy and transpose the data.
-            TransposeArrayData((*pArrayRef)->GetDataPtr(), (BYTE*)pSafeArray->pvData, dwNumComponents, dwManagedComponentSize, pSafeArray, TRUE);
-        }
+        // Multi-dimensional arrays need transposition before content conversion.
+        TmpArray.ReSizeThrows(dwNumComponents * dwNativeComponentSize);
+        pSrcData = TmpArray.Ptr();
+        TransposeArrayData(pSrcData, (BYTE*)pSafeArray->pvData, dwNumComponents, dwNativeComponentSize, pSafeArray, TRUE);
     }
     else
     {
-        CQuickArray<BYTE> TmpArray;
-        BYTE* pSrcData = NULL;
-        SIZE_T dwNativeComponentSize = GetElementSizeForVarType(vt, pInterfaceMT);
-
-        if (pSafeArray->cDims != 1)
-        {
-            TmpArray.ReSizeThrows(dwNumComponents * dwNativeComponentSize);
-            pSrcData = TmpArray.Ptr();
-            TransposeArrayData(pSrcData, (BYTE*)pSafeArray->pvData, dwNumComponents, dwNativeComponentSize, pSafeArray, TRUE);
-        }
-        else
-        {
-            pSrcData = (BYTE*)pSafeArray->pvData;
-        }
-
-        PinningHandleHolder handle = GetAppDomain()->CreatePinningHandle((OBJECTREF)*pArrayRef);
-
-        marshal->OleToComArray(pSrcData, pArrayRef, pInterfaceMT);
+        pSrcData = (BYTE*)pSafeArray->pvData;
     }
+
+    // Use managed IArrayElementMarshaler<T> implementations for content conversion.
+    UnmanagedCallersOnlyCaller invoker(METHOD__STUBHELPERS__INVOKE_ARRAY_CONTENTS_CONVERTER);
+    invoker.InvokeThrowing(pArrayRef, pSrcData, (void*)pConvertContentsCode);
 }
 
 void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT *pOleVariant)

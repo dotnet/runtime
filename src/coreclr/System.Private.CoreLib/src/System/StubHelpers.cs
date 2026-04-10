@@ -677,7 +677,7 @@ namespace System.StubHelpers
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_CreateMarshaler")]
         [SuppressGCTransition]
-        internal static partial void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int iRank, int dwFlags);
+        internal static partial void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int iRank, int dwFlags, IntPtr pConvertToNative, IntPtr pConvertToManaged);
 
         internal static void ConvertSpaceToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
         {
@@ -2268,6 +2268,23 @@ namespace System.StubHelpers
             {
                 TMarshaler.ConvertToManaged(ref managed[i], pNative);
                 pNative += TMarshaler.UnmanagedSize;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void InvokeArrayContentsConverter(
+            Array* pManagedArray,
+            byte* pNative,
+            delegate*<Array, byte*, void> pConvertMethod,
+            Exception* pException)
+        {
+            try
+            {
+                pConvertMethod(*pManagedArray, pNative);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 

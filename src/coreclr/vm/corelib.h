@@ -1082,6 +1082,7 @@ DEFINE_METHOD(STUBHELPERS,          FREE_ARRAY_CONTENTS,                 FreeArr
 DEFINE_METHOD(STUBHELPERS,          CONVERT_ARRAY_SPACE_TO_NATIVE,       ConvertArraySpaceToNative,       NoSig)
 DEFINE_METHOD(STUBHELPERS,          CONVERT_ARRAY_SPACE_TO_MANAGED,      ConvertArraySpaceToManaged,      NoSig)
 DEFINE_METHOD(STUBHELPERS,          CLEAR_ARRAY_NATIVE,                  ClearArrayNative,                NoSig)
+DEFINE_METHOD(STUBHELPERS,          INVOKE_ARRAY_CONTENTS_CONVERTER,     InvokeArrayContentsConverter,     NoSig)
 DEFINE_METHOD(STUBHELPERS,          THROW_WRONG_SIZE_ARRAY_IN_NSTRUCT,   ThrowWrongSizeArrayInNativeStruct, SM_RetVoid)
 
 #ifdef FEATURE_COMINTEROP
@@ -1169,7 +1170,7 @@ DEFINE_METHOD(INTERFACEMARSHALER,   VALIDATE_COM_VISIBILITY_FOR_IUNKNOWN, Valida
 
 
 DEFINE_CLASS(MNGD_SAFE_ARRAY_MARSHALER,  StubHelpers,                 MngdSafeArrayMarshaler)
-DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CREATE_MARSHALER,            CreateMarshaler,            SM_IntPtr_IntPtr_Int_Int_RetVoid)
+DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CREATE_MARSHALER,            CreateMarshaler,            SM_IntPtr_IntPtr_Int_Int_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_SPACE_TO_NATIVE,     ConvertSpaceToNative,       SM_IntPtr_RefObj_IntPtr_RetVoid)
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertContentsToNative,    SM_IntPtr_RefObj_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_SPACE_TO_MANAGED,    ConvertSpaceToManaged,      SM_IntPtr_RefObj_IntPtr_RetVoid)
@@ -1250,6 +1251,7 @@ DEFINE_CLASS(CURRENCY_ARRAY_ELEMENT_MARSHALER, StubHelpers,  CurrencyArrayElemen
 DEFINE_CLASS(BSTR_ARRAY_ELEMENT_MARSHALER,     StubHelpers,  BSTRArrayElementMarshaler)
 DEFINE_CLASS(INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, InterfaceArrayElementMarshaler`1)
 DEFINE_CLASS(TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, TypedInterfaceArrayElementMarshaler`1)
+DEFINE_CLASS(HETEROGENEOUS_INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, HeterogeneousInterfaceArrayElementMarshaler)
 DEFINE_CLASS(VARIANT_ARRAY_ELEMENT_MARSHALER,  StubHelpers,  VariantArrayElementMarshaler)
 #endif // FEATURE_COMINTEROP
 DEFINE_CLASS(MARSHALER_OPTION_ENABLED,  StubHelpers,         IMarshalerOption+EnabledOption)
