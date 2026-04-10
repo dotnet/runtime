@@ -74,10 +74,6 @@ public:
                                     PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                     uintptr_t *     pSpForArm64PacSign);// out
 
-#if defined(TARGET_ARM64)
-    bool IsPacPresent(MethodInfo *    pMethodInfo, REGDISPLAY *    pRegisterSet);
-#endif // TARGET_ARM64
-
     PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC);
 
     bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress, EHEnumState * pEHEnumState);

@@ -839,7 +839,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 
         void* pvHijackedAddr = (void*)pfnHijackFunction;
 #if defined(TARGET_ARM64)
-        if (frameIterator->GetCodeManager()->IsPacPresent(frameIterator->GetMethodInfo(), frameIterator->GetRegisterSet()))
+        if (spForPacSign != 0)
         {
             pvHijackedAddr = PacSignPtr(pvHijackedAddr, (void*)spForPacSign);
         }

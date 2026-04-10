@@ -118,13 +118,16 @@ static ssize_t readSLEB(const uint8_t *&p, const uint8_t *end)
     return result;
 }
 
-static bool TryGetSpForPacSigning(UnixNativeMethodInfo *pNativeMethodInfo,
-                                  PTR_PTR_VOID ppvRetAddrLocation,
-                                  uintptr_t *pSpForPacSign)
+struct PacFrameInfo
 {
-    if (ppvRetAddrLocation == NULL)
-        return false;
+    bool hasPac;
+    int cfaOffset;
+    int lrOffset;
+};
 
+static bool TryGetPacFrameInfo(UnixNativeMethodInfo *pNativeMethodInfo,
+                                    PacFrameInfo *pPacFrameInfo)
+{
     const uint8_t* p = (const uint8_t*)pNativeMethodInfo->unwind_info;
     uint32_t fdeLength = *dac_cast<PTR_uint32_t>((uint8_t*)p);
     const uint8_t* end = p + fdeLength;
@@ -241,73 +244,27 @@ static bool TryGetSpForPacSigning(UnixNativeMethodInfo *pNativeMethodInfo,
         }
     }
 
-    if (!hasPac || lrOffset == INT_MIN || cfaOffset < lrOffset)
-        return false;
-
-    *pSpForPacSign = dac_cast<TADDR>(ppvRetAddrLocation) + (cfaOffset - lrOffset);
+    pPacFrameInfo->hasPac = hasPac;
+    pPacFrameInfo->cfaOffset = cfaOffset;
+    pPacFrameInfo->lrOffset = lrOffset;
     return true;
 }
 
-bool UnixNativeCodeManager::IsPacPresent(MethodInfo *    pMethodInfo,
-                                        REGDISPLAY *    pRegisterSet)
+static bool TryGetSpForPacSigning(const PacFrameInfo& pacFrameInfo,
+                                  PTR_PTR_VOID ppvRetAddrLocation,
+                                  uintptr_t *pSpForPacSign)
 {
-    UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
-    const uint8_t *p = (uint8_t *) pNativeMethodInfo->unwind_info;
-    const uint8_t *end = p + *((uint32_t *)p);
-    p += 4; // Skip length
-    assert(*((uint32_t *)p) != 0); // Ensure it's FDE entry
-    p += 4; // Skip offset to CIE
-    p += 4; // Skip PC start
-    p += 4; // Skip function length
-    size_t augmentationLength = readULEB(p, end);
-    p += augmentationLength;    // skip augmentation data
-
-    while (p < end) {
-        uint8_t op = *p++;
-
-        if (op == DW_CFA_AARCH64_negate_ra_state)
-        {
-            return true;
-        }
-
-        if ((op & 0xC0) == DW_CFA_advance_loc)
-        {
-            continue;
-        }
-        if ((op & ~(0x3F)) == DW_CFA_offset)
-        {
-            readULEB(p, end);  // offset
-            continue;
-        }
-
-        // Extended, single‐byte opcodes:
-        switch (op) {
-            case DW_CFA_advance_loc1:
-            case DW_CFA_def_cfa_register:
-                p++;   // offset
-                break;
-
-            case DW_CFA_offset_extended_sf:
-            case DW_CFA_offset_extended:
-                readULEB(p, end);  // register
-                readULEB(p, end);  // offset
-                break;
-
-            case DW_CFA_def_cfa_offset: // DW_CFA_def_cfa_offset
-                readULEB(p, end);  // offset
-                break;
-
-            case DW_CFA_def_cfa:  // DW_CFA_def_cfa
-                p++;    // register
-                readULEB(p, end);  // offset
-                break;
-
-            default: // Unknown unwind op code
-                //TODO-PAC: Handle unknown op codes correctly. return false/assert false?
-                p++;
-        }
+    if (!pacFrameInfo.hasPac)
+    {
+        *pSpForPacSign = 0;
+        return true;
     }
-    return false;
+
+    if (ppvRetAddrLocation == NULL || pacFrameInfo.lrOffset == INT_MIN || pacFrameInfo.cfaOffset < pacFrameInfo.lrOffset)
+        return false;
+
+    *pSpForPacSign = dac_cast<TADDR>(ppvRetAddrLocation) + (pacFrameInfo.cfaOffset - pacFrameInfo.lrOffset);
+    return true;
 }
 #endif // TARGET_ARM64
 
@@ -1182,6 +1139,18 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
             }
         }
 
+        // Post-index restore sequences such as "ldp x19, x20, [sp], #0x10" also adjust SP
+        // before the final AUTIASP/RET. We avoid signing with a partially-restored SP.
+        int baseRegister = (instr >> 5) & 0x1f;
+        if (baseRegister == 31)
+        {
+            if ((instr & LDP_MASK2) == LDP_BITS2 ||
+                (instr & LDR_MASK2) == LDR_BITS2)
+            {
+                return -1;
+            }
+        }
+
         // Stack pointer adjustments can happen before AUTIASP/RET in some epilog layouts,
         // so treat them as being in the epilog as well.
         if ((instr & ADD_SP_SP_MASK) == ADD_SP_SP_BITS ||
@@ -1431,7 +1400,9 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
 
 #if defined(TARGET_ARM64)
-    bool pacPresent = IsPacPresent(pMethodInfo, pRegisterSet);
+    PacFrameInfo pacFrameInfo = {};
+    bool hasPacFrameInfo = TryGetPacFrameInfo(pNativeMethodInfo, &pacFrameInfo);
+    bool pacPresent = hasPacFrameInfo && pacFrameInfo.hasPac;
     if (pacPresent)
     {
         // For PAC frames we only hijack locations where the current frame state is
@@ -1469,7 +1440,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         *pSpForArm64PacSign = 0;
         *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() + (sizeof(TADDR) * (epilogueInstructions - 1)));
 #if defined(TARGET_ARM64)
-        if (IsPacPresent(pMethodInfo, pRegisterSet) && !TryGetSpForPacSigning(pNativeMethodInfo, *ppvRetAddrLocation, pSpForArm64PacSign))
+        if (!TryGetSpForPacSigning(pacFrameInfo, *ppvRetAddrLocation, pSpForArm64PacSign))
             return false;
 #endif
         return true;
@@ -1549,7 +1520,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->GetReturnAddressRegisterLocation();
 
 #if defined(TARGET_ARM64)
-    if (IsPacPresent(pMethodInfo, pRegisterSet) && !TryGetSpForPacSigning(pNativeMethodInfo, *ppvRetAddrLocation, pSpForArm64PacSign))
+    if (!TryGetSpForPacSigning(pacFrameInfo, *ppvRetAddrLocation, pSpForArm64PacSign))
     {
         return false;
     }

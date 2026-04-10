@@ -830,22 +830,14 @@ bool CoffNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     return true;
 }
 
-#if defined(TARGET_ARM64)
-bool CoffNativeCodeManager::IsPacPresent(MethodInfo *    pMethodInfo,
-                                         REGDISPLAY *    pRegisterSet)
+static bool HasPacInUnwindInfo(PTR_VOID pUnwindDataBlob, size_t unwindDataBlobSize)
 {
-    CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
-
-    size_t unwindDataBlobSize;
-
-    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
-
     PTR_uint8_t UnwindCodePtr = dac_cast<PTR_uint8_t>(pUnwindDataBlob);
     PTR_uint8_t UnwindCodesEndPtr = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
 
-     while (UnwindCodePtr < UnwindCodesEndPtr)
+    while (UnwindCodePtr < UnwindCodesEndPtr)
     {
-        uint8_t CurCode = * UnwindCodePtr;
+        uint8_t CurCode = *UnwindCodePtr;
         if ((CurCode & 0xfe) == 0xe4)   // The last unwind code
         {
             break;
@@ -930,7 +922,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *ppvRetAddrLocation = (PTR_PTR_VOID)(context.Rsp - sizeof (PVOID));
     return true;
 #elif defined(TARGET_ARM64)
-    *pSpForArm64PacSign = pRegisterSet->GetSP();
+    *pSpForArm64PacSign = 0;
 
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
         p += sizeof(int32_t);
@@ -953,6 +945,11 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         //    the hijacked return address would not be not on the stack and so we would
         //    not be able to unhijack.
         return false;
+    }
+
+    if (HasPacInUnwindInfo(pUnwindDataBlob, unwindDataBlobSize))
+    {
+        *pSpForArm64PacSign = pRegisterSet->GetSP();
     }
 
     context.Sp = pRegisterSet->GetSP();
