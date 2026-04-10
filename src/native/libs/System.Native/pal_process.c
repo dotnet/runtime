@@ -359,8 +359,11 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
 #if defined(TARGET_MACCATALYST)
-    // posix_spawn_file_actions_addchdir_np is not available on MacCatalyst, so changing the working
-    // directory is not supported. Credential changes via setuid/setgid are also not supported.
+    // On MacCatalyst, fork(2) exists in the SDK but is blocked by the kernel at runtime (EPERM).
+    // posix_spawn is used instead, but with restrictions: posix_spawn_file_actions_addchdir_np
+    // is not available on MacCatalyst (marked unavailable in the SDK), and setuid/setgid-based
+    // credential changes require fork. Fail fast with ENOTSUP for these unsupported combinations
+    // rather than returning -1 with a stale or unset errno.
     if (setCredentials || cwd != NULL)
     {
         errno = ENOTSUP;
@@ -368,7 +371,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     }
 #endif
     // Use posix_spawn on macOS/MacCatalyst when credentials don't need to be set,
-    // since macOS does not support setuid/setgid with posix_spawn.
+    // since posix_spawn does not support setuid/setgid.
     // On MacCatalyst, setCredentials and cwd are guaranteed to be false/NULL by the check above.
     if (!setCredentials)
     {
