@@ -27,6 +27,8 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #include <sys/vfs.h>
 #endif
 
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+
 #define CGROUP2_SUPER_MAGIC 0x63677270
 
 #define BASE_TEN 10
@@ -516,6 +518,18 @@ void CleanupCGroup()
     CGroup::Cleanup();
 }
 
+#else // !(TARGET_LINUX || TARGET_ANDROID)
+
+void InitializeCGroup()
+{
+}
+
+void CleanupCGroup()
+{
+}
+
+#endif // TARGET_LINUX || TARGET_ANDROID
+
 BOOL
 PALAPI
 PAL_GetCpuLimit(UINT* val)
@@ -523,5 +537,9 @@ PAL_GetCpuLimit(UINT* val)
     if (val == nullptr)
         return FALSE;
 
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     return CGroup::GetCpuLimit(val);
+#else
+    return FALSE;
+#endif // TARGET_LINUX || TARGET_ANDROID
 }

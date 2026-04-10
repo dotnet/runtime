@@ -38,6 +38,8 @@ Abstract:
 #define SIZE_T_MAX (~(size_t)0)
 #endif
 
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+
 #define CGROUP2_SUPER_MAGIC 0x63677270
 
 #define PROC_MOUNTINFO_FILENAME "/proc/self/mountinfo"
@@ -568,8 +570,21 @@ void CleanupCGroup()
     CGroup::Cleanup();
 }
 
+#else // !(TARGET_LINUX || TARGET_ANDROID)
+
+void InitializeCGroup()
+{
+}
+
+void CleanupCGroup()
+{
+}
+
+#endif // TARGET_LINUX || TARGET_ANDROID
+
 size_t GetRestrictedPhysicalMemoryLimit()
 {
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     uint64_t physical_memory_limit = 0;
 
     if (!CGroup::GetPhysicalMemoryLimit(&physical_memory_limit))
@@ -615,16 +630,20 @@ size_t GetRestrictedPhysicalMemoryLimit()
     {
         return (size_t)physical_memory_limit;
     }
+#else
+    return 0;
+#endif // TARGET_LINUX || TARGET_ANDROID
 }
 
 bool GetPhysicalMemoryUsed(size_t* val)
 {
+    if (val == nullptr)
+        return false;
+
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     bool result = false;
     size_t linelen;
     char* line = nullptr;
-
-    if (val == nullptr)
-        return false;
 
     // Linux uses cgroup usage to trigger oom kills.
     if (CGroup::GetPhysicalMemoryUsage(val))
@@ -655,4 +674,7 @@ bool GetPhysicalMemoryUsed(size_t* val)
         fclose(file);
     free(line);
     return result;
+#else
+    return false;
+#endif // TARGET_LINUX || TARGET_ANDROID
 }

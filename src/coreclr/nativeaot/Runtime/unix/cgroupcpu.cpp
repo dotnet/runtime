@@ -35,6 +35,8 @@ Abstract:
 
 #include "cgroupcpu.h"
 
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+
 #define CGROUP2_SUPER_MAGIC 0x63677270
 
 #define BASE_TEN 10
@@ -510,3 +512,16 @@ bool GetCpuLimit(uint32_t* val)
 
     return CGroup::GetCpuLimit(val);
 }
+
+#else // !(TARGET_LINUX || TARGET_ANDROID)
+
+void InitializeCpuCGroup()
+{
+}
+
+bool GetCpuLimit(uint32_t* val)
+{
+    return false;
+}
+
+#endif // TARGET_LINUX || TARGET_ANDROID
