@@ -698,6 +698,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.HttpListener\tests\System.Net.HttpListener.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+
+    <!-- Not supported on Apple mobile -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.TraceSource\tests\System.Diagnostics.TraceSource.Config.Tests\System.Diagnostics.TraceSource.Config.Tests.csproj" />
   </ItemGroup>
 
   <!-- https://github.com/dotnet/runtime/issues/124044 -->
