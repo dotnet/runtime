@@ -1028,7 +1028,9 @@ namespace BINDER_SPACE
         {
             StackSString format;
             format.LoadResource(IDS_BINDING_FAILED_TO_INIT_ASSEMBLY);
-            pDiagnosticInfo->AppendPrintf(format.GetUTF8(), assemblyPath.GetUTF8(), hr);
+            StackSString hrMsg;
+            GetHRMsg(hr, hrMsg);
+            pDiagnosticInfo->AppendPrintf(format.GetUTF8(), assemblyPath.GetUTF8(), hrMsg.GetUTF8());
         }
 
         return hr;

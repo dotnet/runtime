@@ -100,7 +100,9 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
                     StackSString format;
                     format.LoadResource(IDS_BINDING_FAILED_TO_OPEN_FILE);
                     SString pathStr(wszAssemblyPath);
-                    pDiagnosticInfo->AppendPrintf(format.GetUTF8(), pathStr.GetUTF8(), hr);
+                    StackSString hrMsg;
+                    GetHRMsg(hr, hrMsg);
+                    pDiagnosticInfo->AppendPrintf(format.GetUTF8(), pathStr.GetUTF8(), hrMsg.GetUTF8());
                 }
                 goto Exit;
             }
@@ -120,7 +122,7 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
             SString pathStr(wszAssemblyPath);
             StackSString exMessage;
             GET_EXCEPTION()->GetMessage(exMessage);
-            pDiagnosticInfo->AppendPrintf(format.GetUTF8(), pathStr.GetUTF8(), exMessage.GetUTF8(), hr);
+            pDiagnosticInfo->AppendPrintf(format.GetUTF8(), pathStr.GetUTF8(), exMessage.GetUTF8());
         }
     }
     EX_END_CATCH
