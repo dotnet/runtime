@@ -312,6 +312,8 @@ namespace System
         [RequiresUnsafe]
         private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
 
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe uint RunFinalizers()
         {
             Thread currentThread = Thread.CurrentThread;
@@ -336,6 +338,7 @@ namespace System
                 currentThread.ResetFinalizerThread();
                 count++;
             }
+
             return count;
         }
 

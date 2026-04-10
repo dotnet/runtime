@@ -28,6 +28,16 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
         // load r10 to point to the cache block.
         mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
 
+        // Validate r10 is a cache pointer matching the expected cache size.
+        // This compensates for a race where the stub was updated to expect a larger cache
+        // but we loaded a stale (smaller or non-cache) m_pCache value.
+        // On detection, re-dispatch through the indirection cell to retry with the current
+        // stub and cache pair.
+        test    r10, IDC_CACHE_POINTER_MASK
+        jnz     LOCAL_LABEL(RaceRetry_\entries)
+        cmp     dword ptr [r10 + OFFSETOF__InterfaceDispatchCache__m_cEntries], \entries
+        jne     LOCAL_LABEL(RaceRetry_\entries)
+
         // Load the MethodTable from the object instance in rdi.
 #ifdef TARGET_APPLE
 // Apple's linker has issues which break unwind info if
@@ -55,6 +65,10 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
         // r11 still contains the indirection cell address.
 
         jmp     C_FUNC(RhpInterfaceDispatchSlow)
+
+LOCAL_LABEL(RaceRetry_\entries):
+        jmp     [r11]
+
 LEAF_END RhpInterfaceDispatch\entries, _TEXT
 
 .endm // DEFINE_INTERFACE_DISPATCH_STUB

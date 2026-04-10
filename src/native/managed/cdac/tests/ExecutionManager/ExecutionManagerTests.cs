@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Xunit;
 
 using System.Collections.Generic;
@@ -12,11 +13,37 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 public class ExecutionManagerTests
 {
-    private static Target CreateTarget(MockDescriptors.ExecutionManager emBuilder)
+    private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockExecutionManagerBuilder emBuilder)
+    {
+        TargetTestHelpers helpers = emBuilder.Builder.TargetTestHelpers;
+        var types = new Dictionary<DataType, Target.TypeInfo>
+        {
+            [DataType.RangeSectionMap] = TargetTestHelpers.CreateTypeInfo(emBuilder.RangeSectionMapLayout),
+            [DataType.RangeSectionFragment] = TargetTestHelpers.CreateTypeInfo(emBuilder.RangeSectionFragmentLayout),
+            [DataType.RangeSection] = TargetTestHelpers.CreateTypeInfo(emBuilder.RangeSectionLayout),
+            [DataType.CodeHeapListNode] = TargetTestHelpers.CreateTypeInfo(emBuilder.CodeHeapListNodeLayout),
+            [DataType.CodeHeap] = TargetTestHelpers.CreateTypeInfo(emBuilder.CodeHeapLayout),
+            [DataType.LoaderCodeHeap] = TargetTestHelpers.CreateTypeInfo(emBuilder.LoaderCodeHeapLayout),
+            [DataType.HostCodeHeap] = TargetTestHelpers.CreateTypeInfo(emBuilder.HostCodeHeapLayout),
+            [DataType.RealCodeHeader] = TargetTestHelpers.CreateTypeInfo(emBuilder.RealCodeHeaderLayout),
+            [DataType.ReadyToRunInfo] = TargetTestHelpers.CreateTypeInfo(emBuilder.ReadyToRunInfoLayout),
+            [DataType.EEJitManager] = TargetTestHelpers.CreateTypeInfo(emBuilder.EEJitManagerLayout),
+            [DataType.Module] = TargetTestHelpers.CreateTypeInfo(emBuilder.ModuleLayout),
+            [DataType.HashMap] = TargetTestHelpers.CreateTypeInfo(MockHashMap.CreateLayout(helpers.Arch)),
+            [DataType.Bucket] = TargetTestHelpers.CreateTypeInfo(MockHashMapBucket.CreateLayout(helpers.Arch)),
+        };
+
+        types[DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(emBuilder.RuntimeFunctionLayout);
+        types[DataType.UnwindInfo] = TargetTestHelpers.CreateTypeInfo(emBuilder.UnwindInfoLayout);
+
+        return types;
+    }
+
+    private static Target CreateTarget(MockExecutionManagerBuilder emBuilder)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
         TestPlaceholderTarget.ReadFromTargetDelegate reader = emBuilder.Builder.GetMemoryContext().ReadFromTarget;
-        var target = new TestPlaceholderTarget(arch, reader, emBuilder.Types, emBuilder.Globals);
+        var target = new TestPlaceholderTarget(arch, reader, CreateContractTypes(emBuilder), emBuilder.Globals);
         IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
         ContractRegistry reg = Mock.Of<ContractRegistry>(
             c => c.ExecutionManager == emfactory.CreateContract(target, emBuilder.Version)
@@ -25,30 +52,39 @@ public class ExecutionManagerTests
         return target;
     }
 
-    private static void LinkHeapIntoAllCodeHeaps(MockDescriptors.ExecutionManager emBuilder, TargetPointer heapAddr)
+    private static IExecutionManager CreateExecutionManagerContract(
+        int version,
+        MockTarget.Architecture arch,
+        Action<MockExecutionManagerBuilder>? configure = null,
+        ulong allCodeHeaps = 0)
     {
-        TargetPointer codeRangeStart = new(0x1000_0000);
-        uint codeRangeSize = 0x1000;
-        var nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart.Value, codeRangeSize);
-        TargetPointer nodeAddr = emBuilder.AddCodeHeapListNode(
-            next: TargetPointer.Null,
-            startAddress: codeRangeStart,
-            endAddress: codeRangeStart + codeRangeSize,
-            mapBase: codeRangeStart,
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange, allCodeHeaps);
+        configure?.Invoke(emBuilder);
+        Target target = CreateTarget(emBuilder);
+        return target.Contracts.ExecutionManager;
+    }
+
+    private static void LinkHeapIntoAllCodeHeaps(MockExecutionManagerBuilder emBuilder, ulong heapAddress)
+    {
+        const ulong CodeRangeStart = 0x1000_0000;
+        const uint CodeRangeSize = 0x1000;
+
+        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(CodeRangeStart, CodeRangeSize);
+        MockCodeHeapListNode node = emBuilder.AddCodeHeapListNode(
+            next: 0,
+            startAddress: CodeRangeStart,
+            endAddress: CodeRangeStart + CodeRangeSize,
+            mapBase: CodeRangeStart,
             headerMap: nibBuilder.NibbleMapFragment.Address,
-            heap: heapAddr);
-        emBuilder.SetAllCodeHeaps(nodeAddr);
+            heap: heapAddress);
+        emBuilder.SetAllCodeHeaps(node.Address);
     }
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeBlockHandle_Null(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var target = CreateTarget(emBuilder);
-
-        var em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
+        IExecutionManager em = CreateExecutionManagerContract(version, arch);
         var eeInfo = em.GetCodeBlockHandle(TargetCodePointer.Null);
         Assert.Null(eeInfo);
     }
@@ -57,11 +93,7 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeBlockHandle_NoRangeSections(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var target = CreateTarget(emBuilder);
-
-        var em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
+        IExecutionManager em = CreateExecutionManagerContract(version, arch);
         var eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(0x0a0a_0000));
         Assert.Null(eeInfo);
     }
@@ -73,45 +105,45 @@ public class ExecutionManagerTests
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
         const uint methodSize = 0x450; // arbitrary
+        ulong methodStart = 0;
 
-        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+        const ulong jitManagerAddress = 0x000b_ff00; // arbitrary
 
-        TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
+        const ulong expectedMethodDescAddress = 0x0101_aaa0;
 
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress).CodeAddress;
 
-        TargetCodePointer methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress);
+                NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+                nibBuilder.AllocateCodeChunk(new TargetCodePointer(methodStart), methodSize);
 
-        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
-        nibBuilder.AllocateCodeChunk(methodStart, methodSize);
-
-        TargetPointer codeHeapListNodeAddress = emBuilder.AddCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
-        TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(jittedCode, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
-        TargetPointer rangeSectionFragmentAddress = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
-
-        var target = CreateTarget(emBuilder);
-
-        var em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
+                MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+                MockRangeSection rangeSection = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNode.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
 
         // test at method start
-        var eeInfo = em.GetCodeBlockHandle(methodStart);
+        var eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(methodStart));
         Assert.NotNull(eeInfo);
         TargetPointer actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
-        Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+        Assert.Equal(new TargetPointer(expectedMethodDescAddress), actualMethodDesc);
 
         // test middle of method
-        eeInfo = em.GetCodeBlockHandle(methodStart + methodSize / 2);
+        eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(methodStart + methodSize / 2));
         Assert.NotNull(eeInfo);
         actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
-        Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+        Assert.Equal(new TargetPointer(expectedMethodDescAddress), actualMethodDesc);
 
         // test end of method
-        eeInfo = em.GetCodeBlockHandle(methodStart + methodSize - 1);
+        eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(methodStart + methodSize - 1));
         Assert.NotNull(eeInfo);
         actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
-        Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+        Assert.Equal(new TargetPointer(expectedMethodDescAddress), actualMethodDesc);
     }
 
     [Theory]
@@ -121,32 +153,30 @@ public class ExecutionManagerTests
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
 
-        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+        const ulong jitManagerAddress = 0x000b_ff00; // arbitrary
 
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
-
-        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
-
-        TargetPointer codeHeapListNodeAddress = emBuilder.AddCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
-        TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(jittedCode, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
-        TargetPointer rangeSectionFragmentAddress = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
-
-        var target = CreateTarget(emBuilder);
-
-        var em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+                MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+                MockRangeSection rangeSection = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNode.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
 
         // test at code range start
-        var eeInfo = em.GetCodeBlockHandle(codeRangeSize + codeRangeSize);
+        var eeInfo = em.GetCodeBlockHandle(codeRangeStart);
         Assert.Null(eeInfo);
 
         // test middle of code range
-        eeInfo = em.GetCodeBlockHandle(codeRangeSize + codeRangeSize / 2);
+        eeInfo = em.GetCodeBlockHandle(codeRangeStart + codeRangeSize / 2);
         Assert.Null(eeInfo);
 
         // test end of code range
-        eeInfo = em.GetCodeBlockHandle(codeRangeSize + codeRangeSize - 1);
+        eeInfo = em.GetCodeBlockHandle(codeRangeStart + codeRangeSize - 1);
         Assert.Null(eeInfo);
     }
 
@@ -157,31 +187,31 @@ public class ExecutionManagerTests
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
         const uint methodSize = 0x450; // arbitrary
+        ulong methodStart = 0;
 
-        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+        const ulong jitManagerAddress = 0x000b_ff00; // arbitrary
 
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, 0x0101_aaa0).CodeAddress;
 
-        TargetCodePointer methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, 0x0101_aaa0);
+                NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+                nibBuilder.AllocateCodeChunk(new TargetCodePointer(methodStart), methodSize);
 
-        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
-        nibBuilder.AllocateCodeChunk(methodStart, methodSize);
-
-        TargetPointer codeHeapListNodeAddress = emBuilder.AddCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
-        TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(jittedCode, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
-        TargetPointer rangeSectionFragmentAddress = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
-
-        var target = CreateTarget(emBuilder);
-
-        var em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
+                MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+                MockRangeSection rangeSection = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNode.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
 
         // Get CodeBlockHandle
-        var eeInfo = em.GetCodeBlockHandle(methodStart);
+        var eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(methodStart));
         Assert.NotNull(eeInfo);
         TargetPointer actualBaseAddress = em.GetUnwindInfoBaseAddress(eeInfo.Value);
-        Assert.Equal(new TargetPointer(actualBaseAddress), actualBaseAddress);
+        Assert.Equal(new TargetPointer(codeRangeStart), actualBaseAddress);
     }
 
     [Theory]
@@ -190,27 +220,25 @@ public class ExecutionManagerTests
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
-        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
-
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
-
+        const ulong jitManagerAddress = 0x000b_ff00; // arbitrary
         uint runtimeFunction = 0x100;
 
-        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([runtimeFunction], []);
-        MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
-        hashMapBuilder.PopulatePtrMap(
-            r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
-            []);
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([runtimeFunction], []);
+                MockHashMapBuilder hashMapBuilder = new(emBuilder.Builder);
+                hashMapBuilder.PopulatePtrMap(
+                    r2rInfo.EntryPointToMethodDescMapAddress,
+                    []);
 
-        TargetPointer r2rModule = emBuilder.AddReadyToRunModule(r2rInfo);
-        TargetPointer rangeSectionAddress = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule);
-        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
-
-        Target target = CreateTarget(emBuilder);
-
-        IExecutionManager em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
+                MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+                MockRangeSection rangeSection = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
 
         // Before any functions
         var handle = em.GetCodeBlockHandle(codeRangeStart + runtimeFunction - 1);
@@ -223,43 +251,41 @@ public class ExecutionManagerTests
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
-        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+        const ulong jitManagerAddress = 0x000b_ff00; // arbitrary
 
-        TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
-
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+        const ulong expectedMethodDescAddress = 0x0101_aaa0;
 
         uint expectedRuntimeFunction = 0x100;
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([expectedRuntimeFunction], []);
+                MockHashMapBuilder hashMapBuilder = new(emBuilder.Builder);
+                hashMapBuilder.PopulatePtrMap(
+                    r2rInfo.EntryPointToMethodDescMapAddress,
+                    [(jittedCode.RangeStart + expectedRuntimeFunction, expectedMethodDescAddress)]);
 
-        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([expectedRuntimeFunction], []);
-        MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
-        hashMapBuilder.PopulatePtrMap(
-            r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
-            [(jittedCode.RangeStart + expectedRuntimeFunction, expectedMethodDescAddress)]);
-
-        TargetPointer r2rModule = emBuilder.AddReadyToRunModule(r2rInfo);
-        TargetPointer rangeSectionAddress = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule);
-        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
-
-        Target target = CreateTarget(emBuilder);
-
-        IExecutionManager em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
+                MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+                MockRangeSection rangeSection = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
 
         {
             // Function start
             var handle = em.GetCodeBlockHandle(codeRangeStart + expectedRuntimeFunction);
             Assert.NotNull(handle);
             TargetPointer actualMethodDesc = em.GetMethodDesc(handle.Value);
-            Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+            Assert.Equal(new TargetPointer(expectedMethodDescAddress), actualMethodDesc);
         }
         {
             // Past function start
             var handle = em.GetCodeBlockHandle(codeRangeStart + expectedRuntimeFunction * 2);
             Assert.NotNull(handle);
             TargetPointer actualMethodDesc = em.GetMethodDesc(handle.Value);
-            Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+            Assert.Equal(new TargetPointer(expectedMethodDescAddress), actualMethodDesc);
         }
     }
 
@@ -269,32 +295,30 @@ public class ExecutionManagerTests
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
-        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+        const ulong jitManagerAddress = 0x000b_ff00; // arbitrary
 
         TargetPointer[] methodDescAddresses = [0x0101_aaa0, 0x0201_aaa0];
 
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
-
         uint[] runtimeFunctions = [0x100, 0xc00];
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions, []);
+                MockHashMapBuilder hashMapBuilder = new(emBuilder.Builder);
+                hashMapBuilder.PopulatePtrMap(
+                    r2rInfo.EntryPointToMethodDescMapAddress,
+                    [
+                        (jittedCode.RangeStart + runtimeFunctions[0], methodDescAddresses[0].Value),
+                        (jittedCode.RangeStart + runtimeFunctions[1], methodDescAddresses[1].Value),
+                    ]);
 
-        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions, []);
-        MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
-        hashMapBuilder.PopulatePtrMap(
-            r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
-            [
-                (jittedCode.RangeStart + runtimeFunctions[0], methodDescAddresses[0]),
-                (jittedCode.RangeStart + runtimeFunctions[1], methodDescAddresses[1]),
-            ]);
-
-        TargetPointer r2rModule = emBuilder.AddReadyToRunModule(r2rInfo);
-        TargetPointer rangeSectionAddress = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule);
-        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
-
-        Target target = CreateTarget(emBuilder);
-
-        IExecutionManager em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
+                MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+                MockRangeSection rangeSection = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
 
         {
             // Match first function
@@ -333,33 +357,31 @@ public class ExecutionManagerTests
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
-        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+        const ulong jitManagerAddress = 0x000b_ff00; // arbitrary
 
         TargetPointer[] methodDescAddresses = [0x0101_aaa0, 0x0201_aaa0];
 
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
-
         uint[] runtimeFunctions = [0x100, 0x200, 0x300, 0x400, 0x500];
         uint[] hotColdMap = [3, 0, 4, 1];
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions, hotColdMap);
+                MockHashMapBuilder hashMapBuilder = new(emBuilder.Builder);
+                hashMapBuilder.PopulatePtrMap(
+                    r2rInfo.EntryPointToMethodDescMapAddress,
+                    [
+                        (jittedCode.RangeStart + runtimeFunctions[hotColdMap[1]], methodDescAddresses[0].Value),
+                        (jittedCode.RangeStart + runtimeFunctions[hotColdMap[3]], methodDescAddresses[1].Value),
+                    ]);
 
-        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions, hotColdMap);
-        MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
-        hashMapBuilder.PopulatePtrMap(
-            r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
-            [
-                (jittedCode.RangeStart + runtimeFunctions[hotColdMap[1]], methodDescAddresses[0]),
-                (jittedCode.RangeStart + runtimeFunctions[hotColdMap[3]], methodDescAddresses[1]),
-            ]);
-
-        TargetPointer r2rModule = emBuilder.AddReadyToRunModule(r2rInfo);
-        TargetPointer rangeSectionAddress = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule);
-        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
-
-        Target target = CreateTarget(emBuilder);
-
-        IExecutionManager em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
+                MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+                MockRangeSection rangeSection = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
 
         // Hot and cold parts should map to the same method desc
         for (int i = 0; i < hotColdMap.Length; i++)
@@ -384,27 +406,25 @@ public class ExecutionManagerTests
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
-        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
-
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+        const ulong jitManagerAddress = 0x000b_ff00; // arbitrary
 
         uint runtimeFunction = 0x100;
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([runtimeFunction], []);
+                MockHashMapBuilder hashMapBuilder = new(emBuilder.Builder);
+                hashMapBuilder.PopulatePtrMap(
+                    r2rInfo.EntryPointToMethodDescMapAddress,
+                    [(jittedCode.RangeStart + runtimeFunction, 0x0101_aaa0)]);
 
-        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([runtimeFunction], []);
-        MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
-        hashMapBuilder.PopulatePtrMap(
-            r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
-            [(jittedCode.RangeStart + runtimeFunction, new TargetPointer(0x0101_aaa0))]);
-
-        TargetPointer r2rModule = emBuilder.AddReadyToRunModule(r2rInfo);
-        TargetPointer rangeSectionAddress = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule);
-        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
-
-        Target target = CreateTarget(emBuilder);
-
-        IExecutionManager em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
+                MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+                MockRangeSection rangeSection = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
 
         var handle = em.GetCodeBlockHandle(codeRangeStart + runtimeFunction);
         Assert.NotNull(handle);
@@ -426,51 +446,44 @@ public class ExecutionManagerTests
         const uint codeRangeSize = 0xc000u;
         const uint methodSize = 0x450;
 
-        TargetPointer jitManagerAddress = new(0x000b_ff00);
-        TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const ulong expectedMethodDescAddress = 0x0101_aaa0;
 
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+        ulong methodStart = 0;
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress).CodeAddress;
 
-        TargetCodePointer methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress);
+                NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+                nibBuilder.AllocateCodeChunk(new TargetCodePointer(methodStart), methodSize);
 
-        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
-        nibBuilder.AllocateCodeChunk(methodStart, methodSize);
+                MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+                MockRangeSection rangeSection = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNode.Address);
+                MockRangeSectionFragment tailFragment = emBuilder.AddUnmappedRangeSectionFragment(jittedCode, rangeSection.Address);
+                _ = emBuilder.AddRangeSectionFragmentWithCollectibleNext(jittedCode, rangeSection.Address, tailFragment.Address);
+            });
 
-        TargetPointer codeHeapListNodeAddress = emBuilder.AddCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
-        TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNodeAddress);
-
-        // Tail fragment: covers the real code range but is NOT in the range section map.
-        // It is only reachable by following the head fragment's Next pointer.
-        TargetPointer tailFragmentAddress = emBuilder.AddUnmappedRangeSectionFragment(jittedCode, rangeSectionAddress);
-
-        // Head fragment: inserted into the map with an empty range (Contains always returns false)
-        // and Next = tailFragmentAddress | 1 (collectible tag bit set).
-        _ = emBuilder.AddRangeSectionFragmentWithCollectibleNext(jittedCode, rangeSectionAddress, tailFragmentAddress);
-
-        var target = CreateTarget(emBuilder);
-
-        var em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
-
-        var eeInfo = em.GetCodeBlockHandle(methodStart);
+        var eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(methodStart));
         Assert.NotNull(eeInfo);
         TargetPointer actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
-        Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+        Assert.Equal(new TargetPointer(expectedMethodDescAddress), actualMethodDesc);
     }
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
     public void GetEEJitManagerInfo_ReturnsManagerAddress(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var target = CreateTarget(emBuilder);
-
-        var em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
-
+        ulong expectedManagerAddress = 0;
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder => expectedManagerAddress = emBuilder.EEJitManagerAddress);
         JitManagerInfo info = em.GetEEJitManagerInfo();
-        Assert.Equal(emBuilder.EEJitManagerAddress, info.ManagerAddress);
+        Assert.Equal(new TargetPointer(expectedManagerAddress), info.ManagerAddress);
         Assert.Equal(0u, info.CodeType);
         Assert.Equal(TargetPointer.Null, info.HeapListAddress);
     }
@@ -479,27 +492,26 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetEEJitManagerInfo_WithCodeHeaps(int version, MockTarget.Architecture arch)
     {
-        TargetPointer expectedHeapList = new(0x0099_aa00);
-
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange, allCodeHeaps: expectedHeapList);
-        var target = CreateTarget(emBuilder);
-
-        var em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
-
+        const ulong expectedHeapList = 0x0099_aa00;
+        ulong expectedManagerAddress = 0;
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder => expectedManagerAddress = emBuilder.EEJitManagerAddress,
+            allCodeHeaps: expectedHeapList);
         JitManagerInfo info = em.GetEEJitManagerInfo();
-        Assert.Equal(emBuilder.EEJitManagerAddress, info.ManagerAddress);
+        Assert.Equal(new TargetPointer(expectedManagerAddress), info.ManagerAddress);
         Assert.Equal(0u, info.CodeType);
-        Assert.Equal(expectedHeapList, info.HeapListAddress);
+        Assert.Equal(new TargetPointer(expectedHeapList), info.HeapListAddress);
     }
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeHeapInfo_LoaderCodeHeap(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        TargetPointer heapAddr = emBuilder.AddLoaderCodeHeap();
-        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        MockLoaderCodeHeap heap = emBuilder.AddLoaderCodeHeap();
+        LinkHeapIntoAllCodeHeaps(emBuilder, heap.Address);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -511,11 +523,11 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeHeapInfo_HostCodeHeap(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         TargetPointer baseAddr    = new(0x0001_0000);
         TargetPointer currentAddr = new(0x0001_8000);
-        TargetPointer heapAddr = emBuilder.AddHostCodeHeap(baseAddr, currentAddr);
-        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
+        MockHostCodeHeap heap = emBuilder.AddHostCodeHeap(baseAddr.Value, currentAddr.Value);
+        LinkHeapIntoAllCodeHeaps(emBuilder, heap.Address);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -527,26 +539,27 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeHeapInfo_LoaderCodeHeap_ReturnsLoaderHeapAddress(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        TargetPointer heapAddr = emBuilder.AddLoaderCodeHeap();
-        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        MockLoaderCodeHeap heap = emBuilder.AddLoaderCodeHeap();
+        LinkHeapIntoAllCodeHeaps(emBuilder, heap.Address);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
         LoaderCodeHeapInfo loader = Assert.IsType<LoaderCodeHeapInfo>(em.GetCodeHeapInfos().Single());
-        ulong loaderHeapFieldOffset = (ulong)emBuilder.Types[DataType.LoaderCodeHeap].Fields[nameof(Data.LoaderCodeHeap.LoaderHeap)].Offset;
-        Assert.Equal(new TargetPointer(heapAddr.Value + loaderHeapFieldOffset), loader.LoaderHeapAddress);
+        Target.TypeInfo loaderCodeHeapType = TargetTestHelpers.CreateTypeInfo(emBuilder.LoaderCodeHeapLayout);
+        ulong loaderHeapFieldOffset = (ulong)loaderCodeHeapType.Fields[nameof(Data.LoaderCodeHeap.LoaderHeap)].Offset;
+        Assert.Equal(new TargetPointer(heap.Address + loaderHeapFieldOffset), loader.LoaderHeapAddress);
     }
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeHeapInfo_HostCodeHeap_ReturnsAddresses(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         TargetPointer expectedBase    = new(0x0002_0000);
         TargetPointer expectedCurrent = new(0x0002_4000);
-        TargetPointer heapAddr = emBuilder.AddHostCodeHeap(expectedBase, expectedCurrent);
-        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
+        MockHostCodeHeap heap = emBuilder.AddHostCodeHeap(expectedBase.Value, expectedCurrent.Value);
+        LinkHeapIntoAllCodeHeaps(emBuilder, heap.Address);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -559,23 +572,23 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeHeapList_SingleNode(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
 
-        TargetPointer heapAddr = emBuilder.AddLoaderCodeHeap();
+        MockLoaderCodeHeap heap = emBuilder.AddLoaderCodeHeap();
 
         TargetPointer codeRangeStart = new(0x1000_0000);
         uint codeRangeSize = 0x1000;
         var nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart.Value, codeRangeSize);
 
-        TargetPointer nodeAddr = emBuilder.AddCodeHeapListNode(
-            next: TargetPointer.Null,
-            startAddress: codeRangeStart,
-            endAddress: codeRangeStart + codeRangeSize,
-            mapBase: codeRangeStart,
+        MockCodeHeapListNode node = emBuilder.AddCodeHeapListNode(
+            next: 0,
+            startAddress: codeRangeStart.Value,
+            endAddress: codeRangeStart.Value + codeRangeSize,
+            mapBase: codeRangeStart.Value,
             headerMap: nibBuilder.NibbleMapFragment.Address,
-            heap: heapAddr);
+            heap: heap.Address);
 
-        emBuilder.SetAllCodeHeaps(nodeAddr);
+        emBuilder.SetAllCodeHeaps(node.Address);
 
         var target = CreateTarget(emBuilder);
         var em = target.Contracts.ExecutionManager;
@@ -589,13 +602,13 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeHeapList_LinkedList_TwoNodes(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
 
-        TargetPointer loaderHeap = emBuilder.AddLoaderCodeHeap();
+        MockLoaderCodeHeap loaderHeap = emBuilder.AddLoaderCodeHeap();
 
         TargetPointer baseAddr    = new(0x0003_0000);
         TargetPointer currentAddr = new(0x0003_8000);
-        TargetPointer hostHeap = emBuilder.AddHostCodeHeap(baseAddr, currentAddr);
+        MockHostCodeHeap hostHeap = emBuilder.AddHostCodeHeap(baseAddr.Value, currentAddr.Value);
 
         TargetPointer codeRangeStart1 = new(0x1000_0000);
         TargetPointer codeRangeStart2 = new(0x2000_0000);
@@ -605,23 +618,23 @@ public class ExecutionManagerTests
         var nib2 = emBuilder.CreateNibbleMap(codeRangeStart2.Value, codeRangeSize);
 
         // Build list: node2 -> null, node1 -> node2
-        TargetPointer node2 = emBuilder.AddCodeHeapListNode(
-            next: TargetPointer.Null,
-            startAddress: codeRangeStart2,
-            endAddress: codeRangeStart2 + codeRangeSize,
-            mapBase: codeRangeStart2,
+        MockCodeHeapListNode node2 = emBuilder.AddCodeHeapListNode(
+            next: 0,
+            startAddress: codeRangeStart2.Value,
+            endAddress: codeRangeStart2.Value + codeRangeSize,
+            mapBase: codeRangeStart2.Value,
             headerMap: nib2.NibbleMapFragment.Address,
-            heap: hostHeap);
+            heap: hostHeap.Address);
 
-        TargetPointer node1 = emBuilder.AddCodeHeapListNode(
-            next: node2,
-            startAddress: codeRangeStart1,
-            endAddress: codeRangeStart1 + codeRangeSize,
-            mapBase: codeRangeStart1,
+        MockCodeHeapListNode node1 = emBuilder.AddCodeHeapListNode(
+            next: node2.Address,
+            startAddress: codeRangeStart1.Value,
+            endAddress: codeRangeStart1.Value + codeRangeSize,
+            mapBase: codeRangeStart1.Value,
             headerMap: nib1.NibbleMapFragment.Address,
-            heap: loaderHeap);
+            heap: loaderHeap.Address);
 
-        emBuilder.SetAllCodeHeaps(node1);
+        emBuilder.SetAllCodeHeaps(node1.Address);
 
         var target = CreateTarget(emBuilder);
         var em = target.Contracts.ExecutionManager;
@@ -631,13 +644,14 @@ public class ExecutionManagerTests
 
         // First heap (from node1) is a LoaderCodeHeap
         LoaderCodeHeapInfo loaderInfo = Assert.IsType<LoaderCodeHeapInfo>(heapInfos[0]);
-        Assert.Equal(loaderHeap, loaderInfo.HeapAddress);
-        ulong loaderHeapFieldOffset = (ulong)emBuilder.Types[DataType.LoaderCodeHeap].Fields[nameof(Data.LoaderCodeHeap.LoaderHeap)].Offset;
-        Assert.Equal(new TargetPointer(loaderHeap.Value + loaderHeapFieldOffset), loaderInfo.LoaderHeapAddress);
+        Assert.Equal(loaderHeap.Address, loaderInfo.HeapAddress.Value);
+        Target.TypeInfo loaderCodeHeapType = TargetTestHelpers.CreateTypeInfo(emBuilder.LoaderCodeHeapLayout);
+        ulong loaderHeapFieldOffset = (ulong)loaderCodeHeapType.Fields[nameof(Data.LoaderCodeHeap.LoaderHeap)].Offset;
+        Assert.Equal(new TargetPointer(loaderHeap.Address + loaderHeapFieldOffset), loaderInfo.LoaderHeapAddress);
 
         // Second heap (from node2) is a HostCodeHeap
         HostCodeHeapInfo hostInfo = Assert.IsType<HostCodeHeapInfo>(heapInfos[1]);
-        Assert.Equal(hostHeap, hostInfo.HeapAddress);
+        Assert.Equal(hostHeap.Address, hostInfo.HeapAddress.Value);
         Assert.Equal(baseAddr, hostInfo.BaseAddress);
         Assert.Equal(currentAddr, hostInfo.CurrentAddress);
     }

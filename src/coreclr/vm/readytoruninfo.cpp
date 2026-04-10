@@ -621,6 +621,20 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
 
     READYTORUN_HEADER * pHeader = pLayout->GetReadyToRunHeader();
 
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_STRIPPED_IL_BODIES) != 0)
+    {
+        DoLog("Ready to Run load failed - stripped IL bodies are not supported with dynamic code compilation");
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    if ((pHeader->CoreHeader.Flags & (READYTORUN_FLAG_STRIPPED_INLINING_INFO | READYTORUN_FLAG_STRIPPED_DEBUG_INFO)) != 0)
+    {
+        DoLog("Ready to Run disabled - stripped R2R sections not supported with dynamic code compilation");
+        return NULL;
+    }
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
+
     // Ignore the content if the image major version is higher or lower than the major version currently supported by the runtime
     if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
     {

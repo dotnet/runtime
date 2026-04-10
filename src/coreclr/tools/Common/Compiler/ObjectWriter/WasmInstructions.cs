@@ -295,9 +295,9 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    struct WasmEncodableULong : IWasmEncodable
+    readonly struct WasmEncodableULong : IWasmEncodable
     {
-        private ulong _value;
+        private readonly ulong _value;
         public WasmEncodableULong(ulong value)
         {
             _value = value;
@@ -314,10 +314,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         public int EncodeRelocations(Span<Relocation> buffer) => 0;
     }
 
-    struct WasmEncodableSymbol : IWasmEncodable
+    readonly struct WasmEncodableSymbol : IWasmEncodable
     {
-        private ISymbolNode _symbol;
-        private RelocType _relocType;
+        private readonly ISymbolNode _symbol;
+        private readonly RelocType _relocType;
 
         public WasmEncodableSymbol(ISymbolNode symbol, RelocType relocType)
         {
@@ -334,6 +334,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         {
             // The actual value is not encoded into the buffer, instead a relocation is emitted for the symbol
             int relocSize = Relocation.GetSize(_relocType);
+            Debug.Assert(buffer.Length >= relocSize);
             switch (_relocType)
             {
                 case RelocType.WASM_FUNCTION_INDEX_LEB:
@@ -341,12 +342,12 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
                 case RelocType.WASM_MEMORY_ADDR_REL_LEB:
                 case RelocType.WASM_TYPE_INDEX_LEB:
                 case RelocType.WASM_GLOBAL_INDEX_LEB:
-                    DwarfHelper.WritePaddedULEB128(buffer, 0);
+                    DwarfHelper.WritePaddedULEB128(buffer.Slice(0, relocSize), 0);
                     break;
 
                 case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
-                    DwarfHelper.WritePaddedSLEB128(buffer, 0);
+                    DwarfHelper.WritePaddedSLEB128(buffer.Slice(0, relocSize), 0);
                     break;
 
                 default:
