@@ -130,14 +130,14 @@ namespace System.Diagnostics
         /// <see cref="StandardInputHandle"/>, <see cref="StandardOutputHandle"/>, or <see cref="StandardErrorHandle"/>.
         /// </para>
         /// <para>
-        /// On Windows, the process is started with the <c>DETACHED_PROCESS</c> flag.
+        /// On Windows, the process is started with the <c>DETACHED_PROCESS</c> creation flag
+        /// (see <see href="https://learn.microsoft.com/windows/win32/procthread/process-creation-flags#flags"/>).
         /// </para>
         /// <para>
         /// On Unix, the process is started as a leader of a new session.
         /// </para>
         /// <para>
-        /// This property cannot be used together with <see cref="UseShellExecute"/> or <see cref="CreateNoWindow"/>
-        /// set to <see langword="true"/>.
+        /// This property cannot be used together with <see cref="UseShellExecute"/> set to <see langword="true"/>.
         /// </para>
         /// </remarks>
         public bool StartDetached { get; set; }
@@ -417,7 +417,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
-            if (StartDetached && (UseShellExecute || CreateNoWindow))
+            if (StartDetached && UseShellExecute)
             {
                 throw new InvalidOperationException(SR.StartDetachedNotCompatible);
             }
