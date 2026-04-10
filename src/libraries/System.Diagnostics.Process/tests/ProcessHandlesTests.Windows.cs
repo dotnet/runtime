@@ -31,11 +31,13 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void ProcessStartedWithInvalidHandles_CanStartChildProcessWithDerivedInvalidHandles(bool restrictHandles)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void ProcessStartedWithInvalidHandles_CanStartChildProcessWithDerivedInvalidHandles(bool restrictHandles, bool killOnParentExit)
         {
-            using Process process = CreateProcess(arg =>
+            using Process process = CreateProcess((inheritanceArg, killArg) =>
             {
                 using (Process childProcess = CreateProcess(() =>
                 {
@@ -46,7 +48,8 @@ namespace System.Diagnostics.Tests
                     return RemoteExecutor.SuccessExitCode;
                 }))
                 {
-                    childProcess.StartInfo.InheritedHandles = bool.Parse(arg) ? [] : null;
+                    childProcess.StartInfo.InheritedHandles = bool.Parse(inheritanceArg) ? [] : null;
+                    childProcess.StartInfo.KillOnParentExit = bool.Parse(killArg);
                     childProcess.Start();
 
                     try
@@ -59,7 +62,7 @@ namespace System.Diagnostics.Tests
                         childProcess.Kill();
                     }
                 }
-            }, restrictHandles.ToString());
+            }, restrictHandles.ToString(), killOnParentExit.ToString());
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithInvalidHandles(process.StartInfo));
         }

@@ -54,23 +54,26 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void KillOnParentExit_KillsTheChild_WhenParentExits(bool enabled)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)] // (false, true) is tested by ProcessHandleTests
+        public void KillOnParentExit_KillsTheChild_WhenParentExits(bool enabled, bool restrictInheritance)
         {
             RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false };
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
-                (enabledStr) =>
+                (enabledStr, limitInherianceStr) =>
                 {
                     using Process grandChild = CreateProcessLong();
                     grandChild.StartInfo.KillOnParentExit = bool.Parse(enabledStr);
+                    grandChild.StartInfo.InheritedHandles = bool.Parse(limitInherianceStr) ? [] : null;
 
                     grandChild.Start();
                     Console.WriteLine(grandChild.Id);
                 },
-                arg: enabled.ToString(),
+                enabled.ToString(),
+                restrictInheritance.ToString(),
                 remoteInvokeOptions);
 
             string firstLine = remoteHandle.Process.StandardOutput.ReadLine();
@@ -81,19 +84,21 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void KillOnParentExit_KillsTheChild_WhenParentIsKilled(bool enabled)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)] // (false, true) is tested by ProcessHandleTests
+        public void KillOnParentExit_KillsTheChild_WhenParentIsKilled(bool enabled, bool restrictInheritance)
         {
             RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false };
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
             remoteInvokeOptions.StartInfo.RedirectStandardInput = true;
 
             using RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(
-                (enabledStr) =>
+                (enabledStr, limitInherianceStr) =>
                 {
                     using Process grandChild = CreateProcessLong();
                     grandChild.StartInfo.KillOnParentExit = bool.Parse(enabledStr);
+                    grandChild.StartInfo.InheritedHandles = bool.Parse(limitInherianceStr) ? [] : null;
 
                     grandChild.Start();
                     Console.WriteLine(grandChild.Id);
@@ -101,7 +106,8 @@ namespace System.Diagnostics.Tests
                     // This will block the child until parent kills it.
                     _ = Console.ReadLine();
                 },
-                arg: enabled.ToString(),
+                enabled.ToString(),
+                restrictInheritance.ToString(),
                 remoteInvokeOptions);
 
             string firstLine = childHandle.Process.StandardOutput.ReadLine();
@@ -113,9 +119,10 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void KillOnParentExit_KillsTheChild_WhenParentCrashes(bool enabled)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)] // (false, true) is tested by ProcessHandleTests
+        public void KillOnParentExit_KillsTheChild_WhenParentCrashes(bool enabled, bool restrictInheritance)
         {
             RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false };
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
@@ -123,10 +130,11 @@ namespace System.Diagnostics.Tests
             remoteInvokeOptions.StartInfo.RedirectStandardInput = true;
 
             using RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(
-                (enabledStr) =>
+                (enabledStr, limitInherianceStr) =>
                 {
                     using Process grandChild = CreateProcessLong();
                     grandChild.StartInfo.KillOnParentExit = bool.Parse(enabledStr);
+                    grandChild.StartInfo.InheritedHandles = bool.Parse(limitInherianceStr) ? [] : null;
 
                     grandChild.Start();
                     Console.WriteLine(grandChild.Id);
@@ -137,7 +145,8 @@ namespace System.Diagnostics.Tests
                     // Guaranteed Access Violation - write to null pointer
                     Marshal.WriteInt32(IntPtr.Zero, 42);
                 },
-                arg: enabled.ToString(),
+                enabled.ToString(),
+                restrictInheritance.ToString(),
                 remoteInvokeOptions);
 
             string firstLine = childHandle.Process.StandardOutput.ReadLine();
