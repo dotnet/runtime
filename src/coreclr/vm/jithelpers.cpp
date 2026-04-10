@@ -1713,9 +1713,10 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         // Walk back to the original method frame
         pThread->VirtualUnwindToFirstManagedCallFrame(pFrameContext);
 
-        // Remember original method FP and SP because new method will inherit them.
+        // Remember original method FP, SP and SSP because new method will inherit them.
         UINT_PTR currentSP = GetSP(pFrameContext);
         UINT_PTR currentFP = GetFP(pFrameContext);
+        DWORD64 currentSSP = GetSSP(pFrameContext);
 
         // We expect to be back at the right IP
         if ((UINT_PTR)ip != GetIP(pFrameContext))
@@ -1741,6 +1742,7 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
 
 #if defined(TARGET_AMD64)
         pFrameContext->Rbp = currentFP;
+        SetSSP(pFrameContext, currentSSP);
 #endif // TARGET_AMD64
 
         SetSP(pFrameContext, currentSP);

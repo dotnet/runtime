@@ -9882,6 +9882,11 @@ static void EnumerateOSRLocalGCSlots(Compiler* compiler, TFunctor func)
 
         int offset = compiler->lvaOSRLocalTier0FrameOffset(varNum);
 
+        if (offset >= 0)
+        {
+            continue;
+        }
+
         if (varDsc->TypeIs(TYP_STRUCT) && (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
         {
             unsigned     numSlots = compiler->lvaLclStackHomeSize(varNum) / REGSIZE_BYTES;
@@ -9959,7 +9964,7 @@ void CodeGen::genDuplicateTier0Prolog()
     }
     else
     {
-        auto zeroSlot = [&](unsigned offset) {
+        auto zeroSlot = [&](int offset) {
             GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, genGetZeroReg(REG_SCRATCH, &initRegZeroed),
                                        REG_FPBASE, offset);
         };
