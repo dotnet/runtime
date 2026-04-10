@@ -123,7 +123,7 @@ configuration:
         - payloadType: Pull_Request
       - or:
         - labelAdded:
-            label: area-AssemblyLoader-coreclr
+            label: area-assemblyloading
         - labelAdded:
             label: area-AssemblyLoader-mono
         - labelAdded:
@@ -173,17 +173,11 @@ configuration:
         - labelAdded:
             label: area-GC-mono
         - labelAdded:
-            label: area-Host
-        - labelAdded:
-            label: area-HostModel
-        - labelAdded:
             label: area-ILTools-coreclr
         - labelAdded:
             label: area-Tools-ILVerification
         - labelAdded:
             label: area-Infrastructure
-        - labelAdded:
-            label: area-Infrastructure-coreclr
         - labelAdded:
             label: area-Infrastructure-libraries
         - labelAdded:
@@ -303,8 +297,6 @@ configuration:
         - labelAdded:
             label: area-System.Runtime.CompilerServices
         - labelAdded:
-            label: area-System.Runtime.InteropServices
-        - labelAdded:
             label: area-System.Runtime.Intrinsics
         - labelAdded:
             label: area-System.Security
@@ -337,7 +329,7 @@ configuration:
       then:
       - if:
         - hasLabel:
-            label: area-AssemblyLoader-coreclr
+            label: area-assemblyloading
         then:
         - mentionUsers:
             mentionees:
@@ -655,33 +647,6 @@ configuration:
             assignMentionees: False
       - if:
         - hasLabel:
-            label: area-Host
-        then:
-        - mentionUsers:
-            mentionees:
-            - agocke
-            - jeffschwMSFT
-            - elinor-fung
-            replyTemplate: >-
-              Tagging subscribers to this area: ${mentionees}
-
-              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
-            assignMentionees: False
-      - if:
-        - hasLabel:
-            label: area-HostModel
-        then:
-        - mentionUsers:
-            mentionees:
-            - agocke
-            - elinor-fung
-            replyTemplate: >-
-              Tagging subscribers to this area: ${mentionees}
-
-              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
-            assignMentionees: False
-      - if:
-        - hasLabel:
             label: area-ILTools-coreclr
         then:
         - mentionUsers:
@@ -712,19 +677,6 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - dotnet/runtime-infrastructure
-            replyTemplate: >-
-              Tagging subscribers to this area: ${mentionees}
-
-              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
-            assignMentionees: False
-      - if:
-        - hasLabel:
-            label: area-Infrastructure-coreclr
-        then:
-        - mentionUsers:
-            mentionees:
-            - agocke
             - dotnet/runtime-infrastructure
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1450,18 +1402,6 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-system-runtime-compilerservices
-            replyTemplate: >-
-              Tagging subscribers to this area: ${mentionees}
-
-              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
-            assignMentionees: False
-      - if:
-        - hasLabel:
-            label: area-System.Runtime.InteropServices
-        then:
-        - mentionUsers:
-            mentionees:
-            - dotnet/interop-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
