@@ -720,9 +720,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_get_certificate) \
     REQUIRED_FUNCTION(SSL_new) \
     REQUIRED_FUNCTION(SSL_peek) \
-    REQUIRED_FUNCTION(SSL_state_string_long) \
-    REQUIRED_FUNCTION(SSL_alert_desc_string_long) \
-    REQUIRED_FUNCTION(SSL_alert_type_string_long) \
     REQUIRED_FUNCTION(SSL_read) \
     REQUIRED_FUNCTION(SSL_renegotiate) \
     REQUIRED_FUNCTION(SSL_renegotiate_pending) \
@@ -741,8 +738,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_set_ex_data) \
     REQUIRED_FUNCTION(SSL_set_options) \
     REQUIRED_FUNCTION(SSL_set_session) \
-    REQUIRED_FUNCTION(SSL_set_verify_result) \
-    REQUIRED_FUNCTION(SSL_get_verify_result) \
     REQUIRED_FUNCTION(SSL_get_session) \
     REQUIRED_FUNCTION(SSL_set_verify) \
     REQUIRED_FUNCTION(SSL_shutdown) \
@@ -1299,9 +1294,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_is_init_finished SSL_is_init_finished_ptr
 #define SSL_new SSL_new_ptr
 #define SSL_peek SSL_peek_ptr
-#define SSL_state_string_long SSL_state_string_long_ptr
-#define SSL_alert_type_string_long SSL_alert_type_string_long_ptr
-#define SSL_alert_desc_string_long SSL_alert_desc_string_long_ptr
 #define SSL_read SSL_read_ptr
 #define SSL_renegotiate SSL_renegotiate_ptr
 #define SSL_renegotiate_pending SSL_renegotiate_pending_ptr
@@ -1320,8 +1312,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_set_ex_data SSL_set_ex_data_ptr
 #define SSL_set_options SSL_set_options_ptr
 #define SSL_set_session SSL_set_session_ptr
-#define SSL_set_verify_result SSL_set_verify_result_ptr
-#define SSL_get_verify_result SSL_get_verify_result_ptr
 #define SSL_get_session SSL_get_session_ptr
 #define SSL_set_verify SSL_set_verify_ptr
 #define SSL_shutdown SSL_shutdown_ptr
