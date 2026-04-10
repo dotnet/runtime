@@ -756,7 +756,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
 HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
 {
     HRESULT hr = S_OK;
-    CLRConfigStringHolder wszProfilerList(NULL);
+    CLRConfigStringHolder wszProfilerList;
 
 #if defined(TARGET_ARM64)
     CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM64, &wszProfilerList);

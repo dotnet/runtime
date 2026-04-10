@@ -18,6 +18,10 @@ namespace ILCompiler.DependencyAnalysis
         // COFF relocation types
         IMAGE_REL_BASED_ADDR32NB             = 0x0B,   // The 32-bit address without an image base (RVA)
 
+        // Webcil Relocation Types
+        IMAGE_REL_BASED_WASM32_TABLE         = 0x0C,
+        IMAGE_REL_BASED_WASM64_TABLE         = 0x0D,
+
         // General relocation types
         IMAGE_REL_BASED_REL32                = 0x10,   // 32-bit relative address from byte following reloc
         IMAGE_REL_BASED_THUMB_BRANCH24       = 0x13,   // Thumb2: based B, BL
@@ -806,6 +810,12 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_DIR64:
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
                     return relocationType;
+
+                case RelocType.WASM_TABLE_INDEX_I32:
+                    return RelocType.IMAGE_REL_BASED_WASM32_TABLE;
+
+                case RelocType.WASM_TABLE_INDEX_I64:
+                    return RelocType.IMAGE_REL_BASED_WASM64_TABLE;
 
                 default:
                     return RelocType.IMAGE_REL_BASED_ABSOLUTE;

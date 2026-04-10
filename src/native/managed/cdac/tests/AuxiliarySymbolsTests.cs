@@ -12,54 +12,71 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class AuxiliarySymbolsTests
 {
-    private static readonly MockDescriptors.TypeFields AuxiliarySymbolInfoFields = new()
+    private sealed class MockAuxiliarySymbolInfo : TypedView
     {
-        DataType = DataType.AuxiliarySymbolInfo,
-        Fields =
-        [
-            new(nameof(Data.AuxiliarySymbolInfo.Address), DataType.pointer),
-            new(nameof(Data.AuxiliarySymbolInfo.Name), DataType.pointer),
-        ]
-    };
+        private const string AddressFieldName = "Address";
+        private const string NameFieldName = "Name";
+
+        public static Layout<MockAuxiliarySymbolInfo> CreateLayout(MockTarget.Architecture architecture)
+            => new SequentialLayoutBuilder("AuxiliarySymbolInfo", architecture)
+                .AddPointerField(AddressFieldName)
+                .AddPointerField(NameFieldName)
+                .Build<MockAuxiliarySymbolInfo>();
+
+        public ulong AddressValue
+        {
+            get => ReadPointerField(AddressFieldName);
+            set => WritePointerField(AddressFieldName, value);
+        }
+
+        public ulong Name
+        {
+            get => ReadPointerField(NameFieldName);
+            set => WritePointerField(NameFieldName, value);
+        }
+    }
 
     private static Target CreateTarget(
         MockTarget.Architecture arch,
         (ulong Address, string Name)[] helpers)
     {
-        TargetTestHelpers targetTestHelpers = new(arch);
-        MockMemorySpace.Builder builder = new(targetTestHelpers);
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        MockMemorySpace.Builder builder = targetBuilder.MemoryBuilder;
+        TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
+        Layout<MockAuxiliarySymbolInfo> auxiliarySymbolInfoLayout = MockAuxiliarySymbolInfo.CreateLayout(arch);
 
-        Dictionary<DataType, Target.TypeInfo> types =
-            MockDescriptors.GetTypesForTypeFields(targetTestHelpers, [AuxiliarySymbolInfoFields]);
-        uint entrySize = types[DataType.AuxiliarySymbolInfo].Size!.Value;
+        Dictionary<DataType, Target.TypeInfo> types = new()
+        {
+            [DataType.AuxiliarySymbolInfo] = TargetTestHelpers.CreateTypeInfo(auxiliarySymbolInfoLayout),
+        };
 
         MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(0x1000_0000, 0x2000_0000);
 
-        // Allocate the array (only if non-empty)
         ulong arrayAddress = 0;
         if (helpers.Length > 0)
         {
-            MockMemorySpace.HeapFragment arrayFragment = allocator.Allocate(entrySize * (ulong)helpers.Length, "AuxiliarySymbolInfoArray");
-
+            // Allocate the array (only if non-empty)
+            MockMemorySpace.HeapFragment arrayFragment =
+                allocator.Allocate((ulong)(auxiliarySymbolInfoLayout.Size * helpers.Length), "AuxiliarySymbolInfoArray");
             // Write each entry
-            Target.TypeInfo typeInfo = types[DataType.AuxiliarySymbolInfo];
             for (int i = 0; i < helpers.Length; i++)
             {
-                int addressOffset = typeInfo.Fields[nameof(Data.AuxiliarySymbolInfo.Address)].Offset;
-                int nameOffset = typeInfo.Fields[nameof(Data.AuxiliarySymbolInfo.Name)].Offset;
-                Span<byte> entryData = arrayFragment.Data.AsSpan((int)(i * entrySize), (int)entrySize);
+                ulong entryAddress = arrayFragment.Address + (ulong)(i * auxiliarySymbolInfoLayout.Size);
+                Memory<byte> entryMemory =
+                    arrayFragment.Data.AsMemory(i * auxiliarySymbolInfoLayout.Size, auxiliarySymbolInfoLayout.Size);
+                MockAuxiliarySymbolInfo entry = auxiliarySymbolInfoLayout.Create(entryMemory, entryAddress);
 
                 // Write the code pointer address
-                targetTestHelpers.WritePointer(entryData.Slice(addressOffset), helpers[i].Address);
+                entry.AddressValue = helpers[i].Address;
 
                 // Allocate and write the UTF-8 name string
                 byte[] nameBytes = Encoding.UTF8.GetBytes(helpers[i].Name + '\0');
                 MockMemorySpace.HeapFragment nameFragment = allocator.Allocate((ulong)nameBytes.Length, $"Name_{helpers[i].Name}");
                 nameBytes.CopyTo(nameFragment.Data.AsSpan());
                 builder.AddHeapFragment(nameFragment);
-
-                targetTestHelpers.WritePointer(entryData.Slice(nameOffset), nameFragment.Address);
+                entry.Name = nameFragment.Address;
             }
+
             builder.AddHeapFragment(arrayFragment);
             arrayAddress = arrayFragment.Address;
         }
@@ -69,24 +86,14 @@ public class AuxiliarySymbolsTests
         targetTestHelpers.Write(countFragment.Data, (uint)helpers.Length);
         builder.AddHeapFragment(countFragment);
 
-        (string Name, ulong Value)[] globals =
-        [
-            (Constants.Globals.AuxiliarySymbols, arrayAddress),
-            (Constants.Globals.AuxiliarySymbolCount, countFragment.Address),
-        ];
-
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, types, globals);
-
-        Mock<IPlatformMetadata> platformMetadata = new();
-        platformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(default(CodePointerFlags));
-
-        IContractFactory<IAuxiliarySymbols> factory = new AuxiliarySymbolsFactory();
-        Mock<ContractRegistry> reg = new();
-        reg.SetupGet(c => c.PlatformMetadata).Returns(platformMetadata.Object);
-        reg.SetupGet(c => c.AuxiliarySymbols).Returns(() => factory.CreateContract(target, 1));
-        target.SetContracts(reg.Object);
-
-        return target;
+        return targetBuilder
+            .AddTypes(types)
+            .AddGlobals(
+                (Constants.Globals.AuxiliarySymbols, arrayAddress),
+                (Constants.Globals.AuxiliarySymbolCount, countFragment.Address))
+            .AddContract<IPlatformMetadata>(_ => Mock.Of<IPlatformMetadata>(p => p.GetCodePointerFlags() == default(CodePointerFlags)))
+            .AddContract<IAuxiliarySymbols>(static target => ((IContractFactory<IAuxiliarySymbols>)new AuxiliarySymbolsFactory()).CreateContract(target, 1))
+            .Build();
     }
 
     [Theory]
