@@ -109,6 +109,11 @@
              Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkFifo.cs"
              Link="Common\Interop\Unix\Interop.MkFifo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
+             Link="Common\Interop\Unix\Interop.Stat.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LChflags.cs"
+             Link="Common\Interop\Unix\Interop.LChflags.cs" />
+    <Compile Include="FileInfo\GetSetAttributes.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="Directory\Delete.Windows.cs" />

@@ -231,6 +231,26 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal(0U, BinaryIntegerHelper<UInt128>.Log10(Zero));
+            Assert.Equal(0U, BinaryIntegerHelper<UInt128>.Log10(One));
+
+            UInt128 power = 1;
+            for (uint n = 0; n < 38; n++)
+            {
+                Assert.Equal((UInt128)n, BinaryIntegerHelper<UInt128>.Log10(power));
+                if (power > 1)
+                {
+                    Assert.Equal((UInt128)(n - 1), BinaryIntegerHelper<UInt128>.Log10(power - 1));
+                }
+                power *= 10;
+            }
+
+            Assert.Equal(38U, BinaryIntegerHelper<UInt128>.Log10(MaxValue));
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             Assert.Equal(0x00U, BinaryIntegerHelper<UInt128>.PopCount(Zero));

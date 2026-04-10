@@ -86,6 +86,47 @@ internal static class Entrypoints
         return 0;
     }
 
+    /// <summary>
+    /// Create the DacDbi interface implementation.
+    /// </summary>
+    /// <param name="handle">Handle created via cdac initialization</param>
+    /// <param name="legacyImplPtr">Optional. Pointer to legacy implementation of IDacDbiInterface</param>
+    /// <param name="obj"><c>IUnknown</c> pointer that can be queried for IDacDbiInterface</param>
+    [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_dacdbi_interface")]
+    private static unsafe int CreateDacDbiInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
+    {
+        if (obj == null)
+            return HResults.E_INVALIDARG;
+        if (handle == IntPtr.Zero)
+        {
+            *obj = IntPtr.Zero;
+            return HResults.E_NOTIMPL;
+        }
+
+        Target? target = GCHandle.FromIntPtr(handle).Target as Target;
+        if (target is null)
+        {
+            *obj = IntPtr.Zero;
+            return HResults.E_INVALIDARG;
+        }
+
+        ComWrappers cw = new StrategyBasedComWrappers();
+        object? legacyObj = null;
+        if (legacyImplPtr != IntPtr.Zero)
+        {
+            legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
+            if (legacyObj is not Legacy.IDacDbiInterface)
+            {
+                *obj = IntPtr.Zero;
+                return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
+            }
+        }
+
+        Legacy.DacDbiImpl impl = new(target, legacyObj);
+        *obj = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
+        return HResults.S_OK;
+    }
+
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstanceWithFallback")]
     private static unsafe int CLRDataCreateInstanceWithFallback(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
     {

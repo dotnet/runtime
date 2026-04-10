@@ -20,8 +20,26 @@
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>
 #endif
-#if HAVE_PIPE2
 #include <fcntl.h>
+
+#if defined(__linux__)
+#if !defined(HAVE_CLOSE_RANGE)
+#include <sys/syscall.h>
+#if !defined(__NR_close_range)
+// close_range was added in Linux 5.9. The syscall number is 436 for all
+// architectures using the generic syscall table (asm-generic/unistd.h),
+// which covers aarch64, riscv, s390x, ppc64le, and others. The exception
+// is alpha, which has its own syscall table and uses 546 instead.
+# if defined(__alpha__)
+#  define __NR_close_range 546
+# else
+#  define __NR_close_range 436
+# endif
+#endif // !defined(__NR_close_range)
+#endif // !defined(HAVE_CLOSE_RANGE)
+#endif // defined(__linux__)
+#if (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
+#define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
 #include <pthread.h>
 
@@ -31,6 +49,7 @@
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
+#include <spawn.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -205,6 +224,106 @@ handler_from_sigaction (struct sigaction *sa)
     }
 }
 
+#if HAVE_FDWALK
+// Callback used with fdwalk() on Illumos/Solaris to set FD_CLOEXEC on all file descriptors >= 3.
+static int SetCloexecForFd(void* context, int fd)
+{
+    (void)context;
+    if (fd >= 3)
+    {
+        int flags = fcntl(fd, F_GETFD);
+        if (flags != -1 && (flags & FD_CLOEXEC) == 0)
+        {
+            fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+        }
+    }
+    return 0;
+}
+#endif
+
+// Used when OS-specific bulk methods (close_range, fdwalk) are unavailable or fail.
+// Always sets FD_CLOEXEC rather than closing fds directly. Closing fds directly would close
+// waitForChildToExecPipe[WRITE_END_OF_PIPE] (which has O_CLOEXEC), making it impossible to
+// report exec() failures back to the parent when execve() fails after RestrictHandleInheritance.
+static void SetCloexecForAllFdsFallback(void)
+{
+    struct rlimit rl;
+    int maxFd;
+    if (getrlimit(RLIMIT_NOFILE, &rl) == 0 && rl.rlim_cur != RLIM_INFINITY)
+    {
+        maxFd = (int)rl.rlim_cur;
+    }
+    else
+    {
+        maxFd = (int)sysconf(_SC_OPEN_MAX);
+        if (maxFd <= 0)
+        {
+            maxFd = 65536; // reasonable upper bound
+        }
+    }
+
+    // Fallback: iterate over all file descriptors and set FD_CLOEXEC on each open one >= 3.
+    for (int fd = 3; fd < maxFd; fd++)
+    {
+        int flags = fcntl(fd, F_GETFD);
+        if (flags == -1)
+        {
+            continue; // fd not open
+        }
+
+        if ((flags & FD_CLOEXEC) == 0)
+        {
+            fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+        }
+    }
+}
+
+static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFdCount)
+{
+    // FDs 0-2 are stdin/stdout/stderr; this method must be called AFTER the dup2 calls.
+    // We always set FD_CLOEXEC rather than closing fds directly. This is critical because
+    // waitForChildToExecPipe[WRITE_END_OF_PIPE] (which has O_CLOEXEC) must remain open
+    // until execve() is called so that exec failures can be reported back to the parent.
+    // Using closefrom() or close_range() with flag 0 (direct close) would destroy this pipe.
+
+#if HAVE_CLOSE_RANGE
+    // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
+    if (close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
+    {
+        SetCloexecForAllFdsFallback();
+    }
+#elif defined(__NR_close_range)
+    // On Linux with older glibc that doesn't expose close_range() as a function,
+    // use the raw syscall number if the kernel supports it (kernel >= 5.9).
+    if (syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
+    {
+        SetCloexecForAllFdsFallback();
+    }
+#elif HAVE_FDWALK
+    // On Illumos/Solaris, use fdwalk() to set FD_CLOEXEC on all open fds >= 3.
+    if (fdwalk(SetCloexecForFd, NULL) != 0)
+    {
+        SetCloexecForAllFdsFallback();
+    }
+#else
+    SetCloexecForAllFdsFallback();
+#endif
+
+    // Remove CLOEXEC from user-provided inherited file descriptors so they survive execve.
+    for (int i = 0; i < inheritedFdCount; i++)
+    {
+        int fd = inheritedFds[i];
+        if (fd >= 3) // skip std io (already handled by dup)
+        {
+            int flags = fcntl(fd, F_GETFD);
+            if (flags != -1)
+            {
+                fcntl(fd, F_SETFD, flags & ~FD_CLOEXEC);
+            }
+        }
+    }
+}
+
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -217,8 +336,147 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* childPid,
                                       int32_t stdinFd,
                                       int32_t stdoutFd,
-                                      int32_t stderrFd)
+                                      int32_t stderrFd,
+                                      int32_t* inheritedFds,
+                                      int32_t inheritedFdCount)
 {
+#if HAVE_FORK || defined(TARGET_OSX)
+    assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
+            (groupsLength == 0 || groups != NULL) && "null argument.");
+
+    *childPid = -1;
+
+    // Make sure we can find and access the executable. exec will do this, of course, but at that point it's already
+    // in the child process, at which point it'll translate to the child process' exit code rather than to failing
+    // the Start itself.  There's a race condition here, in that this could change prior to exec's checks, but there's
+    // little we can do about that. There are also more rigorous checks exec does, such as validating the executable
+    // format of the target; such errors will emerge via the child process' exit code.
+    if (access(filename, X_OK) != 0)
+    {
+        return -1;
+    }
+#endif
+
+#if defined(TARGET_OSX)
+    // Use posix_spawn on macOS when credentials don't need to be set,
+    // since macOS does not support setuid/setgid with posix_spawn.
+    if (!setCredentials)
+    {
+        pid_t spawnedPid;
+        posix_spawn_file_actions_t file_actions;
+        posix_spawnattr_t attr;
+        int result;
+
+        if ((result = posix_spawnattr_init(&attr)) != 0)
+        {
+            errno = result;
+            return -1;
+        }
+
+        // Build sigdefault set: only reset signals that have custom handlers,
+        // preserving SIG_IGN and SIG_DFL handlers (matching fork path behavior).
+        sigset_t sigdefault_set;
+        sigemptyset(&sigdefault_set);
+        for (int sig = 1; sig < NSIG; ++sig)
+        {
+            if (sig == SIGKILL || sig == SIGSTOP)
+            {
+                continue;
+            }
+
+            struct sigaction sa_old;
+            if (!sigaction(sig, NULL, &sa_old))
+            {
+                void (*oldhandler)(int) = handler_from_sigaction(&sa_old);
+                if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
+                {
+                    sigaddset(&sigdefault_set, sig);
+                }
+            }
+        }
+
+        // pthread_sigmask follows POSIX thread conventions: it returns an error number but does not set errno
+        sigset_t current_mask;
+        result = pthread_sigmask(SIG_SETMASK, NULL, &current_mask);
+        if (result != 0)
+        {
+            posix_spawnattr_destroy(&attr);
+            errno = result;
+            return -1;
+        }
+
+        // POSIX_SPAWN_SETSIGDEF to reset signal handlers to default
+        // POSIX_SPAWN_SETSIGMASK to set the child's signal mask
+        short flags = POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK;
+
+        // When inheritedFdCount >= 0, use POSIX_SPAWN_CLOEXEC_DEFAULT to close all FDs by default,
+        // then use posix_spawn_file_actions_addinherit_np to explicitly keep the specified FDs open.
+        if (inheritedFdCount >= 0)
+        {
+            flags |= POSIX_SPAWN_CLOEXEC_DEFAULT;
+        }
+
+        if ((result = posix_spawnattr_setflags(&attr, flags)) != 0
+            || (result = posix_spawnattr_setsigdefault(&attr, &sigdefault_set)) != 0
+            || (result = posix_spawnattr_setsigmask(&attr, &current_mask)) != 0 // Set the child's signal mask to match the parent's current mask
+            || (result = posix_spawn_file_actions_init(&file_actions)) != 0)
+        {
+            int saved_errno = result;
+            posix_spawnattr_destroy(&attr);
+            errno = saved_errno;
+            return -1;
+        }
+
+        // Redirect stdin/stdout/stderr
+        if ((stdinFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdinFd, STDIN_FILENO)) != 0)
+            || (stdoutFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdoutFd, STDOUT_FILENO)) != 0)
+            || (stderrFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stderrFd, STDERR_FILENO)) != 0)
+            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0)) // Change working directory if specified
+        {
+            int saved_errno = result;
+            posix_spawn_file_actions_destroy(&file_actions);
+            posix_spawnattr_destroy(&attr);
+            errno = saved_errno;
+            return -1;
+        }
+
+        // When handle count restriction is active, explicitly mark the user-provided FDs as inherited
+        if (inheritedFdCount > 0)
+        {
+            for (int i = 0; i < inheritedFdCount; i++)
+            {
+                int fd = inheritedFds[i];
+                if (fd != STDIN_FILENO && fd != STDOUT_FILENO && fd != STDERR_FILENO)
+                {
+                    if ((result = posix_spawn_file_actions_addinherit_np(&file_actions, fd)) != 0)
+                    {
+                        int saved_errno = result;
+                        posix_spawn_file_actions_destroy(&file_actions);
+                        posix_spawnattr_destroy(&attr);
+                        errno = saved_errno;
+                        return -1;
+                    }
+                }
+            }
+        }
+
+        // Spawn the process
+        result = posix_spawn(&spawnedPid, filename, &file_actions, &attr, argv, envp);
+
+        posix_spawn_file_actions_destroy(&file_actions);
+        posix_spawnattr_destroy(&attr);
+
+        if (result != 0)
+        {
+            errno = result;
+            return -1;
+        }
+
+        *childPid = spawnedPid;
+        return 0;
+    }
+#endif
+
 #if HAVE_FORK
     bool success = true;
     int waitForChildToExecPipe[2] = {-1, -1};
@@ -234,9 +492,6 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &thread_cancel_state);
 #endif
 
-    assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
-            (groupsLength == 0 || groups != NULL) && "null argument.");
-
     if (setCredentials && groupsLength > 0)
     {
         getGroupsBuffer = (uint32_t*)(malloc(sizeof(uint32_t) * Int32ToSizeT(groupsLength)));
@@ -245,17 +500,6 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             success = false;
             goto done;
         }
-    }
-
-    // Make sure we can find and access the executable. exec will do this, of course, but at that point it's already
-    // in the child process, at which point it'll translate to the child process' exit code rather than to failing
-    // the Start itself.  There's a race condition here, in that this could change prior to exec's checks, but there's
-    // little we can do about that. There are also more rigorous checks exec does, such as validating the executable
-    // format of the target; such errors will emerge via the child process' exit code.
-    if (access(filename, X_OK) != 0)
-    {
-        success = false;
-        goto done;
     }
 
     // We create a pipe purely for the benefit of knowing when the child process has called exec.
@@ -385,6 +629,11 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             }
         }
 
+        if (inheritedFdCount >= 0)
+        {
+            RestrictHandleInheritance(inheritedFds, inheritedFdCount);
+        }
+
         // Finally, execute the new process.  execve will not return if it's successful.
         execve(filename, argv, envp);
         ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno); // execve failed
@@ -464,6 +713,8 @@ done:;
     (void)stdinFd;
     (void)stdoutFd;
     (void)stderrFd;
+    (void)inheritedFds;
+    (void)inheritedFdCount;
     return -1;
 #endif
 }
@@ -601,26 +852,6 @@ int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limit
 
 int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
-    switch (signal)
-    {
-        case PAL_NONE:
-             signal = 0;
-             break;
-
-        case PAL_SIGKILL:
-             signal = SIGKILL;
-             break;
-
-        case PAL_SIGSTOP:
-             signal = SIGSTOP;
-             break;
-
-        default:
-             assert_msg(false, "Unknown signal", signal);
-             errno = EINVAL;
-             return -1;
-    }
-
     return kill(pid, signal);
 }
 
