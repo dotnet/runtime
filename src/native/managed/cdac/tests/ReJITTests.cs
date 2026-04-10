@@ -11,77 +11,86 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-using MockReJIT = MockDescriptors.ReJIT;
-
 public class ReJITTests
 {
-    internal static Target CreateTarget(
-        MockTarget.Architecture arch,
-        MockReJIT builder,
-        Mock<ICodeVersions> mockCodeVersions = null)
-    {
-        TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.Builder.GetMemoryContext().ReadFromTarget, builder.Types, builder.Globals);
+    private readonly record struct ReJITContractContext(IReJIT ReJIT, Target Target);
 
+    private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockReJITBuilder rejitBuilder)
+        => new()
+        {
+            [DataType.ProfControlBlock] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.ProfControlBlockLayout),
+            [DataType.MethodDescVersioningState] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.MethodDescVersioningStateLayout),
+            [DataType.NativeCodeVersionNode] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.NativeCodeVersionNodeLayout),
+            [DataType.ILCodeVersioningState] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.ILCodeVersioningStateLayout),
+            [DataType.ILCodeVersionNode] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.ILCodeVersionNodeLayout),
+            [DataType.GCCoverageInfo] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.GCCoverageInfoLayout),
+        };
+
+    private static ReJITContractContext CreateReJITContract(
+        MockTarget.Architecture arch,
+        Action<MockReJITBuilder> configure,
+        bool rejitOnAttachEnabled = true,
+        Mock<ICodeVersions>? mockCodeVersions = null)
+    {
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        MockReJITBuilder rejitBuilder = new(targetBuilder.MemoryBuilder, rejitOnAttachEnabled);
+        configure(rejitBuilder);
         mockCodeVersions ??= new Mock<ICodeVersions>();
 
-        IContractFactory<IReJIT> rejitFactory = new ReJITFactory();
-
-        ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.ReJIT == rejitFactory.CreateContract(target, 1)
-                && c.CodeVersions == mockCodeVersions.Object);
-        target.SetContracts(reg);
-        return target;
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(CreateContractTypes(rejitBuilder))
+            .AddGlobals((nameof(Constants.Globals.ProfilerControlBlock), rejitBuilder.ProfilerControlBlockGlobalAddress))
+            .AddContract<IReJIT>(static target => ((IContractFactory<IReJIT>)new ReJITFactory()).CreateContract(target, 1))
+            .AddContract<ICodeVersions>(_ => mockCodeVersions.Object)
+            .Build();
+        return new ReJITContractContext(target.Contracts.ReJIT, target);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void IsEnabled_RejitOnAttachEnabled_ReturnsTrue(MockTarget.Architecture arch)
     {
-        MockReJIT mockRejit = new MockReJIT(arch, rejitOnAttachEnabled: true);
-        var target = CreateTarget(arch, mockRejit);
-
-        var rejit = target.Contracts.ReJIT;
-        Assert.NotNull(rejit);
-        Assert.True(rejit.IsEnabled());
+        ReJITContractContext context = CreateReJITContract(
+            arch,
+            _ => { },
+            rejitOnAttachEnabled: true,
+            mockCodeVersions: new Mock<ICodeVersions>());
+        Assert.True(context.ReJIT.IsEnabled());
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void IsEnabled_RejitOnAttachDisabled_NoProfiler_ReturnsFalse(MockTarget.Architecture arch)
     {
-        MockReJIT mockRejit = new MockReJIT(arch, rejitOnAttachEnabled: false);
-        var target = CreateTarget(arch, mockRejit);
-
-        var rejit = target.Contracts.ReJIT;
-        Assert.NotNull(rejit);
-        Assert.False(rejit.IsEnabled());
+        ReJITContractContext context = CreateReJITContract(
+            arch,
+            _ => { },
+            rejitOnAttachEnabled: false);
+        Assert.False(context.ReJIT.IsEnabled());
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetRejitId_SyntheticAndExplicit_Success(MockTarget.Architecture arch)
     {
-        MockReJIT mockRejit = new MockReJIT(arch);
-
         Dictionary<ILCodeVersionHandle, TargetNUInt> expectedRejitIds = new()
         {
             // synthetic ILCodeVersionHandle
             { ILCodeVersionHandle.CreateSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100), new TargetNUInt(0) },
-            { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(1), MockReJIT.RejitFlags.kStateActive), new TargetNUInt(1) },
-            { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(2), MockReJIT.RejitFlags.kStateRequested), new TargetNUInt(2) },
-            { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(3), MockReJIT.RejitFlags.kStateRequested), new TargetNUInt(3) }
         };
 
-        var target = CreateTarget(arch, mockRejit);
-
-        // TEST
-
-        var rejit = target.Contracts.ReJIT;
-        Assert.NotNull(rejit);
+        ReJITContractContext context = CreateReJITContract(
+            arch,
+            rejitBuilder =>
+            {
+                expectedRejitIds.Add(ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(1, MockReJITBuilder.RejitFlags.kStateActive).Address), new TargetNUInt(1));
+                expectedRejitIds.Add(ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(2, MockReJITBuilder.RejitFlags.kStateRequested).Address), new TargetNUInt(2));
+                expectedRejitIds.Add(ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(3, MockReJITBuilder.RejitFlags.kStateRequested).Address), new TargetNUInt(3));
+            });
 
         foreach (var (ilCodeVersionHandle, expectedRejitId) in expectedRejitIds)
         {
-            TargetNUInt rejitState = rejit.GetRejitId(ilCodeVersionHandle);
+            TargetNUInt rejitState = context.ReJIT.GetRejitId(ilCodeVersionHandle);
             Assert.Equal(expectedRejitId, rejitState);
         }
     }
@@ -90,26 +99,23 @@ public class ReJITTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetRejitState_SyntheticAndExplicit_Success(MockTarget.Architecture arch)
     {
-        MockReJIT mockRejit = new MockReJIT(arch);
-
         Dictionary<ILCodeVersionHandle, RejitState> expectedRejitStates = new()
         {
             // synthetic ILCodeVersionHandle
             { ILCodeVersionHandle.CreateSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100), RejitState.Active },
-            { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(1), MockReJIT.RejitFlags.kStateActive), RejitState.Active },
-            { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(2), MockReJIT.RejitFlags.kStateRequested), RejitState.Requested },
         };
 
-        var target = CreateTarget(arch, mockRejit);
-
-        // TEST
-
-        var rejit = target.Contracts.ReJIT;
-        Assert.NotNull(rejit);
+        ReJITContractContext context = CreateReJITContract(
+            arch,
+            rejitBuilder =>
+            {
+                expectedRejitStates.Add(ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(1, MockReJITBuilder.RejitFlags.kStateActive).Address), RejitState.Active);
+                expectedRejitStates.Add(ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(2, MockReJITBuilder.RejitFlags.kStateRequested).Address), RejitState.Requested);
+            });
 
         foreach (var (ilCodeVersionHandle, expectedRejitState) in expectedRejitStates)
         {
-            RejitState rejitState = rejit.GetRejitState(ilCodeVersionHandle);
+            RejitState rejitState = context.ReJIT.GetRejitState(ilCodeVersionHandle);
             Assert.Equal(expectedRejitState, rejitState);
         }
     }
@@ -118,7 +124,6 @@ public class ReJITTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetRejitIds_SyntheticAndExplicit_Success(MockTarget.Architecture arch)
     {
-        MockReJIT mockRejit = new MockReJIT(arch);
         Mock<ICodeVersions> mockCodeVersions = new Mock<ICodeVersions>();
 
         List<ulong> expectedRejitIds = [0, 1];
@@ -128,21 +133,21 @@ public class ReJITTests
         [
             // synthetic ILCodeVersionHandle
             ILCodeVersionHandle.CreateSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100),
-            mockRejit.AddExplicitILCodeVersion(new TargetNUInt(1), MockReJIT.RejitFlags.kStateActive),
-            mockRejit.AddExplicitILCodeVersion(new TargetNUInt(2), MockReJIT.RejitFlags.kStateRequested)
         ];
 
         TargetPointer methodDesc = new TargetPointer(/* arbitrary */ 0x200);
         mockCodeVersions.Setup(cv => cv.GetILCodeVersions(methodDesc))
             .Returns(ilCodeVersionHandles);
-        var target = CreateTarget(arch, mockRejit, mockCodeVersions);
+        ReJITContractContext context = CreateReJITContract(
+            arch,
+            rejitBuilder =>
+            {
+                ilCodeVersionHandles.Add(ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(1, MockReJITBuilder.RejitFlags.kStateActive).Address));
+                ilCodeVersionHandles.Add(ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(2, MockReJITBuilder.RejitFlags.kStateRequested).Address));
+            },
+            mockCodeVersions: mockCodeVersions);
 
-        // TEST
-
-        var rejit = target.Contracts.ReJIT;
-        Assert.NotNull(rejit);
-
-        List<ulong> rejitIds = rejit.GetRejitIds(target, methodDesc)
+        List<ulong> rejitIds = context.ReJIT.GetRejitIds(context.Target, methodDesc)
             .Select(e => e.Value)
             .ToList();
         rejitIds.Sort();
