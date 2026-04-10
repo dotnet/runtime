@@ -59,18 +59,9 @@ extern "C" void PALAPI OutputDebugStringW(LPCWSTR lpOutputString)
     (void)lpOutputString;
 }
 
-// __cxa_thread_atexit is provided by libc++abi in WASI SDK 32+
-
-extern "C" void *__cxa_allocate_exception(size_t thrown_size)
-{
-    return malloc(thrown_size);
-}
-
-extern "C" void __cxa_throw(void *thrown_exception, void *tinfo, void (*dest)(void *))
-{
-    (void)thrown_exception; (void)tinfo; (void)dest;
-    abort();
-}
+// C++ EH runtime symbols (__cxa_thread_atexit, __cxa_allocate_exception,
+// __cxa_throw, __cxa_begin_catch, __cxa_end_catch) are provided by the
+// wasm-exceptions-enabled libc++abi and libunwind.
 
 BOOL PAL_ProbeMemory(PVOID pBuffer, DWORD cbBuffer, BOOL fWriteAccess)
 {

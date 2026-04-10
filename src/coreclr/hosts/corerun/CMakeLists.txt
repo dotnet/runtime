@@ -125,6 +125,7 @@ else()
             endif()
         elseif (CLR_CMAKE_TARGET_WASI)
             target_link_options(corerun PRIVATE
+                -fwasm-exceptions
                 -Wl,-z,stack-size=8388608
                 -Wl,--initial-memory=52428800
                 -L$ENV{WASI_SDK_PATH}/share/wasi-sysroot/lib/wasm32-wasip2)
@@ -132,7 +133,7 @@ else()
                 -lwasi-emulated-process-clocks
                 -lwasi-emulated-signal
                 -lwasi-emulated-getpid
-                -lsetjmp)
+                -lunwind)
         endif()
 
         if (CORERUN_IN_BROWSER)
