@@ -3843,12 +3843,30 @@ bool ILNativeArrayMarshaler::CanMarshalViaPinning()
 {
     // We can't pin an array if we have a non-default element native type (e.g. ANSICHAR, WINBOOL, CBOOL),
     // if we have a marshaler for the var type, or if we can't get a method-table representing the array.
+
+    if (!IsCLRToNative(m_dwMarshalFlags) || IsByref(m_dwMarshalFlags))
+    {
+        return false;
+    }
+
     CREATE_MARSHALER_CARRAY_OPERANDS mops;
     m_pargs->m_pMarshalInfo->GetMops(&mops);
+    if (mops.elementNativeType != NATIVE_TYPE_DEFAULT)
+    {
+        // This means that we have some sort of custom marshaling logic.
+        return false;
+    }
 
-    return IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && (NULL != m_pargs->na.m_pArrayMT)
-        && mops.elementNativeType == NATIVE_TYPE_DEFAULT
-        && (NULL == OleVariant::GetMarshalerForVarType(m_pargs->na.m_vt, TRUE));
+    if (NULL == m_pargs->na.m_pArrayMT)
+    {
+        return false;
+    }
+
+    TypeHandle elementTypeHandle = m_pargs->na.m_pArrayMT->GetArrayElementTypeHandle();
+
+    return elementTypeHandle.IsBlittable()
+        && (elementTypeHandle.GetMethodTable()->IsValueType()
+            || elementTypeHandle.GetMethodTable()->IsTruePrimitive());
 }
 
 void ILNativeArrayMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
