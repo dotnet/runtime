@@ -118,13 +118,16 @@ bool CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg)
 }
 
 //------------------------------------------------------------------------
-// genCallFinally: Generate a call to the finally block.
+// genCallFinally: Generate a call to a finally.
 //
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
-    BasicBlock* nextBlock = block->Next();
+    BasicBlock* const nextBlock = block->Next();
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
@@ -135,7 +138,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
             instGen(INS_BREAKPOINT);
         }
 
-        return block;
+        return;
     }
     else
     {
@@ -163,8 +166,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
 
         GetEmitter()->emitEnableGC();
-
-        return nextBlock;
     }
 }
 
@@ -2370,7 +2371,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Generates code for an EH funclet epilog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)

@@ -1947,7 +1947,7 @@ extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodD
     if (pMethod->IsAsyncVariantMethod())
     {
         // do not report async variants to reflection.
-        pMethod = pMethod->GetAsyncOtherVariant(/*allowInstParam*/ false);
+        pMethod = pMethod->GetOrdinaryVariant(/*allowInstParam*/ false);
     }
 
     TypeHandle instType = declaringTypeHandle.AsTypeHandle();

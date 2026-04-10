@@ -11,8 +11,8 @@ internal sealed class IdDispenser : IData<IdDispenser>
     public IdDispenser(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.IdDispenser);
-        IdToThread = target.ReadPointer(address + (ulong)type.Fields[nameof(IdToThread)].Offset);
-        HighestId = target.Read<uint>(address + (ulong)type.Fields[nameof(HighestId)].Offset);
+        IdToThread = target.ReadPointerField(address, type, nameof(IdToThread));
+        HighestId = target.ReadField<uint>(address, type, nameof(HighestId));
     }
 
     public TargetPointer IdToThread { get; init; }

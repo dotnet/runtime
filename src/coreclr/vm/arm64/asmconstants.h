@@ -277,8 +277,14 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offseto
 #define OFFSETOF__InterfaceDispatchCache__m_rgEntries 0x20
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_rgEntries == offsetof(InterfaceDispatchCache, m_rgEntries))
 
+#define OFFSETOF__InterfaceDispatchCache__m_cEntries 0x18
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_cEntries == offsetof(InterfaceDispatchCache, m_cEntries))
+
 #define OFFSETOF__InterfaceDispatchCell__m_pCache 0x08
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCell__m_pCache == offsetof(InterfaceDispatchCell, m_pCache))
+
+#define IDC_CACHE_POINTER_MASK 0x3
+ASMCONSTANTS_C_ASSERT(IDC_CACHE_POINTER_MASK == ::IDC_CachePointerMask)
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #define OFFSETOF__ThreadLocalInfo__m_pThread 0
@@ -292,15 +298,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLoc
 #endif
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
 
-#ifdef TARGET_UNIX
-#ifdef _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xb20
-#else // _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0x2b8
-#endif // _DEBUG
-#else // TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xb48
-#endif // TARGET_UNIX
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x30
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
 
 #define OFFSETOF__InterpThreadContext__pStackPointer 0x10
