@@ -5936,7 +5936,12 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         {
             // Spill to a local if sizes don't match so we can avoid the "load more than requested"
             // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
-            if (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size())
+            if (
+                (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size()) &&
+                // Ensure that the retval is actually a struct - otherwise the ReplaceWithLclVar below
+                // will fail due to assigning a non-struct to a struct local
+                (retVal->TypeGet() == TYP_STRUCT)
+            )
             {
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
                 unsigned tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
