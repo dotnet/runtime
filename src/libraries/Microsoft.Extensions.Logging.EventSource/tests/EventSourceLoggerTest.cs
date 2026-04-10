@@ -244,7 +244,7 @@ namespace Microsoft.Extensions.Logging.Test
                     {
                         Assert.Contains($@"""ActivityTraceId"":""{activity.TraceId.ToHexString()}""", eventJson);
                         Assert.Contains($@"""ActivitySpanId"":""{activity.SpanId.ToHexString()}""", eventJson);
-                        Assert.Contains($@"""ActivityTraceFlags"":""{(activity.Recorded ? "1" : "0")}""", eventJson);
+                        Assert.Contains($@"""ActivityTraceFlags"":""{((int)activity.ActivityTraceFlags).ToString(CultureInfo.InvariantCulture)}""", eventJson);
                     }
                     else
                     {
