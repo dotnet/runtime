@@ -255,7 +255,8 @@ namespace System.Diagnostics
         /// This property cannot be used together with <see cref="UseShellExecute"/> set to <see langword="true"/>.
         /// </para>
         /// <para>
-        /// On Windows, this is implemented using Job Objects with the <c>JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE</c> flag.
+        /// On Windows, this is implemented using Job Objects with the
+        /// <see href="https://learn.microsoft.com/windows/win32/api/winnt/ns-winnt-jobobject_basic_limit_information">JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE</see> flag.
         /// </para>
         /// </remarks>
         /// <value><see langword="true"/> to terminate the child process when the parent exits; otherwise, <see langword="false"/>. The default is <see langword="false"/>.</value>

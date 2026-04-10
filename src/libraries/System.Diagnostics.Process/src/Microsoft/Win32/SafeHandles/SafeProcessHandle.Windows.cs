@@ -514,7 +514,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
 
-            if (handlesToInherit is not null && handleCount > 0 && !Interop.Kernel32.UpdateProcThreadAttribute(
+            if (handlesToInherit is not null && !Interop.Kernel32.UpdateProcThreadAttribute(
                 attributeListBuffer,
                 0,
                 (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
