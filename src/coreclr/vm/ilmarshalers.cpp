@@ -4610,12 +4610,12 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     // Resolve the instantiated content conversion methods at stub generation time
     // and emit ldftn to pass their entry points to CreateMarshaler.
     MethodDesc* pConvertToNativeMD = GetInstantiatedSafeArrayMethod(
-        METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED,
+        METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_UNMANAGED,
         mops.elementType, mops.methodTable, FALSE);
     pslILEmit->EmitLDFTN(pslILEmit->GetToken(pConvertToNativeMD));
 
     MethodDesc* pConvertToManagedMD = GetInstantiatedSafeArrayMethod(
-        METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED,
+        METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_MANAGED,
         mops.elementType, mops.methodTable, FALSE);
     pslILEmit->EmitLDFTN(pslILEmit->GetToken(pConvertToManagedMD));
 

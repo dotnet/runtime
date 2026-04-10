@@ -2312,6 +2312,33 @@ namespace System.StubHelpers
             }
         }
 
+        // SafeArray-specific overloads that accept Array instead of T[].
+        // SafeArrays can be multidimensional or have non-zero lower bounds,
+        // producing general Array objects that are not T[].
+        // CLR arrays store elements contiguously regardless of rank,
+        // so we use MemoryMarshal.GetArrayDataReference to access the data directly.
+        public static unsafe void ConvertSafeArrayContentsToUnmanaged<T, TMarshaler>(Array managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+        {
+            ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managed));
+            int length = managed.Length;
+            for (int i = 0; i < length; i++)
+            {
+                TMarshaler.ConvertToUnmanaged(ref Unsafe.Add(ref firstElement, i), pNative);
+                pNative += TMarshaler.UnmanagedSize;
+            }
+        }
+
+        public static unsafe void ConvertSafeArrayContentsToManaged<T, TMarshaler>(Array managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+        {
+            ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managed));
+            int length = managed.Length;
+            for (int i = 0; i < length; i++)
+            {
+                TMarshaler.ConvertToManaged(ref Unsafe.Add(ref firstElement, i), pNative);
+                pNative += TMarshaler.UnmanagedSize;
+            }
+        }
+
         [UnmanagedCallersOnly]
         internal static unsafe void InvokeArrayContentsConverter(
             Array* pManagedArray,

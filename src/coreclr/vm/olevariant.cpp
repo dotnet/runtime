@@ -1476,7 +1476,7 @@ void OleVariant::MarshalArrayVariantOleToObject(const VARIANT* pOleVariant,
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
         SetObjectReference(pObj, pArrayRef);
-        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE);
+        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE);
         MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT, pConvertMD->GetMultiCallableAddrOfCode());
     }
     else
@@ -1514,7 +1514,7 @@ void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
     if (*pArrayRef != NULL)
     {
         pSafeArray = CreateSafeArrayForArrayRef(pArrayRef, vt, pElemMT);
-        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, vt, pElemMT, FALSE);
+        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_UNMANAGED, vt, pElemMT, FALSE);
         MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT, pConvertMD->GetMultiCallableAddrOfCode());
     }
     V_ARRAY(pOleVariant) = pSafeArray;
@@ -1547,7 +1547,7 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
         SetObjectReference(pObj, pArrayRef);
-        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE);
+        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE);
         MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT, pConvertMD->GetMultiCallableAddrOfCode());
     }
     else
