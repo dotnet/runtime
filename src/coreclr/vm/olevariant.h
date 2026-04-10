@@ -7,11 +7,14 @@
 #ifndef _H_OLEVARIANT_
 #define _H_OLEVARIANT_
 
+#ifndef FEATURE_COMINTEROP
+#error FEATURE_COMINTEROP is required for this file
+#endif // FEATURE_COMINTEROP
+
 class OleVariant
 {
   public:
 
-#ifdef FEATURE_COMINTEROP
     // New variant conversion
     static void MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *pOle);
     static void MarshalObjectForOleVariant(const VARIANT *pOle, OBJECTREF * const & pObj);
@@ -22,9 +25,7 @@ class OleVariant
 
     static void MarshalObjectForOleVariantUncommon(const VARIANT *pOle, OBJECTREF * const & pObj);
     static void MarshalOleVariantForObjectUncommon(OBJECTREF * const & pObj, VARIANT *pOle);
-#endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_COMINTEROP
     // Safearray conversion
 
     static SAFEARRAY* CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF* pArrayRef, VARTYPE vt,
@@ -64,29 +65,20 @@ class OleVariant
     static HRESULT ClearAndInsertContentsIntoByrefRecordVariant(VARIANT* pOle, OBJECTREF* pObj);
 
     static BOOL IsValidArrayForSafeArrayElementType(BASEARRAYREF* pArrayRef, VARTYPE vtExpected);
-#endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_COMINTEROP
     static BOOL CheckVariant(VARIANT *pOle);
 
     // Type conversion utilities
     static void ExtractContentsFromByrefVariant(VARIANT* pByrefVar, VARIANT* pDestVar);
     static void InsertContentsIntoByRefVariant(VARIANT* pSrcVar, VARIANT* pByrefVar);
     static void CreateByrefVariantForVariant(VARIANT* pSrcVar, VARIANT* pByrefVar);
-#endif // FEATURE_COMINTEROP
 
-    static TypeHandle GetTypeHandleForVarType(VARTYPE vt);
-    static VARTYPE GetVarTypeForTypeHandle(TypeHandle typeHnd);
-
-    static VARTYPE GetVarTypeForValueClassArrayName(LPCUTF8 pArrayClassName);
     static VARTYPE GetElementVarTypeForArrayRef(BASEARRAYREF pArrayRef);
 
     // Note that Rank == 0 means SZARRAY (that is rank 1, no lower bounds)
     static TypeHandle GetArrayForVarType(VARTYPE vt, TypeHandle elemType, unsigned rank=0);
     static UINT GetElementSizeForVarType(VARTYPE vt, MethodTable* pInterfaceMT);
-    static MethodTable* GetNativeMethodTableForVarType(VARTYPE vt, MethodTable* pManagedMT);
 
-#ifdef FEATURE_COMINTEROP
     // Determine the element type of the objects being wrapped by an array of wrappers.
     static TypeHandle GetWrappedArrayElementType(BASEARRAYREF* pArray);
 
@@ -99,23 +91,16 @@ class OleVariant
     static TypeHandle GetElementTypeForRecordSafeArray(SAFEARRAY* pSafeArray);
 
     static void MarshalVarArgVariantArrayToOle(PTRARRAYREF* pComArray, VARIANT* oleArray);
-#endif // FEATURE_COMINTEROP
 
 private:
 
-#ifdef FEATURE_COMINTEROP
     static HRESULT MarshalCommonOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle);
 
-#ifdef FEATURE_COMINTEROP
     static void MarshalRecordVariantOleToObject(const VARIANT* pOleVariant, OBJECTREF * const & pComVariant);
-#endif
 
-#ifdef FEATURE_COMINTEROP
     static void MarshalArrayVariantOleToObject(const VARIANT* pOleVariant, OBJECTREF * const & pObj);
     static void MarshalArrayVariantOleRefToObject(const VARIANT* pOleVariant, OBJECTREF * const & pObj);
     static void MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj, VARIANT* pOleVariant);
-#endif
-#endif // FEATURE_COMINTEROP
 };
 
 // Returns the instantiated MethodDesc for a StubHelpers array marshalling method

@@ -15,7 +15,7 @@
 #include "../dlls/mscorrc/resource.h"
 #include "typeparse.h"
 #include "comdelegate.h"
-#include "olevariant.h"
+#include "fieldmarshaler.h"
 #include "ilmarshalers.h"
 #include "interoputil.h"
 #include "mdfileformat.h"  // For CPackedLen
@@ -3533,7 +3533,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
             }
             else
             {
-                m_vtElement = OleVariant::GetVarTypeForTypeHandle(m_thElement);
+                m_vtElement = GetVarTypeForTypeHandle(m_thElement);
             }
         }
 #ifdef FEATURE_COMINTEROP

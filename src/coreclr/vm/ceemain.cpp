@@ -147,7 +147,6 @@
 #include "eventtrace.h"
 #include "corhost.h"
 #include "binder.h"
-#include "olevariant.h"
 #include "comcallablewrapper.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"

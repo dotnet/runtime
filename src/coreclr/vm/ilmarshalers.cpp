@@ -11,7 +11,9 @@
 #include "dllimport.h"
 #include "mlinfo.h"
 #include "ilmarshalers.h"
+#ifdef FEATURE_COMINTEROP
 #include "olevariant.h"
+#endif // FEATURE_COMINTEROP
 #include "comdatetime.h"
 #include "fieldmarshaler.h"
 

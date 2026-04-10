@@ -22,249 +22,6 @@
  * Local constants
  * ------------------------------------------------------------------------- */
 
-#define NO_MAPPING ((BYTE) -1)
-
-
-/* ------------------------------------------------------------------------- *
- * Mapping routines
- * ------------------------------------------------------------------------- */
-
-VARTYPE GetVarTypeForCorElementType(CorElementType type)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    static const BYTE map[] =
-    {
-        VT_EMPTY,           // ELEMENT_TYPE_END
-        VT_VOID,            // ELEMENT_TYPE_VOID
-        VT_BOOL,            // ELEMENT_TYPE_BOOLEAN
-        VT_UI2,             // ELEMENT_TYPE_CHAR
-        VT_I1,              // ELEMENT_TYPE_I1
-        VT_UI1,             // ELEMENT_TYPE_U1
-        VT_I2,              // ELEMENT_TYPE_I2
-        VT_UI2,             // ELEMENT_TYPE_U2
-        VT_I4,              // ELEMENT_TYPE_I4
-        VT_UI4,             // ELEMENT_TYPE_U4
-        VT_I8,              // ELEMENT_TYPE_I8
-        VT_UI8,             // ELEMENT_TYPE_U8
-        VT_R4,              // ELEMENT_TYPE_R4
-        VT_R8,              // ELEMENT_TYPE_R8
-        VT_BSTR,            // ELEMENT_TYPE_STRING
-    };
-
-    _ASSERTE(type < (CorElementType) (sizeof(map) / sizeof(map[0])));
-
-    VARTYPE vt = VARTYPE(map[type]);
-
-    if (vt == NO_MAPPING)
-        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-
-    return vt;
-}
-
-//
-// GetTypeHandleForVarType returns the TypeHandle for a given
-// VARTYPE.  This is called by the marshaller in the context of
-// a function call.
-//
-
-TypeHandle OleVariant::GetTypeHandleForVarType(VARTYPE vt)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    static const BYTE map[] =
-    {
-        CLASS__EMPTY,       // VT_EMPTY
-        CLASS__NULL,        // VT_NULL
-        CLASS__INT16,       // VT_I2
-        CLASS__INT32,       // VT_I4
-        CLASS__SINGLE,      // VT_R4
-        CLASS__DOUBLE,      // VT_R8
-        CLASS__DECIMAL,     // VT_CY
-        CLASS__DATE_TIME,   // VT_DATE
-        CLASS__STRING,      // VT_BSTR
-        CLASS__OBJECT,      // VT_DISPATCH
-        CLASS__INT32,       // VT_ERROR
-        CLASS__BOOLEAN,     // VT_BOOL
-        NO_MAPPING,         // VT_VARIANT
-        CLASS__OBJECT,      // VT_UNKNOWN
-        CLASS__DECIMAL,     // VT_DECIMAL
-        NO_MAPPING,         // unused
-        CLASS__SBYTE,       // VT_I1
-        CLASS__BYTE,        // VT_UI1
-        CLASS__UINT16,      // VT_UI2
-        CLASS__UINT32,      // VT_UI4
-        CLASS__INT64,       // VT_I8
-        CLASS__UINT64,      // VT_UI8
-        CLASS__INT32,       // VT_INT
-        CLASS__UINT32,      // VT_UINT
-        CLASS__VOID,        // VT_VOID
-        NO_MAPPING,         // VT_HRESULT
-        NO_MAPPING,         // VT_PTR
-        NO_MAPPING,         // VT_SAFEARRAY
-        NO_MAPPING,         // VT_CARRAY
-        NO_MAPPING,         // VT_USERDEFINED
-        NO_MAPPING,         // VT_LPSTR
-        NO_MAPPING,         // VT_LPWSTR
-        NO_MAPPING,         // unused
-        NO_MAPPING,         // unused
-        NO_MAPPING,         // unused
-        NO_MAPPING,         // unused
-        CLASS__OBJECT,      // VT_RECORD
-    };
-
-    BinderClassID type = CLASS__NIL;
-
-    // Validate the arguments.
-    _ASSERTE((vt & VT_BYREF) == 0);
-
-    // Array's map to object.
-    if (vt & VT_ARRAY)
-        return TypeHandle(CoreLibBinder::GetClass(CLASS__OBJECT));
-
-    // This is prety much a workaround because you cannot cast a CorElementType into a CVTYPE
-    if (vt > VT_RECORD || (type = (BinderClassID) map[vt]) == NO_MAPPING)
-        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_TYPE);
-
-    return TypeHandle(CoreLibBinder::GetClass(type));
-} // CVTypes OleVariant::GetCVTypeForVarType()
-
-VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Handle primitive types.
-    CorElementType elemType = type.GetSignatureCorElementType();
-    if (elemType <= ELEMENT_TYPE_R8)
-        return GetVarTypeForCorElementType(elemType);
-
-    // Types incompatible with interop.
-    if (type.IsTypeDesc())
-        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-
-    // Handle objects.
-    MethodTable * pMT = type.AsMethodTable();
-
-    if (pMT == g_pStringClass)
-        return VT_BSTR;
-    if (pMT == g_pObjectClass)
-        return VT_VARIANT;
-
-    // We need to make sure the CVClasses table is populated.
-    if(CoreLibBinder::IsClass(pMT, CLASS__DATE_TIME))
-        return VT_DATE;
-    if(CoreLibBinder::IsClass(pMT, CLASS__DECIMAL))
-        return VT_DECIMAL;
-
-#ifdef HOST_64BIT
-    if (CoreLibBinder::IsClass(pMT, CLASS__INTPTR))
-        return VT_I8;
-    if (CoreLibBinder::IsClass(pMT, CLASS__UINTPTR))
-        return VT_UI8;
-#else
-    if (CoreLibBinder::IsClass(pMT, CLASS__INTPTR))
-        return VT_INT;
-    if (CoreLibBinder::IsClass(pMT, CLASS__UINTPTR))
-        return VT_UINT;
-#endif
-
-#ifdef FEATURE_COMINTEROP
-    // The wrapper types are only available when built-in COM is supported.
-    if (g_pConfig->IsBuiltInCOMSupported())
-    {
-        if (CoreLibBinder::IsClass(pMT, CLASS__DISPATCH_WRAPPER))
-            return VT_DISPATCH;
-        if (CoreLibBinder::IsClass(pMT, CLASS__UNKNOWN_WRAPPER))
-            return VT_UNKNOWN;
-        if (CoreLibBinder::IsClass(pMT, CLASS__ERROR_WRAPPER))
-            return VT_ERROR;
-        if (CoreLibBinder::IsClass(pMT, CLASS__CURRENCY_WRAPPER))
-            return VT_CY;
-        if (CoreLibBinder::IsClass(pMT, CLASS__BSTR_WRAPPER))
-            return VT_BSTR;
-
-        // VariantWrappers cannot be stored in VARIANT's.
-        if (CoreLibBinder::IsClass(pMT, CLASS__VARIANT_WRAPPER))
-            COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-    }
-#endif // FEATURE_COMINTEROP
-
-    if (pMT->IsEnum())
-        return GetVarTypeForCorElementType(type.GetInternalCorElementType());
-
-    if (pMT->IsValueType())
-        return VT_RECORD;
-
-    if (pMT->IsArray())
-        return VT_ARRAY;
-
-#ifdef FEATURE_COMINTEROP
-    // There is no VT corresponding to SafeHandles as they cannot be stored in
-    // VARIANTs or Arrays. The same applies to CriticalHandle.
-    if (type.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__SAFE_HANDLE))))
-        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-    if (type.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE))))
-        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
-
-    if (pMT->IsInterface())
-    {
-        CorIfaceAttr ifaceType = pMT->GetComInterfaceType();
-        return static_cast<VARTYPE>(IsDispatchBasedItf(ifaceType) ? VT_DISPATCH : VT_UNKNOWN);
-    }
-
-    TypeHandle hndDefItfClass;
-    DefaultInterfaceType DefItfType = GetDefaultInterfaceForClassWrapper(type, &hndDefItfClass);
-    switch (DefItfType)
-    {
-        case DefaultInterfaceType_Explicit:
-        {
-            CorIfaceAttr ifaceType = hndDefItfClass.GetMethodTable()->GetComInterfaceType();
-            return static_cast<VARTYPE>(IsDispatchBasedItf(ifaceType) ? VT_DISPATCH : VT_UNKNOWN);
-        }
-
-        case DefaultInterfaceType_AutoDual:
-        {
-            return VT_DISPATCH;
-        }
-
-        case DefaultInterfaceType_IUnknown:
-        case DefaultInterfaceType_BaseComClass:
-        {
-            return VT_UNKNOWN;
-        }
-
-        case DefaultInterfaceType_AutoDispatch:
-        {
-            return VT_DISPATCH;
-        }
-
-        default:
-        {
-            _ASSERTE(!"Invalid default interface type!");
-        }
-    }
-#endif // FEATURE_COMINTEROP
-
-    return VT_UNKNOWN;
-}
 
 //
 // GetElementVarTypeForArrayRef returns the safearray variant type for the
@@ -282,10 +39,8 @@ VARTYPE OleVariant::GetElementVarTypeForArrayRef(BASEARRAYREF pArrayRef)
     CONTRACTL_END;
 
     TypeHandle elemTypeHnd = pArrayRef->GetArrayElementTypeHandle();
-    return(GetVarTypeForTypeHandle(elemTypeHnd));
+    return(::GetVarTypeForTypeHandle(elemTypeHnd));
 }
-
-#ifdef FEATURE_COMINTEROP
 
 BOOL OleVariant::IsValidArrayForSafeArrayElementType(BASEARRAYREF *pArrayRef, VARTYPE vtExpected)
 {
@@ -336,8 +91,6 @@ BOOL OleVariant::IsValidArrayForSafeArrayElementType(BASEARRAYREF *pArrayRef, VA
             return FALSE;
     }
 }
-
-#endif // FEATURE_COMINTEROP
 
 //
 // GetArrayClassForVarType returns the element class name and underlying method table
@@ -632,61 +385,6 @@ UINT OleVariant::GetElementSizeForVarType(VARTYPE vt, MethodTable *pInterfaceMT)
 }
 
 //
-// GetElementSizeForVarType returns the a MethodTable* to a type that it blittable to the native
-// element representation, or pManagedMT if vt represents a record (user-defined type).
-//
-
-MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable* pManagedMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (vt & VT_ARRAY)
-    {
-        return CoreLibBinder::GetClass(CLASS__INTPTR);
-    }
-
-    switch (vt)
-    {
-        case VT_DATE:
-            return CoreLibBinder::GetClass(CLASS__DOUBLE);
-        case VT_CY:
-            return CoreLibBinder::GetClass(CLASS__CURRENCY);
-        case VT_BOOL:
-            return CoreLibBinder::GetClass(CLASS__INT16);
-        case VT_DISPATCH:
-        case VT_UNKNOWN:
-        case VT_LPSTR:
-        case VT_LPWSTR:
-        case VT_BSTR:
-        case VT_USERDEFINED:
-        case VT_SAFEARRAY:
-        case VT_CARRAY:
-            return CoreLibBinder::GetClass(CLASS__INTPTR);
-        case VT_VARIANT:
-            return CoreLibBinder::GetClass(CLASS__COMVARIANT);
-        case VT_UI2:
-            // When CharSet = CharSet.Unicode, System.Char arrays are marshaled as VT_UI2.
-            // However, since System.Char itself is CharSet.Ansi, the native size of
-            // System.Char is 1 byte instead of 2. So here we explicitly return System.UInt16's
-            // MethodTable to ensure the correct size.
-            return CoreLibBinder::GetClass(CLASS__UINT16);
-        case VT_DECIMAL:
-            return CoreLibBinder::GetClass(CLASS__DECIMAL);
-        default:
-            _ASSERTE(pManagedMT != NULL);
-            return pManagedMT;
-    }
-}
-
-//
-#ifdef FEATURE_COMINTEROP
-
 void SafeVariantClear(VARIANT* pVar)
 {
     CONTRACTL
@@ -753,7 +451,6 @@ public:
         Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>::operator=(p);
     }
 };
-#endif  // FEATURE_COMINTEROP
 
 /* ------------------------------------------------------------------------- *
 /* ------------------------------------------------------------------------- *
@@ -764,7 +461,6 @@ public:
  * Record marshaling routines
  * ------------------------------------------------------------------------- */
 
-#ifdef FEATURE_COMINTEROP
 void OleVariant::MarshalRecordVariantOleToObject(const VARIANT *pOleVariant,
                                                  OBJECTREF * const & pObj)
 {
@@ -817,9 +513,6 @@ void OleVariant::MarshalRecordVariantOleToObject(const VARIANT *pOleVariant,
     }
     GCPROTECT_END();
 }
-#endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMINTEROP
 
 // Warning! VariantClear's previous contents of pVarOut.
 void OleVariant::MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *pOle)
@@ -1753,7 +1446,6 @@ void OleVariant::MarshalVarArgVariantArrayToOle(PTRARRAYREF *pClrArray, VARIANT 
 /* ------------------------------------------------------------------------- *
  * Array marshaling routines
  * ------------------------------------------------------------------------- */
-#ifdef FEATURE_COMINTEROP
 
 void OleVariant::MarshalArrayVariantOleToObject(const VARIANT* pOleVariant,
                                                 OBJECTREF * const & pObj)
@@ -1863,7 +1555,6 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
         SetObjectReference(pObj, NULL);
     }
 }
-#endif //FEATURE_COMINTEROP
 
 
 /* ------------------------------------------------------------------------- *
@@ -2208,7 +1899,6 @@ namespace
             return TypeHandle(CoreLibBinder::GetClass(CLASS__LPSTR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
         }
 
-#ifdef FEATURE_COMINTEROP
         case VT_CY:
             return CoreLibBinder::GetClass(CLASS__CURRENCY_ARRAY_ELEMENT_MARSHALER);
 
@@ -2238,7 +1928,6 @@ namespace
 
         case VT_VARIANT:
             return CoreLibBinder::GetClass(CLASS__VARIANT_ARRAY_ELEMENT_MARSHALER);
-#endif // FEATURE_COMINTEROP
 
         case VT_RECORD:
         {
@@ -2280,7 +1969,6 @@ namespace
         case VT_BSTR:
         case VT_LPWSTR:
         case VT_LPSTR:      return TypeHandle(g_pStringClass);
-#ifdef FEATURE_COMINTEROP
         case VT_CY:         return TypeHandle(CoreLibBinder::GetClass(CLASS__DECIMAL));
         case VT_VARIANT:    return TypeHandle(g_pObjectClass);
         case VT_UNKNOWN:
@@ -2288,7 +1976,6 @@ namespace
             if (pElementMT == NULL || pElementMT == g_pObjectClass)
                 return TypeHandle(g_pObjectClass);
             return TypeHandle(pElementMT);
-#endif // FEATURE_COMINTEROP
         case VT_RECORD:
             _ASSERTE(pElementMT != NULL);
             return TypeHandle(pElementMT);
@@ -2830,7 +2517,6 @@ TypeHandle OleVariant::GetArrayElementTypeWrapperAware(BASEARRAYREF *pArray)
     }
 }
 
-#ifdef FEATURE_COMINTEROP
 TypeHandle OleVariant::GetElementTypeForRecordSafeArray(SAFEARRAY* pSafeArray)
 {
     CONTRACTL
@@ -2846,7 +2532,6 @@ TypeHandle OleVariant::GetElementTypeForRecordSafeArray(SAFEARRAY* pSafeArray)
     COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
     return TypeHandle(); // Unreachable
 }
-#endif //FEATURE_COMINTEROP
 
 void OleVariant::ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj)
 {
@@ -2909,5 +2594,4 @@ extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOn
 
     END_QCALL;
 }
-#endif // FEATURE_COMINTEROP
 
