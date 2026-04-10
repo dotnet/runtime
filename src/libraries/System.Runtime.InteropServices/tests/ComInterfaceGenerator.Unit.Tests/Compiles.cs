@@ -385,18 +385,17 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
-                internal virtual partial interface IComInterface
+                internal partial interface IComInterface
                 {
                     void Method();
-                    public partial void PartialMethod();
+                    public virtual partial void PartialMethod();
                 }
-                internal virtual partial interface IComInterface
+                internal partial interface IComInterface
                 {
-                    public partial void PartialMethod() { }
+                    public virtual partial void PartialMethod() { }
                 }
                 """;
 
-            // CS0539 is expected because the partial method's default implementation
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source);
         }
 
