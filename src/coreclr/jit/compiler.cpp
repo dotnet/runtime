@@ -449,8 +449,8 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
 
-    info.compCode         = methodInfo->ILCode;
-    info.compILCodeSize   = methodInfo->ILCodeSize;
+    info.compCode       = methodInfo->ILCode;
+    info.compILCodeSize = methodInfo->ILCodeSize;
 
     info.compHasNextCallRetAddr    = false;
     info.compIsVarArgs             = false;

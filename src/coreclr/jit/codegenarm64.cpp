@@ -1821,7 +1821,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 //    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 //
-void CodeGen::genZeroInitFrameUsingBlockInit(regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genZeroInitFrameUsingBlockInit(
+    regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     assert(m_compiler->compGeneratingProlog);
     assert(genUseBlockInit);

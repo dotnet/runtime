@@ -677,16 +677,20 @@ PhaseStatus AsyncTransformation::Run()
 
     if (ReuseContinuations())
     {
+#ifndef TARGET_AMD64
         // Set up the local containing the continuation we can reuse. For OSR
         // things are special: we can transition to the OSR method after having
         // resumed in the tier0 method. In that case we end up with the tier0
         // continuation in the OSR method, but we cannot reuse it.
+        // This is not needed for x64 since there we resume directly in the OSR method.
         if (m_compiler->opts.IsOSR())
         {
             m_reuseContinuationVar = m_compiler->lvaGrabTemp(false DEBUGARG("OSR reusable continuation"));
             m_compiler->lvaGetDesc(m_reuseContinuationVar)->lvType = TYP_REF;
         }
-        else
+#endif
+
+        if (m_reuseContinuationVar == BAD_VAR_NUM)
         {
             m_reuseContinuationVar = m_compiler->lvaAsyncContinuationArg;
         }
@@ -1201,10 +1205,12 @@ void AsyncTransformation::BuildContinuation(BasicBlock*                block,
         JITDUMP("  Call has return; continuation will have return value\n");
     }
 
+#ifndef TARGET_AMD64
     // For OSR, we store the IL offset that inspired the OSR method at the
     // beginning of the data (and store -1 in the tier0 version). This must be
     // at the beginning because the tier0 and OSR versions need to agree on
     // this.
+    // This is not needed for x64 which can resume directly in the OSR method.
     if (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR())
     {
         JITDUMP("  Method %s; keeping IL offset that inspired OSR method at the beginning of non-GC data\n",
@@ -1212,6 +1218,7 @@ void AsyncTransformation::BuildContinuation(BasicBlock*                block,
         // Must be pointer sized for compatibility with Continuation methods that access fields
         layoutBuilder->SetNeedsOSRILOffset();
     }
+#endif
 
     if (HasNonContextRestoreExceptionalFlow(block))
     {
@@ -1892,7 +1899,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
                                                  VARSET_VALARG_TP                 mutatedSinceResumption,
                                                  SaveSet                          saveSet)
 {
-    if ((saveSet != SaveSet::MutatedLocals) && (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR()))
+    if ((saveSet != SaveSet::MutatedLocals) && subLayout.NeedsOSRILOffset())
     {
         GenTree* ilOffsetToStore;
         if (m_compiler->doesMethodHavePatchpoints())
@@ -3000,6 +3007,7 @@ void AsyncTransformation::CreateResumptionSwitch()
     resumingEdge->setLikelihood(0);
     newEntryBB->GetFalseEdge()->setLikelihood(1);
 
+#ifndef TARGET_AMD64
     if (m_compiler->doesMethodHavePatchpoints())
     {
         JITDUMP("  Method has patch points...\n");
@@ -3097,4 +3105,5 @@ void AsyncTransformation::CreateResumptionSwitch()
             LIR::AsRange(onContinuationBB).InsertAtBeginning(continuationArg, storeReusable);
         }
     }
+#endif
 }

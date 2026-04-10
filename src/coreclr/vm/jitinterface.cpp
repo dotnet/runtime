@@ -14945,6 +14945,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     // same version here.
     PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
     NativeCodeVersion ncv = config->GetCodeVersion();
+#ifndef TARGET_AMD64
     if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
     {
 #ifdef FEATURE_ON_STACK_REPLACEMENT
@@ -14952,6 +14953,8 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         // version will handle setting up the frame that the OSR version
         // expects and then delegating back into the OSR version (knowing to do
         // so through information stored in the continuation).
+        // This is not needed for x64 which duplicates the tier0 prolog at the beginning of the OSR method,
+        // and hence can resume directly in the OSR method.
         _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
         pCode->EmitLDC((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
 #else // !FEATURE_ON_STACK_REPLACEMENT
@@ -14959,6 +14962,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 #endif // FEATURE_ON_STACK_REPLACEMENT
     }
     else
+#endif // TARGET_AMD64
 #endif // FEATURE_TIERED_COMPILATION
     {
         {

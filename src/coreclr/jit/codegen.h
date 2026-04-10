@@ -556,7 +556,8 @@ protected:
     regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
 
     void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
-    void genZeroInitFrameUsingBlockInit(regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
+    void genZeroInitFrameUsingBlockInit(
+        regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed);
 
     void genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed);
 

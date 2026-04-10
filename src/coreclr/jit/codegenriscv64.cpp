@@ -715,7 +715,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     m_compiler->unwindEndEpilog();
 }
 
-void CodeGen::genZeroInitFrameUsingBlockInit(regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genZeroInitFrameUsingBlockInit(
+    regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     regNumber rAddr;
     regMaskTP regMask;

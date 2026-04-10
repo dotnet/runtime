@@ -1740,14 +1740,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         // use that to adjust the stack, likely saving some stack space.
 
 #if defined(TARGET_AMD64)
-#if defined(TARGET_WINDOWS)
-        DWORD64 ssp = GetSSP(pFrameContext);
-        if (ssp != 0)
-        {
-            SetSSP(pFrameContext, ssp - 8);
-        }
-#endif // TARGET_WINDOWS
-
         pFrameContext->Rbp = currentFP;
 #endif // TARGET_AMD64
 

@@ -9863,8 +9863,8 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 #ifdef TARGET_AMD64
 
-template<typename TFunctor>
-static void EnumerateOSRLocalGCSlots(Compiler* compiler, unsigned tier0LocalFrameSize, TFunctor func)
+template <typename TFunctor>
+static void EnumerateOSRLocalGCSlots(Compiler* compiler, TFunctor func)
 {
     for (unsigned varNum = 0; varNum < compiler->lvaCount; varNum++)
     {
@@ -9875,25 +9875,28 @@ static void EnumerateOSRLocalGCSlots(Compiler* compiler, unsigned tier0LocalFram
             continue;
         }
 
+        if (varNum == compiler->lvaAsyncContinuationArg)
+        {
+            continue;
+        }
+
         int offset = compiler->lvaOSRLocalTier0FrameOffset(varNum);
-        offset += (int)tier0LocalFrameSize;
-        assert(offset >= 0);
 
         if (varDsc->TypeIs(TYP_STRUCT) && (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
         {
-            unsigned numSlots = compiler->lvaLclStackHomeSize(varNum) / REGSIZE_BYTES;
-            ClassLayout* layout = varDsc->GetLayout();
+            unsigned     numSlots = compiler->lvaLclStackHomeSize(varNum) / REGSIZE_BYTES;
+            ClassLayout* layout   = varDsc->GetLayout();
             for (unsigned i = 0; i < numSlots; i++)
             {
                 if (layout->IsGCPtr(i))
                 {
-                    func((unsigned)offset + i * REGSIZE_BYTES);
+                    func(offset + (int)i * REGSIZE_BYTES);
                 }
             }
         }
         else if (varDsc->TypeIs(TYP_REF, TYP_BYREF))
         {
-            func((unsigned)offset);
+            func(offset);
         }
     }
 }
@@ -9907,13 +9910,13 @@ void CodeGen::genDuplicateTier0Prolog()
     inst_RV(INS_push, REG_FPBASE, TYP_REF);
     m_compiler->unwindPush(REG_FPBASE);
 
-    PatchpointInfo* ppi = m_compiler->info.compPatchpointInfo;
-    regMaskTP tier0CalleeSaves = (regMaskTP)ppi->CalleeSaveRegisters();
+    PatchpointInfo* ppi              = m_compiler->info.compPatchpointInfo;
+    regMaskTP       tier0CalleeSaves = (regMaskTP)ppi->CalleeSaveRegisters();
+    tier0CalleeSaves &= ~RBM_FPBASE;
     // On x64 only integer registers are part of this set.
     // TODO: Isn't this a bug? How does the OSR method restore float registers saved by tier0?
     assert((tier0CalleeSaves & RBM_ALLINT) == tier0CalleeSaves);
     regMaskTP rsPushRegs = tier0CalleeSaves;
-    rsPushRegs &= ~RBM_FPBASE;
 
     // Push backwards so we match the order we will pop them in the epilog
     // and all the other code that expects it to be in this order.
@@ -9930,44 +9933,60 @@ void CodeGen::genDuplicateTier0Prolog()
     }
 
     unsigned totalFrameSize = (unsigned)m_compiler->info.compPatchpointInfo->TotalFrameSize();
-    unsigned localFrameSize = totalFrameSize - genCountBits(tier0CalleeSaves) * REGSIZE_BYTES;
-    bool initRegZeroed = false;
+    unsigned localFrameSize = totalFrameSize - REGSIZE_BYTES - genCountBits(tier0CalleeSaves) * REGSIZE_BYTES;
+    bool     initRegZeroed  = false;
     genAllocLclFrame(localFrameSize, REG_SCRATCH, &initRegZeroed, RBM_NONE);
 
+    genEstablishFramePointer((int)localFrameSize, /* reportUnwindData */ false);
     // Now zero all GC pointers in OSR locals.
     // TODO-CQ: Not all OSR locals need to have their frame slot zero
     // inited, only if it's needed for GC purposes while resuming for
     // runtime async.
 
     unsigned numStkSlotsToInit = 0;
-    unsigned zeroLow = UINT_MAX;
-    unsigned zeroHigh = 0; 
-    auto checkSlot = [&](unsigned offset) {
+    int zeroLow           = INT_MAX;
+    int zeroHigh          = INT_MIN;
+    auto     checkSlot         = [&](int offset) {
         numStkSlotsToInit++;
-        zeroLow = std::min(zeroLow, offset);
+        zeroLow  = std::min(zeroLow, offset);
         zeroHigh = std::max(zeroHigh, offset + REGSIZE_BYTES);
-        };
-    EnumerateOSRLocalGCSlots(m_compiler, localFrameSize, checkSlot);
+    };
+    EnumerateOSRLocalGCSlots(m_compiler, checkSlot);
 
     if (numStkSlotsToInit > 4)
     {
-        genZeroInitFrameUsingBlockInit(REG_ESP, zeroHigh, zeroLow, REG_SCRATCH, &initRegZeroed);
+        genZeroInitFrameUsingBlockInit(REG_FPBASE, zeroHigh, zeroLow, REG_SCRATCH, &initRegZeroed);
     }
     else
     {
         auto zeroSlot = [&](unsigned offset) {
-            GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, genGetZeroReg(REG_SCRATCH, &initRegZeroed), REG_ESP, (int)offset);
-            };
+            GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, genGetZeroReg(REG_SCRATCH, &initRegZeroed),
+                                       REG_FPBASE, offset);
+        };
 
-        EnumerateOSRLocalGCSlots(m_compiler, localFrameSize, zeroSlot);
+        EnumerateOSRLocalGCSlots(m_compiler, zeroSlot);
+    }
+
+    // For runtime async methods we do need to save the actual continuation arg
+    // in its rightful location, since it is the root of how we're going to
+    // restore the rest of the frame.
+    if (m_compiler->lvaAsyncContinuationArg != BAD_VAR_NUM)
+    {
+        const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(m_compiler->lvaAsyncContinuationArg);
+        assert(abiInfo.HasExactlyOneRegisterSegment());
+
+        regNumber passedReg = abiInfo.Segment(0).GetRegister();
+        unsigned storeOffset = m_compiler->lvaOSRLocalTier0FrameOffset(m_compiler->lvaAsyncContinuationArg);
+        GetEmitter()->emitIns_AR_R(ins_Store(TYP_REF), EA_PTRSIZE, passedReg, REG_FPBASE, storeOffset);
     }
 
     // We save this offset in a PatchpointInfo allocated for the OSR method.
     // The VM uses this on OSR transitions to know how to skip this duplicate
     // prolog.
     unsigned int          osrTransitionOffset = GetEmitter()->emitGetPrologOffsetEstimate();
-    const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(0);
-    PatchpointInfo* const patchpointInfo     = (PatchpointInfo*)m_compiler->info.compCompHnd->allocateArray(patchpointInfoSize);
+    const unsigned        patchpointInfoSize  = PatchpointInfo::ComputeSize(0);
+    PatchpointInfo* const patchpointInfo =
+        (PatchpointInfo*)m_compiler->info.compCompHnd->allocateArray(patchpointInfoSize);
     patchpointInfo->Initialize(0, 0);
     patchpointInfo->SetTransitionPrologOffset((int)osrTransitionOffset);
     m_compiler->info.compCompHnd->setPatchpointInfo(patchpointInfo);
@@ -11083,7 +11102,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 //    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 //
-void CodeGen::genZeroInitFrameUsingBlockInit(regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genZeroInitFrameUsingBlockInit(
+    regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     assert(m_compiler->compGeneratingProlog);
     assert(untrLclHi > untrLclLo);

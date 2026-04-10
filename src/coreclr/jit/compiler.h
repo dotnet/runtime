@@ -11239,11 +11239,11 @@ public:
         unsigned compClassAttr;
 
         const BYTE*     compCode;
-        IL_OFFSET       compILCodeSize = 0;         // The IL code size
-        IL_OFFSET       compILImportSize = 0;       // Estimated amount of IL actually imported
-        IL_OFFSET       compILEntry = 0;            // The IL entry point (normally 0)
-        PatchpointInfo* compPatchpointInfo = nullptr;     // Patchpoint data for OSR (normally nullptr)
-        UNATIVE_OFFSET  compNativeCodeSize = 0; // The native code size, after instructions are issued. This
+        IL_OFFSET       compILCodeSize     = 0;       // The IL code size
+        IL_OFFSET       compILImportSize   = 0;       // Estimated amount of IL actually imported
+        IL_OFFSET       compILEntry        = 0;       // The IL entry point (normally 0)
+        PatchpointInfo* compPatchpointInfo = nullptr; // Patchpoint data for OSR (normally nullptr)
+        UNATIVE_OFFSET  compNativeCodeSize = 0;       // The native code size, after instructions are issued. This
         // is less than (compTotalHotCodeSize + compTotalColdCodeSize) only if:
         // (1) the code is not hot/cold split, and we issued less code than we expected, or
         // (2) the code is hot/cold split, and we issued less code than we expected
