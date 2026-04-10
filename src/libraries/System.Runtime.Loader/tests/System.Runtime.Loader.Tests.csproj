@@ -31,6 +31,8 @@
     <Compile Include="SatelliteAssemblies.cs" />
     <Compile Include="LoaderLinkTest.cs" />
     <Compile Include="AssemblyResolutionDowngradeTest.cs" />
+    <Compile Include="TpaLoadFailureTest.cs" />
+    <Compile Include="$(CommonPath)System\HResults.cs" Link="Common\System\HResults.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <EmbeddedResource Include="MainStrings*.resx" />
   </ItemGroup>
@@ -54,6 +56,9 @@
     <ProjectReference Include="ContextualReflectionDependency\System.Runtime.Loader.Test.ContextualReflectionDependency.csproj" />
     <ProjectReference Include="ReferencedClassLib\ReferencedClassLib.csproj" />
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
+    <ProjectReference Include="System.Runtime.Loader.Test.BindFailure.Missing\System.Runtime.Loader.Test.BindFailure.Missing.csproj" />
+    <ProjectReference Include="System.Runtime.Loader.Test.BindFailure.Locked\System.Runtime.Loader.Test.BindFailure.Locked.csproj" />
+    <ProjectReference Include="System.Runtime.Loader.Test.BindFailure.Corrupt\System.Runtime.Loader.Test.BindFailure.Corrupt.csproj" />
     <ProjectReference Include="LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
     <ProjectReference Include="System.Runtime.Loader.Test.AssemblyVersion1\System.Runtime.Loader.Test.AssemblyVersion1.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" Link="AssemblyVersion1.dll" />
@@ -106,5 +111,13 @@
         <TrimMode>copy</TrimMode>
       </ManagedAssemblyToLink>
     </ItemGroup>
+  </Target>
+
+  <!-- Remove the Missing and Corrupt bind-failure test assemblies from the output directory
+       after build. They must remain in deps.json (so the host adds them to the TPA list)
+       but must not be physically present on disk, so the tests can verify load failure behavior. -->
+  <Target Name="RemoveBindFailureTestAssemblies" AfterTargets="Build">
+    <Delete Files="$(OutputPath)System.Runtime.Loader.Test.BindFailure.Missing.dll" />
+    <Delete Files="$(OutputPath)System.Runtime.Loader.Test.BindFailure.Corrupt.dll" />
   </Target>
 </Project>
