@@ -220,7 +220,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t stdoutFd,
                                       int32_t stderrFd)
 {
-#if HAVE_FORK || defined(TARGET_OSX)
+#if HAVE_FORK || defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
             (groupsLength == 0 || groups != NULL) && "null argument.");
 
