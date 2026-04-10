@@ -726,6 +726,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 // `genUseBlockInit` is set.
 //
 // Arguments:
+//    baseReg       - The base register from which we will calculate the addresses to zero init.
 //    untrLclHi      - (Untracked locals High-Offset)  The upper bound offset at which the zero init
 //                                                     code will end initializing memory (not inclusive).
 //    untrLclLo      - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
@@ -734,7 +735,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 //    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 //
-void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genZeroInitFrameUsingBlockInit(regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     regNumber rAddr;
     regNumber rCnt = REG_NA; // Invalid
@@ -755,13 +756,13 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     if (emitter::isValidSimm12(untrLclLo))
     {
-        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, rAddr, genFramePointerReg(), untrLclLo);
+        GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, rAddr, baseReg, untrLclLo);
     }
     else
     {
         // Load immediate into the InitReg register
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, (ssize_t)untrLclLo);
-        GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, rAddr, genFramePointerReg(), initReg);
+        GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, rAddr, baseReg, initReg);
         *pInitRegZeroed = false;
     }
 

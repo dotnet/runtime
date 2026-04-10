@@ -2499,6 +2499,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 // `genUseBlockInit` is set.
 //
 // Arguments:
+//    baseReg        - the base register for addressing the frame (e.g., FP).
 //    untrLclHi      - (Untracked locals High-Offset)  The upper bound offset at which the zero init
 //                                                     code will end initializing memory (not inclusive).
 //    untrLclLo      - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
@@ -2507,7 +2508,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 //    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 //
-void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genZeroInitFrameUsingBlockInit(regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     assert(m_compiler->compGeneratingProlog);
     assert(genUseBlockInit);
@@ -2597,13 +2598,13 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     if (arm_Valid_Imm_For_Add(untrLclLo, INS_FLAGS_DONT_CARE))
     {
-        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), untrLclLo);
+        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, rAddr, baseReg, untrLclLo);
     }
     else
     {
         // Load immediate into the InitReg register
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, (ssize_t)untrLclLo);
-        GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), initReg);
+        GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rAddr, baseReg, initReg);
         *pInitRegZeroed = false;
     }
 

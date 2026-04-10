@@ -715,7 +715,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     m_compiler->unwindEndEpilog();
 }
 
-void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genZeroInitFrameUsingBlockInit(regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     regNumber rAddr;
     regMaskTP regMask;
@@ -735,13 +735,13 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     if (emitter::isValidSimm12(untrLclLo))
     {
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, genFramePointerReg(), untrLclLo);
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rAddr, baseReg, untrLclLo);
     }
     else
     {
         // Load immediate into the InitReg register
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, (ssize_t)untrLclLo);
-        GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), initReg);
+        GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, rAddr, baseReg, initReg);
         *pInitRegZeroed = false;
     }
 

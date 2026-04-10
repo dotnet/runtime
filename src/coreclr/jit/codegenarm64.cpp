@@ -1812,6 +1812,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 // `genUseBlockInit` is set.
 //
 // Arguments:
+//    baseReg        - The base register for the frame (typically FP).
 //    untrLclHi      - (Untracked locals High-Offset)  The upper bound offset at which the zero init
 //                                                     code will end initializing memory (not inclusive).
 //    untrLclLo      - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
@@ -1820,7 +1821,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 //    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 //
-void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+void CodeGen::genZeroInitFrameUsingBlockInit(regNumber baseReg, int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     assert(m_compiler->compGeneratingProlog);
     assert(genUseBlockInit);
@@ -1897,7 +1898,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             // This is in order to avoid **unintended** zeroing of the data by dc zva
             // outside of [fp+untrLclLo, fp+untrLclHi) memory region.
 
-            genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo + 64, addrReg);
+            genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, baseReg, untrLclLo + 64, addrReg);
             addrOffset = -64;
 
             const regNumber endAddrReg = REG_ZERO_INIT_FRAME_REG2;
@@ -1907,7 +1908,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
                 *pInitRegZeroed = false;
             }
 
-            genInstrWithConstant(INS_add, EA_PTRSIZE, endAddrReg, genFramePointerReg(), untrLclHi - 64, endAddrReg);
+            genInstrWithConstant(INS_add, EA_PTRSIZE, endAddrReg, baseReg, untrLclHi - 64, endAddrReg);
 
             GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, addrOffset);
             addrOffset += simdRegPairSizeBytes;
@@ -1930,7 +1931,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         }
         else
         {
-            genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo - 32, addrReg);
+            genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, baseReg, untrLclLo - 32, addrReg);
             addrOffset = 32;
 
             const regNumber countReg = REG_ZERO_INIT_FRAME_REG2;
@@ -1954,7 +1955,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     }
     else
     {
-        genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo, addrReg);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, baseReg, untrLclLo, addrReg);
     }
 
     if (bytesToWrite >= simdRegPairSizeBytes)
