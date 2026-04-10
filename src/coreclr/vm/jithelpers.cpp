@@ -1270,19 +1270,14 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, const EECodeInfo& codeInfo, in
 // fetches the information and computes the final transition address.
 static PCODE GetOSRTransitionAddress(PCODE entryPoint)
 {
-    if (entryPoint == NULL)
-    {
-        return NULL;
-    }
-
     int offset = 0;
 
+#if defined(TARGET_AMD64)
     EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
     CodeHeader* codeHdr = jitMgr->GetCodeHeaderFromStartAddress(entryPoint);
     PTR_BYTE debugInfo = codeHdr->GetDebugInfo();
     PatchpointInfo* patchpointInfo = CompressDebugInfo::RestorePatchpointInfo(debugInfo);
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     if (patchpointInfo == NULL)
     {
         return NULL;
@@ -1457,7 +1452,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
 
             // Invoke the helper to build the OSR method
             osrMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
-            osrMethodCode = GetOSRTransitionAddress(osrMethodCode);
+            osrMethodCode = osrMethodCode != NULL ? GetOSRTransitionAddress(osrMethodCode) : NULL;
 
             // If that failed, mark the patchpoint as invalid.
             if (osrMethodCode == (PCODE)NULL)
@@ -1567,8 +1562,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             //
             LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointRequiredPolicy: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
             PCODE newMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
-
-            newMethodCode = GetOSRTransitionAddress(newMethodCode);
+            newMethodCode = newMethodCode != NULL ? GetOSRTransitionAddress(newMethodCode) : NULL;
             // If that failed, mark the patchpoint as invalid.
             // This is fatal, for partial compilation patchpoints
             //
@@ -1746,11 +1740,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         // use that to adjust the stack, likely saving some stack space.
 
 #if defined(TARGET_AMD64)
-        // If calls push the return address, we need to simulate that here, so the OSR
-        // method sees the "expected" SP misalgnment on entry.
-        _ASSERTE(currentSP % 16 == 0);
-        currentSP -= 8;
-
 #if defined(TARGET_WINDOWS)
         DWORD64 ssp = GetSSP(pFrameContext);
         if (ssp != 0)
