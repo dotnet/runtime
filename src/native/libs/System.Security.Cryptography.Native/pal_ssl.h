@@ -131,8 +131,9 @@ typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* session);
 // the function pointer for keylog
 typedef void (*SslCtxSetKeylogCallback)(const SSL* ssl, const char *line);
 
-// the function pointer for remote certificate validation.
-typedef int32_t (*SslCtxCertValidationCallback)(SSL* ssl, X509_STORE_CTX* store);
+// the function pointer for remote certificate validation, matches the
+// signature expected by SSL_CTX_set_cert_verify_callback directly.
+typedef int (*SslCtxCertVerifyCallback)(X509_STORE_CTX* store, void* arg);
 
 /*
 Ensures that libssl is correctly initialized and ready to use.
@@ -567,5 +568,14 @@ PALEXPORT void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len);
 /*
 Sets the certificate verification callback for the SSL_CTX.
 */
-PALEXPORT void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertValidationCallback callback);
+PALEXPORT void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertVerifyCallback callback);
 
+/*
+Retrieves the SSL object associated with an X509_STORE_CTX during verification.
+*/
+PALEXPORT SSL* CryptoNative_X509StoreCtxGetSslPtr(X509_STORE_CTX* storeCtx);
+
+/*
+Sets the error code on an X509_STORE_CTX.
+*/
+PALEXPORT void CryptoNative_X509StoreCtxSetError(X509_STORE_CTX* storeCtx, int32_t error);

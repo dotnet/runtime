@@ -1331,26 +1331,22 @@ void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len)
     }
 }
 
-static SslCtxCertValidationCallback s_certValidationCallback;
-
-static int CertVerifyCallback(X509_STORE_CTX* store, void* param)
-{
-    (void)param;
-    SSL* ssl = (SSL*) X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx());
-
-    int verifyResult = s_certValidationCallback(ssl, store);
-
-    X509_STORE_CTX_set_error(store, verifyResult);
-    return verifyResult == X509_V_OK;
-}
-
-void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertValidationCallback callback)
+void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertVerifyCallback callback)
 {
     if (ctx != NULL)
     {
-        s_certValidationCallback = callback;
-        SSL_CTX_set_cert_verify_callback(ctx, CertVerifyCallback, NULL);
+        SSL_CTX_set_cert_verify_callback(ctx, callback, NULL);
     }
+}
+
+SSL* CryptoNative_X509StoreCtxGetSslPtr(X509_STORE_CTX* storeCtx)
+{
+    return (SSL*)X509_STORE_CTX_get_ex_data(storeCtx, SSL_get_ex_data_X509_STORE_CTX_idx());
+}
+
+void CryptoNative_X509StoreCtxSetError(X509_STORE_CTX* storeCtx, int32_t error)
+{
+    X509_STORE_CTX_set_error(storeCtx, error);
 }
 
 /*
