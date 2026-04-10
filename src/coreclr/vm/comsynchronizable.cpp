@@ -401,7 +401,7 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     INT32 res = 0;
 
     // grab a snapshot
-    Thread::ThreadState state = thread->GetSnapshotState();
+    Thread::ThreadState state = thread->GetState();
 
     if (state & Thread::TS_Dead)
         res |= ThreadNative::ThreadStopped;

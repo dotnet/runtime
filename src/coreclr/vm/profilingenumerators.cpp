@@ -562,11 +562,11 @@ HRESULT ProfilerThreadEnum::Init()
     // Because the thread enumeration status need to change before the ThreadCreated/ThreadDestroyed
     // callback, we need to:
     // 1. Include Thread::TS_FullyInitialized threads for ThreadCreated
-    // 2. Exclude Thread::TS_Dead | Thread::TS_ReportDead for ThreadDestroyed
+    // 2. Exclude Thread::TS_Dead | Thread::TS_Stopped for ThreadDestroyed
     //
     while ((pThread = ThreadStore::GetAllThreadList(
         pThread,
-        Thread::TS_Dead | Thread::TS_ReportDead | Thread::TS_FullyInitialized,
+        Thread::TS_Dead | Thread::TS_Stopped | Thread::TS_FullyInitialized,
         Thread::TS_FullyInitialized
         )))
     {

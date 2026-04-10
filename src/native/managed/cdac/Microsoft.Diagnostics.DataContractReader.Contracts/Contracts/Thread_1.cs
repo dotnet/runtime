@@ -25,8 +25,7 @@ internal readonly struct Thread_1 : IThread
         Hijacked = 0x80,
         Background = 0x200,
         Unstarted = 0x400,
-        Dead = 0x800,
-        ReportDead = 0x10000,
+        Stopped = 0x10000,
         ThreadPoolWorker = 0x1000000
     }
 
@@ -70,10 +69,8 @@ internal readonly struct Thread_1 : IThread
             result |= Contracts.ThreadState.Background;
         if (state.HasFlag(ThreadState_1.Unstarted))
             result |= Contracts.ThreadState.Unstarted;
-        if (state.HasFlag(ThreadState_1.Dead))
-            result |= Contracts.ThreadState.Dead;
-        if (state.HasFlag(ThreadState_1.ReportDead))
-            result |= Contracts.ThreadState.ReportDead;
+        if (state.HasFlag(ThreadState_1.Stopped))
+            result |= Contracts.ThreadState.Stopped;
         if (state.HasFlag(ThreadState_1.ThreadPoolWorker))
             result |= Contracts.ThreadState.ThreadPoolWorker;
         return result;
