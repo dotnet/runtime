@@ -2418,17 +2418,6 @@ private:
                         GC_CALL_INTERIOR);                              \
                 {
 
-// If FEATURE_INTERPRETER is set, the GC side of conservative reporting is enabled, so it is possible to report GC pointers conservatively
-#ifdef FEATURE_INTERPRETER
-
-#define GCPROTECT_BEGINCONSERVATIVE_ARRAY(ObjRefArray,cnt) do {         \
-                GCFrame __gcframe(                                      \
-                        (OBJECTREF*)&(ObjRefArray),                     \
-                        cnt,                                            \
-                        GC_CALL_INTERIOR | GC_CALL_PINNED);             \
-                {
-#endif // FEATURE_INTERPRETER
-
 #define GCPROTECT_END()                                                 \
                 }                                                       \
                 } while(0)
