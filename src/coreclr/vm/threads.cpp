@@ -5687,7 +5687,14 @@ void CheckRegDisplaySP (REGDISPLAY *pRD)
     if (pRD->SP && pRD->_pThread)
     {
 #ifndef NO_FIXED_STACK_LIMIT
+        // Use GetStackLowerBound() instead of GetCachedStackLimit() — on Linux the stack grows on demand
+        // and the cached limit can be stale if the stack has grown past the initially committed boundary.
+        // GetStackLowerBound() is only available in non-DAC builds.
+#ifndef DACCESS_COMPILE
+        _ASSERTE(pRD->_pThread->IsExecutingOnAltStack() || PTR_VOID(pRD->SP) >= pRD->_pThread->GetStackLowerBound());
+#else
         _ASSERTE(pRD->_pThread->IsExecutingOnAltStack() || PTR_VOID(pRD->SP) >= pRD->_pThread->GetCachedStackLimit());
+#endif // DACCESS_COMPILE
 #endif // NO_FIXED_STACK_LIMIT
         _ASSERTE(pRD->_pThread->IsExecutingOnAltStack() || PTR_VOID(pRD->SP) <  pRD->_pThread->GetCachedStackBase());
     }
