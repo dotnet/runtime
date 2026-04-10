@@ -299,8 +299,11 @@ private:
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CallCountingManager members
 
+public:
+    SLink m_Link;
+
 private:
-    static CallCountingManager *s_callCountingManagers;
+    static SList<CallCountingManager> s_callCountingManagers;
     static COUNT_T s_callCountingStubCount;
     static COUNT_T s_activeCallCountingStubCount;
     static COUNT_T s_completedCallCountingStubCount;
@@ -310,9 +313,6 @@ private:
     CallCountingStubAllocator m_callCountingStubAllocator;
     MethodDescForwarderStubHash m_methodDescForwarderStubHash;
     SArray<CallCountingInfo *> m_callCountingInfosPendingCompletion;
-
-    CallCountingManager **m_pPreviousManager = nullptr;
-    CallCountingManager *m_nextManager = nullptr;
 
 public:
     CallCountingManager();

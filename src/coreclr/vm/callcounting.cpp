@@ -383,7 +383,7 @@ CallCountingManager::MethodDescForwarderStubHashTraits::Hash(const key_t &k)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CallCountingManager
 
-CallCountingManager* CallCountingManager::s_callCountingManagers = nullptr;
+SList<CallCountingManager> CallCountingManager::s_callCountingManagers;
 COUNT_T CallCountingManager::s_callCountingStubCount = 0;
 COUNT_T CallCountingManager::s_activeCallCountingStubCount = 0;
 COUNT_T CallCountingManager::s_completedCallCountingStubCount = 0;
@@ -400,13 +400,7 @@ CallCountingManager::CallCountingManager()
 
 #ifndef DACCESS_COMPILE
     CodeVersionManager::LockHolder codeVersioningLockHolder;
-    m_nextManager = s_callCountingManagers;
-    m_pPreviousManager = &s_callCountingManagers;
-    if (s_callCountingManagers != nullptr)
-    {
-        s_callCountingManagers->m_pPreviousManager = &m_nextManager;
-    }
-    s_callCountingManagers = this;
+    s_callCountingManagers.InsertTail(this);
 #endif
 }
 
@@ -431,11 +425,7 @@ CallCountingManager::~CallCountingManager()
         delete callCountingInfo;
     }
 
-    *m_pPreviousManager = m_nextManager;
-    if (m_nextManager != nullptr)
-    {
-        m_nextManager->m_pPreviousManager = m_pPreviousManager;
-    }
+    s_callCountingManagers.FindAndRemove(this);
 #endif
 }
 
@@ -739,7 +729,7 @@ COUNT_T CallCountingManager::GetCountOfCodeVersionsPendingCompletion()
 
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 
-    for (auto* callCountingManager = s_callCountingManagers; callCountingManager != nullptr; callCountingManager = callCountingManager->m_nextManager)
+    for (CallCountingManager *callCountingManager = s_callCountingManagers.GetHead(); callCountingManager != nullptr; callCountingManager = SList<CallCountingManager>::GetNext(callCountingManager))
     {
         count += callCountingManager->m_callCountingInfosPendingCompletion.GetCount();
     }
@@ -766,7 +756,7 @@ void CallCountingManager::CompleteCallCounting()
     MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 
-    for (auto* callCountingManager = s_callCountingManagers; callCountingManager != nullptr; callCountingManager = callCountingManager->m_nextManager)
+    for (CallCountingManager *callCountingManager = s_callCountingManagers.GetHead(); callCountingManager != nullptr; callCountingManager = SList<CallCountingManager>::GetNext(callCountingManager))
     {
         SArray<CallCountingInfo *> &callCountingInfosPendingCompletion =
             callCountingManager->m_callCountingInfosPendingCompletion;
@@ -926,7 +916,7 @@ void CallCountingManager::StopAllCallCounting(TieredCompilationManager *tieredCo
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     _ASSERTE(tieredCompilationManager != nullptr);
 
-    for (auto* callCountingManager = s_callCountingManagers; callCountingManager != nullptr; callCountingManager = callCountingManager->m_nextManager)
+    for (CallCountingManager *callCountingManager = s_callCountingManagers.GetHead(); callCountingManager != nullptr; callCountingManager = SList<CallCountingManager>::GetNext(callCountingManager))
     {
         CallCountingInfoByCodeVersionHash &callCountingInfoByCodeVersionHash =
             callCountingManager->m_callCountingInfoByCodeVersionHash;
@@ -1012,7 +1002,7 @@ void CallCountingManager::DeleteAllCallCountingStubs()
     s_callCountingStubCount = 0;
     s_completedCallCountingStubCount = 0;
 
-    for (auto* callCountingManager = s_callCountingManagers; callCountingManager != nullptr; callCountingManager = callCountingManager->m_nextManager)
+    for (CallCountingManager *callCountingManager = s_callCountingManagers.GetHead(); callCountingManager != nullptr; callCountingManager = SList<CallCountingManager>::GetNext(callCountingManager))
     {
         _ASSERTE(callCountingManager->m_callCountingInfosPendingCompletion.IsEmpty());
 
