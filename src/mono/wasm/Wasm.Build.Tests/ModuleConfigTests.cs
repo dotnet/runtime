@@ -57,7 +57,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("bundler-friendly")]
+    [Fact, TestCategory("bundler-friendly")]
     public async Task OutErrOverrideWorks()
     {
         Configuration config = Configuration.Debug;
@@ -98,7 +98,6 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [TestCategory("native")]
     public void SymbolMapFileEmitted(bool isPublish)
         => SymbolMapFileEmittedCore(emitSymbolMap: true, isPublish);
 

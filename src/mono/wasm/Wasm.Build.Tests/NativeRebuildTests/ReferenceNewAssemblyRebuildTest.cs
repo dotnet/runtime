@@ -13,7 +13,6 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.NativeRebuild.Tests
 {
-    [TestCategory("native")]
     public class ReferenceNewAssemblyRebuildTest : NativeRebuildTestsBase
     {
         public ReferenceNewAssemblyRebuildTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

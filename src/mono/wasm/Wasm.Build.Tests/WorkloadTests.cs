@@ -16,7 +16,6 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    [TestCategory("native")]
     public class WorkloadTests : WasmTemplateTestsBase
     {
         public WorkloadTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

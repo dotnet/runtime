@@ -53,7 +53,6 @@ public class IcuTests : IcuTestsBase
 
     [Theory]
     [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { Configuration.Release })]
-    [TestCategory("coreclr-native")]
     public async Task FullIcuFromRuntimePackWithInvariant(Configuration config=Configuration.Release, bool aot=false, bool invariant=true, bool fullIcu=true, string testedLocales="Array.Empty<Locale>()") =>
         await PublishAndRunIcuTest(
             config,
@@ -67,7 +66,6 @@ public class IcuTests : IcuTestsBase
 
     [Theory]
     [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { Configuration.Release })]
-    [TestCategory("coreclr-native")]
     public async Task FullIcuFromRuntimePackWithCustomIcu(Configuration config, bool aot, bool fullIcu)
     {
         string customIcuProperty = "BlazorIcuDataFileName";
@@ -84,7 +82,6 @@ public class IcuTests : IcuTestsBase
 
     [Theory]
     [MemberData(nameof(IncorrectIcuTestData), parameters: new object[] { Configuration.Release })]
-    [TestCategory("workload")]
     public void NonExistingCustomFileAssertError(Configuration config, string customIcu, bool isFilenameFormCorrect)
     {        
         string customIcuProperty = "BlazorIcuDataFileName";

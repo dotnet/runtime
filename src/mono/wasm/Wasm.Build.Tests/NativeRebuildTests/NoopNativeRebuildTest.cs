@@ -11,7 +11,6 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.NativeRebuild.Tests
 {
-    [TestCategory("native")]
     public class NoopNativeRebuildTest : NativeRebuildTestsBase
     {
         public NoopNativeRebuildTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
