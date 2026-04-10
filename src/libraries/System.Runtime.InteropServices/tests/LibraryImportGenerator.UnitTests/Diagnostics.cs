@@ -446,7 +446,7 @@ namespace LibraryImportGenerator.UnitTests
         [InlineData("StringMarshalling = StringMarshalling.Utf8")]
         public async Task StringBuilderNotSupported_WithStringParam_ReportsDiagnostic(string stringMarshallingArg)
         {
-            // StringBuilder with [Out] alongside a string parameter (repro from dotnet/runtime#126687)
+            // StringBuilder with [Out] alongside a string parameter
             string source = $$"""
 
                 using System.Runtime.InteropServices;
