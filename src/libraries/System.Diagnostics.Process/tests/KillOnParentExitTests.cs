@@ -63,11 +63,11 @@ namespace System.Diagnostics.Tests
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
-                (enabledStr, limitInherianceStr) =>
+                (enabledStr, limitInheritanceStr) =>
                 {
                     using Process grandChild = CreateProcessLong();
                     grandChild.StartInfo.KillOnParentExit = bool.Parse(enabledStr);
-                    grandChild.StartInfo.InheritedHandles = bool.Parse(limitInherianceStr) ? [] : null;
+                    grandChild.StartInfo.InheritedHandles = bool.Parse(limitInheritanceStr) ? [] : null;
 
                     grandChild.Start();
                     Console.WriteLine(grandChild.Id);
