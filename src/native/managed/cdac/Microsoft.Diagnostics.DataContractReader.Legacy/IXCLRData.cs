@@ -34,6 +34,12 @@ public struct DacpGetModuleData
     public ulong InMemoryPdbSize;
 }
 
+public enum CLRDataByNameFlag : uint
+{
+    CLRDATA_BYNAME_CASE_SENSITIVE = 0,
+    CLRDATA_BYNAME_CASE_INSENSITIVE = 1
+}
+
 public unsafe struct EXCEPTION_RECORD64
 {
     public const int ExceptionMaximumParameters = 15;

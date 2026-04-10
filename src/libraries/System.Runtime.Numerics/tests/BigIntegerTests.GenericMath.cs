@@ -207,6 +207,46 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.Log10(Zero));
+            Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.Log10(One));
+
+            BigInteger power = 1;
+            for (int n = 0; n < 25; n++)
+            {
+                Assert.Equal((BigInteger)n, BinaryIntegerHelper<BigInteger>.Log10(power));
+                if (power > 1)
+                {
+                    Assert.Equal((BigInteger)(n - 1), BinaryIntegerHelper<BigInteger>.Log10(power - 1));
+                }
+                power *= 10;
+            }
+
+            Assert.Equal((BigInteger)18, BinaryIntegerHelper<BigInteger>.Log10(Int64MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<BigInteger>.Log10(NegativeOne));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<BigInteger>.Log10(Int64MinValue));
+        }
+
+        [Fact]
+        public static void Log10Test_LargeValues()
+        {
+            // 2^681 produces log10 = 205, verifying correctness for values
+            // beyond the fixed-width type range.
+            Assert.Equal((BigInteger)205, BinaryIntegerHelper<BigInteger>.Log10(BigInteger.Pow(2, 681)));
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void Log10Test_VeryLargeValues()
+        {
+            // 2^217769 produces log10 = 65555, verifying correctness for
+            // very large values where a less precise approximation constant
+            // would fail.
+            Assert.Equal((BigInteger)65555, BinaryIntegerHelper<BigInteger>.Log10(BigInteger.Pow(2, 217769)));
+        }
+
+        [Fact]
         public static void LeadingZeroCountTest()
         {
             Assert.Equal((BigInteger)(nint.Size * 8), BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Zero));

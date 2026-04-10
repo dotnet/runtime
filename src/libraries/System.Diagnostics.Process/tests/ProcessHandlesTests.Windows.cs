@@ -8,6 +8,7 @@ using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -15,7 +16,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessHandlesTests
     {
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ProcessStartedWithInvalidHandles_ConsoleReportsInvalidHandles()
         {
             using Process process = CreateProcess(() =>
@@ -30,7 +31,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithInvalidHandles(process.StartInfo));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -67,7 +68,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithInvalidHandles(process.StartInfo));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void ProcessStartedWithInvalidHandles_CanRedirectOutput(bool restrictHandles)
@@ -184,5 +185,23 @@ namespace System.Diagnostics.Tests
 
         [LibraryImport(Interop.Libraries.Kernel32)]
         private static partial int ResumeThread(nint hThread);
+
+        private static unsafe string GetSafeFileHandleId(SafeFileHandle handle)
+        {
+            const int MaxPath = 32_767;
+            char[] buffer = new char[MaxPath];
+            uint result;
+            fixed (char* ptr = buffer)
+            {
+                result = Interop.Kernel32.GetFinalPathNameByHandle(handle, ptr, (uint)MaxPath, Interop.Kernel32.FILE_NAME_NORMALIZED);
+            }
+
+            if (result == 0)
+            {
+                throw new Win32Exception();
+            }
+
+            return new string(buffer, 0, (int)result);
+        }
     }
 }
