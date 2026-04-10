@@ -337,62 +337,24 @@ namespace System.Diagnostics.Tests
                 string pidLine = childHandle.Process.StandardOutput.ReadLine();
                 Assert.True(int.TryParse(pidLine, out grandchildPid), $"Could not parse grandchild PID from: '{pidLine}'");
 
-                // Kill the child's entire process group
-                SendSignal(OperatingSystem.IsWindows() ? PosixSignal.SIGQUIT : PosixSignal.SIGKILL, childHandle.Process, entireProcessGroup: true);
+                // Obtain a Process instance before the child is killed to avoid PID reuse issues.
+                using Process grandchild = Process.GetProcessById(grandchildPid);
 
-                Assert.True(childHandle.Process.WaitForExit(WaitInMS));
-            }
-
-            try
-            {
-                // Poll deterministically instead of using a fixed sleep to avoid flakiness on slow machines.
-                bool grandchildAlive = false;
-                long timeoutAt = Environment.TickCount64 + WaitInMS;
-                do
-                {
-                    grandchildAlive = IsProcessAlive(grandchildPid);
-                    if (grandchildAlive == enable)
-                    {
-                        break;
-                    }
-                    Thread.Sleep(20);
-                }
-                while (Environment.TickCount64 < timeoutAt);
-
-                // Detached grandchild (StartDetached=true):
-                // - On Unix: creates its own session/process group.
-                // - On Windows: uses DETACHED_PROCESS and hence does not inherit its parent's console
-                // In both cases, the signal is not delivered and the grandchild survives.
-                // Non-detached grandchild inherits the child's process group/console and is killed by the signal.
-                Assert.Equal(enable, grandchildAlive);
-            }
-            finally
-            {
-                KillGrandchild(grandchildPid);
-            }
-
-            static bool IsProcessAlive(int processId)
-            {
                 try
                 {
-                    using Process grandchild = Process.GetProcessById(processId);
-                    return !grandchild.HasExited;
-                }
-                catch (ArgumentException)
-                {
-                    return false;
-                }
-            }
+                    Assert.False(grandchild.HasExited);
 
-            static void KillGrandchild(int pid)
-            {
-                try
+                    // Kill the child's entire process group
+                    PosixSignal signal = OperatingSystem.IsWindows() ? PosixSignal.SIGQUIT : PosixSignal.SIGKILL;
+                    SendSignal(signal, childHandle.Process, entireProcessGroup: true);
+
+                    Assert.True(childHandle.Process.WaitForExit(WaitInMS));
+                    Assert.Equal(enable, !grandchild.WaitForExit(300));
+                }
+                finally
                 {
-                    using Process grandchild = Process.GetProcessById(pid);
                     grandchild.Kill();
-                    grandchild.WaitForExit(WaitInMS);
                 }
-                catch (ArgumentException) { } // process may have already exited
             }
         }
 
