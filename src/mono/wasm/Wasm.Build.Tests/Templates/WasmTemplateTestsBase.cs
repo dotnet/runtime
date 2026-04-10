@@ -140,7 +140,6 @@ public class WasmTemplateTestsBase : BuildTestBase
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
     }
 
-    // TODO-WASM: https://github.com/dotnet/sdk/issues/51213
     private static void AddCoreClrProjectProperties(ref string extraProperties, ref string extraItems, ref string insertAtEnd)
     {
         if (!s_buildEnv.IsCoreClrRuntime)
