@@ -12,6 +12,7 @@
 // ============================================================
 
 #include "failurecache.hpp"
+#include "common.h"
 
 namespace BINDER_SPACE
 {
@@ -32,7 +33,8 @@ namespace BINDER_SPACE
     }
 
     HRESULT FailureCache::Add(SString &assemblyNameorPath,
-                              HRESULT hrBindingResult)
+                              HRESULT hrBindingResult,
+                              SString *pDiagnosticInfo)
     {
         HRESULT hr = S_OK;
 
@@ -44,6 +46,10 @@ namespace BINDER_SPACE
 
         pFailureCacheEntry->GetAssemblyNameOrPath().Set(assemblyNameorPath);
         pFailureCacheEntry->SetBindingResult(hrBindingResult);
+        if (pDiagnosticInfo != NULL && !pDiagnosticInfo->IsEmpty())
+        {
+            pFailureCacheEntry->SetDiagnosticInfo(*pDiagnosticInfo);
+        }
 
         Hash::Add(pFailureCacheEntry);
         pFailureCacheEntry.SuppressRelease();
@@ -52,7 +58,8 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    HRESULT FailureCache::Lookup(SString &assemblyNameorPath)
+    HRESULT FailureCache::Lookup(SString &assemblyNameorPath,
+                                 SString *pDiagnosticInfo)
     {
         HRESULT hr = S_OK;
         FailureCacheEntry *pFailureCachEntry = Hash::Lookup(assemblyNameorPath);
@@ -60,6 +67,12 @@ namespace BINDER_SPACE
         if (pFailureCachEntry != NULL)
         {
             hr = pFailureCachEntry->GetBindingResult();
+            if (pDiagnosticInfo != NULL && !pFailureCachEntry->GetDiagnosticInfo().IsEmpty())
+            {
+                StackSString format;
+                format.LoadResource(IDS_BINDING_CACHED_FAILURE_PREFIX);
+                pDiagnosticInfo->FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, pFailureCachEntry->GetDiagnosticInfo());
+            }
         }
 
         return hr;

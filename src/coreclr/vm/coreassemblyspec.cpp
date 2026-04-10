@@ -78,7 +78,8 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
 
 STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
                             PEImage               **ppPEImage,
-                            ProbeExtensionResult    probeExtensionResult)
+                            ProbeExtensionResult    probeExtensionResult,
+                            SString                *pDiagnosticInfo)
 {
     HRESULT hr = S_OK;
 
@@ -94,6 +95,14 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
             hr = pImage->TryOpenFile();
             if (FAILED(hr))
             {
+                if (pDiagnosticInfo != NULL)
+                {
+                    StackSString format;
+                    format.LoadResource(IDS_BINDING_FAILED_TO_OPEN_FILE);
+                    StackSString hrString;
+                    hrString.Printf("%08x", hr);
+                    pDiagnosticInfo->FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, SString(wszAssemblyPath), hrString);
+                }
                 goto Exit;
             }
         }
@@ -101,7 +110,22 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
         if (pImage)
             *ppPEImage = pImage.Extract();
     }
-    EX_CATCH_HRESULT(hr);
+    EX_CATCH
+    {
+        hr = GET_EXCEPTION()->GetHR();
+        _ASSERTE(FAILED(hr));
+        if (pDiagnosticInfo != NULL)
+        {
+            StackSString format;
+            format.LoadResource(IDS_BINDING_EXCEPTION_OPENING_FILE);
+            StackSString exMessage;
+            GET_EXCEPTION()->GetMessage(exMessage);
+            StackSString hrString;
+            hrString.Printf("%08x", hr);
+            pDiagnosticInfo->FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, SString(wszAssemblyPath), exMessage, hrString);
+        }
+    }
+    EX_END_CATCH
 
  Exit:
     return hr;

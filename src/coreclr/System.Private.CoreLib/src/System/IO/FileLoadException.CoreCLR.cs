@@ -47,16 +47,17 @@ namespace System.IO
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe void Create(FileLoadExceptionKind kind, char* pFileName, int hresult, object* pThrowable, Exception* pException)
+        internal static unsafe void Create(FileLoadExceptionKind kind, char* pFileName, int hresult, char* pDiagnosticInfo, object* pThrowable, Exception* pException)
         {
             try
             {
                 string? fileName = pFileName is not null ? new string(pFileName) : null;
+                string? diagnosticInfo = pDiagnosticInfo is not null ? new string(pDiagnosticInfo) : null;
                 Debug.Assert(Enum.IsDefined(kind));
                 *pThrowable = kind switch
                 {
                     FileLoadExceptionKind.BadImageFormat => new BadImageFormatException(fileName, hresult),
-                    FileLoadExceptionKind.FileNotFound => new FileNotFoundException(fileName, hresult),
+                    FileLoadExceptionKind.FileNotFound => new FileNotFoundException(fileName, hresult, diagnosticInfo),
                     FileLoadExceptionKind.OutOfMemory => new OutOfMemoryException(),
                     _ /* FileLoadExceptionKind.FileLoad */ => new FileLoadException(fileName, hresult),
                 };

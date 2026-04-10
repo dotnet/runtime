@@ -31,7 +31,8 @@ namespace BINDER_SPACE
         static HRESULT BindAssembly(/* in */  AssemblyBinder      *pBinder,
                                     /* in */  AssemblyName        *pAssemblyName,
                                     /* in */  bool                 excludeAppPaths,
-                                    /* out */ Assembly           **ppAssembly);
+                                    /* out */ Assembly           **ppAssembly,
+                                    /* out */ SString            *pDiagnosticInfo = NULL);
 
         static HRESULT BindToSystem(/* in */ SString    &systemDirectory,
                                     /* out */ Assembly **ppSystemAssembly);
@@ -44,7 +45,8 @@ namespace BINDER_SPACE
         static HRESULT GetAssembly(/* in */  SString     &assemblyPath,
                                    /* in */  BOOL         fIsInTPA,
                                    /* out */ Assembly   **ppAssembly,
-                                   /* in */  ProbeExtensionResult probeExtensionResult = ProbeExtensionResult::Invalid());
+                                   /* in */  ProbeExtensionResult probeExtensionResult = ProbeExtensionResult::Invalid(),
+                                   /* out */ SString    *pDiagnosticInfo = NULL);
 
 #if !defined(DACCESS_COMPILE)
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pAssemblyLoadContextToBindWithin,
@@ -72,13 +74,15 @@ namespace BINDER_SPACE
                                   /* in */  bool                skipFailureCaching,
                                   /* in */  bool                skipVersionCompatibilityCheck,
                                   /* in */  bool                excludeAppPaths,
-                                  /* out */ BindResult         *pBindResult);
+                                  /* out */ BindResult         *pBindResult,
+                                  /* out */ SString            *pDiagnosticInfo = NULL);
 
         static HRESULT BindLocked(/* in */  ApplicationContext *pApplicationContext,
                                   /* in */  AssemblyName       *pAssemblyName,
                                   /* in */  bool                skipVersionCompatibilityCheck,
                                   /* in */  bool                excludeAppPaths,
-                                  /* out */ BindResult         *pBindResult);
+                                  /* out */ BindResult         *pBindResult,
+                                  /* out */ SString            *pDiagnosticInfo = NULL);
 
         static HRESULT FindInExecutionContext(/* in */  ApplicationContext  *pApplicationContext,
                                               /* in */  AssemblyName        *pAssemblyName,
@@ -87,7 +91,8 @@ namespace BINDER_SPACE
         static HRESULT BindByTpaList(/* in */  ApplicationContext  *pApplicationContext,
                                      /* in */  AssemblyName        *pRequestedAssemblyName,
                                      /* in */  bool                 excludeAppPaths,
-                                     /* out */ BindResult          *pBindResult);
+                                     /* out */ BindResult          *pBindResult,
+                                     /* out */ SString            *pDiagnosticInfo = NULL);
 
         static HRESULT Register(/* in */  ApplicationContext *pApplicationContext,
                                 /* in */  BindResult         *pBindResult);

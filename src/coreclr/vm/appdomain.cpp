@@ -2420,7 +2420,9 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
                 PAL_CPP_THROW(Exception *, pEx);
             }
             else
+            {
                 AddExceptionToCache(pSpec, pEx);
+            }
         }
     }
     EX_END_HOOK;

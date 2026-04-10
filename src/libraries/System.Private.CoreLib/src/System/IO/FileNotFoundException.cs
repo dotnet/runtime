@@ -68,7 +68,7 @@ namespace System.IO
         }
 
         public string? FileName { get; }
-        public string? FusionLog { get; }
+        public string? FusionLog { get; internal set; }
 
         public override string ToString()
         {

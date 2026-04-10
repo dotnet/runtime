@@ -1452,6 +1452,28 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, Except
 }
 
 
+EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException/* = NULL*/)
+  : EEException(GetFileLoadKind(hr)),
+    m_name(name),
+    m_hr(hr),
+    m_diagnosticInfo(diagnosticInfo)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pInnerException == NULL || !(pInnerException->IsTransient()));
+    m_innerException = pInnerException ? pInnerException->DomainBoundClone() : NULL;
+
+    if (m_name.IsEmpty())
+        m_name.Set(W("<Unknown>"));
+}
+
+
 EEFileLoadException::~EEFileLoadException()
 {
     STATIC_CONTRACT_NOTHROW;
@@ -1587,10 +1609,11 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     GCPROTECT_BEGIN(gc);
 
     LPCWSTR pFileName = m_name.GetUnicode();
+    LPCWSTR pDiagnosticInfo = m_diagnosticInfo.IsEmpty() ? NULL : m_diagnosticInfo.GetUnicode();
     UnmanagedCallersOnlyCaller createFileLoadEx(METHOD__FILE_LOAD_EXCEPTION__CREATE);
 
     FileLoadExceptionKind kind = GetFileLoadExceptionKind(m_hr);
-    createFileLoadEx.InvokeThrowing(kind, pFileName, (int)m_hr, &gc.pNewException);
+    createFileLoadEx.InvokeThrowing(kind, pFileName, (int)m_hr, pDiagnosticInfo, &gc.pNewException);
     _ASSERTE(gc.pNewException->GetMethodTable() == CoreLibBinder::GetException(m_kind));
 
     GCPROTECT_END();

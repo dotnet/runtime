@@ -809,10 +809,11 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
     if (m_hFile != INVALID_HANDLE_VALUE)
             return S_OK;
 
-    if (GetLastError())
-        return HRESULT_FROM_WIN32(GetLastError());
+    DWORD dwLastError = GetLastError();
+    if (dwLastError != 0)
+        return HRESULT_FROM_WIN32(dwLastError);
 
-    return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+    return HRESULT_FROM_WIN32(ERROR_OPEN_FAILED);
 }
 
 #endif // !DACCESS_COMPILE

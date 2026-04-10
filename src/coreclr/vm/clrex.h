@@ -665,10 +665,12 @@ class EEFileLoadException : public EEException
   private:
     SString m_name;
     HRESULT m_hr;
+    SString m_diagnosticInfo;
 
   public:
 
     EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException = NULL);
+    EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException = NULL);
     ~EEFileLoadException();
 
     // virtual overrides
@@ -692,7 +694,7 @@ class EEFileLoadException : public EEException
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
-        return new EEFileLoadException(m_name, m_hr);
+        return new EEFileLoadException(m_name, m_hr, m_diagnosticInfo);
     }
 
  private:

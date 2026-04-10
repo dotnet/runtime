@@ -37,7 +37,8 @@ extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToB
 
 STDAPI BinderAcquirePEImage(LPCTSTR            szAssemblyPath,
     PEImage** ppPEImage,
-    ProbeExtensionResult probeExtensionResult);
+    ProbeExtensionResult probeExtensionResult,
+    SString *pDiagnosticInfo = NULL);
 
 namespace BINDER_SPACE
 {
@@ -192,7 +193,8 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinderCommon::BindAssembly(/* in */  AssemblyBinder      *pBinder,
                                                /* in */  AssemblyName        *pAssemblyName,
                                                /* in */  bool                 excludeAppPaths,
-                                               /* out */ Assembly           **ppAssembly)
+                                               /* out */ Assembly           **ppAssembly,
+                                               /* out */ SString            *pDiagnosticInfo)
     {
         HRESULT hr = S_OK;
         LONG kContextVersion = 0;
@@ -213,7 +215,8 @@ namespace BINDER_SPACE
                                     false, // skipFailureCaching
                                     false, // skipVersionCompatibilityCheck
                                     excludeAppPaths,
-                                    &bindResult));
+                                    &bindResult,
+                                    pDiagnosticInfo));
 
             // Remember the post-bind version
             kContextVersion = pApplicationContext->GetVersion();
@@ -393,7 +396,8 @@ namespace BINDER_SPACE
                                        bool                skipFailureCaching,
                                        bool                skipVersionCompatibilityCheck,
                                        bool                excludeAppPaths,
-                                       BindResult         *pBindResult)
+                                       BindResult         *pBindResult,
+                                       SString            *pDiagnosticInfo)
     {
         HRESULT hr = S_OK;
         PathString assemblyDisplayName;
@@ -402,7 +406,7 @@ namespace BINDER_SPACE
         pAssemblyName->GetDisplayName(assemblyDisplayName,
                                       AssemblyName::INCLUDE_VERSION);
 
-        hr = pApplicationContext->GetFailureCache()->Lookup(assemblyDisplayName);
+        hr = pApplicationContext->GetFailureCache()->Lookup(assemblyDisplayName, pDiagnosticInfo);
         if (FAILED(hr))
         {
             if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) && skipFailureCaching)
@@ -430,7 +434,8 @@ namespace BINDER_SPACE
                               pAssemblyName,
                               skipVersionCompatibilityCheck,
                               excludeAppPaths,
-                              pBindResult));
+                              pBindResult,
+                              pDiagnosticInfo));
 
         if (!pBindResult->HaveResult())
         {
@@ -455,7 +460,7 @@ namespace BINDER_SPACE
                 }
             }
 
-            hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr);
+            hr = pApplicationContext->AddToFailureCache(assemblyDisplayName, hr, pDiagnosticInfo);
         }
 
     LogExit:
@@ -467,7 +472,8 @@ namespace BINDER_SPACE
                                              AssemblyName       *pAssemblyName,
                                              bool                skipVersionCompatibilityCheck,
                                              bool                excludeAppPaths,
-                                             BindResult         *pBindResult)
+                                             BindResult         *pBindResult,
+                                             SString            *pDiagnosticInfo)
     {
         HRESULT hr = S_OK;
 
@@ -509,7 +515,8 @@ namespace BINDER_SPACE
             hr = BindByTpaList(pApplicationContext,
                                      pAssemblyName,
                                      excludeAppPaths,
-                                     pBindResult);
+                                     pBindResult,
+                                     pDiagnosticInfo);
             if (SUCCEEDED(hr) && pBindResult->HaveResult())
             {
                 bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pBindResult->GetAssemblyName());
@@ -825,7 +832,8 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinderCommon::BindByTpaList(ApplicationContext  *pApplicationContext,
                                                 AssemblyName        *pRequestedAssemblyName,
                                                 bool                 excludeAppPaths,
-                                                BindResult          *pBindResult)
+                                                BindResult          *pBindResult,
+                                                SString             *pDiagnosticInfo)
     {
         HRESULT hr = S_OK;
 
@@ -861,7 +869,8 @@ namespace BINDER_SPACE
                     hr = GetAssembly(assemblyFilePath,
                                         TRUE,  // fIsInTPA
                                         &pTPAAssembly,
-                                        probeExtensionResult);
+                                        probeExtensionResult,
+                                        pDiagnosticInfo);
 
                     BinderTracing::PathProbed(assemblyFilePath, BinderTracing::PathSource::Bundle, hr);
 
@@ -891,7 +900,9 @@ namespace BINDER_SPACE
 
                 hr = GetAssembly(fileName,
                                     TRUE,  // fIsInTPA
-                                    &pTPAAssembly);
+                                    &pTPAAssembly,
+                                    ProbeExtensionResult::Invalid(),
+                                    pDiagnosticInfo);
                 BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
 
                 pBindResult->SetAttemptResult(hr, pTPAAssembly);
@@ -977,7 +988,8 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinderCommon::GetAssembly(SString            &assemblyPath,
                                               BOOL               fIsInTPA,
                                               Assembly           **ppAssembly,
-                                              ProbeExtensionResult probeExtensionResult)
+                                              ProbeExtensionResult probeExtensionResult,
+                                              SString            *pDiagnosticInfo)
     {
         HRESULT hr = S_OK;
 
@@ -993,7 +1005,7 @@ namespace BINDER_SPACE
         {
             LPCTSTR szAssemblyPath = const_cast<LPCTSTR>(assemblyPath.GetUnicode());
 
-            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, probeExtensionResult);
+            hr = BinderAcquirePEImage(szAssemblyPath, &pPEImage, probeExtensionResult, pDiagnosticInfo);
             IF_FAIL_GO(hr);
         }
 
@@ -1011,6 +1023,14 @@ namespace BINDER_SPACE
         if ((FAILED(hr)) && IsFileNotFound(hr))
         {
             hr = HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+        }
+        else if (FAILED(hr) && pDiagnosticInfo != NULL && pDiagnosticInfo->IsEmpty())
+        {
+            StackSString format;
+            format.LoadResource(IDS_BINDING_FAILED_TO_INIT_ASSEMBLY);
+            StackSString hrString;
+            hrString.Printf("%08x", hr);
+            pDiagnosticInfo->FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, assemblyPath, hrString);
         }
 
         return hr;
