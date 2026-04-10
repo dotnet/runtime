@@ -19,6 +19,10 @@
     <SuppressDependenciesWhenPacking Condition="'$(PackageUsePlatformTargeting)' != 'true' and '$(TargetPlatformIdentifier)' != '' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</SuppressDependenciesWhenPacking>
     <!-- Don't treat the TPM as an input to APICompat PackageValidation's reference assembly calculation. -->
     <ApiCompatIgnoreTargetPlatformMoniker Condition="'$(SuppressDependenciesWhenPacking)' == 'true'">true</ApiCompatIgnoreTargetPlatformMoniker>
+    <!-- For the net471 TFM (which has System.ValueTuple built in), include it in TargetFrameworks
+         to produce a net471 dependency group with no System.ValueTuple dependency, but don't
+         ship the lib assembly — lib/net462 is a fully compatible fallback for net471 consumers. -->
+    <IncludeBuildOutput Condition="'$(NetFrameworkWithValueTuple)' != '' and '$(TargetFramework)' == '$(NetFrameworkWithValueTuple)'">false</IncludeBuildOutput>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
 
     <!-- PackageReadmeFile specifies the package readme file name in the package. PackageReadmeFilePath points to the package readme file on disk. -->
@@ -41,6 +45,8 @@
   <ItemGroup>
     <PackageValidationBaselineFrameworkToIgnore Include="net8.0" />
     <PackageValidationBaselineFrameworkToIgnore Include="net9.0" />
+    <!-- net471 is new to packages via NetFrameworkWithValueTuple and won't exist in baselines. -->
+    <PackageValidationBaselineFrameworkToIgnore Include="$(NetFrameworkWithValueTuple)" Condition="'$(NetFrameworkWithValueTuple)' != ''" />
   </ItemGroup>
 
   <!-- Flow these properties to consuming projects. Used by i.e. Microsoft.Internal.Runtime.WindowsDesktop.Transport. -->
@@ -98,6 +104,13 @@
                            $(BuildOutputTargetFolder)\xamarinwatchos10\"
               Condition="'$(AddXamarinPlaceholderFilesToPackage)' == 'true'" />
       </ItemGroup>
+    </When>
+    <When Condition="'$(NetFrameworkWithValueTuple)' != '' and $(TargetFrameworks.Contains('$(NetFrameworkWithValueTuple)'))">
+      <PropertyGroup>
+        <!-- The net471 TFM is included for dependency group generation only; no lib assembly is
+             shipped, so NuGet's NU5128 (mismatched lib/dependency groups) warning is expected. -->
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
+      </PropertyGroup>
     </When>
   </Choose>
 
