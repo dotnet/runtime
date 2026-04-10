@@ -4,6 +4,8 @@
     <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
+    <!-- https://github.com/dotnet/runtime/issues/126755 -->
+    <CrossGenTest>false</CrossGenTest>
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
 </Project>
