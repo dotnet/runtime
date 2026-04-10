@@ -20,7 +20,7 @@ public:
         BINDER_SPACE::Assembly** ppAssembly) override;
 
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
-        BINDER_SPACE::Assembly** ppAssembly) override;
+        BINDER_SPACE::Assembly** ppAssembly, SString* pDiagnosticInfo = NULL) override;
 
     AssemblyLoaderAllocator* GetLoaderAllocator() override
     {
@@ -46,7 +46,8 @@ private:
     HRESULT BindAssemblyByNameWorker(
             BINDER_SPACE::AssemblyName *pAssemblyName,
             BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
-            bool excludeAppPaths);
+            bool excludeAppPaths,
+            SString *pDiagnosticInfo = NULL);
 };
 
 #endif // __DEFAULT_ASSEMBLY_BINDER_H__

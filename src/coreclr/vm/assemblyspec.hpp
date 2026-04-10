@@ -195,7 +195,8 @@ class AssemblySpec  : public BaseAssemblySpec
 
     HRESULT Bind(
         AppDomain* pAppDomain,
-        BINDER_SPACE::Assembly** ppAssembly);
+        BINDER_SPACE::Assembly** ppAssembly,
+        SString* pDiagnosticInfo = NULL);
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);

@@ -1671,6 +1671,27 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
 }
 
 /* static */
+void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec *pSpec, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException/* = NULL*/)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (hr == COR_E_THREADABORTED)
+        COMPlusThrow(kThreadAbortException);
+    if (hr == E_OUTOFMEMORY)
+        COMPlusThrowOM();
+
+    StackSString name;
+    pSpec->GetDisplayName(0, name);
+    EX_THROW_WITH_INNER(EEFileLoadException, (name, hr, diagnosticInfo), pInnerException);
+}
+
+/* static */
 void DECLSPEC_NORETURN EEFileLoadException::Throw(PEAssembly *pPEAssembly, HRESULT hr, Exception *pInnerException /* = NULL*/)
 {
     CONTRACTL

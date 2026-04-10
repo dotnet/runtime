@@ -27,7 +27,7 @@
 #include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
-HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly)
+HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly, SString* pDiagnosticInfo)
 {
     CONTRACTL
     {
@@ -63,7 +63,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     {
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
-        hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
+        hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm, pDiagnosticInfo);
     }
 
     if (SUCCEEDED(hr))

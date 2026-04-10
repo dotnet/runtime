@@ -3138,6 +3138,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
     HRESULT hrBindResult = S_OK;
     PEAssemblyHolder result;
+    StackSString bindDiagnosticInfo;
 
     bool isCached = false;
     EX_TRY
@@ -3148,7 +3149,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
             {
                 ReleaseHolder<BINDER_SPACE::Assembly> boundAssembly;
-                hrBindResult = pSpec->Bind(this, &boundAssembly);
+                hrBindResult = pSpec->Bind(this, &boundAssembly, &bindDiagnosticInfo);
 
                 if (boundAssembly)
                 {
@@ -3192,6 +3193,10 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
                         if (fFailure && fThrowOnFileNotFound)
                         {
+                            if (!bindDiagnosticInfo.IsEmpty())
+                            {
+                                EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, bindDiagnosticInfo, NULL);
+                            }
                             EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, NULL);
                         }
                     }
