@@ -54,7 +54,7 @@ namespace System.Net
                     }
                 }
 
-                return new UnsupportedNegotiateAuthenticationPal(clientOptions, statusCode, ex);
+                return new UnsupportedNegotiateAuthenticationPal(clientOptions, statusCode);
             }
         }
 
@@ -78,7 +78,7 @@ namespace System.Net
                         statusCode = NegotiateAuthenticationStatusCode.Unsupported;
                     }
                 }
-                return new UnsupportedNegotiateAuthenticationPal(serverOptions, statusCode, ex);
+                return new UnsupportedNegotiateAuthenticationPal(serverOptions, statusCode);
             }
         }
 
