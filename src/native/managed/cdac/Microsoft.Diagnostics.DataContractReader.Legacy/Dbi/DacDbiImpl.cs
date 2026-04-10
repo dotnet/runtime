@@ -338,7 +338,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             while (currentThread != TargetPointer.Null)
             {
                 Contracts.ThreadData threadData = threadContract.GetThreadData(currentThread);
-                // Match native: skip dead and unstarted threads
+                // Match native: skip stopped and unstarted threads
                 if ((threadData.State & (Contracts.ThreadState.Stopped | Contracts.ThreadState.Unstarted)) == 0)
                 {
                     callback(currentThread.Value, pUserData);
