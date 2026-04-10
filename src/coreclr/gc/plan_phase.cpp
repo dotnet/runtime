@@ -691,12 +691,12 @@ bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
 {
 #ifdef BACKGROUND_GC
     dprintf (GC_TABLE_LOG, ("new seg %p, mark_array is %p",
-        heap_segment_mem (region), mark_array));
+        (void*)heap_segment_mem (region), (void*)mark_array));
     if (((region->flags & heap_segment_flags_ma_committed) == 0) &&
         !commit_mark_array_new_seg (__this, region))
     {
         dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %p-%p",
-            get_region_start (region), heap_segment_reserved (region)));
+            (void*)get_region_start (region), (void*)heap_segment_reserved (region)));
 
         // We don't have memory to commit the mark array so we cannot use the new region.
         decommit_region (region, gen_to_oh (gen_number), heap_number);
@@ -2536,7 +2536,7 @@ void gc_heap::decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_
     if (pinned_surv == 0)
     {
         (*no_pinned_surv_region_count)++;
-        dprintf (REGIONS_LOG, ("h%d gen%d region %Ix will be empty", heap_number, heap_segment_gen_num (region), heap_segment_mem (region)));
+        dprintf (REGIONS_LOG, ("h%d gen%d region %p will be empty", heap_number, heap_segment_gen_num (region), (void*)heap_segment_mem (region)));
     }
     else
     {
@@ -2702,7 +2702,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
                 assert (pinned_plug_que_empty_p ());
                 if (!pinned_plug_que_empty_p ())
                 {
-                    dprintf (REGIONS_LOG, ("we still have a pin at %p but no more regions!?", pinned_plug (oldest_pin ())));
+                    dprintf (REGIONS_LOG, ("we still have a pin at %p but no more regions!?", (void*)pinned_plug (oldest_pin ())));
                     GCToOSInterface::DebugBreak ();
                 }
 

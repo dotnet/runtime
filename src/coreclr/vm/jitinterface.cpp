@@ -12009,8 +12009,8 @@ void CEEJitInfo::recordRelocation(void *       location,
             }
         }
 
-        LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
-             DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, delta));
+                LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
+                         DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, (UINT32)delta));
 
         // Write the 32-bits pc-relative delta into location
         *fixupLocationRW = (INT32) delta;
@@ -12097,8 +12097,8 @@ void CEEJitInfo::recordRelocation(void *       location,
                  DBG_ADDR(jumpStubAddr), DBG_ADDR(target)));
         }
 
-        LOG((LF_JIT, LL_INFO100000, "Encoded a BRANCH26 at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%04x\n",
-             DBG_ADDR(fixupLocation), DBG_ADDR(target), delta));
+                LOG((LF_JIT, LL_INFO100000, "Encoded a BRANCH26 at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%04x\n",
+                         DBG_ADDR(fixupLocation), DBG_ADDR(target), (UINT32)delta));
 
         _ASSERTE(FitsInRel28(delta));
 
