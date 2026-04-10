@@ -2353,7 +2353,62 @@ namespace System.Xml.Serialization
             }
             else
             {
-                if (member.IsArrayLike)
+                if (member.IsArrayLike && text.Separator.HasValue)
+                {
+                    // Emit IL to split on separator and add each part individually
+                    MethodInfo XmlSerializationReader_get_Reader2 = typeof(XmlSerializationReader).GetMethod(
+                         "get_Reader",
+                         CodeGenerator.InstanceBindingFlags,
+                         Type.EmptyTypes
+                         )!;
+                    MethodInfo XmlReader_ReadString2 = typeof(XmlReader).GetMethod(
+                        "ReadContentAsString",
+                        CodeGenerator.InstanceBindingFlags,
+                        Type.EmptyTypes
+                        )!;
+                    // rawText = Reader.ReadContentAsString() [optionally collapsed]
+                    LocalBuilder rawTextLoc = ilg.DeclareOrGetLocal(typeof(string), "rawText");
+                    if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                    {
+                        ilg.Ldarg(0);
+                    }
+                    ilg.Ldarg(0);
+                    ilg.Call(XmlSerializationReader_get_Reader2);
+                    ilg.Call(XmlReader_ReadString2);
+                    if (text.Mapping.TypeDesc.CollapseWhitespace)
+                    {
+                        MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
+                            "CollapseWhitespace",
+                            CodeGenerator.InstanceBindingFlags,
+                            new Type[] { typeof(string) }
+                            )!;
+                        ilg.Call(XmlSerializationReader_CollapseWhitespace);
+                    }
+                    ilg.Stloc(rawTextLoc);
+
+                    // vals = rawText.Split(separatorChar)
+                    LocalBuilder valsLoc = ilg.DeclareOrGetLocal(typeof(string[]), "valsText");
+                    MethodInfo String_Split = typeof(string).GetMethod(
+                        "Split",
+                        CodeGenerator.InstanceBindingFlags,
+                        new Type[] { typeof(char) }
+                        )!;
+                    ilg.Ldloc(rawTextLoc);
+                    ilg.Ldc(text.Separator.Value);
+                    ilg.Call(String_Split);
+                    ilg.Stloc(valsLoc);
+
+                    // for (int i = 0; i < vals.Length; i++) { ArraySource = vals[i]; }
+                    LocalBuilder iLoc = ilg.DeclareOrGetLocal(typeof(int), "iText");
+                    ilg.For(iLoc, 0, valsLoc);
+                    WriteSourceBegin(member.ArraySource);
+                    ilg.Ldloc(valsLoc);
+                    ilg.Ldloc(iLoc);
+                    ilg.Ldelem(typeof(string));
+                    WriteSourceEnd(member.ArraySource, typeof(string));
+                    ilg.EndFor();
+                }
+                else if (member.IsArrayLike)
                 {
                     WriteSourceBegin(member.ArraySource);
                     if (text.Mapping!.TypeDesc!.CollapseWhitespace)
@@ -2385,6 +2440,7 @@ namespace System.Xml.Serialization
                             )!;
                         ilg.Call(XmlSerializationReader_CollapseWhitespace);
                     }
+                    WriteSourceEnd(member.ArraySource, text.Mapping.TypeDesc.Type!);
                 }
                 else
                 {
@@ -2410,8 +2466,8 @@ namespace System.Xml.Serialization
                         WriteSourceBegin(member.ArraySource);
                         WritePrimitive(text.Mapping, "Reader.ReadString()");
                     }
+                    WriteSourceEnd(member.ArraySource, text.Mapping.TypeDesc.Type!);
                 }
-                WriteSourceEnd(member.ArraySource, text.Mapping.TypeDesc.Type!);
             }
         }
 

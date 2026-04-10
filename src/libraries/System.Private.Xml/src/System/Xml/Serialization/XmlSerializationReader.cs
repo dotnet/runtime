@@ -4111,12 +4111,17 @@ namespace System.Xml.Serialization
                         throw new InvalidOperationException(SR.XmlInternalError);
                 }
                 WriteSourceEnd(member.ArraySource);
+                Writer.WriteLine(";");
             }
             else
             {
-                if (member.IsArrayLike)
+                if (member.IsArrayLike && text.Separator.HasValue)
                 {
-                    WriteSourceBegin(member.ArraySource);
+                    // Emit code to split the text on the separator and add each part individually
+                    string separatorStr = text.Separator.Value.ToString();
+                    Writer.WriteLine("{");
+                    Writer.Indent++;
+                    Writer.Write("string rawText = ");
                     if (text.Mapping!.TypeDesc!.CollapseWhitespace)
                     {
                         Writer.Write("CollapseWhitespace(Reader.ReadString())");
@@ -4125,30 +4130,58 @@ namespace System.Xml.Serialization
                     {
                         Writer.Write("Reader.ReadString()");
                     }
+                    Writer.WriteLine(";");
+                    Writer.Write("string[] vals = rawText.Split(");
+                    WriteQuotedCSharpString(separatorStr);
+                    Writer.WriteLine("[0]);");
+                    Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
+                    Writer.Indent++;
+                    WriteSourceBegin(member.ArraySource);
+                    Writer.Write("vals[i]");
+                    WriteSourceEnd(member.ArraySource);
+                    Writer.WriteLine(";");
+                    Writer.Indent--;
+                    Writer.WriteLine("}");
+                    Writer.Indent--;
+                    Writer.WriteLine("}");
                 }
                 else
                 {
-                    if (text.Mapping!.TypeDesc == StringTypeDesc || text.Mapping.TypeDesc!.FormatterName == "String")
+                    if (member.IsArrayLike)
                     {
-                        Writer.Write("tmp = ReadString(tmp, ");
-                        if (text.Mapping.TypeDesc!.CollapseWhitespace)
-                            Writer.WriteLine("true);");
-                        else
-                            Writer.WriteLine("false);");
-
                         WriteSourceBegin(member.ArraySource);
-                        Writer.Write("tmp");
+                        if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                        {
+                            Writer.Write("CollapseWhitespace(Reader.ReadString())");
+                        }
+                        else
+                        {
+                            Writer.Write("Reader.ReadString()");
+                        }
                     }
                     else
                     {
-                        WriteSourceBegin(member.ArraySource);
-                        WritePrimitive(text.Mapping, "Reader.ReadString()");
-                    }
-                }
-                WriteSourceEnd(member.ArraySource);
-            }
+                        if (text.Mapping!.TypeDesc == StringTypeDesc || text.Mapping.TypeDesc!.FormatterName == "String")
+                        {
+                            Writer.Write("tmp = ReadString(tmp, ");
+                            if (text.Mapping.TypeDesc!.CollapseWhitespace)
+                                Writer.WriteLine("true);");
+                            else
+                                Writer.WriteLine("false);");
 
-            Writer.WriteLine(";");
+                            WriteSourceBegin(member.ArraySource);
+                            Writer.Write("tmp");
+                        }
+                        else
+                        {
+                            WriteSourceBegin(member.ArraySource);
+                            WritePrimitive(text.Mapping, "Reader.ReadString()");
+                        }
+                    }
+                    WriteSourceEnd(member.ArraySource);
+                    Writer.WriteLine(";");
+                }
+            }
         }
 
         private void WriteMemberElementsCheckType(string? checkTypeHrefsSource)

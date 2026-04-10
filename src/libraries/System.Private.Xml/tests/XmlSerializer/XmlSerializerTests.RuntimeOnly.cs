@@ -3666,4 +3666,50 @@ public static partial class XmlSerializerTests
         var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\"?><PrimiveAttributeTestDerived xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">5</PrimiveAttributeTestDerived>");
         Assert.Equal(value.Number, actual.Number);
     }
+
+    [Fact]
+    public static void XML_XmlTextSeparator_SpaceSeparatedStringArray_RoundTrips()
+    {
+        var original = new TypeWithXmlTextSeparatorSpaceOnStringArray { Text = new string[] { "val1", "val2", "val3" } };
+        var actual = SerializeAndDeserialize(original, baseline: null, skipStringCompare: true);
+        Assert.NotNull(actual.Text);
+        Assert.Equal(3, actual.Text.Length);
+        Assert.Equal("val1", actual.Text[0]);
+        Assert.Equal("val2", actual.Text[1]);
+        Assert.Equal("val3", actual.Text[2]);
+    }
+
+    [Fact]
+    public static void XML_XmlTextSeparator_CommaSeparatedStringArray_RoundTrips()
+    {
+        var original = new TypeWithXmlTextSeparatorCommaOnStringArray { Text = new string[] { "a", "b", "c" } };
+        var actual = SerializeAndDeserialize(original, baseline: null, skipStringCompare: true);
+        Assert.NotNull(actual.Text);
+        Assert.Equal(3, actual.Text.Length);
+        Assert.Equal("a", actual.Text[0]);
+        Assert.Equal("b", actual.Text[1]);
+        Assert.Equal("c", actual.Text[2]);
+    }
+
+    [Fact]
+    public static void XML_XmlAttributeSeparator_CommaSeparatedStringArray_RoundTrips()
+    {
+        var original = new TypeWithXmlAttributeWithSeparatorComma { Items = new string[] { "x", "y", "z" } };
+        var actual = SerializeAndDeserialize(original, baseline: null, skipStringCompare: true);
+        Assert.NotNull(actual.Items);
+        Assert.Equal(3, actual.Items.Length);
+        Assert.Equal("x", actual.Items[0]);
+        Assert.Equal("y", actual.Items[1]);
+        Assert.Equal("z", actual.Items[2]);
+    }
+
+    [Fact]
+    public static void XML_XmlTextSeparator_InvalidChar_ThrowsOnSerializerCreation()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            // \0 is not a valid XML character; should throw at reflection time
+            var serializer = new XmlSerializer(typeof(TypeWithXmlTextInvalidSeparator));
+        });
+    }
 }

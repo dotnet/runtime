@@ -3439,15 +3439,21 @@ namespace System.Xml.Serialization
                 }
                 if (attribute.IsList)
                 {
+                    // get separator character - default is space for backward compat
+                    string separatorStr = attribute.Separator.HasValue ? attribute.Separator.Value.ToString() : " ";
                     // check to see if we can write values of the attribute sequentially
                     if (CanOptimizeWriteListSequence(memberTypeDesc.ArrayElementTypeDesc))
                     {
-                        Writer.WriteLine("if (i != 0) Writer.WriteString(\" \");");
+                        Writer.Write("if (i != 0) Writer.WriteString(");
+                        WriteQuotedCSharpString(separatorStr);
+                        Writer.WriteLine(");");
                         Writer.Write("WriteValue(");
                     }
                     else
                     {
-                        Writer.WriteLine("if (i != 0) sb.Append(\" \");");
+                        Writer.Write("if (i != 0) sb.Append(");
+                        WriteQuotedCSharpString(separatorStr);
+                        Writer.WriteLine(");");
                         Writer.Write("sb.Append(");
                     }
                     if (attribute.Mapping is EnumMapping)
@@ -3567,12 +3573,54 @@ namespace System.Xml.Serialization
                 Writer.WriteLine("}");
             }
 
-            WriteArrayItems(elements, text, choice, arrayTypeDesc, "a", "c");
+            // When text has a separator, handle the array as a separated list
+            if (text?.Separator.HasValue == true && elements.Length == 0)
+            {
+                WriteTextList(text, arrayTypeDesc, "a");
+            }
+            else
+            {
+                WriteArrayItems(elements, text, choice, arrayTypeDesc, "a", "c");
+            }
+
             if (arrayTypeDesc.IsNullable)
             {
                 Writer.Indent--;
                 Writer.WriteLine("}");
             }
+            Writer.Indent--;
+            Writer.WriteLine("}");
+        }
+
+        [RequiresUnreferencedCode("calls WriteText")]
+        private void WriteTextList(TextAccessor text, TypeDesc arrayTypeDesc, string arrayName)
+        {
+            TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc!;
+            string separatorStr = text.Separator!.Value.ToString();
+
+            // Emit: for (int i = 0; i < a.Length; i++) { if (i != 0) WriteValue("sep"); WriteValue(a[i]); }
+            Writer.Write("for (int i = 0; i < ");
+            if (arrayTypeDesc.IsArray)
+            {
+                Writer.Write(arrayName);
+                Writer.Write(".Length");
+            }
+            else
+            {
+                Writer.Write("((");
+                Writer.Write(typeof(ICollection).FullName);
+                Writer.Write(")");
+                Writer.Write(arrayName);
+                Writer.Write(").Count");
+            }
+            Writer.WriteLine("; i++) {");
+            Writer.Indent++;
+            Writer.Write("if (i != 0) WriteValue(");
+            WriteQuotedCSharpString(separatorStr);
+            Writer.WriteLine(");");
+            string arrayTypeFullName = arrayElementTypeDesc.CSharpName;
+            WriteLocalDecl(arrayTypeFullName, "ai", RaCodeGen.GetStringForArrayMember(arrayName, "i", arrayTypeDesc), arrayElementTypeDesc.UseReflection);
+            WriteText("ai", text);
             Writer.Indent--;
             Writer.WriteLine("}");
         }

@@ -1213,6 +1213,8 @@ namespace System.Xml.Serialization
                 }
                 if (attribute.IsList)
                 {
+                    // get separator string - default is space for backward compat
+                    string separatorStr = attribute.Separator.HasValue ? attribute.Separator.Value.ToString() : " ";
                     string methodName;
                     Type methodType;
                     Type argType;
@@ -1234,7 +1236,7 @@ namespace System.Xml.Serialization
                             )!;
                         ilg.Ldarg(0);
                         ilg.Call(XmlSerializationWriter_get_Writer);
-                        ilg.Ldstr(" ");
+                        ilg.Ldstr(separatorStr);
                         ilg.Call(XmlWriter_WriteString);
                         ilg.EndIf();
                         ilg.Ldarg(0);
@@ -1252,7 +1254,7 @@ namespace System.Xml.Serialization
                         ilg.Ldc(0);
                         ilg.If(Cmp.NotEqualTo);
                         ilg.Ldloc("sb");
-                        ilg.Ldstr(" ");
+                        ilg.Ldstr(separatorStr);
                         ilg.Call(StringBuilder_Append);
                         ilg.Pop();
                         ilg.EndIf();
@@ -1463,13 +1465,53 @@ namespace System.Xml.Serialization
                 ilg.EndIf();
             }
 
-            WriteArrayItems(elements, text, choice, arrayTypeDesc, aName, cName!);
+            // When text has a separator, handle the array as a separated list
+            if (text?.Separator.HasValue == true && elements.Length == 0)
+            {
+                WriteTextList(text, arrayTypeDesc, aName);
+            }
+            else
+            {
+                WriteArrayItems(elements, text, choice, arrayTypeDesc, aName, cName!);
+            }
             if (arrayTypeDesc.IsNullable)
             {
                 ilg.EndIf();
             }
 
             ilg.ExitScope();
+        }
+
+        private void WriteTextList(TextAccessor text, TypeDesc arrayTypeDesc, string arrayName)
+        {
+            TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc!;
+            string separatorStr = text.Separator!.Value.ToString();
+
+            LocalBuilder iLoc = ilg.DeclareOrGetLocal(typeof(int), "i_text");
+            LocalBuilder aLoc = ilg.GetLocal(arrayName);
+
+            ilg.For(iLoc, 0, aLoc);
+
+            // if (i != 0) WriteValue(separatorStr)
+            ilg.Ldloc(iLoc);
+            ilg.Ldc(0);
+            ilg.If(Cmp.NotEqualTo);
+            MethodInfo XmlSerializationWriter_WriteValue = typeof(XmlSerializationWriter).GetMethod(
+                "WriteValue",
+                CodeGenerator.InstanceBindingFlags,
+                new Type[] { typeof(string) }
+                )!;
+            ilg.Ldarg(0);
+            ilg.Ldstr(separatorStr);
+            ilg.Call(XmlSerializationWriter_WriteValue);
+            ilg.EndIf();
+
+            // WriteText(a[i])
+            string aiVar = $"{arrayName}i_text";
+            WriteArrayLocalDecl(arrayElementTypeDesc.CSharpName, aiVar, new SourceInfo(ReflectionAwareILGen.GetStringForArrayMember(arrayName, "i_text"), null, null, arrayElementTypeDesc.Type, ilg), arrayElementTypeDesc);
+            WriteText(new SourceInfo(aiVar, aiVar, null, arrayElementTypeDesc.Type, ilg), text);
+
+            ilg.EndFor();
         }
 
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, TypeDesc arrayTypeDesc, string arrayName, string? choiceName)

@@ -1613,6 +1613,11 @@ namespace System.Xml.Serialization
                     CheckForm(attribute.Form, ns != attribute.Namespace);
                     attribute.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(targetType), ns, ImportContext.Attribute, a.XmlAttribute.DataType, null, isList, false, limiter);
                     attribute.IsList = isList;
+                    if (a.XmlAttribute.Separator != '\0')
+                    {
+                        ValidateSeparatorChar(a.XmlAttribute.Separator, accessorName);
+                        attribute.Separator = a.XmlAttribute.Separator;
+                    }
                     attribute.Default = GetDefaultValue(model.FieldTypeDesc, model.FieldType, a);
                     attribute.Any = (a.XmlAnyAttribute != null);
                     if (attribute.Form == XmlSchemaForm.Qualified && attribute.Namespace != ns)
@@ -1636,6 +1641,12 @@ namespace System.Xml.Serialization
                         text.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(targetType), ns, ImportContext.Text, a.XmlText.DataType, null, true, false, limiter);
                         if (!(text.Mapping is SpecialMapping) && targetTypeDesc != _typeScope.GetTypeDesc(typeof(string)))
                             throw new InvalidOperationException(SR.Format(SR.XmlIllegalArrayTextAttribute, accessorName));
+
+                        if (a.XmlText.Separator != '\0')
+                        {
+                            ValidateSeparatorChar(a.XmlText.Separator, accessorName);
+                            text.Separator = a.XmlText.Separator;
+                        }
 
                         accessor.Text = text;
                     }
@@ -2259,6 +2270,18 @@ namespace System.Xml.Serialization
         private static void CheckForm(XmlSchemaForm form, bool isQualified)
         {
             if (isQualified && form == XmlSchemaForm.Unqualified) throw new InvalidOperationException(SR.XmlInvalidFormUnqualified);
+        }
+
+        private static void ValidateSeparatorChar(char separator, string memberName)
+        {
+            try
+            {
+                XmlConvert.VerifyXmlChars(separator.ToString());
+            }
+            catch (XmlException)
+            {
+                throw new InvalidOperationException(SR.Format(SR.XmlInvalidSeparatorChar, separator, memberName));
+            }
         }
 
         private static void CheckNullable(bool isNullable, TypeDesc typeDesc, TypeMapping? mapping)

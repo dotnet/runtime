@@ -2513,6 +2513,7 @@ namespace System.Xml.Serialization
         public string DataType { get { throw null; } set { } }
         public System.Xml.Schema.XmlSchemaForm Form { get { throw null; } set { } }
         public string? Namespace { get { throw null; } set { } }
+        public char Separator { get { throw null; } set { } }
         public System.Type? Type { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
@@ -2583,6 +2584,7 @@ namespace System.Xml.Serialization
         public XmlTextAttribute(System.Type? type) { }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string DataType { get { throw null; } set { } }
+        public char Separator { get { throw null; } set { } }
         public System.Type? Type { get { throw null; } set { } }
     }
 }

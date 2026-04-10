@@ -14,6 +14,7 @@ namespace System.Xml.Serialization
     {
         private Type? _type;
         private string? _dataType;
+        private char _separator;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -47,6 +48,19 @@ namespace System.Xml.Serialization
         {
             get { return _dataType ?? string.Empty; }
             set { _dataType = value; }
+        }
+
+        /// <summary>Gets or sets the separator character used when serializing an array to XML text content.</summary>
+        /// <remarks>
+        /// When set to a non-default value (i.e., not the null character <c>'\0'</c>), array items are serialized
+        /// with this character as separator, and deserialization splits the text content on this character.
+        /// The default value of <c>'\0'</c> means no separator: array items are concatenated without any separator,
+        /// preserving the existing behavior.
+        /// </remarks>
+        public char Separator
+        {
+            get { return _separator; }
+            set { _separator = value; }
         }
     }
 }

@@ -696,14 +696,22 @@ namespace System.Xml.Serialization
                 {
                     if (anyTextMapping.TypeDesc!.IsArrayLike)
                     {
-                        if (text.Mapping!.TypeDesc!.CollapseWhitespace)
+                        string rawText = text.Mapping!.TypeDesc!.CollapseWhitespace
+                            ? CollapseWhitespace(Reader.ReadString())
+                            : Reader.ReadString();
+
+                        if (text.Separator.HasValue)
                         {
-                            value = CollapseWhitespace(Reader.ReadString());
+                            // Split on separator and add each part to the collection
+                            string[] parts = rawText.Split(text.Separator.Value);
+                            foreach (string part in parts)
+                            {
+                                anyText.Source!(part);
+                            }
+                            return true;
                         }
-                        else
-                        {
-                            value = Reader.ReadString();
-                        }
+
+                        value = rawText;
                     }
                     else
                     {

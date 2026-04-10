@@ -4636,3 +4636,28 @@ public class PrimiveAttributeTestDerived : PrimiveAttributeTestBase
     [XmlText]
     public int Number { get; set; }
 }
+
+public class TypeWithXmlTextSeparatorSpaceOnStringArray
+{
+    [XmlText(Separator = ' ')]
+    public string[] Text;
+}
+
+public class TypeWithXmlTextSeparatorCommaOnStringArray
+{
+    [XmlText(Separator = ',')]
+    public string[] Text;
+}
+
+[XmlType(TypeName = "MyXmlType")]
+public class TypeWithXmlAttributeWithSeparatorComma
+{
+    [XmlAttribute(Form = XmlSchemaForm.Qualified, Separator = ',')]
+    public string[] Items;
+}
+
+public class TypeWithXmlTextInvalidSeparator
+{
+    [XmlText(Separator = '\x01')]
+    public string[] Text;
+}

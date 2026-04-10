@@ -2286,6 +2286,9 @@
   <data name="XmlIllegalAttribute" xml:space="preserve">
     <value>For non-array types, you may use the following attributes: XmlAttribute, XmlText, XmlElement, or XmlAnyElement.</value>
   </data>
+  <data name="XmlInvalidSeparatorChar" xml:space="preserve">
+    <value>The Separator character '{0}' is not a valid XML character and cannot be used as a separator for member '{1}'.</value>
+  </data>
   <data name="XmlIllegalType" xml:space="preserve">
     <value>The type for {0} may not be specified for primitive types.</value>
   </data>
