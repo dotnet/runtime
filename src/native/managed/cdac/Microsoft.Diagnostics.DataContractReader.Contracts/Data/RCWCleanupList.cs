@@ -10,7 +10,7 @@ internal sealed class RCWCleanupList : IData<RCWCleanupList>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RCWCleanupList);
 
-        FirstBucket = target.ReadPointer(address + (ulong)type.Fields[nameof(FirstBucket)].Offset);
+        FirstBucket = target.ReadPointerField(address, type, nameof(FirstBucket));
     }
 
     public TargetPointer FirstBucket { get; init; }

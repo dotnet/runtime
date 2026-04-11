@@ -7,7 +7,6 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
-using Moq;
 using Xunit;
 using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
 
@@ -41,19 +40,16 @@ public class MethodTableTests
 
     internal static TestPlaceholderTarget CreateTarget(MockTarget.Architecture arch, Action<MockRTS> configure)
     {
-        TargetTestHelpers targetTestHelpers = new(arch);
-        MockMemorySpace.Builder builder = new(targetTestHelpers);
-        MockRTS rtsBuilder = new(builder);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockRTS rtsBuilder = new(targetBuilder.MemoryBuilder);
 
         configure?.Invoke(rtsBuilder);
 
-        var target = new TestPlaceholderTarget(
-            arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(rtsBuilder),
-            CreateContractGlobals(rtsBuilder));
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)));
+        var target = targetBuilder
+            .AddTypes(CreateContractTypes(rtsBuilder))
+            .AddGlobals(CreateContractGlobals(rtsBuilder))
+            .AddContract<IRuntimeTypeSystem>(version: 1)
+            .Build();
         return target;
     }
 

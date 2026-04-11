@@ -12,7 +12,7 @@ internal class DebuggerEval : IData<DebuggerEval>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.DebuggerEval);
         TargetContext = address + (ulong)type.Fields[nameof(TargetContext)].Offset;
-        EvalDuringException = target.Read<byte>(address + (ulong)type.Fields[nameof(EvalDuringException)].Offset) != 0;
+        EvalDuringException = target.ReadField<byte>(address, type, nameof(EvalDuringException)) != 0;
         Address = address;
     }
 
