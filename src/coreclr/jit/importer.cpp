@@ -7546,9 +7546,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         mask = 0x3f;
                     }
 #endif
-                    while (op2->OperIs(GT_AND) && op2->gtGetOp2()->IsCnsIntOrI())
+                    while (op2->OperIs(GT_AND))
                     {
-                        if ((static_cast<size_t>(op2->gtGetOp2()->AsIntCon()->IconValue()) & mask) != mask)
+                        GenTree* maskOp = op2->gtGetOp2();
+                        if (!maskOp->IsCnsIntOrI())
+                        {
+                            break;
+                        }
+                        if ((static_cast<size_t>(maskOp->AsIntCon()->IconValue()) & mask) != mask)
                         {
                             break;
                         }
