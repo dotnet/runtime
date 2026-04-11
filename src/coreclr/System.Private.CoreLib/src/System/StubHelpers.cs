@@ -893,8 +893,8 @@ namespace System.StubHelpers
 
         private struct ArrayMarshalerMethods
         {
-            public MethodInvoker convertContentsToNative;
-            public MethodInvoker convertContentsToManaged;
+            public unsafe delegate*<Array, byte*, void> convertContentsToNative;
+            public unsafe delegate*<Array, byte*, void> convertContentsToManaged;
             public unsafe delegate*<Array, byte*> convertSpaceToNative;
         }
 
@@ -960,18 +960,20 @@ namespace System.StubHelpers
 
             arrayMarshalerMethods = new ArrayMarshalerMethods
             {
-                convertContentsToManaged = MethodInvoker.Create(
+                convertContentsToManaged = (delegate*<Array, byte*, void>)
                     typeof(StubHelpers)
                     .GetMethod(
                         nameof(StubHelpers.ConvertArrayContentsToManaged),
                         BindingFlags.Public | BindingFlags.Static)!
-                    .MakeGenericMethod(marshalerGenericArgs)),
-                convertContentsToNative = MethodInvoker.Create(
+                    .MakeGenericMethod(marshalerGenericArgs)
+                    .MethodHandle.GetFunctionPointer(),
+                convertContentsToNative = (delegate*<Array, byte*, void>)
                     typeof(StubHelpers)
                     .GetMethod(
                         nameof(StubHelpers.ConvertArrayContentsToUnmanaged),
                         BindingFlags.Public | BindingFlags.Static)!
-                    .MakeGenericMethod(marshalerGenericArgs)),
+                    .MakeGenericMethod(marshalerGenericArgs)
+                    .MethodHandle.GetFunctionPointer(),
                 convertSpaceToNative = (delegate*<Array, byte*>)
                     typeof(StubHelpers)
                     .GetMethod(
@@ -985,7 +987,7 @@ namespace System.StubHelpers
 
             if (IsIn(dwFlags))
             {
-                arrayMarshalerMethods.convertContentsToNative.Invoke(null, pManagedHome, Pointer.Box(pNativeHome, typeof(byte*)));
+                arrayMarshalerMethods.convertContentsToNative((Array)pManagedHome, pNativeHome);
             }
 
             if (IsOut(dwFlags))
@@ -1178,7 +1180,7 @@ namespace System.StubHelpers
             {
                 case BackPropAction.Array:
                     {
-                        arrayMarshalerMethods.convertContentsToManaged.Invoke(null, pManagedHome, pNativeHome);
+                        arrayMarshalerMethods.convertContentsToManaged((Array)pManagedHome, (byte*)pNativeHome);
                         break;
                     }
 
@@ -2295,30 +2297,7 @@ namespace System.StubHelpers
             }
         }
 
-        public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(T[] managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
-        {
-            for (int i = 0; i < managed.Length; i++)
-            {
-                TMarshaler.ConvertToUnmanaged(ref managed[i], pNative);
-                pNative += TMarshaler.UnmanagedSize;
-            }
-        }
-
-        public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(T[] managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
-        {
-            for (int i = 0; i < managed.Length; i++)
-            {
-                TMarshaler.ConvertToManaged(ref managed[i], pNative);
-                pNative += TMarshaler.UnmanagedSize;
-            }
-        }
-
-        // SafeArray-specific overloads that accept Array instead of T[].
-        // SafeArrays can be multidimensional or have non-zero lower bounds,
-        // producing general Array objects that are not T[].
-        // CLR arrays store elements contiguously regardless of rank,
-        // so we use MemoryMarshal.GetArrayDataReference to access the data directly.
-        public static unsafe void ConvertSafeArrayContentsToUnmanaged<T, TMarshaler>(Array managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+        public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(Array managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
         {
             ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managed));
             int length = managed.Length;
@@ -2329,7 +2308,7 @@ namespace System.StubHelpers
             }
         }
 
-        public static unsafe void ConvertSafeArrayContentsToManaged<T, TMarshaler>(Array managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+        public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(Array managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
         {
             ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managed));
             int length = managed.Length;
@@ -2366,7 +2345,7 @@ namespace System.StubHelpers
             }
         }
 
-        public static unsafe byte* ConvertArraySpaceToNative<T, TMarshaler>(T[]? managed)
+        public static unsafe byte* ConvertArraySpaceToNative<T, TMarshaler>(Array? managed)
             where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
         {
             if (managed is null)
