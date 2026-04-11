@@ -64,6 +64,46 @@
     <PackageValidationBaselineFrameworkToIgnore Include="net9.0" />
   </ItemGroup>
 
+  <!--
+    Exclude DependencyOnlyTargetFrameworks TFMs from P2P TFM resolution so that test projects or
+    consuming projects don't accidentally resolve the dependency-only TFM instead of the shipping
+    NetFrameworkMinimum TFM. The dependency-only TFMs are only meaningful for NuGet packaging
+    (to emit an empty dependency group); they should be invisible to project references.
+
+    The save/restore pattern mirrors the approach used in the arcade SDK's buildMultiTargeting
+    targets: filter _InnerBuildProjects before GetTargetFrameworksWithPlatformFromInnerBuilds
+    (the P2P query target) and restore afterward so DispatchToInnerBuilds still builds them.
+  -->
+  <Target Name="ExcludeDependencyOnlyTFMsFromP2PQuery"
+          Condition="'$(DependencyOnlyTargetFrameworks)' != '' and '$(IsCrossTargetingBuild)' == 'true'"
+          BeforeTargets="GetTargetFrameworksWithPlatformFromInnerBuilds">
+    <ItemGroup>
+      <!-- Save the full set so it can be restored after the P2P TFM query. -->
+      <_InnerBuildProjectsWithDependencyOnlyTFMs Include="@(_InnerBuildProjects)" />
+      <!-- Build one filter item per DependencyOnly TFM, using the same AdditionalProperties
+           format that _ComputeTargetFrameworkItems uses for _InnerBuildProjects. -->
+      <_DependencyOnlyTFMItems Include="$(DependencyOnlyTargetFrameworks)" />
+      <_DependencyOnlyInnerBuildFilter Include="$(MSBuildProjectFile)">
+        <AdditionalProperties>TargetFramework=%(_DependencyOnlyTFMItems.Identity)</AdditionalProperties>
+      </_DependencyOnlyInnerBuildFilter>
+      <!-- Remove DependencyOnly TFMs from the inner builds visible to P2P callers. -->
+      <_InnerBuildProjects Remove="@(_DependencyOnlyInnerBuildFilter)"
+                           MatchOnMetadata="AdditionalProperties"
+                           MatchOnMetadataOptions="CaseInsensitive" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RestoreInnerBuildProjectsAfterP2PQuery"
+          Condition="'@(_InnerBuildProjectsWithDependencyOnlyTFMs)' != ''"
+          AfterTargets="GetTargetFrameworksWithPlatformFromInnerBuilds">
+    <ItemGroup>
+      <!-- Restore the full set so DispatchToInnerBuilds still builds the DependencyOnly TFMs
+           (they need to compile for NuGet to generate the dependency group in the nuspec). -->
+      <_InnerBuildProjects Remove="@(_InnerBuildProjects)" />
+      <_InnerBuildProjects Include="@(_InnerBuildProjectsWithDependencyOnlyTFMs)" />
+    </ItemGroup>
+  </Target>
+
   <!-- Flow these properties to consuming projects. Used by i.e. Microsoft.Internal.Runtime.WindowsDesktop.Transport. -->
   <ItemDefinitionGroup>
     <TargetPathWithTargetPlatformMoniker>
