@@ -87,7 +87,6 @@ When the environment supports launching sub-agents with different models (e.g., 
    - From each family, pick the model with the highest capability tier (prefer "premium" or "standard" over "fast/cheap").
    - Never pick models labeled "mini", "fast", or "cheap" for code review.
    - Do not select the same model that is already running the primary review (i.e., your own model). The goal is diverse perspectives from different model families.
-   - **Do not pick a second model from the same family as the primary reviewer.** If the primary is an Anthropic Claude model, do not launch another Claude as a sub-agent — it adds cost without meaningful diversity.
    - **Do not use `gpt-5.4`** — it has known reliability issues causing sub-agent timeouts in >90% of affected runs. From the OpenAI/GPT family, use `gpt-5.3-codex` instead.
    - If multiple standard-tier models exist in the same family (excluding blocked models above), pick the one with the highest version number. Prefer "-codex" variants over general-purpose for code review tasks.
 2. Launch a sub-agent for each selected model in parallel, giving each the same review prompt: the PR diff, the review rules from this skill, and instructions to produce findings in the severity format defined above.
