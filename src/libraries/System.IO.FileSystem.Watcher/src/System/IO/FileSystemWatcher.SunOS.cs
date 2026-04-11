@@ -803,7 +803,13 @@ namespace System.IO
 
                 // Collect all changes in order during single-pass comparison
                 var changes = new List<ChangeEvent>();
-                // Dictionaries used for rename detection: (inode) -> index in changes list
+                // Dictionaries used for rename detection: inode -> index in changes list.
+                // Entries are never removed during the processing pass; instead, each entry
+                // is marked with .Processed = true when consumed. This avoids churn on the
+                // dictionaries (which could re-hash on every removal) and keeps the code
+                // simple. The !other.Processed guard in the pairing loop ensures a consumed
+                // entry is never reused. Both dictionaries go out of scope together at the
+                // end of the method.
                 var deletes = new Dictionary<long, int>();
                 var creates = new Dictionary<long, int>();
 
@@ -903,9 +909,9 @@ namespace System.IO
                         ? deletes
                         : creates;
 
-                    if (otherDict.TryGetValue(inode, out int otherIdx))
+                    if (otherDict.TryGetValue(inode, out int otherIdx) && !changes[otherIdx].Processed)
                     {
-                        // Found rename pair
+                        // Found valid (unconsumed) rename pair
                         var other = changes[otherIdx];
 
                         if (change.Type == WatcherChangeTypes.Deleted)
