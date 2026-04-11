@@ -154,7 +154,6 @@ namespace System.Diagnostics.Tests
         {
             RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false };
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
-            remoteInvokeOptions.StartInfo.RedirectStandardError = true;
             remoteInvokeOptions.StartInfo.RedirectStandardInput = true;
 
             // RemoteExecutor creates a memory dump when the child process does not exit on time.
