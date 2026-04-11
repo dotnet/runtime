@@ -9949,8 +9949,8 @@ void CodeGen::genDuplicateTier0Prolog()
     // runtime async.
 
     unsigned numStkSlotsToInit = 0;
-    int zeroLow           = INT_MAX;
-    int zeroHigh          = INT_MIN;
+    int      zeroLow           = INT_MAX;
+    int      zeroHigh          = INT_MIN;
     auto     checkSlot         = [&](int offset) {
         numStkSlotsToInit++;
         zeroLow  = std::min(zeroLow, offset);
@@ -9980,8 +9980,8 @@ void CodeGen::genDuplicateTier0Prolog()
         const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(m_compiler->lvaAsyncContinuationArg);
         assert(abiInfo.HasExactlyOneRegisterSegment());
 
-        regNumber passedReg = abiInfo.Segment(0).GetRegister();
-        unsigned storeOffset = m_compiler->lvaOSRLocalTier0FrameOffset(m_compiler->lvaAsyncContinuationArg);
+        regNumber passedReg   = abiInfo.Segment(0).GetRegister();
+        unsigned  storeOffset = m_compiler->lvaOSRLocalTier0FrameOffset(m_compiler->lvaAsyncContinuationArg);
         GetEmitter()->emitIns_AR_R(ins_Store(TYP_REF), EA_PTRSIZE, passedReg, REG_FPBASE, storeOffset);
     }
 
