@@ -182,5 +182,23 @@ namespace System.Diagnostics.Tests
 
         [LibraryImport(Interop.Libraries.Kernel32)]
         private static partial int ResumeThread(nint hThread);
+
+        private static unsafe string GetSafeFileHandleId(SafeFileHandle handle)
+        {
+            const int MaxPath = 32_767;
+            char[] buffer = new char[MaxPath];
+            uint result;
+            fixed (char* ptr = buffer)
+            {
+                result = Interop.Kernel32.GetFinalPathNameByHandle(handle, ptr, (uint)MaxPath, Interop.Kernel32.FILE_NAME_NORMALIZED);
+            }
+
+            if (result == 0)
+            {
+                throw new Win32Exception();
+            }
+
+            return new string(buffer, 0, (int)result);
+        }
     }
 }

@@ -120,6 +120,29 @@ namespace System.Diagnostics
         public bool RedirectStandardError { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the process should be started in a detached manner.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Starts a new detached process with standard input, output, and error redirected to the null device
+        /// (<c>NUL</c> on Windows, <c>/dev/null</c> on Unix) unless explicitly configured by the user with
+        /// <see cref="RedirectStandardInput"/>, <see cref="RedirectStandardOutput"/>, <see cref="RedirectStandardError"/>,
+        /// <see cref="StandardInputHandle"/>, <see cref="StandardOutputHandle"/>, or <see cref="StandardErrorHandle"/>.
+        /// </para>
+        /// <para>
+        /// On Windows, the process is started with the
+        /// <see href="https://learn.microsoft.com/windows/win32/procthread/process-creation-flags">DETACHED_PROCESS</see> flag.
+        /// </para>
+        /// <para>
+        /// On Unix, the process is started as a leader of a new session.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="UseShellExecute"/> set to <see langword="true"/>.
+        /// </para>
+        /// </remarks>
+        public bool StartDetached { get; set; }
+
+        /// <summary>
         /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard input of the child process.
         /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardInput"/> must be <see langword="false"/>.
         /// </summary>
@@ -392,6 +415,11 @@ namespace System.Diagnostics
             if (UseShellExecute && (anyRedirection || anyHandle))
             {
                 throw new InvalidOperationException(SR.CantRedirectStreams);
+            }
+
+            if (StartDetached && UseShellExecute)
+            {
+                throw new InvalidOperationException(SR.StartDetachedNotCompatible);
             }
 
             if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))

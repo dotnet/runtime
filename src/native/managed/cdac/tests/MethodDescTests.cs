@@ -60,26 +60,22 @@ public class MethodDescTests
         Action<MockDescriptors.MockMethodDescriptorsBuilder> configure,
         Mock<IExecutionManager>? mockExecutionManager = null)
     {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
-        MockLoaderBuilder loaderBuilder = new(builder);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(targetBuilder.MemoryBuilder);
+        MockLoaderBuilder loaderBuilder = new(targetBuilder.MemoryBuilder);
         MockDescriptors.MockMethodDescriptorsBuilder methodDescBuilder = new(rtsBuilder, loaderBuilder);
 
         configure(methodDescBuilder);
 
-        var target = new TestPlaceholderTarget(
-            builder.TargetTestHelpers.Arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(methodDescBuilder),
-            CreateContractGlobals(methodDescBuilder));
-
         mockExecutionManager ??= new Mock<IExecutionManager>();
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)
-                && c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)
-                && c.PlatformMetadata == new Mock<IPlatformMetadata>().Object
-                && c.ExecutionManager == mockExecutionManager.Object));
+        var target = targetBuilder
+            .AddTypes(CreateContractTypes(methodDescBuilder))
+            .AddGlobals(CreateContractGlobals(methodDescBuilder))
+            .AddContract<IRuntimeTypeSystem>(version: 1)
+            .AddContract<ILoader>(version: 1)
+            .AddMockContract(new Mock<IPlatformMetadata>())
+            .AddMockContract(mockExecutionManager)
+            .Build();
         return target.Contracts.RuntimeTypeSystem;
     }
 

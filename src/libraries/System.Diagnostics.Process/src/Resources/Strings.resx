@@ -222,6 +222,9 @@
   <data name="CantSetRedirectForSafeProcessHandleStart" xml:space="preserve">
     <value>The RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties cannot be used by SafeProcessHandle.Start. Use the StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties.</value>
   </data>
+  <data name="StartDetachedNotCompatible" xml:space="preserve">
+    <value>The StartDetached property cannot be used with UseShellExecute set to true.</value>
+  </data>
   <data name="DirectoryNotValidAsInput" xml:space="preserve">
     <value>The FileName property should not be a directory unless UseShellExecute is set.</value>
   </data>
