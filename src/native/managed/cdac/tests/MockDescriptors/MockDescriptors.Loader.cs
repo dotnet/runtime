@@ -62,6 +62,12 @@ internal sealed class MockLoaderModule : TypedView
         set => WritePointerField(AssemblyFieldName, value);
     }
 
+    public ulong PEAssembly
+    {
+        get => ReadPointerField(PEAssemblyFieldName);
+        set => WritePointerField(PEAssemblyFieldName, value);
+    }
+
     public ulong SimpleName
     {
         get => ReadPointerField(SimpleNameFieldName);
@@ -167,7 +173,6 @@ internal sealed class MockLoaderBuilder
         MockLoaderAssembly assembly = AssemblyLayout.Create(AllocateAndAdd((ulong)AssemblyLayout.Size, "Assembly"));
         assembly.Module = module.Address;
         module.Assembly = assembly.Address;
-
         return module;
     }
 

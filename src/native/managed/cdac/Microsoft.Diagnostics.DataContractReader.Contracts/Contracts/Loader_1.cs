@@ -191,6 +191,9 @@ internal readonly struct Loader_1 : ILoader
         if (!TryGetPEImage(handle, out Data.PEImage? peImage))
             return false; // no PE image
 
+        if (peImage.LoadedImageLayout == TargetPointer.Null)
+            return false; // no loaded image layout
+
         Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
 
         baseAddress = peImageLayout.Base;

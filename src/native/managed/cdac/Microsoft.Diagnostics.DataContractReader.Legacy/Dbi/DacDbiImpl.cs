@@ -330,47 +330,27 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int SetCompilerFlags(ulong vmDomainAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC)
         => _legacy is not null ? _legacy.SetCompilerFlags(vmDomainAssembly, fAllowJitOpts, fEnableEnC) : HResults.E_NOTIMPL;
 
-    public int EnumerateAppDomains(delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
+    public int EnumerateAppDomains(nint fpCallback, nint pUserData)
     {
         int hr = HResults.S_OK;
-#if DEBUG
-        ulong? cdacAppDomain = null;
-#endif
         try
         {
             TargetPointer appDomainPtr = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
             ulong appDomain = _target.ReadPointer(appDomainPtr);
-            fpCallback(appDomain, pUserData);
-#if DEBUG
-            cdacAppDomain = appDomain;
-#endif
+            var callback = (delegate* unmanaged<ulong, nint, void>)fpCallback;
+            callback(appDomain, pUserData);
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            List<ulong> dacAppDomains = new();
-            GCHandle dacHandle = GCHandle.Alloc(dacAppDomains);
-            int hrLocal = _legacy.EnumerateAppDomains(&CollectEnumerationCallback, GCHandle.ToIntPtr(dacHandle));
-            dacHandle.Free();
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(dacAppDomains.Count == 1, $"DAC returned {dacAppDomains.Count} app domains, expected 1");
-                Debug.Assert(cdacAppDomain == dacAppDomains[0], $"cDAC: 0x{cdacAppDomain:x}, DAC: 0x{dacAppDomains[0]:x}");
-            }
-        }
-#endif
         return hr;
     }
 
-    public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
+    public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData)
         => _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
-    public int EnumerateModulesInAssembly(ulong vmAssembly, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
+    public int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData)
         => _legacy is not null ? _legacy.EnumerateModulesInAssembly(vmAssembly, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int RequestSyncAtEvent()
@@ -396,6 +376,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #endif
         try
         {
+            if (fpCallback == null)
+                throw new ArgumentNullException(nameof(fpCallback));
             Contracts.IThread threadContract = _target.Contracts.Thread;
             Contracts.ThreadStoreData threadStore = threadContract.GetThreadStoreData();
             TargetPointer currentThread = threadStore.FirstThread;
@@ -1294,13 +1276,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped)
     {
-        *isModuleMapped = Interop.BOOL.FALSE;
         int hr = HResults.S_FALSE;
         try
         {
             if (pModule == 0 || isModuleMapped == null)
                 throw new ArgumentNullException(nameof(isModuleMapped));
 
+            *isModuleMapped = Interop.BOOL.FALSE;
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(pModule));
             if (loader.TryGetLoadedImageContents(handle, out _, out _, out _))

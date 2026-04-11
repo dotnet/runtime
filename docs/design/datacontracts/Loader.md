@@ -372,7 +372,7 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
     size = 0;
     imageFlags = 0;
 
-    // try to get loaded PE image, if not loaded return false
+    // try to get loaded PE image (peImage), if not loaded return false
 
     TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
 
@@ -385,6 +385,7 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
 bool IsModuleMapped(ModuleHandle handle)
 {
     // try to get loaded PE image, if not loaded return false
+    // try to get layout (peImageLayout)
 
     uint format = target.Read<uint>(peImageLayout + /* PEImageLayout::Format offset */);
     return /* Webcil images are never mapped; for PE images check the FLAG_MAPPED flag */;

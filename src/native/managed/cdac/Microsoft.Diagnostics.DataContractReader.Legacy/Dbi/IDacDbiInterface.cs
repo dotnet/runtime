@@ -214,13 +214,13 @@ public unsafe partial interface IDacDbiInterface
     int SetCompilerFlags(ulong vmDomainAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC);
 
     [PreserveSig]
-    int EnumerateAppDomains(delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
+    int EnumerateAppDomains(nint fpCallback, nint pUserData);
 
     [PreserveSig]
-    int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
+    int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData);
 
     [PreserveSig]
-    int EnumerateModulesInAssembly(ulong vmAssembly, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
+    int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData);
 
     [PreserveSig]
     int RequestSyncAtEvent();

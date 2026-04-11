@@ -32,7 +32,7 @@ public class DacDbiThreadDumpTests : DumpTestBase
 
         int dbiCount = 0;
         delegate* unmanaged<ulong, nint, void> callback = &CountThreadCallback;
-        int hr = dbi.EnumerateThreads((nint)callback, (nint)(&dbiCount));
+        int hr = dbi.EnumerateThreads(callback, (nint)(&dbiCount));
         Assert.Equal(System.HResults.S_OK, hr);
 
         int expectedCount = 0;
