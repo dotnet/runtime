@@ -107,11 +107,18 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TestNativeAot)' != 'true' or '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-    <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.v3.extensibility.core" Version="$(XUnitV3Version)" ExcludeAssets="build" />
+    <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <ProjectReference Include="$(CommonTestPath)AotXunitExtensions\AotXunitExtensions.csproj" />
+    <PackageReference Include="xunit.v3.core.aot" Version="4.0.0-pre.33" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" ExcludeAssets="build" />
+    <PackageReference Include="xunit.v3.assert.aot" Version="4.0.0-pre.33" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" />
+    <PackageReference Include="xunit.v3.extensibility.core.aot" Version="4.0.0-pre.33" ExcludeAssets="build" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

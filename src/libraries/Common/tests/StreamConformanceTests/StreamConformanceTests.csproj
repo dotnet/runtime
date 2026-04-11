@@ -14,9 +14,13 @@
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs" Link="Common\System\IO\DelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TestNativeAot)' != 'true' or '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.v3.extensibility.core" Version="$(XUnitV3Version)" ExcludeAssets="build" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <PackageReference Include="xunit.v3.extensibility.core.aot" Version="4.0.0-pre.33" ExcludeAssets="build" />
+    <PackageReference Include="xunit.v3.assert.aot" Version="4.0.0-pre.33" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />

@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetFrameworkCurrent)</TargetFrameworks>
+    <!-- xunit AOT source generator emits null literals for nullable InlineData args
+         against non-nullable parameters; suppress until the generator is fixed. -->
+    <NoWarn Condition="'$(TestNativeAot)' == 'true'">$(NoWarn);CS8625</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BerConverterTests.cs" />

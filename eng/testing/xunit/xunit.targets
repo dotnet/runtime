@@ -53,6 +53,32 @@
     <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(TestNativeAot)' != 'true' or '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <!-- Excluding xunit.core/build as it enables deps file generation. -->
+    <PackageReference Include="xunit.v3.core" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" ExcludeAssets="build" />
+
+    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <!--
+      Deploy xunit.v3.assert as a runtime-only dependency for .NETCoreApp test projects.
+      This is needed because netstandard2.0 support libraries (e.g. ModuleCore) compile
+      against xunit.v3.assert and need it at runtime, even though test projects compile
+      against Microsoft.DotNet.XUnitAssert (which has a different assembly name).
+      ExcludeAssets="compile" prevents CS0433 ambiguity with Microsoft.DotNet.XUnitAssert.
+    -->
+    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" Publish="true" ExcludeAssets="compile" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+
+    <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <!-- Excluding xunit.core/build as it enables deps file generation. -->
+    <PackageReference Include="xunit.v3.core.aot" Version="4.0.0-pre.33" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" ExcludeAssets="build" />
+
+    <PackageReference Include="xunit.v3.assert.aot" Version="4.0.0-pre.33" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" />
+
+    <ProjectReference Include="$(CommonTestPath)AotXunitExtensions\AotXunitExtensions.csproj" />
+  </ItemGroup>
   <!--
     The xunit.v3.core.mtp-v1 package injects DefaultRunnerReporters.cs into
     compilation. On mobile/WASM, the compilation environment may lack the

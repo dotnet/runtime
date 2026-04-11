@@ -36,7 +36,8 @@ namespace System.Collections.Generic.Tests
     {
         private static readonly TGenerator s_generator = new TGenerator();
 
-        [Fact]
+        // Test attributes are on the concrete subclasses (not here) so the xunit
+        // AOT source generator emits code for closed types instead of the open generic.
         public void ParameterlessConstructor()
         {
             var builder = new ArrayBuilder<T>();
@@ -49,8 +50,6 @@ namespace System.Collections.Generic.Tests
             Assert.Same(Array.Empty<T>(), builder.ToArray());
         }
 
-        [Theory]
-        [MemberData(nameof(CapacityData))]
         public void CapacityConstructor(int capacity)
         {
             Debug.Assert(capacity >= 0);
@@ -64,8 +63,6 @@ namespace System.Collections.Generic.Tests
             Assert.Same(Array.Empty<T>(), builder.ToArray());
         }
 
-        [Theory]
-        [MemberData(nameof(CountData))]
         public void Count(int count)
         {
             Debug.Assert(count >= 0);
@@ -83,8 +80,6 @@ namespace System.Collections.Generic.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(EnumerableData))]
         public void ToArray(IEnumerable<T> seed)
         {
             ArrayBuilder<T> builder = CreateBuilderFromSequence(seed);
@@ -96,8 +91,6 @@ namespace System.Collections.Generic.Tests
             Assert.Equal(seed, array);
         }
 
-        [Theory]
-        [MemberData(nameof(CapacityData))]
         public void UncheckedAdd(int capacity)
         {
             Debug.Assert(capacity >= 0);
@@ -208,8 +201,32 @@ namespace System.Collections.Generic.Tests
         }
     }
 
+    // The xunit AOT source generator cannot discover test methods declared on
+    // open generic base classes.  Each concrete subclass re-declares the test
+    // methods as thin stubs so the generator emits entry points for them.
+
+#pragma warning disable xUnit1024 // Test methods cannot have overloads — intentional: stubs hide base methods
     public class ArrayBuilderTestsInt32 : ArrayBuilderTests<int, ArrayBuilderTestsInt32.Generator>
     {
+        [Fact]
+        public new void ParameterlessConstructor() => base.ParameterlessConstructor();
+
+        [Theory]
+        [MemberData(nameof(CapacityData))]
+        public new void CapacityConstructor(int capacity) => base.CapacityConstructor(capacity);
+
+        [Theory]
+        [MemberData(nameof(CountData))]
+        public new void Count(int count) => base.Count(count);
+
+        [Theory]
+        [MemberData(nameof(EnumerableData))]
+        public new void ToArray(IEnumerable<int> seed) => base.ToArray(seed);
+
+        [Theory]
+        [MemberData(nameof(CapacityData))]
+        public new void UncheckedAdd(int capacity) => base.UncheckedAdd(capacity);
+
         public sealed class Generator : IGenerator<int>
         {
             public int Generate(int seed) => seed;
@@ -218,9 +235,29 @@ namespace System.Collections.Generic.Tests
 
     public class ArrayBuilderTestsString : ArrayBuilderTests<string, ArrayBuilderTestsString.Generator>
     {
+        [Fact]
+        public new void ParameterlessConstructor() => base.ParameterlessConstructor();
+
+        [Theory]
+        [MemberData(nameof(CapacityData))]
+        public new void CapacityConstructor(int capacity) => base.CapacityConstructor(capacity);
+
+        [Theory]
+        [MemberData(nameof(CountData))]
+        public new void Count(int count) => base.Count(count);
+
+        [Theory]
+        [MemberData(nameof(EnumerableData))]
+        public new void ToArray(IEnumerable<string> seed) => base.ToArray(seed);
+
+        [Theory]
+        [MemberData(nameof(CapacityData))]
+        public new void UncheckedAdd(int capacity) => base.UncheckedAdd(capacity);
+
         public sealed class Generator : IGenerator<string>
         {
             public string Generate(int seed) => seed.ToString();
         }
     }
+#pragma warning restore xUnit1024
 }

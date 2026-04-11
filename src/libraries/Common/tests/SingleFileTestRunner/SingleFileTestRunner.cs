@@ -33,8 +33,10 @@ public static class SingleFileTestRunner
         // In NativeAOT, Assembly.Location returns empty string. Fall back
         // to the native executable path so xunit can resolve the assembly.
         var processPath = testAssembly.Location;
+#if NET
         if (string.IsNullOrEmpty(processPath))
             processPath = Environment.ProcessPath ?? "unknown";
+#endif
 
         string? xmlResultFileName = null;
         var excludedTraits = new Dictionary<string, HashSet<string>>();
