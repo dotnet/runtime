@@ -3193,11 +3193,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
                         if (fFailure && fThrowOnFileNotFound)
                         {
-                            if (!bindDiagnosticInfo.IsEmpty())
-                            {
-                                EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, bindDiagnosticInfo, NULL);
-                            }
-                            EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, NULL);
+                            EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, bindDiagnosticInfo, NULL);
                         }
                     }
                 }

@@ -1453,10 +1453,7 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, Except
 
 
 EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException/* = NULL*/)
-  : EEException(GetFileLoadKind(hr)),
-    m_name(name),
-    m_hr(hr),
-    m_diagnosticInfo(diagnosticInfo)
+  : EEFileLoadException(name, hr, pInnerException)
 {
     CONTRACTL
     {
@@ -1466,11 +1463,7 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const 
     }
     CONTRACTL_END;
 
-    _ASSERTE(pInnerException == NULL || !(pInnerException->IsTransient()));
-    m_innerException = pInnerException ? pInnerException->DomainBoundClone() : NULL;
-
-    if (m_name.IsEmpty())
-        m_name.Set(W("<Unknown>"));
+    m_diagnosticInfo.Set(diagnosticInfo);
 }
 
 
