@@ -1449,6 +1449,9 @@ namespace System.IO
                 Parent = parent;
                 Cookie = cookie;
                 Metadata = metadata;
+
+                // Pinned on the Pinned Object Heap (POH) to avoid GC fragmentation while
+                // keeping the buffer at a fixed address for port_associate(3C).
                 FileObjBuffer = GC.AllocateArray<byte>(Interop.PortFs.FileObjSize, pinned: true);
             }
         }
