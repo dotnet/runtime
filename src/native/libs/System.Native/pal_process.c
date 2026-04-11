@@ -358,13 +358,19 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 #endif
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
-#if defined(TARGET_MACCATALYST)
+#if !HAVE_FORK
     // On MacCatalyst, fork(2) exists in the SDK but is blocked by the kernel at runtime (EPERM).
-    // posix_spawn is used instead, but with restrictions: posix_spawn_file_actions_addchdir_np
-    // is not available on MacCatalyst (marked unavailable in the SDK), and setuid/setgid-based
-    // credential changes require fork. Fail fast with ENOTSUP for these unsupported combinations
-    // rather than returning -1 with a stale or unset errno.
-    if (setCredentials || cwd != NULL)
+    // setuid/setgid-based credential changes require fork.
+    if (setCredentials)
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
+#if !HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
+    // posix_spawn_file_actions_addchdir_np is not available on all Apple platforms (e.g. MacCatalyst).
+    if (cwd != NULL)
     {
         errno = ENOTSUP;
         return -1;
@@ -372,7 +378,6 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 #endif
     // Use posix_spawn on macOS/MacCatalyst when credentials don't need to be set,
     // since posix_spawn does not support setuid/setgid.
-    // On MacCatalyst, setCredentials and cwd are guaranteed to be false/NULL by the check above.
     if (!setCredentials)
     {
         pid_t spawnedPid;
@@ -444,9 +449,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         if ((stdinFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdinFd, STDIN_FILENO)) != 0)
             || (stdoutFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdoutFd, STDOUT_FILENO)) != 0)
             || (stderrFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stderrFd, STDERR_FILENO)) != 0)
-#if !defined(TARGET_MACCATALYST)
-            // posix_spawn_file_actions_addchdir_np is not available on MacCatalyst;
-            // cwd is guaranteed NULL at this point due to the early return above.
+#if HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
             || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0)
 #endif
             ) // Change working directory if specified
