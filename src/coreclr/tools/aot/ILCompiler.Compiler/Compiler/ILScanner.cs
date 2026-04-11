@@ -433,9 +433,8 @@ namespace ILCompiler
                     // On the path, you'll find a node that exists in both graphs, but it's predecessor
                     // only exists in the compiler's graph. That's the place to focus the investigation on.
                     // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
-                    string message = $"Dictionary layout of '{methodOrType}' was not computed by the IL scanner.";
-                    Debug.Fail(message);
-                    throw new ScannerFailedException(message);
+                    Debug.Assert(false);
+                    throw new ScannerFailedException($"Dictionary layout of '{methodOrType}' was not computed by the IL scanner.");
                 }
                 return new PrecomputedDictionaryLayoutNode(methodOrType, layout.Slots, layout.DiscardedSlots);
             }

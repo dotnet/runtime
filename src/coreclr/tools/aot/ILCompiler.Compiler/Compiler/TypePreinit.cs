@@ -3297,6 +3297,7 @@ namespace ILCompiler
                     // _firstParameter
                     if (_firstParameter is null)
                     {
+                        Debug.Assert(!_methodPointed.OwningType.HasInstantiation);
                         builder.EmitZeroPointer();
                     }
                     else
