@@ -611,9 +611,9 @@ namespace System
         private static extern Delegate? CreateDelegate_internal(QCallTypeHandle type, object? target, MethodInfo info, bool throwOnBindFailure);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Delegate? CreateShared_internal(QCallTypeHandle type, nint ptr);
+        private extern MethodInfo GetVirtualMethod_internal();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern MethodInfo GetVirtualMethod_internal();
+        private static extern Delegate? CreateShared_internal(QCallTypeHandle type, nint ptr);
     }
 }
