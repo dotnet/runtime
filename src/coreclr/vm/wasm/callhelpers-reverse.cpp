@@ -610,6 +610,19 @@ static void Call_System_Private_CoreLib_System_Threading_Lock_InitializeForMonit
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid);
 }
 
+static MethodDesc* MD_System_Private_CoreLib_System_Reflection_CustomAttribute_InvokeCustomAttributeCtor_I32_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_Reflection_CustomAttribute_InvokeCustomAttributeCtor_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
+{
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_Reflection_CustomAttribute_InvokeCustomAttributeCtor_I32_I32_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.Reflection.CustomAttribute, System.Private.CoreLib", "InvokeCustomAttributeCtor", &MD_System_Private_CoreLib_System_Reflection_CustomAttribute_InvokeCustomAttributeCtor_I32_I32_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_CustomAttribute_InvokeCustomAttributeCtor_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_CustomAttribute_InvokeCustomAttributeCtor_I32_I32_I32_RetVoid);
+}
+
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid(void * arg0, void * arg1)
 {
@@ -1161,6 +1174,7 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 513042204, "InitializeDefaultEventSources#1:System.Private.CoreLib:System.Diagnostics.Tracing:EventSource", { &MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid } },
     { 266659693, "InitializeForMonitor#4:System.Private.CoreLib:System.Threading:Lock", { &MD_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid } },
     { 288803216, "InternalPreserveStackTrace#2:System.Private.CoreLib:System:Exception", { &MD_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid } },
+    { 1442849229, "InvokeCustomAttributeCtor#3:System.Private.CoreLib:System.Reflection:CustomAttribute", { &MD_System_Private_CoreLib_System_Reflection_CustomAttribute_InvokeCustomAttributeCtor_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Reflection_CustomAttribute_InvokeCustomAttributeCtor_I32_I32_I32_RetVoid } },
     { 3290644746, "IsInterfaceImplemented#5:System.Private.CoreLib:System.Runtime.InteropServices:DynamicInterfaceCastableHelpers", { &MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid } },
     { 3422156547, "LoadAssembly#3:System.Private.CoreLib:Internal.Runtime.InteropServices:ComponentActivator", { &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32 } },
     { 542185314, "LoadAssemblyAndGetFunctionPointer#6:System.Private.CoreLib:Internal.Runtime.InteropServices:ComponentActivator", { &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32 } },
