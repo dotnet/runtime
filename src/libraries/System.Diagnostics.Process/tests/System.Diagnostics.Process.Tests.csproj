@@ -68,13 +68,18 @@
              Link="Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs" />
     <!-- Helpers -->
     <Compile Include="$(CommonTestPath)TestUtilities\System\WindowsTestFileShare.cs" Link="Common\TestUtilities\System\WindowsTestFileShare.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'maccatalyst'">
     <Compile Include="Interop.Unix.cs" />
+    <Compile Include="ProcessHandlesTests.Unix.cs" />
     <Compile Include="ProcessTests.Unix.cs" />
     <Compile Include="ProcessThreadTests.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Kill.cs"
+             Link="Common\Interop\Unix\Interop.Kill.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.cs"
@@ -85,6 +90,8 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs" 
              Link="Common\Interop\Unix\System.Native\Interop.PosixSignal.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'maccatalyst'">
     <Compile Include="ProcessTests.Mobile.cs" />
