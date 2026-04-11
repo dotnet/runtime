@@ -1452,7 +1452,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
 
             // Invoke the helper to build the OSR method
             osrMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
-            osrMethodCode = osrMethodCode != NULL ? GetOSRTransitionAddress(osrMethodCode) : NULL;
+            osrMethodCode = osrMethodCode != (PCODE)NULL ? GetOSRTransitionAddress(osrMethodCode) : (PCODE)NULL;
 
             // If that failed, mark the patchpoint as invalid.
             if (osrMethodCode == (PCODE)NULL)
@@ -1562,7 +1562,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             //
             LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointRequiredPolicy: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
             PCODE newMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
-            newMethodCode = newMethodCode != NULL ? GetOSRTransitionAddress(newMethodCode) : NULL;
+            newMethodCode = newMethodCode != (PCODE)NULL ? GetOSRTransitionAddress(newMethodCode) : (PCODE)NULL;
             // If that failed, mark the patchpoint as invalid.
             // This is fatal, for partial compilation patchpoints
             //
