@@ -2977,5 +2977,152 @@ namespace System.Diagnostics.Tests
                 test();
             }
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Run_ReturnsExitStatus()
+        {
+            ProcessExitStatus status = Process.Run(RemoteExecutor.HostRunner, new[] { "\"" + GetCurrentAssemblyPath() + "\"", nameof(RemotelyInvokable.Dummy) });
+            Assert.Equal(RemoteExecutor.SuccessExitCode, status.ExitCode);
+            Assert.False(status.Canceled);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task RunAsync_ReturnsExitStatus()
+        {
+            ProcessExitStatus status = await Process.RunAsync(RemoteExecutor.HostRunner, new[] { "\"" + GetCurrentAssemblyPath() + "\"", nameof(RemotelyInvokable.Dummy) });
+            Assert.Equal(RemoteExecutor.SuccessExitCode, status.ExitCode);
+            Assert.False(status.Canceled);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RunAndCaptureText_CapturesOutput()
+        {
+            ProcessStartInfo psi = new(RemoteExecutor.HostRunner, new[] { "\"" + GetCurrentAssemblyPath() + "\"", nameof(RemotelyInvokable.WriteLineReadLine) });
+            psi.RedirectStandardInput = true;
+
+            ProcessTextOutput output = Process.RunAndCaptureText(psi);
+            Assert.Equal(RemoteExecutor.SuccessExitCode, output.ExitStatus.ExitCode);
+            Assert.False(output.ExitStatus.Canceled);
+            Assert.True(output.ProcessId > 0);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StartAndForget_ReturnsValidProcessId()
+        {
+            int pid = Process.StartAndForget(new ProcessStartInfo(RemoteExecutor.HostRunner, new[] { "\"" + GetCurrentAssemblyPath() + "\"", nameof(RemotelyInvokable.Dummy) }));
+            Assert.True(pid > 0);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StartAndForget_StringOverload_ReturnsValidProcessId()
+        {
+            int pid = Process.StartAndForget(RemoteExecutor.HostRunner, new[] { "\"" + GetCurrentAssemblyPath() + "\"", nameof(RemotelyInvokable.Dummy) });
+            Assert.True(pid > 0);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ReadAllText_ReturnsOutput()
+        {
+            Process process = CreateProcess(() =>
+            {
+                Console.Out.Write("stdout content");
+                Console.Error.Write("stderr content");
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            (string stdout, string stderr) = process.ReadAllText();
+            Assert.Equal("stdout content", stdout);
+            Assert.Equal("stderr content", stderr);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task ReadAllTextAsync_ReturnsOutput()
+        {
+            Process process = CreateProcess(() =>
+            {
+                Console.Out.Write("async stdout");
+                Console.Error.Write("async stderr");
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            (string stdout, string stderr) = await process.ReadAllTextAsync();
+            Assert.Equal("async stdout", stdout);
+            Assert.Equal("async stderr", stderr);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ReadAllBytes_ReturnsOutput()
+        {
+            Process process = CreateProcess(() =>
+            {
+                Console.Out.Write("byte output");
+                Console.Error.Write("byte error");
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            (byte[] stdout, byte[] stderr) = process.ReadAllBytes();
+            Assert.Contains((byte)'b', stdout);
+            Assert.Contains((byte)'b', stderr);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ReadAllLines_ReturnsLines()
+        {
+            Process process = CreateProcess(() =>
+            {
+                Console.Out.WriteLine("line1");
+                Console.Error.WriteLine("error1");
+                Console.Out.WriteLine("line2");
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            var lines = new List<ProcessOutputLine>(process.ReadAllLines());
+            Assert.True(lines.Count >= 3);
+            Assert.Contains(lines, l => l.Content == "line1" && !l.StandardError);
+            Assert.Contains(lines, l => l.Content == "error1" && l.StandardError);
+            Assert.Contains(lines, l => l.Content == "line2" && !l.StandardError);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task ReadAllLinesAsync_ReturnsLines()
+        {
+            Process process = CreateProcess(() =>
+            {
+                Console.Out.WriteLine("async line1");
+                Console.Error.WriteLine("async error1");
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            var lines = new List<ProcessOutputLine>();
+            await foreach (ProcessOutputLine line in process.ReadAllLinesAsync())
+            {
+                lines.Add(line);
+            }
+            Assert.True(lines.Count >= 2);
+            Assert.Contains(lines, l => l.Content == "async line1" && !l.StandardError);
+            Assert.Contains(lines, l => l.Content == "async error1" && l.StandardError);
+        }
+
+        private static string GetCurrentAssemblyPath() => typeof(ProcessTests).Assembly.Location;
     }
 }

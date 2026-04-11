@@ -1486,6 +1486,21 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public void KillOnParentExit_DefaultIsFalse()
+        {
+            var psi = new ProcessStartInfo();
+            Assert.False(psi.KillOnParentExit);
+        }
+
+        [Fact]
+        public void KillOnParentExit_SetAndGet()
+        {
+            var psi = new ProcessStartInfo();
+            psi.KillOnParentExit = true;
+            Assert.True(psi.KillOnParentExit);
+        }
+
         private class TestProcessState : IDisposable
         {
             private readonly Process _process;

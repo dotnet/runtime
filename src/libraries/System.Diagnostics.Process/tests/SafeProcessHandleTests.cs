@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -248,6 +249,52 @@ namespace System.Diagnostics.Tests
                 process.Kill();
                 process.WaitForExit();
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void WaitForExit_ReturnsExitStatus()
+        {
+            Process process = CreateProcess(() => RemoteExecutor.SuccessExitCode);
+            process.Start();
+            using SafeProcessHandle handle = process.SafeHandle;
+
+            ProcessExitStatus status = handle.WaitForExit();
+            Assert.Equal(RemoteExecutor.SuccessExitCode, status.ExitCode);
+            Assert.False(status.Canceled);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TryWaitForExit_ReturnsTrueWhenExited()
+        {
+            Process process = CreateProcess(() => RemoteExecutor.SuccessExitCode);
+            process.Start();
+            using SafeProcessHandle handle = process.SafeHandle;
+
+            // Wait up to 30 seconds (should be enough)
+            bool exited = handle.TryWaitForExit(TimeSpan.FromSeconds(30), out ProcessExitStatus? status);
+            Assert.True(exited);
+            Assert.NotNull(status);
+            Assert.Equal(RemoteExecutor.SuccessExitCode, status.ExitCode);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task WaitForExitAsync_ReturnsExitStatus()
+        {
+            Process process = CreateProcess(() => RemoteExecutor.SuccessExitCode);
+            process.Start();
+            using SafeProcessHandle handle = process.SafeHandle;
+
+            ProcessExitStatus status = await handle.WaitForExitAsync();
+            Assert.Equal(RemoteExecutor.SuccessExitCode, status.ExitCode);
+            Assert.False(status.Canceled);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Open_ReturnsValidHandle()
+        {
+            Process process = CreateDefaultProcess();
+            using SafeProcessHandle handle = SafeProcessHandle.Open(process.Id);
+            Assert.False(handle.IsInvalid);
         }
     }
 }
