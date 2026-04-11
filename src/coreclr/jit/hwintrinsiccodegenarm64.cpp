@@ -441,6 +441,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     case 2:
                     {
+                        assert(!isRMW);
+
                         HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
                         for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -454,6 +456,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     case 3:
                     {
+                        assert(!isRMW);
+
                         HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
                         for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -469,7 +473,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         assert(isRMW);
 
-                        HWIntrinsicImmOpHelper helper(this, intrin.op4, node);
+                        // emitIns_R_R_R_R_I may emit a mov (when not redundant) for RMW instructions;
+                        // the ImmOpHelper must account for that mov
+                        int                    numInstrs = (targetReg != op1Reg) ? 2 : 1;
+                        HWIntrinsicImmOpHelper helper(this, intrin.op4, node, numInstrs);
 
                         for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                         {
@@ -499,8 +506,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(hasImmediateOperand);
 
-            GenTree*               shiftOp = isRMW ? intrin.op3 : intrin.op2;
-            HWIntrinsicImmOpHelper helper(this, shiftOp, node);
+            GenTree*               shiftOp   = isRMW ? intrin.op3 : intrin.op2;
+            int                    numInstrs = (isRMW && (targetReg != op1Reg)) ? 2 : 1;
+            HWIntrinsicImmOpHelper helper(this, shiftOp, node, numInstrs);
 
             for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
             {
@@ -2644,7 +2652,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op2Reg, op2Reg, op3Reg);
 
                     // Generate the table using the combined immediate.
-                    HWIntrinsicImmOpHelper helper(this, op2Reg, 0, 511, node);
+                    int                    numInstrs = (targetReg != op1Reg) ? 2 : 1;
+                    HWIntrinsicImmOpHelper helper(this, op2Reg, 0, 511, node, numInstrs);
                     for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                     {
                         // Extract scale and pattern from the immediate
@@ -2704,7 +2713,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 assert(isRMW);
 
-                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+                int                    numInstrs = (targetReg != op1Reg) ? 2 : 1;
+                HWIntrinsicImmOpHelper helper(this, intrin.op3, node, numInstrs);
 
                 for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                 {

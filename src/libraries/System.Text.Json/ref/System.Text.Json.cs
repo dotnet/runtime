@@ -587,7 +587,9 @@ namespace System.Text.Json
         public System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Reset() { }
         public void Reset(System.Buffers.IBufferWriter<byte> bufferWriter) { }
+        public void Reset(System.Buffers.IBufferWriter<byte> bufferWriter, System.Text.Json.JsonWriterOptions options) { }
         public void Reset(System.IO.Stream utf8Json) { }
+        public void Reset(System.IO.Stream utf8Json, System.Text.Json.JsonWriterOptions options) { }
         public void WriteBase64String(System.ReadOnlySpan<byte> utf8PropertyName, System.ReadOnlySpan<byte> bytes) { }
         public void WriteBase64String(System.ReadOnlySpan<char> propertyName, System.ReadOnlySpan<byte> bytes) { }
         public void WriteBase64String(string propertyName, System.ReadOnlySpan<byte> bytes) { }

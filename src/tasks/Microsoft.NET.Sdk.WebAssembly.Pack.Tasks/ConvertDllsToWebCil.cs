@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using WasmAppBuilder;
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
@@ -133,7 +132,7 @@ public class ConvertDllsToWebcil : Task
         if (Utils.IsNewerThan(dllFilePath, finalWebcil))
         {
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
-            var logAdapter = new LogAdapter(Log);
+            var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
             var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter);
             webcilWriter.ConvertToWebcil();
 

@@ -10,7 +10,6 @@ using System.Globalization;
 using Microsoft.Build.Utilities;
 using Microsoft.Build.Framework;
 using System.Diagnostics.CodeAnalysis;
-using WasmAppBuilder;
 
 using JoinedString;
 //
@@ -19,6 +18,8 @@ using JoinedString;
 //
 
 #nullable enable
+
+namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 internal sealed class InterpToNativeGenerator
 {

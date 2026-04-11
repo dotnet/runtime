@@ -3411,8 +3411,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // This one is just `return true/false`
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
 
-            case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
-
             // Not expanding this can lead to noticeable allocations in T0
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
 
@@ -3639,14 +3637,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
             {
                 retNode = impInitializeArrayIntrinsic(sig);
-                break;
-            }
-
-            case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
-            {
-                GenTree* val = impPopStack().val;
-                GenTree* dst = impPopStack().val;
-                retNode      = gtNewStoreIndNode(TYP_REF, dst, val, GTF_IND_TGT_HEAP);
                 break;
             }
 
@@ -7989,53 +7979,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
 }
 
 //------------------------------------------------------------------------
-// impConvertToUserCallAndMarkForInlining: convert a helper call to a user call
-//   and mark it for inlining. This is used for helper calls that are
-//   known to be backed by a user method that can be inlined.
-//
-// Arguments:
-//    call - the helper call to convert
-//
-void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
-{
-    assert(call->IsHelperCall());
-
-    if (!opts.OptEnabled(CLFLG_INLINING))
-    {
-        return;
-    }
-
-    CORINFO_METHOD_HANDLE helperCallHnd     = call->gtCallMethHnd;
-    CORINFO_METHOD_HANDLE managedCallHnd    = NO_METHOD_HANDLE;
-    CORINFO_CONST_LOOKUP  pNativeEntrypoint = {};
-    info.compCompHnd->getHelperFtn(eeGetHelperNum(helperCallHnd), &pNativeEntrypoint, &managedCallHnd);
-
-    if (managedCallHnd != NO_METHOD_HANDLE)
-    {
-        call->gtCallMethHnd = managedCallHnd;
-        call->gtCallType    = CT_USER_FUNC;
-
-        CORINFO_CALL_INFO hCallInfo = {};
-        hCallInfo.hMethod           = managedCallHnd;
-        hCallInfo.methodFlags       = info.compCompHnd->getMethodAttribs(hCallInfo.hMethod);
-        impMarkInlineCandidate(call, nullptr, false, &hCallInfo, compInlineContext);
-
-#if DEBUG
-        CORINFO_METHOD_HANDLE existingValue = NO_METHOD_HANDLE;
-        if (impInlineRoot()->HelperToManagedMapLookup(helperCallHnd, &existingValue))
-        {
-            // Let's make sure HelperToManagedMap::Overwrite behavior always overwrites the same value.
-            assert(existingValue == managedCallHnd);
-        }
-#endif
-
-        impInlineRoot()->GetHelperToManagedMap()->Set(helperCallHnd, managedCallHnd, HelperToManagedMap::Overwrite);
-        JITDUMP("Converting helperCall [%06u] to user call [%s] and marking for inlining\n", dspTreeID(call),
-                eeGetMethodFullName(managedCallHnd));
-    }
-}
-
-//------------------------------------------------------------------------
 // impMarkInlineCandidate: determine if this call can be subsequently inlined
 //
 // Arguments:
@@ -10804,9 +10747,22 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else
                     {
 #ifdef FEATURE_HW_INTRINSICS
-                        bool isVectorT = strcmp(className, "Vector`1") == 0;
+                        bool isVectorT = false;
+                        bool isVector  = false;
 
-                        if (isVectorT || (strcmp(className, "Vector") == 0))
+                        if (strncmp(className, "Vector", 6) == 0)
+                        {
+                            if (className[6] == '\0')
+                            {
+                                isVector = true;
+                            }
+                            else if (strcmp(className + 6, "`1") == 0)
+                            {
+                                isVectorT = true;
+                            }
+                        }
+
+                        if (isVectorT || isVector)
                         {
                             if (strncmp(methodName, "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector",
                                         60) == 0)
@@ -10822,7 +10778,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             }
 
                             uint32_t size = getVectorTByteLength();
+#ifdef TARGET_ARM64
+                            assert((size == 16) || (size == SIZE_UNKNOWN));
+#else
                             assert((size == 16) || (size == 32) || (size == 64));
+#endif
 
                             const char* lookupClassName = className;
 
@@ -10845,7 +10805,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                     lookupClassName = isVectorT ? "Vector512`1" : "Vector512";
                                     break;
                                 }
-
+#ifdef TARGET_ARM64
+                                case SIZE_UNKNOWN:
+                                {
+                                    // NTD, Vector<T> is implemented directly with SVE in this case.
+                                    break;
+                                }
+#endif
                                 default:
                                 {
                                     unreached();
@@ -10987,10 +10953,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "IsKnownConstant") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
-                            }
-                            else if (strcmp(methodName, "WriteBarrier") == 0)
-                            {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier;
                             }
                             else if (strcmp(methodName, "IsReferenceOrContainsReferences") == 0)
                             {

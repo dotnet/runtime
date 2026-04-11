@@ -10,16 +10,16 @@ internal sealed class MethodTable : IData<MethodTable>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.MethodTable);
 
-        MTFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(MTFlags)].Offset);
-        BaseSize = target.Read<uint>(address + (ulong)type.Fields[nameof(BaseSize)].Offset);
-        MTFlags2 = target.Read<uint>(address + (ulong)type.Fields[nameof(MTFlags2)].Offset);
-        EEClassOrCanonMT = target.ReadPointer(address + (ulong)type.Fields[nameof(EEClassOrCanonMT)].Offset);
-        Module = target.ReadPointer(address + (ulong)type.Fields[nameof(Module)].Offset);
-        ParentMethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(ParentMethodTable)].Offset);
-        NumInterfaces = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumInterfaces)].Offset);
-        NumVirtuals = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumVirtuals)].Offset);
-        PerInstInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PerInstInfo)].Offset);
-        AuxiliaryData = target.ReadPointer(address + (ulong)type.Fields[nameof(AuxiliaryData)].Offset);
+        MTFlags = target.ReadField<uint>(address, type, nameof(MTFlags));
+        BaseSize = target.ReadField<uint>(address, type, nameof(BaseSize));
+        MTFlags2 = target.ReadField<uint>(address, type, nameof(MTFlags2));
+        EEClassOrCanonMT = target.ReadPointerField(address, type, nameof(EEClassOrCanonMT));
+        Module = target.ReadPointerField(address, type, nameof(Module));
+        ParentMethodTable = target.ReadPointerField(address, type, nameof(ParentMethodTable));
+        NumInterfaces = target.ReadField<ushort>(address, type, nameof(NumInterfaces));
+        NumVirtuals = target.ReadField<ushort>(address, type, nameof(NumVirtuals));
+        PerInstInfo = target.ReadPointerField(address, type, nameof(PerInstInfo));
+        AuxiliaryData = target.ReadPointerField(address, type, nameof(AuxiliaryData));
     }
 
     public uint MTFlags { get; init; }

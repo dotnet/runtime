@@ -23,6 +23,15 @@ namespace System.Text.Json.SourceGeneration
         private sealed class Parser
         {
             private const string SystemTextJsonNamespace = "System.Text.Json";
+
+            /// <summary>
+            /// A <see cref="SymbolDisplayFormat"/> that renders fully qualified type names with
+            /// generic type parameter constraint clauses appended
+            /// (e.g., "global::NS.MyType&lt;T&gt; where T : notnull, global::NS.MyBase").
+            /// </summary>
+            private static readonly SymbolDisplayFormat s_fullyQualifiedWithConstraints =
+                SymbolDisplayFormat.FullyQualifiedFormat.AddGenericsOptions(
+                    SymbolDisplayGenericsOptions.IncludeTypeConstraints);
             private const string JsonExtensionDataAttributeFullName = "System.Text.Json.Serialization.JsonExtensionDataAttribute";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
@@ -1397,6 +1406,8 @@ namespace System.Text.Json.SourceGeneration
                         ? memberInfo.OriginalDefinition.GetMemberType().GetFullyQualifiedName() : null,
                     DeclaringTypeParameterNames = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType && _knownSymbols.SupportsGenericUnsafeAccessors
                         ? namedType.OriginalDefinition.TypeParameters.Select(tp => tp.Name).ToImmutableEquatableArray() : null,
+                    DeclaringTypeParameterConstraintClauses = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType2 && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? GetTypeParameterConstraintClauses(namedType2.OriginalDefinition) : null,
                     IsExtensionData = isExtensionData,
                     PropertyType = propertyTypeRef,
                     DeclaringType = declaringType,
@@ -2186,6 +2197,29 @@ namespace System.Text.Json.SourceGeneration
                         builtInSupportTypes.Add(type);
                     }
                 }
+            }
+
+            /// <summary>
+            /// Extracts the type parameter constraint clauses from a generic type using
+            /// Roslyn's <see cref="SymbolDisplayGenericsOptions.IncludeTypeConstraints"/>.
+            /// Returns the combined <c>where</c> clauses (e.g., "where T : notnull, global::NS.MyBase"),
+            /// or null if the type has no constraints.
+            /// </summary>
+            private static string? GetTypeParameterConstraintClauses(INamedTypeSymbol type)
+            {
+                Debug.Assert(type.IsGenericType);
+                string display = type.ToDisplayString(s_fullyQualifiedWithConstraints);
+
+                // The display string has the form "global::NS.Type<T, U> where T : C1 where U : C2".
+                // Extract the constraint clauses after the type name by finding the first " where ".
+                const string whereMarker = " where ";
+                int whereIndex = display.IndexOf(whereMarker);
+                if (whereIndex < 0)
+                {
+                    return null;
+                }
+
+                return display.Substring(whereIndex + 1);
             }
 
             private readonly struct TypeToGenerate

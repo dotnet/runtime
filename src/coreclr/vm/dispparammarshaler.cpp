@@ -265,7 +265,7 @@ void DispParamArrayMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT
     }
     CONTRACTL_END;
 
-    SafeArrayPtrHolder pSafeArray = NULL;
+    SafeArrayPtrHolder pSafeArray;
     VARTYPE vt = m_ElementVT;
     MethodTable *pElemMT = m_pElementMT;
 
@@ -294,11 +294,8 @@ void DispParamArrayMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT
     }
 
     // Store the resulting SAFEARRAY in the destination VARIANT.
-    V_ARRAY(pDestVar) = pSafeArray;
+    V_ARRAY(pDestVar) = pSafeArray.Detach();
     V_VT(pDestVar) = VT_ARRAY | vt;
-
-    // Don't destroy the safearray.
-    pSafeArray.SuppressRelease();
 }
 
 void DispParamArrayMarshaler::MarshalManagedToNativeRef(OBJECTREF *pSrcObj, VARIANT *pRefVar)

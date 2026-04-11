@@ -76,6 +76,12 @@ public:
 
     void ApplyBaseRelocations(bool relocationMustWriteCopy);
 
+#ifdef FEATURE_WEBCIL
+// TODO-WASM: These can be removed very soon, and we can fetch this from the webcil header itself
+    void SetTableBaseOffset(SSIZE_T tableBaseOffset) { m_tableBaseOffset = tableBaseOffset; }
+    SSIZE_T GetTableBaseOffset() const { return m_tableBaseOffset; }
+#endif
+
     // ------------------------------------------------------------
     // Format query
     // ------------------------------------------------------------
@@ -227,7 +233,7 @@ protected:
     // Protected forwarding helpers for subclass access to PEDecoder protected members
     IMAGE_NT_HEADERS* FindNTHeaders() const { return m_peDecoder.FindNTHeaders(); }
     IMAGE_SECTION_HEADER* RvaToSection(RVA rva) const { return m_peDecoder.RvaToSection(rva); }
-    void SetRelocated() { m_peDecoder.SetRelocated(); }
+    void SetRelocated();
 
 private:
     Volatile<LONG> m_refCount;
@@ -238,6 +244,7 @@ protected:
     PEDecoder m_peDecoder;
 #ifdef FEATURE_WEBCIL
     WebcilDecoder m_webcilDecoder;
+    SSIZE_T m_tableBaseOffset;
 #endif
 
 public:

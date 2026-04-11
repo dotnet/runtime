@@ -850,5 +850,36 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(42, deserialized.GetValue());
             Assert.Equal("test", deserialized.GetLabel());
         }
+
+        public class ConstraintBase
+        {
+            public int Id { get; set; }
+        }
+
+        public class ConstraintDerived : ConstraintBase
+        {
+            public string Extra { get; set; } = "";
+        }
+
+        public class ConstrainedGenericClassWithInitOnlyProperties<T> where T : notnull, ConstraintBase
+        {
+            public required T Response { get; init; }
+            public required string Name { get; init; }
+        }
+
+        [Fact]
+        public virtual async Task InitOnlyProperties_GenericTypeWithConstraints_CanRoundtrip()
+        {
+            var derived = new ConstraintDerived { Id = 1, Extra = "extra" };
+            string json = await Serializer.SerializeWrapper(
+                new ConstrainedGenericClassWithInitOnlyProperties<ConstraintDerived> { Response = derived, Name = "test" });
+            Assert.Contains(@"""Name"":""test""", json);
+            Assert.Contains(@"""Id"":1", json);
+
+            var deserialized = await Serializer.DeserializeWrapper<ConstrainedGenericClassWithInitOnlyProperties<ConstraintDerived>>(json);
+            Assert.Equal("test", deserialized.Name);
+            Assert.Equal(1, deserialized.Response.Id);
+            Assert.Equal("extra", deserialized.Response.Extra);
+        }
     }
 }
