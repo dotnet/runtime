@@ -27,8 +27,9 @@ namespace System.Runtime.Loader.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public void NotFound_ExceptionContainsAssemblyPath()
         {
-            // The Missing assembly is referenced at compile time but not copied to the output
-            // directory (Private=false), so it will not be found at runtime.
+            // The Missing assembly is referenced at compile time and listed in deps.json
+            // (so the host adds it to the TPA list), but the DLL is deleted from the output
+            // directory by the RemoveBindFailureTestAssemblies MSBuild target after build.
             const string assemblyFileName = "System.Runtime.Loader.Test.BindFailure.Missing.dll";
             string dllPath = GetAssemblyPath(assemblyFileName);
             Assert.False(File.Exists(dllPath), $"Test assembly should not be present at {dllPath}");
@@ -62,8 +63,10 @@ namespace System.Runtime.Loader.Tests
         {
             const int COR_E_ASSEMBLYEXPECTED = unchecked((int)0x80131018);
 
-            // The Corrupt assembly is referenced at compile time but not copied to the output
-            // directory (Private=false). We write a corrupt file in its place.
+            // The Corrupt assembly is referenced at compile time and listed in deps.json
+            // (so the host adds it to the TPA list), but the DLL is deleted from the output
+            // directory by the RemoveBindFailureTestAssemblies MSBuild target after build.
+            // We write a corrupt file in its place.
             const string assemblyFileName = "System.Runtime.Loader.Test.BindFailure.Corrupt.dll";
             string dllPath = GetAssemblyPath(assemblyFileName);
             Assert.False(File.Exists(dllPath), $"Test assembly should not be present at {dllPath}");
