@@ -156,11 +156,6 @@ namespace System.Diagnostics.Tests
             remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
             remoteInvokeOptions.StartInfo.RedirectStandardInput = true;
 
-            // RemoteExecutor creates a memory dump when the child process does not exit on time.
-            // Until we have a dedicated API to control this behavior,
-            // we can disable dump creation by setting the upload root to null.
-            remoteInvokeOptions.StartInfo.Environment["HELIX_WORKITEM_UPLOAD_ROOT"] = null;
-
             using RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(
                 (enabledStr, limitInheritanceStr) =>
                 {
