@@ -1280,13 +1280,15 @@ static PCODE GetOSRTransitionAddress(PCODE entryPoint)
 
     if (patchpointInfo == NULL)
     {
-        return NULL;
+        return (PCODE)NULL;
     }
 
-    if (patchpointInfo->TransitionPrologOffset() != -1)
+    if (patchpointInfo->TransitionPrologOffset() == -1)
     {
-        offset = patchpointInfo->TransitionPrologOffset();
+        return (PCODE)NULL;
     }
+
+    offset = patchpointInfo->TransitionPrologOffset();
 #endif
 
     return entryPoint + offset;
