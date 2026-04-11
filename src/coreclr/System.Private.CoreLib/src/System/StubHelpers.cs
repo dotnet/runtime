@@ -1404,9 +1404,9 @@ namespace System.StubHelpers
     {
         // Blittable types have a no-op FreeCore (the [Intrinsic] C# body is used) and need no NativeMemory.Clear.
         // Non-blittable types have a JIT-generated FreeCore stub and require NativeMemory.Clear after cleanup.
-        private static readonly bool s_isBlittable = ComputeIsBlittable();
+        private static readonly bool s_isBlittable = InitIsBlittable();
 
-        private static bool ComputeIsBlittable()
+        private static bool InitIsBlittable()
         {
             RuntimeType type = (RuntimeType)typeof(T);
             Marshal.HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out _);
@@ -1534,6 +1534,7 @@ namespace System.StubHelpers
 
             internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> Free => _free;
 
+            // s_nativeSizeForBlittableTypes is non-zero for blittable types and zero for non-blittable types.
             internal static bool IsBlittable => s_nativeSizeForBlittableTypes != 0;
         }
 
