@@ -1906,6 +1906,7 @@ namespace System.StubHelpers
     {
         public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
         {
+            ObjectMarshaler.ClearNative((IntPtr)unmanaged);
             ObjectMarshaler.ConvertToNative(managed!, (IntPtr)unmanaged);
         }
 
