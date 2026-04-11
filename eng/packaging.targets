@@ -68,6 +68,10 @@
   <Target Name="AddDependencyOnlyTFMsToRestoreGraph"
           Condition="'$(DependencyOnlyTargetFrameworks)' != ''"
           AfterTargets="_GetRestoreTargetFrameworksAsItems">
+    <!-- _GetRestoreTargetFrameworksAsItems is the SDK target that builds the list of TFMs
+         NuGet will restore for (_RestoreTargetFrameworkItems). Adding items here causes NuGet
+         to evaluate the project for each dep-only TFM and write per-TFM dependency info to
+         project.assets.json, which the PackTask later reads to generate nuspec dependency groups. -->
     <ItemGroup>
       <_RestoreTargetFrameworkItems Include="$(DependencyOnlyTargetFrameworks)" />
     </ItemGroup>
@@ -81,6 +85,11 @@
   <Target Name="AddDependencyOnlyTFMsToPackFrameworks"
           Condition="'$(DependencyOnlyTargetFrameworks)' != ''"
           AfterTargets="_WalkEachTargetPerFramework">
+    <!-- _WalkEachTargetPerFramework is the SDK target that iterates _TargetFrameworks and
+         invokes inner builds to collect build outputs and TFM-specific content. By adding
+         dep-only TFMs here — after all inner builds have already run — they are visible to
+         the PackTask (which reads _TargetFrameworks to generate nuspec dependency groups from
+         project.assets.json) but no inner build is triggered for them. -->
     <ItemGroup>
       <_TargetFrameworks Include="$(DependencyOnlyTargetFrameworks)" />
     </ItemGroup>
