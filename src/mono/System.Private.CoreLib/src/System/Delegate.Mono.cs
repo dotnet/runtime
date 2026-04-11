@@ -593,7 +593,7 @@ namespace System
                 else
                 {
                     Type? declaringType = methodBase.DeclaringType;
-                    // reject instance methods on static types, those require proper targets
+                    // reject instance methods on generic types, those require proper targets
                     if (declaringType is null || declaringType.IsValueType || declaringType.IsGenericType)
                     {
                         throw new NotSupportedException();

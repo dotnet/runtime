@@ -1722,7 +1722,7 @@ struct FuncInfoDsc
     };
 
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
-#endif // defined(TARGET_WASM)  
+#endif // defined(TARGET_WASM)
 
     EHblkDsc*            GetEHDesc(Compiler* comp) const;
     BasicBlock*          GetStartBlock(Compiler* comp) const;
@@ -3267,7 +3267,7 @@ public:
     GenTreeCall* gtNewIndCallNode(GenTree* addr, var_types type, const DebugInfo& di = DebugInfo());
 
     GenTreeCall* gtNewHelperCallNode(
-        unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr);
+        unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr, GenTree* arg5 = nullptr, GenTree* arg6 = nullptr);
 
     GenTreeCall* gtNewVirtualFunctionLookupHelperCallNode(
         unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd = nullptr);

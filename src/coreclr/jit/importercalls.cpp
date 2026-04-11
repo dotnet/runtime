@@ -3504,6 +3504,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetDelegate:
                 mustExpand = true;
                 break;
 
@@ -3659,17 +3660,89 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 CORINFO_OBJECT_HANDLE delegate = info.compCompHnd->constructDelegateLiteral(targetMethod, delegateType);
 
-                if (delegate == NO_OBJECT_HANDLE)
+                if (delegate != NO_OBJECT_HANDLE)
                 {
-                    JITDUMP("VM failed to allocate the delegate literal\n");
-                    return nullptr;
+                    JITDUMP("Optimized frozen delegate creation\n");
+                    retNode = gtNewIconEmbObjHndNode(delegate);
+                    impPopStack();
+                    impPopStack();
+                    break;
                 }
 
-                JITDUMP("Optimized frozen delegate creation\n");
-                retNode = gtNewIconEmbObjHndNode(delegate);
-                impPopStack();
-                impPopStack();
-                break;
+                if (IsNativeAot())
+                {
+                    GenTree* op2 = impPopStack().val;
+                    op1          = impPopStack().val;
+
+                    CORINFO_SIG_INFO callSig;
+                    info.compCompHnd->getMethodSig(targetMethod, &callSig);
+
+                    CORINFO_CLASS_HANDLE closureType = NO_CLASS_HANDLE;
+                    if (callSig.hasThis())
+                    {
+                        closureType = info.compCompHnd->getMethodClass(targetMethod);
+                    }
+                    else if (callSig.numArgs != 0)
+                    {
+                        info.compCompHnd->getArgType(sig, sig->args, &closureType);
+                    }
+
+                    int throwIfClosed = closureType == NO_CLASS_HANDLE || eeIsValueClass(closureType);
+
+                    if (!throwIfClosed && callSig.hasThis())
+                    {
+                        assert(closureType != NO_CLASS_HANDLE);
+                        TypeCompareState state = info.compCompHnd->isGenericType(closureType);
+                        // we should always see the declaring type enough to know if it's generic
+                        assert(state != TypeCompareState::May);
+
+                        throwIfClosed = state == TypeCompareState::Must;
+                    }
+
+                    GenTree* refClone;
+                    op2 = impCloneExpr(op2, &refClone, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("RuntimeHelpers.GetDelegate storage"));
+
+                    CORINFO_RESOLVED_TOKEN resolvedToken;
+                    resolvedToken.tokenContext = impTokenLookupContextHandle;
+                    resolvedToken.tokenScope   = info.compScopeHnd;
+                    resolvedToken.token        = memberRef;
+                    resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
+
+                    CORINFO_GENERICHANDLE_RESULT embedInfo;
+                    info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, info.compMethodHnd, &embedInfo);
+
+                    GenTree* delegateTypeLookup =
+                        impLookupToTree(&embedInfo.lookup, gtTokenToIconFlags(memberRef), embedInfo.compileTimeHandle);
+
+                    unsigned delegateSlot = lvaGrabTemp(false DEBUGARG("delegateSlot"));
+                    impStoreToTemp(delegateSlot, gtNewIndir(TYP_REF, op2), CHECK_SPILL_ALL);
+
+                    GenTreeOp* nullcheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewLclVarNode(delegateSlot), gtNewNull());
+
+                    GenTreeCall* helper =
+                        gtNewHelperCallNode(CORINFO_HELP_NATIVEAOT_CREATE_SHARED_DELEGATE, TYP_REF, op1,
+                                            gtNewIconNode(callSig.hasThis()), gtNewIconNode(callSig.totalILArgs()),
+                                            gtNewIconNode(throwIfClosed),
+                                            gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF,
+                                                                delegateTypeLookup),
+                                            refClone);
+                    GenTree* storeSlow = gtNewTempStore(delegateSlot, helper);
+
+                    GenTreeColon* colon = gtNewColonNode(TYP_VOID, storeSlow, gtNewNothingNode());
+                    GenTreeQmark* qmark = gtNewQmarkNode(TYP_VOID, nullcheck, colon);
+                    qmark->SetThenNodeLikelihood(0);
+
+                    impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
+
+                    lvaSetClass(delegateSlot, delegateType, /*isExact*/ false);
+                    retNode = gtNewLclVarNode(delegateSlot);
+                    JITDUMP("Expanded GetDelegate for ilc\n");
+                    break;
+                }
+
+                JITDUMP("VM failed to allocate the delegate literal\n");
+                return nullptr;
             }
 
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:

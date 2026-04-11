@@ -287,7 +287,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
+        private static TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
         {
             ArgumentNullException.ThrowIfNull(method);
 
@@ -300,69 +300,78 @@ namespace System.Runtime.CompilerServices
                 throw new PlatformNotSupportedException();
             }
 
-            RuntimeMethodInfo invokeMethod = ((RuntimeType)typeof(TDelegate)).GetRuntimeTypeInfo().GetInvokeMethod();
             ReadOnlySpan<ParameterInfo> parameters = methodBase.GetParametersAsSpan();
 
-            int invokeCount = invokeMethod.GetParametersAsSpan().Length;
             int paramCount = parameters.Length;
             bool isStatic = methodBase.IsStatic;
-            if (!isStatic)
+
+            Type? closureType;
+            if (isStatic)
             {
+                closureType = parameters.Length > 0 ? parameters[0].ParameterType : null;
+            }
+            else
+            {
+                closureType = methodBase.DeclaringType;
                 paramCount++; // count 'this'
             }
+            bool throwIfClosed = closureType is null || closureType.IsValueType ||
+                                 (!isStatic && closureType.IsGenericType);
+
+            Delegate newDelegate = CreateSharedDelegateHelper(method, isStatic, paramCount, throwIfClosed, (RuntimeType)typeof(TDelegate), ref Unsafe.As<TDelegate?, Delegate?>(ref storage));
+            Debug.Assert(newDelegate is TDelegate);
+            return Unsafe.As<TDelegate>(newDelegate);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe Delegate CreateSharedDelegateHelper(nint method, bool isStatic, int paramCount, bool throwIfClosed, RuntimeType delegateType, ref Delegate? storage)
+        {
+            Debug.Assert(delegateType.GetRuntimeTypeInfo().IsDelegate);
+
+            RuntimeMethodInfo invokeMethod = delegateType.GetRuntimeTypeInfo().GetInvokeMethod();
+            int invokeCount = invokeMethod.GetParametersAsSpan().Length;
 
             bool isOpen = invokeCount == paramCount;
 
             // reject cases needing valid instances
-            if (!isOpen)
+            // we block delegates closed over null valuetypes since we'd just always NRE in the unboxing stub
+            // reject instance methods on generic types, those require proper targets
+            if (!isOpen && throwIfClosed)
             {
-                // we block delegates closed over null valuetypes since we'd just always NRE in the unboxing stub
-                if (isStatic)
-                {
-                    if (parameters.Length == 0 || parameters[0].ParameterType.IsValueType)
-                    {
-                        throw new NotSupportedException();
-                    }
-                }
-                else
-                {
-                    Type? declaringType = methodBase.DeclaringType;
-                    // reject instance methods on static types, those require proper targets
-                    if (declaringType is null || declaringType.IsValueType || declaringType.IsGenericType)
-                    {
-                        throw new NotSupportedException();
-                    }
-                }
+                throw new NotSupportedException();
             }
 
-            TDelegate? newDelegate = null;
+            MethodTable* pMT = delegateType.TypeHandle.ToMethodTable();
+
+            Delegate? newDelegate = null;
             lock (FrozenDelegateCache.CacheLock)
             {
-                ref Delegate? reference = ref CollectionsMarshal.GetValueRefOrAddDefault(FrozenDelegateCache.Cache, (method, typeof(TDelegate)), out bool exists);
+                ref Delegate? reference = ref CollectionsMarshal.GetValueRefOrAddDefault(FrozenDelegateCache.Cache, (method, delegateType), out bool exists);
                 if (exists)
                 {
-                    Debug.Assert(reference is TDelegate);
-                    newDelegate = Unsafe.As<TDelegate>(reference);
+                    Debug.Assert(reference.GetType() == delegateType);
+                    newDelegate = reference;
                 }
                 else
                 {
-                    TDelegate? frozen = FrozenObjectHeapManager.Instance.TryAllocateObject<TDelegate>();
+                    object frozen = FrozenObjectHeapManager.Instance.TryAllocateObject(pMT);
                     if (frozen is not null)
                     {
-                        Delegate.FillDelegate(frozen, method, null, isStatic, isOpen);
-                        reference = frozen;
+                        Debug.Assert(frozen.GetType() == delegateType);
+                        newDelegate = Unsafe.As<Delegate>(frozen);
+                        Delegate.FillDelegate(newDelegate, method, null, isStatic, isOpen);
 
-                        newDelegate = frozen;
+                        reference = newDelegate;
                     }
                 }
             }
 
             if (newDelegate is null)
             {
-                object nonPinned = RuntimeImports.RhNewObject(MethodTable.Of<TDelegate>());
-                Debug.Assert(nonPinned is TDelegate);
+                object nonPinned = RuntimeImports.RhNewObject(pMT);
 
-                newDelegate = Unsafe.As<TDelegate>(nonPinned);
+                Debug.Assert(nonPinned.GetType() == delegateType);
+                newDelegate = Unsafe.As<Delegate>(nonPinned);
                 Delegate.FillDelegate(newDelegate, method, null, isStatic, isOpen);
             }
 

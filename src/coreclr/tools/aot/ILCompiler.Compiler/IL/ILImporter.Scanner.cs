@@ -587,11 +587,23 @@ namespace Internal.IL
                     if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
                     {
                         _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ObjectAllocator, runtimeDeterminedMethod.Instantiation[0]), reason);
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.Instantiation[0]), reason);
                     }
                     else
                     {
                         _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, method.Instantiation[0]), reason);
+                        _dependencies.Add(_factory.ConstructedTypeSymbol(method.Instantiation[0]), reason);
                     }
+
+                    if (method.RequiresInstMethodDescArg())
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod), reason);
+                    }
+                    else if (method.RequiresInstMethodTableArg())
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType), reason);
+                    }
+                    _dependencies.Add(_factory.CanonicalEntrypoint(method), reason);
 
                     return;
                 }

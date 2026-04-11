@@ -41,8 +41,6 @@ namespace Internal.JitInterface
         private DebugVarInfo[] _debugVarInfos;
         private readonly UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private bool _isFallbackBodyCompilation;
-        private readonly ConcurrentDictionary<MethodDesc, int> _delegateId = new();
-        private int _nextMethodId;
 
         public CorInfoImpl(RyuJitCompilation compilation)
             : this()
@@ -768,6 +766,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AllocContinuation;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_NATIVEAOT_CREATE_SHARED_DELEGATE:
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8, "CreateSharedDelegateHelper"u8, null));
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                     return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTable"u8, null));
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
@@ -926,7 +927,7 @@ namespace Internal.JitInterface
                 else
                 {
                     TypeDesc declaringType = method.OwningType;
-                    // reject instance methods on static types, those require proper targets
+                    // reject instance methods on generic types, those require proper targets
                     if (declaringType is null || declaringType.IsValueType || declaringType.HasInstantiation)
                     {
                         return null;
@@ -934,10 +935,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            int allocationSiteId = _delegateId.GetOrAdd(method, static (_, compiler) => Interlocked.Increment(ref compiler._nextMethodId), this);
-            TypePreinit.ISerializableReference reference = TypePreinit.GetLambdaDelegate(type, method, metadataType);
-            FrozenObjectNode delegateObject = _compilation.NodeFactory.SerializedFrozenObject(metadataType, allocationSiteId, reference);
-
+            FrozenObjectNode delegateObject = _compilation.NodeFactory.SerializedDelegateObject(metadataType, method);
             Debug.Assert(!delegateObject.RepresentsIndirectionCell);
             return ObjectToHandle(delegateObject);
         }
@@ -1966,6 +1964,10 @@ namespace Internal.JitInterface
                 case "AllocatorOf":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.ObjectAllocator, HandleToObject(callerHandle), ref pResult.lookup);
                     pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_UNKNOWN;
+                    break;
+                case "GetDelegate":
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, HandleToObject(callerHandle), ref pResult.lookup);
+                    pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
                     break;
                 default:
                     Debug.Fail("Unexpected raw handle intrinsic");

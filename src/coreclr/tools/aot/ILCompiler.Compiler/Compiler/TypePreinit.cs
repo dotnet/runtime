@@ -3224,9 +3224,9 @@ namespace ILCompiler
             }
         }
 
-        public static ISerializableReference GetLambdaDelegate(TypeDesc delegateType, MethodDesc methodPointed, MetadataType owner)
+        public static ISerializableReference GetLambdaDelegate(MetadataType delegateType, MethodDesc method)
         {
-            return new DelegateInstance(delegateType, methodPointed, null, new AllocationSite(owner, 0));
+            return new DelegateInstance(delegateType, method, null, new AllocationSite(delegateType, method.GetHashCode()));
         }
 
         private sealed class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference

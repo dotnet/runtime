@@ -766,6 +766,7 @@ namespace Internal.JitInterface
 
         private object HandleToObject(void* handle)
         {
+            Debug.Assert(handle != null);
 #if DEBUG
             handle = (void*)(~s_handleHighBitSet & (nint)handle);
 #endif

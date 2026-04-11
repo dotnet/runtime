@@ -1902,7 +1902,7 @@ DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* pMT, b
         }
         else
         {
-            // reject instance methods on static types, those require proper targets
+            // reject instance methods on generic types, those require proper targets
             if (declaringType->IsValueType() || declaringType->GetNumGenericArgs() != 0)
             {
                 return NULL;
