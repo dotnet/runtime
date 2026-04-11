@@ -16,11 +16,11 @@ namespace System.Reflection
         internal delegate object? InvokeFunc_ObjSpanArgs(object? obj, Span<object?> arguments);
         internal delegate object? InvokeFunc_Obj4Args(object? obj, object? arg1, object? arg2, object? arg3, object? arg4);
 
-        public static InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase method
-    #if MONO
-            , bool backwardsCompat
-    #endif
-            )
+#if MONO
+        public static InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase method, bool backwardsCompat)
+#else
+        public static InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase method)
+#endif
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
@@ -81,21 +81,21 @@ namespace System.Reflection
                 }
             }
 
-            EmitCallAndReturnHandling(il, method, emitNew
 #if MONO
-                , backwardsCompat
+            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+#else
+            EmitCallAndReturnHandling(il, method, emitNew);
 #endif
-                );
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_Obj4Args)dm.CreateDelegate(typeof(InvokeFunc_Obj4Args), target: null);
         }
 
-        public static InvokeFunc_ObjSpanArgs CreateInvokeDelegate_ObjSpanArgs(MethodBase method
-    #if MONO
-            , bool backwardsCompat
-    #endif
-            )
+#if MONO
+        public static InvokeFunc_ObjSpanArgs CreateInvokeDelegate_ObjSpanArgs(MethodBase method, bool backwardsCompat)
+#else
+        public static InvokeFunc_ObjSpanArgs CreateInvokeDelegate_ObjSpanArgs(MethodBase method)
+#endif
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
@@ -146,21 +146,21 @@ namespace System.Reflection
                 }
             }
 
-            EmitCallAndReturnHandling(il, method, emitNew
 #if MONO
-                , backwardsCompat
+            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+#else
+            EmitCallAndReturnHandling(il, method, emitNew);
 #endif
-                );
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_ObjSpanArgs)dm.CreateDelegate(typeof(InvokeFunc_ObjSpanArgs), target: null);
         }
 
-        public static InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase method
-    #if MONO
-            , bool backwardsCompat
-    #endif
-            )
+#if MONO
+        public static InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase method, bool backwardsCompat)
+#else
+        public static InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase method)
+#endif
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
@@ -254,11 +254,11 @@ namespace System.Reflection
                     }
                 }
 
-                EmitCallAndReturnHandling(il, method, emitNew
 #if MONO
-                    , backwardsCompat
+                EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+#else
+                EmitCallAndReturnHandling(il, method, emitNew);
 #endif
-                    );
 
                 il.MarkLabel(done);
                 il.Emit(OpCodes.Ret);
@@ -287,11 +287,11 @@ namespace System.Reflection
                 }
             }
 
-            EmitCallAndReturnHandling(il, method, emitNew
 #if MONO
-                , backwardsCompat
+            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+#else
+            EmitCallAndReturnHandling(il, method, emitNew);
 #endif
-                );
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
@@ -306,11 +306,11 @@ namespace System.Reflection
             il.Emit(OpCodes.Ldobj, parameterType);
         }
 
-        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew
 #if MONO
-            , bool backwardsCompat
+        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
+#else
+        private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew)
 #endif
-            )
         {
 #if MONO
             // For CallStack reasons, don't inline target method.

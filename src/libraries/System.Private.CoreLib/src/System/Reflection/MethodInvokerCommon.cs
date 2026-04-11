@@ -105,11 +105,12 @@ namespace System.Reflection
             ref InvokeFunc_ObjSpanArgs?
             invokeFunc_ObjSpanArgs,
             MethodBase method,
-            bool needsByRefStrategy
 #if MONO
-            , bool backwardsCompat
+            bool needsByRefStrategy,
+            bool backwardsCompat)
+#else
+            bool needsByRefStrategy)
 #endif
-            )
         {
             if (needsByRefStrategy)
             {
@@ -126,11 +127,11 @@ namespace System.Reflection
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
                 {
-                    invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(method
 #if MONO
-                        , backwardsCompat
+                    invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(method, backwardsCompat);
+#else
+                    invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(method);
 #endif
-                        );
                 }
 
                 strategy |= InvokerStrategy.StrategyDetermined_ObjSpanArgs;
@@ -141,11 +142,12 @@ namespace System.Reflection
             ref InvokerStrategy strategy,
             ref InvokeFunc_Obj4Args? invokeFunc_Obj4Args,
             MethodBase method,
-            bool needsByRefStrategy
 #if MONO
-            , bool backwardsCompat
+            bool needsByRefStrategy,
+            bool backwardsCompat)
+#else
+            bool needsByRefStrategy)
 #endif
-            )
         {
             if (needsByRefStrategy)
             {
@@ -162,11 +164,11 @@ namespace System.Reflection
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
                 {
-                    invokeFunc_Obj4Args = CreateInvokeDelegate_Obj4Args(method
 #if MONO
-                        , backwardsCompat
+                    invokeFunc_Obj4Args = CreateInvokeDelegate_Obj4Args(method, backwardsCompat);
+#else
+                    invokeFunc_Obj4Args = CreateInvokeDelegate_Obj4Args(method);
 #endif
-                        );
                 }
 
                 strategy |= InvokerStrategy.StrategyDetermined_Obj4Args;
@@ -176,11 +178,12 @@ namespace System.Reflection
         internal static void DetermineStrategy_RefArgs(
             ref InvokerStrategy strategy,
             ref InvokeFunc_RefArgs? invokeFunc_RefArgs,
-            MethodBase method
 #if MONO
-            , bool backwardsCompat
+            MethodBase method,
+            bool backwardsCompat)
+#else
+            MethodBase method)
 #endif
-            )
         {
 #if !MONO
             if (((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0) && !Debugger.IsAttached)
@@ -225,11 +228,11 @@ namespace System.Reflection
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
                 {
-                    invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method
 #if MONO
-                        , backwardsCompat
+                    invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method, backwardsCompat);
+#else
+                    invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method);
 #endif
-                        );
                 }
 
                 strategy |= InvokerStrategy.StrategyDetermined_RefArgs;
