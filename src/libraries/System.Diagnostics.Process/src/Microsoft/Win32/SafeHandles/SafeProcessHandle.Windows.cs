@@ -254,7 +254,7 @@ namespace Microsoft.Win32.SafeHandles
                     // assign it to the job object and then resume the thread.
                     if (killOnParentExit && logon)
                     {
-                        AssignJobAndResumeThread(processInfo, procSH);
+                        AssignJobAndResumeThread(processInfo.hThread, procSH);
                     }
                 }
 
@@ -601,18 +601,18 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static void AssignJobAndResumeThread(Interop.Kernel32.PROCESS_INFORMATION processInfo, SafeProcessHandle procSH)
+        private static void AssignJobAndResumeThread(IntPtr hThread, SafeProcessHandle procSH)
         {
-            Debug.Assert(!IsInvalidHandle(processInfo.hThread), "Thread handle must be valid for suspended process.");
+            Debug.Assert(hThread != IntPtr.Zero, "Thread handle must be valid for suspended process.");
 
             try
             {
-                if (!Interop.Kernel32.AssignProcessToJobObject(s_killOnParentExitJob.Value, processInfo.hProcess))
+                if (!Interop.Kernel32.AssignProcessToJobObject(s_killOnParentExitJob.Value, procSH))
                 {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
 
-                if (Interop.Kernel32.ResumeThread(processInfo.hThread) == -1)
+                if (Interop.Kernel32.ResumeThread(hThread) == -1)
                 {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }

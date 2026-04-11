@@ -44,10 +44,10 @@ internal static partial class Interop
             internal long PerProcessUserTimeLimit;
             internal long PerJobUserTimeLimit;
             internal uint LimitFlags;
-            internal UIntPtr MinimumWorkingSetSize;
-            internal UIntPtr MaximumWorkingSetSize;
+            internal nuint MinimumWorkingSetSize;
+            internal nuint MaximumWorkingSetSize;
             internal uint ActiveProcessLimit;
-            internal UIntPtr Affinity;
+            internal nuint Affinity;
             internal uint PriorityClass;
             internal uint SchedulingClass;
         }
@@ -57,10 +57,10 @@ internal static partial class Interop
         {
             internal JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
             internal IO_COUNTERS IoInfo;
-            internal UIntPtr ProcessMemoryLimit;
-            internal UIntPtr JobMemoryLimit;
-            internal UIntPtr PeakProcessMemoryUsed;
-            internal UIntPtr PeakJobMemoryUsed;
+            internal nuint ProcessMemoryLimit;
+            internal nuint JobMemoryLimit;
+            internal nuint PeakProcessMemoryUsed;
+            internal nuint PeakJobMemoryUsed;
         }
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
@@ -69,7 +69,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool AssignProcessToJobObject(SafeJobHandle hJob, IntPtr hProcess);
+        internal static partial bool AssignProcessToJobObject(SafeJobHandle hJob, SafeProcessHandle hProcess);
 
         internal const int PROC_THREAD_ATTRIBUTE_JOB_LIST = 0x0002000D;
     }
