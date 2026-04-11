@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Defines the functions understood by the value-numbering system.
-// ValueNumFuncDef(<name of function>, <arity (-1, 0-4; -1 for variadic HW intrinsics)>, <is-commutative (for arity = 2)>, <non-null (for gc functions)>)
+// ValueNumFuncDef(<name of function>, <arity (-1, 0-4; -1 for variadic HW intrinsics)>,
+// <is-commutative (for arity = 2)>, <non-null (for gc functions)>)
 
 // clang-format off
 ValueNumFuncDef(MemOpaque, 1, false, false)          // Args: 0: loop num

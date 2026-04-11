@@ -10596,9 +10596,7 @@ void ValueNumStore::vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj)
            (static_cast<uint8_t>(illegalAsVNFunc) << VNFOA_IllegalGenTreeOpShift);
 }
 
-/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForFunc(int  arity,
-                                                                  bool commute,
-                                                                  bool knownNonNull)
+/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForFunc(int arity, bool commute, bool knownNonNull)
 {
     return (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift) |
            (static_cast<uint8_t>(knownNonNull) << VNFOA_KnownNonNullShift) |
@@ -10612,8 +10610,7 @@ const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] = {
 
     0, // VNF_Boundary
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull)                                                               \
-    GetOpAttribsForFunc(arity, commute, knownNonNull),
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull) GetOpAttribsForFunc(arity, commute, knownNonNull),
 #include "valuenumfuncs.h"
 };
 
@@ -10668,7 +10665,7 @@ void ValueNumStore::ValidateValueNumStoreStatics()
 
     int vnfNum = VNF_Boundary + 1; // The macro definition below will update this after using it.
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull)                                                               \
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull)                                                             \
     if (commute)                                                                                                       \
         arr[vnfNum] |= VNFOA_Commutative;                                                                              \
     if (knownNonNull)                                                                                                  \
