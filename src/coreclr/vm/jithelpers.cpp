@@ -1716,7 +1716,9 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         // Remember original method FP, SP and SSP because new method will inherit them.
         UINT_PTR currentSP = GetSP(pFrameContext);
         UINT_PTR currentFP = GetFP(pFrameContext);
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         DWORD64 currentSSP = GetSSP(pFrameContext);
+#endif
 
         // We expect to be back at the right IP
         if ((UINT_PTR)ip != GetIP(pFrameContext))
@@ -1742,10 +1744,12 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
 
 #if defined(TARGET_AMD64)
         pFrameContext->Rbp = currentFP;
-        SetSSP(pFrameContext, currentSSP);
 #endif // TARGET_AMD64
 
         SetSP(pFrameContext, currentSP);
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+        SetSSP(pFrameContext, currentSSP);
+#endif
 
         // Note we can get here w/o triggering, if there is an existing OSR method and
         // we hit the patchpoint.
