@@ -1010,7 +1010,22 @@ namespace BINDER_SPACE
         }
 
         // Initialize assembly object
-        IF_FAIL_GO(pAssembly->Init(pPEImage, fIsInTPA));
+        hr = pAssembly->Init(pPEImage, fIsInTPA);
+        if (FAILED(hr))
+        {
+            if (pDiagnosticInfo != NULL)
+            {
+                if (!pDiagnosticInfo->IsEmpty())
+                    pDiagnosticInfo->AppendUTF8("\n");
+
+                StackSString format;
+                format.LoadResource(IDS_BINDING_FAILED_TO_INIT_ASSEMBLY);
+                StackSString hrMsg;
+                GetHRMsg(hr, hrMsg);
+                pDiagnosticInfo->AppendPrintf(format.GetUTF8(), assemblyPath.GetUTF8(), hrMsg.GetUTF8());
+            }
+            goto Exit;
+        }
 
         // We're done
         *ppAssembly = pAssembly.Extract();
@@ -1023,17 +1038,6 @@ namespace BINDER_SPACE
         if ((FAILED(hr)) && IsFileNotFound(hr))
         {
             hr = HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
-        }
-        else if (FAILED(hr) && pDiagnosticInfo != NULL)
-        {
-            if (!pDiagnosticInfo->IsEmpty())
-                pDiagnosticInfo->AppendUTF8("\n");
-
-            StackSString format;
-            format.LoadResource(IDS_BINDING_FAILED_TO_INIT_ASSEMBLY);
-            StackSString hrMsg;
-            GetHRMsg(hr, hrMsg);
-            pDiagnosticInfo->AppendPrintf(format.GetUTF8(), assemblyPath.GetUTF8(), hrMsg.GetUTF8());
         }
 
         return hr;
