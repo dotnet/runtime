@@ -157,7 +157,7 @@ namespace System.Diagnostics.Tests
                 // As soon as SafeProcessHandle.WaitForExit* are implemented (#126293), we can use them instead.
                 using Process process = Process.GetProcessById(processInfo.dwProcessId);
 
-                if (ResumeThread(processInfo.hThread) == -1)
+                if (Interop.Kernel32.ResumeThread(processInfo.hThread) == 0xFFFFFFFF)
                 {
                     throw new Win32Exception();
                 }
@@ -182,9 +182,6 @@ namespace System.Diagnostics.Tests
                 Interop.Kernel32.CloseHandle(processInfo.hThread);
             }
         }
-
-        [LibraryImport(Interop.Libraries.Kernel32)]
-        private static partial int ResumeThread(nint hThread);
 
         private static unsafe string GetSafeFileHandleId(SafeFileHandle handle)
         {
