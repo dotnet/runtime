@@ -34,7 +34,9 @@
     <!-- Append DependencyOnlyTargetFrameworks to TargetFrameworks so the inner builds run. -->
     <TargetFrameworks Condition="'$(DependencyOnlyTargetFrameworks)' != '' and '$(TargetFrameworks)' != ''">$(TargetFrameworks);$(DependencyOnlyTargetFrameworks)</TargetFrameworks>
     <!-- Suppress build output for these TFMs so no lib/ entry is added to the package. -->
-    <IncludeBuildOutput Condition="'$(DependencyOnlyTargetFrameworks)' != '' and '$(TargetFramework)' != '' and $(DependencyOnlyTargetFrameworks.Contains('$(TargetFramework)'))">false</IncludeBuildOutput>
+    <_NormalizedDependencyOnlyTargetFrameworks Condition="'$(DependencyOnlyTargetFrameworks)' != ''">;$(DependencyOnlyTargetFrameworks.ToUpperInvariant());</_NormalizedDependencyOnlyTargetFrameworks>
+    <!-- Suppress build output for these TFMs so no lib/ entry is added to the package. -->
+    <IncludeBuildOutput Condition="'$(DependencyOnlyTargetFrameworks)' != '' and '$(TargetFramework)' != '' and $(_NormalizedDependencyOnlyTargetFrameworks.Contains(';$(TargetFramework.ToUpperInvariant());'))">false</IncludeBuildOutput>
     <!-- NU5128: NuGet warns when a dependency group TFM has no matching lib/ entry; suppress it
          since the absence of a lib/ entry is intentional for DependencyOnlyTargetFrameworks. -->
     <NoWarn Condition="'$(DependencyOnlyTargetFrameworks)' != ''">$(NoWarn);NU5128</NoWarn>
