@@ -1653,16 +1653,6 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
     return VNVisitReachingVNs(vn, vnVisitor) == VNVisit::Continue;
 }
 
-bool ValueNumStore::IsSharedStatic(ValueNum vn)
-{
-    if (vn == NoVN)
-    {
-        return false;
-    }
-    VNFuncApp funcAttr;
-    return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_SharedStatic) != 0;
-}
-
 ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_types typ, ChunkExtraAttribs attribs)
     : m_defs(nullptr)
     , m_numUsed(0)
@@ -10608,12 +10598,10 @@ void ValueNumStore::vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj)
 
 /* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForFunc(int  arity,
                                                                   bool commute,
-                                                                  bool knownNonNull,
-                                                                  bool sharedStatic)
+                                                                  bool knownNonNull)
 {
     return (static_cast<uint8_t>(commute) << VNFOA_CommutativeShift) |
            (static_cast<uint8_t>(knownNonNull) << VNFOA_KnownNonNullShift) |
-           (static_cast<uint8_t>(sharedStatic) << VNFOA_SharedStaticShift) |
            ((static_cast<uint8_t>(arity & ~(arity >> 31)) << VNFOA_ArityShift) & VNFOA_ArityMask);
 }
 
@@ -10624,8 +10612,8 @@ const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] = {
 
     0, // VNF_Boundary
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic)                                               \
-    GetOpAttribsForFunc(arity, commute, knownNonNull, sharedStatic),
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull)                                                               \
+    GetOpAttribsForFunc(arity, commute, knownNonNull),
 #include "valuenumfuncs.h"
 };
 
@@ -10680,13 +10668,11 @@ void ValueNumStore::ValidateValueNumStoreStatics()
 
     int vnfNum = VNF_Boundary + 1; // The macro definition below will update this after using it.
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic)                                               \
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull)                                                               \
     if (commute)                                                                                                       \
         arr[vnfNum] |= VNFOA_Commutative;                                                                              \
     if (knownNonNull)                                                                                                  \
         arr[vnfNum] |= VNFOA_KnownNonNull;                                                                             \
-    if (sharedStatic)                                                                                                  \
-        arr[vnfNum] |= VNFOA_SharedStatic;                                                                             \
     if (arity > 0)                                                                                                     \
         arr[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);                                                \
     vnfNum++;
@@ -10730,7 +10716,7 @@ void ValueNumStore::ValidateValueNumStoreStatics()
 
 #ifdef DEBUG
 // Define the name array.
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic) #vnf,
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull) #vnf,
 
 const char* ValueNumStore::VNFuncNameArr[] = {
 #include "valuenumfuncs.h"
