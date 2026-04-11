@@ -12,20 +12,6 @@ bool minipal_mutex_init(minipal_mutex* mtx)
     InitializeCriticalSection(&mtx->_impl);
     return true;
 #else
-#ifdef TARGET_WASI
-    // WASI: use recursive mutex to match other platforms.
-    // Even though WASI is single-threaded, the runtime may re-enter locks
-    // (e.g., handle table lock during exception handling).
-    pthread_mutexattr_t mutexAttributes;
-    int st = pthread_mutexattr_init(&mutexAttributes);
-    if (st != 0)
-        return false;
-    st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
-    if (st == 0)
-        st = pthread_mutex_init(&mtx->_impl, &mutexAttributes);
-    pthread_mutexattr_destroy(&mutexAttributes);
-    return (st == 0);
-#else
     pthread_mutexattr_t mutexAttributes;
     int st = pthread_mutexattr_init(&mutexAttributes);
     if (st != 0)
@@ -38,7 +24,6 @@ bool minipal_mutex_init(minipal_mutex* mtx)
     pthread_mutexattr_destroy(&mutexAttributes);
 
     return (st == 0);
-#endif // TARGET_WASI
 #endif // HOST_WINDOWS
 }
 

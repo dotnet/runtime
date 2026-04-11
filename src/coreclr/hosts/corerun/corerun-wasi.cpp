@@ -108,8 +108,6 @@ int main(int argc, char* argv[])
             clr_path = ".";
     }
 
-    fprintf(stderr, "corerun-wasi: clr_path=%s assembly=%s\n", clr_path, assembly);
-
     // Build TPA list (large buffer for full framework deployment)
     static char tpa_list[262144];
     build_tpa_list(clr_path, tpa_list, sizeof(tpa_list));
@@ -145,7 +143,6 @@ int main(int argc, char* argv[])
     void* host_handle = NULL;
     unsigned int domain_id = 0;
 
-    fprintf(stderr, "corerun-wasi: calling coreclr_initialize...\n");
     int hr = coreclr_initialize(
         assembly,
         "wasi_appdomain",
@@ -161,8 +158,6 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    fprintf(stderr, "corerun-wasi: executing assembly...\n");
-
     unsigned int exit_code = 0;
     hr = coreclr_execute_assembly(
         host_handle,
@@ -177,8 +172,6 @@ int main(int argc, char* argv[])
         fprintf(stderr, "corerun-wasi: coreclr_execute_assembly failed: 0x%08x\n", hr);
         return 1;
     }
-
-    fprintf(stderr, "corerun-wasi: exit code %u\n", exit_code);
 
     int latch = 0;
     coreclr_shutdown_2(host_handle, domain_id, &latch);
