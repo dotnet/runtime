@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Defines the functions understood by the value-numbering system.
-// ValueNumFuncDef(<name of function>, <arity (1-4)>, <is-commutative (for arity = 2)>, <non-null (for gc functions)>)
+// ValueNumFuncDef(<name of function>, <arity (-1, 0-4; -1 for variadic HW intrinsics)>, <is-commutative (for arity = 2)>, <non-null (for gc functions)>)
 
 // clang-format off
 ValueNumFuncDef(MemOpaque, 1, false, false)          // Args: 0: loop num
@@ -51,8 +51,8 @@ ValueNumFuncDef(LoopCloneChoiceAddr, 0, false, true)
 ValueNumFuncDef(ValWithExc, 2, false, false)         // Args: 0: value number from normal execution; 1: VN for set of possible exceptions.
 ValueNumFuncDef(ExcSetCons, 2, false, false)         // Args: 0: exception; 1: exception set (including EmptyExcSet).  Invariant: "car"s are always in ascending order.
 
-// Various functions that are used to indicate that an exceptions may occur
-// Curremtly  when the execution is always thrown, the value VNForVoid() is used as Arg0 by OverflowExc and DivideByZeroExc
+// Various functions that are used to indicate that exceptions may occur
+// Currently when the execution is always thrown, the value VNForVoid() is used as Arg0 by OverflowExc and DivideByZeroExc
 //
 ValueNumFuncDef(NullPtrExc, 1, false, false)         // Null pointer exception check.  Args: 0: address value,  throws when it is null
 ValueNumFuncDef(ArithmeticExc, 2, false, false)      // Arithmetic exception check, ckfinite and integer division overflow, Args: 0: expression value,
