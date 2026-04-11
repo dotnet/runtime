@@ -82,9 +82,9 @@ Now read the PR description, labels, linked issues (in full), author information
 When the environment supports launching sub-agents with different models (e.g., the `task` tool with a `model` parameter), run the review in parallel across multiple model families to get diverse perspectives. Different models catch different classes of issues. If the environment does not support this, proceed with a single-model review.
 
 **How to execute (when supported):**
-1. Inspect the available model list and select one model from each distinct model family. Use at least 2 and at most 3 sub-agent models. **Model selection rules:**
+1. Inspect the available model list and select models from 2-3 distinct model families, up to 3 sub-agent models total. If fewer than 2 eligible families are available, use what is available. **Model selection rules:**
    - Pick only from models explicitly listed as available in the environment. Do not guess or assume model names.
-   - From each family, pick the model with the highest capability tier (prefer "premium" or "standard" over "fast/cheap").
+   - From each selected family, pick the model with the highest capability tier (prefer "premium" or "standard" over "fast/cheap").
    - Never pick models labeled "mini", "fast", or "cheap" for code review.
    - Do not select the same model that is already running the primary review (i.e., your own model). The goal is diverse perspectives from different model families.
    - **Do not use `gpt-5.4`** — it has known reliability issues causing sub-agent timeouts in >90% of affected runs. For the OpenAI/GPT family, prefer `gpt-5.3-codex` if it is explicitly listed as available; otherwise, fall back to the highest-version non-blocked GPT model that satisfies the other rules here.
