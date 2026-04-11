@@ -56,8 +56,8 @@
 // 5. Cleanup (StopRaisingEvents):
 //    - Cancel token
 //    - Send port_send to wake up port_get
-//    - Wait for event thread to exit
-//    - Clean up all resources
+//    - Return without waiting; event thread exits asynchronously
+//    - Clean up resources as shutdown completes
 //
 // PortAssociate Strategy:
 //
