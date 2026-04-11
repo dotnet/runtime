@@ -3105,10 +3105,8 @@ ULONG       GetFixedStackSize();
     ULONG       GetFixedStackSize();
 
     void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
-    unsigned     GetSizeOfProlog();
 #endif // TARGET_AMD64
 
-    static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFunction, /* out */ SIZE_T * pSize);
 private:
     PCODE               m_codeAddress;
     METHODTOKEN         m_methodToken;
@@ -3127,6 +3125,7 @@ private:
     // Simple helper to return a pointer to the UNWIND_INFO given the offset to the unwind info.
     UNWIND_INFO * GetUnwindInfoHelper(ULONG unwindInfoOffset);
 #endif // TARGET_AMD64
+
 };
 
 #ifdef FEATURE_INTERPRETER

@@ -1033,7 +1033,7 @@ void IJitManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #endif // #ifdef DACCESS_COMPILE
 
-PTR_VOID EECodeInfo::GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFunction, /* out */ SIZE_T * pSize)
+PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFunction, /* out */ SIZE_T * pSize)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -6463,7 +6463,7 @@ GCInfoToken ReadyToRunJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
     TADDR baseAddress = JitTokenToModuleBase(MethodToken);
 
     SIZE_T nUnwindDataSize;
-    PTR_VOID pUnwindData = EECodeInfo::GetUnwindDataBlob(baseAddress, pRuntimeFunction, &nUnwindDataSize);
+    PTR_VOID pUnwindData = GetUnwindDataBlob(baseAddress, pRuntimeFunction, &nUnwindDataSize);
 
     // GCInfo immediately follows unwind data
     PTR_BYTE gcInfo = dac_cast<PTR_BYTE>(pUnwindData) + nUnwindDataSize;
@@ -6951,7 +6951,7 @@ BOOL ReadyToRunJitManager::LazyIsFunclet(EECodeInfo* pCodeInfo)
     {
         // This maps to a hot entry in the lookup table, so check its unwind info
         SIZE_T unwindSize;
-        PTR_VOID pUnwindData = EECodeInfo::GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &unwindSize);
+        PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &unwindSize);
         _ASSERTE(pUnwindData != NULL);
 
 #ifdef TARGET_AMD64
@@ -6991,7 +6991,7 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
 #else
     // Get address of the personality routine for the function being queried.
     SIZE_T size;
-    PTR_VOID pUnwindData = EECodeInfo::GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &size);
+    PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pCodeInfo->GetFunctionEntry(), &size);
     _ASSERTE(pUnwindData != NULL);
 
     // Personality routine is always the last element of the unwind data
@@ -7002,7 +7002,7 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     if (pInfo->m_nRuntimeFunctions == 0)
         return FALSE;
 
-    PTR_VOID pFirstUnwindData = EECodeInfo::GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pInfo->m_pRuntimeFunctions, &size);
+    PTR_VOID pFirstUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pInfo->m_pRuntimeFunctions, &size);
     _ASSERTE(pFirstUnwindData != NULL);
     DWORD rvaFirstPersonalityRoutine = *(dac_cast<PTR_DWORD>(dac_cast<TADDR>(pFirstUnwindData) + size) - 1);
 
@@ -7109,7 +7109,7 @@ void ReadyToRunJitManager::EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemor
     EnumRuntimeFunctionEntriesToFindEntry(pRtf, pReadyToRunInfo->m_pRuntimeFunctions, pReadyToRunInfo->m_nRuntimeFunctions);
 
     SIZE_T size;
-    PTR_VOID pUnwindData = EECodeInfo::GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pRtf, &size);
+    PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pRtf, &size);
     if (pUnwindData != NULL)
         DacEnumMemoryRegion(PTR_TO_TADDR(pUnwindData), size);
 }

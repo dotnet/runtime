@@ -15687,22 +15687,5 @@ void EECodeInfo::GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset)
     *pRSPOffset = StackSize + 8;        // add 8 for the return address
     *pRBPOffset = StackOffset;
 }
-
-unsigned EECodeInfo::GetSizeOfProlog()
-{
-    LIMITED_METHOD_CONTRACT;
-    TADDR moduleBase = GetModuleBase();
-
-    DWORD unwindInfo = RUNTIME_FUNCTION__GetUnwindInfoAddress(GetFunctionEntry());
-
-    if ((unwindInfo & RUNTIME_FUNCTION_INDIRECT) != 0)
-    {
-        unwindInfo = RUNTIME_FUNCTION__GetUnwindInfoAddress(PTR_RUNTIME_FUNCTION(moduleBase + (unwindInfo & ~RUNTIME_FUNCTION_INDIRECT)));
-    }
-
-    UNWIND_INFO * pInfo = GetUnwindInfoHelper(unwindInfo);
-    _ASSERTE((pInfo->Flags & UNW_FLAG_CHAININFO) == 0);
-    return pInfo->SizeOfProlog;
-}
 #undef kRBP
 #endif // defined(TARGET_AMD64)
