@@ -511,43 +511,5 @@ public unsafe class LoaderTests
         // RVA in second section: offset = (0x4500 - 0x4000) + 0x2200 = 0x2700
         Assert.Equal((TargetPointer)(imageBase + 0x2700u), contract.GetILAddr(peAssemblyAddr, 0x4500));
     }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetModuleForDomainAssembly_ReturnsCorrectModule(MockTarget.Architecture arch)
-    {
-        TargetPointer domainAssemblyAddr = TargetPointer.Null;
-        TargetPointer moduleAddr = TargetPointer.Null;
-
-        ILoader contract = CreateLoaderContract(arch, loader =>
-        {
-            MockLoaderModule module = loader.AddModule();
-            moduleAddr = module.Address;
-
-            TargetPointer assemblyAddr = new TargetPointer(module.Assembly);
-            domainAssemblyAddr = loader.AddDomainAssembly(assemblyAddr);
-        });
-
-        Contracts.ModuleHandle handle = contract.GetModuleForDomainAssembly(domainAssemblyAddr);
-        Assert.Equal(moduleAddr.Value, contract.GetModule(handle).Value);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetDomainAssemblyFromModule_ReturnsCorrectDomainAssembly(MockTarget.Architecture arch)
-    {
-        TargetPointer domainAssemblyAddr = new TargetPointer(0xDADA_0000);
-        TargetPointer moduleAddr = TargetPointer.Null;
-
-        ILoader contract = CreateLoaderContract(arch, loader =>
-        {
-            MockLoaderModule module = loader.AddModule(domainAssembly: domainAssemblyAddr);
-            moduleAddr = module.Address;
-        });
-
-        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-        TargetPointer result = contract.GetDomainAssemblyFromModule(handle);
-        Assert.Equal(domainAssemblyAddr.Value, result.Value);
-    }
 }
 

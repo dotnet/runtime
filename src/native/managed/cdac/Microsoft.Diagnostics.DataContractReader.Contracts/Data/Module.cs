@@ -25,7 +25,6 @@ internal sealed class Module : IData<Module>
         FileName = target.ReadPointerField(address, type, nameof(FileName));
         ReadyToRunInfo = target.ReadPointerField(address, type, nameof(ReadyToRunInfo));
         GrowableSymbolStream = target.ReadPointerField(address, type, nameof(GrowableSymbolStream));
-        DomainAssembly = target.ReadPointerField(address, type, nameof(DomainAssembly));
         AvailableTypeParams = target.ReadPointerField(address, type, nameof(AvailableTypeParams));
         InstMethodHashTable = target.ReadPointerField(address, type, nameof(InstMethodHashTable));
 
@@ -50,7 +49,6 @@ internal sealed class Module : IData<Module>
     public TargetPointer FileName { get; init; }
     public TargetPointer ReadyToRunInfo { get; init; }
     public TargetPointer GrowableSymbolStream { get; init; }
-    public TargetPointer DomainAssembly { get; init; }
     public TargetPointer AvailableTypeParams { get; init; }
     public TargetPointer InstMethodHashTable { get; init; }
 

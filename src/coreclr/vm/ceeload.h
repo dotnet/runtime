@@ -1722,7 +1722,6 @@ struct cdac_data<Module>
     static constexpr size_t FileName = offsetof(Module, m_fileName);
     static constexpr size_t ReadyToRunInfo = offsetof(Module, m_pReadyToRunInfo);
     static constexpr size_t GrowableSymbolStream = offsetof(Module, m_pIStreamSym);
-    static constexpr size_t DomainAssembly = offsetof(Module, m_pDomainAssembly);
 
     // Lookup map pointers
     static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);

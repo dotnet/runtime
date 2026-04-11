@@ -20,7 +20,6 @@ internal sealed class MockLoaderModule : TypedView
     private const string FileNameFieldName = "FileName";
     private const string ReadyToRunInfoFieldName = "ReadyToRunInfo";
     private const string GrowableSymbolStreamFieldName = "GrowableSymbolStream";
-    private const string DomainAssemblyFieldName = "DomainAssembly";
     private const string AvailableTypeParamsFieldName = "AvailableTypeParams";
     private const string InstMethodHashTableFieldName = "InstMethodHashTable";
     private const string FieldDefToDescMapFieldName = "FieldDefToDescMap";
@@ -45,7 +44,6 @@ internal sealed class MockLoaderModule : TypedView
             .AddPointerField(FileNameFieldName)
             .AddPointerField(ReadyToRunInfoFieldName)
             .AddPointerField(GrowableSymbolStreamFieldName)
-            .AddPointerField(DomainAssemblyFieldName)
             .AddPointerField(AvailableTypeParamsFieldName)
             .AddPointerField(InstMethodHashTableFieldName)
             .AddPointerField(FieldDefToDescMapFieldName)
@@ -86,12 +84,6 @@ internal sealed class MockLoaderModule : TypedView
     {
         get => ReadPointerField(ReadyToRunInfoFieldName);
         set => WritePointerField(ReadyToRunInfoFieldName, value);
-    }
-
-    public ulong DomainAssembly
-    {
-        get => ReadPointerField(DomainAssemblyFieldName);
-        set => WritePointerField(DomainAssemblyFieldName, value);
     }
 }
 
@@ -152,8 +144,7 @@ internal sealed class MockLoaderBuilder
         string? path = null,
         string? fileName = null,
         string? simpleName = null,
-        byte[]? simpleNameBytes = null,
-        TargetPointer domainAssembly = default)
+        byte[]? simpleNameBytes = null)
     {
         MockLoaderModule module = ModuleLayout.Create(AllocateAndAdd((ulong)ModuleLayout.Size, "Module"));
 
@@ -177,21 +168,7 @@ internal sealed class MockLoaderBuilder
         assembly.Module = module.Address;
         module.Assembly = assembly.Address;
 
-        if (domainAssembly != default)
-        {
-            module.DomainAssembly = domainAssembly.Value;
-        }
-
         return module;
-    }
-
-    internal TargetPointer AddDomainAssembly(TargetPointer assemblyPointer)
-    {
-        TargetTestHelpers helpers = Builder.TargetTestHelpers;
-        MockMemorySpace.HeapFragment domainAssembly = AllocateAndAdd((ulong)helpers.PointerSize, "DomainAssembly");
-        helpers.WritePointer(domainAssembly.Data.AsSpan().Slice(0, helpers.PointerSize), assemblyPointer);
-
-        return domainAssembly.Address;
     }
 
     private ulong AddNullTerminatedUtf8(ReadOnlySpan<byte> bytes, string name)

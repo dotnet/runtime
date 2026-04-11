@@ -253,7 +253,6 @@ CDAC_TYPE_FIELD(Module, T_POINTER, Path, cdac_data<Module>::Path)
 CDAC_TYPE_FIELD(Module, T_POINTER, FileName, cdac_data<Module>::FileName)
 CDAC_TYPE_FIELD(Module, T_POINTER, ReadyToRunInfo, cdac_data<Module>::ReadyToRunInfo)
 CDAC_TYPE_FIELD(Module, T_POINTER, GrowableSymbolStream, cdac_data<Module>::GrowableSymbolStream)
-CDAC_TYPE_FIELD(Module, T_POINTER, DomainAssembly, cdac_data<Module>::DomainAssembly)
 CDAC_TYPE_FIELD(Module, T_POINTER, AvailableTypeParams, offsetof(Module, m_pAvailableParamTypes))
 CDAC_TYPE_FIELD(Module, T_POINTER, InstMethodHashTable, offsetof(Module, m_pInstMethodHashTable))
 

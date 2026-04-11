@@ -316,34 +316,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => _legacy is not null ? _legacy.GetDomainAssemblyData(vmDomainAssembly, pData) : HResults.E_NOTIMPL;
 
     public int GetModuleForDomainAssembly(ulong vmDomainAssembly, ulong* pModule)
-    {
-        *pModule = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            if (vmDomainAssembly == 0 || pModule == null)
-                throw new ArgumentNullException(nameof(pModule));
-
-            Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = loader.GetModuleForDomainAssembly(new TargetPointer(vmDomainAssembly));
-            *pModule = loader.GetModule(handle).Value;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong moduleLocal;
-            int hrLocal = _legacy.GetModuleForDomainAssembly(vmDomainAssembly, &moduleLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pModule == moduleLocal, $"cDAC: {*pModule:x}, DAC: {moduleLocal:x}");
-        }
-#endif
-        return hr;
-    }
+        => _legacy is not null ? _legacy.GetModuleForDomainAssembly(vmDomainAssembly, pModule) : HResults.E_NOTIMPL;
 
     public int GetAddressType(ulong address, int* pRetVal)
         => _legacy is not null ? _legacy.GetAddressType(address, pRetVal) : HResults.E_NOTIMPL;
@@ -395,95 +368,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
-    {
-        int hr = HResults.S_OK;
-#if DEBUG
-        List<ulong>? cdacDomainAssemblies = _legacy is not null ? new() : null;
-#endif
-        try
-        {
-            if (vmAppDomain == 0 || fpCallback == null)
-                throw new ArgumentException("vmAppDomain and fpCallback must not be null");
-
-            Contracts.ILoader loader = _target.Contracts.Loader;
-
-            foreach (Contracts.ModuleHandle handle in loader.GetModuleHandles(
-                new TargetPointer(vmAppDomain),
-                AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
-            {
-                TargetPointer domainAssembly = loader.GetDomainAssemblyFromModule(handle);
-                fpCallback(domainAssembly.Value, pUserData);
-#if DEBUG
-                cdacDomainAssemblies?.Add(domainAssembly.Value);
-#endif
-            }
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            List<ulong> dacDomainAssemblies = new();
-            GCHandle dacHandle = GCHandle.Alloc(dacDomainAssemblies);
-            int hrLocal = _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, &CollectEnumerationCallback, GCHandle.ToIntPtr(dacHandle));
-            dacHandle.Free();
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(
-                    cdacDomainAssemblies!.SequenceEqual(dacDomainAssemblies),
-                    $"Assembly enumeration mismatch - cDAC: [{string.Join(",", cdacDomainAssemblies!.Select(a => $"0x{a:x}"))}], DAC: [{string.Join(",", dacDomainAssemblies.Select(a => $"0x{a:x}"))}]");
-            }
-        }
-#endif
-        return hr;
-    }
+        => _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int EnumerateModulesInAssembly(ulong vmAssembly, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
-    {
-        int hr = HResults.S_OK;
-#if DEBUG
-        List<ulong>? cdacModules = _legacy is not null ? new() : null;
-#endif
-        try
-        {
-            if (vmAssembly == 0 || fpCallback == null)
-                throw new ArgumentException("vmAssembly and fpCallback must not be null");
-
-            Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = loader.GetModuleForDomainAssembly(new TargetPointer(vmAssembly));
-            if (loader.IsAssemblyLoaded(handle))
-            {
-                fpCallback(vmAssembly, pUserData);
-#if DEBUG
-                cdacModules?.Add(vmAssembly);
-#endif
-            }
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            List<ulong> dacModules = new();
-            GCHandle dacHandle = GCHandle.Alloc(dacModules);
-            int hrLocal = _legacy.EnumerateModulesInAssembly(vmAssembly, &CollectEnumerationCallback, GCHandle.ToIntPtr(dacHandle));
-            dacHandle.Free();
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(
-                    cdacModules!.SequenceEqual(dacModules),
-                    $"Module enumeration mismatch - cDAC: [{string.Join(",", cdacModules!.Select(m => $"0x{m:x}"))}], DAC: [{string.Join(",", dacModules.Select(m => $"0x{m:x}"))}]");
-            }
-        }
-#endif
-        return hr;
-    }
+        => _legacy is not null ? _legacy.EnumerateModulesInAssembly(vmAssembly, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int RequestSyncAtEvent()
         => _legacy is not null ? _legacy.RequestSyncAtEvent() : HResults.E_NOTIMPL;
@@ -1466,34 +1354,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly)
-    {
-        *pVmDomainAssembly = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            if (vmModule == 0 || pVmDomainAssembly == null)
-                throw new ArgumentNullException(nameof(pVmDomainAssembly));
-
-            Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
-            *pVmDomainAssembly = loader.GetDomainAssemblyFromModule(handle).Value;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong domainAssemblyLocal;
-            int hrLocal = _legacy.GetDomainAssemblyFromModule(vmModule, &domainAssemblyLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pVmDomainAssembly == domainAssemblyLocal, $"cDAC: {*pVmDomainAssembly:x}, DAC: {domainAssemblyLocal:x}");
-        }
-#endif
-        return hr;
-    }
+        => _legacy is not null ? _legacy.GetDomainAssemblyFromModule(vmModule, pVmDomainAssembly) : HResults.E_NOTIMPL;
 
     public int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState)
         => _legacy is not null ? _legacy.ParseContinuation(continuationAddress, pDiagnosticIP, pNextContinuation, pState) : HResults.E_NOTIMPL;

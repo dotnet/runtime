@@ -92,12 +92,6 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
-// Gets the module handle for the module owned by the given DomainAssembly.
-// Assumes DomainAssembly layout: the first pointer-sized field is a pointer to Assembly,
-// and Assembly has a Module field pointing to the Module (1:1 Assembly-Module assumption).
-ModuleHandle GetModuleForDomainAssembly(TargetPointer domainAssemblyPointer);
-// Gets the DomainAssembly pointer for the module, using the Module's back-pointer field.
-TargetPointer GetDomainAssemblyFromModule(ModuleHandle handle);
 ```
 
 ## Version 1
@@ -114,7 +108,6 @@ TargetPointer GetDomainAssemblyFromModule(ModuleHandle handle);
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
 | `Module` | `SimpleName` | Simple name of the Module (UTF-8, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
-| `Module` | `DomainAssembly` | Back-pointer to the DomainAssembly that owns this module |
 | `Module` | `AvailableTypeParams` | Pointer to an EETypeHashTable |
 | `Module` | `InstMethodHashTable` | Pointer to an InstMethodHashTable |
 | `Module` | `FieldDefToDescMap` | Mapping table |
@@ -825,19 +818,6 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
     SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
     Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
     return /* blob entry IL address */
-}
-
-ModuleHandle GetModuleForDomainAssembly(TargetPointer domainAssemblyPointer)
-{
-    // DomainAssembly layout assumption: the first pointer-sized field is a pointer to Assembly.
-    TargetPointer assemblyPointer = target.ReadPointer(domainAssemblyPointer);
-    Assembly assembly = // read Assembly object at assemblyPointer
-    return new ModuleHandle(assembly.Module);
-}
-
-TargetPointer GetDomainAssemblyFromModule(ModuleHandle handle)
-{
-    return target.ReadPointer(handle.Address + /* Module::DomainAssembly offset */);
 }
 ```
 
