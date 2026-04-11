@@ -3073,8 +3073,8 @@ namespace System.Diagnostics.Tests
             process.Start();
 
             (byte[] stdout, byte[] stderr) = process.ReadAllBytes();
-            Assert.Contains((byte)'b', stdout);
-            Assert.Contains((byte)'b', stderr);
+            Assert.Equal(Encoding.UTF8.GetBytes("byte output"), stdout);
+            Assert.Equal(Encoding.UTF8.GetBytes("byte error"), stderr);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
