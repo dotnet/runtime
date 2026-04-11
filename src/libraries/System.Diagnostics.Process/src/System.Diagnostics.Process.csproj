@@ -24,8 +24,10 @@
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
     <Compile Include="System\Diagnostics\ProcessModule.cs" />
     <Compile Include="System\Diagnostics\ProcessModuleCollection.cs" />
+    <Compile Include="System\Diagnostics\ProcessOutputLine.cs" />
     <Compile Include="System\Diagnostics\ProcessPriorityClass.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.cs" />
+    <Compile Include="System\Diagnostics\ProcessTextOutput.cs" />
     <Compile Include="System\Diagnostics\ProcessUtils.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.cs" />
     <Compile Include="System\Diagnostics\ProcessThreadCollection.cs" />

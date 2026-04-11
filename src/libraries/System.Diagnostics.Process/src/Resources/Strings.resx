@@ -360,4 +360,7 @@
   <data name="InheritedHandles_MustNotContainDuplicates" xml:space="preserve">
     <value>InheritedHandles must not contain duplicates.</value>
   </data>
+  <data name="CantReadStreamsForRedirectedIO" xml:space="preserve">
+    <value>StandardOutput and StandardError have not been redirected or the process hasn't started yet.</value>
+  </data>
 </root>

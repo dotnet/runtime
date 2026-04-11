@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -503,6 +504,71 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
+
+        private static SafeProcessHandle OpenCore(int processId)
+        {
+            SafeProcessHandle handle = Interop.Kernel32.OpenProcess(
+                Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION | Interop.Advapi32.ProcessOptions.SYNCHRONIZE | Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE,
+                false,
+                processId);
+            if (handle.IsInvalid)
+            {
+                throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
+            }
+            return handle;
+        }
+
+        private ProcessExitStatus? WaitForExitCore(TimeSpan timeout)
+        {
+            using (var processWaitHandle = new Interop.Kernel32.ProcessWaitHandle(this))
+            {
+                int milliseconds = timeout == Timeout.InfiniteTimeSpan ? Timeout.Infinite : (int)timeout.TotalMilliseconds;
+                if (!processWaitHandle.WaitOne(milliseconds))
+                {
+                    return null;
+                }
+            }
+
+            if (!Interop.Kernel32.GetExitCodeProcess(this, out int exitCode))
+            {
+                throw new Win32Exception();
+            }
+
+            return new ProcessExitStatus(exitCode, canceled: false);
+        }
+
+        private async Task<ProcessExitStatus> WaitForExitAsyncCore(CancellationToken cancellationToken)
+        {
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using (var processWaitHandle = new Interop.Kernel32.ProcessWaitHandle(this))
+            {
+                RegisteredWaitHandle registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    processWaitHandle,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(!timedOut),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                try
+                {
+                    using (cancellationToken.UnsafeRegister(static (s, ct) => ((TaskCompletionSource<bool>)s!).TrySetCanceled(ct), tcs))
+                    {
+                        await tcs.Task.ConfigureAwait(false);
+                    }
+                }
+                finally
+                {
+                    registeredWaitHandle.Unregister(null);
+                }
+            }
+
+            if (!Interop.Kernel32.GetExitCodeProcess(this, out int exitCode))
+            {
+                throw new Win32Exception();
+            }
+
+            return new ProcessExitStatus(exitCode, canceled: false);
+        }
 
         private bool SignalCore(PosixSignal signal)
         {

@@ -13,6 +13,7 @@ using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace Microsoft.Win32.SafeHandles
@@ -58,6 +59,95 @@ namespace Microsoft.Win32.SafeHandles
 
         // On Unix, we don't use process descriptors yet, so we can't get PID.
         private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
+
+        private static SafeProcessHandle OpenCore(int processId)
+        {
+            // On Unix, verify the process exists by sending signal 0.
+            int killResult = Interop.Sys.Kill(processId, 0);
+            if (killResult != 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (errorInfo.Error == Interop.Error.ESRCH)
+                {
+                    throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
+                }
+                // EPERM means process exists but we don't have permission - still "open" it
+            }
+
+            var holder = new ProcessWaitState.Holder(processId);
+            var handle = new SafeProcessHandle(processId, holder);
+            holder.Dispose(); // The DangerousAddRef in the constructor keeps the handle alive.
+            return handle;
+        }
+
+        private ProcessExitStatus? WaitForExitCore(TimeSpan timeout)
+        {
+            using (var waitHandle = new ManualResetEvent(false))
+            {
+                waitHandle.SetSafeWaitHandle(new SafeWaitHandle(this.DangerousGetHandle(), ownsHandle: false));
+                int milliseconds = timeout == Timeout.InfiniteTimeSpan ? Timeout.Infinite : (int)timeout.TotalMilliseconds;
+                if (!waitHandle.WaitOne(milliseconds))
+                {
+                    return null;
+                }
+            }
+
+            // Get exit code from ProcessWaitState.
+            var pws = new ProcessWaitState.Holder(ProcessId);
+            try
+            {
+                pws._state.GetExited(out int? exitCode, refresh: true);
+                int code = exitCode ?? -1;
+
+                return new ProcessExitStatus(code, canceled: false);
+            }
+            finally
+            {
+                pws.Dispose();
+            }
+        }
+
+        private async Task<ProcessExitStatus> WaitForExitAsyncCore(CancellationToken cancellationToken)
+        {
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using (var waitHandle = new ManualResetEvent(false))
+            {
+                waitHandle.SetSafeWaitHandle(new SafeWaitHandle(this.DangerousGetHandle(), ownsHandle: false));
+                RegisteredWaitHandle registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    waitHandle,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(!timedOut),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                try
+                {
+                    using (cancellationToken.UnsafeRegister(static (s, ct) => ((TaskCompletionSource<bool>)s!).TrySetCanceled(ct), tcs))
+                    {
+                        await tcs.Task.ConfigureAwait(false);
+                    }
+                }
+                finally
+                {
+                    registeredWaitHandle.Unregister(null);
+                }
+            }
+
+            // Get exit code from ProcessWaitState.
+            var pws = new ProcessWaitState.Holder(ProcessId);
+            try
+            {
+                pws._state.GetExited(out int? exitCode, refresh: true);
+                int code = exitCode ?? -1;
+
+                return new ProcessExitStatus(code, canceled: false);
+            }
+            finally
+            {
+                pws.Dispose();
+            }
+        }
 
         private bool SignalCore(PosixSignal signal)
         {

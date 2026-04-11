@@ -1777,6 +1777,585 @@ namespace System.Diagnostics
             AsyncMode
         }
 
+        #region New Process APIs
+
+        /// <summary>
+        /// Reads all output lines from the process's standard output and standard error streams.
+        /// Both streams are drained concurrently to avoid deadlocks.
+        /// </summary>
+        /// <param name="timeout">The maximum amount of time to wait. When <see langword="null"/>, the default timeout is used.</param>
+        /// <returns>An enumerable of <see cref="ProcessOutputLine"/> representing the lines from both streams.</returns>
+        /// <exception cref="InvalidOperationException">The process has not been started, or standard output/error are not redirected.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public IEnumerable<ProcessOutputLine> ReadAllLines(TimeSpan? timeout = default)
+        {
+            EnsureState(State.Associated);
+
+            if (_standardOutput is null || _standardError is null)
+            {
+                throw new InvalidOperationException(SR.CantReadStreamsForRedirectedIO);
+            }
+
+            return ReadAllLinesIterator();
+        }
+
+        private IEnumerable<ProcessOutputLine> ReadAllLinesIterator()
+        {
+            StreamReader stdout = _standardOutput!;
+            StreamReader stderr = _standardError!;
+
+            // Read lines from both streams concurrently using tasks.
+            Task<string?>? stdoutTask = null;
+            Task<string?>? stderrTask = null;
+            bool stdoutDone = false;
+            bool stderrDone = false;
+
+            while (!stdoutDone || !stderrDone)
+            {
+                if (!stdoutDone && stdoutTask is null)
+                {
+                    stdoutTask = stdout.ReadLineAsync();
+                }
+                if (!stderrDone && stderrTask is null)
+                {
+                    stderrTask = stderr.ReadLineAsync();
+                }
+
+                Task? completedTask;
+                if (stdoutTask is not null && stderrTask is not null)
+                {
+                    completedTask = Task.WhenAny(stdoutTask, stderrTask).GetAwaiter().GetResult();
+                }
+                else if (stdoutTask is not null)
+                {
+                    completedTask = stdoutTask;
+                    stdoutTask.GetAwaiter().GetResult(); // block
+                }
+                else if (stderrTask is not null)
+                {
+                    completedTask = stderrTask;
+                    stderrTask.GetAwaiter().GetResult(); // block
+                }
+                else
+                {
+                    break;
+                }
+
+                if (completedTask == stdoutTask)
+                {
+                    string? line = stdoutTask.GetAwaiter().GetResult();
+                    stdoutTask = null;
+                    if (line is null)
+                    {
+                        stdoutDone = true;
+                    }
+                    else
+                    {
+                        yield return new ProcessOutputLine(line, standardError: false);
+                    }
+                }
+                else if (completedTask == stderrTask)
+                {
+                    string? line = stderrTask.GetAwaiter().GetResult();
+                    stderrTask = null;
+                    if (line is null)
+                    {
+                        stderrDone = true;
+                    }
+                    else
+                    {
+                        yield return new ProcessOutputLine(line, standardError: true);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously reads all output lines from the process's standard output and standard error streams.
+        /// Both streams are drained concurrently to avoid deadlocks.
+        /// </summary>
+        /// <param name="cancellationToken">A token to cancel the operation.</param>
+        /// <returns>An async enumerable of <see cref="ProcessOutputLine"/> representing the lines from both streams.</returns>
+        /// <exception cref="InvalidOperationException">The process has not been started, or standard output/error are not redirected.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public async IAsyncEnumerable<ProcessOutputLine> ReadAllLinesAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            EnsureState(State.Associated);
+
+            if (_standardOutput is null || _standardError is null)
+            {
+                throw new InvalidOperationException(SR.CantReadStreamsForRedirectedIO);
+            }
+
+            StreamReader stdout = _standardOutput;
+            StreamReader stderr = _standardError;
+
+            Task<string?>? stdoutTask = null;
+            Task<string?>? stderrTask = null;
+            bool stdoutDone = false;
+            bool stderrDone = false;
+
+            while (!stdoutDone || !stderrDone)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (!stdoutDone && stdoutTask is null)
+                {
+                    stdoutTask = stdout.ReadLineAsync(cancellationToken).AsTask();
+                }
+                if (!stderrDone && stderrTask is null)
+                {
+                    stderrTask = stderr.ReadLineAsync(cancellationToken).AsTask();
+                }
+
+                Task? completedTask;
+                if (stdoutTask is not null && stderrTask is not null)
+                {
+                    completedTask = await Task.WhenAny(stdoutTask, stderrTask).ConfigureAwait(false);
+                }
+                else if (stdoutTask is not null)
+                {
+                    await stdoutTask.ConfigureAwait(false);
+                    completedTask = stdoutTask;
+                }
+                else if (stderrTask is not null)
+                {
+                    await stderrTask.ConfigureAwait(false);
+                    completedTask = stderrTask;
+                }
+                else
+                {
+                    break;
+                }
+
+                if (completedTask == stdoutTask)
+                {
+                    string? line = await stdoutTask.ConfigureAwait(false);
+                    stdoutTask = null;
+                    if (line is null)
+                    {
+                        stdoutDone = true;
+                    }
+                    else
+                    {
+                        yield return new ProcessOutputLine(line, standardError: false);
+                    }
+                }
+                else if (completedTask == stderrTask)
+                {
+                    string? line = await stderrTask.ConfigureAwait(false);
+                    stderrTask = null;
+                    if (line is null)
+                    {
+                        stderrDone = true;
+                    }
+                    else
+                    {
+                        yield return new ProcessOutputLine(line, standardError: true);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reads all text from the process's standard output and standard error streams.
+        /// Both streams are drained concurrently to avoid deadlocks.
+        /// </summary>
+        /// <param name="timeout">The maximum amount of time to wait. When <see langword="null"/>, the default timeout is used.</param>
+        /// <returns>A tuple containing the standard output and standard error text.</returns>
+        /// <exception cref="InvalidOperationException">The process has not been started, or standard output/error are not redirected.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public (string StandardOutput, string StandardError) ReadAllText(TimeSpan? timeout = default)
+        {
+            EnsureState(State.Associated);
+
+            if (_standardOutput is null || _standardError is null)
+            {
+                throw new InvalidOperationException(SR.CantReadStreamsForRedirectedIO);
+            }
+
+            Task<string> stdoutTask = _standardOutput.ReadToEndAsync();
+            Task<string> stderrTask = _standardError.ReadToEndAsync();
+            Task.WaitAll(stdoutTask, stderrTask);
+
+            return (stdoutTask.GetAwaiter().GetResult(), stderrTask.GetAwaiter().GetResult());
+        }
+
+        /// <summary>
+        /// Asynchronously reads all text from the process's standard output and standard error streams.
+        /// Both streams are drained concurrently to avoid deadlocks.
+        /// </summary>
+        /// <param name="cancellationToken">A token to cancel the operation.</param>
+        /// <returns>A task that completes with a tuple containing the standard output and standard error text.</returns>
+        /// <exception cref="InvalidOperationException">The process has not been started, or standard output/error are not redirected.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public async Task<(string StandardOutput, string StandardError)> ReadAllTextAsync(CancellationToken cancellationToken = default)
+        {
+            EnsureState(State.Associated);
+
+            if (_standardOutput is null || _standardError is null)
+            {
+                throw new InvalidOperationException(SR.CantReadStreamsForRedirectedIO);
+            }
+
+            Task<string> stdoutTask = _standardOutput.ReadToEndAsync(cancellationToken);
+            Task<string> stderrTask = _standardError.ReadToEndAsync(cancellationToken);
+
+            await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
+
+            return (stdoutTask.GetAwaiter().GetResult(), stderrTask.GetAwaiter().GetResult());
+        }
+
+        /// <summary>
+        /// Reads all bytes from the process's standard output and standard error streams.
+        /// Both streams are drained concurrently to avoid deadlocks.
+        /// </summary>
+        /// <param name="timeout">The maximum amount of time to wait. When <see langword="null"/>, the default timeout is used.</param>
+        /// <returns>A tuple containing the standard output and standard error bytes.</returns>
+        /// <exception cref="InvalidOperationException">The process has not been started, or standard output/error are not redirected.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public (byte[] StandardOutput, byte[] StandardError) ReadAllBytes(TimeSpan? timeout = default)
+        {
+            EnsureState(State.Associated);
+
+            if (_standardOutput is null || _standardError is null)
+            {
+                throw new InvalidOperationException(SR.CantReadStreamsForRedirectedIO);
+            }
+
+            Task<byte[]> stdoutTask = ReadAllBytesFromStreamAsync(_standardOutput.BaseStream);
+            Task<byte[]> stderrTask = ReadAllBytesFromStreamAsync(_standardError.BaseStream);
+            Task.WaitAll(stdoutTask, stderrTask);
+
+            return (stdoutTask.GetAwaiter().GetResult(), stderrTask.GetAwaiter().GetResult());
+        }
+
+        /// <summary>
+        /// Asynchronously reads all bytes from the process's standard output and standard error streams.
+        /// Both streams are drained concurrently to avoid deadlocks.
+        /// </summary>
+        /// <param name="cancellationToken">A token to cancel the operation.</param>
+        /// <returns>A task that completes with a tuple containing the standard output and standard error bytes.</returns>
+        /// <exception cref="InvalidOperationException">The process has not been started, or standard output/error are not redirected.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public async Task<(byte[] StandardOutput, byte[] StandardError)> ReadAllBytesAsync(CancellationToken cancellationToken = default)
+        {
+            EnsureState(State.Associated);
+
+            if (_standardOutput is null || _standardError is null)
+            {
+                throw new InvalidOperationException(SR.CantReadStreamsForRedirectedIO);
+            }
+
+            Task<byte[]> stdoutTask = ReadAllBytesFromStreamAsync(_standardOutput.BaseStream, cancellationToken);
+            Task<byte[]> stderrTask = ReadAllBytesFromStreamAsync(_standardError.BaseStream, cancellationToken);
+
+            await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
+
+            return (stdoutTask.GetAwaiter().GetResult(), stderrTask.GetAwaiter().GetResult());
+        }
+
+        private static async Task<byte[]> ReadAllBytesFromStreamAsync(Stream stream, CancellationToken cancellationToken = default)
+        {
+            using MemoryStream ms = new();
+            await stream.CopyToAsync(ms, cancellationToken).ConfigureAwait(false);
+            return ms.ToArray();
+        }
+
+        /// <summary>
+        /// Starts a process, captures its standard output and standard error text, and waits for it to exit.
+        /// If the timeout expires, the process and its entire tree are killed.
+        /// </summary>
+        /// <param name="startInfo">The process start information.</param>
+        /// <param name="timeout">The maximum amount of time to wait. When <see langword="null"/>, the method waits indefinitely.</param>
+        /// <returns>A <see cref="ProcessTextOutput"/> containing the exit status, standard output, and standard error.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static ProcessTextOutput RunAndCaptureText(ProcessStartInfo startInfo, TimeSpan? timeout = default)
+        {
+            ArgumentNullException.ThrowIfNull(startInfo);
+
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
+
+            using Process process = Start(startInfo)!;
+
+            Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+            Task.WaitAll(stdoutTask, stderrTask);
+
+            bool canceled = false;
+            if (timeout.HasValue)
+            {
+                if (!process.WaitForExit(timeout.Value))
+                {
+                    process.Kill(entireProcessTree: true);
+                    canceled = true;
+                }
+            }
+
+            process.WaitForExit();
+
+            return new ProcessTextOutput(
+                new ProcessExitStatus(process.ExitCode, canceled),
+                stdoutTask.GetAwaiter().GetResult(),
+                stderrTask.GetAwaiter().GetResult(),
+                process.Id);
+        }
+
+        /// <summary>
+        /// Starts a process, captures its standard output and standard error text, and waits for it to exit.
+        /// If the timeout expires, the process and its entire tree are killed.
+        /// </summary>
+        /// <param name="fileName">The name of the application to start.</param>
+        /// <param name="arguments">The command-line arguments to pass to the application.</param>
+        /// <param name="timeout">The maximum amount of time to wait. When <see langword="null"/>, the method waits indefinitely.</param>
+        /// <returns>A <see cref="ProcessTextOutput"/> containing the exit status, standard output, and standard error.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static ProcessTextOutput RunAndCaptureText(string fileName, IList<string>? arguments = null, TimeSpan? timeout = default)
+        {
+            ProcessStartInfo startInfo = new(fileName);
+            if (arguments is not null)
+            {
+                foreach (string arg in arguments)
+                {
+                    startInfo.ArgumentList.Add(arg);
+                }
+            }
+            return RunAndCaptureText(startInfo, timeout);
+        }
+
+        /// <summary>
+        /// Asynchronously starts a process, captures its standard output and standard error text, and waits for it to exit.
+        /// If the <paramref name="cancellationToken"/> is canceled, the process and its entire tree are killed.
+        /// </summary>
+        /// <param name="startInfo">The process start information.</param>
+        /// <param name="cancellationToken">A token to cancel the operation and kill the process.</param>
+        /// <returns>A task that completes with a <see cref="ProcessTextOutput"/> containing the exit status, standard output, and standard error.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static async Task<ProcessTextOutput> RunAndCaptureTextAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(startInfo);
+
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
+
+            using Process process = Start(startInfo)!;
+
+            Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            Task<string> stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
+
+            bool canceled = false;
+            try
+            {
+                await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
+                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                canceled = true;
+                try { process.Kill(entireProcessTree: true); } catch { }
+                try { process.WaitForExit(); } catch { }
+            }
+
+            return new ProcessTextOutput(
+                new ProcessExitStatus(process.ExitCode, canceled),
+                canceled ? string.Empty : stdoutTask.GetAwaiter().GetResult(),
+                canceled ? string.Empty : stderrTask.GetAwaiter().GetResult(),
+                process.Id);
+        }
+
+        /// <summary>
+        /// Asynchronously starts a process, captures its standard output and standard error text, and waits for it to exit.
+        /// If the <paramref name="cancellationToken"/> is canceled, the process and its entire tree are killed.
+        /// </summary>
+        /// <param name="fileName">The name of the application to start.</param>
+        /// <param name="arguments">The command-line arguments to pass to the application.</param>
+        /// <param name="cancellationToken">A token to cancel the operation and kill the process.</param>
+        /// <returns>A task that completes with a <see cref="ProcessTextOutput"/> containing the exit status, standard output, and standard error.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static Task<ProcessTextOutput> RunAndCaptureTextAsync(string fileName, IList<string>? arguments = null, CancellationToken cancellationToken = default)
+        {
+            ProcessStartInfo startInfo = new(fileName);
+            if (arguments is not null)
+            {
+                foreach (string arg in arguments)
+                {
+                    startInfo.ArgumentList.Add(arg);
+                }
+            }
+            return RunAndCaptureTextAsync(startInfo, cancellationToken);
+        }
+
+        /// <summary>
+        /// Starts a process and waits for it to exit. Standard input, output, and error are inherited from the parent process.
+        /// If the timeout expires, the process and its entire tree are killed.
+        /// </summary>
+        /// <param name="startInfo">The process start information.</param>
+        /// <param name="timeout">The maximum amount of time to wait. When <see langword="null"/>, the method waits indefinitely.</param>
+        /// <returns>The <see cref="ProcessExitStatus"/> of the process.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static ProcessExitStatus Run(ProcessStartInfo startInfo, TimeSpan? timeout = default)
+        {
+            ArgumentNullException.ThrowIfNull(startInfo);
+
+            using Process process = Start(startInfo)!;
+
+            bool canceled = false;
+            if (timeout.HasValue)
+            {
+                if (!process.WaitForExit(timeout.Value))
+                {
+                    process.Kill(entireProcessTree: true);
+                    canceled = true;
+                }
+            }
+
+            process.WaitForExit();
+
+            return new ProcessExitStatus(process.ExitCode, canceled);
+        }
+
+        /// <summary>
+        /// Starts a process and waits for it to exit. Standard input, output, and error are inherited from the parent process.
+        /// If the timeout expires, the process and its entire tree are killed.
+        /// </summary>
+        /// <param name="fileName">The name of the application to start.</param>
+        /// <param name="arguments">The command-line arguments to pass to the application.</param>
+        /// <param name="timeout">The maximum amount of time to wait. When <see langword="null"/>, the method waits indefinitely.</param>
+        /// <returns>The <see cref="ProcessExitStatus"/> of the process.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static ProcessExitStatus Run(string fileName, IList<string>? arguments = null, TimeSpan? timeout = default)
+        {
+            ProcessStartInfo startInfo = new(fileName);
+            if (arguments is not null)
+            {
+                foreach (string arg in arguments)
+                {
+                    startInfo.ArgumentList.Add(arg);
+                }
+            }
+            return Run(startInfo, timeout);
+        }
+
+        /// <summary>
+        /// Asynchronously starts a process and waits for it to exit. Standard input, output, and error are inherited from the parent process.
+        /// If the <paramref name="cancellationToken"/> is canceled, the process and its entire tree are killed.
+        /// </summary>
+        /// <param name="startInfo">The process start information.</param>
+        /// <param name="cancellationToken">A token to cancel the operation and kill the process.</param>
+        /// <returns>A task that completes with the <see cref="ProcessExitStatus"/> of the process.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static async Task<ProcessExitStatus> RunAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(startInfo);
+
+            using Process process = Start(startInfo)!;
+
+            bool canceled = false;
+            try
+            {
+                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                canceled = true;
+                try { process.Kill(entireProcessTree: true); } catch { }
+                process.WaitForExit();
+            }
+
+            return new ProcessExitStatus(process.ExitCode, canceled);
+        }
+
+        /// <summary>
+        /// Asynchronously starts a process and waits for it to exit. Standard input, output, and error are inherited from the parent process.
+        /// If the <paramref name="cancellationToken"/> is canceled, the process and its entire tree are killed.
+        /// </summary>
+        /// <param name="fileName">The name of the application to start.</param>
+        /// <param name="arguments">The command-line arguments to pass to the application.</param>
+        /// <param name="cancellationToken">A token to cancel the operation and kill the process.</param>
+        /// <returns>A task that completes with the <see cref="ProcessExitStatus"/> of the process.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static Task<ProcessExitStatus> RunAsync(string fileName, IList<string>? arguments = null, CancellationToken cancellationToken = default)
+        {
+            ProcessStartInfo startInfo = new(fileName);
+            if (arguments is not null)
+            {
+                foreach (string arg in arguments)
+                {
+                    startInfo.ArgumentList.Add(arg);
+                }
+            }
+            return RunAsync(startInfo, cancellationToken);
+        }
+
+        /// <summary>
+        /// Starts a process, does not wait for its completion, returns its process ID, and cleans up all associated resources.
+        /// </summary>
+        /// <param name="startInfo">The process start information.</param>
+        /// <returns>The process ID of the started process.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static int StartAndForget(ProcessStartInfo startInfo)
+        {
+            ArgumentNullException.ThrowIfNull(startInfo);
+
+            using Process process = Start(startInfo)!;
+            return process.Id;
+        }
+
+        /// <summary>
+        /// Starts a process, does not wait for its completion, returns its process ID, and cleans up all associated resources.
+        /// </summary>
+        /// <param name="fileName">The name of the application to start.</param>
+        /// <param name="arguments">The command-line arguments to pass to the application.</param>
+        /// <returns>The process ID of the started process.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static int StartAndForget(string fileName, IList<string>? arguments = null)
+        {
+            ProcessStartInfo startInfo = new(fileName);
+            if (arguments is not null)
+            {
+                foreach (string arg in arguments)
+                {
+                    startInfo.ArgumentList.Add(arg);
+                }
+            }
+            return StartAndForget(startInfo);
+        }
+
+        #endregion
+
         /// <summary>A desired internal state.</summary>
         private enum State
         {

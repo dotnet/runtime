@@ -8,6 +8,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -141,6 +142,23 @@ namespace System.Diagnostics
         /// </para>
         /// </remarks>
         public bool StartDetached { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the child process should be killed when the parent process exits.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// When this property is set to <see langword="true"/>, the operating system will automatically terminate
+        /// the child process if the parent process exits, including abnormal termination (crash, kill).
+        /// </para>
+        /// <para>
+        /// On Windows, this is implemented using Job Objects.
+        /// On Linux, this is implemented using <c>prctl(PR_SET_PDEATHSIG)</c>.
+        /// </para>
+        /// </remarks>
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
+        public bool KillOnParentExit { get; set; }
 
         /// <summary>
         /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard input of the child process.
