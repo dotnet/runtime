@@ -1474,10 +1474,15 @@ void OleVariant::MarshalArrayVariantOleToObject(const VARIANT* pOleVariant,
         if (vt == VT_RECORD)
             pElemMT = GetElementTypeForRecordSafeArray(pSafeArray).GetMethodTable();
 
+        PCODE pConvertCode;
+        {
+            GCX_PREEMP();
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+        }
+
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
         SetObjectReference(pObj, pArrayRef);
-        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE);
-        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT, pConvertMD->GetMultiCallableAddrOfCode());
+        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT, pConvertCode);
     }
     else
     {
@@ -1514,8 +1519,14 @@ void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
     if (*pArrayRef != NULL)
     {
         pSafeArray = CreateSafeArrayForArrayRef(pArrayRef, vt, pElemMT);
-        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_UNMANAGED, vt, pElemMT, FALSE);
-        MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT, pConvertMD->GetMultiCallableAddrOfCode());
+
+        PCODE pConvertCode;
+        {
+            GCX_PREEMP();
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_UNMANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+        }
+
+        MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT, pConvertCode);
     }
     V_ARRAY(pOleVariant) = pSafeArray;
     pSafeArray.SuppressRelease();
@@ -1545,10 +1556,15 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
         if (vt == VT_RECORD)
             pElemMT = GetElementTypeForRecordSafeArray(pSafeArray).GetMethodTable();
 
+        PCODE pConvertCode;
+        {
+            GCX_PREEMP();
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+        }
+
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
         SetObjectReference(pObj, pArrayRef);
-        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE);
-        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT, pConvertMD->GetMultiCallableAddrOfCode());
+        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT, pConvertCode);
     }
     else
     {

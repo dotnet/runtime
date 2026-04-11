@@ -274,7 +274,10 @@ void DispParamArrayMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF
     // Convert the contents of the SAFEARRAY.
     PCODE pConvertCode = m_pConvertContentsToManagedCode;
     if (pConvertCode == NULL)
+    {
+        GCX_PREEMP();
         pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_MANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+    }
     OleVariant::MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF*)pDestObj, vt, pElemMT, pConvertCode);
 }
 
@@ -316,7 +319,10 @@ void DispParamArrayMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT
         // Marshal the contents of the SAFEARRAY.
         PCODE pConvertCode = m_pConvertContentsToUnmanagedCode;
         if (pConvertCode == NULL)
+        {
+            GCX_PREEMP();
             pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_UNMANAGED, vt, pElemMT, FALSE)->GetMultiCallableAddrOfCode();
+        }
         OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF*)pSrcObj, pSafeArray, vt, pElemMT, pConvertCode);
     }
 

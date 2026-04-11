@@ -2154,8 +2154,13 @@ void DispatchInfo::MarshalParamManagedToNativeRef(DispatchMemberInfo *pMemberInf
         MethodTable *pElementMT = (*(BASEARRAYREF *)pSrcObj)->GetArrayElementTypeHandle().GetMethodTable();
 
         // Convert the contents of the managed array into the original SAFEARRAY.
-        MethodDesc* pConvertMD = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_UNMANAGED, ElementVt, pElementMT, FALSE);
-        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt, pElementMT, pConvertMD->GetMultiCallableAddrOfCode());
+        PCODE pConvertCode;
+        {
+            GCX_PREEMP();
+            pConvertCode = GetInstantiatedSafeArrayMethod(METHOD__STUBHELPERS__CONVERT_SAFE_ARRAY_CONTENTS_TO_UNMANAGED, ElementVt, pElementMT, FALSE)->GetMultiCallableAddrOfCode();
+        }
+
+        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt, pElementMT, pConvertCode);
     }
     else
 {
