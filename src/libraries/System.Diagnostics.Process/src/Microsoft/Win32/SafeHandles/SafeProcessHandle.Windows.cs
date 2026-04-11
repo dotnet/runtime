@@ -603,7 +603,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static void AssignJobAndResumeThread(IntPtr hThread, SafeProcessHandle procSH)
         {
-            Debug.Assert(hThread != IntPtr.Zero, "Thread handle must be valid for suspended process.");
+            Debug.Assert(!IsInvalidHandle(hThread), "Thread handle must be valid for suspended process.");
 
             try
             {
