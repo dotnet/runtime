@@ -190,6 +190,7 @@ namespace System.Reflection
                 }
             }
 
+#if !MONO
             if (emitNew)
             {
                 Debug.Assert(method is RuntimeConstructorInfo);
@@ -254,11 +255,7 @@ namespace System.Reflection
                     }
                 }
 
-#if MONO
-                EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
-#else
                 EmitCallAndReturnHandling(il, method, emitNew);
-#endif
 
                 il.MarkLabel(done);
                 il.Emit(OpCodes.Ret);
@@ -266,6 +263,7 @@ namespace System.Reflection
                 // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
                 return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
             }
+#endif
 
             // Push the arguments.
             ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
