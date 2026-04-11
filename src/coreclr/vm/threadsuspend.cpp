@@ -4290,9 +4290,10 @@ Label_MarkThreadAsSynced:
         return true;
     }
 
-    // The CLR is not yet synced. We release the threadstore lock and return false.
+    // The CLR is not yet synced. We release the suspend-in-progress flag and return false.
     hldSuspendRuntimeInProgress.Release();
 
+    _ASSERTE(ThreadStore::HoldingThreadStore());
     return false;
 }
 
