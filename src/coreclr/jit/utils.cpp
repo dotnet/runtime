@@ -1771,7 +1771,7 @@ void HelperCallProperties::init()
                 break;
 
             case CORINFO_HELP_NATIVEAOT_CREATE_SHARED_DELEGATE:
-                mutatesHeap = true;
+                mutatesHeap   = true;
                 nonNullReturn = true;
                 break;
 
