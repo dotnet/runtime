@@ -612,7 +612,7 @@ namespace Microsoft.Win32.SafeHandles
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
 
-                if (Interop.Kernel32.ResumeThread(hThread) == -1)
+                if (Interop.Kernel32.ResumeThread(hThread) == 0xFFFFFFFF)
                 {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
