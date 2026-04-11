@@ -69,6 +69,9 @@ namespace BINDER_SPACE
             hr = pFailureCachEntry->GetBindingResult();
             if (pDiagnosticInfo != NULL && !pFailureCachEntry->GetDiagnosticInfo().IsEmpty())
             {
+                if (!pDiagnosticInfo->IsEmpty())
+                    pDiagnosticInfo->AppendUTF8("\n");
+
                 StackSString format;
                 format.LoadResource(IDS_BINDING_CACHED_FAILURE_PREFIX);
                 pDiagnosticInfo->AppendPrintf(format.GetUTF8(), pFailureCachEntry->GetDiagnosticInfo().GetUTF8());

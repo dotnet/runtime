@@ -1026,6 +1026,9 @@ namespace BINDER_SPACE
         }
         else if (FAILED(hr) && pDiagnosticInfo != NULL)
         {
+            if (!pDiagnosticInfo->IsEmpty())
+                pDiagnosticInfo->AppendUTF8("\n");
+
             StackSString format;
             format.LoadResource(IDS_BINDING_FAILED_TO_INIT_ASSEMBLY);
             StackSString hrMsg;

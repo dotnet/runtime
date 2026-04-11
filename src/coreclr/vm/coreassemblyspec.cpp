@@ -97,6 +97,9 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
             {
                 if (pDiagnosticInfo != NULL)
                 {
+                    if (!pDiagnosticInfo->IsEmpty())
+                        pDiagnosticInfo->AppendUTF8("\n");
+
                     StackSString format;
                     format.LoadResource(IDS_BINDING_FAILED_TO_OPEN_FILE);
                     SString pathStr(wszAssemblyPath);
@@ -117,6 +120,9 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
         _ASSERTE(FAILED(hr));
         if (pDiagnosticInfo != NULL)
         {
+            if (!pDiagnosticInfo->IsEmpty())
+                pDiagnosticInfo->AppendUTF8("\n");
+
             StackSString format;
             format.LoadResource(IDS_BINDING_EXCEPTION_OPENING_FILE);
             SString pathStr(wszAssemblyPath);
