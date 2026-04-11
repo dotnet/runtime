@@ -1,41 +1,69 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
+using static System.Reflection.InvokerEmitUtil;
+using static System.Reflection.MethodBase;
 
 namespace System.Reflection
 {
     internal partial class MethodBaseInvoker
     {
-        private readonly Signature? _signature;
-
         internal unsafe MethodBaseInvoker(RuntimeMethodInfo method) : this(method, method.Signature.Arguments)
         {
-            _signature = method.Signature;
             _invocationFlags = method.ComputeAndUpdateInvocationFlags();
             _invokeFunc_RefArgs = InterpretedInvoke_Method;
         }
 
         internal unsafe MethodBaseInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.Signature.Arguments)
         {
-            _signature = constructor.Signature;
             _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
             _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
         }
 
         internal unsafe MethodBaseInvoker(DynamicMethod method, Signature signature) : this(method, signature.Arguments)
         {
-            _signature = signature;
             _invokeFunc_RefArgs = InterpretedInvoke_Method;
         }
 
-        [RequiresUnsafe]
-        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr* args) =>
-            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: obj is null);
+        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr* args)
+        {
+            InvokeFunc_RefArgs emitDelegate = CreateEmitDelegate(_method);
 
-        [RequiresUnsafe]
-        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr* args) =>
-            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: false);
+            // Don't cache for collectible assemblies: the DynamicMethod holds token
+            // references to types that would prevent the assembly from being unloaded.
+            if (!IsCollectible(_method))
+            {
+                _invokeFunc_RefArgs = emitDelegate;
+            }
+
+            return emitDelegate(obj, args);
+        }
+
+        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr* args)
+        {
+            InvokeFunc_RefArgs emitDelegate = CreateEmitDelegate(_method);
+
+            if (!IsCollectible(_method))
+            {
+                _invokeFunc_RefArgs = emitDelegate;
+            }
+
+            return emitDelegate(obj, args);
+        }
+
+        private static bool IsCollectible(MethodBase method)
+        {
+            Type? declaringType = method.DeclaringType;
+            return declaringType is not null && declaringType.Assembly.IsCollectible;
+        }
+
+        private static InvokeFunc_RefArgs CreateEmitDelegate(MethodBase method)
+        {
+            using (AssemblyBuilder.ForceAllowDynamicCode())
+            {
+                return CreateInvokeDelegate_RefArgs(method);
+            }
+        }
     }
 }

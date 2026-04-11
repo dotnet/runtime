@@ -1867,7 +1867,6 @@ namespace System.Reflection
             {
                 object?[]? parameters = *pContract->CtorArgs;
                 object? ctorObject = *pContract->CtorMethod;
-                object? ctorDeclaringTypeObject = *pContract->CtorDeclaringType;
 
                 int argCount = pContract->ArgCount;
                 if (argCount < 0 || parameters is null || parameters.Length != argCount)
@@ -1875,23 +1874,48 @@ namespace System.Reflection
                     throw new TargetParameterCountException(SR.Arg_ParmCnt);
                 }
 
-                if (ctorObject is not System.IRuntimeMethodInfo methodInfo)
+                RuntimeConstructorInfo? ctor = ctorObject as RuntimeConstructorInfo;
+                if (ctor is null)
                 {
-                    throw new InvalidOperationException("Invalid custom attribute constructor.");
+                    if (ctorObject is not System.IRuntimeMethodInfo methodInfo ||
+                        RuntimeType.GetMethodBase(methodInfo) is not RuntimeConstructorInfo resolvedCtor)
+                    {
+                        throw new InvalidOperationException("Invalid custom attribute constructor.");
+                    }
+
+                    ctor = resolvedCtor;
                 }
 
-                if (ctorDeclaringTypeObject is not RuntimeType ctorDeclaringType)
+                ReadOnlySpan<ParameterInfo> ctorParameters = default;
+                bool needCtorParameters = false;
+
+                for (int i = 0; i < argCount; i++)
                 {
-                    throw new InvalidOperationException("Invalid custom attribute constructor.");
+                    object? arg = parameters[i];
+
+                    if (ReferenceEquals(arg, DBNull.Value) || ReferenceEquals(arg, Missing.Value))
+                    {
+                        parameters[i] = null;
+                        continue;
+                    }
+
+                    if (arg is not null && arg.GetType() == typeof(object))
+                    {
+                        if (!needCtorParameters)
+                        {
+                            ctorParameters = ctor.GetParametersAsSpan();
+                            needCtorParameters = true;
+                        }
+
+                        if ((uint)i < (uint)ctorParameters.Length && ctorParameters[i].ParameterType == typeof(object))
+                        {
+                            // Native custom-attribute parsing can represent object-typed null as a plain object instance.
+                            parameters[i] = null;
+                        }
+                    }
                 }
 
-                RuntimeMethodHandle methodHandle = new(methodInfo);
-                if (MethodBase.GetMethodFromHandle(methodHandle, ctorDeclaringType.TypeHandle) is not RuntimeConstructorInfo ctor)
-                {
-                    throw new InvalidOperationException("Invalid custom attribute constructor.");
-                }
-
-                MethodBaseInvoker invoker = new(ctor);
+                MethodBaseInvoker invoker = ctor.Invoker;
                 object? result = argCount switch
                 {
                     0 => invoker.InvokeWithNoArgs(obj: null, BindingFlags.DoNotWrapExceptions),

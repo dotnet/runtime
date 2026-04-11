@@ -1192,27 +1192,6 @@ namespace System
             return new MdUtf8String(name);
         }
 
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_InvokeMethod")]
-        [RequiresUnsafe]
-        private static partial void InvokeMethod(ObjectHandleOnStack target, void** arguments, ObjectHandleOnStack sig, Interop.BOOL isConstructor, ObjectHandleOnStack result);
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        [RequiresUnsafe]
-        internal static object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor)
-        {
-            object? result = null;
-            InvokeMethod(
-                ObjectHandleOnStack.Create(ref target),
-                arguments,
-                ObjectHandleOnStack.Create(ref sig),
-                isConstructor ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-                ObjectHandleOnStack.Create(ref result));
-            return result;
-        }
-
         /// <summary>
         /// For a true boxed Nullable{T}, re-box to a boxed {T} or null, otherwise just return the input.
         /// </summary>

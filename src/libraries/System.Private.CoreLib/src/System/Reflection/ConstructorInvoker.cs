@@ -184,7 +184,11 @@ namespace System.Reflection
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_Obj4Args) == 0)
             {
-                DetermineStrategy_Obj4Args(ref _strategy, ref _invokeFunc_Obj4Args, _method, _needsByRefStrategy, backwardsCompat: false);
+                DetermineStrategy_Obj4Args(ref _strategy, ref _invokeFunc_Obj4Args, _method, _needsByRefStrategy
+#if MONO
+                    , backwardsCompat: false
+#endif
+                    );
                 if (_invokeFunc_Obj4Args is not null)
                 {
                     return _invokeFunc_Obj4Args(obj: null, arg1, arg2, arg3, arg4)!;
@@ -264,7 +268,11 @@ namespace System.Reflection
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: false);
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy
+#if MONO
+                    , backwardsCompat: false
+#endif
+                    );
                 if (_invokeFunc_ObjSpanArgs is not null)
                 {
                     return _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs)!;
@@ -286,7 +294,11 @@ namespace System.Reflection
         {
             if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
             {
-                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: false);
+                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method
+#if MONO
+                    , backwardsCompat: false
+#endif
+                    );
             }
 
             StackAllocatedByRefs byrefs = default;
@@ -310,7 +322,11 @@ namespace System.Reflection
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: false);
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy
+#if MONO
+                    , backwardsCompat: false
+#endif
+                    );
             }
 
             if (_invokeFunc_ObjSpanArgs is not null)
@@ -343,7 +359,11 @@ namespace System.Reflection
             {
                 if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
                 {
-                    DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: false);
+                    DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method
+#if MONO
+                        , backwardsCompat: false
+#endif
+                        );
                 }
 
                 IntPtr* pStorage = stackalloc IntPtr[2 * _argCount];
