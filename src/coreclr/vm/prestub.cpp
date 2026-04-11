@@ -1937,7 +1937,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         pPFrame->Pop(CURRENT_THREAD);
     }
 
-    _ASSERTE(pbRetVal != NULL);
+    _ASSERTE(pbRetVal != 0);
 
     return pbRetVal;
 }
@@ -2473,7 +2473,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
 Return:
 
-    _ASSERTE(pCode != NULL);
+    _ASSERTE(pCode != 0);
     return pCode;
 }
 
