@@ -270,6 +270,7 @@ namespace System.Diagnostics
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardInputHandle { get { throw null; } set { } }
         public System.Text.Encoding? StandardOutputEncoding { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardOutputHandle { get { throw null; } set { } }
+        public bool StartDetached { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool UseCredentialsForNetworkingOnly { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]

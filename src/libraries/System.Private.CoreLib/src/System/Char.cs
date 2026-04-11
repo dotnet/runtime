@@ -1214,6 +1214,9 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         static char IBinaryInteger<char>.LeadingZeroCount(char value) => (char)(BitOperations.LeadingZeroCount(value) - 16);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        static char IBinaryInteger<char>.Log10(char value) => (char)uint.Log10(value);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         static char IBinaryInteger<char>.PopCount(char value) => (char)BitOperations.PopCount(value);
 

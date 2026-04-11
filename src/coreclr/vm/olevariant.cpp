@@ -1607,6 +1607,7 @@ void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable 
     LPWSTR *pOle = (LPWSTR *) oleArray;
     LPWSTR *pOleEnd = pOle + cElements;
 
+    PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonRuntimeReentrancy); // IMallocSpy in managed
     while (pOle < pOleEnd)
     {
         LPWSTR lpwstr = *pOle++;
@@ -1742,6 +1743,7 @@ void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *
     LPSTR *pOle = (LPSTR *) oleArray;
     LPSTR *pOleEnd = pOle + cElements;
 
+    PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonRuntimeReentrancy); // IMallocSpy in managed
     while (pOle < pOleEnd)
     {
         LPSTR lpstr = *pOle++;

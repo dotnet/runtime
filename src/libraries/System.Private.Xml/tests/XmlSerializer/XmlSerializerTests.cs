@@ -716,6 +716,44 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_StructImplementingIXmlSerializableWithoutParameterlessConstructor()
+    {
+        StructImplementingIXmlSerializableWithoutParameterlessConstructor value = new()
+        {
+            StringValue = "Hello world"
+        };
+        StructImplementingIXmlSerializableWithoutParameterlessConstructor actual = SerializeAndDeserialize(
+            value,
+            $"""
+            <?xml version="1.0"?>
+            <{nameof(StructImplementingIXmlSerializableWithoutParameterlessConstructor)} StringValue="Hello world" />
+            """
+        );
+        Assert.Equal(value.StringValue, actual.StringValue);
+        Assert.True(StructImplementingIXmlSerializableWithoutParameterlessConstructor.ReadXmlInvoked);
+        Assert.True(StructImplementingIXmlSerializableWithoutParameterlessConstructor.WriteXmlInvoked);
+    }
+
+    [Fact]
+    public static void Xml_StructImplementingIXmlSerializableWithParameterlessConstructor()
+    {
+        StructImplementingIXmlSerializableWithParameterlessConstructor value = new()
+        {
+            StringValue = "Hello world"
+        };
+        StructImplementingIXmlSerializableWithParameterlessConstructor actual = SerializeAndDeserialize(
+            value,
+            $"""
+            <?xml version="1.0"?>
+            <{nameof(StructImplementingIXmlSerializableWithParameterlessConstructor)} StringValue="Hello world" />
+            """
+        );
+        Assert.Equal(value.StringValue, actual.StringValue);
+        Assert.True(StructImplementingIXmlSerializableWithParameterlessConstructor.ReadXmlInvoked);
+        Assert.True(StructImplementingIXmlSerializableWithParameterlessConstructor.WriteXmlInvoked);
+    }
+
+    [Fact]
     public static void Xml_TypeWithFieldNameEndBySpecified()
     {
         var value = new TypeWithPropertyNameSpecified() { MyField = "MyField", MyFieldIgnored = 99, MyFieldSpecified = true, MyFieldIgnoredSpecified = false };

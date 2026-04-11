@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-internal static class EcmaMetadataUtils
+public static class EcmaMetadataUtils
 {
     internal const int RowIdBitCount = 24;
     internal const uint RIDMask = (1 << RowIdBitCount) - 1;
@@ -24,7 +24,7 @@ internal static class EcmaMetadataUtils
         mdtMethodDef = 0x06 << 24,
     }
 
-    internal const uint TokenTypeMask = 0xff000000;
+    public const uint TokenTypeMask = 0xff000000;
 
     public static uint CreateMethodDef(uint tokenParts)
     {

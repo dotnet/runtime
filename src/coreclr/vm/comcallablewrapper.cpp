@@ -286,17 +286,13 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
     return pMarshInfo->GetComCallMethodDesc();
 }
 
-#ifdef FEATURE_INTERPRETER
-extern PLATFORM_THREAD_LOCAL UMEntryThunkData * t_MostRecentUMEntryThunkData;
-#endif
-
 //--------------------------------------------------------------------------
 // This routine is called anytime a com method is invoked for the first time.
 // It is responsible for generating the real stub.
 //--------------------------------------------------------------------------
 extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
 {
-    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
@@ -310,16 +306,17 @@ extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
         return pMarshalInfo->GetReturnStubForHResult(E_OUTOFMEMORY);
     }
 
+    // The below "INSTALL_" macros ensure exceptions don't escape,
+    // but the macros do not update the contract state for the thread, so
+    // we manually indicate that here.
+    BEGIN_CONTRACT_VIOLATION(ThrowsViolation);
+
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
 #ifdef FEATURE_INTERPRETER
-    PCODE pInterpreterTarget = pEntryThunk->GetInterpreterTarget();
-    if (pInterpreterTarget != (PCODE)0)
-    {
-        t_MostRecentUMEntryThunkData = pEntryThunk;
-        return pInterpreterTarget;
-    }
+    // If we add support for COM interop on interpreter, this will need to update t_MostRecentUMEntryThunkData
+    _ASSERTE(pEntryThunk->GetInterpreterTarget() == (PCODE)0);
 #endif // FEATURE_INTERPRETER
 
     if (pThread->PreemptiveGCDisabled())
@@ -334,6 +331,8 @@ extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    END_CONTRACT_VIOLATION;
 
     return pStub;
 }
@@ -2246,7 +2245,7 @@ static IUnknown * GetComIPFromCCW_ForIID_Worker(
         {
             // Make sure the all the base classes of the class this IClassX corresponds to
             // are visible to COM.
-            pIntfComMT->CheckParentComVisibility(FALSE);
+            pIntfComMT->CheckParentComVisibility();
 
             // Giveout IClassX of this class because the IID matches one of the IClassX in the hierarchy
             // This assumes any IClassX implementation must be derived from base class IClassX's implementation
@@ -2293,7 +2292,7 @@ static IUnknown *GetComIPFromCCW_ForIntfMT_Worker(ComCallWrapper *pWrap, MethodT
             {
                 // Make sure the all the base classes of the class this IClassX corresponds to
                 // are visible to COM.
-                pIntfComMT->CheckParentComVisibility(FALSE);
+                pIntfComMT->CheckParentComVisibility();
 
                 // Giveout IClassX
                 IUnknown * pIntf = pWrap->GetIClassXIP();
@@ -2587,7 +2586,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
         // Make sure we release the BasicIP we're about to get.
         SafeComHolder<IUnknown> pBasic = GetBasicIP();
         ComMethodTable* pCMT = ComMethodTable::ComMethodTableFromIP(pBasic);
-        pCMT->CheckParentComVisibility(TRUE);
+        pCMT->CheckParentComVisibility();
     }
 
     // If the class implements IReflect then use the IDispatchEx implementation.
@@ -3789,7 +3788,7 @@ BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
 // Checks to see if the parent of the current class interface is visible to COM.
 // Throws an InvalidOperationException if not.
 //--------------------------------------------------------------------------
-void ComCallWrapperTemplate::CheckParentComVisibility(BOOL fForIDispatch)
+void ComCallWrapperTemplate::CheckParentComVisibility()
 {
     CONTRACTL
     {
@@ -3799,9 +3798,8 @@ void ComCallWrapperTemplate::CheckParentComVisibility(BOOL fForIDispatch)
     }
     CONTRACTL_END;
 
-
     // Throw an exception to report the error.
-    if (!CheckParentComVisibilityNoThrow(fForIDispatch))
+    if (HasInvisibleParent())
     {
         ComCallWrapperTemplate *invisParent = FindInvisibleParent();
         _ASSERTE(invisParent != NULL);
@@ -3812,24 +3810,6 @@ void ComCallWrapperTemplate::CheckParentComVisibility(BOOL fForIDispatch)
         TypeString::AppendType(invisParentType, invisParent->m_thClass);
         COMPlusThrow(kInvalidOperationException, IDS_EE_COM_INVISIBLE_PARENT, thisType.GetUnicode(), invisParentType.GetUnicode());
     }
-}
-
-BOOL ComCallWrapperTemplate::CheckParentComVisibilityNoThrow(BOOL fForIDispatch)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-
-    // If the parent is visible to COM then everything is ok.
-    if (!HasInvisibleParent())
-        return TRUE;
-
-    return FALSE;
 }
 
 DefaultInterfaceType ComCallWrapperTemplate::GetDefaultInterface(MethodTable **ppDefaultItf)

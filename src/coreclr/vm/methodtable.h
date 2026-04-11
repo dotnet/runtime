@@ -351,6 +351,11 @@ struct MethodTableAuxiliaryData
         };
     };
 
+    // Lazily initialized cache for the version-resilient hash code of this MethodTable.
+    // A stored value of 0 indicates the field hasn't been set yet.
+    // Placed here to fill the 4-byte alignment padding between m_dwFlags and m_pLoaderModule,
+    // so this field adds no extra size to the struct on 64-bit platforms.
+    int m_cachedVersionResilientHashCode;
 
     PTR_Module m_pLoaderModule;
 

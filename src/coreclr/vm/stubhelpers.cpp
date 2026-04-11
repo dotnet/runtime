@@ -312,11 +312,12 @@ FCIMPLEND
 
 #include <optdefault.h>
 
-extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget)
+extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget, BOOL* pfNeedsRelease)
 {
     QCALL_CONTRACT;
     _ASSERTE(pMD != NULL);
     _ASSERTE(ppTarget != NULL);
+    _ASSERTE(pfNeedsRelease != NULL);
 
     IUnknown *pIntf = NULL;
     BEGIN_QCALL;
@@ -325,6 +326,8 @@ extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHand
 
     OBJECTREF objRef = pSrc.Get();
     GCPROTECT_BEGIN(objRef);
+
+    *pfNeedsRelease = FALSE;
 
     // This snippet exists to enable OLE TLS data creation that isn't possible on the fast path.
     // It is practically identical to the StubHelpers::GetCOMIPFromRCW FCALL, but in the event the OLE TLS
@@ -335,17 +338,19 @@ extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHand
     RCW* pRCW = objRef->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
-        IUnknown* pUnk = GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
-        if (pUnk != NULL)
-            return pUnk;
+        pIntf = GetCOMIPFromRCW_GetTargetFromRCWCache(pOleTlsData, pRCW, pComInfo, ppTarget);
     }
 
-    // Still not in the cache and we've ensured the OLE TLS data was created.
-    SafeComHolder<IUnknown> pRetUnk = ComObject::GetComIPFromRCWThrowing(&objRef, pComInfo->m_pInterfaceMT);
-    *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
-    _ASSERTE(*ppTarget != NULL);
+    if (pIntf == NULL)
+    {
+        // Still not in the cache and we've ensured the OLE TLS data was created.
+        SafeComHolder<IUnknown> pRetUnk = ComObject::GetComIPFromRCWThrowing(&objRef, pComInfo->m_pInterfaceMT);
+        *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
+        _ASSERTE(*ppTarget != NULL);
 
-    pIntf = pRetUnk.Extract();
+        pIntf = pRetUnk.Extract();
+        *pfNeedsRelease = TRUE;
+    }
 
     GCPROTECT_END();
 
@@ -471,7 +476,7 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IU
 
     if (pComMT->IsIClassX())
     {
-        pComMT->CheckParentComVisibility(FALSE);
+        pComMT->CheckParentComVisibility();
     }
 
     END_QCALL;

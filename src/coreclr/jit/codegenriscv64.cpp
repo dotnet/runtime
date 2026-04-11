@@ -463,7 +463,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *
  *  See the description of frame shapes at genFuncletProlog().
  */
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)

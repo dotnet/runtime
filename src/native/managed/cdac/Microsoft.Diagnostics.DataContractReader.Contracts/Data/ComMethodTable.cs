@@ -10,8 +10,8 @@ internal sealed class ComMethodTable : IData<ComMethodTable>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ComMethodTable);
 
-        Flags = target.ReadNUInt(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        MethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset);
+        Flags = target.ReadNUIntField(address, type, nameof(Flags));
+        MethodTable = target.ReadPointerField(address, type, nameof(MethodTable));
     }
 
     public TargetNUInt Flags { get; init; }

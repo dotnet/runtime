@@ -813,7 +813,7 @@ inline IMAGE_COR20_HEADER *PEDecoder::GetCorHeader() const
     CONTRACTL_END;
 
     if (m_pCorHeader == NULL)
-        const_cast<PEDecoder *>(this)->m_pCorHeader =
+        m_pCorHeader =
             dac_cast<PTR_IMAGE_COR20_HEADER>(FindCorHeader());
 
     _ASSERTE(m_pCorHeader != NULL);

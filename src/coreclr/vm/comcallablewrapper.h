@@ -224,8 +224,7 @@ public:
     ComMethodTable* GetBasicComMT();
     ULONG           GetNumInterfaces();
     SLOT*           GetVTableSlot(ULONG index);
-    void            CheckParentComVisibility(BOOL fForIDispatch);
-    BOOL            CheckParentComVisibilityNoThrow(BOOL fForIDispatch);
+    void            CheckParentComVisibility();
 
     // Calls GetDefaultInterfaceForClassInternal and caches the result.
     DefaultInterfaceType GetDefaultInterface(MethodTable **ppDefaultItf);
@@ -656,18 +655,11 @@ struct ComMethodTable
     }
 #endif // DACCESS_COMPILE
 
-    void CheckParentComVisibility(BOOL fForIDispatch)
+    void CheckParentComVisibility()
     {
         WRAPPER_NO_CONTRACT;
 
-        ((ComCallWrapperTemplate*)m_pMT->GetComCallWrapperTemplate())->CheckParentComVisibility(fForIDispatch);
-    }
-
-    BOOL CheckParentComVisibilityNoThrow(BOOL fForIDispatch)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return ((ComCallWrapperTemplate*)m_pMT->GetComCallWrapperTemplate())->CheckParentComVisibilityNoThrow(fForIDispatch);
+        ((ComCallWrapperTemplate*)m_pMT->GetComCallWrapperTemplate())->CheckParentComVisibility();
     }
 
 private:

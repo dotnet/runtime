@@ -1081,11 +1081,6 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
 // Function Data
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-// Workaround for https://developercommunity.visualstudio.com/t/C-compiling-hangs-building-checked-bui/10974056 . Delete
-// once MSVC compiler with a fix is released.
-#ifdef _MSC_VER
-#pragma optimize("", off)
-#endif
 
 // GetILCodeAndSig returns the function's ILCode and SigToken given
 // a module and a token. The info will come from a MethodDesc, if
@@ -1150,10 +1145,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainAssem
     EX_CATCH_HRESULT(hr);
     return hr;
 }
-
-#ifdef _MSC_VER
-#pragma optimize("", on)
-#endif
 
 //---------------------------------------------------------------------------------------
 //
@@ -1352,7 +1343,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAss
         MethodDesc* pMethodDesc = FindLoadedMethodRefOrDef(pModule, functionToken);
         if (pMethodDesc != NULL && pMethodDesc->IsAsyncThunkMethod())
         {
-            MethodDesc* pAsyncVariant = pMethodDesc->GetOrdinaryVariantNoCreate();
+            MethodDesc* pAsyncVariant = pMethodDesc->GetAsyncVariantNoCreate();
             if (pAsyncVariant != NULL)
             {
                 pMethodDesc = pAsyncVariant;
