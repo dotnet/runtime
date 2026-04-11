@@ -71,9 +71,6 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool AssignProcessToJobObject(SafeJobHandle hJob, IntPtr hProcess);
 
-        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial int ResumeThread(IntPtr hThread);
-
         internal const int PROC_THREAD_ATTRIBUTE_JOB_LIST = 0x0002000D;
     }
 }

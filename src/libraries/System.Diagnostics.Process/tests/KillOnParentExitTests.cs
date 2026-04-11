@@ -30,7 +30,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
         public void KillOnParentExit_WithUseShellExecute_Throws()
         {
             ProcessStartInfo startInfo = new("dummy")
