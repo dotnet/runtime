@@ -7532,7 +7532,32 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impBashVarAddrsToI(op1, op2);
 
                 type = genActualType(op1->TypeGet());
-                op1  = gtNewOperNode(oper, type, op1, op2);
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                // Shift instructions on these targets mask the shift amount,
+                // so strip the redundant AND mask (e.g., & 31 for 32-bit or & 63 for 64-bit)
+                // that Roslyn emits. Doing this early prevents CSE from hoisting
+                // the mask and hiding it from later optimizations.
+                {
+                    size_t mask = 0x1f;
+#ifdef TARGET_64BIT
+                    if (varTypeIsLong(type))
+                    {
+                        mask = 0x3f;
+                    }
+#endif
+                    while (op2->OperIs(GT_AND) && op2->gtGetOp2()->IsCnsIntOrI())
+                    {
+                        if ((static_cast<size_t>(op2->gtGetOp2()->AsIntCon()->IconValue()) & mask) != mask)
+                        {
+                            break;
+                        }
+                        op2 = op2->gtGetOp1();
+                    }
+                }
+#endif
+
+                op1 = gtNewOperNode(oper, type, op1, op2);
 
                 // Fold result, if possible.
                 op1 = gtFoldExpr(op1);
