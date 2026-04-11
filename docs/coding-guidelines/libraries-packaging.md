@@ -182,7 +182,7 @@ The above layout is achieved via the following item declaration in the project f
 
 ### DependencyOnlyTargetFrameworks
 
-`DependencyOnlyTargetFrameworks` is a semicolon-separated list of target frameworks that the project restores and builds for, solely to emit a NuGet dependency group for each listed TFM. No `lib/` or `ref/` assembly is included in the package for these TFMs — consumers fall back to the nearest compatible `lib/` entry for the assembly, but NuGet selects the dependency group that best matches their TFM when resolving package dependencies.
+`DependencyOnlyTargetFrameworks` is a semicolon-separated list of target frameworks that should emit a NuGet dependency group in the package but ship no `lib/` assembly and require no compilation. No `lib/` or `ref/` assembly is included in the package for these TFMs — consumers fall back to the nearest compatible `lib/` entry for the assembly, but NuGet selects the dependency group that best matches their TFM when resolving package dependencies.
 
 Use this when a compatible framework has inbox assemblies that make a package dependency unnecessary. For example, `net471` has `System.ValueTuple` built in, so a package that depends on `System.ValueTuple` for `net462` consumers should add an empty `net471` dependency group so that `net471` consumers do not see a `System.ValueTuple` dependency at all.
 
@@ -197,6 +197,7 @@ Use this when a compatible framework has inbox assemblies that make a package de
 
 The infrastructure in `eng/packaging.targets` handles this automatically when `DependencyOnlyTargetFrameworks` is set:
 
-- The listed TFMs are appended to `TargetFrameworks` so the SDK runs inner builds and generates dependency groups in the nuspec.
-- `IncludeBuildOutput` is set to `false` for those inner builds, so no `lib/` entry is added to the package.
-- NuGet warning `NU5128` (dependency group TFM has no matching `lib/` entry) is suppressed, since the mismatch is intentional.
+- The listed TFMs are added to the NuGet restore graph (hooked into `_GetRestoreTargetFrameworksAsItems`) so that `project.assets.json` records per-TFM dependency information for each listed TFM. When NuGet evaluates the project for, say, `net471`, any `PackageReference` items conditioned on `$(NetFrameworkMinimum)` (= `net462`) are absent, so `project.assets.json` has a `net471` entry without `System.ValueTuple`.
+- They are added to the pack's framework list **after** `_WalkEachTargetPerFramework` has completed (hooked into `AfterTargets="_WalkEachTargetPerFramework"`), so the `PackTask` generates nuspec dependency groups from `project.assets.json` **without triggering any inner builds** for these TFMs.
+- The listed TFMs are **not** added to `TargetFrameworks`, so no compilation happens for them during regular builds.
+- NuGet warning `NU5128` (dependency group TFM has no matching `lib/` entry) is suppressed, since the absence of a `lib/` entry is intentional — consumers fall back to the nearest compatible `lib/` entry for the assembly.
