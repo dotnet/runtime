@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.IO.Hashing.Tests
@@ -35,14 +36,14 @@ namespace System.IO.Hashing.Tests
             reflectValues: true);
     }
 
-#if SINGLE_FILE_TEST_RUNNER
     public sealed class Crc32Tests_ParameterSet_Crc32 : Crc32Tests_Parameterized
     {
         public Crc32Tests_ParameterSet_Crc32() : base(new Crc32Driver()) { }
-#else
-    public sealed class Crc32Tests_ParameterSet_Crc32 : Crc32Tests_Parameterized<Crc32Driver>
-    {
+
+#if !SINGLE_FILE_TEST_RUNNER
+        public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc32Driver());
 #endif
+
         [Fact]
         public void StaticProperty_IsSingleton()
         {
@@ -62,14 +63,14 @@ namespace System.IO.Hashing.Tests
         }
     }
 
-#if SINGLE_FILE_TEST_RUNNER
     public sealed class Crc32Tests_ParameterSet_Custom_Crc32 : Crc32Tests_Parameterized
     {
         public Crc32Tests_ParameterSet_Custom_Crc32() : base(new CustomCrc32Driver()) { }
-#else
-    public sealed class Crc32Tests_ParameterSet_Custom_Crc32 : Crc32Tests_Parameterized<CustomCrc32Driver>
-    {
+
+#if !SINGLE_FILE_TEST_RUNNER
+        public new static IEnumerable<object[]> TestCases => GenerateTestCases(new CustomCrc32Driver());
 #endif
+
         [Fact]
         public void CreateIsNotSingleton()
         {

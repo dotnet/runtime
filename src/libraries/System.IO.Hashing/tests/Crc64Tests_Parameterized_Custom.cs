@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.IO.Hashing.Tests
@@ -89,22 +90,25 @@ namespace System.IO.Hashing.Tests
             };
     }
 
-#if SINGLE_FILE_TEST_RUNNER
     public class Crc64Tests_ParameterSet_Custom_WE : Crc64Tests_Parameterized
     {
         public Crc64Tests_ParameterSet_Custom_WE() : base(new Crc64WEDriver()) { }
+#if !SINGLE_FILE_TEST_RUNNER
+        public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc64WEDriver());
+#endif
     }
     public class Crc64Tests_ParameterSet_Custom_GoIso : Crc64Tests_Parameterized
     {
         public Crc64Tests_ParameterSet_Custom_GoIso() : base(new Crc64GoIsoDriver()) { }
+#if !SINGLE_FILE_TEST_RUNNER
+        public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc64GoIsoDriver());
+#endif
     }
     public class Crc64Tests_ParameterSet_Custom_Redis : Crc64Tests_Parameterized
     {
         public Crc64Tests_ParameterSet_Custom_Redis() : base(new Crc64RedisDriver()) { }
-    }
-#else
-    public class Crc64Tests_ParameterSet_Custom_WE : Crc64Tests_Parameterized<Crc64WEDriver>;
-    public class Crc64Tests_ParameterSet_Custom_GoIso : Crc64Tests_Parameterized<Crc64GoIsoDriver>;
-    public class Crc64Tests_ParameterSet_Custom_Redis : Crc64Tests_Parameterized<Crc64RedisDriver>;
+#if !SINGLE_FILE_TEST_RUNNER
+        public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc64RedisDriver());
 #endif
+    }
 }
