@@ -985,12 +985,26 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
                 }
                 else
                 {
-                    MethodTable* pMTValue = (type == ELEMENT_TYPE_VALUETYPE || type == ELEMENT_TYPE_CLASS)
-                        ? argTypeForParse.GetMethodTable()
-                        : CoreLibBinder::GetElementType(type);
+                    if (type == ELEMENT_TYPE_CLASS ||
+                        type == ELEMENT_TYPE_STRING ||
+                        type == ELEMENT_TYPE_OBJECT ||
+                        type == ELEMENT_TYPE_SZARRAY ||
+                        type == ELEMENT_TYPE_ARRAY)
+                    {
+                        // Reference-like custom-attribute ctor arguments are already represented as OBJECTREF
+                        // when non-null. If no object was created, this must be the null case.
+                        _ASSERTE(data == (ARG_SLOT)0);
+                        argObj = NULL;
+                    }
+                    else
+                    {
+                        MethodTable* pMTValue = (type == ELEMENT_TYPE_VALUETYPE)
+                            ? argTypeForParse.GetMethodTable()
+                            : CoreLibBinder::GetElementType(type);
 
-                    _ASSERTE(pMTValue != NULL);
-                    argObj = pMTValue->Box((void*)ArgSlotEndiannessFixup(&data, pMTValue->GetNumInstanceFieldBytes()));
+                        _ASSERTE(pMTValue != NULL);
+                        argObj = pMTValue->Box((void*)ArgSlotEndiannessFixup(&data, pMTValue->GetNumInstanceFieldBytes()));
+                    }
                 }
 
                 gc.ctorArgs->SetAt(i, argObj);
