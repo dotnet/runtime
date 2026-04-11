@@ -23,7 +23,6 @@ internal static partial class Interop
 
         internal enum JOBOBJECTINFOCLASS
         {
-            JobObjectBasicLimitInformation = 2,
             JobObjectExtendedLimitInformation = 9
         }
 

@@ -143,10 +143,15 @@ namespace Microsoft.Win32.SafeHandles
                 // Extended Startup Info can be configured only for the non-logon path
                 if (!logon)
                 {
-                    ConfigureExtendedStartupInfo(inheritedHandles, killOnParentExit,
-                        ref startupInfoEx, ref creationFlags, ref attributeListBuffer,
+                    if (ConfigureExtendedStartupInfo(inheritedHandles, killOnParentExit,
+                        in startupInfoEx, ref attributeListBuffer,
                         ref handlesToInherit, ref handlesToRelease, ref bInheritHandles,
-                        ref jobHandles);
+                        ref jobHandles))
+                    {
+                        creationFlags |= Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT;
+                        startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
+                        startupInfoEx.lpAttributeList = attributeListBuffer;
+                    }
                 }
 
                 bool retVal;
@@ -461,16 +466,11 @@ namespace Microsoft.Win32.SafeHandles
             handlesToInherit[handleCount++] = handle;
         }
 
-        private static unsafe void ConfigureExtendedStartupInfo(SafeHandle[]? inheritedHandles, bool killOnParentExit,
-            ref Interop.Kernel32.STARTUPINFOEX startupInfoEx, ref int creationFlags, ref void* attributeListBuffer,
+        private static unsafe bool ConfigureExtendedStartupInfo(SafeHandle[]? inheritedHandles, bool killOnParentExit,
+            in Interop.Kernel32.STARTUPINFOEX startupInfoEx, ref void* attributeListBuffer,
             ref nint* handlesToInherit, ref SafeHandle?[]? handlesToRelease, ref bool bInheritHandles,
             ref nint* jobHandles)
         {
-            if (inheritedHandles is null && !killOnParentExit)
-            {
-                return;
-            }
-
             // Determine the number of attributes we need to set in the proc thread attribute list.
             int attributeCount = 0;
 
@@ -510,8 +510,7 @@ namespace Microsoft.Win32.SafeHandles
 
             if (attributeCount == 0)
             {
-                Debug.Assert(!bInheritHandles);
-                return;
+                return false;
             }
 
             nuint size = 0;
@@ -547,9 +546,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
 
-            creationFlags |= Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT;
-            startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
-            startupInfoEx.lpAttributeList = attributeListBuffer;
+            return true;
         }
 
         private static void EnableInheritanceAndAddRef(
