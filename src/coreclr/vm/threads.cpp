@@ -2581,7 +2581,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     // If a debugger attached during such a window (or even took a dump at the exit event),
     // then it may not realize the thread is dead.
     // So ensure we mark the thread as dead before we send the tool notifications.
-    // The TS_Stopped bit will cause the debugger to view this as TS_Dead.
     _ASSERTE(HasThreadState(TS_Stopped));
 
     // Should not use OSThreadId:
