@@ -246,7 +246,7 @@ namespace System.Linq.Expressions.Tests
         public static int SI { get; set; }
     }
 
-    internal class CompilationTypes : IEnumerable<object[]>
+    public class CompilationTypes : IEnumerable<object[]>
     {
         private static IEnumerable<object[]> Booleans
         {

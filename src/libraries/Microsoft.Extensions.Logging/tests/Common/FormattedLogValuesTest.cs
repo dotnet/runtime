@@ -29,23 +29,33 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Theory]
-        [InlineData("[null]", null, null)]
-        [InlineData("[null]", null, new object[] { })]
-        [InlineData("[null]", null, new object[] { null })]
-        [InlineData("[null]", null, new object[] { 1 })]
-        public void Log_NullFormat(string expected, string? format, object[]? args)
+        [MemberData(nameof(Log_NullFormat_Data))]
+        public void Log_NullFormat(string expected, string? format, object?[]? args)
         {
             var logValues = new FormattedLogValues(format, args);
             Assert.Equal(expected, logValues.ToString());
         }
 
+        public static IEnumerable<object?[]> Log_NullFormat_Data()
+        {
+            yield return new object?[] { "[null]", null, null };
+            yield return new object?[] { "[null]", null, new object[] { } };
+            yield return new object?[] { "[null]", null, new object?[] { null } };
+            yield return new object?[] { "[null]", null, new object[] { 1 } };
+        }
+
         [Theory]
-        [InlineData("(null), (null) : (null)", "{0} : {1}", new object[] { new object[] { null, null }, null })]
-        [InlineData("(null)", "{0}", new object[] { null })]
-        public void LogValues_WithNulls(string expected, string format, object[]? args)
+        [MemberData(nameof(LogValues_WithNulls_Data))]
+        public void LogValues_WithNulls(string expected, string format, object?[]? args)
         {
             var logValues = new FormattedLogValues(format, args);
             Assert.Equal(expected, logValues.ToString());
+        }
+
+        public static IEnumerable<object?[]> LogValues_WithNulls_Data()
+        {
+            yield return new object?[] { "(null), (null) : (null)", "{0} : {1}", new object?[] { new object?[] { null, null }, null } };
+            yield return new object?[] { "(null)", "{0}", new object?[] { null } };
         }
 
         [Theory]

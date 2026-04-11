@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+#if !SINGLE_FILE_TEST_RUNNER
 using System.Reflection;
+#endif
 using Xunit.Sdk;
 using Xunit.v3;
 
@@ -14,22 +16,25 @@ namespace System.Linq.Expressions.Tests
     {
         public IReadOnlyCollection<TTestCase> OrderTestCases<TTestCase>(IReadOnlyCollection<TTestCase> testCases) where TTestCase : notnull, ITestCase
         {
+#if SINGLE_FILE_TEST_RUNNER
+            // In Native AOT, ITestMethod does not expose MethodInfo, so
+            // attribute-based ordering is not available.  Return the
+            // original collection unmodified.
+            return testCases;
+#else
             Dictionary<int, List<TTestCase>> queue = new Dictionary<int, List<TTestCase>>();
             List<TTestCase> result = new List<TTestCase>();
 
             foreach (TTestCase testCase in testCases)
             {
                 int order = 0;
-                if (testCase is IXunitTestCase xunitTestCase)
+                MethodInfo? method = testCase.TestMethod.Method;
+                if (method != null)
                 {
-                    MethodInfo? method = xunitTestCase.TestMethod.Method;
-                    if (method != null)
+                    TestOrderAttribute? orderAttribute = method.GetCustomAttribute<TestOrderAttribute>();
+                    if (orderAttribute != null)
                     {
-                        TestOrderAttribute? orderAttribute = method.GetCustomAttribute<TestOrderAttribute>();
-                        if (orderAttribute != null)
-                        {
-                            order = orderAttribute.Order;
-                        }
+                        order = orderAttribute.Order;
                     }
                 }
 
@@ -50,6 +55,7 @@ namespace System.Linq.Expressions.Tests
                     result.Add(testCase);
 
             return result;
+#endif
         }
     }
 }

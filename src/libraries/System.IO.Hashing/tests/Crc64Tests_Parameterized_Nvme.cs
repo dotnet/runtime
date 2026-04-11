@@ -29,8 +29,14 @@ namespace System.IO.Hashing.Tests
             };
     }
 
+#if SINGLE_FILE_TEST_RUNNER
+    public class Crc64Tests_ParameterSet_Nvme : Crc64Tests_Parameterized
+    {
+        public Crc64Tests_ParameterSet_Nvme() : base(new Crc64NvmeDriver()) { }
+#else
     public class Crc64Tests_ParameterSet_Nvme : Crc64Tests_Parameterized<Crc64NvmeDriver>
     {
+#endif
         [Fact]
         public void StaticProperty_IsSingleton()
         {

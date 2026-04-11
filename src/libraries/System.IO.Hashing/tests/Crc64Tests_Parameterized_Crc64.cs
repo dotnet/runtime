@@ -29,8 +29,14 @@ namespace System.IO.Hashing.Tests
             };
     }
 
+#if SINGLE_FILE_TEST_RUNNER
+    public class Crc64Tests_ParameterSet_Crc64 : Crc64Tests_Parameterized
+    {
+        public Crc64Tests_ParameterSet_Crc64() : base(new Crc64Driver()) { }
+#else
     public class Crc64Tests_ParameterSet_Crc64 : Crc64Tests_Parameterized<Crc64Driver>
     {
+#endif
         [Fact]
         public void StaticProperty_IsSingleton()
         {

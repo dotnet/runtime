@@ -437,6 +437,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+#if !SINGLE_FILE_TEST_RUNNER
         [Theory]
         [MemberData(nameof(GetCustomOverflowConverters))]
         public async Task ExtensionProperty_SupportsWritingToCustomSerializerWithOptions<TDictionary>(JsonConverter<TDictionary> dictionaryConverter)
@@ -453,6 +454,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = await Serializer.SerializeWrapper(root, options);
             Assert.Equal("""{"MyCustomOverflowWrite":"OverflowValueWrite"}""", json);
         }
+#endif
 
         public interface IClassWithOverflow
         {
@@ -495,6 +497,7 @@ namespace System.Text.Json.Serialization.Tests
             public IDictionary GetOverflow() => Overflow;
         }
 
+#if !SINGLE_FILE_TEST_RUNNER
         [Theory]
         [MemberData(nameof(GetClassesWithCustomExtensionDataOverflowConverter))]
         public async Task ExtensionProperty_SupportsWritingToCustomSerializerWithExplicitConverter<ClassWithOverflow>(ClassWithOverflow obj) where ClassWithOverflow : IClassWithOverflow
@@ -502,7 +505,9 @@ namespace System.Text.Json.Serialization.Tests
             string json = await Serializer.SerializeWrapper(obj);
             Assert.Equal("""{"MyCustomOverflowWrite":"OverflowValueWrite"}""", json);
         }
+#endif
 
+#if !SINGLE_FILE_TEST_RUNNER
         [Theory]
 #if BUILDING_SOURCE_GENERATOR_TESTS
         [ActiveIssue("https://github.com/dotnet/runtime/issues/87005")]
@@ -516,6 +521,7 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithExtensionData<TDictionary> obj = await Serializer.DeserializeWrapper<ClassWithExtensionData<TDictionary>>("""{"TestKey":"TestValue"}""", options);
             Assert.Equal("TestValue", ((JsonElement)obj.Overflow["TestKey"]).GetString());
         }
+#endif
 
         public static IEnumerable<object[]> GetCustomOverflowConverters()
         {
@@ -540,6 +546,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("JsonObject", ex.Message);
         }
 
+#if !SINGLE_FILE_TEST_RUNNER
         [Theory]
         [MemberData(nameof(GetClassesWithCustomExtensionDataOverflowConverter))]
         public async Task ExtensionProperty_IgnoresCustomSerializerWithExplicitConverter<ClassWithOverflow>(ClassWithOverflow obj)
@@ -548,6 +555,7 @@ namespace System.Text.Json.Serialization.Tests
             obj = await Serializer.DeserializeWrapper<ClassWithOverflow>("""{"TestKey":"TestValue"}""");
             Assert.Equal("TestValue", ((JsonElement)obj.GetOverflow()["TestKey"]).GetString());
         }
+#endif
 
         public static IEnumerable<object[]> GetClassesWithCustomExtensionDataOverflowConverter()
         {

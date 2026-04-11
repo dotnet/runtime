@@ -89,7 +89,22 @@ namespace System.IO.Hashing.Tests
             };
     }
 
+#if SINGLE_FILE_TEST_RUNNER
+    public class Crc64Tests_ParameterSet_Custom_WE : Crc64Tests_Parameterized
+    {
+        public Crc64Tests_ParameterSet_Custom_WE() : base(new Crc64WEDriver()) { }
+    }
+    public class Crc64Tests_ParameterSet_Custom_GoIso : Crc64Tests_Parameterized
+    {
+        public Crc64Tests_ParameterSet_Custom_GoIso() : base(new Crc64GoIsoDriver()) { }
+    }
+    public class Crc64Tests_ParameterSet_Custom_Redis : Crc64Tests_Parameterized
+    {
+        public Crc64Tests_ParameterSet_Custom_Redis() : base(new Crc64RedisDriver()) { }
+    }
+#else
     public class Crc64Tests_ParameterSet_Custom_WE : Crc64Tests_Parameterized<Crc64WEDriver>;
     public class Crc64Tests_ParameterSet_Custom_GoIso : Crc64Tests_Parameterized<Crc64GoIsoDriver>;
     public class Crc64Tests_ParameterSet_Custom_Redis : Crc64Tests_Parameterized<Crc64RedisDriver>;
+#endif
 }

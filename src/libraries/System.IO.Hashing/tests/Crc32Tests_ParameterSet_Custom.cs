@@ -106,8 +106,27 @@ namespace System.IO.Hashing.Tests
             };
     }
 
+#if SINGLE_FILE_TEST_RUNNER
+    public class Crc32Tests_ParameterSet_Custom_Cksum : Crc32Tests_Parameterized
+    {
+        public Crc32Tests_ParameterSet_Custom_Cksum() : base(new Crc32CksumDriver()) { }
+    }
+    public class Crc32Tests_ParameterSet_Custom_CDRomEdc : Crc32Tests_Parameterized
+    {
+        public Crc32Tests_ParameterSet_Custom_CDRomEdc() : base(new Crc32CDRomEdcDriver()) { }
+    }
+    public class Crc32Tests_ParameterSet_Custom_Mef : Crc32Tests_Parameterized
+    {
+        public Crc32Tests_ParameterSet_Custom_Mef() : base(new Crc32MefDriver()) { }
+    }
+    public class Crc32Tests_ParameterSet_Custom_HD16Forward : Crc32Tests_Parameterized
+    {
+        public Crc32Tests_ParameterSet_Custom_HD16Forward() : base(new Crc32HD16ForwardDriver()) { }
+    }
+#else
     public class Crc32Tests_ParameterSet_Custom_Cksum : Crc32Tests_Parameterized<Crc32CksumDriver>;
     public class Crc32Tests_ParameterSet_Custom_CDRomEdc : Crc32Tests_Parameterized<Crc32CDRomEdcDriver>;
     public class Crc32Tests_ParameterSet_Custom_Mef : Crc32Tests_Parameterized<Crc32MefDriver>;
     public class Crc32Tests_ParameterSet_Custom_HD16Forward : Crc32Tests_Parameterized<Crc32HD16ForwardDriver>;
+#endif
 }

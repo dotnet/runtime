@@ -22,6 +22,7 @@ namespace System.Linq.Expressions.Tests
             _data = data;
         }
 
+        [Obsolete]
         public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod, DisposalTracker disposalTracker)
         {
             var result = new List<ITheoryDataRow>();
@@ -40,6 +41,7 @@ namespace System.Linq.Expressions.Tests
             return new ValueTask<IReadOnlyCollection<ITheoryDataRow>>(result);
         }
 
+        [Obsolete]
         public override bool SupportsDiscoveryEnumeration() => true;
     }
 }

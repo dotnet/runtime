@@ -27,6 +27,7 @@ namespace System.Linq.Expressions.Tests
             delegatedTo = new MemberDataAttribute(memberName, parameters);
         }
 
+        [Obsolete]
         public override async ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod, DisposalTracker disposalTracker)
         {
             delegatedTo.MemberType ??= testMethod.ReflectedType;
@@ -70,6 +71,7 @@ namespace System.Linq.Expressions.Tests
             return result;
         }
 
+        [Obsolete]
         public override bool SupportsDiscoveryEnumeration() => true;
     }
 }

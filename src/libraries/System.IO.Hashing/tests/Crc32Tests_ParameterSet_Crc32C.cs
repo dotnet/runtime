@@ -26,8 +26,14 @@ namespace System.IO.Hashing.Tests
             };
     }
 
+#if SINGLE_FILE_TEST_RUNNER
+    public class Crc32Tests_ParameterSet_Crc32C : Crc32Tests_Parameterized
+    {
+        public Crc32Tests_ParameterSet_Crc32C() : base(new Crc32CDriver()) { }
+#else
     public class Crc32Tests_ParameterSet_Crc32C : Crc32Tests_Parameterized<Crc32CDriver>
     {
+#endif
         [Fact]
         public void StaticProperty_IsSingleton()
         {

@@ -6,6 +6,31 @@ using Xunit;
 
 namespace System.IO.Hashing.Tests
 {
+#if SINGLE_FILE_TEST_RUNNER
+    // Non-generic version for AOT: the xunit AOT source generator cannot handle
+    // abstract generic test classes that inherit [Fact] methods from a base class.
+    public abstract class Crc64Tests_Parameterized : NonCryptoHashTestDriver
+    {
+        private protected readonly Crc64ParameterSet s_parameterSet;
+
+        protected Crc64Tests_Parameterized(Crc64DriverBase driver)
+            : base(TestCaseBase.FromHexString(driver.EmptyOutput))
+        {
+            s_parameterSet = driver.ParameterSet;
+        }
+
+        protected override NonCryptographicHashAlgorithm CreateInstance() => new Crc64(s_parameterSet);
+        protected override NonCryptographicHashAlgorithm Clone(NonCryptographicHashAlgorithm instance) => ((Crc64)instance).Clone();
+        protected override byte[] StaticOneShot(byte[] source) => Crc64.Hash(s_parameterSet, source);
+        protected override byte[] StaticOneShot(ReadOnlySpan<byte> source) => Crc64.Hash(s_parameterSet, source);
+
+        protected override int StaticOneShot(ReadOnlySpan<byte> source, Span<byte> destination) =>
+            Crc64.Hash(s_parameterSet, source, destination);
+
+        protected override bool TryStaticOneShot(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
+            Crc64.TryHash(s_parameterSet, source, destination, out bytesWritten);
+    }
+#else
     public abstract class Crc64Tests_Parameterized<T> : NonCryptoHashTestDriver
         where T : Crc64DriverBase, new()
     {
@@ -198,6 +223,7 @@ namespace System.IO.Hashing.Tests
             AssertEqualHashNumber(testCase.OutputHex, Crc64.HashToUInt64(s_parameterSet, testCase.Input), littleEndian: s_parameterSet.ReflectValues);
         }
     }
+#endif
 
     public abstract class Crc64DriverBase
     {

@@ -35,8 +35,14 @@ namespace System.IO.Hashing.Tests
             reflectValues: true);
     }
 
+#if SINGLE_FILE_TEST_RUNNER
+    public sealed class Crc32Tests_ParameterSet_Crc32 : Crc32Tests_Parameterized
+    {
+        public Crc32Tests_ParameterSet_Crc32() : base(new Crc32Driver()) { }
+#else
     public sealed class Crc32Tests_ParameterSet_Crc32 : Crc32Tests_Parameterized<Crc32Driver>
     {
+#endif
         [Fact]
         public void StaticProperty_IsSingleton()
         {
@@ -56,8 +62,14 @@ namespace System.IO.Hashing.Tests
         }
     }
 
+#if SINGLE_FILE_TEST_RUNNER
+    public sealed class Crc32Tests_ParameterSet_Custom_Crc32 : Crc32Tests_Parameterized
+    {
+        public Crc32Tests_ParameterSet_Custom_Crc32() : base(new CustomCrc32Driver()) { }
+#else
     public sealed class Crc32Tests_ParameterSet_Custom_Crc32 : Crc32Tests_Parameterized<CustomCrc32Driver>
     {
+#endif
         [Fact]
         public void CreateIsNotSingleton()
         {

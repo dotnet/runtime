@@ -53,6 +53,7 @@ namespace Xunit
         public ActiveIssueAttribute(string issue, TestPlatforms platforms) { }
         public ActiveIssueAttribute(string issue, TargetFrameworkMonikers frameworks) { }
         public ActiveIssueAttribute(string issue, TestRuntimes runtimes) { }
+        public ActiveIssueAttribute(string issue, TestPlatforms platforms, TestRuntimes runtimes) { }
         public ActiveIssueAttribute(string issue, TestPlatforms platforms, TargetFrameworkMonikers frameworks, TestRuntimes runtimes) { }
         public ActiveIssueAttribute(string issue, Type conditionType, params string[] conditionMemberNames) { }
     }
