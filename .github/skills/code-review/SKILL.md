@@ -308,7 +308,7 @@ Before reviewing individual lines of code, evaluate the PR as a whole. Consider 
 - **Place local functions at method end, fields first in types.** Local functions go at the end of the containing method. Fields are the first members declared in a type.
 - **Narrow warning suppression to smallest scope.** Avoid file-wide `#pragma` suppressions. Disable only around the specific line that triggers the warning.
 - **Use pattern matching and `is`/`or`/`and` patterns.** Prefer `is` patterns and C# pattern matching over manual type checks and comparisons. Use named parameters for boolean arguments.
-- **Do not initialize fields to default values (CA1805).** The CLR zero-initializes fields. Explicit `= false`, `= 0`, `= null` is redundant.
+- **Do not initialize managed fields to default values (CA1805).** The CLR zero-initializes all fields in managed code. Explicit `= false`, `= 0`, `= null` is redundant. (This does not apply to native C/C++ code, where fields and locals must be explicitly initialized.)
 - **Sealed classes do not need the full Dispose pattern.** A simple `Dispose()` is sufficient since no derived class can introduce a finalizer.
 - **Prefer table-driven approaches over excessive case statements.** For hardware intrinsics and pattern-heavy code, use lookup tables (`AuxiliaryJitType`, `SpecialCodeGen` flags) instead of many explicit case entries.
 - **Order struct fields to minimize padding.** In C/C++ struct definitions, order fields by size (pointers first) to reduce padding.
