@@ -448,8 +448,9 @@ foreach ($config in $configuration) {
   $msbuildDebugLogsDir = "$PSScriptRoot/../artifacts/log/$titleCaseConfig/MsbuildDebugLogs"
   New-Item -ItemType Directory -Force -Path $msbuildDebugLogsDir | Out-Null
   $env:MSBUILDDEBUGPATH = $msbuildDebugLogsDir
+  Write-Host "MSBUILDDEBUGPATH=$msbuildDebugLogsDir"
 
-  $argumentsWithConfig = $arguments + " -configuration $titleCaseConfig";
+  $argumentsWithConfig= $arguments + " -configuration $titleCaseConfig";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
     Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
