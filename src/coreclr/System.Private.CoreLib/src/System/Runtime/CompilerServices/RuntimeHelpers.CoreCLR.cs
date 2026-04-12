@@ -684,6 +684,55 @@ namespace System.Runtime.CompilerServices
                 *pException = ex;
             }
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private unsafe struct FuncEvalInvokeContract
+        {
+            public nint MethodHandle;
+            public nint OwnerType;
+            public object* ThisObj;
+            public object?[]* Args;
+            public int IsNewObj;
+        }
+
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void InvokeFuncEval(FuncEvalInvokeContract* pContract, object* pResult, Exception* pException)
+        {
+            try
+            {
+                RuntimeMethodHandleInternal handle = new RuntimeMethodHandleInternal(pContract->MethodHandle);
+                RuntimeType? ownerType = pContract->OwnerType != 0
+                    ? RuntimeTypeHandle.GetRuntimeTypeFromHandle(pContract->OwnerType)
+                    : null;
+                MethodBase method = RuntimeType.GetMethodBase(ownerType, handle)!;
+
+                object? thisObj = *pContract->ThisObj;
+                object?[]? args = *pContract->Args;
+
+                if (pContract->IsNewObj != 0)
+                {
+                    // Call constructor on the pre-allocated instance.
+                    // ConstructorInfo.Invoke(object, ...) invokes on an existing instance and returns null.
+                    method.Invoke(thisObj, BindingFlags.DoNotWrapExceptions, binder: null, args, culture: null);
+                    *pResult = thisObj!;
+                }
+                else
+                {
+                    object? result = method.Invoke(thisObj, BindingFlags.DoNotWrapExceptions, binder: null, args, culture: null);
+                    if (result is not null)
+                        *pResult = result;
+                }
+
+                // Write back any modified byref args into the args array so native can read them.
+                if (args is not null)
+                    *pContract->Args = args;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
@@ -736,7 +785,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct MethodDescChunk
     {
         public MethodTable* MethodTable;
-        public MethodDescChunk*  Next;
+        public MethodDescChunk* Next;
         public byte Size;        // The size of this chunk minus 1 (in multiples of MethodDesc::ALIGNMENT)
         public byte Count;       // The number of MethodDescs in this chunk minus 1
         public ushort FlagsAndTokenRange;
@@ -1132,11 +1181,11 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
 
-        private const uint enum_flag_Initialized                = 0x0001;
-        private const uint enum_flag_HasCheckedStreamOverride   = 0x0400;
-        private const uint enum_flag_StreamOverriddenRead       = 0x0800;
-        private const uint enum_flag_StreamOverriddenWrite      = 0x1000;
-        private const uint enum_flag_EnsuredInstanceActive      = 0x2000;
+        private const uint enum_flag_Initialized = 0x0001;
+        private const uint enum_flag_HasCheckedStreamOverride = 0x0400;
+        private const uint enum_flag_StreamOverriddenRead = 0x0800;
+        private const uint enum_flag_StreamOverriddenWrite = 0x1000;
+        private const uint enum_flag_EnsuredInstanceActive = 0x2000;
 
 
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
