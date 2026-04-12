@@ -490,8 +490,6 @@ enum EEToManagedCallFlags
 
 #define ARGHOLDER_TYPE LPVOID
 
-void CallDefaultConstructor(OBJECTREF ref);
-
 //
 // Helper types for calling managed methods marked with [UnmanagedCallersOnly]
 // from native code.

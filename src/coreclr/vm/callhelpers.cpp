@@ -474,34 +474,3 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #endif // !defined(HOST_64BIT) && BIGENDIAN
     }
 }
-
-void CallDefaultConstructor(OBJECTREF ref)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = ref->GetMethodTable();
-
-    _ASSERTE(pMT != NULL);
-
-    if (!pMT->HasDefaultConstructor())
-    {
-        SString ctorMethodName(SString::Utf8, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, ctorMethodName.GetUnicode());
-    }
-
-    GCPROTECT_BEGIN (ref);
-
-    MethodDesc *pMD = pMT->GetDefaultConstructor();
-
-    UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
-
-    defaultCtorInvoker.InvokeThrowing(&ref, pMD->GetSingleCallableAddrOfCode());
-
-    GCPROTECT_END ();
-}

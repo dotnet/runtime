@@ -109,7 +109,11 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParam
 
         OBJECTREF newObj = instantiatedType.GetMethodTable()->Allocate();
         GCPROTECT_BEGIN(newObj);
-        CallDefaultConstructor(newObj);
+
+        MethodDesc *pMD = pVMT->GetDefaultConstructor();
+        UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
+        defaultCtorInvoker.InvokeThrowing(&newObj, pMD->GetSingleCallableAddrOfCode());
+
         GCPROTECT_END();
 
         pInstantiatedObject.Set(newObj);
