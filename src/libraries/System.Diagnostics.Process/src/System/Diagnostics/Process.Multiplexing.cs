@@ -37,6 +37,8 @@ namespace System.Diagnostics
         /// </exception>
         public (string StandardOutput, string StandardError) ReadAllText(TimeSpan? timeout = default)
         {
+            ValidateReadAllState();
+
             byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
             byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
             int outputBytesRead = 0;
@@ -89,6 +91,8 @@ namespace System.Diagnostics
         /// </exception>
         public (byte[] StandardOutput, byte[] StandardError) ReadAllBytes(TimeSpan? timeout = default)
         {
+            ValidateReadAllState();
+
             byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
             byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
             int outputBytesRead = 0;
@@ -116,15 +120,10 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Validates state, obtains handles, and reads both stdout and stderr pipes into the provided buffers.
-        /// The caller is responsible for renting and returning the buffers.
+        /// Validates that the process is not disposed, both stdout and stderr are redirected,
+        /// and neither stream is in async mode. Sets both streams to sync mode.
         /// </summary>
-        private void ReadPipesToBuffers(
-            TimeSpan? timeout,
-            ref byte[] outputBuffer,
-            ref int outputBytesRead,
-            ref byte[] errorBuffer,
-            ref int errorBytesRead)
+        private void ValidateReadAllState()
         {
             CheckDisposed();
 
@@ -150,13 +149,26 @@ namespace System.Diagnostics
 
             _outputStreamReadMode = StreamReadMode.SyncMode;
             _errorStreamReadMode = StreamReadMode.SyncMode;
+        }
 
+        /// <summary>
+        /// Obtains handles and reads both stdout and stderr pipes into the provided buffers.
+        /// The caller is responsible for calling <see cref="ValidateReadAllState"/> before renting buffers,
+        /// and for renting and returning the buffers.
+        /// </summary>
+        private void ReadPipesToBuffers(
+            TimeSpan? timeout,
+            ref byte[] outputBuffer,
+            ref int outputBytesRead,
+            ref byte[] errorBuffer,
+            ref int errorBytesRead)
+        {
             int timeoutMs = timeout.HasValue
                 ? (int)timeout.Value.TotalMilliseconds
                 : -1; // Infinite
 
-            SafeFileHandle outputHandle = GetSafeFileHandleFromStreamReader(_standardOutput, out SafeHandle outputOwner);
-            SafeFileHandle errorHandle = GetSafeFileHandleFromStreamReader(_standardError, out SafeHandle errorOwner);
+            SafeFileHandle outputHandle = GetSafeFileHandleFromStreamReader(_standardOutput!, out SafeHandle outputOwner);
+            SafeFileHandle errorHandle = GetSafeFileHandleFromStreamReader(_standardError!, out SafeHandle errorOwner);
 
             bool outputRefAdded = false;
             bool errorRefAdded = false;

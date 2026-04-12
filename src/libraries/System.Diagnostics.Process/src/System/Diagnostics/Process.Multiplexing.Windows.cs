@@ -15,7 +15,7 @@ namespace System.Diagnostics
         /// Reads from both standard output and standard error pipes using Windows overlapped IO
         /// with wait handles for single-threaded synchronous multiplexing.
         /// </summary>
-        private static void ReadPipes(
+        private static unsafe void ReadPipes(
             SafeFileHandle outputHandle,
             SafeFileHandle errorHandle,
             int timeoutMs,
@@ -24,131 +24,132 @@ namespace System.Diagnostics
             ref byte[] errorBuffer,
             ref int errorBytesRead)
         {
-            MemoryHandle outputPin = outputBuffer.AsMemory().Pin();
-            MemoryHandle errorPin = errorBuffer.AsMemory().Pin();
+            MemoryHandle outputPin = default;
+            MemoryHandle errorPin = default;
+            NativeOverlapped* outputOverlapped = null;
+            NativeOverlapped* errorOverlapped = null;
+            EventWaitHandle? outputEvent = null;
+            EventWaitHandle? errorEvent = null;
 
-            unsafe
+            try
             {
-                NativeOverlapped* outputOverlapped = null;
-                NativeOverlapped* errorOverlapped = null;
+                outputPin = outputBuffer.AsMemory().Pin();
+                errorPin = errorBuffer.AsMemory().Pin();
 
-                EventWaitHandle outputEvent = new(initialState: false, EventResetMode.ManualReset);
-                EventWaitHandle errorEvent = new(initialState: false, EventResetMode.ManualReset);
+                outputEvent = new EventWaitHandle(initialState: false, EventResetMode.ManualReset);
+                errorEvent = new EventWaitHandle(initialState: false, EventResetMode.ManualReset);
 
-                try
+                outputOverlapped = AllocateOverlapped(outputEvent);
+                errorOverlapped = AllocateOverlapped(errorEvent);
+
+                bool outputDone = false;
+                bool errorDone = false;
+
+                WaitHandle[] waitHandles = [outputEvent, errorEvent];
+
+                // Issue initial reads.
+                Interop.Kernel32.ReadFile(outputHandle, (byte*)outputPin.Pointer + outputBytesRead,
+                    outputBuffer.Length - outputBytesRead, IntPtr.Zero, outputOverlapped);
+
+                Interop.Kernel32.ReadFile(errorHandle, (byte*)errorPin.Pointer + errorBytesRead,
+                    errorBuffer.Length - errorBytesRead, IntPtr.Zero, errorOverlapped);
+
+                long deadline = timeoutMs >= 0
+                    ? Environment.TickCount64 + timeoutMs
+                    : long.MaxValue;
+
+                while (!outputDone || !errorDone)
                 {
-                    outputOverlapped = AllocateOverlapped(outputEvent);
-                    errorOverlapped = AllocateOverlapped(errorEvent);
-
-                    bool outputDone = false;
-                    bool errorDone = false;
-
-                    WaitHandle[] waitHandles = [outputEvent, errorEvent];
-
-                    // Issue initial reads.
-                    Interop.Kernel32.ReadFile(outputHandle, (byte*)outputPin.Pointer + outputBytesRead,
-                        outputBuffer.Length - outputBytesRead, IntPtr.Zero, outputOverlapped);
-
-                    Interop.Kernel32.ReadFile(errorHandle, (byte*)errorPin.Pointer + errorBytesRead,
-                        errorBuffer.Length - errorBytesRead, IntPtr.Zero, errorOverlapped);
-
-                    long deadline = timeoutMs >= 0
-                        ? Environment.TickCount64 + timeoutMs
-                        : long.MaxValue;
-
-                    while (!outputDone || !errorDone)
+                    int waitTimeout;
+                    if (timeoutMs >= 0)
                     {
-                        int waitTimeout;
-                        if (timeoutMs >= 0)
-                        {
-                            long remaining = deadline - Environment.TickCount64;
-                            if (remaining <= 0)
-                            {
-                                CancelPendingIOIfNeeded(outputHandle, outputDone, outputOverlapped);
-                                CancelPendingIOIfNeeded(errorHandle, errorDone, errorOverlapped);
-                                throw new TimeoutException();
-                            }
-
-                            waitTimeout = (int)Math.Min(remaining, int.MaxValue);
-                        }
-                        else
-                        {
-                            waitTimeout = Timeout.Infinite;
-                        }
-
-                        int waitResult = WaitHandle.WaitAny(waitHandles, waitTimeout);
-
-                        if (waitResult == WaitHandle.WaitTimeout)
+                        long remaining = deadline - Environment.TickCount64;
+                        if (remaining <= 0)
                         {
                             CancelPendingIOIfNeeded(outputHandle, outputDone, outputOverlapped);
                             CancelPendingIOIfNeeded(errorHandle, errorDone, errorOverlapped);
                             throw new TimeoutException();
                         }
 
-                        bool isError = waitResult == 1;
-                        NativeOverlapped* currentOverlapped = isError ? errorOverlapped : outputOverlapped;
-                        SafeFileHandle currentHandle = isError ? errorHandle : outputHandle;
-                        ref int totalBytesRead = ref (isError ? ref errorBytesRead : ref outputBytesRead);
-                        ref byte[] currentBuffer = ref (isError ? ref errorBuffer : ref outputBuffer);
-                        EventWaitHandle currentEvent = isError ? errorEvent : outputEvent;
+                        waitTimeout = (int)Math.Min(remaining, int.MaxValue);
+                    }
+                    else
+                    {
+                        waitTimeout = Timeout.Infinite;
+                    }
 
-                        int bytesRead = GetOverlappedResultForPipe(currentHandle, currentOverlapped);
+                    int waitResult = WaitHandle.WaitAny(waitHandles, waitTimeout);
 
-                        if (bytesRead > 0)
+                    if (waitResult == WaitHandle.WaitTimeout)
+                    {
+                        CancelPendingIOIfNeeded(outputHandle, outputDone, outputOverlapped);
+                        CancelPendingIOIfNeeded(errorHandle, errorDone, errorOverlapped);
+                        throw new TimeoutException();
+                    }
+
+                    bool isError = waitResult == 1;
+                    NativeOverlapped* currentOverlapped = isError ? errorOverlapped : outputOverlapped;
+                    SafeFileHandle currentHandle = isError ? errorHandle : outputHandle;
+                    ref int totalBytesRead = ref (isError ? ref errorBytesRead : ref outputBytesRead);
+                    ref byte[] currentBuffer = ref (isError ? ref errorBuffer : ref outputBuffer);
+                    EventWaitHandle currentEvent = isError ? errorEvent : outputEvent;
+
+                    int bytesRead = GetOverlappedResultForPipe(currentHandle, currentOverlapped);
+
+                    if (bytesRead > 0)
+                    {
+                        totalBytesRead += bytesRead;
+
+                        if (totalBytesRead == currentBuffer.Length)
                         {
-                            totalBytesRead += bytesRead;
+                            ref MemoryHandle currentPin = ref (isError ? ref errorPin : ref outputPin);
+                            currentPin.Dispose();
 
-                            if (totalBytesRead == currentBuffer.Length)
-                            {
-                                ref MemoryHandle currentPin = ref (isError ? ref errorPin : ref outputPin);
-                                currentPin.Dispose();
+                            RentLargerBuffer(ref currentBuffer, totalBytesRead);
 
-                                RentLargerBuffer(ref currentBuffer, totalBytesRead);
+                            currentPin = currentBuffer.AsMemory().Pin();
+                        }
 
-                                currentPin = currentBuffer.AsMemory().Pin();
-                            }
+                        // Reset the event and overlapped for next read.
+                        ResetOverlapped(currentEvent, currentOverlapped);
 
-                            // Reset the event and overlapped for next read.
-                            ResetOverlapped(currentEvent, currentOverlapped);
-
-                            byte* pinPointer = isError ? (byte*)errorPin.Pointer : (byte*)outputPin.Pointer;
-                            Interop.Kernel32.ReadFile(currentHandle, pinPointer + totalBytesRead,
-                                currentBuffer.Length - totalBytesRead, IntPtr.Zero, currentOverlapped);
+                        byte* pinPointer = isError ? (byte*)errorPin.Pointer : (byte*)outputPin.Pointer;
+                        Interop.Kernel32.ReadFile(currentHandle, pinPointer + totalBytesRead,
+                            currentBuffer.Length - totalBytesRead, IntPtr.Zero, currentOverlapped);
+                    }
+                    else
+                    {
+                        // EOF: pipe write end was closed.
+                        if (isError)
+                        {
+                            errorDone = true;
                         }
                         else
                         {
-                            // EOF: pipe write end was closed.
-                            if (isError)
-                            {
-                                errorDone = true;
-                            }
-                            else
-                            {
-                                outputDone = true;
-                            }
-
-                            // Reset the event so WaitAny won't trigger on this stale handle.
-                            currentEvent.Reset();
+                            outputDone = true;
                         }
+
+                        // Reset the event so WaitAny won't trigger on this stale handle.
+                        currentEvent.Reset();
                     }
                 }
-                finally
+            }
+            finally
+            {
+                if (outputOverlapped is not null)
                 {
-                    if (outputOverlapped != null)
-                    {
-                        NativeMemory.Free(outputOverlapped);
-                    }
-
-                    if (errorOverlapped != null)
-                    {
-                        NativeMemory.Free(errorOverlapped);
-                    }
-
-                    outputEvent.Dispose();
-                    errorEvent.Dispose();
-                    outputPin.Dispose();
-                    errorPin.Dispose();
+                    NativeMemory.Free(outputOverlapped);
                 }
+
+                if (errorOverlapped is not null)
+                {
+                    NativeMemory.Free(errorOverlapped);
+                }
+
+                outputEvent?.Dispose();
+                errorEvent?.Dispose();
+                outputPin.Dispose();
+                errorPin.Dispose();
             }
         }
 
