@@ -1615,12 +1615,28 @@ namespace System.StubHelpers
             }
         }
 
+        private static bool GetIsBlittable()
+        {
+            try
+            {
+                return CallIsBlittable();
+            }
+            catch (TypeInitializationException ex)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
+                return false; // unreachable
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static bool CallIsBlittable() => Methods.IsBlittable;
+        }
+
         public static void Free(T? managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
             // For blittable types, FreeCore is a no-op and there are no native sub-structures to free.
             // Calling NativeMemory.Clear on a potentially invalid pointer (e.g., in DestroyStructure tests)
             // would cause a fault, so we skip cleanup entirely for blittable types.
-            if (unmanaged != null && !Methods.IsBlittable)
+            if (unmanaged != null && !GetIsBlittable())
             {
                 FreeCore(managed, unmanaged, ref cleanupWorkList);
                 NativeMemory.Clear(unmanaged, (nuint)nativeSize);
