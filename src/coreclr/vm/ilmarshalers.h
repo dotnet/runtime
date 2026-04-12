@@ -3379,6 +3379,8 @@ protected:
 
     void EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
     void EmitLoadNativeSize(ILCodeStream* pslILEmit) override;
     void EmitClearNative(ILCodeStream* pslILEmit) override;
 };

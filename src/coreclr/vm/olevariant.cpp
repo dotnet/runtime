@@ -2067,7 +2067,7 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
 
         // Use managed IArrayElementMarshaler<T> implementations for content conversion.
         UnmanagedCallersOnlyCaller invoker(METHOD__STUBHELPERS__INVOKE_ARRAY_CONTENTS_CONVERTER);
-        invoker.InvokeThrowing(&Array, pSafeArray->pvData, (void*)pConvertContentsCode);
+        invoker.InvokeThrowing(&Array, pSafeArray->pvData, (INT32)dwNumComponents, (void*)pConvertContentsCode);
 
         if (pSafeArray->cDims != 1)
         {
@@ -2124,7 +2124,7 @@ void OleVariant::MarshalArrayRefForSafeArray(SAFEARRAY *pSafeArray,
 
     // Use managed IArrayElementMarshaler<T> implementations for content conversion.
     UnmanagedCallersOnlyCaller invoker(METHOD__STUBHELPERS__INVOKE_ARRAY_CONTENTS_CONVERTER);
-    invoker.InvokeThrowing(pArrayRef, pSrcData, (void*)pConvertContentsCode);
+    invoker.InvokeThrowing(pArrayRef, pSrcData, (INT32)dwNumComponents, (void*)pConvertContentsCode);
 }
 
 void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT *pOleVariant)

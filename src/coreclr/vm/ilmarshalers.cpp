@@ -4218,7 +4218,10 @@ void ILNativeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 0);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitLDLEN();
+    pslILEmit->EmitCONV_I4();
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 3, 0);
 }
 
 void ILNativeArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -4229,7 +4232,10 @@ void ILNativeArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 0);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitLDLEN();
+    pslILEmit->EmitCONV_I4();
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 3, 0);
 }
 
 void ILNativeArrayMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
@@ -4498,7 +4504,10 @@ void ILArrayMarshalerBase::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmi
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 0);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitLDLEN();
+    pslILEmit->EmitCONV_I4();
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 3, 0);
 }
 
 void ILArrayMarshalerBase::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -4509,7 +4518,10 @@ void ILArrayMarshalerBase::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmi
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 2, 0);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitLDLEN();
+    pslILEmit->EmitCONV_I4();
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 3, 0);
 }
 
 // ==================== ILFixedArrayMarshaler ====================
@@ -4551,6 +4563,36 @@ void ILFixedArrayMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit)
     pslILEmit->EmitLDC(mops.additive);
     pslILEmit->EmitNEWARR(pslILEmit->GetToken(mops.methodTable));
     EmitStoreManagedValue(pslILEmit);
+}
+
+void ILFixedArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    CREATE_MARSHALER_CARRAY_OPERANDS mops;
+    m_pargs->m_pMarshalInfo->GetMops(&mops);
+
+    MethodDesc* pMD = GetInstantiatedArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED);
+
+    EmitLoadManagedValue(pslILEmit);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(mops.additive);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 3, 0);
+}
+
+void ILFixedArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
+{
+    STANDARD_VM_CONTRACT;
+
+    CREATE_MARSHALER_CARRAY_OPERANDS mops;
+    m_pargs->m_pMarshalInfo->GetMops(&mops);
+
+    MethodDesc* pMD = GetInstantiatedArrayMethod(METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED);
+
+    EmitLoadManagedValue(pslILEmit);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(mops.additive);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 3, 0);
 }
 
 void ILFixedArrayMarshaler::EmitLoadNativeSize(ILCodeStream* pslILEmit)

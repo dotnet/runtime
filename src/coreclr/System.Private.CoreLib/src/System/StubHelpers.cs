@@ -893,8 +893,8 @@ namespace System.StubHelpers
 
         private struct ArrayMarshalerMethods
         {
-            public unsafe delegate*<Array, byte*, void> convertContentsToNative;
-            public unsafe delegate*<Array, byte*, void> convertContentsToManaged;
+            public unsafe delegate*<Array, byte*, int, void> convertContentsToNative;
+            public unsafe delegate*<Array, byte*, int, void> convertContentsToManaged;
             public unsafe delegate*<Array, byte*> convertSpaceToNative;
         }
 
@@ -960,14 +960,14 @@ namespace System.StubHelpers
 
             arrayMarshalerMethods = new ArrayMarshalerMethods
             {
-                convertContentsToManaged = (delegate*<Array, byte*, void>)
+                convertContentsToManaged = (delegate*<Array, byte*, int, void>)
                     typeof(StubHelpers)
                     .GetMethod(
                         nameof(StubHelpers.ConvertArrayContentsToManaged),
                         BindingFlags.Public | BindingFlags.Static)!
                     .MakeGenericMethod(marshalerGenericArgs)
                     .MethodHandle.GetFunctionPointer(),
-                convertContentsToNative = (delegate*<Array, byte*, void>)
+                convertContentsToNative = (delegate*<Array, byte*, int, void>)
                     typeof(StubHelpers)
                     .GetMethod(
                         nameof(StubHelpers.ConvertArrayContentsToUnmanaged),
@@ -987,7 +987,8 @@ namespace System.StubHelpers
 
             if (IsIn(dwFlags))
             {
-                arrayMarshalerMethods.convertContentsToNative((Array)pManagedHome, pNativeHome);
+                Array managedArray = (Array)pManagedHome;
+                arrayMarshalerMethods.convertContentsToNative(managedArray, pNativeHome, managedArray.Length);
             }
 
             if (IsOut(dwFlags))
@@ -1180,7 +1181,8 @@ namespace System.StubHelpers
             {
                 case BackPropAction.Array:
                     {
-                        arrayMarshalerMethods.convertContentsToManaged((Array)pManagedHome, (byte*)pNativeHome);
+                        Array managedArray = (Array)pManagedHome;
+                        arrayMarshalerMethods.convertContentsToManaged(managedArray, (byte*)pNativeHome, managedArray.Length);
                         break;
                     }
 
@@ -2297,22 +2299,20 @@ namespace System.StubHelpers
             }
         }
 
-        public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(Array managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+        public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(Array managed, byte* pNative, int numElements) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
         {
             ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managed));
-            int length = managed.Length;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < numElements; i++)
             {
                 TMarshaler.ConvertToUnmanaged(ref Unsafe.Add(ref firstElement, i), pNative);
                 pNative += TMarshaler.UnmanagedSize;
             }
         }
 
-        public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(Array managed, byte* pNative) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+        public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(Array managed, byte* pNative, int numElements) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
         {
             ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managed));
-            int length = managed.Length;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < numElements; i++)
             {
                 TMarshaler.ConvertToManaged(ref Unsafe.Add(ref firstElement, i), pNative);
                 pNative += TMarshaler.UnmanagedSize;
@@ -2323,12 +2323,13 @@ namespace System.StubHelpers
         internal static unsafe void InvokeArrayContentsConverter(
             Array* pManagedArray,
             byte* pNative,
-            delegate*<Array, byte*, void> pConvertMethod,
+            int numElements,
+            delegate*<Array, byte*, int, void> pConvertMethod,
             Exception* pException)
         {
             try
             {
-                pConvertMethod(*pManagedArray, pNative);
+                pConvertMethod(*pManagedArray, pNative, numElements);
             }
             catch (Exception ex)
             {
