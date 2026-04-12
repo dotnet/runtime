@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
 
                 case TargetArchitecture.ARM64:
-                    return target.OperatingSystem == TargetOS.OSX ?
+                    return target.IsApplePlatform ?
                         AppleArm64TransitionBlock.Instance :
                         Arm64TransitionBlock.Instance;
 

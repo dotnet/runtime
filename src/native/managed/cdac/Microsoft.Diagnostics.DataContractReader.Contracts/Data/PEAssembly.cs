@@ -12,8 +12,8 @@ internal sealed class PEAssembly : IData<PEAssembly>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.PEAssembly);
 
-        PEImage = target.ReadPointer(address + (ulong)type.Fields[nameof(PEImage)].Offset);
-        AssemblyBinder = target.ReadPointer(address + (ulong)type.Fields[nameof(AssemblyBinder)].Offset);
+        PEImage = target.ReadPointerField(address, type, nameof(PEImage));
+        AssemblyBinder = target.ReadPointerField(address, type, nameof(AssemblyBinder));
     }
 
     public TargetPointer PEImage { get; init; }

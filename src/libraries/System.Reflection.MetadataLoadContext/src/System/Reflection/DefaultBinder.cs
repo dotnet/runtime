@@ -53,7 +53,7 @@ namespace System
             for (i = 0; i < types.Length; i++)
             {
                 realTypes[i] = types[i].UnderlyingSystemType;
-                if (!(IsImplementedByMetadataLoadContext(realTypes[i]) || realTypes[i].IsSignatureType()))
+                if (!(IsImplementedByMetadataLoadContext(realTypes[i]) || realTypes[i].IsSignatureType))
                     throw new ArgumentException(SR.Arg_MustBeType, nameof(types));
             }
             types = realTypes;
@@ -81,7 +81,7 @@ namespace System
                         continue;
 
                     Type? type = types[j];
-                    if (type.IsSignatureType())
+                    if (type.IsSignatureType)
                     {
                         if (!(candidates[i] is MethodInfo methodInfo))
                             break;
@@ -427,7 +427,7 @@ namespace System
             if (c1 == c2)
                 return 0;
 
-            if (t.IsSignatureType())
+            if (t.IsSignatureType)
             {
                 if (t.MatchesExactly(c1))
                     return 1;

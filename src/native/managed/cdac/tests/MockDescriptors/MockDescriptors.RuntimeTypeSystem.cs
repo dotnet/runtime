@@ -2,10 +2,285 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
+
+internal sealed class MockMethodTable : TypedView
+{
+    private const string MTFlagsFieldName = nameof(Data.MethodTable.MTFlags);
+    private const string BaseSizeFieldName = nameof(Data.MethodTable.BaseSize);
+    private const string MTFlags2FieldName = nameof(Data.MethodTable.MTFlags2);
+    private const string EEClassOrCanonMTFieldName = nameof(Data.MethodTable.EEClassOrCanonMT);
+    private const string ModuleFieldName = nameof(Data.MethodTable.Module);
+    private const string ParentMethodTableFieldName = nameof(Data.MethodTable.ParentMethodTable);
+    private const string NumInterfacesFieldName = nameof(Data.MethodTable.NumInterfaces);
+    private const string NumVirtualsFieldName = nameof(Data.MethodTable.NumVirtuals);
+    private const string PerInstInfoFieldName = nameof(Data.MethodTable.PerInstInfo);
+    private const string AuxiliaryDataFieldName = nameof(Data.MethodTable.AuxiliaryData);
+
+    public static Layout<MockMethodTable> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("MethodTable", architecture)
+            .AddUInt32Field(MTFlagsFieldName)
+            .AddUInt32Field(BaseSizeFieldName)
+            .AddUInt32Field(MTFlags2FieldName)
+            .AddPointerField(EEClassOrCanonMTFieldName)
+            .AddPointerField(ModuleFieldName)
+            .AddPointerField(ParentMethodTableFieldName)
+            .AddUInt16Field(NumInterfacesFieldName)
+            .AddUInt16Field(NumVirtualsFieldName)
+            .AddPointerField(PerInstInfoFieldName)
+            .AddPointerField(AuxiliaryDataFieldName)
+            .Build<MockMethodTable>();
+
+    public uint MTFlags
+    {
+        get => ReadUInt32Field(MTFlagsFieldName);
+        set => WriteUInt32Field(MTFlagsFieldName, value);
+    }
+
+    public uint BaseSize
+    {
+        get => ReadUInt32Field(BaseSizeFieldName);
+        set => WriteUInt32Field(BaseSizeFieldName, value);
+    }
+
+    public uint MTFlags2
+    {
+        get => ReadUInt32Field(MTFlags2FieldName);
+        set => WriteUInt32Field(MTFlags2FieldName, value);
+    }
+
+    public ulong EEClassOrCanonMT
+    {
+        get => ReadPointerField(EEClassOrCanonMTFieldName);
+        set => WritePointerField(EEClassOrCanonMTFieldName, value);
+    }
+
+    public ulong Module
+    {
+        get => ReadPointerField(ModuleFieldName);
+        set => WritePointerField(ModuleFieldName, value);
+    }
+
+    public ulong ParentMethodTable
+    {
+        get => ReadPointerField(ParentMethodTableFieldName);
+        set => WritePointerField(ParentMethodTableFieldName, value);
+    }
+
+    public ushort NumInterfaces
+    {
+        get => ReadUInt16Field(NumInterfacesFieldName);
+        set => WriteUInt16Field(NumInterfacesFieldName, value);
+    }
+
+    public ushort NumVirtuals
+    {
+        get => ReadUInt16Field(NumVirtualsFieldName);
+        set => WriteUInt16Field(NumVirtualsFieldName, value);
+    }
+
+    public ulong PerInstInfo
+    {
+        get => ReadPointerField(PerInstInfoFieldName);
+        set => WritePointerField(PerInstInfoFieldName, value);
+    }
+
+    public ulong AuxiliaryData
+    {
+        get => ReadPointerField(AuxiliaryDataFieldName);
+        set => WritePointerField(AuxiliaryDataFieldName, value);
+    }
+}
+
+internal sealed class MockEEClass : TypedView
+{
+    private const string MethodTableFieldName = nameof(Data.EEClass.MethodTable);
+    private const string MethodDescChunkFieldName = nameof(Data.EEClass.MethodDescChunk);
+    private const string CorTypeAttrFieldName = nameof(Data.EEClass.CorTypeAttr);
+    private const string NumMethodsFieldName = nameof(Data.EEClass.NumMethods);
+    private const string InternalCorElementTypeFieldName = nameof(Data.EEClass.InternalCorElementType);
+    private const string NumInstanceFieldsFieldName = nameof(Data.EEClass.NumInstanceFields);
+    private const string NumStaticFieldsFieldName = nameof(Data.EEClass.NumStaticFields);
+    private const string NumThreadStaticFieldsFieldName = nameof(Data.EEClass.NumThreadStaticFields);
+    private const string FieldDescListFieldName = nameof(Data.EEClass.FieldDescList);
+    private const string NumNonVirtualSlotsFieldName = nameof(Data.EEClass.NumNonVirtualSlots);
+
+    public static Layout<MockEEClass> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("EEClass", architecture)
+            .AddPointerField(MethodTableFieldName)
+            .AddPointerField(MethodDescChunkFieldName)
+            .AddUInt32Field(CorTypeAttrFieldName)
+            .AddUInt16Field(NumMethodsFieldName)
+            .AddByteField(InternalCorElementTypeFieldName)
+            .AddUInt16Field(NumInstanceFieldsFieldName)
+            .AddUInt16Field(NumStaticFieldsFieldName)
+            .AddUInt16Field(NumThreadStaticFieldsFieldName)
+            .AddPointerField(FieldDescListFieldName)
+            .AddUInt16Field(NumNonVirtualSlotsFieldName)
+            .Build<MockEEClass>();
+
+    public ulong MethodTable
+    {
+        get => ReadPointerField(MethodTableFieldName);
+        set => WritePointerField(MethodTableFieldName, value);
+    }
+
+    public uint CorTypeAttr
+    {
+        get => ReadUInt32Field(CorTypeAttrFieldName);
+        set => WriteUInt32Field(CorTypeAttrFieldName, value);
+    }
+
+    public ushort NumMethods
+    {
+        get => ReadUInt16Field(NumMethodsFieldName);
+        set => WriteUInt16Field(NumMethodsFieldName, value);
+    }
+
+    public ushort NumNonVirtualSlots
+    {
+        get => ReadUInt16Field(NumNonVirtualSlotsFieldName);
+        set => WriteUInt16Field(NumNonVirtualSlotsFieldName, value);
+    }
+}
+
+internal sealed class MockMethodTableAuxiliaryData : TypedView
+{
+    private const string LoaderModuleFieldName = nameof(Data.MethodTableAuxiliaryData.LoaderModule);
+    private const string OffsetToNonVirtualSlotsFieldName = nameof(Data.MethodTableAuxiliaryData.OffsetToNonVirtualSlots);
+    private const string FlagsFieldName = nameof(Data.MethodTableAuxiliaryData.Flags);
+
+    public static Layout<MockMethodTableAuxiliaryData> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("MethodTableAuxiliaryData", architecture)
+            .AddPointerField(LoaderModuleFieldName)
+            .AddInt16Field(OffsetToNonVirtualSlotsFieldName)
+            .AddUInt32Field(FlagsFieldName)
+            .Build<MockMethodTableAuxiliaryData>();
+
+    public ulong LoaderModule
+    {
+        get => ReadPointerField(LoaderModuleFieldName);
+        set => WritePointerField(LoaderModuleFieldName, value);
+    }
+
+    public short OffsetToNonVirtualSlots
+    {
+        get => ReadInt16Field(OffsetToNonVirtualSlotsFieldName);
+        set => WriteInt16Field(OffsetToNonVirtualSlotsFieldName, value);
+    }
+
+    public uint Flags
+    {
+        get => ReadUInt32Field(FlagsFieldName);
+        set => WriteUInt32Field(FlagsFieldName, value);
+    }
+}
+
+internal class MockTypeDesc : TypedView
+{
+    private const string TypeAndFlagsFieldName = nameof(Data.TypeDesc.TypeAndFlags);
+
+    public static Layout<MockTypeDesc> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("TypeDesc", architecture)
+            .AddUInt32Field(TypeAndFlagsFieldName)
+            .Build<MockTypeDesc>();
+
+    public uint TypeAndFlags
+    {
+        get => ReadUInt32Field(TypeAndFlagsFieldName);
+        set => WriteUInt32Field(TypeAndFlagsFieldName, value);
+    }
+}
+
+internal sealed class MockFnPtrTypeDesc : MockTypeDesc
+{
+    private const string NumArgsFieldName = nameof(Data.FnPtrTypeDesc.NumArgs);
+    private const string CallConvFieldName = nameof(Data.FnPtrTypeDesc.CallConv);
+    private const string LoaderModuleFieldName = nameof(Data.FnPtrTypeDesc.LoaderModule);
+    private const string RetAndArgTypesFieldName = nameof(Data.FnPtrTypeDesc.RetAndArgTypes);
+
+    public new static Layout<MockFnPtrTypeDesc> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("FnPtrTypeDesc", architecture, MockTypeDesc.CreateLayout(architecture))
+            .AddUInt32Field(NumArgsFieldName)
+            .AddUInt32Field(CallConvFieldName)
+            .AddPointerField(LoaderModuleFieldName)
+            .AddPointerField(RetAndArgTypesFieldName)
+            .Build<MockFnPtrTypeDesc>();
+
+    public uint NumArgs
+    {
+        get => ReadUInt32Field(NumArgsFieldName);
+        set => WriteUInt32Field(NumArgsFieldName, value);
+    }
+
+    public uint CallConv
+    {
+        get => ReadUInt32Field(CallConvFieldName);
+        set => WriteUInt32Field(CallConvFieldName, value);
+    }
+
+    public ulong LoaderModule
+    {
+        get => ReadPointerField(LoaderModuleFieldName);
+        set => WritePointerField(LoaderModuleFieldName, value);
+    }
+
+    public ulong this[int index]
+    {
+        get => ReadPointer(GetFieldSlice(index).Span);
+        set => WritePointer(GetFieldSlice(index).Span, value);
+    }
+
+    private Memory<byte> GetFieldSlice(int index)
+    {
+        int pointerSize = Architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
+        LayoutField field = Layout.GetField(RetAndArgTypesFieldName);
+        int offset = field.Offset + (index * pointerSize);
+        return Memory.Slice(offset, pointerSize);
+    }
+}
+
+internal sealed class MockParamTypeDesc : MockTypeDesc
+{
+    private const string TypeArgFieldName = nameof(Data.ParamTypeDesc.TypeArg);
+
+    public new static Layout<MockParamTypeDesc> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("ParamTypeDesc", architecture, MockTypeDesc.CreateLayout(architecture))
+            .AddPointerField(TypeArgFieldName)
+            .Build<MockParamTypeDesc>();
+
+    public ulong TypeArg
+    {
+        get => ReadPointerField(TypeArgFieldName);
+        set => WritePointerField(TypeArgFieldName, value);
+    }
+}
+
+internal sealed class MockTypeVarTypeDesc : MockTypeDesc
+{
+    private const string ModuleFieldName = nameof(Data.TypeVarTypeDesc.Module);
+    private const string TokenFieldName = nameof(Data.TypeVarTypeDesc.Token);
+
+    public new static Layout<MockTypeVarTypeDesc> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("TypeVarTypeDesc", architecture, MockTypeDesc.CreateLayout(architecture))
+            .AddPointerField(ModuleFieldName)
+            .AddUInt32Field(TokenFieldName)
+            .Build<MockTypeVarTypeDesc>();
+
+    public ulong Module
+    {
+        get => ReadPointerField(ModuleFieldName);
+        set => WritePointerField(ModuleFieldName, value);
+    }
+
+    public uint Token
+    {
+        get => ReadUInt32Field(TokenFieldName);
+        set => WriteUInt32Field(TokenFieldName, value);
+    }
+}
 
 internal partial class MockDescriptors
 {
@@ -17,96 +292,52 @@ internal partial class MockDescriptors
         private const ulong DefaultAllocationRangeStart = 0x00000000_4a000000;
         private const ulong DefaultAllocationRangeEnd = 0x00000000_4b000000;
 
-        private static readonly TypeFields TypeDescFields = new TypeFields()
-        {
-            DataType = DataType.TypeDesc,
-            Fields =
-            [
-                new(nameof(Data.TypeDesc.TypeAndFlags), DataType.uint32),
-            ]
-        };
-
-        private static readonly TypeFields FnPtrTypeDescFields = new TypeFields()
-        {
-            DataType = DataType.FnPtrTypeDesc,
-            Fields =
-            [
-                new(nameof(Data.FnPtrTypeDesc.NumArgs), DataType.uint32),
-                new(nameof(Data.FnPtrTypeDesc.CallConv), DataType.uint32),
-                new(nameof(Data.FnPtrTypeDesc.LoaderModule), DataType.pointer),
-                new(nameof(Data.FnPtrTypeDesc.RetAndArgTypes), DataType.pointer),
-            ],
-            BaseTypeFields = TypeDescFields
-        };
-
-        private static readonly TypeFields ParamTypeDescFields = new TypeFields()
-        {
-            DataType = DataType.ParamTypeDesc,
-            Fields =
-            [
-                new(nameof(Data.ParamTypeDesc.TypeArg), DataType.pointer),
-            ],
-            BaseTypeFields = TypeDescFields
-        };
-
-        private static readonly TypeFields TypeVarTypeDescFields = new TypeFields()
-        {
-            DataType = DataType.TypeVarTypeDesc,
-            Fields =
-            [
-                new(nameof(Data.TypeVarTypeDesc.Module), DataType.pointer),
-                new(nameof(Data.TypeVarTypeDesc.Token), DataType.uint32),
-            ],
-            BaseTypeFields = TypeDescFields
-        };
-
-        private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
-        {
-            return GetTypesForTypeFields(
-                helpers,
-                [
-                    MethodTableFields,
-                    EEClassFields,
-                    MethodTableAuxiliaryDataFields,
-                    TypeDescFields,
-                    FnPtrTypeDescFields,
-                    ParamTypeDescFields,
-                    TypeVarTypeDescFields,
-                    GCCoverageInfoFields,
-                ]);
-        }
-
         internal static uint GetMethodDescAlignment(TargetTestHelpers helpers) => helpers.Arch.Is64Bit ? 8u : 4u;
 
         internal readonly MockMemorySpace.Builder Builder;
-
-        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
-        internal (string Name, ulong Value)[] Globals { get; }
-
         internal MockMemorySpace.BumpAllocator TypeSystemAllocator { get; }
 
-        internal TargetPointer FreeObjectMethodTableAddress { get; private set; }
-        internal TargetPointer ContinuationMethodTableAddress { get; private set; }
+        internal Layout<MockMethodTable> MethodTableLayout { get; }
+        internal Layout<MockEEClass> EEClassLayout { get; }
+        internal Layout<MockMethodTableAuxiliaryData> MethodTableAuxiliaryDataLayout { get; }
+        internal Layout<MockTypeDesc> TypeDescLayout { get; }
+        internal Layout<MockFnPtrTypeDesc> FnPtrTypeDescLayout { get; }
+        internal Layout<MockParamTypeDesc> ParamTypeDescLayout { get; }
+        internal Layout<MockTypeVarTypeDesc> TypeVarTypeDescLayout { get; }
+        internal Layout<MockGCCoverageInfo> GCCoverageInfoLayout { get; }
+
+        internal MockEEClass SystemObjectEEClass { get; private set; } = null!;
+        internal MockMethodTable SystemObjectMethodTable { get; private set; } = null!;
+        internal MockEEClass ContinuationEEClass { get; private set; } = null!;
+        internal MockMethodTable ContinuationMethodTable { get; private set; } = null!;
+
+        internal ulong FreeObjectMethodTableAddress { get; private set; }
+        internal ulong FreeObjectMethodTableGlobalAddress => TestFreeObjectMethodTableGlobalAddress;
+        internal ulong ContinuationMethodTableGlobalAddress => TestContinuationMethodTableGlobalAddress;
+        internal ulong MethodDescAlignment => GetMethodDescAlignment(Builder.TargetTestHelpers);
+        internal ulong ArrayBaseSize => Builder.TargetTestHelpers.ArrayBaseBaseSize;
 
         public RuntimeTypeSystem(MockMemorySpace.Builder builder)
             : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
-        { }
+        {
+        }
 
         public RuntimeTypeSystem(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
         {
             Builder = builder;
             TypeSystemAllocator = builder.CreateAllocator(allocationRange.Start, allocationRange.End);
 
-            Types = GetTypes(Builder.TargetTestHelpers);
+            MethodTableLayout = MockMethodTable.CreateLayout(Builder.TargetTestHelpers.Arch);
+            EEClassLayout = MockEEClass.CreateLayout(Builder.TargetTestHelpers.Arch);
+            MethodTableAuxiliaryDataLayout = MockMethodTableAuxiliaryData.CreateLayout(Builder.TargetTestHelpers.Arch);
+            TypeDescLayout = MockTypeDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
+            FnPtrTypeDescLayout = MockFnPtrTypeDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
+            ParamTypeDescLayout = MockParamTypeDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
+            TypeVarTypeDescLayout = MockTypeVarTypeDesc.CreateLayout(Builder.TargetTestHelpers.Arch);
+            GCCoverageInfoLayout = MockGCCoverageInfo.CreateLayout(Builder.TargetTestHelpers.Arch);
 
             AddGlobalPointers();
-            Globals =
-            [
-                (nameof(Constants.Globals.FreeObjectMethodTable), TestFreeObjectMethodTableGlobalAddress),
-                (nameof(Constants.Globals.ContinuationMethodTable), TestContinuationMethodTableGlobalAddress),
-                (nameof(Constants.Globals.MethodDescAlignment), GetMethodDescAlignment(Builder.TargetTestHelpers)),
-                (nameof(Constants.Globals.ArrayBaseSize), Builder.TargetTestHelpers.ArrayBaseBaseSize),
-            ];
+            AddDefaultTypes();
         }
 
         private void AddGlobalPointers()
@@ -115,165 +346,107 @@ internal partial class MockDescriptors
             AddContinuationMethodTableGlobal();
         }
 
+        private void AddDefaultTypes()
+        {
+            AddSystemObjectType();
+            AddContinuationType();
+        }
+
         private void AddFreeObjectMethodTable()
         {
-            Target.TypeInfo methodTableTypeInfo = Types[DataType.MethodTable];
-            MockMemorySpace.HeapFragment freeObjectMethodTableFragment = TypeSystemAllocator.Allocate(methodTableTypeInfo.Size.Value, "Free Object Method Table");
-            Builder.AddHeapFragment(freeObjectMethodTableFragment);
-            FreeObjectMethodTableAddress = freeObjectMethodTableFragment.Address;
-
-            TargetTestHelpers targetTestHelpers = Builder.TargetTestHelpers;
-            MockMemorySpace.HeapFragment globalAddr = new() { Name = "Address of Free Object Method Table", Address = TestFreeObjectMethodTableGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
-            targetTestHelpers.WritePointer(globalAddr.Data, FreeObjectMethodTableAddress);
-            Builder.AddHeapFragment(globalAddr);
+            MockMethodTable freeObjectMethodTable = AddMethodTable("Free Object Method Table");
+            FreeObjectMethodTableAddress = freeObjectMethodTable.Address;
+            AddPointerGlobal("Address of Free Object Method Table", TestFreeObjectMethodTableGlobalAddress, FreeObjectMethodTableAddress);
         }
 
         private void AddContinuationMethodTableGlobal()
         {
-            // Initially the continuation method table global points to null (no continuations created yet)
-            TargetTestHelpers targetTestHelpers = Builder.TargetTestHelpers;
-            MockMemorySpace.HeapFragment globalAddr = new() { Name = "Address of Continuation Method Table", Address = TestContinuationMethodTableGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
-            targetTestHelpers.WritePointer(globalAddr.Data, TargetPointer.Null);
-            Builder.AddHeapFragment(globalAddr);
-            ContinuationMethodTableAddress = TargetPointer.Null;
+            AddPointerGlobal("Address of Continuation Method Table", TestContinuationMethodTableGlobalAddress, 0);
         }
 
-        internal void SetContinuationMethodTable(TargetPointer continuationMethodTable)
+        private void AddSystemObjectType()
+        {
+            const int NumMethods = 8;
+            const int NumVirtuals = 3;
+
+            SystemObjectEEClass = AddEEClass("System.Object");
+            SystemObjectEEClass.CorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
+            SystemObjectEEClass.NumMethods = NumMethods;
+
+            SystemObjectMethodTable = AddMethodTable("System.Object");
+            SystemObjectMethodTable.BaseSize = Builder.TargetTestHelpers.ObjectBaseSize;
+            SystemObjectMethodTable.NumVirtuals = NumVirtuals;
+            SystemObjectEEClass.MethodTable = SystemObjectMethodTable.Address;
+            SystemObjectMethodTable.EEClassOrCanonMT = SystemObjectEEClass.Address;
+        }
+
+        private void AddContinuationType()
+        {
+            ContinuationEEClass = AddEEClass("Continuation");
+
+            ContinuationMethodTable = AddMethodTable("Continuation");
+            ContinuationMethodTable.BaseSize = Builder.TargetTestHelpers.ObjectBaseSize;
+            ContinuationMethodTable.ParentMethodTable = SystemObjectMethodTable.Address;
+            ContinuationMethodTable.NumVirtuals = 3;
+            ContinuationEEClass.MethodTable = ContinuationMethodTable.Address;
+            ContinuationMethodTable.EEClassOrCanonMT = ContinuationEEClass.Address;
+            SetContinuationMethodTable(ContinuationMethodTable.Address);
+        }
+
+        private void AddPointerGlobal(string name, ulong address, ulong value)
         {
             TargetTestHelpers targetTestHelpers = Builder.TargetTestHelpers;
-            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestContinuationMethodTableGlobalAddress, targetTestHelpers.PointerSize);
-            targetTestHelpers.WritePointer(globalAddrBytes, continuationMethodTable);
-            ContinuationMethodTableAddress = continuationMethodTable;
-        }
-
-        // set the eeClass MethodTable pointer to the canonMT and the canonMT's EEClass pointer to the eeClass
-        internal void SetEEClassAndCanonMTRefs(TargetPointer eeClass, TargetPointer canonMT)
-        {
-            // make eeClass point at the canonMT
-            Target.TypeInfo eeClassTypeInfo = Types[DataType.EEClass];
-            Span<byte> eeClassBytes = Builder.BorrowAddressRange(eeClass, (int)eeClassTypeInfo.Size.Value);
-            Builder.TargetTestHelpers.WritePointer(eeClassBytes.Slice(eeClassTypeInfo.Fields[nameof(Data.EEClass.MethodTable)].Offset, Builder.TargetTestHelpers.PointerSize), canonMT);
-
-            // and make the canonMT point at the eeClass
-            SetMethodTableEEClassOrCanonMTRaw(canonMT, eeClass);
-        }
-
-        // for cases when a methodTable needs to point at a canonical method table
-        internal void SetMethodTableCanonMT(TargetPointer methodTable, TargetPointer canonMT) => SetMethodTableEEClassOrCanonMTRaw(methodTable, canonMT.Value | 1);
-
-        // NOTE: don't use directly unless you want to write a bogus value into the canonMT field
-        internal void SetMethodTableEEClassOrCanonMTRaw(TargetPointer methodTable, TargetPointer eeClassOrCanonMT)
-        {
-            Target.TypeInfo methodTableTypeInfo = Types[DataType.MethodTable];
-            Span<byte> methodTableBytes = Builder.BorrowAddressRange(methodTable, (int)methodTableTypeInfo.Size.Value);
-            Builder.TargetTestHelpers.WritePointer(methodTableBytes.Slice(methodTableTypeInfo.Fields[nameof(Data.MethodTable.EEClassOrCanonMT)].Offset, Builder.TargetTestHelpers.PointerSize), eeClassOrCanonMT);
-        }
-
-        // call SetEEClassAndCanonMTRefs after the EEClass and the MethodTable have been added
-        internal TargetPointer AddEEClass(string name, uint attr, ushort numMethods, ushort numNonVirtualSlots)
-        {
-            Target.TypeInfo eeClassTypeInfo  = Types[DataType.EEClass];
-            MockMemorySpace.Builder builder = Builder;
-            TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
-
-            MockMemorySpace.HeapFragment eeClassFragment = TypeSystemAllocator.Allocate(eeClassTypeInfo.Size.Value, $"EEClass '{name}'");
-            Span<byte> dest = eeClassFragment.Data;
-            targetTestHelpers.Write(dest.Slice(eeClassTypeInfo.Fields[nameof(Data.EEClass.CorTypeAttr)].Offset), attr);
-            targetTestHelpers.Write(dest.Slice(eeClassTypeInfo.Fields[nameof(Data.EEClass.NumMethods)].Offset), numMethods);
-            targetTestHelpers.Write(dest.Slice(eeClassTypeInfo.Fields[nameof(Data.EEClass.NumNonVirtualSlots)].Offset), numNonVirtualSlots);
-            builder.AddHeapFragment(eeClassFragment);
-            return eeClassFragment.Address;
-        }
-
-        internal TargetPointer AddMethodTable(string name, uint mtflags, uint mtflags2, uint baseSize,
-                                                            TargetPointer module, TargetPointer parentMethodTable, ushort numInterfaces, ushort numVirtuals)
-        {
-            Target.TypeInfo methodTableTypeInfo = Types[DataType.MethodTable];
-            MockMemorySpace.Builder builder = Builder;
-            TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
-            MockMemorySpace.HeapFragment methodTableFragment = TypeSystemAllocator.Allocate(methodTableTypeInfo.Size.Value,  $"MethodTable '{name}'");
-            Span<byte> dest = methodTableFragment.Data;
-            targetTestHelpers.Write(dest.Slice(methodTableTypeInfo.Fields[nameof(Data.MethodTable.MTFlags)].Offset), mtflags);
-            targetTestHelpers.Write(dest.Slice(methodTableTypeInfo.Fields[nameof(Data.MethodTable.MTFlags2)].Offset), mtflags2);
-            targetTestHelpers.Write(dest.Slice(methodTableTypeInfo.Fields[nameof(Data.MethodTable.BaseSize)].Offset), baseSize);
-            targetTestHelpers.WritePointer(dest.Slice(methodTableTypeInfo.Fields[nameof(Data.MethodTable.Module)].Offset), module);
-            targetTestHelpers.WritePointer(dest.Slice(methodTableTypeInfo.Fields[nameof(Data.MethodTable.ParentMethodTable)].Offset), parentMethodTable);
-            targetTestHelpers.Write(dest.Slice(methodTableTypeInfo.Fields[nameof(Data.MethodTable.NumInterfaces)].Offset), numInterfaces);
-            targetTestHelpers.Write(dest.Slice(methodTableTypeInfo.Fields[nameof(Data.MethodTable.NumVirtuals)].Offset), numVirtuals);
-
-            // TODO fill in the rest of the fields
-            builder.AddHeapFragment(methodTableFragment);
-            return methodTableFragment.Address;
-        }
-
-        internal void SetMethodTableAuxData(TargetPointer methodTablePointer, TargetPointer loaderModule)
-        {
-            Target.TypeInfo methodTableTypeInfo = Types[DataType.MethodTable];
-            Target.TypeInfo auxDataTypeInfo = Types[DataType.MethodTableAuxiliaryData];
-            MockMemorySpace.HeapFragment auxDataFragment = TypeSystemAllocator.Allocate(auxDataTypeInfo.Size.Value, "MethodTableAuxiliaryData");
-            Span<byte> dest = auxDataFragment.Data;
-            Builder.TargetTestHelpers.WritePointer(dest.Slice(auxDataTypeInfo.Fields[nameof(Data.MethodTableAuxiliaryData.LoaderModule)].Offset), loaderModule);
-            Builder.AddHeapFragment(auxDataFragment);
-
-            Span<byte> methodTable = Builder.BorrowAddressRange(methodTablePointer, (int)methodTableTypeInfo.Size.Value);
-            Builder.TargetTestHelpers.WritePointer(methodTable.Slice(methodTableTypeInfo.Fields[nameof(Data.MethodTable.AuxiliaryData)].Offset), auxDataFragment.Address);
-        }
-
-        internal TargetPointer AddFunctionPointerTypeDesc(uint callConv, TargetPointer[] retAndArgTypes, TargetPointer loaderModule)
-        {
-            Target.TypeInfo typeInfo = Types[DataType.FnPtrTypeDesc];
-            TargetTestHelpers helpers = Builder.TargetTestHelpers;
-
-            ulong size = typeInfo.Size.Value + (ulong)(retAndArgTypes.Length * helpers.PointerSize);
-            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(size, $"FnPtrTypeDesc");
-            Builder.AddHeapFragment(fragment);
-            Span<byte> dest = fragment.Data;
-            helpers.Write(dest.Slice(Types[DataType.TypeDesc].Fields[nameof(Data.TypeDesc.TypeAndFlags)].Offset), (uint)CorElementType.FnPtr);
-            helpers.Write(dest.Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.NumArgs)].Offset), retAndArgTypes.Length - 1);
-            helpers.Write(dest.Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.CallConv)].Offset), callConv);
-            helpers.WritePointer(dest.Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.LoaderModule)].Offset), loaderModule);
-            for (int i = 0; i < retAndArgTypes.Length; i ++)
+            MockMemorySpace.HeapFragment global = new()
             {
-                Span<byte> span = fragment.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.RetAndArgTypes)].Offset + i * helpers.PointerSize, helpers.PointerSize);
-                helpers.WritePointer(span, retAndArgTypes[i]);
-            }
-
-            return fragment.Address;
+                Name = name,
+                Address = address,
+                Data = new byte[targetTestHelpers.PointerSize]
+            };
+            targetTestHelpers.WritePointer(global.Data, value);
+            Builder.AddHeapFragment(global);
         }
 
-        internal TargetPointer AddParamTypeDesc(uint typeAndFlags, TargetPointer typeArg)
+        internal void SetContinuationMethodTable(ulong continuationMethodTable)
         {
-            CorElementType type = (CorElementType)(typeAndFlags & 0xFF);
-            if (type != CorElementType.ValueType && type != CorElementType.Byref && type != CorElementType.Ptr)
-                throw new ArgumentOutOfRangeException(nameof(typeAndFlags));
-
-            Target.TypeInfo typeInfo = Types[DataType.ParamTypeDesc];
-            TargetTestHelpers helpers = Builder.TargetTestHelpers;
-
-            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(typeInfo.Size.Value, $"ParamTypeDesc");
-            Builder.AddHeapFragment(fragment);
-            Span<byte> dest = fragment.Data;
-            helpers.Write(dest.Slice(Types[DataType.TypeDesc].Fields[nameof(Data.TypeDesc.TypeAndFlags)].Offset), typeAndFlags);
-            helpers.WritePointer(dest.Slice(typeInfo.Fields[nameof(Data.ParamTypeDesc.TypeArg)].Offset), typeArg);
-            return fragment.Address;
+            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestContinuationMethodTableGlobalAddress, Builder.TargetTestHelpers.PointerSize);
+            Builder.TargetTestHelpers.WritePointer(globalAddrBytes, continuationMethodTable);
         }
 
-        internal TargetPointer AddTypeVarTypeDesc(uint typeAndFlags, TargetPointer module, uint token)
+        internal MockEEClass AddEEClass(string name)
+            => Add(EEClassLayout, $"EEClass '{name}'");
+
+        internal MockMethodTable AddMethodTable(string name)
+            => Add(MethodTableLayout, $"MethodTable '{name}'");
+
+        internal MockMethodTableAuxiliaryData AddMethodTableAuxiliaryData()
         {
-            CorElementType type = (CorElementType)(typeAndFlags & 0xFF);
-            if (type != CorElementType.MVar && type != CorElementType.Var)
-                throw new ArgumentOutOfRangeException(nameof(typeAndFlags));
+            MockMethodTableAuxiliaryData auxData = Add(MethodTableAuxiliaryDataLayout, "MethodTableAuxiliaryData");
+            return auxData;
+        }
 
-            Target.TypeInfo typeInfo = Types[DataType.TypeVarTypeDesc];
+        internal MockFnPtrTypeDesc AddFunctionPointerTypeDesc(int retAndArgTypeCount)
+        {
             TargetTestHelpers helpers = Builder.TargetTestHelpers;
+            ulong size = (ulong)(FnPtrTypeDescLayout.Size + (retAndArgTypeCount * helpers.PointerSize));
+            return Add(FnPtrTypeDescLayout, size, "FnPtrTypeDesc");
+        }
 
-            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(typeInfo.Size.Value, $"TypeVarTypeDesc");
+        internal MockParamTypeDesc AddParamTypeDesc()
+            => Add(ParamTypeDescLayout, "ParamTypeDesc");
+
+        internal MockTypeVarTypeDesc AddTypeVarTypeDesc()
+            => Add(TypeVarTypeDescLayout, "TypeVarTypeDesc");
+
+        private TView Add<TView>(Layout<TView> layout, string name)
+            where TView : TypedView, new()
+            => Add(layout, (ulong)layout.Size, name);
+
+        private TView Add<TView>(Layout<TView> layout, ulong size, string name)
+            where TView : TypedView, new()
+        {
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(size, name);
             Builder.AddHeapFragment(fragment);
-            Span<byte> dest = fragment.Data;
-            helpers.Write(dest.Slice(Types[DataType.TypeDesc].Fields[nameof(Data.TypeDesc.TypeAndFlags)].Offset), typeAndFlags);
-            helpers.WritePointer(dest.Slice(typeInfo.Fields[nameof(Data.TypeVarTypeDesc.Module)].Offset), module);
-            helpers.Write(dest.Slice(typeInfo.Fields[nameof(Data.TypeVarTypeDesc.Token)].Offset), token);
-            return fragment.Address;
+            return layout.Create(fragment.Data.AsMemory(), fragment.Address);
         }
     }
 }
