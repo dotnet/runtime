@@ -12,80 +12,45 @@ namespace System.Diagnostics
     public partial class Process
     {
         /// <summary>
-        /// Reads from one or both standard output and standard error pipes using Windows overlapped IO
+        /// Reads from both standard output and standard error pipes using Windows overlapped IO
         /// with wait handles for single-threaded synchronous multiplexing.
         /// </summary>
-        private static partial void ReadPipes(
-            SafeFileHandle? outputHandle,
-            SafeFileHandle? errorHandle,
+        private static void ReadPipes(
+            SafeFileHandle outputHandle,
+            SafeFileHandle errorHandle,
             int timeoutMs,
             ref byte[] outputBuffer,
             ref int outputBytesRead,
             ref byte[] errorBuffer,
             ref int errorBytesRead)
         {
-            bool hasOutput = outputHandle is not null;
-            bool hasError = errorHandle is not null;
-
-            MemoryHandle outputPin = hasOutput ? outputBuffer.AsMemory().Pin() : default;
-            MemoryHandle errorPin = hasError ? errorBuffer.AsMemory().Pin() : default;
+            MemoryHandle outputPin = outputBuffer.AsMemory().Pin();
+            MemoryHandle errorPin = errorBuffer.AsMemory().Pin();
 
             unsafe
             {
                 NativeOverlapped* outputOverlapped = null;
                 NativeOverlapped* errorOverlapped = null;
-                EventWaitHandle? outputEvent = null;
-                EventWaitHandle? errorEvent = null;
+
+                EventWaitHandle outputEvent = new(initialState: false, EventResetMode.ManualReset);
+                EventWaitHandle errorEvent = new(initialState: false, EventResetMode.ManualReset);
 
                 try
                 {
-                    if (hasOutput)
-                    {
-                        outputEvent = new EventWaitHandle(initialState: false, EventResetMode.ManualReset);
-                        outputOverlapped = AllocateOverlapped(outputEvent);
-                    }
+                    outputOverlapped = AllocateOverlapped(outputEvent);
+                    errorOverlapped = AllocateOverlapped(errorEvent);
 
-                    if (hasError)
-                    {
-                        errorEvent = new EventWaitHandle(initialState: false, EventResetMode.ManualReset);
-                        errorOverlapped = AllocateOverlapped(errorEvent);
-                    }
+                    bool outputDone = false;
+                    bool errorDone = false;
 
-                    bool outputDone = !hasOutput;
-                    bool errorDone = !hasError;
-
-                    // Build wait handle array: only include handles for pipes we're reading.
-                    WaitHandle[] waitHandles;
-                    int errorWaitIndex;
-
-                    if (hasOutput && hasError)
-                    {
-                        waitHandles = [outputEvent!, errorEvent!];
-                        errorWaitIndex = 1;
-                    }
-                    else if (hasOutput)
-                    {
-                        waitHandles = [outputEvent!];
-                        errorWaitIndex = -1;
-                    }
-                    else
-                    {
-                        waitHandles = [errorEvent!];
-                        errorWaitIndex = 0;
-                    }
+                    WaitHandle[] waitHandles = [outputEvent, errorEvent];
 
                     // Issue initial reads.
-                    if (hasOutput)
-                    {
-                        Interop.Kernel32.ReadFile(outputHandle!, (byte*)outputPin.Pointer + outputBytesRead,
-                            outputBuffer.Length - outputBytesRead, IntPtr.Zero, outputOverlapped);
-                    }
+                    Interop.Kernel32.ReadFile(outputHandle, (byte*)outputPin.Pointer + outputBytesRead,
+                        outputBuffer.Length - outputBytesRead, IntPtr.Zero, outputOverlapped);
 
-                    if (hasError)
-                    {
-                        Interop.Kernel32.ReadFile(errorHandle!, (byte*)errorPin.Pointer + errorBytesRead,
-                            errorBuffer.Length - errorBytesRead, IntPtr.Zero, errorOverlapped);
-                    }
+                    Interop.Kernel32.ReadFile(errorHandle, (byte*)errorPin.Pointer + errorBytesRead,
+                        errorBuffer.Length - errorBytesRead, IntPtr.Zero, errorOverlapped);
 
                     long deadline = timeoutMs >= 0
                         ? Environment.TickCount64 + timeoutMs
@@ -120,12 +85,12 @@ namespace System.Diagnostics
                             throw new TimeoutException();
                         }
 
-                        bool isError = waitResult == errorWaitIndex;
+                        bool isError = waitResult == 1;
                         NativeOverlapped* currentOverlapped = isError ? errorOverlapped : outputOverlapped;
-                        SafeFileHandle currentHandle = (isError ? errorHandle : outputHandle)!;
+                        SafeFileHandle currentHandle = isError ? errorHandle : outputHandle;
                         ref int totalBytesRead = ref (isError ? ref errorBytesRead : ref outputBytesRead);
                         ref byte[] currentBuffer = ref (isError ? ref errorBuffer : ref outputBuffer);
-                        EventWaitHandle currentEvent = (isError ? errorEvent : outputEvent)!;
+                        EventWaitHandle currentEvent = isError ? errorEvent : outputEvent;
 
                         int bytesRead = GetOverlappedResultForPipe(currentHandle, currentOverlapped);
 
@@ -179,8 +144,8 @@ namespace System.Diagnostics
                         NativeMemory.Free(errorOverlapped);
                     }
 
-                    outputEvent?.Dispose();
-                    errorEvent?.Dispose();
+                    outputEvent.Dispose();
+                    errorEvent.Dispose();
                     outputPin.Dispose();
                     errorPin.Dispose();
                 }
@@ -225,9 +190,9 @@ namespace System.Diagnostics
             return bytesRead;
         }
 
-        private static unsafe void CancelPendingIOIfNeeded(SafeFileHandle? handle, bool done, NativeOverlapped* overlapped)
+        private static unsafe void CancelPendingIOIfNeeded(SafeFileHandle handle, bool done, NativeOverlapped* overlapped)
         {
-            if (done || handle is null || overlapped == null)
+            if (done)
             {
                 return;
             }

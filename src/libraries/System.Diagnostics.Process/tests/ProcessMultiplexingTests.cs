@@ -32,10 +32,35 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ReadAllBytes_ThrowsWhenOnlyOutputRedirected()
+        {
+            Process process = CreateProcess(RemotelyInvokable.StreamBody);
+            process.StartInfo.RedirectStandardOutput = true;
+            process.Start();
+
+            Assert.Throws<InvalidOperationException>(() => process.ReadAllBytes());
+
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ReadAllBytes_ThrowsWhenOnlyErrorRedirected()
+        {
+            Process process = CreateProcess(RemotelyInvokable.ErrorProcessBody);
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            Assert.Throws<InvalidOperationException>(() => process.ReadAllBytes());
+
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ReadAllBytes_ThrowsWhenOutputInAsyncMode()
         {
             Process process = CreateProcess(RemotelyInvokable.StreamBody);
             process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
             process.Start();
 
             process.BeginOutputReadLine();
@@ -50,6 +75,7 @@ namespace System.Diagnostics.Tests
         public void ReadAllBytes_ThrowsWhenErrorInAsyncMode()
         {
             Process process = CreateProcess(RemotelyInvokable.ErrorProcessBody);
+            process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.Start();
 
@@ -102,7 +128,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void ReadAllText_ReadsOnlyStandardOutput()
+        public void ReadAllText_OutputOnlyOnStdout()
         {
             Process process = CreateProcess(() =>
             {
@@ -110,6 +136,7 @@ namespace System.Diagnostics.Tests
                 return RemoteExecutor.SuccessExitCode;
             });
             process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
             process.Start();
 
             (string standardOutput, string standardError) = process.ReadAllText();
@@ -120,13 +147,14 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void ReadAllText_ReadsOnlyStandardError()
+        public void ReadAllText_OutputOnlyOnStderr()
         {
             Process process = CreateProcess(() =>
             {
                 Console.Error.Write("only_stderr");
                 return RemoteExecutor.SuccessExitCode;
             });
+            process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.Start();
 
@@ -143,6 +171,7 @@ namespace System.Diagnostics.Tests
             string largeText = new string('A', 100_000);
             Process process = CreateProcess(RemotelyInvokable.Echo, largeText);
             process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
             process.Start();
 
             (string standardOutput, string standardError) = process.ReadAllText();
@@ -157,6 +186,7 @@ namespace System.Diagnostics.Tests
         {
             Process process = CreateProcess(RemotelyInvokable.ReadLine);
             process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
             process.StartInfo.RedirectStandardInput = true;
             process.Start();
 
@@ -167,7 +197,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void ReadAllBytes_ReadsOnlyStandardOutput()
+        public void ReadAllBytes_OutputOnlyOnStdout()
         {
             Process process = CreateProcess(() =>
             {
@@ -175,6 +205,7 @@ namespace System.Diagnostics.Tests
                 return RemoteExecutor.SuccessExitCode;
             });
             process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
             process.Start();
 
             (byte[] standardOutput, byte[] standardError) = process.ReadAllBytes();
@@ -185,13 +216,14 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void ReadAllBytes_ReadsOnlyStandardError()
+        public void ReadAllBytes_OutputOnlyOnStderr()
         {
             Process process = CreateProcess(() =>
             {
                 Console.Error.Write("err_data");
                 return RemoteExecutor.SuccessExitCode;
             });
+            process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.Start();
 

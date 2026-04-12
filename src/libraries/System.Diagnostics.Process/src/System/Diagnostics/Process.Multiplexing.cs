@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -22,10 +23,9 @@ namespace System.Diagnostics
         /// </param>
         /// <returns>
         /// A tuple containing the standard output and standard error text.
-        /// When a stream was not redirected, the corresponding value is an empty string.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        /// Neither standard output nor standard error has been redirected.
+        /// Standard output or standard error has not been redirected.
         /// -or-
         /// A redirected stream is already being read asynchronously.
         /// </exception>
@@ -37,20 +37,33 @@ namespace System.Diagnostics
         /// </exception>
         public (string StandardOutput, string StandardError) ReadAllText(TimeSpan? timeout = default)
         {
-            (byte[] StandardOutput, byte[] StandardError) bytes = ReadAllBytes(timeout);
+            byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            int outputBytesRead = 0;
+            int errorBytesRead = 0;
 
-            Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();
-            Encoding errorEncoding = _startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding();
+            try
+            {
+                ReadPipesToBuffers(timeout, ref outputBuffer, ref outputBytesRead, ref errorBuffer, ref errorBytesRead);
 
-            string standardOutput = bytes.StandardOutput.Length > 0
-                ? outputEncoding.GetString(bytes.StandardOutput)
-                : string.Empty;
+                Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();
+                Encoding errorEncoding = _startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding();
 
-            string standardError = bytes.StandardError.Length > 0
-                ? errorEncoding.GetString(bytes.StandardError)
-                : string.Empty;
+                string standardOutput = outputBytesRead > 0
+                    ? outputEncoding.GetString(outputBuffer, 0, outputBytesRead)
+                    : string.Empty;
 
-            return (standardOutput, standardError);
+                string standardError = errorBytesRead > 0
+                    ? errorEncoding.GetString(errorBuffer, 0, errorBytesRead)
+                    : string.Empty;
+
+                return (standardOutput, standardError);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(outputBuffer);
+                ArrayPool<byte>.Shared.Return(errorBuffer);
+            }
         }
 
         /// <summary>
@@ -62,10 +75,9 @@ namespace System.Diagnostics
         /// </param>
         /// <returns>
         /// A tuple containing the standard output and standard error bytes.
-        /// When a stream was not redirected, the corresponding value is an empty array.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        /// Neither standard output nor standard error has been redirected.
+        /// Standard output or standard error has not been redirected.
         /// -or-
         /// A redirected stream is already being read asynchronously.
         /// </exception>
@@ -77,40 +89,6 @@ namespace System.Diagnostics
         /// </exception>
         public (byte[] StandardOutput, byte[] StandardError) ReadAllBytes(TimeSpan? timeout = default)
         {
-            CheckDisposed();
-
-            bool hasOutput = _standardOutput is not null;
-            bool hasError = _standardError is not null;
-
-            if (!hasOutput && !hasError)
-            {
-                throw new InvalidOperationException(SR.CantGetStandardOut);
-            }
-
-            if (hasOutput && _outputStreamReadMode == StreamReadMode.AsyncMode)
-            {
-                throw new InvalidOperationException(SR.CantMixSyncAsyncOperation);
-            }
-
-            if (hasError && _errorStreamReadMode == StreamReadMode.AsyncMode)
-            {
-                throw new InvalidOperationException(SR.CantMixSyncAsyncOperation);
-            }
-
-            if (hasOutput)
-            {
-                _outputStreamReadMode = StreamReadMode.SyncMode;
-            }
-
-            if (hasError)
-            {
-                _errorStreamReadMode = StreamReadMode.SyncMode;
-            }
-
-            int timeoutMs = timeout.HasValue
-                ? (int)timeout.Value.TotalMilliseconds
-                : -1; // Infinite
-
             byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
             byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
             int outputBytesRead = 0;
@@ -118,12 +96,7 @@ namespace System.Diagnostics
 
             try
             {
-                SafeFileHandle? outputHandle = hasOutput ? GetSafeFileHandleFromStreamReader(_standardOutput!) : null;
-                SafeFileHandle? errorHandle = hasError ? GetSafeFileHandleFromStreamReader(_standardError!) : null;
-
-                ReadPipes(outputHandle, errorHandle, timeoutMs,
-                    ref outputBuffer, ref outputBytesRead,
-                    ref errorBuffer, ref errorBytesRead);
+                ReadPipesToBuffers(timeout, ref outputBuffer, ref outputBytesRead, ref errorBuffer, ref errorBytesRead);
 
                 byte[] outputResult = outputBytesRead > 0
                     ? outputBuffer.AsSpan(0, outputBytesRead).ToArray()
@@ -143,38 +116,97 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Validates state, obtains handles, and reads both stdout and stderr pipes into the provided buffers.
+        /// The caller is responsible for renting and returning the buffers.
+        /// </summary>
+        private void ReadPipesToBuffers(
+            TimeSpan? timeout,
+            ref byte[] outputBuffer,
+            ref int outputBytesRead,
+            ref byte[] errorBuffer,
+            ref int errorBytesRead)
+        {
+            CheckDisposed();
+
+            if (_standardOutput is null)
+            {
+                throw new InvalidOperationException(SR.CantGetStandardOut);
+            }
+
+            if (_standardError is null)
+            {
+                throw new InvalidOperationException(SR.CantGetStandardError);
+            }
+
+            if (_outputStreamReadMode == StreamReadMode.AsyncMode)
+            {
+                throw new InvalidOperationException(SR.CantMixSyncAsyncOperation);
+            }
+
+            if (_errorStreamReadMode == StreamReadMode.AsyncMode)
+            {
+                throw new InvalidOperationException(SR.CantMixSyncAsyncOperation);
+            }
+
+            _outputStreamReadMode = StreamReadMode.SyncMode;
+            _errorStreamReadMode = StreamReadMode.SyncMode;
+
+            int timeoutMs = timeout.HasValue
+                ? (int)timeout.Value.TotalMilliseconds
+                : -1; // Infinite
+
+            SafeFileHandle outputHandle = GetSafeFileHandleFromStreamReader(_standardOutput, out SafeHandle outputOwner);
+            SafeFileHandle errorHandle = GetSafeFileHandleFromStreamReader(_standardError, out SafeHandle errorOwner);
+
+            bool outputRefAdded = false;
+            bool errorRefAdded = false;
+
+            try
+            {
+                outputOwner.DangerousAddRef(ref outputRefAdded);
+                errorOwner.DangerousAddRef(ref errorRefAdded);
+
+                ReadPipes(outputHandle, errorHandle, timeoutMs,
+                    ref outputBuffer, ref outputBytesRead,
+                    ref errorBuffer, ref errorBytesRead);
+            }
+            finally
+            {
+                if (outputRefAdded)
+                {
+                    outputOwner.DangerousRelease();
+                }
+
+                if (errorRefAdded)
+                {
+                    errorOwner.DangerousRelease();
+                }
+            }
+        }
+
+        /// <summary>
         /// Obtains the <see cref="SafeFileHandle"/> from the underlying stream of a <see cref="StreamReader"/>.
         /// On Unix, the stream is an <see cref="System.IO.Pipes.AnonymousPipeClientStream"/> and the handle is obtained via the pipe handle.
         /// On Windows, the stream is a <see cref="FileStream"/> opened for async IO.
         /// </summary>
-        private static SafeFileHandle GetSafeFileHandleFromStreamReader(StreamReader reader)
+        private static SafeFileHandle GetSafeFileHandleFromStreamReader(StreamReader reader, out SafeHandle owner)
         {
             Stream baseStream = reader.BaseStream;
 
             if (baseStream is FileStream fileStream)
             {
+                owner = fileStream.SafeFileHandle;
                 return fileStream.SafeFileHandle;
             }
 
             if (baseStream is System.IO.Pipes.AnonymousPipeClientStream pipeStream)
             {
+                owner = pipeStream.SafePipeHandle;
                 return new SafeFileHandle(pipeStream.SafePipeHandle.DangerousGetHandle(), ownsHandle: false);
             }
 
             throw new InvalidOperationException();
         }
-
-        /// <summary>
-        /// Reads from one or both standard output and standard error pipes using platform-specific multiplexing.
-        /// </summary>
-        private static partial void ReadPipes(
-            SafeFileHandle? outputHandle,
-            SafeFileHandle? errorHandle,
-            int timeoutMs,
-            ref byte[] outputBuffer,
-            ref int outputBytesRead,
-            ref byte[] errorBuffer,
-            ref int errorBytesRead);
 
         /// <summary>
         /// Rents a larger buffer from the array pool and copies the existing data to it.
