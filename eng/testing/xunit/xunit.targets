@@ -73,9 +73,9 @@
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Excluding xunit.core/build as it enables deps file generation. -->
-    <PackageReference Include="xunit.v3.core.aot" Version="4.0.0-pre.33" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" ExcludeAssets="build" />
+    <PackageReference Include="xunit.v3.core.aot" Version="4.0.0-pre.51" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" ExcludeAssets="build" />
 
-    <PackageReference Include="xunit.v3.assert.aot" Version="4.0.0-pre.33" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" />
+    <PackageReference Include="xunit.v3.assert.aot" Version="4.0.0-pre.51" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" />
 
     <ProjectReference Include="$(CommonTestPath)AotXunitExtensions\AotXunitExtensions.csproj" />
   </ItemGroup>

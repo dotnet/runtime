@@ -34,9 +34,7 @@ namespace System.IO.Hashing.Tests
     {
         public Crc64Tests_ParameterSet_Nvme() : base(new Crc64NvmeDriver()) { }
 
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc64NvmeDriver());
-#endif
 
         [Fact]
         public void StaticProperty_IsSingleton()

@@ -111,29 +111,21 @@ namespace System.IO.Hashing.Tests
     public class Crc32Tests_ParameterSet_Custom_Cksum : Crc32Tests_Parameterized
     {
         public Crc32Tests_ParameterSet_Custom_Cksum() : base(new Crc32CksumDriver()) { }
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc32CksumDriver());
-#endif
     }
     public class Crc32Tests_ParameterSet_Custom_CDRomEdc : Crc32Tests_Parameterized
     {
         public Crc32Tests_ParameterSet_Custom_CDRomEdc() : base(new Crc32CDRomEdcDriver()) { }
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc32CDRomEdcDriver());
-#endif
     }
     public class Crc32Tests_ParameterSet_Custom_Mef : Crc32Tests_Parameterized
     {
         public Crc32Tests_ParameterSet_Custom_Mef() : base(new Crc32MefDriver()) { }
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc32MefDriver());
-#endif
     }
     public class Crc32Tests_ParameterSet_Custom_HD16Forward : Crc32Tests_Parameterized
     {
         public Crc32Tests_ParameterSet_Custom_HD16Forward() : base(new Crc32HD16ForwardDriver()) { }
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc32HD16ForwardDriver());
-#endif
     }
 }

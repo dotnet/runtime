@@ -34,9 +34,7 @@ namespace System.IO.Hashing.Tests
     {
         public Crc64Tests_ParameterSet_Crc64() : base(new Crc64Driver()) { }
 
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc64Driver());
-#endif
 
         [Fact]
         public void StaticProperty_IsSingleton()

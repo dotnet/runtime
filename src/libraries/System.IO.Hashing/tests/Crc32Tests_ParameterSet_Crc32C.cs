@@ -31,9 +31,7 @@ namespace System.IO.Hashing.Tests
     {
         public Crc32Tests_ParameterSet_Crc32C() : base(new Crc32CDriver()) { }
 
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc32CDriver());
-#endif
 
         [Fact]
         public void StaticProperty_IsSingleton()

@@ -40,9 +40,7 @@ namespace System.IO.Hashing.Tests
     {
         public Crc32Tests_ParameterSet_Crc32() : base(new Crc32Driver()) { }
 
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc32Driver());
-#endif
 
         [Fact]
         public void StaticProperty_IsSingleton()
@@ -67,9 +65,7 @@ namespace System.IO.Hashing.Tests
     {
         public Crc32Tests_ParameterSet_Custom_Crc32() : base(new CustomCrc32Driver()) { }
 
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new CustomCrc32Driver());
-#endif
 
         [Fact]
         public void CreateIsNotSingleton()

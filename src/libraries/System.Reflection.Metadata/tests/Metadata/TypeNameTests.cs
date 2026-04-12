@@ -597,19 +597,24 @@ namespace System.Reflection.Metadata.Tests
             yield return new object[] { typeof(long).Assembly.GetType("System.Int64[*]"), 2 }; // long[*]
         }
 
+        public static IEnumerable<object[]> GetNodeCountData()
+        {
+            yield return new object[] { typeof(int[,][]), 3 };
+            yield return new object[] { typeof(Nullable<>), 1 }; // open generic type treated as elemental
+        }
+
         [Theory]
         [InlineData(typeof(TypeName), 1)]
         [InlineData(typeof(TypeNameTests), 1)]
         [InlineData(typeof(object), 1)]
         [InlineData(typeof(Assert), 1)] // xunit
         [InlineData(typeof(int[]), 2)]
-        [InlineData(typeof(int[,][]), 3)]
-        [InlineData(typeof(Nullable<>), 1)] // open generic type treated as elemental
         [InlineData(typeof(NestedNonGeneric_0), 2)] // declaring and nested
         [InlineData(typeof(NestedGeneric_0<int>), 4)] // declaring, nested, generic arg and generic type definition
         [InlineData(typeof(NestedNonGeneric_0.NestedNonGeneric_1), 3)] // declaring, nested 0 and nested 1
         // TypeNameTests+NestedGeneric_0`1+NestedGeneric_1`2[[Int32],[String],[Boolean]] (simplified for brevity)
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>), 7)] // declaring, nested 0 and nested 1 and 3 generic args and generic type definition
+        [MemberData(nameof(GetNodeCountData))]
         [MemberData(nameof(GetAdditionalConstructedTypeData))]
         public void GetNodeCountReturnsExpectedValue(Type type, int expected)
         {
@@ -888,12 +893,16 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(128, typeName.GetArrayRank());
         }
 
+        public static IEnumerable<object[]> GetRoundtripMultiDimArrayData()
+        {
+            yield return new object[] { typeof(int[,]) };
+            yield return new object[] { typeof(int[,,,]) };
+        }
+
         [Theory]
         [InlineData(typeof(int))]
         [InlineData(typeof(int?))]
         [InlineData(typeof(int[]))]
-        [InlineData(typeof(int[,]))]
-        [InlineData(typeof(int[,,,]))]
         [InlineData(typeof(List<int>))]
         [InlineData(typeof(List<List<int>>))]
         [InlineData(typeof(Dictionary<int, string>))]
@@ -904,6 +913,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>))]
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>))]
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>.NestedNonGeneric_3))]
+        [MemberData(nameof(GetRoundtripMultiDimArrayData))]
         public void CanImplementGetTypeUsingPublicAPIs_Roundtrip(Type type)
         {
             Test(type);

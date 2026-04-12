@@ -93,22 +93,16 @@ namespace System.IO.Hashing.Tests
     public class Crc64Tests_ParameterSet_Custom_WE : Crc64Tests_Parameterized
     {
         public Crc64Tests_ParameterSet_Custom_WE() : base(new Crc64WEDriver()) { }
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc64WEDriver());
-#endif
     }
     public class Crc64Tests_ParameterSet_Custom_GoIso : Crc64Tests_Parameterized
     {
         public Crc64Tests_ParameterSet_Custom_GoIso() : base(new Crc64GoIsoDriver()) { }
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc64GoIsoDriver());
-#endif
     }
     public class Crc64Tests_ParameterSet_Custom_Redis : Crc64Tests_Parameterized
     {
         public Crc64Tests_ParameterSet_Custom_Redis() : base(new Crc64RedisDriver()) { }
-#if !SINGLE_FILE_TEST_RUNNER
         public new static IEnumerable<object[]> TestCases => GenerateTestCases(new Crc64RedisDriver());
-#endif
     }
 }

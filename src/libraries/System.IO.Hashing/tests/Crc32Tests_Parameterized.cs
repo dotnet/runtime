@@ -31,7 +31,6 @@ namespace System.IO.Hashing.Tests
         protected override bool TryStaticOneShot(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
             Crc32.TryHash(s_parameterSet, source, destination, out bytesWritten);
 
-#if !SINGLE_FILE_TEST_RUNNER
         // MemberData requires static members, but per-subclass test data depends on the driver.
         // Each concrete subclass shadows TestCases with its own static property that calls
         // GenerateTestCases with the appropriate driver. This placeholder satisfies the
@@ -196,7 +195,6 @@ namespace System.IO.Hashing.Tests
             AssertEqualHashNumber(testCase.OutputHex, alg.GetCurrentHashAsUInt32(), littleEndian: s_parameterSet.ReflectValues);
             AssertEqualHashNumber(testCase.OutputHex, Crc32.HashToUInt32(s_parameterSet, testCase.Input), littleEndian: s_parameterSet.ReflectValues);
         }
-#endif
     }
 
     public abstract class Crc32DriverBase
