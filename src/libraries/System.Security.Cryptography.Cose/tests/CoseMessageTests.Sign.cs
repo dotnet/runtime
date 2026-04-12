@@ -92,7 +92,6 @@ namespace System.Security.Cryptography.Cose.Tests
             }
         }
 
-#if !SINGLE_FILE_TEST_RUNNER
         [Fact]
         public void SignVerify()
         {
@@ -295,6 +294,5 @@ namespace System.Security.Cryptography.Cose.Tests
                 msg.RemoveSignature(signature);
             }
         }
-#endif
     }
 }
