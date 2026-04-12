@@ -121,20 +121,9 @@ namespace System.Diagnostics
                 SafeFileHandle? outputHandle = hasOutput ? GetSafeFileHandleFromStreamReader(_standardOutput!) : null;
                 SafeFileHandle? errorHandle = hasError ? GetSafeFileHandleFromStreamReader(_standardError!) : null;
 
-                if (hasOutput && hasError)
-                {
-                    ReadBothPipes(outputHandle!, errorHandle!, timeoutMs,
-                        ref outputBuffer, ref outputBytesRead,
-                        ref errorBuffer, ref errorBytesRead);
-                }
-                else if (hasOutput)
-                {
-                    ReadSinglePipe(outputHandle!, timeoutMs, ref outputBuffer, ref outputBytesRead);
-                }
-                else
-                {
-                    ReadSinglePipe(errorHandle!, timeoutMs, ref errorBuffer, ref errorBytesRead);
-                }
+                ReadPipes(outputHandle, errorHandle, timeoutMs,
+                    ref outputBuffer, ref outputBytesRead,
+                    ref errorBuffer, ref errorBytesRead);
 
                 byte[] outputResult = outputBytesRead > 0
                     ? outputBuffer.AsSpan(0, outputBytesRead).ToArray()
@@ -176,44 +165,11 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Reads from a single pipe using <see cref="RandomAccess"/> until EOF or timeout.
+        /// Reads from one or both standard output and standard error pipes using platform-specific multiplexing.
         /// </summary>
-        private static void ReadSinglePipe(SafeFileHandle handle, int timeoutMs, ref byte[] buffer, ref int bytesRead)
-        {
-            long deadline = timeoutMs >= 0
-                ? Environment.TickCount64 + timeoutMs
-                : long.MaxValue;
-
-            while (true)
-            {
-                int remaining = buffer.Length - bytesRead;
-
-                int read = RandomAccess.Read(handle, buffer.AsSpan(bytesRead, remaining), fileOffset: -1);
-                if (read == 0)
-                {
-                    break; // EOF
-                }
-
-                bytesRead += read;
-
-                if (bytesRead == buffer.Length)
-                {
-                    RentLargerBuffer(ref buffer, bytesRead);
-                }
-
-                if (Environment.TickCount64 >= deadline)
-                {
-                    throw new TimeoutException();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Reads from both standard output and standard error pipes using platform-specific multiplexing.
-        /// </summary>
-        private static partial void ReadBothPipes(
-            SafeFileHandle outputHandle,
-            SafeFileHandle errorHandle,
+        private static partial void ReadPipes(
+            SafeFileHandle? outputHandle,
+            SafeFileHandle? errorHandle,
             int timeoutMs,
             ref byte[] outputBuffer,
             ref int outputBytesRead,

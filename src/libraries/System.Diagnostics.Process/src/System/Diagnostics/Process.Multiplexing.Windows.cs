@@ -11,12 +11,12 @@ namespace System.Diagnostics
     public partial class Process
     {
         /// <summary>
-        /// Reads from both standard output and standard error pipes using async IO with tasks.
+        /// Reads from one or both standard output and standard error pipes using async IO with tasks.
         /// On Windows, the underlying handles are opened for async IO, so async reads can be cancelled.
         /// </summary>
-        private static partial void ReadBothPipes(
-            SafeFileHandle outputHandle,
-            SafeFileHandle errorHandle,
+        private static partial void ReadPipes(
+            SafeFileHandle? outputHandle,
+            SafeFileHandle? errorHandle,
             int timeoutMs,
             ref byte[] outputBuffer,
             ref int outputBytesRead,
@@ -29,11 +29,15 @@ namespace System.Diagnostics
 
             CancellationToken cancellationToken = cts.Token;
 
-            Task<int> outputTask = RandomAccess.ReadAsync(outputHandle, outputBuffer.AsMemory(outputBytesRead), fileOffset: -1, cancellationToken).AsTask();
-            Task<int> errorTask = RandomAccess.ReadAsync(errorHandle, errorBuffer.AsMemory(errorBytesRead), fileOffset: -1, cancellationToken).AsTask();
+            Task<int>? outputTask = outputHandle is not null
+                ? RandomAccess.ReadAsync(outputHandle, outputBuffer.AsMemory(outputBytesRead), fileOffset: 0, cancellationToken).AsTask()
+                : null;
+            Task<int>? errorTask = errorHandle is not null
+                ? RandomAccess.ReadAsync(errorHandle, errorBuffer.AsMemory(errorBytesRead), fileOffset: 0, cancellationToken).AsTask()
+                : null;
 
-            bool outputDone = false;
-            bool errorDone = false;
+            bool outputDone = outputTask is null;
+            bool errorDone = errorTask is null;
 
             try
             {
@@ -44,18 +48,18 @@ namespace System.Diagnostics
 
                     if (outputDone)
                     {
-                        bytesRead = errorTask.GetAwaiter().GetResult();
+                        bytesRead = errorTask!.GetAwaiter().GetResult();
                         isError = true;
                     }
                     else if (errorDone)
                     {
-                        bytesRead = outputTask.GetAwaiter().GetResult();
+                        bytesRead = outputTask!.GetAwaiter().GetResult();
                         isError = false;
                     }
                     else
                     {
 #pragma warning disable CA2025 // Tasks complete or are cancelled before CTS disposal
-                        Task<int> completed = Task.WhenAny(outputTask, errorTask).GetAwaiter().GetResult();
+                        Task<int> completed = Task.WhenAny(outputTask!, errorTask!).GetAwaiter().GetResult();
 #pragma warning restore CA2025
                         isError = completed == errorTask;
                         bytesRead = completed.GetAwaiter().GetResult();
@@ -70,7 +74,7 @@ namespace System.Diagnostics
                             {
                                 RentLargerBuffer(ref errorBuffer, errorBytesRead);
                             }
-                            errorTask = RandomAccess.ReadAsync(errorHandle, errorBuffer.AsMemory(errorBytesRead), fileOffset: -1, cancellationToken).AsTask();
+                            errorTask = RandomAccess.ReadAsync(errorHandle!, errorBuffer.AsMemory(errorBytesRead), fileOffset: 0, cancellationToken).AsTask();
                         }
                         else
                         {
@@ -79,7 +83,7 @@ namespace System.Diagnostics
                             {
                                 RentLargerBuffer(ref outputBuffer, outputBytesRead);
                             }
-                            outputTask = RandomAccess.ReadAsync(outputHandle, outputBuffer.AsMemory(outputBytesRead), fileOffset: -1, cancellationToken).AsTask();
+                            outputTask = RandomAccess.ReadAsync(outputHandle!, outputBuffer.AsMemory(outputBytesRead), fileOffset: 0, cancellationToken).AsTask();
                         }
                     }
                     else

@@ -11,21 +11,21 @@ namespace System.Diagnostics
     public partial class Process
     {
         /// <summary>
-        /// Reads from both standard output and standard error pipes using Unix poll-based multiplexing.
+        /// Reads from one or both standard output and standard error pipes using Unix poll-based multiplexing.
         /// </summary>
-        private static partial void ReadBothPipes(
-            SafeFileHandle outputHandle,
-            SafeFileHandle errorHandle,
+        private static partial void ReadPipes(
+            SafeFileHandle? outputHandle,
+            SafeFileHandle? errorHandle,
             int timeoutMs,
             ref byte[] outputBuffer,
             ref int outputBytesRead,
             ref byte[] errorBuffer,
             ref int errorBytesRead)
         {
-            int outputFd = outputHandle.DangerousGetHandle().ToInt32();
-            int errorFd = errorHandle.DangerousGetHandle().ToInt32();
-            bool outputDone = false;
-            bool errorDone = false;
+            int outputFd = outputHandle is not null ? outputHandle.DangerousGetHandle().ToInt32() : -1;
+            int errorFd = errorHandle is not null ? errorHandle.DangerousGetHandle().ToInt32() : -1;
+            bool outputDone = outputHandle is null;
+            bool errorDone = errorHandle is null;
 
             Interop.PollEvent[] pollFds = new Interop.PollEvent[2];
 
@@ -110,7 +110,7 @@ namespace System.Diagnostics
                     ref int currentBytesRead = ref (isError ? ref errorBytesRead : ref outputBytesRead);
                     ref bool currentDone = ref (isError ? ref errorDone : ref outputDone);
 
-                    int bytesRead = RandomAccess.Read(currentHandle, currentBuffer.AsSpan(currentBytesRead), fileOffset: -1);
+                    int bytesRead = RandomAccess.Read(currentHandle, currentBuffer.AsSpan(currentBytesRead), fileOffset: 0);
                     if (bytesRead > 0)
                     {
                         currentBytesRead += bytesRead;
