@@ -51,30 +51,34 @@ public class Color
         Assert.Throws<PlatformNotSupportedException>(() => Console.BackgroundColor = ConsoleColor.Red);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void RedirectedOutputDoesNotUseAnsiSequences()
     {
-        // Make sure that redirecting to a memory stream causes Console not to write out the ANSI sequences
-
-        Helpers.RunInRedirectedOutput((data) =>
+        // Make sure that redirecting to a memory stream causes Console not to write out the ANSI sequences.
+        // Run in a remote process to isolate from the test runner's background output thread, which may
+        // write diagnostic messages to Console.Out and pollute the redirected MemoryStream.
+        RemoteExecutor.Invoke(static () =>
         {
-            Console.Write('1');
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.Write('2');
-            Console.BackgroundColor = ConsoleColor.Red;
-            Console.Write('3');
-            Console.ResetColor();
-            Console.Write('4');
+            Helpers.RunInRedirectedOutput((data) =>
+            {
+                Console.Write('1');
+                Console.ForegroundColor = ConsoleColor.Blue;
+                Console.Write('2');
+                Console.BackgroundColor = ConsoleColor.Red;
+                Console.Write('3');
+                Console.ResetColor();
+                Console.Write('4');
 
-            string output = Encoding.UTF8.GetString(data.ToArray());
+                string output = Encoding.UTF8.GetString(data.ToArray());
 
-            // Use char-level check rather than string search: culture-sensitive string
-            // comparison treats control characters like ESC (\x1B) as ignorable, so
-            // Assert.DoesNotContain(Esc.ToString(), ...) would always pass.
-            Assert.Equal(0, output.Count(c => c == Esc));
-            Assert.Equal("1234", output);
-        });
+                // Use char-level check rather than string search: culture-sensitive string
+                // comparison treats control characters like ESC (\x1B) as ignorable, so
+                // Assert.DoesNotContain(Esc.ToString(), ...) would always pass.
+                Assert.Equal(0, output.Count(c => c == Esc));
+                Assert.Equal("1234", output);
+            });
+        }).Dispose();
     }
 
     public static bool TermIsSetAndRemoteExecutorIsSupported

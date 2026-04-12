@@ -80,6 +80,7 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
     public virtual bool IsCollectible(TypeHandle typeHandle);
+    public virtual bool ContainsGenericVariables(TypeHandle typeHandle);
     public virtual bool HasTypeParam(TypeHandle typeHandle);
 
     // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class.
@@ -123,6 +124,19 @@ public enum ArrayFunctionType
     Set = 1,
     Address = 2,
     Constructor = 3
+}
+```
+
+```csharp
+public enum OptimizationTier
+{
+    OptimizationTierUnknown,
+    OptimizationTier0,
+    OptimizationTier1,
+    OptimizationTier1OSR,
+    OptimizationTierOptimized,
+    OptimizationTier0Instrumented,
+    OptimizationTier1Instrumented,
 }
 ```
 
@@ -196,6 +210,12 @@ partial interface IRuntimeTypeSystem : IContract
     // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
     public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
 
+    // Gets the optimization tier stored on the MethodDesc's code data
+    public virtual OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDesc);
+
+    // Returns true if the method is eligible for tiered compilation
+    public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
+
 }
 ```
 
@@ -207,6 +227,8 @@ bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
+TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer);
+TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread);
 ```
 
 ### Other APIs
@@ -252,6 +274,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_Interface = 0x000C0000,
         Collectible = 0x00200000,
         ContainsGCPointers = 0x01000000,
+        ContainsGenericVariables = 0x20000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                        // otherwise the lower bits are used for WFLAGS_LOW
     }
@@ -423,6 +446,20 @@ The contract additionally depends on these data descriptors
 | `FnPtrTypeDesc` | `RetAndArgTypes` | Pointer to an array of TypeHandle addresses. This length of this is 1 more than `NumArgs` |
 | `GenericsDictInfo` | `NumDicts` | Number of instantiation dictionaries, including inherited ones, in this `GenericsDictInfo` |
 | `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
+
+The value of the `NativeCodeVersionNode::OptimizationTier` field is one of:
+```csharp
+private enum OptimizationTier_1 : uint
+{
+    OptimizationTier0 = 0,
+    OptimizationTier1 = 1,
+    OptimizationTier1OSR = 2,
+    OptimizationTierOptimized = 3,
+    OptimizationTier0Instrumented = 4,
+    OptimizationTier1Instrumented = 5,
+    OptimizationTierUnknown = 0xFFFFFFFF
+}
+```
 
 Contracts used:
 | Contract Name |
@@ -642,6 +679,14 @@ Contracts used:
             return false;
         MethodTable typeHandle = _methodTables[typeHandle.Address];
         return typeHandle.Flags.IsCollectible;
+    }
+
+    public bool ContainsGenericVariables(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable())
+            return _methodTables[typeHandle.Address].Flags.ContainsGenericVariables;
+        // For TypeDescs: Var/MVar are generic variables; for parameterized types (Ptr, ByRef),
+        // recurse through GetTypeParam; for FnPtr, check each signature type argument.
     }
 
     public bool HasTypeParam(TypeHandle typeHandle)
@@ -1779,6 +1824,19 @@ uint GetFieldDescOffset(TargetPointer fieldDescPointer)
         return (uint)fieldDef.GetRelativeVirtualAddress();
     }
     return DWord2 & (uint)FieldDescFlags2.OffsetMask;
+}
+
+TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer)
+{
+    // Resolves the base pointer (GC or non-GC statics) for the enclosing type,
+    // then applies the field's metadata-based offset within that region.
+    // Uses GetGCStaticsBasePointer / GetNonGCStaticsBasePointer depending on the field's CorElementType.
+}
+
+TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread)
+{
+    // Like GetFieldDescStaticAddress, but resolves thread-local base pointers instead.
+    // Uses GetGCThreadStaticsBasePointer / GetNonGCThreadStaticsBasePointer.
 }
 ```
 

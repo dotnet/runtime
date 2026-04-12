@@ -31,6 +31,47 @@ The build system uses a two-phase approach:
 
 ## Macro Reference
 
+### Field Type Annotation Defines
+
+Field types in `CDAC_TYPE_FIELD` use preprocessor defines that expand to type name strings in
+debug/checked builds and to nothing in release builds. This keeps the release blob compact while
+providing type information for diagnostic validation in debug builds.
+
+These defines are declared in `wrappeddatadescriptor.inc` and are available to all `.inc` files:
+
+| Define | Expansion | Description |
+|--------|----------------|-------------|
+| `T_UINT8` | `uint8` | 8-bit unsigned integer |
+| `T_UINT16` | `uint16` | 16-bit unsigned integer |
+| `T_UINT32` | `uint32` | 32-bit unsigned integer |
+| `T_UINT64` | `uint64` | 64-bit unsigned integer |
+| `T_INT8` | `int8` | 8-bit signed integer |
+| `T_INT16` | `int16` | 16-bit signed integer |
+| `T_INT32` | `int32` | 32-bit signed integer |
+| `T_INT64` | `int64` | 64-bit signed integer |
+| `T_NUINT` | `nuint` | Native unsigned integer |
+| `T_NINT` | `nint` | Native signed integer |
+| `T_POINTER` | `pointer` | Target pointer |
+| `T_BOOL` | `bool` | Boolean |
+| `TYPE(name)` | `name` | Inline struct type declared with `CDAC_TYPE_BEGIN` in the same descriptor |
+| `EXTERN_TYPE(name)` | `name` | Type not validated locally (cross-descriptor or well-known) |
+| `T_ARRAY(type)` | `pointer` | Array of the given element type. Expands to `pointer` in the blob |
+
+These defines always expand to the type name in all build configurations. Whether the
+type name string is included in the binary blob is controlled by `CDAC_STRINGIFY_TYPE`
+in `datadescriptor.cpp` (currently debug/checked builds only; release builds emit `""`
+to keep the blob compact).
+
+`TYPE(name)` references are validated at compile time in debug builds via
+`cdactypevalidation.inc`. If the name does not match any `CDAC_TYPE_BEGIN` in the same
+descriptor, a `static_assert` failure is produced. Use `EXTERN_TYPE(name)` for types
+declared in a different descriptor or for well-known types that don't have a
+`CDAC_TYPE_BEGIN` in the current descriptor.
+
+`T_ARRAY(type)` accepts any type define as its element type (e.g., `T_ARRAY(T_UINT8)`,
+`T_ARRAY(TYPE(StressLogModuleDesc))`). The inner type is validated but the array itself
+expands to `pointer` in the blob since arrays are accessed via pointers.
+
 ### Structure Definition Macros
 
 **`CDAC_BASELINE("identifier")`**
@@ -56,7 +97,7 @@ The build system uses a two-phase approach:
 
 **`CDAC_TYPE_FIELD(typeName, fieldType, fieldName, offset)`**
 - Defines a field within the type
-- `fieldType`: primitive type or another defined type
+- `fieldType`: a type annotation define (see table above)
 - `fieldName`: diagnostic-friendly name (use managed names for managed types)
 - `offset`: byte offset, usually `offsetof()` or `cdac_data<T>::FieldName`
 
@@ -72,7 +113,7 @@ The build system uses a two-phase approach:
 **`CDAC_GLOBAL(globalName, typeName, value)`**
 - Defines a global literal value
 - `value` must be a compile-time constant
-- `typeName` can be a primitive type or defined type
+- `typeName`: a type annotation define (e.g., `T_UINT32`, `T_UINT8`, `T_NUINT`)
 
 **`CDAC_GLOBAL_POINTER(globalName, address)`**
 - Defines a global pointer value
@@ -88,6 +129,27 @@ The build system uses a two-phase approach:
 - Used for multi-contract scenarios where one contract references another
 - Example: `CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))`
 
+## Compile-Time Type Validation
+
+In debug/checked builds, `cdactypevalidation.inc` validates that every `TYPE(name)` reference
+in `CDAC_TYPE_FIELD` corresponds to a type declared with `CDAC_TYPE_BEGIN` in the same
+descriptor. It uses two passes:
+
+1. **Pass 1**: Each `CDAC_TYPE_BEGIN(name)` declares a tag struct `cdac_type_tag_<name>`.
+2. **Pass 2**: Each `TYPE(name)` in `CDAC_TYPE_FIELD` expands to `struct cdac_type_tag_<name>`,
+   and `static_assert(sizeof(...))` fails if the tag struct was not declared.
+
+Primitive types (`T_UINT32`, etc.) and `EXTERN_TYPE` references (cross-descriptor or
+well-known types) expand to `char` during validation, so they always pass. `T_ARRAY`
+passes through to its inner type for validation.
+
+This validation is included from `datadescriptor.cpp` under `#ifdef _DEBUG` and runs before
+the blob construction passes. A type mismatch produces a clear compiler error, for example:
+
+```
+error C2338: static assertion failed:
+    'Field Thread.OSId references undeclared cDAC type TYPE(RandomNonExistentType)'
+```
 
 ## Current Implementation
 

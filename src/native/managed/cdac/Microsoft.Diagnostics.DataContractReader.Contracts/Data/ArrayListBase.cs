@@ -16,7 +16,7 @@ internal sealed class ArrayListBase : IData<ArrayListBase>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ArrayListBase);
 
-        Count = target.Read<uint>(address + (ulong)type.Fields[nameof(Count)].Offset);
+        Count = target.ReadField<uint>(address, type, nameof(Count));
         FirstBlock = address + (ulong)type.Fields[nameof(FirstBlock)].Offset;
 
         TargetPointer next = FirstBlock;
@@ -56,8 +56,8 @@ internal sealed class ArrayListBase : IData<ArrayListBase>
         {
             Target.TypeInfo type = target.GetTypeInfo(DataType.ArrayListBlock);
 
-            Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-            Size = target.Read<uint>(address + (ulong)type.Fields[nameof(Size)].Offset);
+            Next = target.ReadPointerField(address, type, nameof(Next));
+            Size = target.ReadField<uint>(address, type, nameof(Size));
             ArrayStart = address + (ulong)type.Fields[nameof(ArrayStart)].Offset;
 
             for (ulong i = 0; i < Size; i++)

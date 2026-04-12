@@ -795,7 +795,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector256.Count{T}(Vector256{T}, T)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Count<T>(Vector512<T> vector, T value) => BitOperations.PopCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+        public static int Count<T>(Vector512<T> vector, T value) => CountMatches(Equals(vector, Create(value)));
 
         /// <inheritdoc cref="Vector256.CountWhereAllBitsSet{T}(Vector256{T})" />
         [Intrinsic]
@@ -2075,11 +2075,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector256.IndexOf{T}(Vector256{T}, T)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(Vector512<T> vector, T value)
-        {
-            int result = BitOperations.TrailingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
-            return (result != 64) ? result : -1;
-        }
+        public static int IndexOf<T>(Vector512<T> vector, T value) => IndexOfFirstMatch(Equals(vector, Create(value)));
 
         /// <inheritdoc cref="Vector256.IndexOfWhereAllBitsSet{T}(Vector256{T})" />
         [Intrinsic]
@@ -2310,7 +2306,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector256.LastIndexOf{T}(Vector256{T}, T)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(Vector512<T> vector, T value) => 63 - BitOperations.LeadingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+        public static int LastIndexOf<T>(Vector512<T> vector, T value) => IndexOfLastMatch(Equals(vector, Create(value)));
 
         /// <inheritdoc cref="Vector256.LastIndexOfWhereAllBitsSet{T}(Vector256{T})" />
         [Intrinsic]
@@ -4423,11 +4419,66 @@ namespace System.Runtime.Intrinsics
         public static Vector512<T> Xor<T>(Vector512<T> left, Vector512<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int CountMatches<T>(Vector512<T> vector)
+        {
+            if (Vector512.IsHardwareAccelerated)
+            {
+                return BitOperations.PopCount(vector.ExtractMostSignificantBits());
+            }
+            else
+            {
+                return Vector256.CountMatches(vector._lower)
+                     + Vector256.CountMatches(vector._upper);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static T GetElementUnsafe<T>(in this Vector512<T> vector, int index)
         {
             Debug.Assert((index >= 0) && (index < Vector512<T>.Count));
             ref T address = ref Unsafe.As<Vector512<T>, T>(ref Unsafe.AsRef(in vector));
             return Unsafe.Add(ref address, index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfFirstMatch<T>(Vector512<T> vector)
+        {
+            if (Vector512.IsHardwareAccelerated)
+            {
+                int result = BitOperations.TrailingZeroCount(vector.ExtractMostSignificantBits());
+                return (result != 64) ? result : -1;
+            }
+            else
+            {
+                int result = Vector256.IndexOfFirstMatch(vector._lower);
+
+                if (result >= 0)
+                {
+                    return result;
+                }
+
+                result = Vector256.IndexOfFirstMatch(vector._upper);
+                return result + ((result >= 0) ? Vector256<T>.Count : 0);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfLastMatch<T>(Vector512<T> vector)
+        {
+            if (Vector512.IsHardwareAccelerated)
+            {
+                return 63 - BitOperations.LeadingZeroCount(vector.ExtractMostSignificantBits());
+            }
+            else
+            {
+                int result = Vector256.IndexOfLastMatch(vector._upper);
+
+                if (result >= 0)
+                {
+                    return result + Vector256<T>.Count;
+                }
+                return Vector256.IndexOfLastMatch(vector._lower);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
