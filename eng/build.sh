@@ -637,7 +637,7 @@ arguments+=("/p:CMakeArgs=\"$cmakeargs\"" ${extraargs[@]+"${extraargs[@]}"})
 
 # Set up the directory for MSBuild debug logs, so that if MSBuild crashes (MSB4166)
 # the failure.txt diagnostics are written to a known location under artifacts/log
-# where they'll be captured as build artifacts. See https://github.com/dotnet/runtime/issues/92290
+# where they'll be captured as build artifacts.
 MSBUILDDEBUGPATH="$scriptroot/../artifacts/log/${bootstrapConfig:-Debug}/MsbuildDebugLogs"
 mkdir -p "$MSBUILDDEBUGPATH"
 export MSBUILDDEBUGPATH

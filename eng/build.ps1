@@ -382,7 +382,7 @@ $env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 
 # Set up the directory for MSBuild debug logs, so that if MSBuild crashes (MSB4166)
 # the failure.txt diagnostics are written to a known location under artifacts/log
-# where they'll be captured as build artifacts. See https://github.com/dotnet/runtime/issues/92290
+# where they'll be captured as build artifacts.
 $msbuildDebugLogsDir = "$PSScriptRoot/../artifacts/log/$((Get-Culture).TextInfo.ToTitleCase($configuration[0]))/MsbuildDebugLogs"
 New-Item -ItemType Directory -Force -Path $msbuildDebugLogsDir | Out-Null
 $env:MSBUILDDEBUGPATH = $msbuildDebugLogsDir
