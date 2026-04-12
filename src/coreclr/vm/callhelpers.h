@@ -11,6 +11,7 @@
 
 struct CallDescrData
 {
+    // Input arguments
     LPVOID                      pSrc;
     UINT32                      numStackSlots;
 #ifdef CALLDESCR_ARGREGS
