@@ -105,7 +105,7 @@ namespace System.Diagnostics
                     }
 
                     bool isError = i == errorIndex;
-                    SafeFileHandle currentHandle = isError ? errorHandle : outputHandle;
+                    SafeFileHandle currentHandle = (isError ? errorHandle : outputHandle)!;
                     ref byte[] currentBuffer = ref (isError ? ref errorBuffer : ref outputBuffer);
                     ref int currentBytesRead = ref (isError ? ref errorBytesRead : ref outputBytesRead);
                     ref bool currentDone = ref (isError ? ref errorDone : ref outputDone);

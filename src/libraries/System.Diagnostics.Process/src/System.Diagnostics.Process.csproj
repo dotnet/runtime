@@ -226,6 +226,12 @@
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\Process.Windows.cs" />
     <Compile Include="System\Diagnostics\Process.Multiplexing.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CancelIoEx.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CancelIoEx.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
@@ -413,6 +419,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.Extensions\src\System.Text.Encoding.Extensions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Overlapped\src\System.Threading.Overlapped.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\src\System.Threading.ThreadPool.csproj" />
   </ItemGroup>
