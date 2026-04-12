@@ -23,45 +23,25 @@ namespace System.Reflection
         private unsafe MethodInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.Signature.Arguments)
         {
             _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
-            _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
+            _invokeFunc_RefArgs = InterpretedInvoke_Method;
         }
 
         private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr* args)
         {
-            InvokeFunc_RefArgs emitDelegate = CreateEmitDelegate(_method);
-
-            if (!IsCollectible(_method))
-            {
-                _invokeFunc_RefArgs = emitDelegate;
-            }
-
-            return emitDelegate(obj, args);
-        }
-
-        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr* args)
-        {
-            InvokeFunc_RefArgs emitDelegate = CreateEmitDelegate(_method);
-
-            if (!IsCollectible(_method))
-            {
-                _invokeFunc_RefArgs = emitDelegate;
-            }
-
-            return emitDelegate(obj, args);
-        }
-
-        private static bool IsCollectible(MethodBase method)
-        {
-            Type? declaringType = method.DeclaringType;
-            return declaringType is not null && declaringType.Assembly.IsCollectible;
-        }
-
-        private static InvokeFunc_RefArgs CreateEmitDelegate(MethodBase method)
-        {
+            InvokeFunc_RefArgs emitDelegate;
             using (AssemblyBuilder.ForceAllowDynamicCode())
             {
-                return CreateInvokeDelegate_RefArgs(method);
+                emitDelegate = CreateInvokeDelegate_RefArgs(_method);
             }
+
+            Type? declaringType = _method.DeclaringType;
+            if (declaringType is null || !declaringType.Assembly.IsCollectible)
+            {
+                _invokeFunc_RefArgs = emitDelegate;
+            }
+
+            return emitDelegate(obj, args);
         }
+
     }
 }

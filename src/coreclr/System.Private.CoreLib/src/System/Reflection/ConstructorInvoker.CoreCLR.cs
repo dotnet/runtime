@@ -23,18 +23,13 @@ namespace System.Reflection
 
             // Don't cache for collectible assemblies: the DynamicMethod holds token
             // references to types that would prevent the assembly from being unloaded.
-            if (!IsCollectible(_method))
+            Type? declaringType = _method.DeclaringType;
+            if (declaringType is null || !declaringType.Assembly.IsCollectible)
             {
                 _invokeFunc_RefArgs = emitDelegate;
             }
 
             return emitDelegate(obj, args);
-        }
-
-        private static bool IsCollectible(MethodBase method)
-        {
-            Type? declaringType = method.DeclaringType;
-            return declaringType is not null && declaringType.Assembly.IsCollectible;
         }
     }
 }

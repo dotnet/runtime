@@ -48,7 +48,7 @@ namespace System.Reflection
                 try
                 {
                     // Use the interpreted version to avoid having to generate a new method that doesn't allocate.
-                    ret = InterpretedInvoke_Constructor(obj, pByRefStorage);
+                    ret = InterpretedInvoke_Method(obj, pByRefStorage);
                 }
                 catch (Exception e) when (wrapInTargetInvocationException)
                 {
@@ -70,7 +70,7 @@ namespace System.Reflection
             try
             {
                 // Use the interpreted version to avoid having to generate a new method that doesn't allocate.
-                return InterpretedInvoke_Constructor(obj, null);
+                return InterpretedInvoke_Method(obj, null);
             }
             catch (Exception e) when (wrapInTargetInvocationException)
             {
