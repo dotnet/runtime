@@ -933,8 +933,6 @@ protected:
     HRESULT STDMETHODCALLTYPE GetAppDomainIdFromVmObjectHandle(VMPTR_OBJECTHANDLE vmHandle, OUT ULONG * pRetVal);
 
 private:
-    bool IsThreadMarkedDeadWorker(Thread * pThread);
-
     // Check whether the specified thread is at a GC-safe place, i.e. in an interruptible region.
     BOOL IsThreadAtGCSafePlace(VMPTR_Thread vmThread);
 

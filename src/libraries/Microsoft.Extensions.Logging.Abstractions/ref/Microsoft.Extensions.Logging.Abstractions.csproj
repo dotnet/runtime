@@ -10,10 +10,11 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\ref\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\ref\System.Diagnostics.DiagnosticSource.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\ref\System.Diagnostics.DiagnosticSource.csproj" /> 
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
 
 </Project>

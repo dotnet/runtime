@@ -130,7 +130,13 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
     genDefineTempLabel(gsCheckBlk);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+//------------------------------------------------------------------------
+// genCallFinally: Generate a call to a finally.
+//
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
@@ -181,17 +187,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         GetEmitter()->emitEnableGC();
     }
-
-    // The BBJ_CALLFINALLYRET is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbTargetEdge - that is already used to point
-    // to the finally block. So just skip past the BBJ_CALLFINALLYRET unless the
-    // block is RETLESS.
-    if (!block->HasFlag(BBF_RETLESS_CALL))
-    {
-        assert(block->isBBCallFinallyPair());
-        block = nextBlock;
-    }
-    return block;
 }
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
@@ -2121,16 +2116,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_ASYNC_CONTINUATION:
             genCodeForAsyncContinuation(treeNode);
-            break;
-
-        case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
-                          ~fullIntArgRegMask(m_compiler->info.compCallConv)) == 0);
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-            // the runtime side requires the codegen here to be consistent
-            emit->emitDisableRandomNops();
-#endif // PSEUDORANDOM_NOP_INSERTION
             break;
 
         case GT_LABEL:
@@ -10880,7 +10865,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Note that we don't do anything with unwind codes, because AMD64 only cares about unwind codes for the prolog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
@@ -11007,7 +10992,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Generates code for an EH funclet epilog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)

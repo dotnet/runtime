@@ -86,7 +86,7 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
 
     EX_TRY
     {
-        PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, probeExtensionResult);
+        PEImageHolder pImage(PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, probeExtensionResult));
 
         // Make sure that the IL image can be opened.
         if (pImage->IsFile())
@@ -99,7 +99,7 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
         }
 
         if (pImage)
-            *ppPEImage = pImage.Extract();
+            *ppPEImage = pImage.Detach();
     }
     EX_CATCH_HRESULT(hr);
 

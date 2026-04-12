@@ -475,7 +475,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Generates code for an EH funclet epilog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
@@ -866,7 +866,13 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
     GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+//------------------------------------------------------------------------
+// genCallFinally: Generate a call to a finally.
+//
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
@@ -886,7 +892,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
             instGen(INS_break); // This should never get executed
         }
 
-        return block;
+        return;
     }
     else
     {
@@ -912,8 +918,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
 
         GetEmitter()->emitEnableGC();
-
-        return nextBlock;
     }
 }
 
@@ -4379,16 +4383,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
             genConsumeReg(treeNode);
-            break;
-
-        case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
-                          ~fullIntArgRegMask(m_compiler->info.compCallConv)) == 0);
-
-// the runtime side requires the codegen here to be consistent
-#ifdef PSEUDORANDOM_NOP_INSERTION
-            emit->emitDisableRandomNops();
-#endif // PSEUDORANDOM_NOP_INSERTION
             break;
 
         case GT_LABEL:

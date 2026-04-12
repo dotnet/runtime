@@ -307,10 +307,10 @@ void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, 
     UINT64 *pCalleeSavedFloats = (UINT64*)((BYTE*)pTransitionBlock - 128);
 
     // LoongArch CONTEXT::F has 4 slots per register for LASX support.
-    // Each scalar double value is stored in the first slot.
+    // Scalar double value is stored in the first 8 * 32.
     for (int i = 0; i < 8; i++)
     {
-        memcpy(&pRD->pCurrentContext->F[(24 + i) * 4], &pCalleeSavedFloats[i], sizeof(double));
+        memcpy(&pRD->pCurrentContext->F[24 + i], &pCalleeSavedFloats[i], sizeof(double));
     }
 }
 #endif // DACCESS_COMPILE
@@ -531,43 +531,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 #endif // FEATURE_HIJACK
-
-#ifdef FEATURE_COMINTEROP
-
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-
-{
-    WRAPPER_NO_CONTRACT;
-
-    // pcaddi  $r21,0
-	// ld.d  $t2, label_comCallMethodDesc
-	// ld.d  $r21, label_target
-	// jirl  $r0,$r21,0
-	// label_target:
-    // target address (8 bytes)
-    // label_comCallMethodDesc:
-    DWORD rgCode[] = {
-        0x0,
-        0x0,
-        0x0
-    };
-
-    _ASSERTE(!"LOONGARCH64: not implementation on loongarch64!!!");
-
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    memcpy(pBufferRW, rgCode, sizeof(rgCode));
-    *((PCODE*)(pBufferRW + sizeof(rgCode) + 4)) = target;
-
-    // Ensure that the updated instructions get actually written
-    ClrFlushInstructionCache(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE);
-
-    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-             *((PCODE*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == target);
-}
-#endif // FEATURE_COMINTEROP
-
 
 #if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
