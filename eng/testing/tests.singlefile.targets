@@ -53,9 +53,7 @@
     <TrimmerRootAssembly Include="TestUtilities" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="xunit.runner.utility" Version="$(XUnitVersion)" />
-  </ItemGroup>
+
 
   <Target Name="__ExcludeAssembliesFromSingleFile"
           Inputs="%(ResolvedFileToPublish.Identity)"

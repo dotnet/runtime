@@ -5,10 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RdXmlFile Include="default.rd.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <AssembliesBeingTested Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
