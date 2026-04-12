@@ -370,7 +370,16 @@ CDAC_TYPE_INDETERMINATE(Debugger)
 CDAC_TYPE_FIELD(Debugger, T_INT32, LeftSideInitialized, offsetof(Debugger, m_fLeftSideInitialized))
 CDAC_TYPE_FIELD(Debugger, T_UINT32, Defines, offsetof(Debugger, m_defines))
 CDAC_TYPE_FIELD(Debugger, T_UINT32, MDStructuresVersion, offsetof(Debugger, m_mdDataStructureVersion))
+CDAC_TYPE_FIELD(Debugger, T_POINTER, RCThread, cdac_data<Debugger>::RCThread)
+CDAC_TYPE_FIELD(Debugger, T_INT32, RSRequestedSync, cdac_data<Debugger>::RSRequestedSync)
+CDAC_TYPE_FIELD(Debugger, T_INT32, SendExceptionsOutsideOfJMC, cdac_data<Debugger>::SendExceptionsOutsideOfJMC)
+CDAC_TYPE_FIELD(Debugger, T_INT32, GCNotificationEventsEnabled, cdac_data<Debugger>::GCNotificationEventsEnabled)
 CDAC_TYPE_END(Debugger)
+
+CDAC_TYPE_BEGIN(DebuggerRCThread)
+CDAC_TYPE_INDETERMINATE(DebuggerRCThread)
+CDAC_TYPE_FIELD(DebuggerRCThread, T_POINTER, DCB, cdac_data<DebuggerRCThread>::DCB)
+CDAC_TYPE_END(DebuggerRCThread)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 
 CDAC_TYPE_BEGIN(ArrayListBase)

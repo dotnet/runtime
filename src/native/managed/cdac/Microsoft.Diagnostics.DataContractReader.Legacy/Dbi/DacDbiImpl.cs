@@ -309,10 +309,46 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => _legacy is not null ? _legacy.EnumerateModulesInAssembly(vmAssembly, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int RequestSyncAtEvent()
-        => _legacy is not null ? _legacy.RequestSyncAtEvent() : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            _target.Contracts.Debugger.RequestSyncAtEvent();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.RequestSyncAtEvent();
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int SetSendExceptionsOutsideOfJMC(Interop.BOOL sendExceptionsOutsideOfJMC)
-        => _legacy is not null ? _legacy.SetSendExceptionsOutsideOfJMC(sendExceptionsOutsideOfJMC) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            _target.Contracts.Debugger.SetSendExceptionsOutsideOfJMC(sendExceptionsOutsideOfJMC != Interop.BOOL.FALSE);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.SetSendExceptionsOutsideOfJMC(sendExceptionsOutsideOfJMC);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int MarkDebuggerAttachPending()
         => _legacy is not null ? _legacy.MarkDebuggerAttachPending() : HResults.E_NOTIMPL;
@@ -855,7 +891,29 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => _legacy is not null ? _legacy.TestRWLock(vmRWLock) : HResults.E_NOTIMPL;
 
     public int GetDebuggerControlBlockAddress(ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetDebuggerControlBlockAddress(pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            *pRetVal = _target.Contracts.Debugger.GetDebuggerControlBlockAddress().Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.GetDebuggerControlBlockAddress(&retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetObjectFromRefPtr(ulong ptr, ulong* pRetVal)
     {
@@ -1303,7 +1361,25 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => _legacy is not null ? _legacy.GetILCodeVersionNodeData(ilCodeVersionNode, pData) : HResults.E_NOTIMPL;
 
     public int EnableGCNotificationEvents(Interop.BOOL fEnable)
-        => _legacy is not null ? _legacy.EnableGCNotificationEvents(fEnable) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            _target.Contracts.Debugger.EnableGCNotificationEvents(fEnable != Interop.BOOL.FALSE);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.EnableGCNotificationEvents(fEnable);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int IsDelegate(ulong vmObject, Interop.BOOL* pResult)
         => _legacy is not null ? _legacy.IsDelegate(vmObject, pResult) : HResults.E_NOTIMPL;

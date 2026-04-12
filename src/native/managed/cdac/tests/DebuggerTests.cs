@@ -16,6 +16,18 @@ public class DebuggerTests
             new(nameof(Data.Debugger.LeftSideInitialized), DataType.int32),
             new(nameof(Data.Debugger.Defines), DataType.uint32),
             new(nameof(Data.Debugger.MDStructuresVersion), DataType.uint32),
+            new(nameof(Data.Debugger.RCThread), DataType.pointer),
+            new(nameof(Data.Debugger.RSRequestedSync), DataType.int32),
+            new(nameof(Data.Debugger.SendExceptionsOutsideOfJMC), DataType.int32),
+            new(nameof(Data.Debugger.GCNotificationEventsEnabled), DataType.int32),
+        ]);
+    }
+
+    private static TargetTestHelpers.LayoutResult GetDebuggerRCThreadLayout(TargetTestHelpers helpers)
+    {
+        return helpers.LayoutFields(
+        [
+            new(nameof(Data.DebuggerRCThread.DCB), DataType.pointer),
         ]);
     }
 
@@ -25,7 +37,8 @@ public class DebuggerTests
         uint defines,
         uint mdStructuresVersion,
         int? attachStateFlags = null,
-        byte? metadataUpdatesApplied = null)
+        byte? metadataUpdatesApplied = null,
+        ulong? debuggerControlBlockAddress = null)
     {
         TargetTestHelpers helpers = new(arch);
         var builder = new TestPlaceholderTarget.Builder(arch);
@@ -33,13 +46,31 @@ public class DebuggerTests
         MockMemorySpace.BumpAllocator allocator = memBuilder.CreateAllocator(0x1_0000, 0x2_0000);
 
         TargetTestHelpers.LayoutResult debuggerLayout = GetDebuggerLayout(helpers);
-        builder.AddTypes(new() { [DataType.Debugger] = new Target.TypeInfo() { Fields = debuggerLayout.Fields, Size = debuggerLayout.Stride } });
+        TargetTestHelpers.LayoutResult debuggerRcThreadLayout = GetDebuggerRCThreadLayout(helpers);
+        builder.AddTypes(new()
+        {
+            [DataType.Debugger] = new Target.TypeInfo() { Fields = debuggerLayout.Fields, Size = debuggerLayout.Stride },
+            [DataType.DebuggerRCThread] = new Target.TypeInfo() { Fields = debuggerRcThreadLayout.Fields, Size = debuggerRcThreadLayout.Stride },
+        });
+
+        ulong debuggerRcThreadAddress = 0;
+        if (debuggerControlBlockAddress.HasValue)
+        {
+            MockMemorySpace.HeapFragment debuggerRCThreadFrag = allocator.Allocate(debuggerRcThreadLayout.Stride, "DebuggerRCThread");
+            helpers.WritePointer(debuggerRCThreadFrag.Data.AsSpan(debuggerRcThreadLayout.Fields[nameof(Data.DebuggerRCThread.DCB)].Offset, helpers.PointerSize), debuggerControlBlockAddress.Value);
+            memBuilder.AddHeapFragment(debuggerRCThreadFrag);
+            debuggerRcThreadAddress = debuggerRCThreadFrag.Address;
+        }
 
         // Allocate and populate the Debugger struct
         MockMemorySpace.HeapFragment debuggerFrag = allocator.Allocate(debuggerLayout.Stride, "Debugger");
         helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.LeftSideInitialized)].Offset, sizeof(int)), leftSideInitialized);
         helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.Defines)].Offset, sizeof(uint)), defines);
         helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.MDStructuresVersion)].Offset, sizeof(uint)), mdStructuresVersion);
+        helpers.WritePointer(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.RCThread)].Offset, helpers.PointerSize), debuggerRcThreadAddress);
+        helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.RSRequestedSync)].Offset, sizeof(int)), 0);
+        helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.SendExceptionsOutsideOfJMC)].Offset, sizeof(int)), 0);
+        helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.GCNotificationEventsEnabled)].Offset, sizeof(int)), 0);
         memBuilder.AddHeapFragment(debuggerFrag);
 
         // g_pDebugger is a pointer-to-Debugger. The global stores the address of g_pDebugger,
@@ -167,5 +198,75 @@ public class DebuggerTests
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.False(debugger.MetadataUpdatesApplied());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void RequestSyncAtEvent_DoesNothing_WhenDebuggerNull(MockTarget.Architecture arch)
+    {
+        Target target = BuildNullDebuggerTarget(arch);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        debugger.RequestSyncAtEvent();
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void SetSendExceptionsOutsideOfJMC_DoesNothing_WhenDebuggerNull(MockTarget.Architecture arch)
+    {
+        Target target = BuildNullDebuggerTarget(arch);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        debugger.SetSendExceptionsOutsideOfJMC(true);
+        debugger.SetSendExceptionsOutsideOfJMC(false);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDebuggerControlBlockAddress_ReturnsAddress(MockTarget.Architecture arch)
+    {
+        const ulong expectedAddress = 0x1234_5678;
+        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, debuggerControlBlockAddress: expectedAddress);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        TargetPointer result = debugger.GetDebuggerControlBlockAddress();
+
+        Assert.Equal(expectedAddress, result.Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDebuggerControlBlockAddress_ReturnsNull_WhenDebuggerNull(MockTarget.Architecture arch)
+    {
+        Target target = BuildNullDebuggerTarget(arch);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        TargetPointer result = debugger.GetDebuggerControlBlockAddress();
+
+        Assert.Equal(TargetPointer.Null, result);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDebuggerControlBlockAddress_ReturnsNull_WhenRCThreadNull(MockTarget.Architecture arch)
+    {
+        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        TargetPointer result = debugger.GetDebuggerControlBlockAddress();
+
+        Assert.Equal(TargetPointer.Null, result);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnableGCNotificationEvents_DoesNothing_WhenDebuggerNull(MockTarget.Architecture arch)
+    {
+        Target target = BuildNullDebuggerTarget(arch);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        // Should not throw; null g_pDebugger is silently ignored
+        debugger.EnableGCNotificationEvents(true);
+        debugger.EnableGCNotificationEvents(false);
     }
 }

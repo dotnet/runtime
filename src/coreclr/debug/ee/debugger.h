@@ -46,6 +46,7 @@
 #include "dllimportcallback.h"
 
 #include "canary.h"
+#include "cdacdata.h"
 
 #undef ASSERT
 #define CRASH(x)  _ASSERTE(!(x))
@@ -901,6 +902,7 @@ private:
 
 
     friend class Debugger;
+    friend struct ::cdac_data<DebuggerRCThread>;
     Debugger*                       m_debugger;
 
     // IPC_TARGET_* define default targets - if we ever want to do
@@ -2894,6 +2896,7 @@ private:
 
     // DacDbiInterfaceImpl needs to be able to write to private fields in the debugger class.
     friend class DacDbiInterfaceImpl;
+    friend struct ::cdac_data<Debugger>;
 
     // Set OOP by RS to request a sync after a debug event.
     // Clear by LS when we sync.
@@ -3885,6 +3888,21 @@ HANDLE OpenWin32EventOrThrow(
 
 // Include all of the inline stuff now.
 #include "debugger.inl"
+
+template<>
+struct cdac_data<Debugger>
+{
+    static constexpr size_t RCThread = offsetof(Debugger, m_pRCThread);
+    static constexpr size_t RSRequestedSync = offsetof(Debugger, m_RSRequestedSync);
+    static constexpr size_t SendExceptionsOutsideOfJMC = offsetof(Debugger, m_sendExceptionsOutsideOfJMC);
+    static constexpr size_t GCNotificationEventsEnabled = offsetof(Debugger, m_isGarbageCollectionEventsEnabled);
+};
+
+template<>
+struct cdac_data<DebuggerRCThread>
+{
+    static constexpr size_t DCB = offsetof(DebuggerRCThread, m_pDCB);
+};
 
 
 //
