@@ -12778,6 +12778,43 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
                     ValueNumPair excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                    // Shift instructions on these targets implicitly mask the shift amount
+                    // to the operand width, so AND(shiftAmount, 31) or AND(shiftAmount, 63)
+                    // is redundant. Strip the AND at VN level so that CSE sees through it
+                    // and doesn't hoist the mask into a temp that Lowering can't remove.
+                    if (tree->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+                    {
+                        size_t mask = 0x1f;
+#ifdef TARGET_64BIT
+                        if (varTypeIsLong(tree->TypeGet()))
+                        {
+                            mask = 0x3f;
+                        }
+#endif
+                        GenTree* shiftAmount = tree->AsOp()->gtOp2;
+                        while (shiftAmount->OperIs(GT_AND))
+                        {
+                            GenTree* maskOp = shiftAmount->gtGetOp2();
+                            if (!maskOp->IsCnsIntOrI())
+                            {
+                                break;
+                            }
+                            if ((static_cast<size_t>(maskOp->AsIntCon()->IconValue()) & mask) != mask)
+                            {
+                                break;
+                            }
+                            shiftAmount = shiftAmount->gtGetOp1();
+                        }
+
+                        if (shiftAmount != tree->AsOp()->gtOp2)
+                        {
+                            vnStore->VNPUnpackExc(shiftAmount->gtVNPair, &op2vnp, &op2Xvnp);
+                            excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
+                        }
+                    }
+#endif
+
                     ValueNum newVN = ValueNumStore::NoVN;
 
                     // Check for the addition of a field offset constant

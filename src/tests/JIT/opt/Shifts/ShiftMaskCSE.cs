@@ -9,9 +9,9 @@ namespace ShiftMaskCSE
 {
     // Verify that the redundant AND mask on shift amounts (emitted by Roslyn)
     // does not interfere with CSE. When two shifts share the same variable
-    // shift amount, CSE can hoist the (shift & 31) expression. Stripping the
-    // mask early in the importer prevents the AND from being CSE'd, avoiding
-    // the extra AND instruction at runtime.
+    // shift amount, CSE can hoist the (shift & 31) expression. By stripping
+    // the mask at VN level, shifts see through the redundant AND, preventing
+    // it from being CSE'd and avoiding the extra AND instruction at runtime.
     public class ShiftMaskCSETests
     {
         [Fact]
@@ -64,7 +64,7 @@ namespace ShiftMaskCSE
 
         // Pattern from the issue: the two shifts share the same variable shift amount.
         // Roslyn emits (shift & 31) for both, which CSE can hoist.
-        // With early mask stripping, no AND instruction should be generated.
+        // VN sees through the redundant AND mask, so no AND instruction should be generated.
         [MethodImpl(MethodImplOptions.NoInlining)]
         static uint ShiftAndCSE(uint foo, int shift)
         {

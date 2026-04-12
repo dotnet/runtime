@@ -397,32 +397,6 @@ struct RangeOps
         return Range(Limit(Limit::keConstant, lo), Limit(Limit::keConstant, hi));
     }
 
-    // Shift instructions implicitly mask the shift amount to the operand width.
-    // For 32-bit operations (the only kind range check handles), this means [0..31].
-    // If the shift amount range extends beyond [0..31], clamp it so that range
-    // analysis still works after the importer strips explicit AND masks.
-    static Range ClampShiftAmount(const Range& r)
-    {
-        if (!r.IsConstantRange())
-        {
-            return Limit(Limit::keUnknown);
-        }
-        int lo = r.LowerLimit().GetConstant();
-        int hi = r.UpperLimit().GetConstant();
-        if (lo < 0 || hi < 0)
-        {
-            return Limit(Limit::keUnknown);
-        }
-        lo = lo & 31;
-        hi = hi & 31;
-        if (lo > hi)
-        {
-            // After masking the range wraps, e.g. [30..34] -> [30..2], bail out.
-            return Limit(Limit::keUnknown);
-        }
-        return Range(Limit(Limit::keConstant, lo), Limit(Limit::keConstant, hi));
-    }
-
     static Range ShiftRight(const Range& r1, const Range& r2, bool logical)
     {
         Range result = Limit(Limit::keUnknown);
@@ -430,9 +404,8 @@ struct RangeOps
         // For SHR we require the rhs to be a constant range within [0..31].
         // We only perform the shift if the lhs is also a constant range (never-negative for now
         // to handle both logical and arithmetic shifts uniformly).
-        // Shift amounts are implicitly masked to [0..31] by the hardware, so clamp accordingly.
-        Range clampedR2 = ClampShiftAmount(r2);
-        if (!clampedR2.IsConstantRange())
+        if (!r2.IsConstantRange() || (static_cast<unsigned>(r2.LowerLimit().GetConstant()) > 31) ||
+            (static_cast<unsigned>(r2.UpperLimit().GetConstant()) > 31))
         {
             return result;
         }
@@ -442,11 +415,11 @@ struct RangeOps
         //          [0..65535] >> [2..2] = [0 >> 2 .. 65535 >> 2] = [0..16383]
         if (r1.LowerLimit().IsConstant() && (r1.LowerLimit().GetConstant() >= 0))
         {
-            result.lLimit = Limit(Limit::keConstant, r1.LowerLimit().GetConstant() >> clampedR2.UpperLimit().GetConstant());
+            result.lLimit = Limit(Limit::keConstant, r1.LowerLimit().GetConstant() >> r2.UpperLimit().GetConstant());
         }
         if (r1.UpperLimit().IsConstant() && (r1.UpperLimit().GetConstant() >= 0))
         {
-            result.uLimit = Limit(Limit::keConstant, r1.UpperLimit().GetConstant() >> clampedR2.LowerLimit().GetConstant());
+            result.uLimit = Limit(Limit::keConstant, r1.UpperLimit().GetConstant() >> r2.LowerLimit().GetConstant());
         }
         return result;
     }
@@ -454,7 +427,7 @@ struct RangeOps
     static Range ShiftLeft(const Range& r1, const Range& r2)
     {
         // help the next step a bit, convert the LSH rhs to a multiply
-        Range convertedOp2Range = ConvertShiftToMultiply(ClampShiftAmount(r2));
+        Range convertedOp2Range = ConvertShiftToMultiply(r2);
         return Multiply(r1, convertedOp2Range);
     }
 
