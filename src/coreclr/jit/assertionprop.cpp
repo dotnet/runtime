@@ -2687,11 +2687,95 @@ GenTree* Compiler::optVNBasedFoldExpr_HWIntrinsic(BasicBlock* block, GenTree* pa
             return ValueNumStore::VNVisit::Abort;
         };
 
+        // Check via VNVisitReachingVNs so we also cover cases where the input is a PHI node.
         if (vnStore->VNVisitReachingVNs(optConservativeNormalVN(hw->Op(1)), vnVisitor) ==
             ValueNumStore::VNVisit::Continue)
         {
-            hw->gtFlags |= GTF_HW_INPUT_ZERO_OR_ALLBITS;
-            return hw;
+            bool isLastIndex = hw->OperIsHWIntrinsic(NI_Vector128_LastIndexOfWhereAllBitsSet);
+
+            // Expand using the SHRN trick: SHRN narrows each element by shifting right #4,
+            // producing a packed 64-bit mask. Then CTZ/CLZ to find the element index.
+            //
+            // Each element contributes a fixed number of bits to the mask:
+            //   byte  -> 4 bits (16 elements → 64 bits), divisor = 4 (>> 2)
+            //   short -> 8 bits (8 elements → 64 bits),  divisor = 8 (>> 3)
+            //   int   -> 16 bits (4 elements → 64 bits), divisor = 16 (>> 4)
+            //   long  -> 32 bits (2 elements → 64 bits), divisor = 32 (>> 5)
+
+            var_types shrnBaseType;
+            int       ctzDivisorLog2;
+
+            switch (baseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                    shrnBaseType   = TYP_UBYTE;
+                    ctzDivisorLog2 = 2;
+                    break;
+                case TYP_SHORT:
+                case TYP_USHORT:
+                    shrnBaseType   = TYP_UBYTE;
+                    ctzDivisorLog2 = 3;
+                    break;
+                case TYP_INT:
+                case TYP_UINT:
+                    shrnBaseType   = TYP_USHORT;
+                    ctzDivisorLog2 = 4;
+                    break;
+                case TYP_LONG:
+                case TYP_ULONG:
+                    shrnBaseType   = TYP_UINT;
+                    ctzDivisorLog2 = 5;
+                    break;
+                default:
+                    return nullptr;
+            }
+
+            GenTree* op1 = hw->Op(1);
+
+            // SHRN(input, #4) → Vector64
+            GenTree* shrn = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, gtNewIconNode(4),
+                                                     NI_AdvSimd_ShiftRightLogicalNarrowingLower, shrnBaseType, 8);
+
+            // ToScalar as uint64
+            GenTree* mask = gtNewSimdHWIntrinsicNode(TYP_LONG, shrn, NI_Vector64_ToScalar, TYP_ULONG, 8);
+
+            // Store mask in temp (needed for both bit-scan and condition)
+            unsigned maskTmp         = lvaGrabTemp(true DEBUGARG("SHRN mask temp"));
+            lvaTable[maskTmp].lvType = TYP_LONG;
+            GenTree* maskStore       = gtNewTempStore(maskTmp, mask);
+            GenTree* maskLcl1        = gtNewLclvNode(maskTmp, TYP_LONG);
+            GenTree* maskLcl2        = gtNewLclvNode(maskTmp, TYP_LONG);
+
+            GenTree* idx;
+
+            if (isLastIndex)
+            {
+                // (63 - CLZ64(mask)) >> ctzDivisorLog2
+                GenTree* clz = gtNewScalarHWIntrinsicNode(TYP_INT, maskLcl1, NI_ArmBase_Arm64_LeadingZeroCount);
+                GenTree* sub = gtNewOperNode(GT_SUB, TYP_INT, gtNewIconNode(63), clz);
+                idx          = gtNewOperNode(GT_RSZ, TYP_INT, sub, gtNewIconNode(ctzDivisorLog2));
+            }
+            else
+            {
+                // CTZ64(mask) >> ctzDivisorLog2
+                GenTree* rbit = gtNewScalarHWIntrinsicNode(TYP_LONG, maskLcl1, NI_ArmBase_Arm64_ReverseElementBits);
+                GenTree* clz  = gtNewScalarHWIntrinsicNode(TYP_INT, rbit, NI_ArmBase_Arm64_LeadingZeroCount);
+                idx           = gtNewOperNode(GT_RSZ, TYP_INT, clz, gtNewIconNode(ctzDivisorLog2));
+            }
+
+            // mask != 0 ? idx : -1
+            GenTree* cond   = gtNewOperNode(GT_NE, TYP_INT, maskLcl2, gtNewIconNode(0, TYP_LONG));
+            GenTree* select = gtNewConditionalNode(GT_SELECT, cond, idx, gtNewIconNode(-1, TYP_INT), TYP_INT);
+
+            // COMMA chain: (maskTmp = mask, mask != 0 ? idx : -1)
+            GenTree* result = gtNewOperNode(GT_COMMA, TYP_INT, maskStore, select);
+
+            JITDUMP("Expanding NI_Vector128_IndexOfWhereAllBitsSet or NI_Vector128_LastIndexOfWhereAllBitsSet to:\n");
+            DISPTREE(result);
+            JITDUMP("\n");
+
+            return result;
         }
     }
 #endif // TARGET_ARM64

@@ -605,6 +605,15 @@ void Rationalizer::RewriteHWIntrinsic(GenTree** use, Compiler::GenTreeStack& par
             break;
         }
 
+#if defined(TARGET_ARM64)
+        case NI_Vector128_IndexOfWhereAllBitsSet:
+        case NI_Vector128_LastIndexOfWhereAllBitsSet:
+        {
+            RewriteHWIntrinsicIndexOfWhereAllBitsSet(use, parents);
+            break;
+        }
+#endif // TARGET_ARM64
+
         default:
         {
             break;
@@ -1580,6 +1589,104 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
     unreached();
 #endif
 }
+
+#if defined(TARGET_ARM64)
+//----------------------------------------------------------------------------------------------
+// RewriteHWIntrinsicIndexOfWhereAllBitsSet: Fallback expansion of IndexOfWhereAllBitsSet and
+// LastIndexOfWhereAllBitsSet when the VN-based SHRN optimization did not apply.
+//
+// Expands to: CmpEq(input, AllBitsSet) → ExtractMostSignificantBits → CTZ/CLZ → SELECT
+//
+// This reuses the existing RewriteHWIntrinsicExtractMsb by transforming the node into
+// an EMSB intrinsic and calling it directly (since post-order won't revisit the node).
+//
+void Rationalizer::RewriteHWIntrinsicIndexOfWhereAllBitsSet(GenTree** use, Compiler::GenTreeStack& parents)
+{
+    GenTreeHWIntrinsic* node = (*use)->AsHWIntrinsic();
+
+    NamedIntrinsic intrinsicId  = node->GetHWIntrinsicId();
+    var_types      simdBaseType = node->GetSimdBaseType();
+    unsigned       simdSize     = node->GetSimdSize();
+    var_types      simdType     = Compiler::getSIMDTypeForSize(simdSize);
+    bool           isLastIndex  = (intrinsicId == NI_Vector128_LastIndexOfWhereAllBitsSet);
+
+    GenTree* op1 = node->Op(1);
+
+    assert(!varTypeIsFloating(simdBaseType));
+
+    // Step 1: Insert CmpEq(input, AllBitsSet) before the node
+    GenTree* allBitsSet = m_compiler->gtNewAllBitsSetConNode(simdType);
+    BlockRange().InsertAfter(op1, allBitsSet);
+
+    GenTree* cmp = m_compiler->gtNewSimdCmpOpNode(GT_EQ, simdType, op1, allBitsSet, simdBaseType, simdSize);
+    BlockRange().InsertAfter(allBitsSet, cmp);
+
+    // Step 2: Transform node into ExtractMostSignificantBits and expand it
+    node->ChangeHWIntrinsicId(NI_Vector128_ExtractMostSignificantBits);
+    node->SetSimdBaseType(simdBaseType);
+    node->Op(1) = cmp;
+
+    RewriteHWIntrinsicExtractMsb(use, parents);
+
+    // After RewriteHWIntrinsicExtractMsb, *use points to the EMSB result (TYP_INT or cast node).
+    GenTree* emsbResult = *use;
+
+    // Step 3: Store EMSB result in temp (needed for both bit-scan and SELECT condition)
+    LIR::Use emsbUse;
+    LIR::Use::MakeDummyUse(BlockRange(), emsbResult, &emsbUse);
+    emsbUse.ReplaceWithLclVar(m_compiler);
+    GenTree* emsbLcl = emsbUse.Def();
+
+    // Step 4: bit-scan to find element index
+    GenTree* scanResult;
+
+    if (isLastIndex)
+    {
+        // LastIndexOf: 31 - CLZ(emsb)
+        GenTree* clz = m_compiler->gtNewScalarHWIntrinsicNode(TYP_INT, emsbLcl, NI_ArmBase_LeadingZeroCount);
+        BlockRange().InsertAfter(emsbLcl, clz);
+
+        GenTree* icon31 = m_compiler->gtNewIconNode(31);
+        BlockRange().InsertAfter(clz, icon31);
+
+        scanResult = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, icon31, clz);
+        BlockRange().InsertAfter(icon31, scanResult);
+    }
+    else
+    {
+        // IndexOf: CTZ = RBIT + CLZ (TrailingZeroCount)
+        GenTree* rbit = m_compiler->gtNewScalarHWIntrinsicNode(TYP_INT, emsbLcl, NI_ArmBase_ReverseElementBits);
+        BlockRange().InsertAfter(emsbLcl, rbit);
+
+        scanResult = m_compiler->gtNewScalarHWIntrinsicNode(TYP_INT, rbit, NI_ArmBase_LeadingZeroCount);
+        BlockRange().InsertAfter(rbit, scanResult);
+    }
+
+    // Step 5: GT_SELECT(emsbResult != 0, scanResult, -1)
+    GenTree* emsbCond = m_compiler->gtClone(emsbLcl);
+    BlockRange().InsertAfter(scanResult, emsbCond);
+
+    GenTree* minus1 = m_compiler->gtNewIconNode(-1, TYP_INT);
+    BlockRange().InsertAfter(emsbCond, minus1);
+
+    GenTreeConditional* select = m_compiler->gtNewConditionalNode(GT_SELECT, emsbCond, scanResult, minus1, TYP_INT);
+    BlockRange().InsertAfter(minus1, select);
+
+    // Replace the current use with the select node
+    if (parents.Height() > 1)
+    {
+        parents.Top(1)->ReplaceOperand(use, select);
+    }
+    else
+    {
+        *use = select;
+    }
+
+    (void)parents.Pop();
+    parents.Push(select);
+}
+#endif // TARGET_ARM64
+
 #endif // FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_ARM64
