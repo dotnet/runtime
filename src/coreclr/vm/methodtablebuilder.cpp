@@ -6405,8 +6405,9 @@ MethodTableBuilder::InitMethodDesc(
         AsyncMethodData* pAsyncMethodData = pNewMD->GetAddrOfAsyncMethodData();
         pAsyncMethodData->flags = asyncFlags;
 
-        // async variants have a signature different from their task-returning
-        // definitions, so we store the signature together with the flags
+        // Store the async variant signature if provided. Only async variants
+        // (IsAsyncVariant) have a modified signature; primary thunks use the
+        // original metadata signature and do not store one here.
         if (hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant))
         {
             pAsyncMethodData->sig = sig;

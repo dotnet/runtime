@@ -787,6 +787,16 @@ public:
 #ifdef FEATURE_METADATA_UPDATER
     // Add a new method to an already loaded type for EnC
     static HRESULT AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc** ppMethod);
+
+    // Lazily create an async variant MethodDesc from an EnC-added primary thunk.
+    // Called from FindOrCreateAssociatedMethodDesc when an async variant is first
+    // needed. Computes the variant signature on-demand from the method's metadata.
+    static HRESULT AddAsyncVariant(
+        MethodDesc* pPrimaryThunk,
+        MethodDesc** ppNewVariant);
+
+    // Add a new field to an already loaded type for EnC
+    static HRESULT AddField(MethodTable* pMT, mdFieldDef fieldDesc, FieldDesc** pAddedField);
 private:
     static HRESULT AddMethodDesc(
         MethodTable* pMT,
@@ -797,10 +807,6 @@ private:
         PCCOR_SIGNATURE pAsyncSig,
         DWORD cbAsyncSig,
         MethodDesc** ppNewMD);
-public:
-    // Add a new field to an already loaded type for EnC
-    static HRESULT AddField(MethodTable* pMT, mdFieldDef fieldDesc, FieldDesc** pAddedField);
-private:
     static HRESULT AddFieldDesc(
         MethodTable* pMT,
         mdMethodDef fieldDef,

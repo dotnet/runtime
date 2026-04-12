@@ -1776,7 +1776,8 @@ public:
     }
 
     // same as above, but with allowCreate = FALSE
-    // for rare cases where we cannot allow GC, but we know that the other variant is already created.
+    // For EnC-added async methods, the variant may not exist yet (created lazily),
+    // so callers must handle a NULL return.
     MethodDesc* GetAsyncVariantNoCreate(BOOL allowInstParam = TRUE)
     {
         MethodTable* mt = GetMethodTable();

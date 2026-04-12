@@ -741,6 +741,17 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
 // allowCreate may be set to FALSE to enforce that the method searched
 // should already be in existence - thus preventing creation and GCs during
 // inappropriate times.
+//
+// EnC async variants
+// ------------------
+//
+// When EEClass::AddMethod adds a runtime-async method via EnC, it only creates
+// primary thunks. The actual async variant MethodDescs are created lazily here
+// when first needed: the variant signature is computed on-demand from metadata
+// using the same double-check locking pattern (m_InstMethodHashTableCrst) as
+// NewInstantiatedMethodDesc. LoadTypicalMethodDefinition also triggers this
+// lazy creation when navigating from an instantiation variant to the type-def.
+//
 /* static */
 MethodDesc*
 MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
@@ -831,8 +842,51 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         pMDescInCanonMT = pExactMT->GetCanonicalMethodTable()->GetParallelMethodDesc(pDefMD, asyncVariantLookup);
 
-        if (!allowCreate && !pMDescInCanonMT->GetMethodTable()->IsFullyLoaded())
+#ifdef FEATURE_METADATA_UPDATER
+#ifndef DACCESS_COMPILE
+        // Lazy async variant creation for EnC-added async methods
+        // (see "EnC async variants" in the block comment above).
+        if (asyncVariantLookup == AsyncVariantLookup::AsyncOtherVariant
+            && allowCreate
+            && pDefMD->IsEnCAddedMethod()
+            && (pMDescInCanonMT == NULL ||
+                (pMDescInCanonMT->IsEnCAddedMethod()
+                 && pMDescInCanonMT->GetMethodTable() != pExactMT->GetCanonicalMethodTable())))
         {
+            MethodTable* pCanonMT = pExactMT->GetCanonicalMethodTable();
+            MethodDesc* pPrimaryOnCanonMT = pCanonMT->GetParallelMethodDesc(pDefMD, AsyncVariantLookup::MatchingAsyncVariant);
+
+            if (pPrimaryOnCanonMT != NULL && pPrimaryOnCanonMT->IsEnCAddedMethod())
+            {
+                Module* pModule = pDefMD->GetModule();
+                GCX_COOP();
+                CrstHolder ch(&pModule->m_InstMethodHashTableCrst);
+
+                // Double-check: another thread may have created the variant while we waited for the lock.
+                pMDescInCanonMT = pCanonMT->GetParallelMethodDesc(pDefMD, asyncVariantLookup);
+                if (pMDescInCanonMT == NULL ||
+                    (pMDescInCanonMT->IsEnCAddedMethod()
+                     && pMDescInCanonMT->GetMethodTable() != pCanonMT))
+                {
+                    MethodDesc* pNewAsyncVariant = NULL;
+                    HRESULT hr = EEClass::AddAsyncVariant(pPrimaryOnCanonMT, &pNewAsyncVariant);
+
+                    if (FAILED(hr))
+                    {
+                        COMPlusThrowHR(hr);
+                    }
+
+                    pMDescInCanonMT = pNewAsyncVariant;
+                }
+            }
+        }
+#endif // !DACCESS_COMPILE
+#endif // FEATURE_METADATA_UPDATER
+
+        if (pMDescInCanonMT == NULL
+            || (!allowCreate && !pMDescInCanonMT->GetMethodTable()->IsFullyLoaded()))
+        {
+            _ASSERTE(pMDescInCanonMT != NULL || !allowCreate);
             RETURN(NULL);
         }
 
