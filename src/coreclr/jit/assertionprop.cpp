@@ -2588,20 +2588,10 @@ static bool AllComponentsEitherZeroOrAllBitsSet(Compiler* comp, ValueNum vn, var
     // Check for SIMD constant vectors (all-zero or all-bits-set)
     // TODO: we can be less conservative and allow components to be
     // either all-zero or all-bits-set, but not necessarily the same across the entire vector.
-    if (comp->vnStore->IsVNConstant(vn))
+    if (comp->vnStore->IsVNConstant(vn) && (comp->vnStore->TypeOfVN(vn) == TYP_SIMD16))
     {
-        var_types cnsTyp = comp->vnStore->TypeOfVN(vn);
-        if (cnsTyp == TYP_SIMD16)
-        {
-            simd16_t val = comp->vnStore->GetConstantSimd16(vn);
-            return val.IsAllBitsSet() || val.IsZero();
-        }
-        if (cnsTyp == TYP_SIMD8)
-        {
-            simd8_t val = comp->vnStore->GetConstantSimd8(vn);
-            return val.IsAllBitsSet() || val.IsZero();
-        }
-        return false;
+        simd16_t val = comp->vnStore->GetConstantSimd16(vn);
+        return val.IsAllBitsSet() || val.IsZero();
     }
 
     VNFuncApp funcApp;
@@ -2633,13 +2623,16 @@ static bool AllComponentsEitherZeroOrAllBitsSet(Compiler* comp, ValueNum vn, var
                 // It can actually be even wider than the base type of the vector.
                 VNFuncApp baseTypeFuncApp;
                 if (comp->vnStore->GetVNFunc(funcApp.m_args[2], &baseTypeFuncApp) &&
-                    (baseTypeFuncApp.m_func == VNF_SimdType) &&
-                    (genTypeSize(baseType) <= (unsigned)comp->vnStore->GetConstantInt32(baseTypeFuncApp.m_args[0])))
+                    (baseTypeFuncApp.FuncIs(VNF_SimdType)))
                 {
-                    return true;
+                    return genTypeSize(baseType) <=
+                           genTypeSize((var_types)comp->vnStore->GetConstantInt32(baseTypeFuncApp.m_args[1]));
                 }
             }
             return false;
+
+            // For these operations we don't need to check the base type, as they are guaranteed to produce 0/AllBitsSet
+            // if the inputs do.
 
         case GT_NOT:
             // ~0 = AllBitsSet, ~AllBitsSet = 0
