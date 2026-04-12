@@ -2478,10 +2478,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                                     {
                                         next = data->gtPrev;
                                     }
-                                    if (end == data)
-                                    {
-                                        end = data->gtNext;
-                                    }
+                                    assert(end != data);
                                     blockRange.Delete(m_compiler, block, data);
                                     // fgStmtRemoved was already set by TryRemoveDeadStoreLIR
                                 }
