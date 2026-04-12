@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public record struct DebuggerData(uint DefinesBitField, uint MDStructuresVersion);
+public record struct DebuggerData(bool IsLeftSideInitialized, uint DefinesBitField, uint MDStructuresVersion);
 
 public interface IDebugger : IContract
 {

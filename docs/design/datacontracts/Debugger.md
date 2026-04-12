@@ -5,7 +5,7 @@ This contract is for reading debugger state from the target process, including i
 ## APIs of contract
 
 ```csharp
-record struct DebuggerData(uint DefinesBitField, uint MDStructuresVersion);
+record struct DebuggerData(bool IsLeftSideInitialized, uint DefinesBitField, uint MDStructuresVersion);
 ```
 
 ```csharp
@@ -54,10 +54,9 @@ bool TryGetDebuggerData(out DebuggerData data)
     TargetPointer debuggerPtr = target.ReadPointer(debuggerPtrPtr);
     if (debuggerPtr == TargetPointer.Null)
         return false;
-    int leftSideInitialized = target.Read<int>(debuggerPtr + /* Debugger::LeftSideInitialized offset */);
-    if (leftSideInitialized == 0)
-        return false;
+    bool leftSideInitialized = target.Read<int>(debuggerPtr + /* Debugger::LeftSideInitialized offset */) != 0;
     data = new DebuggerData(
+        IsLeftSideInitialized: leftSideInitialized,
         DefinesBitField: target.Read<uint>(debuggerPtr + /* Debugger::Defines offset */),
         MDStructuresVersion: target.Read<uint>(debuggerPtr + /* Debugger::MDStructuresVersion offset */));
     return true;

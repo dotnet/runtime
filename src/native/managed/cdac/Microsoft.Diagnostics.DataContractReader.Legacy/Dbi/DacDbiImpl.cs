@@ -61,7 +61,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            *pResult = _target.Contracts.Debugger.TryGetDebuggerData(out _) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            *pResult = _target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data) && data.IsLeftSideInitialized ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {

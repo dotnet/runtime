@@ -113,18 +113,22 @@ public class DebuggerTests
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.True(debugger.TryGetDebuggerData(out DebuggerData data));
+        Assert.True(data.IsLeftSideInitialized);
         Assert.Equal(0xDEADBEEFu, data.DefinesBitField);
         Assert.Equal(42u, data.MDStructuresVersion);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TryGetDebuggerData_ReturnsFalse_WhenNotInitialized(MockTarget.Architecture arch)
+    public void TryGetDebuggerData_ReturnsTrue_WhenNotInitialized(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 0, defines: 0, mdStructuresVersion: 0);
+        Target target = BuildTarget(arch, leftSideInitialized: 0, defines: 0xCAFE, mdStructuresVersion: 7);
         IDebugger debugger = target.Contracts.Debugger;
 
-        Assert.False(debugger.TryGetDebuggerData(out _));
+        Assert.True(debugger.TryGetDebuggerData(out DebuggerData data));
+        Assert.False(data.IsLeftSideInitialized);
+        Assert.Equal(0xCAFEu, data.DefinesBitField);
+        Assert.Equal(7u, data.MDStructuresVersion);
     }
 
     [Theory]

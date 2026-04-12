@@ -30,10 +30,7 @@ internal readonly struct Debugger_1 : IDebugger
             return false;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
-        if (debugger.LeftSideInitialized == 0)
-            return false;
-
-        data = new DebuggerData(debugger.Defines, debugger.MDStructuresVersion);
+        data = new DebuggerData(debugger.LeftSideInitialized != 0, debugger.Defines, debugger.MDStructuresVersion);
         return true;
     }
 
