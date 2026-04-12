@@ -16,6 +16,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 {
     private readonly Target _target;
     private readonly IDacDbiInterface? _legacy;
+    private readonly ulong _rcwMask = 1UL;
 
     // IStringHolder is a native C++ abstract class (not COM) with a single virtual method:
     //   virtual HRESULT AssignCopy(const WCHAR* psz) = 0;
@@ -546,7 +547,61 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetObjectForCCW(ulong ccwPtr, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetObjectForCCW(ccwPtr, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            TargetPointer objectHandle = TargetPointer.Null;
+            TargetPointer ccwAddress = new(ccwPtr);
+
+            try
+            {
+                IComWrappers comWrappers = _target.Contracts.ComWrappers;
+                TargetPointer managedObjectWrapper = comWrappers.GetManagedObjectWrapperFromCCW(ccwAddress);
+                if (managedObjectWrapper != TargetPointer.Null)
+                {
+                    objectHandle = _target.ReadPointer(managedObjectWrapper);
+                }
+            }
+            catch (NotImplementedException)
+            {
+                // Targets without ComWrappers support should still try BuiltInCOM.
+            }
+
+            if (objectHandle == TargetPointer.Null)
+            {
+                IBuiltInCOM builtInCOM = _target.Contracts.BuiltInCOM;
+                TargetPointer ccw = builtInCOM.GetCCWFromInterfacePointer(ccwAddress);
+                if (ccw != TargetPointer.Null)
+                {
+                    objectHandle = builtInCOM.GetObjectHandle(ccw);
+                }
+                else
+                {
+                    // not an interface pointer
+                    objectHandle = builtInCOM.GetObjectHandle(ccwAddress);
+                }
+            }
+
+            *pRetVal = objectHandle.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.GetObjectForCCW(ccwPtr, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetCurrentCustomDebuggerNotification(ulong vmThread, ulong* pRetVal)
         => _legacy is not null ? _legacy.GetCurrentCustomDebuggerNotification(vmThread, pRetVal) : HResults.E_NOTIMPL;
@@ -822,7 +877,31 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => _legacy is not null ? _legacy.GetStackFramesFromException(vmObject, pDacStackFrames) : HResults.E_NOTIMPL;
 
     public int IsRcw(ulong vmObject, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.IsRcw(vmObject, pResult) : HResults.E_NOTIMPL;
+    {
+        *pResult = Interop.BOOL.FALSE;
+        int hr = HResults.S_OK;
+        try
+        {
+            IObject obj = _target.Contracts.Object;
+            _ = obj.GetBuiltInComData(new TargetPointer(vmObject), out TargetPointer rcw, out _, out _);
+            *pResult = (rcw & _rcwMask) != TargetPointer.Null ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal;
+            int hrLocal = _legacy.IsRcw(vmObject, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetRcwCachedInterfaceTypes(ulong vmObject, ulong vmAppDomain, Interop.BOOL bIInspectableOnly, nint pDacInterfaces)
         => _legacy is not null ? _legacy.GetRcwCachedInterfaceTypes(vmObject, vmAppDomain, bIInspectableOnly, pDacInterfaces) : HResults.E_NOTIMPL;
