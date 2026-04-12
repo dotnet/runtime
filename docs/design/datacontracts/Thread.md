@@ -37,7 +37,11 @@ record struct ThreadData (
     TargetPointer Frame;
     TargetPointer FirstNestedException;
     TargetPointer TEB;
+    TargetPointer ExposedObjectHandle;
     TargetPointer LastThrownObjectHandle;
+    TargetPointer CurrentCustomDebuggerNotificationHandle;
+    bool LastThrownObjectIsUnhandled;
+    bool HasUnhandledException;
     TargetPointer NextThread;
 );
 ```
@@ -98,7 +102,10 @@ The contract additionally depends on these data descriptors
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
 | `Thread` | `CachedStackLimit` | Pointer to the limit of the stack |
 | `Thread` | `TEB` | Thread Environment Block pointer |
+| `Thread` | `ExposedObject` | Handle to the managed `Thread` object exposed to the debugger |
 | `Thread` | `LastThrownObject` | Handle to last thrown exception object |
+| `Thread` | `LastThrownObjectIsUnhandled` | Whether `LastThrownObject` should be treated as unhandled |
+| `Thread` | `CurrentCustomDebuggerNotification` | Handle to the current custom debugger notification object |
 | `Thread` | `LinkNext` | Pointer to get next thread |
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
