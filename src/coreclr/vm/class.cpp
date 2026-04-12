@@ -3129,7 +3129,9 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
 
     if (head == NULL)
     {
-        SetChunks(pNewChunk);
+        // Use VolatileStore to ensure the chunk's internal data (MethodDescs, flags, etc.)
+        // is fully visible to concurrent readers before the chunk becomes reachable.
+        VolatileStore(&m_pChunks, pNewChunk);
     }
     else
     {
@@ -3138,7 +3140,7 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
         while (head->GetNextChunk() != NULL)
             head = head->GetNextChunk();
 
-        head->SetNextChunk(pNewChunk);
+        head->SetNextChunkVolatile(pNewChunk);
     }
 }
 
