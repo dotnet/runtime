@@ -48,7 +48,11 @@ namespace System.Reflection
                 try
                 {
                     // Use the interpreted version to avoid having to generate a new method that doesn't allocate.
+#if MONO
+                    ret = InterpretedInvoke_Constructor(obj, pByRefStorage);
+#else
                     ret = InterpretedInvoke_Method(obj, pByRefStorage);
+#endif
                 }
                 catch (Exception e) when (wrapInTargetInvocationException)
                 {
@@ -70,7 +74,11 @@ namespace System.Reflection
             try
             {
                 // Use the interpreted version to avoid having to generate a new method that doesn't allocate.
+#if MONO
+                return InterpretedInvoke_Constructor(obj, null);
+#else
                 return InterpretedInvoke_Method(obj, null);
+#endif
             }
             catch (Exception e) when (wrapInTargetInvocationException)
             {
