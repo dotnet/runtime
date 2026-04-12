@@ -4252,7 +4252,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ThreadData threadData = contract.GetThreadData(thread.ToTargetPointer(_target));
             data->corThreadId = (int)threadData.Id;
             data->osThreadId = (int)threadData.OSId.Value;
-            data->state = (int)threadData.State;
+            data->state = 0; // Set to 0, nobody uses this
             data->preemptiveGCDisabled = (uint)(threadData.PreemptiveGCDisabled ? 1 : 0);
             data->allocContextPtr = threadData.AllocContextPointer.ToClrDataAddress(_target);
             data->allocContextLimit = threadData.AllocContextLimit.ToClrDataAddress(_target);
