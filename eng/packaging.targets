@@ -20,17 +20,26 @@
     <!-- Don't treat the TPM as an input to APICompat PackageValidation's reference assembly calculation. -->
     <ApiCompatIgnoreTargetPlatformMoniker Condition="'$(SuppressDependenciesWhenPacking)' == 'true'">true</ApiCompatIgnoreTargetPlatformMoniker>
     <!--
-      DependencyOnlyTargetFrameworks: a semicolon-separated list of target frameworks that should
-      emit a NuGet dependency group in the package but ship no lib/ assembly. These TFMs are
-      added to the NuGet restore graph (so project.assets.json records their per-TFM dependencies)
-      and to the pack's framework list after inner builds run (so the PackTask generates nuspec
-      dependency groups from the assets file) — but they are NOT added to TargetFrameworks, so
-      no compilation happens for them.
+      DependencyOnlyTargetFrameworks: a semicolon-separated list of additional target frameworks
+      that should emit a NuGet dependency group in the package but ship no lib/ assembly.
+
+      These TFMs are appended to TargetFrameworks so NuGet restore and pack both see them, but
+      they are removed from _InnerBuildProjects before DispatchToInnerBuilds and before P2P TFM
+      queries (GetTargetFrameworksWithPlatformFromInnerBuilds), so neither regular builds nor
+      project-reference consumers ever compile or select them. During pack, _WalkEachTargetPerFramework
+      still invokes inner builds per TFM via direct MSBuild calls (not through _InnerBuildProjects),
+      but IncludeBuildOutput=false ensures no lib/ entry is added for these TFMs.
 
       Use this when a compatible framework has inbox assemblies (e.g. net471 has System.ValueTuple
       built in) and you want NuGet to select an empty dependency group for that TFM rather than
       pulling in the package dependency that was only required for the older compatible TFM.
     -->
+    <!-- Append DependencyOnlyTargetFrameworks to TargetFrameworks so restore and pack see them. -->
+    <TargetFrameworks Condition="'$(DependencyOnlyTargetFrameworks)' != '' and '$(TargetFrameworks)' != ''">$(TargetFrameworks);$(DependencyOnlyTargetFrameworks)</TargetFrameworks>
+    <!-- Compute a normalized semicolon-delimited list for exact token matching (case-insensitive). -->
+    <_NormalizedDependencyOnlyTargetFrameworks Condition="'$(DependencyOnlyTargetFrameworks)' != ''">;$(DependencyOnlyTargetFrameworks.ToUpperInvariant());</_NormalizedDependencyOnlyTargetFrameworks>
+    <!-- Suppress build output for dep-only TFM inner builds so no lib/ entry is added to the package. -->
+    <IncludeBuildOutput Condition="'$(DependencyOnlyTargetFrameworks)' != '' and '$(TargetFramework)' != '' and $(_NormalizedDependencyOnlyTargetFrameworks.Contains(';$(TargetFramework.ToUpperInvariant());'))">false</IncludeBuildOutput>
     <!-- NU5128: NuGet warns when a dependency group TFM has no matching lib/ entry; suppress it
          since the absence of a lib/ entry is intentional for DependencyOnlyTargetFrameworks. -->
     <NoWarn Condition="'$(DependencyOnlyTargetFrameworks)' != ''">$(NoWarn);NU5128</NoWarn>
@@ -59,39 +68,29 @@
   </ItemGroup>
 
   <!--
-    Add DependencyOnlyTargetFrameworks to the NuGet restore graph without adding them to
-    TargetFrameworks.  This causes project.assets.json to record per-TFM dependency info
-    for each listed TFM (evaluated with that TargetFramework, so any PackageReference items
-    conditioned on the older TFM are absent), giving the PackTask the data it needs to
-    generate nuspec dependency groups — without triggering any compilation for these TFMs.
-  -->
-  <Target Name="AddDependencyOnlyTFMsToRestoreGraph"
-          Condition="'$(DependencyOnlyTargetFrameworks)' != ''"
-          AfterTargets="_GetRestoreTargetFrameworksAsItems">
-    <!-- _GetRestoreTargetFrameworksAsItems is the SDK target that builds the list of TFMs
-         NuGet will restore for (_RestoreTargetFrameworkItems). Adding items here causes NuGet
-         to evaluate the project for each dep-only TFM and write per-TFM dependency info to
-         project.assets.json, which the PackTask later reads to generate nuspec dependency groups. -->
-    <ItemGroup>
-      <_RestoreTargetFrameworkItems Include="$(DependencyOnlyTargetFrameworks)" />
-    </ItemGroup>
-  </Target>
+    Remove DependencyOnlyTargetFrameworks TFMs from _InnerBuildProjects before both:
+    - GetTargetFrameworksWithPlatformFromInnerBuilds (P2P TFM query): so consuming projects
+      don't accidentally select a dep-only TFM instead of the real shipping TFM.
+    - DispatchToInnerBuilds (the outer multi-targeting build dispatch): so dep-only TFMs are
+      not compiled during regular builds.
 
-  <!--
-    Add DependencyOnlyTargetFrameworks to the pack's _TargetFrameworks list AFTER
-    _WalkEachTargetPerFramework has completed, so the PackTask generates nuspec dependency
-    groups from project.assets.json without triggering any inner builds for these TFMs.
+    We do NOT restore _InnerBuildProjects afterward. During pack, _WalkEachTargetPerFramework
+    invokes inner builds directly via MSBuild task (not through _InnerBuildProjects), so the
+    PackTask still generates nuspec dependency groups for dep-only TFMs. IncludeBuildOutput=false
+    (set in the PropertyGroup above) prevents their output from being included in the package.
   -->
-  <Target Name="AddDependencyOnlyTFMsToPackFrameworks"
-          Condition="'$(DependencyOnlyTargetFrameworks)' != ''"
-          AfterTargets="_WalkEachTargetPerFramework">
-    <!-- _WalkEachTargetPerFramework is the SDK target that iterates _TargetFrameworks and
-         invokes inner builds to collect build outputs and TFM-specific content. By adding
-         dep-only TFMs here — after all inner builds have already run — they are visible to
-         the PackTask (which reads _TargetFrameworks to generate nuspec dependency groups from
-         project.assets.json) but no inner build is triggered for them. -->
+  <Target Name="ExcludeDependencyOnlyTFMsFromBuildAndP2P"
+          Condition="'$(DependencyOnlyTargetFrameworks)' != '' and '$(IsCrossTargetingBuild)' == 'true'"
+          BeforeTargets="GetTargetFrameworksWithPlatformFromInnerBuilds;DispatchToInnerBuilds">
     <ItemGroup>
-      <_TargetFrameworks Include="$(DependencyOnlyTargetFrameworks)" />
+      <_DependencyOnlyTFMItems Include="$(DependencyOnlyTargetFrameworks)" />
+      <!-- Build filter items matching the AdditionalProperties format used by _InnerBuildProjects. -->
+      <_DependencyOnlyInnerBuildFilter Include="$(MSBuildProjectFile)">
+        <AdditionalProperties>TargetFramework=%(_DependencyOnlyTFMItems.Identity)</AdditionalProperties>
+      </_DependencyOnlyInnerBuildFilter>
+      <_InnerBuildProjects Remove="@(_DependencyOnlyInnerBuildFilter)"
+                           MatchOnMetadata="AdditionalProperties"
+                           MatchOnMetadataOptions="CaseInsensitive" />
     </ItemGroup>
   </Target>
 
