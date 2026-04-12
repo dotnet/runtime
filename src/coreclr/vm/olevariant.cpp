@@ -1832,7 +1832,7 @@ BASEARRAYREF OleVariant::CreateArrayRefForSafeArray(SAFEARRAY *pSafeArray, VARTY
 
 namespace
 {
-    // Returns the managed IArrayElementMarshaler<T> MethodTable for a given VARTYPE.
+    // Returns the managed IArrayMarshaler<T> MethodTable for a given VARTYPE.
     // This mirrors the logic in ILArrayMarshalerBase::GetMarshalerMT for SAFEARRAY-compatible types.
     MethodTable* GetMarshalerMTForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous)
     {
@@ -2065,7 +2065,7 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
             Array = *pArrayRef;
         }
 
-        // Use managed IArrayElementMarshaler<T> implementations for content conversion.
+        // Use managed IArrayMarshaler<T> implementations for content conversion.
         UnmanagedCallersOnlyCaller invoker(METHOD__STUBHELPERS__INVOKE_ARRAY_CONTENTS_CONVERTER);
         invoker.InvokeThrowing(&Array, pSafeArray->pvData, (INT32)dwNumComponents, (void*)pConvertContentsCode);
 
@@ -2122,7 +2122,7 @@ void OleVariant::MarshalArrayRefForSafeArray(SAFEARRAY *pSafeArray,
         pSrcData = (BYTE*)pSafeArray->pvData;
     }
 
-    // Use managed IArrayElementMarshaler<T> implementations for content conversion.
+    // Use managed IArrayMarshaler<T> implementations for content conversion.
     UnmanagedCallersOnlyCaller invoker(METHOD__STUBHELPERS__INVOKE_ARRAY_CONTENTS_CONVERTER);
     invoker.InvokeThrowing(pArrayRef, pSrcData, (INT32)dwNumComponents, (void*)pConvertContentsCode);
 }

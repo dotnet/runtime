@@ -947,7 +947,7 @@ namespace System.StubHelpers
                 TypeCode.Char when !IsAnsi(dwFlags) => [typeof(char), typeof(UnicodeCharArrayElementMarshaler)],
                 TypeCode.Char when IsAnsi(dwFlags) => [
                     typeof(char),
-                    typeof(AnsiCharArrayElementMarshaler<,>).MakeGenericType([
+                    typeof(AnsiCharArrayMarshaler<,>).MakeGenericType([
                         IsBestFit(dwFlags)
                         ? typeof(IMarshalerOption.EnabledOption)
                         : typeof(IMarshalerOption.DisabledOption),
@@ -1243,19 +1243,84 @@ namespace System.StubHelpers
         }
     }  // struct AsAnyMarshaler
 
-    internal interface IArrayElementMarshaler<T, TSelf> where TSelf : IArrayElementMarshaler<T, TSelf>
+    internal interface IArrayMarshaler<T, TSelf>
+        where TSelf : IArrayMarshaler<T, TSelf>
     {
+        static abstract unsafe void ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length);
+        static abstract unsafe void ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length);
+        static abstract unsafe void FreeContents(byte* unmanaged, int length);
+        static abstract unsafe byte* AllocateSpaceForUnmanaged(Array? managedArray);
+        static abstract unsafe Array? AllocateSpaceForManaged(byte* unmanaged, int length);
+    }
+
+    internal interface IArrayElementMarshaler<T, TSelf> : IArrayMarshaler<T, TSelf>
+        where TSelf : IArrayElementMarshaler<T, TSelf>, IArrayMarshaler<T, TSelf>
+    {
+        static unsafe void IArrayMarshaler<T, TSelf>.ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
+        {
+            Debug.Assert(managedArray is not null);
+            Debug.Assert(managedArray.GetType().GetElementType() == typeof(T));
+            ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray));
+            for (int i = 0; i < length; i++)
+            {
+                TSelf.ConvertToManaged(ref Unsafe.Add(ref firstElement, i), unmanaged);
+                unmanaged += TSelf.UnmanagedSize;
+            }
+        }
+
+        static unsafe void IArrayMarshaler<T, TSelf>.ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
+        {
+            Debug.Assert(managedArray is not null);
+            Debug.Assert(managedArray.GetType().GetElementType() == typeof(T));
+            ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray));
+            for (int i = 0; i < length; i++)
+            {
+                TSelf.ConvertToUnmanaged(ref Unsafe.Add(ref firstElement, i), unmanaged);
+                unmanaged += TSelf.UnmanagedSize;
+            }
+        }
+
+        static unsafe void IArrayMarshaler<T, TSelf>.FreeContents(byte* unmanaged, int length)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                TSelf.Free(unmanaged);
+                unmanaged += TSelf.UnmanagedSize;
+            }
+        }
+
+        static unsafe byte* IArrayMarshaler<T, TSelf>.AllocateSpaceForUnmanaged(Array? managedArray)
+        {
+            if (managedArray is null)
+            {
+                return null;
+            }
+            else
+            {
+                int nativeBytes = checked(managedArray.Length * (int)TSelf.UnmanagedSize);
+                byte* pNative = (byte*)Marshal.AllocCoTaskMem(nativeBytes);
+                NativeMemory.Clear(pNative, (nuint)nativeBytes);
+                return pNative;
+            }
+        }
+
+        static unsafe Array? IArrayMarshaler<T, TSelf>.AllocateSpaceForManaged(byte* unmanaged, int length)
+        {
+            if (unmanaged is null)
+            {
+                return null;
+            }
+            else
+            {
+                return new T[length];
+            }
+        }
+
         static abstract unsafe void ConvertToUnmanaged(ref T managed, byte* unmanaged);
         static abstract unsafe void ConvertToManaged(ref T managed, byte* unmanaged);
         static abstract unsafe void Free(byte* unmanaged);
 
         static abstract nuint UnmanagedSize { get; }
-
-        // Space to allocate per element. Defaults to UnmanagedSize but may be larger
-        // when conversion can produce more bytes than the final native layout (e.g.
-        // ANSI char needs SystemMaxDBCSCharSize bytes during conversion but only
-        // occupies 1 byte in the native struct).
-        static virtual nuint AllocationSize => TSelf.UnmanagedSize;
     }
 
     // Constants for direction argument of struct marshalling stub.
@@ -1664,27 +1729,62 @@ namespace System.StubHelpers
         static unsafe nuint IArrayElementMarshaler<string?, LPWSTRMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
-    internal sealed class AnsiCharArrayElementMarshaler<TBestFit, TThrowOnUnmappable> : IArrayElementMarshaler<char, AnsiCharArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>
+    internal sealed class AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable> : IArrayMarshaler<char, AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable>>
         where TBestFit : IMarshalerOption
         where TThrowOnUnmappable : IMarshalerOption
     {
-        public static unsafe void ConvertToUnmanaged(ref char managed, byte* unmanaged)
+        public static unsafe void ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
         {
-            *unmanaged = AnsiCharMarshaler.ConvertToNative(managed, TBestFit.Enabled, TThrowOnUnmappable.Enabled);
+            Debug.Assert(managedArray is not null);
+            Debug.Assert(managedArray.GetType().GetElementType() == typeof(char));
+            ReadOnlySpan<char> chars = new(
+                ref Unsafe.As<byte, char>(ref MemoryMarshal.GetArrayDataReference(managedArray)),
+                length);
+            string str = new(chars);
+            Marshal.StringToAnsiString(str, unmanaged, length + 1, TBestFit.Enabled, TThrowOnUnmappable.Enabled);
         }
 
-        public static unsafe void ConvertToManaged(ref char managed, byte* unmanaged)
+        public static unsafe void ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
         {
-            managed = AnsiCharMarshaler.ConvertToManaged(*unmanaged);
+            Debug.Assert(managedArray is not null);
+            Debug.Assert(managedArray.GetType().GetElementType() == typeof(char));
+            Span<char> chars = new Span<char>(
+                ref Unsafe.As<byte, char>(ref MemoryMarshal.GetArrayDataReference(managedArray)),
+                length);
+            // Use the string(sbyte*) constructor which uses the system default ANSI code page,
+            // then copy the resulting characters into the array.
+            string converted = new((sbyte*)unmanaged, 0, length);
+            converted.CopyTo(chars);
         }
 
-        public static unsafe void Free(byte* unmanaged)
+        public static unsafe void FreeContents(byte* unmanaged, int length)
         {
         }
 
-        static nuint IArrayElementMarshaler<char, AnsiCharArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>.UnmanagedSize => sizeof(byte);
+        public static unsafe byte* AllocateSpaceForUnmanaged(Array? managedArray)
+        {
+            if (managedArray is null)
+            {
+                return null;
+            }
 
-        static nuint IArrayElementMarshaler<char, AnsiCharArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>.AllocationSize => (nuint)Marshal.SystemMaxDBCSCharSize;
+            // Each char can map to at most SystemMaxDBCSCharSize bytes during conversion,
+            // but the final native layout uses 1 byte per element.
+            int allocSize = checked(managedArray.Length * Marshal.SystemMaxDBCSCharSize);
+            byte* pNative = (byte*)Marshal.AllocCoTaskMem(allocSize);
+            NativeMemory.Clear(pNative, (nuint)allocSize);
+            return pNative;
+        }
+
+        public static unsafe Array? AllocateSpaceForManaged(byte* unmanaged, int length)
+        {
+            if (unmanaged is null)
+            {
+                return null;
+            }
+
+            return new char[length];
+        }
     }
 
     internal sealed class UnicodeCharArrayElementMarshaler : IArrayElementMarshaler<char, UnicodeCharArrayElementMarshaler>
@@ -2299,24 +2399,16 @@ namespace System.StubHelpers
             }
         }
 
-        public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(Array managed, byte* pNative, int numElements) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+        public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(Array managed, byte* pNative, int numElements)
+        where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managed));
-            for (int i = 0; i < numElements; i++)
-            {
-                TMarshaler.ConvertToUnmanaged(ref Unsafe.Add(ref firstElement, i), pNative);
-                pNative += TMarshaler.UnmanagedSize;
-            }
+            TMarshaler.ConvertContentsToUnmanaged(managed, pNative, numElements);
         }
 
-        public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(Array managed, byte* pNative, int numElements) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+        public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(Array managed, byte* pNative, int numElements)
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managed));
-            for (int i = 0; i < numElements; i++)
-            {
-                TMarshaler.ConvertToManaged(ref Unsafe.Add(ref firstElement, i), pNative);
-                pNative += TMarshaler.UnmanagedSize;
-            }
+            TMarshaler.ConvertContentsToManaged(managed, pNative, numElements);
         }
 
         [UnmanagedCallersOnly]
@@ -2337,46 +2429,25 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void FreeArrayContents<T, TMarshaler>(byte* pNative, int length) where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+        internal static unsafe void FreeArrayContents<T, TMarshaler>(byte* pNative, int length) where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            for (int i = 0; i < length; i++)
-            {
-                TMarshaler.Free(pNative);
-                pNative += TMarshaler.UnmanagedSize;
-            }
+            TMarshaler.FreeContents(pNative, length);
         }
 
         public static unsafe byte* ConvertArraySpaceToNative<T, TMarshaler>(Array? managed)
-            where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            if (managed is null)
-            {
-                return null;
-            }
-            else
-            {
-                int nativeBytes = checked(managed.Length * (int)TMarshaler.AllocationSize);
-                byte* pNative = (byte*)Marshal.AllocCoTaskMem(nativeBytes);
-                NativeMemory.Clear(pNative, (nuint)nativeBytes);
-                return pNative;
-            }
+            return TMarshaler.AllocateSpaceForUnmanaged(managed);
         }
 
         internal static unsafe T[]? ConvertArraySpaceToManaged<T, TMarshaler>(byte* pNativeHome, int cElements)
-            where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            if (pNativeHome == null)
-            {
-                return null;
-            }
-            else
-            {
-                return new T[cElements];
-            }
+            return (T[]?)TMarshaler.AllocateSpaceForManaged(pNativeHome, cElements);
         }
 
         internal static unsafe void ClearArrayNative<T, TMarshaler>(byte* pNativeHome, int cElements)
-            where TMarshaler : IArrayElementMarshaler<T, TMarshaler>
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
             if (pNativeHome != null)
             {

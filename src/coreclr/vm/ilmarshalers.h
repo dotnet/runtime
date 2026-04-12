@@ -3268,7 +3268,7 @@ protected:
     const BinderMethodID m_idClearManaged;
 };
 
-// Base class for array marshalers that use managed IArrayElementMarshaler<T> implementations
+// Base class for array marshalers that use managed IArrayMarshaler<T> implementations
 // for element-by-element conversion. Provides shared VT-to-marshaler-type resolution and
 // generic method instantiation for ConvertArrayContents/FreeArrayContents helpers.
 class ILArrayMarshalerBase : public ILMarshaler
