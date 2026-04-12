@@ -380,6 +380,14 @@ $arguments += " /clp:ForceNoAlign"
 # The later changes are ignored when using the cache.
 $env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 
+# Set up the directory for MSBuild debug logs, so that if MSBuild crashes (MSB4166)
+# the failure.txt diagnostics are written to a known location under artifacts/log
+# where they'll be captured as build artifacts. See https://github.com/dotnet/runtime/issues/92290
+$msbuildDebugLogsDir = "$PSScriptRoot/../artifacts/log/$((Get-Culture).TextInfo.ToTitleCase($configuration[0]))/MsbuildDebugLogs"
+New-Item -ItemType Directory -Force -Path $msbuildDebugLogsDir | Out-Null
+$env:MSBUILDDEBUGPATH = $msbuildDebugLogsDir
+Write-Host "MSBUILDDEBUGPATH=$msbuildDebugLogsDir"
+
 if ($bootstrap -eq $True) {
 
   if ($actionPassedIn) {
@@ -434,7 +442,14 @@ if ($bootstrap -eq $True) {
 $failedBuilds = @()
 
 foreach ($config in $configuration) {
-  $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
+  $titleCaseConfig = $((Get-Culture).TextInfo.ToTitleCase($config))
+
+  # Update MSBuild debug logs directory for this configuration.
+  $msbuildDebugLogsDir = "$PSScriptRoot/../artifacts/log/$titleCaseConfig/MsbuildDebugLogs"
+  New-Item -ItemType Directory -Force -Path $msbuildDebugLogsDir | Out-Null
+  $env:MSBUILDDEBUGPATH = $msbuildDebugLogsDir
+
+  $argumentsWithConfig = $arguments + " -configuration $titleCaseConfig";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
     Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
