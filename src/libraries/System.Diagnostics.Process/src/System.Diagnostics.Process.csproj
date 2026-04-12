@@ -20,6 +20,7 @@
     <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
     <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
     <Compile Include="System\Diagnostics\Process.cs" />
+    <Compile Include="System\Diagnostics\Process.Multiplexing.cs" />
     <Compile Include="System\Diagnostics\ProcessExitStatus.cs" />
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
     <Compile Include="System\Diagnostics\ProcessModule.cs" />
@@ -224,6 +225,7 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\Process.Windows.cs" />
+    <Compile Include="System\Diagnostics\Process.Multiplexing.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
@@ -236,6 +238,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\Process.Unix.cs" />
+    <Compile Include="System\Diagnostics\Process.Multiplexing.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
@@ -246,6 +249,10 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Poll.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
              Link="Common\Interop\Unix\Interop.Close.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs"
