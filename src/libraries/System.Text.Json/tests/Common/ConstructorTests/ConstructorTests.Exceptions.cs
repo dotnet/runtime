@@ -370,11 +370,11 @@ namespace System.Text.Json.Serialization.Tests
             Assert.DoesNotContain(nameof(ParameterizedRecord_WithStringProperty), e.Message);
         }
 
-        private class ParameterizedClass_WithStringProperty(string text)
+        public class ParameterizedClass_WithStringProperty(string text)
         {
             public string Text { get; set; } = text;
         }
 
-        private record ParameterizedRecord_WithStringProperty(string Text);
+        public record ParameterizedRecord_WithStringProperty(string Text);
     }
 }
