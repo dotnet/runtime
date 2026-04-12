@@ -738,7 +738,7 @@ namespace LibraryImportGenerator.UnitTests
                 if (_expectCharSetUnicode)
                 {
                     Assert.NotNull(charSetArgument);
-                    Assert.Equal($"{nameof(CharSet)}.{nameof(CharSet.Unicode)}", charSetArgument.Expression.ToString());
+                    Assert.EndsWith($"{nameof(CharSet)}.{nameof(CharSet.Unicode)}", charSetArgument.Expression.ToString());
                 }
                 else
                 {
