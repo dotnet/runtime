@@ -1403,6 +1403,22 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_IndexOfWhereAllBitsSet:
+        case NI_Vector128_LastIndexOfWhereAllBitsSet:
+        {
+            assert(sig->numArgs == 1);
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                // Float/double use the managed fallback (needs AsInt32/AsInt64 reinterpretation).
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, simdSize);
+            break;
+        }
+
         case NI_Vector64_Floor:
         case NI_Vector128_Floor:
         {

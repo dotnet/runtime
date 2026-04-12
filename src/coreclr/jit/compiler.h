@@ -8666,9 +8666,12 @@ public:
     GenTree*     optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
     GenTree*     optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
     GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
-    GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
-    GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
-    GenTree*     optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call);
+#ifdef FEATURE_HW_INTRINSICS
+    GenTree* optVNBasedFoldExpr_HWIntrinsic(BasicBlock* block, GenTree* parent, GenTreeHWIntrinsic* call);
+#endif
+    GenTree* optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
+    GenTree* optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
+    GenTree* optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call);
 
     AssertionIndex GetAssertionCount()
     {
