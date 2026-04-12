@@ -179,7 +179,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Rents a larger buffer from the array pool and copies the existing data to it.
         /// </summary>
-        internal static void RentLargerBuffer(ref byte[] buffer, int bytesRead)
+        private static void RentLargerBuffer(ref byte[] buffer, int bytesRead)
         {
             byte[] newBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length * 2);
             Buffer.BlockCopy(buffer, 0, newBuffer, 0, bytesRead);

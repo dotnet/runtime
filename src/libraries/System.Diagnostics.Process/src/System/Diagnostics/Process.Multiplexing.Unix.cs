@@ -87,7 +87,7 @@ namespace System.Diagnostics
                                 continue;
                             }
 
-                            throw new ComponentModel.Win32Exception(Marshal.GetLastPInvokeError());
+                            throw new Win32Exception(Marshal.GetLastPInvokeError());
                         }
 
                         if (triggered == 0)
