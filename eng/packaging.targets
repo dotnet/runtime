@@ -84,7 +84,10 @@
           BeforeTargets="GetTargetFrameworksWithPlatformFromInnerBuilds;DispatchToInnerBuilds">
     <ItemGroup>
       <_DependencyOnlyTFMItems Include="$(DependencyOnlyTargetFrameworks)" />
-      <!-- Build filter items matching the AdditionalProperties format used by _InnerBuildProjects. -->
+      <!-- _InnerBuildProjects items use AdditionalProperties="TargetFramework=<tfm>" metadata
+           (set by _ComputeTargetFrameworkItems in the SDK's Microsoft.Common.CrossTargeting.targets).
+           The filter items must match this exact format for MatchOnMetadata="AdditionalProperties"
+           to correctly identify and remove the dep-only TFM entries. -->
       <_DependencyOnlyInnerBuildFilter Include="$(MSBuildProjectFile)">
         <AdditionalProperties>TargetFramework=%(_DependencyOnlyTFMItems.Identity)</AdditionalProperties>
       </_DependencyOnlyInnerBuildFilter>
