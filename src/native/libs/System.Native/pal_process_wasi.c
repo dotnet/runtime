@@ -29,7 +29,10 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* childPid,
                                       int32_t stdinFd,
                                       int32_t stdoutFd,
-                                      int32_t stderrFd)
+                                      int32_t stderrFd,
+                                      int32_t* inheritedFds,
+                                      int32_t inheritedFdCount,
+                                      int32_t startDetached)
 {
     return -1;
 }
