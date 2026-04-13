@@ -500,104 +500,6 @@ enum EEToManagedCallFlags
 /***********************************************************************/
 
 #define ARGHOLDER_TYPE LPVOID
-#define OBJECTREF_TO_ARGHOLDER(x) (LPVOID)OBJECTREFToObject(x)
-#define STRINGREF_TO_ARGHOLDER(x) (LPVOID)STRINGREFToObject(x)
-#define PTR_TO_ARGHOLDER(x) (LPVOID)x
-#define DWORD_TO_ARGHOLDER(x)   (LPVOID)(SIZE_T)x
-#define BOOL_TO_ARGHOLDER(x) DWORD_TO_ARGHOLDER(!!(x))
-
-#define INIT_VARIABLES(count)                               \
-        DWORD   __numArgs = count;                          \
-        BOOL    __criticalDispatchCall = FALSE;             \
-
-#define PREPARE_NONVIRTUAL_CALLSITE(id) \
-        static PCODE s_pAddr##id = 0;                       \
-        PCODE __pSlot = VolatileLoad(&s_pAddr##id);         \
-        if ( __pSlot == 0 )                                 \
-        {                                                   \
-            MethodDesc *pMeth = CoreLibBinder::GetMethod(id);   \
-            _ASSERTE(pMeth);                                \
-            __pSlot = pMeth->GetMultiCallableAddrOfCode();  \
-            VolatileStore(&s_pAddr##id, __pSlot);           \
-        }
-
-#define PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pCode)       \
-        PCODE __pSlot = pCode;
-
-#define CRITICAL_CALLSITE                                   \
-        __criticalDispatchCall = TRUE;
-
-#define PERFORM_CALL    \
-        void * __retval = NULL;                         \
-        __retval = DispatchCallSimple(__pArgs,          \
-                           __numStackSlotsToCopy,       \
-                           __pSlot,                     \
-                           __criticalDispatchCall);     \
-
-#ifdef CALLDESCR_ARGREGS
-
-#if defined(TARGET_X86)
-
-// Arguments on x86 are passed backward
-#define ARGNUM_0    1
-#define ARGNUM_1    0
-#define ARGNUM_N(n)    (__numArgs - (n) + 1)
-
-#else
-
-#define ARGNUM_0    0
-#define ARGNUM_1    1
-#define ARGNUM_N(n)    n
-
-#endif
-
-#define PRECALL_PREP(args)  \
-        DWORD __numStackSlotsToCopy = (__numArgs > NUM_ARGUMENT_REGISTERS) ? (__numArgs - NUM_ARGUMENT_REGISTERS) : 0; \
-        SIZE_T * __pArgs = (SIZE_T *)args;
-
-#define DECLARE_ARGHOLDER_ARRAY(arg, count)             \
-        INIT_VARIABLES(count)                           \
-        ARGHOLDER_TYPE arg[(count <= NUM_ARGUMENT_REGISTERS ? NUM_ARGUMENT_REGISTERS : count)];
-
-#else   // CALLDESCR_ARGREGS
-
-#define ARGNUM_0    0
-#define ARGNUM_1    1
-#define ARGNUM_N(n)    n
-
-#define PRECALL_PREP(args)                              \
-        DWORD __numStackSlotsToCopy = (__numArgs > NUM_ARGUMENT_REGISTERS) ? __numArgs : NUM_ARGUMENT_REGISTERS; \
-        SIZE_T * __pArgs = (SIZE_T *)args;
-
-#define DECLARE_ARGHOLDER_ARRAY(arg, count)             \
-        INIT_VARIABLES(count)                           \
-        ARGHOLDER_TYPE arg[(count <= NUM_ARGUMENT_REGISTERS ? NUM_ARGUMENT_REGISTERS : count)];
-
-#endif  // CALLDESCR_ARGREGS
-
-
-#define CALL_MANAGED_METHOD(ret, rettype, args)         \
-        PRECALL_PREP(args)                              \
-        PERFORM_CALL                                    \
-        ret = *(rettype *)(&__retval);
-
-#define CALL_MANAGED_METHOD_NORET(args)                 \
-        PRECALL_PREP(args)                              \
-        PERFORM_CALL
-
-#define CALL_MANAGED_METHOD_RETREF(ret, reftype, args)  \
-        PRECALL_PREP(args)                              \
-        PERFORM_CALL                                    \
-        ret = (reftype)ObjectToOBJECTREF((Object *)__retval);
-
-#define ARGNUM_2 ARGNUM_N(2)
-#define ARGNUM_3 ARGNUM_N(3)
-#define ARGNUM_4 ARGNUM_N(4)
-#define ARGNUM_5 ARGNUM_N(5)
-#define ARGNUM_6 ARGNUM_N(6)
-#define ARGNUM_7 ARGNUM_N(7)
-#define ARGNUM_8 ARGNUM_N(8)
-
 
 void CallDefaultConstructor(OBJECTREF ref);
 
@@ -741,6 +643,54 @@ public:
         GCPROTECT_END();
 
         return ret;
+    }
+
+    template<typename... Args>
+    void InvokeDirect(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        GCX_PREEMP();
+
+        PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+        _ASSERTE(methodEntry != (PCODE)NULL);
+
+        auto fptr = reinterpret_cast<void(*)(Args...)>(methodEntry);
+        fptr(args...);
+    }
+
+    template<typename Ret, typename... Args>
+    Ret InvokeDirect_Ret(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        GCX_PREEMP();
+
+        PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+        _ASSERTE(methodEntry != (PCODE)NULL);
+
+        auto fptr = reinterpret_cast<Ret(*)(Args...)>(methodEntry);
+        return fptr(args...);
     }
 };
 

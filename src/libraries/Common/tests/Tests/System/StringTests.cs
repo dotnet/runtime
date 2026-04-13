@@ -2122,6 +2122,7 @@ namespace System.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/108832", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108832", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
         public static void EndsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -2144,18 +2145,14 @@ namespace System.Tests
                     Assert.False(s1.EndsWith(s2, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.CurrentCulture),
-                        s1.EndsWith(s2, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        s1.EndsWith(s2, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.InvariantCulture),
-                        s1.EndsWith(s2, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        s1.ToString().EndsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        s1.EndsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+                    foreach (StringComparison comp in new[] { StringComparison.CurrentCulture, StringComparison.CurrentCultureIgnoreCase, StringComparison.InvariantCulture, StringComparison.InvariantCultureIgnoreCase })
+                    {
+                        bool expected = s1.ToString().EndsWith(s2.ToString(), comp);
+                        bool actual = s1.EndsWith(s2, comp);
+                        Assert.True(expected == actual,
+                            $"String.EndsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
+                    }
 
                     var firstSpan = new ReadOnlySpan<char>(first);
                     var secondSpan = new ReadOnlySpan<char>(second);
@@ -2164,18 +2161,14 @@ namespace System.Tests
                     Assert.False(firstSpan.EndsWith(secondSpan, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.EndsWith(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.EndsWith(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.EndsWith(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().EndsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.EndsWith(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    foreach (StringComparison comp in new[] { StringComparison.CurrentCulture, StringComparison.CurrentCultureIgnoreCase, StringComparison.InvariantCulture, StringComparison.InvariantCultureIgnoreCase })
+                    {
+                        bool expected = firstSpan.ToString().EndsWith(secondSpan.ToString(), comp);
+                        bool actual = firstSpan.EndsWith(secondSpan, comp);
+                        Assert.True(expected == actual,
+                            $"Span.EndsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
+                    }
                 }
             }
         }
@@ -7310,6 +7303,7 @@ namespace System.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/112195", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108832", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
         public static void StartsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -7332,18 +7326,14 @@ namespace System.Tests
                     Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        s1.ToString().StartsWith(s2.ToString(), StringComparison.CurrentCulture),
-                        s1.StartsWith(s2, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        s1.ToString().StartsWith(s2.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCulture),
-                        s1.StartsWith(s2, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+                    foreach (StringComparison comp in new[] { StringComparison.CurrentCulture, StringComparison.CurrentCultureIgnoreCase, StringComparison.InvariantCulture, StringComparison.InvariantCultureIgnoreCase })
+                    {
+                        bool expected = s1.ToString().StartsWith(s2.ToString(), comp);
+                        bool actual = s1.StartsWith(s2, comp);
+                        Assert.True(expected == actual,
+                            $"String.StartsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
+                    }
 
                     ReadOnlySpan<char> firstSpan = s1.AsSpan();
                     ReadOnlySpan<char> secondSpan = s2.AsSpan();
@@ -7352,18 +7342,14 @@ namespace System.Tests
                     Assert.False(firstSpan.StartsWith(secondSpan, StringComparison.OrdinalIgnoreCase));
 
                     // Different behavior depending on OS
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.StartsWith(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.StartsWith(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.StartsWith(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.StartsWith(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    foreach (StringComparison comp in new[] { StringComparison.CurrentCulture, StringComparison.CurrentCultureIgnoreCase, StringComparison.InvariantCulture, StringComparison.InvariantCultureIgnoreCase })
+                    {
+                        bool expected = firstSpan.ToString().StartsWith(secondSpan.ToString(), comp);
+                        bool actual = firstSpan.StartsWith(secondSpan, comp);
+                        Assert.True(expected == actual,
+                            $"Span.StartsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
+                    }
                 }
             }
         }

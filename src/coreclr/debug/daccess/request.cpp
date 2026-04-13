@@ -865,7 +865,6 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     ZeroMemory (threadData, sizeof(DacpThreadData));
     threadData->corThreadId = thread->m_ThreadId;
     threadData->osThreadId = (DWORD)thread->m_OSThreadId;
-    threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
 
     gc_alloc_context* allocContext = thread->GetAllocContext();

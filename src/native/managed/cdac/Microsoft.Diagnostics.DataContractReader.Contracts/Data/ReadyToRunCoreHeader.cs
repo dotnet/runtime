@@ -14,7 +14,7 @@ internal sealed class ReadyToRunCoreHeader : IData<ReadyToRunCoreHeader>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunCoreHeader);
 
-        NumberOfSections = target.Read<uint>(address + (ulong)type.Fields[nameof(NumberOfSections)].Offset);
+        NumberOfSections = target.ReadField<uint>(address, type, nameof(NumberOfSections));
         Target.TypeInfo sectionType = target.GetTypeInfo(DataType.ReadyToRunSection);
         for (int i = 0; i < NumberOfSections; i++)
         {

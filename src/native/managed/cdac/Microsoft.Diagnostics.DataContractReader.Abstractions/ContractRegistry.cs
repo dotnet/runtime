@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 
@@ -116,6 +117,13 @@ public abstract class ContractRegistry
     public virtual IDebugger Debugger => GetContract<IDebugger>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
+
+    /// <summary>
+    /// Register a contract implementation for a specific version.
+    /// External packages use this to add contract versions or entirely new contract interfaces.
+    /// </summary>
+    public abstract void Register<TContract>(int version, Func<Target, TContract> creator)
+        where TContract : IContract;
 
     /// <summary>
     /// Flush all cached data held by contracts in this registry.
