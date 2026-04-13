@@ -7,6 +7,7 @@ using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -21,7 +22,7 @@ namespace System.Net.Security.Tests
         private const uint SEC_E_CERT_UNKNOWN = 0x80090327;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task SslStream_StreamToStream_HandshakeAlert_Ok()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -53,7 +54,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_StreamToStream_ServerInitiatedCloseNotify_Ok()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -85,7 +86,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_StreamToStream_ClientInitiatedCloseNotify_Ok(bool sendData)
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -125,7 +126,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_StreamToStream_DataAfterShutdown_Fail()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -204,6 +205,129 @@ namespace System.Net.Security.Tests
                 catch (IOException)
                 {
                     // IOException is expected on macOS, but also acceptable on other platforms
+                }
+            }
+        }
+
+        [Theory]
+        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_NoCallback_UntrustedCert_SendsAlert(SslProtocols protocol)
+        {
+            // When no RemoteCertificateValidationCallback is set and the server's cert
+            // is not trusted, the cert verify callback causes the TLS stack to send an
+            // alert so the client sees a proper error.
+
+            X509Certificate2 cert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream client = new SslStream(clientStream))
+            using (SslStream server = new SslStream(serverStream))
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = cert,
+                    EnabledSslProtocols = protocol,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "localhost",
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    EnabledSslProtocols = protocol,
+                };
+
+                Task serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+
+                // Client should fail because the self-signed cert is not trusted.
+                await Assert.ThrowsAsync<AuthenticationException>(() => clientTask);
+
+                // Server should also fail — either from the handshake or from the
+                // client's alert. In TLS 1.3, the alert may arrive later so we
+                // attempt a data exchange to surface it.
+                try
+                {
+                    await serverTask;
+                    byte[] buffer = new byte[1];
+                    await server.WriteAsync(buffer);
+                    await server.ReadAsync(buffer);
+                    Assert.Fail("Expected an exception from the server side.");
+                }
+                catch (AuthenticationException)
+                {
+                }
+                catch (IOException)
+                {
+                }
+            }
+        }
+
+        [Theory]
+        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_NoCallback_UntrustedClientCert_ServerSendsAlert(SslProtocols protocol)
+        {
+            // When the server requires a client certificate and no
+            // RemoteCertificateValidationCallback is set, the server should send
+            // a TLS alert when the client's cert chain cannot be validated.
+
+            X509Certificate2 cert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream client = new SslStream(clientStream))
+            using (SslStream server = new SslStream(serverStream))
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = cert,
+                    ClientCertificateRequired = true,
+                    EnabledSslProtocols = protocol,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "localhost",
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    RemoteCertificateValidationCallback = delegate { return true; },
+                    ClientCertificates = new X509CertificateCollection { cert },
+                    EnabledSslProtocols = protocol,
+                };
+
+                Task serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+
+                // Server should fail because the client cert is not trusted.
+                // In TLS 1.3, the failure may occur after the handshake during
+                // post-handshake auth, so attempt data exchange to surface it.
+                try
+                {
+                    await serverTask;
+                    byte[] buffer = new byte[1];
+                    await server.WriteAsync(buffer);
+                    await server.ReadAsync(buffer);
+                    Assert.Fail("Expected an exception from the server side.");
+                }
+                catch (AuthenticationException ex)
+                {
+                    Assert.Contains("chain", ex.ToString(), StringComparison.OrdinalIgnoreCase);
+                }
+                catch (IOException)
+                {
+                }
+
+                // Client may or may not throw depending on timing.
+                try
+                {
+                    await clientTask;
+                }
+                catch (AuthenticationException)
+                {
+                }
+                catch (IOException)
+                {
                 }
             }
         }
