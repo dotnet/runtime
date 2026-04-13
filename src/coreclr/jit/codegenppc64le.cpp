@@ -242,6 +242,18 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	    genCall(treeNode->AsCall());
             break;
 
+	case GT_IL_OFFSET:
+            // Do nothing; these nodes are simply markers for debug info.
+            break;
+
+	case GT_NO_OP:
+            instGen(INS_nop);
+            break;
+
+	case GT_STORE_LCL_VAR:
+            genCodeForStoreLclVar(treeNode->AsLclVar());
+            break;
+
         default:
 	    abort();
     }
@@ -352,6 +364,136 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
 }
 
 #endif // FEATURE_SIMD
+
+//------------------------------------------------------------------------
+// genCodeForStoreLclVar: Produce code for a GT_STORE_LCL_VAR node.
+//
+// Arguments:
+//    lclNode - the GT_STORE_LCL_VAR node
+//
+void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
+{
+    GenTree* data = lclNode->gtOp1;
+
+    // Stores from a multi-reg source are handled separately.
+    if (data->gtSkipReloadOrCopy()->IsMultiRegNode())
+    {
+        genMultiRegStoreToLocal(lclNode);
+        return;
+    }
+
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNode);
+    if (lclNode->IsMultiReg())
+    {
+        // This is the case of storing to a multi-reg HFA local from a fixed-size SIMD type.
+        // Note: PPC64LE may not support HFA in the same way as ARM64, but keeping structure similar
+        assert(varTypeIsSIMD(data) && varDsc->lvIsHfa());
+        regNumber    operandReg = genConsumeReg(data);
+        unsigned int regCount   = varDsc->lvFieldCnt;
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            regNumber varReg = lclNode->GetRegByIndex(i);
+            assert(varReg != REG_NA);
+            unsigned   fieldLclNum = varDsc->lvFieldLclStart + i;
+            LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
+            // TODO-PPC64LE: Implement appropriate vector element extraction for PPC64LE
+            // This may require different instructions than ARM64's INS_dup
+            //NYI_PPC64("genCodeForStoreLclVar - multi-reg HFA store");
+            abort();
+        }
+        genProduceReg(lclNode);
+    }
+    else
+    {
+        regNumber targetReg = lclNode->GetRegNum();
+        emitter*  emit      = GetEmitter();
+
+        unsigned  varNum     = lclNode->GetLclNum();
+        var_types targetType = varDsc->GetRegisterType(lclNode);
+
+#ifdef FEATURE_SIMD
+        // storing of TYP_SIMD12 (i.e. Vector3) field
+        if (targetType == TYP_SIMD12)
+        {
+            genStoreLclTypeSimd12(lclNode);
+            return;
+        }
+#endif // FEATURE_SIMD
+
+        genConsumeRegs(data);
+
+        regNumber dataReg = REG_NA;
+        if (data->isContained())
+        {
+            // This is only possible for a zero-init or bitcast.
+            const bool zeroInit = (data->IsIntegralConst(0) || data->IsVectorZero());
+            assert(zeroInit || data->OperIs(GT_BITCAST));
+
+            if (zeroInit && varTypeIsSIMD(targetType))
+            {
+                if (targetReg != REG_NA)
+                {
+                    // TODO-PPC64LE: Implement SIMD zero initialization for PPC64LE
+                    // This may use vector instructions like xxlxor or similar
+                    //NYI_PPC64("genCodeForStoreLclVar - SIMD zero init to register");
+                    abort();
+                }
+                else
+                {
+                    // Store zero to stack-based SIMD local
+                    // TODO-PPC64LE: Implement stack store of zero SIMD value
+                    //NYI_PPC64("genCodeForStoreLclVar - SIMD zero init to stack");
+                    abort();
+                }
+                genUpdateLifeStore(lclNode, targetReg, varDsc);
+                return;
+            }
+            if (zeroInit)
+            {
+                // For PPC64LE, we can use R0 as zero register in some contexts
+                dataReg = REG_R0;
+            }
+            else
+            {
+                const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+                assert(!bitcastSrc->isContained());
+                dataReg = bitcastSrc->GetRegNum();
+            }
+        }
+        else
+        {
+            assert(!data->isContained());
+            dataReg = data->GetRegNum();
+        }
+        assert(dataReg != REG_NA);
+
+        if (targetReg == REG_NA) // store into stack based LclVar
+        {
+            inst_set_SV_var(lclNode);
+
+            instruction ins  = ins_Store(targetType);
+            emitAttr    attr = emitActualTypeSize(targetType);
+
+            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
+        }
+        else // store into register (i.e move into register)
+        {
+            // Assign into targetReg when dataReg (from op1) is not the same register
+            if (varTypeIsIntegral(targetType) && emit->isGeneralRegister(targetReg) && emit->isGeneralRegister(dataReg))
+            {
+                // For PPC64LE, we may need sign/zero extension
+                // Use appropriate move instruction with extension if needed
+                inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+            }
+            else
+            {
+                // For floating point or when no extension needed
+                inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+            }
+        }
+        genUpdateLifeStore(lclNode, targetReg, varDsc);
+    }
+}
 
 //------------------------------------------------------------------------
 // genCreateAndStoreGCInfo: Create and record GC Info for the function.
