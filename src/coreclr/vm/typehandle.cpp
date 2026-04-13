@@ -459,7 +459,7 @@ bool TypeHandle::IsFloatHfa() const
 bool TypeHandle::IsVectorT() const
 {
     LIMITED_METHOD_CONTRACT;
-    return AsMethodTable() == CoreLibBinder::GetClass(CLASS__VECTORT);
+    return !IsTypeDesc() && (AsMethodTable() == CoreLibBinder::GetClass(CLASS__VECTORT));
 }
 
 
