@@ -264,6 +264,8 @@ namespace
         char currentFileName[4 * MAX_LONGPATH] = {};
         ULONG32 currentLineNumber = 0;
 
+        int sequencePointIndex = 0;
+
         for (ULONG32 nativeMapIndex = 0; nativeMapIndex < nativeMapCount; nativeMapIndex++)
         {
             const ULONG32 ilOffset = nativeMap[nativeMapIndex].ilOffset;
@@ -275,26 +277,14 @@ namespace
                 continue;
             }
 
-            int sequencePointIndex = 0;
-            for (; sequencePointIndex < methodDebugInfo.size; sequencePointIndex++)
+            while (sequencePointIndex + 1 < methodDebugInfo.size &&
+                   (ULONG32)methodDebugInfo.points[sequencePointIndex + 1].ilOffset <= ilOffset)
             {
-                if ((ULONG32)methodDebugInfo.points[sequencePointIndex].ilOffset >= ilOffset)
-                {
-                    if (((ULONG32)methodDebugInfo.points[sequencePointIndex].ilOffset > ilOffset) && (sequencePointIndex > 0))
-                    {
-                        sequencePointIndex--;
-                    }
-
-                    break;
-                }
+                sequencePointIndex++;
             }
 
-            if (sequencePointIndex == methodDebugInfo.size)
-            {
-                sequencePointIndex--;
-            }
-
-            while ((methodDebugInfo.points[sequencePointIndex].lineNumber == (int)HiddenLineNumber) && (sequencePointIndex > 0))
+            while (sequencePointIndex > 0 &&
+                   methodDebugInfo.points[sequencePointIndex].lineNumber == (int)HiddenLineNumber)
             {
                 sequencePointIndex--;
             }
