@@ -39,7 +39,7 @@
         - src/tasks/Crossgen2Tasks/Microsoft.NET.CrossGen.targets
         - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
      -->
-    <AndroidApiLevelMin>21</AndroidApiLevelMin>
+    <AndroidApiLevelMin>24</AndroidApiLevelMin>
     <iOSVersionMin>13.0</iOSVersionMin>
     <tvOSVersionMin>13.0</tvOSVersionMin>
     <macOSVersionMin>14.0</macOSVersionMin>

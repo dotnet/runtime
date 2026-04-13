@@ -23,7 +23,7 @@ public enum RuntimeFlavorEnum
 
 public partial class ApkBuilder
 {
-    private const string DefaultMinApiLevel = "21";
+    private const string DefaultMinApiLevel = "24";
     private const string DefaultTargetApiLevel = "31";
 
     public string? ProjectName { get; set; }
