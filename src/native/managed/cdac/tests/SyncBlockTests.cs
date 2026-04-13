@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using Moq;
 using Xunit;
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -14,20 +13,17 @@ public class SyncBlockTests
 {
     private static ISyncBlock CreateSyncBlockContract(MockTarget.Architecture arch, Action<MockSyncBlockBuilder> configure)
     {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(0x0001_0000, 0x0002_0000);
-        MockSyncBlockBuilder syncBlock = new(builder, allocator);
+        var builder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.BumpAllocator allocator = builder.MemoryBuilder.CreateAllocator(0x0001_0000, 0x0002_0000);
+        MockSyncBlockBuilder syncBlock = new(builder.MemoryBuilder, allocator);
 
         configure(syncBlock);
 
-        var target = new TestPlaceholderTarget(
-            arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(syncBlock),
-            CreateContractGlobals(syncBlock));
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.SyncBlock == ((IContractFactory<ISyncBlock>)new SyncBlockFactory()).CreateContract(target, 1)));
+        var target = builder
+            .AddTypes(CreateContractTypes(syncBlock))
+            .AddGlobals(CreateContractGlobals(syncBlock))
+            .AddContract<ISyncBlock>(version: 1)
+            .Build();
         return target.Contracts.SyncBlock;
     }
 

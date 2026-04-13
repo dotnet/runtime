@@ -117,32 +117,6 @@ BOOL UnsafeContains(AssemblySpecBindingCache *pCache, AssemblySpec *pSpec)
 }
 #endif
 
-
-
-AssemblySpecHash::~AssemblySpecHash()
-{
-    CONTRACTL
-    {
-        DESTRUCTOR_CHECK;
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PtrHashMap::PtrIterator i = m_map.begin();
-    while (!i.end())
-    {
-        AssemblySpec *s = (AssemblySpec*) i.GetValue();
-        if (m_pHeap != NULL)
-            s->~AssemblySpec();
-        else
-            delete s;
-
-        ++i;
-    }
-}
-
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
                                   Assembly *pStaticParent)
@@ -1074,14 +1048,6 @@ BOOL AssemblySpecBindingCache::RemoveAssembly(Assembly* pAssembly)
     }
 
     RETURN result;
-}
-
-/* static */
-BOOL AssemblySpecHash::CompareSpecs(UPTR u1, UPTR u2)
-{
-    // the same...
-    WRAPPER_NO_CONTRACT;
-    return AssemblySpecBindingCache::CompareSpecs(u1,u2);
 }
 
 /* static */

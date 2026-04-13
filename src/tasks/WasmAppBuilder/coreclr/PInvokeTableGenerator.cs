@@ -12,8 +12,9 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using WasmAppBuilder;
 using JoinedString;
+
+namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 internal sealed class PInvokeTableGenerator
 {

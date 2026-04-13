@@ -420,8 +420,6 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
         GetEmitter()->emitSetFirstColdIGCookie(block->bbEmitCookie);
     }
 
-    genEmitStartBlock(block);
-
     // Both stacks are always empty on entry to a basic block.
     assert(genStackLevel == 0);
     genAdjustStackLevel(block);
@@ -443,6 +441,8 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
         genUpdateCurrentFunclet(block);
         genReserveFuncletProlog(block);
     }
+
+    genEmitStartBlock(block);
 
     // Clear compCurStmt and compCurLifeTree.
     m_compiler->compCurStmt     = nullptr;

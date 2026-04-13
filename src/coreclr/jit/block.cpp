@@ -1016,6 +1016,38 @@ bool BasicBlock::isEmpty() const
 }
 
 //------------------------------------------------------------------------
+// hasSideEffects: check if block has side effects
+//
+// Returns:
+//   True if any non-phi statement or node in the block has side effects.
+//
+bool BasicBlock::hasSideEffects() const
+{
+    if (!IsLIR())
+    {
+        for (Statement* const stmt : NonPhiStatements())
+        {
+            if ((stmt->GetRootNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
+            {
+                return true;
+            }
+        }
+    }
+    else
+    {
+        for (GenTree* node : LIR::AsRange(this))
+        {
+            if ((node->gtFlags & GTF_SIDE_EFFECT) != 0)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // isValid: Checks that the basic block doesn't mix statements and LIR lists.
 //
 // Return Value:
