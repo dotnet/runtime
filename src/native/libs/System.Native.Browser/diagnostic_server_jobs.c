@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <emscripten.h>
 
-typedef size_t (*ds_job_cb)(void *data);
+#include "diagnostic_server_jobs.h"
 
 extern void SystemJS_ScheduleDiagnosticServer(void);
 
@@ -24,6 +24,9 @@ SystemJS_DiagnosticServerQueueJob (ds_job_cb cb, void *data)
     int wasEmpty = jobs == NULL;
     assert (cb);
     DsJobNode *node = (DsJobNode *)calloc (1, sizeof (DsJobNode));
+    if (!node) {
+        abort ();
+    }
     node->cb = cb;
     node->data = data;
     node->next = jobs;

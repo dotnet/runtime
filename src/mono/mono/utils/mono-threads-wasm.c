@@ -381,13 +381,13 @@ SystemJS_ExecuteDiagnosticServerCallback (void)
 	for (cur1 = j1; cur1; cur1 = cur1->next) {
 		DsJobRegistration* reg = (DsJobRegistration*)cur1->data;
 		g_assert (reg->cb);
-		THREADS_DEBUG ("SystemJS_ExecuteDiagnosticServerCallback running job %p \n", (gpointer)cb);
+		THREADS_DEBUG ("SystemJS_ExecuteDiagnosticServerCallback running job %p \n", (gpointer)reg->cb);
 		gsize done = reg->cb (reg->data);
 		if (done){
-			THREADS_DEBUG ("SystemJS_ExecuteDiagnosticServerCallback done job %p \n", (gpointer)cb);
+			THREADS_DEBUG ("SystemJS_ExecuteDiagnosticServerCallback done job %p \n", (gpointer)reg->cb);
 			g_free (reg);
 		} else {
-			THREADS_DEBUG ("SystemJS_ExecuteDiagnosticServerCallback scheduling job %p again \n", (gpointer)cb);
+			THREADS_DEBUG ("SystemJS_ExecuteDiagnosticServerCallback scheduling job %p again \n", (gpointer)reg->cb);
 			jobs_ds = g_slist_prepend (jobs_ds, (gpointer)reg);
 		}
 	}

@@ -169,7 +169,7 @@ export function onwarn(warning) {
             || id.includes("marshal-to-js")
             || id.includes("diagnostics-js");
     }) !== -1) {
-        // ignore circular dependency warnings from marshal-to-cs <-> marshal-to-js
+        // ignore circular dependency warnings from marshal-to-cs <-> marshal-to-js and diagnostics
         return;
     }
     // eslint-disable-next-line no-console

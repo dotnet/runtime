@@ -7,7 +7,7 @@ import { createDiagConnectionJs, initializeJsClient, serverSession } from "./dia
 import { createDiagConnectionWs } from "./diagnostic-server-ws";
 import { advertise } from "./client-commands";
 import { IDiagnosticConnection } from "./types";
-import { dotnetApi, dotnetBrowserUtilsExports, Module } from "./cross-module";
+import { dotnetApi, dotnetBrowserUtilsExports } from "./cross-module";
 
 let socketHandles: Map<number, IDiagnosticConnection> = undefined as any;
 let nextSocketHandle = 1;
@@ -27,7 +27,6 @@ export function ds_rt_websocket_create(urlPtr: CharPtr): number {
         url = urlOverride;
     }
 
-    Module.UTF8ToString(urlPtr);
     const socketHandle = nextSocketHandle++;
     const isWebSocket = url.startsWith("ws://") || url.startsWith("wss://");
     const wrapper = isWebSocket
@@ -84,6 +83,10 @@ export function connectDSRouter(url: string): void {
     // make sure new sessions hit the new URL
     urlOverride = url;
 
+    const oldWrapper = socketHandles.get(serverSession.clientSocket);
+    if (oldWrapper) {
+        oldWrapper.close();
+    }
     const wrapper = createDiagConnectionWs(serverSession.clientSocket, url);
     socketHandles.set(serverSession.clientSocket, wrapper);
     wrapper.send(advertise());
@@ -93,6 +96,8 @@ export function initializeDS() {
     const loaderConfig = dotnetApi.getConfig();
     const diagnosticPorts = "DOTNET_DiagnosticPorts";
     // WASM-TODO, do this only when <EnableDiagnostics>true</EnableDiagnostics>
-    loaderConfig.environmentVariables![diagnosticPorts] = "js://ready";
+    if (!loaderConfig.environmentVariables![diagnosticPorts]) {
+        loaderConfig.environmentVariables![diagnosticPorts] = "js://ready";
+    }
     initializeJsClient();
 }

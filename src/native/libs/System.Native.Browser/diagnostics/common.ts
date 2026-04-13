@@ -44,7 +44,7 @@ export function downloadBlob(messages: Uint8Array[]) {
     dotnetLogger.info(`Downloading trace ${link.download} - ${blob.size}  bytes`);
     link.href = blobUrl;
     document.body.appendChild(link);
-    link.dispatchEvent(new MouseEvent("click", {
-        bubbles: true, cancelable: true, view: window
-    }));
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
 }
