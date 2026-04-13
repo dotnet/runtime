@@ -41,7 +41,7 @@ PUSH_PROBE_FRAME macro threadReg, trashReg, BITMASK
     push_vol_reg    trashReg                    ; save m_RIP
     lea             trashReg, [rsp + 0]         ; trashReg == address of frame
 
-    ;; allocate scratch space
+    ;; allocate scratch space (20h home space + 10h for xmm0)
     alloc_stack     20h + 10h
 
     ;; save xmm0 in case it's being used as a return value
