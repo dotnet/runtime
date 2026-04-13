@@ -51,9 +51,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     // The trim analyzer changed from warning on the InvocationExpression to the MemberAccessExpression in https://github.com/dotnet/runtime/pull/110086
                     // In other words, the warning location went from from `{|Method1(arg1, arg2)|}` to `{|Method1|}(arg1, arg2)`
                     // To account for this, we need to check if the location is an InvocationExpression or a child of an InvocationExpression.
+                    // Use getInnermostNodeForTie to handle the case where the binding call is an
+                    // argument to another method (e.g. Some.Method(config.Get<T>())). In that case,
+                    // ArgumentSyntax and the inner InvocationExpressionSyntax can share the same span.
                     bool shouldSuppressDiagnostic =
                         location.SourceTree is SyntaxTree sourceTree &&
-                        sourceTree.GetRoot().FindNode(location.SourceSpan) is SyntaxNode syntaxNode &&
+                        sourceTree.GetRoot().FindNode(location.SourceSpan, getInnermostNodeForTie: true) is SyntaxNode syntaxNode &&
                         (syntaxNode as InvocationExpressionSyntax ?? syntaxNode.Parent as InvocationExpressionSyntax) is InvocationExpressionSyntax invocation &&
                         BinderInvocation.IsCandidateSyntaxNode(invocation) &&
                         context.GetSemanticModel(sourceTree)

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
@@ -46,6 +46,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options.ConfigurationExtensions\src\Microsoft.Extensions.Options.ConfigurationExtensions.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="..\..\src\Microsoft.Extensions.Configuration.Binder.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="..\..\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+    <ProjectReference Include="$(RepoRoot)src\tools\illink\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" ReferenceOutputAssembly="true" />
   </ItemGroup>
 
   <ItemGroup>

@@ -62,6 +62,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                 return new ConfigBindingGenRunResult
                 {
+                    InputCompilation = _compilation,
                     OutputCompilation = outputCompilation,
                     Diagnostics = runResult.Diagnostics,
                     GeneratedSource = runResult.Results[0].GeneratedSources is { Length: not 0 } sources ? sources[0] : null,
@@ -96,6 +97,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
     internal struct ConfigBindingGenRunResult
     {
+        /// <summary>
+        /// The compilation before source generation, used for running analyzers/suppressors
+        /// which need to see the original (non-intercepted) method resolution.
+        /// </summary>
+        public Compilation InputCompilation { get; init; }
+
         public Compilation OutputCompilation { get; init; }
 
         public GeneratedSourceResult? GeneratedSource { get; init; }

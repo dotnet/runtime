@@ -10,10 +10,12 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -534,6 +536,136 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, result.OutputCompilation);
             Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1103");
             Assert.False(diagnostic.IsSuppressed);
+        }
+
+        /// <summary>
+        /// Verifies that the suppressor suppresses IL2026/IL3050 when a ConfigurationBinder call
+        /// is passed directly as a method argument (e.g. Some.Method(config.Get&lt;T&gt;())).
+        /// Regression test for https://github.com/dotnet/runtime/issues/94544.
+        /// </summary>
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Suppressor_SuppressesWarnings_WhenBindingCallIsMethodArgument()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfigurationSection c = new ConfigurationBuilder().Build().GetSection("Options");
+                        Some.Method(c.Get<MyOptions>());
+                    }
+                }
+
+                internal static class Some
+                {
+                    public static void Method(MyOptions? options) { }
+                }
+
+                public class MyOptions
+                {
+                    public int MaxRetries { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+
+            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.InputCompilation);
+
+            Assert.Contains(diagnostics, d => d.Id == "IL2026" && d.IsSuppressed);
+            Assert.Contains(diagnostics, d => d.Id == "IL3050" && d.IsSuppressed);
+            Assert.DoesNotContain(diagnostics, d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed);
+        }
+
+        /// <summary>
+        /// Verifies that the suppressor also works for the straightforward assignment case,
+        /// ensuring no regression in existing behavior.
+        /// </summary>
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Suppressor_SuppressesWarnings_ForSimpleBindingCall()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfigurationSection c = new ConfigurationBuilder().Build().GetSection("Options");
+                        var options = c.Get<MyOptions>();
+                    }
+                }
+
+                public class MyOptions
+                {
+                    public int MaxRetries { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+
+            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.InputCompilation);
+
+            Assert.Contains(diagnostics, d => d.Id == "IL2026" && d.IsSuppressed);
+            Assert.Contains(diagnostics, d => d.Id == "IL3050" && d.IsSuppressed);
+            Assert.DoesNotContain(diagnostics, d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed);
+        }
+
+        private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsWithSuppressor(Compilation compilation)
+        {
+            var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(
+                new DynamicallyAccessedMembersAnalyzer(),
+                new ConfigurationBindingGenerator.Suppressor());
+
+            var globalOptions = ImmutableDictionary.CreateRange(
+                StringComparer.OrdinalIgnoreCase,
+                new[]
+                {
+                    new KeyValuePair<string, string>("build_property.EnableTrimAnalyzer", "true"),
+                    new KeyValuePair<string, string>("build_property.EnableAotAnalyzer", "true"),
+                });
+            var analyzerOptions = new AnalyzerOptions(
+                ImmutableArray<AdditionalText>.Empty,
+                new SimpleAnalyzerConfigOptionsProvider(globalOptions));
+            var options = new CompilationWithAnalyzersOptions(
+                analyzerOptions,
+                onAnalyzerException: null,
+                concurrentAnalysis: true,
+                logAnalyzerExecutionTime: false,
+                reportSuppressedDiagnostics: true);
+
+            return await new CompilationWithAnalyzers(compilation, analyzers, options)
+                .GetAllDiagnosticsAsync();
+        }
+
+        private sealed class SimpleAnalyzerConfigOptionsProvider : AnalyzerConfigOptionsProvider
+        {
+            private readonly SimpleOptions _globalOptions;
+
+            public SimpleAnalyzerConfigOptionsProvider(ImmutableDictionary<string, string> globalOptions)
+            {
+                _globalOptions = new SimpleOptions(globalOptions);
+            }
+
+            public override AnalyzerConfigOptions GlobalOptions => _globalOptions;
+
+            public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => SimpleOptions.Empty;
+            public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) => SimpleOptions.Empty;
+
+            private sealed class SimpleOptions : AnalyzerConfigOptions
+            {
+                public static readonly SimpleOptions Empty = new(ImmutableDictionary<string, string>.Empty);
+
+                private readonly ImmutableDictionary<string, string> _dict;
+                public SimpleOptions(ImmutableDictionary<string, string> dict) => _dict = dict;
+
+#pragma warning disable 8765 // Nullability of parameter doesn't match overridden member
+                public override bool TryGetValue(string key, out string? value) => _dict.TryGetValue(key, out value);
+#pragma warning restore 8765
+            }
         }
     }
 }
