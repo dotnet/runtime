@@ -28,7 +28,7 @@ namespace System.Diagnostics
         /// <exception cref="InvalidOperationException">
         /// Standard output or standard error has not been redirected.
         /// -or-
-        /// A redirected stream is already being read asynchronously.
+        /// A redirected stream has already been used for synchronous or asynchronous reading.
         /// </exception>
         /// <exception cref="TimeoutException">
         /// The operation did not complete within the specified <paramref name="timeout" />.
@@ -82,7 +82,7 @@ namespace System.Diagnostics
         /// <exception cref="InvalidOperationException">
         /// Standard output or standard error has not been redirected.
         /// -or-
-        /// A redirected stream is already being read asynchronously.
+        /// A redirected stream has already been used for synchronous or asynchronous reading.
         /// </exception>
         /// <exception cref="TimeoutException">
         /// The operation did not complete within the specified <paramref name="timeout" />.
@@ -122,7 +122,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Validates that the process is not disposed, both stdout and stderr are redirected,
-        /// and neither stream is in async mode. Sets both streams to sync mode.
+        /// and neither stream has been used (mode must be Undefined). Sets both streams to sync mode.
         /// </summary>
         private void ValidateReadAllState()
         {
@@ -136,11 +136,11 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.CantGetStandardError);
             }
-            else if (_outputStreamReadMode == StreamReadMode.AsyncMode)
+            else if (_outputStreamReadMode != StreamReadMode.Undefined)
             {
                 throw new InvalidOperationException(SR.CantMixSyncAsyncOperation);
             }
-            else if (_errorStreamReadMode == StreamReadMode.AsyncMode)
+            else if (_errorStreamReadMode != StreamReadMode.Undefined)
             {
                 throw new InvalidOperationException(SR.CantMixSyncAsyncOperation);
             }

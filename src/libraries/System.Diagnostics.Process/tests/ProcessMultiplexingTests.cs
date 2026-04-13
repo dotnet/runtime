@@ -83,6 +83,33 @@ namespace System.Diagnostics.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
+        public void ReadAll_ThrowsWhenOutputOrErrorIsInSyncMode(bool bytes, bool standardOutput)
+        {
+            Process process = CreateProcess(RemotelyInvokable.StreamBody);
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            // Access the StreamReader property to set the stream to sync mode
+            _ = standardOutput ? process.StandardOutput : process.StandardError;
+
+            if (bytes)
+            {
+                Assert.Throws<InvalidOperationException>(() => process.ReadAllBytes());
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => process.ReadAllText());
+            }
+
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
         public void ReadAll_ThrowsWhenOutputOrErrorIsInAsyncMode(bool bytes, bool standardOutput)
         {
             Process process = CreateProcess(RemotelyInvokable.StreamBody);
@@ -159,7 +186,7 @@ namespace System.Diagnostics.Tests
         [InlineData("", "just error", false)]
         [InlineData("", "", true)]
         [InlineData("", "", false)]
-        public void ReadAllText_ReadsBothOutputAndError(string standardOutput, string standardError, bool bytes)
+        public void ReadAll_ReadsBothOutputAndError(string standardOutput, string standardError, bool bytes)
         {
             using Process process = StartPrintingProcess(
                 string.IsNullOrEmpty(standardOutput) ? DontPrintAnything : standardOutput,
