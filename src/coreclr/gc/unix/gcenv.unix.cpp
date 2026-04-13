@@ -1094,7 +1094,10 @@ uint64_t GetAvailablePhysicalMemory()
 #elif defined(__EMSCRIPTEN__)
     available = emscripten_get_heap_max() - emscripten_get_heap_size();
 #elif defined(__wasi__)
-    available = (uint64_t)__builtin_wasm_memory_size(0) * 65536;
+    // Match Emscripten's approach: max memory minus current usage.
+    // WASI wasm32 linear memory can grow up to 4GB when --max-memory is not set.
+    uint64_t current = (uint64_t)__builtin_wasm_memory_size(0) * 65536;
+    available = (uint64_t)4 * 1024 * 1024 * 1024 - current;
 #else // Linux
     static volatile bool tryReadMemInfo = true;
 
