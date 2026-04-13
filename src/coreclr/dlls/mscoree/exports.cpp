@@ -294,6 +294,7 @@ int coreclr_initialize(
         Bundle::AppBundle = &bundle;
     }
 
+    // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
     Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
 
 #ifdef TARGET_UNIX

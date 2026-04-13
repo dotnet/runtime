@@ -348,6 +348,18 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
     else
     {
         bool fSetFilename = true;
+        // Since realpath implementation cannot handle inexistent filenames,
+        // check if we are going to truncate the "/" corresponding to the
+        // root folder (e.g. case of "/Volumes"). If so:
+        //
+        // 1) Set the separator to point to the NULL terminator of the specified
+        //    file/folder name.
+        //
+        // 2) Null terminate lpBuffer
+        //
+        // 3) Since there is no explicit filename component in lpExistingPath (as
+        //    we only have "/" corresponding to the root), set lpFilename to NULL,
+        //    alongwith a flag indicating that it has already been set.
         if (pchSeparator == lpExistingPath)
         {
             pchSeparator = lpExistingPath+strlen(lpExistingPath);
@@ -381,6 +393,8 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         ERROR ("Append failed!\n");
         palError = ERROR_INSUFFICIENT_BUFFER;
 
+        // Doing a goto here since we want to exit now. This will work
+        // incase someone else adds another if clause below us.
         goto LExit;
     }
 #endif // TARGET_WASI
