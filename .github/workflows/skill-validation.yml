@@ -41,11 +41,11 @@ jobs:
             https://github.com/dotnet/skills/releases/download/skill-validator-nightly/skill-validator-linux-x64.tar.gz
           mkdir -p skill-validator-bin
           tar -xzf skill-validator.tar.gz -C skill-validator-bin
-          chmod +x skill-validator-bin/skill-validator
-          if [ ! -x skill-validator-bin/skill-validator ]; then
+          if [ ! -f skill-validator-bin/skill-validator ]; then
             echo "::error::skill-validator binary not found after extraction"
             exit 1
           fi
+          chmod +x skill-validator-bin/skill-validator
 
       - name: Run skill-validator check
         shell: bash
