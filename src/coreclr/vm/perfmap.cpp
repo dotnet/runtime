@@ -150,7 +150,10 @@ namespace
     {
         WRAPPER_NO_CONTRACT;
 
-        return new BYTE[cBytes];
+        size_t mappingCount = cBytes / sizeof(ICorDebugInfo::OffsetMapping);
+        _ASSERTE(mappingCount * sizeof(ICorDebugInfo::OffsetMapping) == cBytes);
+
+        return reinterpret_cast<BYTE*>(new ICorDebugInfo::OffsetMapping[mappingCount]);
     }
 
     template <typename T>
@@ -205,7 +208,7 @@ namespace
         request.InitFromStartingAddr(pMethod, PCODEToPINSTR(pCode));
 
         ULONG32 nativeMapCount = 0;
-        NewHolder<ICorDebugInfo::OffsetMapping> nativeMap(nullptr);
+        NewArrayHolder<ICorDebugInfo::OffsetMapping> nativeMap(nullptr);
         if (!DebugInfoManager::GetBoundariesAndVars(
                 request,
                 PerfMapDebugInfoNew,
