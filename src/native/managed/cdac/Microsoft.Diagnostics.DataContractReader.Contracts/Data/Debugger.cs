@@ -12,9 +12,9 @@ internal sealed class Debugger : IData<Debugger>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Debugger);
 
-        LeftSideInitialized = target.Read<int>(address + (ulong)type.Fields[nameof(LeftSideInitialized)].Offset);
-        Defines = target.Read<uint>(address + (ulong)type.Fields[nameof(Defines)].Offset);
-        MDStructuresVersion = target.Read<uint>(address + (ulong)type.Fields[nameof(MDStructuresVersion)].Offset);
+        LeftSideInitialized = target.ReadField<int>(address, type, nameof(LeftSideInitialized));
+        Defines = target.ReadField<uint>(address, type, nameof(Defines));
+        MDStructuresVersion = target.ReadField<uint>(address, type, nameof(MDStructuresVersion));
     }
 
     public int LeftSideInitialized { get; init; }

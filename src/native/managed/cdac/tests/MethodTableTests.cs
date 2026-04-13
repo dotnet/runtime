@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
-using Moq;
 using Xunit;
 using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
 
@@ -15,19 +16,41 @@ using MockRTS = MockDescriptors.RuntimeTypeSystem;
 
 public class MethodTableTests
 {
-    private static void RTSContractHelper(MockTarget.Architecture arch, Action<MockRTS> configure, Action<Target> testCase)
+    internal static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockRTS rtsBuilder)
+        => new Dictionary<DataType, Target.TypeInfo>
+        {
+            [DataType.MethodTable] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.MethodTableLayout),
+            [DataType.EEClass] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.EEClassLayout),
+            [DataType.MethodTableAuxiliaryData] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.MethodTableAuxiliaryDataLayout),
+            [DataType.TypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.TypeDescLayout),
+            [DataType.FnPtrTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.FnPtrTypeDescLayout),
+            [DataType.ParamTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.ParamTypeDescLayout),
+            [DataType.TypeVarTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.TypeVarTypeDescLayout),
+            [DataType.GCCoverageInfo] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.GCCoverageInfoLayout),
+        };
+
+    internal static (string Name, ulong Value)[] CreateContractGlobals(MockRTS rtsBuilder)
+        =>
+        [
+            (nameof(Constants.Globals.FreeObjectMethodTable), rtsBuilder.FreeObjectMethodTableGlobalAddress),
+            (nameof(Constants.Globals.ContinuationMethodTable), rtsBuilder.ContinuationMethodTableGlobalAddress),
+            (nameof(Constants.Globals.MethodDescAlignment), rtsBuilder.MethodDescAlignment),
+            (nameof(Constants.Globals.ArrayBaseSize), rtsBuilder.ArrayBaseSize),
+        ];
+
+    internal static TestPlaceholderTarget CreateTarget(MockTarget.Architecture arch, Action<MockRTS> configure)
     {
-        TargetTestHelpers targetTestHelpers = new(arch);
-        MockMemorySpace.Builder builder = new(targetTestHelpers);
-        MockRTS rtsBuilder = new(builder);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockRTS rtsBuilder = new(targetBuilder.MemoryBuilder);
 
         configure?.Invoke(rtsBuilder);
 
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, rtsBuilder.Types, rtsBuilder.Globals);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)));
-
-        testCase(target);
+        var target = targetBuilder
+            .AddTypes(CreateContractTypes(rtsBuilder))
+            .AddGlobals(CreateContractGlobals(rtsBuilder))
+            .AddContract<IRuntimeTypeSystem>(version: 1)
+            .Build();
+        return target;
     }
 
     [Theory]
@@ -35,34 +58,14 @@ public class MethodTableTests
     public void HasRuntimeTypeSystemContract(MockTarget.Architecture arch)
     {
         TargetPointer freeObjectMethodTableAddress = default;
-        RTSContractHelper(arch,
-        (builder) =>
-        {
-            freeObjectMethodTableAddress = builder.FreeObjectMethodTableAddress;
-        },
-        (target) =>
-        {
-            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
-            Assert.NotNull(metadataContract);
-            Contracts.TypeHandle handle = metadataContract.GetTypeHandle(freeObjectMethodTableAddress);
-            Assert.NotEqual(TargetPointer.Null, handle.Address);
-            Assert.True(metadataContract.IsFreeObjectMethodTable(handle));
-        });
-    }
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            builder => freeObjectMethodTableAddress = builder.FreeObjectMethodTableAddress);
 
-    internal static (TargetPointer MethodTable, TargetPointer EEClass) AddSystemObjectMethodTable(MockRTS rtsBuilder)
-    {
-        MockMemorySpace.Builder builder = rtsBuilder.Builder;
-        TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
-        System.Reflection.TypeAttributes typeAttributes = System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class;
-        const int numMethods = 8; // System.Object has 8 methods
-        const int numVirtuals = 3; // System.Object has 3 virtual methods
-        TargetPointer systemObjectEEClassPtr = rtsBuilder.AddEEClass("System.Object", attr: (uint)typeAttributes, numMethods: numMethods, numNonVirtualSlots: 0);
-        TargetPointer systemObjectMethodTablePtr = rtsBuilder.AddMethodTable("System.Object",
-                                mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
-                                module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: numVirtuals);
-        rtsBuilder.SetEEClassAndCanonMTRefs(systemObjectEEClassPtr, systemObjectMethodTablePtr);
-        return (MethodTable: systemObjectMethodTablePtr, EEClass: systemObjectEEClassPtr);
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle handle = contract.GetTypeHandle(freeObjectMethodTableAddress);
+        Assert.NotEqual(TargetPointer.Null, handle.Address);
+        Assert.True(contract.IsFreeObjectMethodTable(handle));
     }
 
     [Theory]
@@ -70,19 +73,14 @@ public class MethodTableTests
     public void ValidateSystemObjectMethodTable(MockTarget.Architecture arch)
     {
         TargetPointer systemObjectMethodTablePtr = default;
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
-        },
-        (target) =>
-        {
-            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
-            Assert.NotNull(metadataContract);
-            Contracts.TypeHandle systemObjectTypeHandle = metadataContract.GetTypeHandle(systemObjectMethodTablePtr);
-            Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectTypeHandle.Address.Value);
-            Assert.False(metadataContract.IsFreeObjectMethodTable(systemObjectTypeHandle));
-        });
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder => systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address);
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle systemObjectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
+        Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectTypeHandle.Address.Value);
+        Assert.False(contract.IsFreeObjectMethodTable(systemObjectTypeHandle));
     }
 
     [Theory]
@@ -91,31 +89,38 @@ public class MethodTableTests
     {
         TargetPointer systemStringMethodTablePtr = default;
         TargetPointer systemStringEEClassPtr = default;
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            TargetPointer systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
 
-            System.Reflection.TypeAttributes typeAttributes = System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Sealed;
-            const int numMethods = 37; // Arbitrary. Not trying to exactly match  the real System.String
-            const int numInterfaces = 8; // Arbitrary
-            const int numVirtuals = 3; // at least as many as System.Object
-            uint mtflags = (uint)MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | /*componentSize: */2;
-            systemStringEEClassPtr = rtsBuilder.AddEEClass("System.String", attr: (uint)typeAttributes, numMethods: numMethods, numNonVirtualSlots: 0);
-            systemStringMethodTablePtr = rtsBuilder.AddMethodTable("System.String",
-                                    mtflags: mtflags, mtflags2: default, baseSize: rtsBuilder.Builder.TargetTestHelpers.StringBaseSize,
-                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: numInterfaces, numVirtuals: numVirtuals);
-            rtsBuilder.SetEEClassAndCanonMTRefs(systemStringEEClassPtr, systemStringMethodTablePtr);
-        },
-        (target) =>
-        {
-            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
-            Assert.NotNull(metadataContract);
-            Contracts.TypeHandle systemStringTypeHandle = metadataContract.GetTypeHandle(systemStringMethodTablePtr);
-            Assert.Equal(systemStringMethodTablePtr.Value, systemStringTypeHandle.Address.Value);
-            Assert.False(metadataContract.IsFreeObjectMethodTable(systemStringTypeHandle));
-            Assert.True(metadataContract.IsString(systemStringTypeHandle));
-        });
+                System.Reflection.TypeAttributes typeAttributes = System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Sealed;
+                const int numMethods = 37; // Arbitrary. Not trying to exactly match  the real System.String
+                const int numInterfaces = 8; // Arbitrary
+                const int numVirtuals = 3; // at least as many as System.Object
+                uint mtflags = (uint)MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | 2;
+                MockEEClass systemStringEEClass = rtsBuilder.AddEEClass("System.String");
+                systemStringEEClass.CorTypeAttr = (uint)typeAttributes;
+                systemStringEEClass.NumMethods = numMethods;
+                systemStringEEClassPtr = systemStringEEClass.Address;
+
+                MockMethodTable systemStringMethodTable = rtsBuilder.AddMethodTable("System.String");
+                systemStringMethodTable.MTFlags = mtflags;
+                systemStringMethodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.StringBaseSize;
+                systemStringMethodTable.ParentMethodTable = systemObjectMethodTablePtr;
+                systemStringMethodTable.NumInterfaces = numInterfaces;
+                systemStringMethodTable.NumVirtuals = numVirtuals;
+                systemStringMethodTablePtr = systemStringMethodTable.Address;
+                systemStringEEClass.MethodTable = systemStringMethodTable.Address;
+                systemStringMethodTable.EEClassOrCanonMT = systemStringEEClass.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle systemStringTypeHandle = contract.GetTypeHandle(systemStringMethodTablePtr);
+        Assert.Equal(systemStringMethodTablePtr.Value, systemStringTypeHandle.Address.Value);
+        Assert.False(contract.IsFreeObjectMethodTable(systemStringTypeHandle));
+        Assert.True(contract.IsString(systemStringTypeHandle));
     }
 
     [Theory]
@@ -124,20 +129,21 @@ public class MethodTableTests
     {
         TargetPointer badMethodTablePtr = default;
         TargetPointer badMethodTableEEClassPtr = new TargetPointer(0x00000010_afafafafa0); // bad address
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            TargetPointer systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
-            badMethodTablePtr = rtsBuilder.AddMethodTable("Bad MethodTable", mtflags: default, mtflags2: default, baseSize: rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize, module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
-            // make the method table point at a bad EEClass
-            rtsBuilder.SetMethodTableEEClassOrCanonMTRaw(badMethodTablePtr, badMethodTableEEClassPtr);
-        },
-        (target) =>
-        {
-            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
-            Assert.NotNull(metadataContract);
-            Assert.Throws<ArgumentException>(() => metadataContract.GetTypeHandle(badMethodTablePtr));
-        });
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
+                MockMethodTable badMethodTable = rtsBuilder.AddMethodTable("Bad MethodTable");
+                badMethodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                badMethodTable.ParentMethodTable = systemObjectMethodTablePtr;
+                badMethodTable.NumVirtuals = 3;
+                badMethodTablePtr = badMethodTable.Address;
+                badMethodTable.EEClassOrCanonMT = badMethodTableEEClassPtr;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Assert.Throws<ArgumentException>(() => contract.GetTypeHandle(badMethodTablePtr));
     }
 
     [Theory]
@@ -149,39 +155,45 @@ public class MethodTableTests
 
         const int numMethods = 17;
 
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
-            TargetPointer systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
 
-            System.Reflection.TypeAttributes typeAttributes = System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class;
-            const int numInterfaces = 0;
-            const int numVirtuals = 3;
-            const uint gtd_mtflags = 0x00000030; // TODO: GenericsMask_TypicalInst
-            TargetPointer genericDefinitionEEClassPtr = rtsBuilder.AddEEClass("EEClass GenericDefinition", attr: (uint)typeAttributes, numMethods: numMethods, numNonVirtualSlots: 0);
-            genericDefinitionMethodTablePtr = rtsBuilder.AddMethodTable("MethodTable GenericDefinition",
-                                    mtflags: gtd_mtflags, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
-                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: numInterfaces, numVirtuals: numVirtuals);
-            rtsBuilder.SetEEClassAndCanonMTRefs(genericDefinitionEEClassPtr, genericDefinitionMethodTablePtr);
+                System.Reflection.TypeAttributes typeAttributes = System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class;
+                const int numVirtuals = 3;
+                const uint gtd_mtflags = 0x00000030; // TODO: GenericsMask_TypicalInst
+                MockEEClass genericDefinitionEEClass = rtsBuilder.AddEEClass("EEClass GenericDefinition");
+                genericDefinitionEEClass.CorTypeAttr = (uint)typeAttributes;
+                genericDefinitionEEClass.NumMethods = numMethods;
 
-            const uint ginst_mtflags = 0x00000010; // TODO: GenericsMask_GenericInst
-            genericInstanceMethodTablePtr = rtsBuilder.AddMethodTable("MethodTable GenericInstance",
-                                    mtflags: ginst_mtflags, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
-                                    module: TargetPointer.Null, parentMethodTable: genericDefinitionMethodTablePtr, numInterfaces: numInterfaces, numVirtuals: numVirtuals);
-            rtsBuilder.SetMethodTableCanonMT(genericInstanceMethodTablePtr, genericDefinitionMethodTablePtr);
+                MockMethodTable genericDefinitionMethodTable = rtsBuilder.AddMethodTable("MethodTable GenericDefinition");
+                genericDefinitionMethodTable.MTFlags = gtd_mtflags;
+                genericDefinitionMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                genericDefinitionMethodTable.ParentMethodTable = systemObjectMethodTablePtr;
+                genericDefinitionMethodTable.NumVirtuals = numVirtuals;
+                genericDefinitionMethodTablePtr = genericDefinitionMethodTable.Address;
+                genericDefinitionEEClass.MethodTable = genericDefinitionMethodTable.Address;
+                genericDefinitionMethodTable.EEClassOrCanonMT = genericDefinitionEEClass.Address;
 
-        },
-        (target) =>
-        {
-            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
-            Assert.NotNull(metadataContract);
-            Contracts.TypeHandle genericInstanceTypeHandle = metadataContract.GetTypeHandle(genericInstanceMethodTablePtr);
-            Assert.Equal(genericInstanceMethodTablePtr.Value, genericInstanceTypeHandle.Address.Value);
-            Assert.False(metadataContract.IsFreeObjectMethodTable(genericInstanceTypeHandle));
-            Assert.False(metadataContract.IsString(genericInstanceTypeHandle));
-            Assert.Equal(numMethods, metadataContract.GetNumMethods(genericInstanceTypeHandle));
-        });
+                const uint ginst_mtflags = 0x00000010; // TODO: GenericsMask_GenericInst
+                MockMethodTable genericInstanceMethodTable = rtsBuilder.AddMethodTable("MethodTable GenericInstance");
+                genericInstanceMethodTable.MTFlags = ginst_mtflags;
+                genericInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                genericInstanceMethodTable.ParentMethodTable = genericDefinitionMethodTablePtr;
+                genericInstanceMethodTable.NumVirtuals = numVirtuals;
+                genericInstanceMethodTablePtr = genericInstanceMethodTable.Address;
+                genericInstanceMethodTable.EEClassOrCanonMT = genericDefinitionMethodTable.Address | 1;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle genericInstanceTypeHandle = contract.GetTypeHandle(genericInstanceMethodTablePtr);
+        Assert.Equal(genericInstanceMethodTablePtr.Value, genericInstanceTypeHandle.Address.Value);
+        Assert.False(contract.IsFreeObjectMethodTable(genericInstanceTypeHandle));
+        Assert.False(contract.IsString(genericInstanceTypeHandle));
+        Assert.Equal(numMethods, contract.GetNumMethods(genericInstanceTypeHandle));
     }
 
     [Theory]
@@ -192,40 +204,52 @@ public class MethodTableTests
 
         const uint arrayInstanceComponentSize = 392;
 
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
-            TargetPointer systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
-            const ushort systemArrayNumInterfaces = 4;
-            const ushort systemArrayNumMethods = 37; // Arbitrary. Not trying to exactly match  the real System.Array
-            const uint systemArrayCorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
+                const ushort systemArrayNumInterfaces = 4;
+                const ushort systemArrayNumMethods = 37; // Arbitrary. Not trying to exactly match  the real System.Array
+                const uint systemArrayCorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
 
-            TargetPointer systemArrayEEClassPtr = rtsBuilder.AddEEClass("EEClass System.Array", attr: systemArrayCorTypeAttr, numMethods: systemArrayNumMethods, numNonVirtualSlots: 0);
-            TargetPointer systemArrayMethodTablePtr = rtsBuilder.AddMethodTable("MethodTable System.Array",
-                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
-                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: systemArrayNumInterfaces, numVirtuals: 3);
-            rtsBuilder.SetEEClassAndCanonMTRefs(systemArrayEEClassPtr, systemArrayMethodTablePtr);
+                MockEEClass systemArrayEEClass = rtsBuilder.AddEEClass("EEClass System.Array");
+                systemArrayEEClass.CorTypeAttr = systemArrayCorTypeAttr;
+                systemArrayEEClass.NumMethods = systemArrayNumMethods;
 
-            const uint arrayInst_mtflags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | MethodTableFlags_1.WFLAGS_HIGH.Category_Array) | arrayInstanceComponentSize;
-            const uint arrayInstCorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Sealed);
+                MockMethodTable systemArrayMethodTable = rtsBuilder.AddMethodTable("MethodTable System.Array");
+                systemArrayMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                systemArrayMethodTable.ParentMethodTable = systemObjectMethodTablePtr;
+                systemArrayMethodTable.NumInterfaces = systemArrayNumInterfaces;
+                systemArrayMethodTable.NumVirtuals = 3;
+                systemArrayEEClass.MethodTable = systemArrayMethodTable.Address;
+                systemArrayMethodTable.EEClassOrCanonMT = systemArrayEEClass.Address;
 
-            TargetPointer arrayInstanceEEClassPtr = rtsBuilder.AddEEClass("EEClass ArrayInstance", attr: arrayInstCorTypeAttr, numMethods: systemArrayNumMethods, numNonVirtualSlots: 0);
-            arrayInstanceMethodTablePtr = rtsBuilder.AddMethodTable("MethodTable ArrayInstance",
-                                    mtflags: arrayInst_mtflags, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
-                                    module: TargetPointer.Null, parentMethodTable: systemArrayMethodTablePtr, numInterfaces: systemArrayNumInterfaces, numVirtuals: 3);
-            rtsBuilder.SetEEClassAndCanonMTRefs(arrayInstanceEEClassPtr, arrayInstanceMethodTablePtr);
-        },
-        (target) =>
-        {
-            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
-            Assert.NotNull(metadataContract);
-            Contracts.TypeHandle arrayInstanceTypeHandle = metadataContract.GetTypeHandle(arrayInstanceMethodTablePtr);
-            Assert.Equal(arrayInstanceMethodTablePtr.Value, arrayInstanceTypeHandle.Address.Value);
-            Assert.False(metadataContract.IsFreeObjectMethodTable(arrayInstanceTypeHandle));
-            Assert.False(metadataContract.IsString(arrayInstanceTypeHandle));
-            Assert.Equal(arrayInstanceComponentSize, metadataContract.GetComponentSize(arrayInstanceTypeHandle));
-        });
+                const uint arrayInst_mtflags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | MethodTableFlags_1.WFLAGS_HIGH.Category_Array) | arrayInstanceComponentSize;
+                const uint arrayInstCorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Sealed);
+
+                MockEEClass arrayInstanceEEClass = rtsBuilder.AddEEClass("EEClass ArrayInstance");
+                arrayInstanceEEClass.CorTypeAttr = arrayInstCorTypeAttr;
+                arrayInstanceEEClass.NumMethods = systemArrayNumMethods;
+
+                MockMethodTable arrayInstanceMethodTable = rtsBuilder.AddMethodTable("MethodTable ArrayInstance");
+                arrayInstanceMethodTable.MTFlags = arrayInst_mtflags;
+                arrayInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                arrayInstanceMethodTable.ParentMethodTable = systemArrayMethodTable.Address;
+                arrayInstanceMethodTable.NumInterfaces = systemArrayNumInterfaces;
+                arrayInstanceMethodTable.NumVirtuals = 3;
+                arrayInstanceMethodTablePtr = arrayInstanceMethodTable.Address;
+                arrayInstanceEEClass.MethodTable = arrayInstanceMethodTable.Address;
+                arrayInstanceMethodTable.EEClassOrCanonMT = arrayInstanceEEClass.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle arrayInstanceTypeHandle = contract.GetTypeHandle(arrayInstanceMethodTablePtr);
+        Assert.Equal(arrayInstanceMethodTablePtr.Value, arrayInstanceTypeHandle.Address.Value);
+        Assert.False(contract.IsFreeObjectMethodTable(arrayInstanceTypeHandle));
+        Assert.False(contract.IsString(arrayInstanceTypeHandle));
+        Assert.Equal(arrayInstanceComponentSize, contract.GetComponentSize(arrayInstanceTypeHandle));
 
     }
 
@@ -239,43 +263,29 @@ public class MethodTableTests
         // passes but subsequent EEClass reads fail.
         TargetPointer methodTablePtr = default;
 
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
 
-            // Create a full MethodTable that will pass validation
-            methodTablePtr = rtsBuilder.AddMethodTable("PartialEEClass MT",
-                mtflags: default, mtflags2: default, baseSize: helpers.ObjectBaseSize,
-                module: TargetPointer.Null, parentMethodTable: TargetPointer.Null,
-                numInterfaces: 0, numVirtuals: 3);
+                MockMethodTable methodTable = rtsBuilder.AddMethodTable("PartialEEClass MT");
+                methodTable.BaseSize = helpers.ObjectBaseSize;
+                methodTable.NumVirtuals = 3;
+                methodTablePtr = methodTable.Address;
 
-            // Create a tiny EEClass fragment — only the MethodTable pointer field.
-            // Previously, validation only read NonValidatedEEClass.MethodTable (at offset 0),
-            // so this minimal fragment was sufficient for validation to pass while later
-            // EEClass reads (for MethodDescChunk, NumMethods, etc.) at subsequent offsets
-            // would fail with VirtualReadException. After the TypeValidation fix, the full
-            // EEClass is eagerly read during validation, so this now correctly reports
-            // E_INVALIDARG instead of surfacing VirtualReadException from those later reads.
-            int pointerSize = helpers.PointerSize;
-            MockMemorySpace.HeapFragment tinyEEClass = rtsBuilder.TypeSystemAllocator.Allocate(
-                (ulong)pointerSize, "Tiny EEClass (MethodTable field only)");
-            helpers.WritePointer(tinyEEClass.Data, methodTablePtr);
-            rtsBuilder.Builder.AddHeapFragment(tinyEEClass);
+                int pointerSize = helpers.PointerSize;
+                MockMemorySpace.HeapFragment tinyEEClass = rtsBuilder.TypeSystemAllocator.Allocate(
+                    (ulong)pointerSize, "Tiny EEClass (MethodTable field only)");
+                helpers.WritePointer(tinyEEClass.Data, methodTablePtr);
+                rtsBuilder.Builder.AddHeapFragment(tinyEEClass);
+                methodTable.EEClassOrCanonMT = tinyEEClass.Address;
+            });
 
-            // Point the MethodTable's EEClassOrCanonMT at the tiny EEClass
-            rtsBuilder.SetMethodTableEEClassOrCanonMTRaw(methodTablePtr, tinyEEClass.Address);
-        },
-        (target) =>
-        {
-            ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
-
-            DacpMethodTableData mtData = default;
-            int hr = sosDac.GetMethodTableData(new ClrDataAddress(methodTablePtr), &mtData);
-
-            // Should return E_INVALIDARG to match legacy DAC behavior
-            AssertHResult(HResults.E_INVALIDARG, hr);
-        });
+        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+        DacpMethodTableData mtData = default;
+        int hr = sosDac.GetMethodTableData(new ClrDataAddress(methodTablePtr), &mtData);
+        AssertHResult(HResults.E_INVALIDARG, hr);
     }
 
     [Theory]
@@ -283,39 +293,29 @@ public class MethodTableTests
     public void IsContinuationReturnsTrueForContinuationType(MockTarget.Architecture arch)
     {
         TargetPointer continuationInstanceMethodTablePtr = default;
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
-            TargetPointer systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
+                MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
 
-            // Create the base Continuation class (parent is System.Object)
-            TargetPointer continuationBaseEEClassPtr = rtsBuilder.AddEEClass("Continuation", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
-            TargetPointer continuationBaseMethodTablePtr = rtsBuilder.AddMethodTable("Continuation",
-                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
-                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
-            rtsBuilder.SetEEClassAndCanonMTRefs(continuationBaseEEClassPtr, continuationBaseMethodTablePtr);
+                MockEEClass continuationInstanceEEClass = rtsBuilder.AddEEClass("ContinuationInstance");
+                MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
+                continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
+                continuationInstanceMethodTable.NumVirtuals = 3;
+                continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
+                continuationInstanceEEClass.MethodTable = continuationInstanceMethodTable.Address;
+                continuationInstanceMethodTable.EEClassOrCanonMT = continuationInstanceEEClass.Address;
+            });
 
-            // Set the global to point to the base continuation MT
-            rtsBuilder.SetContinuationMethodTable(continuationBaseMethodTablePtr);
-
-            // Create a derived continuation instance MT (shares EEClass with the base, parent is the base continuation MT)
-            TargetPointer continuationInstanceEEClassPtr = rtsBuilder.AddEEClass("ContinuationInstance", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
-            continuationInstanceMethodTablePtr = rtsBuilder.AddMethodTable("ContinuationInstance",
-                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
-                                    module: TargetPointer.Null, parentMethodTable: continuationBaseMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
-            // Continuation instances share the EEClass with the base, similar to arrays
-            rtsBuilder.SetEEClassAndCanonMTRefs(continuationInstanceEEClassPtr, continuationInstanceMethodTablePtr);
-        },
-        (target) =>
-        {
-            Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
-            Assert.NotNull(rts);
-            Contracts.TypeHandle continuationTypeHandle = rts.GetTypeHandle(continuationInstanceMethodTablePtr);
-            Assert.True(rts.IsContinuation(continuationTypeHandle));
-            Assert.False(rts.IsFreeObjectMethodTable(continuationTypeHandle));
-            Assert.False(rts.IsString(continuationTypeHandle));
-        });
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
+        Assert.True(contract.IsContinuation(continuationTypeHandle));
+        Assert.False(contract.IsFreeObjectMethodTable(continuationTypeHandle));
+        Assert.False(contract.IsString(continuationTypeHandle));
     }
 
     [Theory]
@@ -331,15 +331,16 @@ public class MethodTableTests
         // surfacing CORDBG_E_READVIRTUAL_FAILURE instead of E_INVALIDARG.
         TargetPointer tinyMethodTableAddr = default;
 
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
-            Target.TypeInfo mtTypeInfo = rtsBuilder.Types[DataType.MethodTable];
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+                Target.TypeInfo mtTypeInfo = TargetTestHelpers.CreateTypeInfo(rtsBuilder.MethodTableLayout);
 
             // Create a valid EEClass that will point back to our tiny MethodTable
-            TargetPointer eeClassPtr = rtsBuilder.AddEEClass("PartialMT EEClass",
-                attr: 0, numMethods: 0, numNonVirtualSlots: 0);
+            MockEEClass eeClass = rtsBuilder.AddEEClass("PartialMT EEClass");
+            TargetPointer eeClassPtr = eeClass.Address;
 
             // Allocate a tiny MethodTable fragment — only enough for the fields that
             // validation reads (MTFlags, BaseSize, MTFlags2, EEClassOrCanonMT) but
@@ -360,23 +361,18 @@ public class MethodTableTests
             tinyMethodTableAddr = tinyMT.Address;
 
             // Point the EEClass back at the tiny MethodTable to pass validation
-            Target.TypeInfo eeClassTypeInfo = rtsBuilder.Types[DataType.EEClass];
+            Target.TypeInfo eeClassTypeInfo = TargetTestHelpers.CreateTypeInfo(rtsBuilder.EEClassLayout);
             Span<byte> eeClassBytes = rtsBuilder.Builder.BorrowAddressRange(
                 eeClassPtr, (int)eeClassTypeInfo.Size.Value);
-            helpers.WritePointer(
-                eeClassBytes.Slice(eeClassTypeInfo.Fields[nameof(Data.EEClass.MethodTable)].Offset,
-                helpers.PointerSize), tinyMethodTableAddr);
-        },
-        (target) =>
-        {
-            ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+                helpers.WritePointer(
+                    eeClassBytes.Slice(eeClassTypeInfo.Fields[nameof(Data.EEClass.MethodTable)].Offset,
+                    helpers.PointerSize), tinyMethodTableAddr);
+            });
 
-            DacpMethodTableData mtData = default;
-            int hr = sosDac.GetMethodTableData(new ClrDataAddress(tinyMethodTableAddr), &mtData);
-
-            // Should return E_INVALIDARG to match legacy DAC behavior
-            AssertHResult(HResults.E_INVALIDARG, hr);
-        });
+        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+        DacpMethodTableData mtData = default;
+        int hr = sosDac.GetMethodTableData(new ClrDataAddress(tinyMethodTableAddr), &mtData);
+        AssertHResult(HResults.E_INVALIDARG, hr);
     }
 
     [Theory]
@@ -386,43 +382,43 @@ public class MethodTableTests
         TargetPointer rank4MethodTablePtr = default;
         TargetPointer rank1MultiDimMethodTablePtr = default;
 
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
-            const uint multidimArrayCorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Sealed);
-            // Category_Array (without Category_IfArrayThenSzArray) marks a multidim ELEMENT_TYPE_ARRAY
-            const uint multidimFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | MethodTableFlags_1.WFLAGS_HIGH.Category_Array);
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                const uint multidimArrayCorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Sealed);
+                const uint multidimFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | MethodTableFlags_1.WFLAGS_HIGH.Category_Array);
 
-            // rank-4: BaseSize = ArrayBaseSize + 4 * sizeof(int) * 2
-            uint baseSize4 = targetTestHelpers.ArrayBaseBaseSize + 4 * sizeof(uint) * 2;
-            TargetPointer eeClass4 = rtsBuilder.AddEEClass("EEClass int[,,,]", attr: multidimArrayCorTypeAttr, numMethods: 0, numNonVirtualSlots: 0);
-            rank4MethodTablePtr = rtsBuilder.AddMethodTable("MethodTable int[,,,]",
-                mtflags: multidimFlags, mtflags2: default, baseSize: baseSize4,
-                module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: 0);
-            rtsBuilder.SetEEClassAndCanonMTRefs(eeClass4, rank4MethodTablePtr);
+                uint baseSize4 = targetTestHelpers.ArrayBaseBaseSize + 4 * sizeof(uint) * 2;
+                MockEEClass eeClass4 = rtsBuilder.AddEEClass("EEClass int[,,,]");
+                eeClass4.CorTypeAttr = multidimArrayCorTypeAttr;
+                MockMethodTable rank4MethodTable = rtsBuilder.AddMethodTable("MethodTable int[,,,]");
+                rank4MethodTable.MTFlags = multidimFlags;
+                rank4MethodTable.BaseSize = baseSize4;
+                rank4MethodTablePtr = rank4MethodTable.Address;
+                eeClass4.MethodTable = rank4MethodTable.Address;
+                rank4MethodTable.EEClassOrCanonMT = eeClass4.Address;
 
-            // rank-1 multidim (ELEMENT_TYPE_ARRAY, not SZARRAY): BaseSize = ArrayBaseSize + 1 * sizeof(int) * 2
-            uint baseSize1 = targetTestHelpers.ArrayBaseBaseSize + 1 * sizeof(uint) * 2;
-            TargetPointer eeClass1 = rtsBuilder.AddEEClass("EEClass int[*]", attr: multidimArrayCorTypeAttr, numMethods: 0, numNonVirtualSlots: 0);
-            rank1MultiDimMethodTablePtr = rtsBuilder.AddMethodTable("MethodTable int[*]",
-                mtflags: multidimFlags, mtflags2: default, baseSize: baseSize1,
-                module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: 0);
-            rtsBuilder.SetEEClassAndCanonMTRefs(eeClass1, rank1MultiDimMethodTablePtr);
-        },
-        (target) =>
-        {
-            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
-            Assert.NotNull(metadataContract);
+                uint baseSize1 = targetTestHelpers.ArrayBaseBaseSize + 1 * sizeof(uint) * 2;
+                MockEEClass eeClass1 = rtsBuilder.AddEEClass("EEClass int[*]");
+                eeClass1.CorTypeAttr = multidimArrayCorTypeAttr;
+                MockMethodTable rank1MultiDimMethodTable = rtsBuilder.AddMethodTable("MethodTable int[*]");
+                rank1MultiDimMethodTable.MTFlags = multidimFlags;
+                rank1MultiDimMethodTable.BaseSize = baseSize1;
+                rank1MultiDimMethodTablePtr = rank1MultiDimMethodTable.Address;
+                eeClass1.MethodTable = rank1MultiDimMethodTable.Address;
+                rank1MultiDimMethodTable.EEClassOrCanonMT = eeClass1.Address;
+            });
 
-            Contracts.TypeHandle rank4Handle = metadataContract.GetTypeHandle(rank4MethodTablePtr);
-            Assert.True(metadataContract.IsArray(rank4Handle, out uint rank4));
-            Assert.Equal(4u, rank4);
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle rank4Handle = contract.GetTypeHandle(rank4MethodTablePtr);
+        Assert.True(contract.IsArray(rank4Handle, out uint rank4));
+        Assert.Equal(4u, rank4);
 
-            Contracts.TypeHandle rank1Handle = metadataContract.GetTypeHandle(rank1MultiDimMethodTablePtr);
-            Assert.True(metadataContract.IsArray(rank1Handle, out uint rank1));
-            Assert.Equal(1u, rank1);
-        });
+        Contracts.TypeHandle rank1Handle = contract.GetTypeHandle(rank1MultiDimMethodTablePtr);
+        Assert.True(contract.IsArray(rank1Handle, out uint rank1));
+        Assert.Equal(1u, rank1);
     }
 
     [Theory]
@@ -430,18 +426,13 @@ public class MethodTableTests
     public void IsContinuationReturnsFalseForRegularType(MockTarget.Architecture arch)
     {
         TargetPointer systemObjectMethodTablePtr = default;
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
-        },
-        (target) =>
-        {
-            Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
-            Assert.NotNull(rts);
-            Contracts.TypeHandle objectTypeHandle = rts.GetTypeHandle(systemObjectMethodTablePtr);
-            Assert.False(rts.IsContinuation(objectTypeHandle));
-        });
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder => systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address);
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle objectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
+        Assert.False(contract.IsContinuation(objectTypeHandle));
     }
 
     [Theory]
@@ -450,33 +441,30 @@ public class MethodTableTests
     {
         TargetPointer systemObjectMethodTablePtr = default;
         TargetPointer childMethodTablePtr = default;
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
-            systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
+                rtsBuilder.SetContinuationMethodTable(0);
 
-            // Don't set the continuation global (it remains null)
-            // Create a child type with System.Object as parent
-            TargetPointer childEEClassPtr = rtsBuilder.AddEEClass("ChildType", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
-            childMethodTablePtr = rtsBuilder.AddMethodTable("ChildType",
-                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
-                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
-            rtsBuilder.SetEEClassAndCanonMTRefs(childEEClassPtr, childMethodTablePtr);
-        },
-        (target) =>
-        {
-            Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
-            Assert.NotNull(rts);
+                MockEEClass childEEClass = rtsBuilder.AddEEClass("ChildType");
+                MockMethodTable childMethodTable = rtsBuilder.AddMethodTable("ChildType");
+                childMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                childMethodTable.ParentMethodTable = systemObjectMethodTablePtr;
+                childMethodTable.NumVirtuals = 3;
+                childMethodTablePtr = childMethodTable.Address;
+                childEEClass.MethodTable = childMethodTable.Address;
+                childMethodTable.EEClassOrCanonMT = childEEClass.Address;
+            });
 
-            // System.Object has ParentMethodTable == Null, same as the null continuation global.
-            // Verify the null guard prevents a false positive match.
-            Contracts.TypeHandle objectTypeHandle = rts.GetTypeHandle(systemObjectMethodTablePtr);
-            Assert.False(rts.IsContinuation(objectTypeHandle));
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle objectTypeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
+        Assert.False(contract.IsContinuation(objectTypeHandle));
 
-            Contracts.TypeHandle childTypeHandle = rts.GetTypeHandle(childMethodTablePtr);
-            Assert.False(rts.IsContinuation(childTypeHandle));
-        });
+        Contracts.TypeHandle childTypeHandle = contract.GetTypeHandle(childMethodTablePtr);
+        Assert.False(contract.IsContinuation(childTypeHandle));
     }
 
     [Theory]
@@ -484,42 +472,33 @@ public class MethodTableTests
     public void ValidateContinuationMethodTablePointer(MockTarget.Architecture arch)
     {
         TargetPointer continuationInstanceMethodTablePtr = default;
-        RTSContractHelper(arch,
-        (rtsBuilder) =>
-        {
-            TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
-            TargetPointer systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+                TargetPointer systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address;
+                MockMethodTable continuationBaseMethodTable = rtsBuilder.ContinuationMethodTable;
 
-            // Create the base Continuation class
-            TargetPointer continuationBaseEEClassPtr = rtsBuilder.AddEEClass("Continuation", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
-            TargetPointer continuationBaseMethodTablePtr = rtsBuilder.AddMethodTable("Continuation",
-                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
-                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
-            rtsBuilder.SetEEClassAndCanonMTRefs(continuationBaseEEClassPtr, continuationBaseMethodTablePtr);
-            rtsBuilder.SetContinuationMethodTable(continuationBaseMethodTablePtr);
+                MockEEClass sharedEEClass = rtsBuilder.AddEEClass("SubContinuation");
+                MockMethodTable sharedCanonMT = rtsBuilder.AddMethodTable("SubContinuationCanon");
+                sharedCanonMT.BaseSize = targetTestHelpers.ObjectBaseSize;
+                sharedCanonMT.ParentMethodTable = continuationBaseMethodTable.Address;
+                sharedCanonMT.NumVirtuals = 3;
+                sharedEEClass.MethodTable = sharedCanonMT.Address;
+                sharedCanonMT.EEClassOrCanonMT = sharedEEClass.Address;
 
-            // Create a derived continuation instance
-            // Continuation instances share the EEClass with the singleton sub-continuation class
-            TargetPointer sharedEEClassPtr = rtsBuilder.AddEEClass("SubContinuation", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
-            TargetPointer sharedCanonMTPtr = rtsBuilder.AddMethodTable("SubContinuationCanon",
-                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
-                                    module: TargetPointer.Null, parentMethodTable: continuationBaseMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
-            rtsBuilder.SetEEClassAndCanonMTRefs(sharedEEClassPtr, sharedCanonMTPtr);
+                MockMethodTable continuationInstanceMethodTable = rtsBuilder.AddMethodTable("ContinuationInstance");
+                continuationInstanceMethodTable.BaseSize = targetTestHelpers.ObjectBaseSize;
+                continuationInstanceMethodTable.ParentMethodTable = continuationBaseMethodTable.Address;
+                continuationInstanceMethodTable.NumVirtuals = 3;
+                continuationInstanceMethodTablePtr = continuationInstanceMethodTable.Address;
+                continuationInstanceMethodTable.EEClassOrCanonMT = sharedCanonMT.Address | 1;
+            });
 
-            // The actual continuation instance MT points to the shared EEClass via CanonMT
-            continuationInstanceMethodTablePtr = rtsBuilder.AddMethodTable("ContinuationInstance",
-                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
-                                    module: TargetPointer.Null, parentMethodTable: continuationBaseMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
-            rtsBuilder.SetMethodTableCanonMT(continuationInstanceMethodTablePtr, sharedCanonMTPtr);
-        },
-        (target) =>
-        {
-            Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
-            Assert.NotNull(rts);
-            // Validation should succeed - the MT→CanonMT→EEClass→MT roundtrip is handled for continuations
-            Contracts.TypeHandle continuationTypeHandle = rts.GetTypeHandle(continuationInstanceMethodTablePtr);
-            Assert.Equal(continuationInstanceMethodTablePtr.Value, continuationTypeHandle.Address.Value);
-            Assert.True(rts.IsContinuation(continuationTypeHandle));
-        });
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle continuationTypeHandle = contract.GetTypeHandle(continuationInstanceMethodTablePtr);
+        Assert.Equal(continuationInstanceMethodTablePtr.Value, continuationTypeHandle.Address.Value);
+        Assert.True(contract.IsContinuation(continuationTypeHandle));
     }
 }

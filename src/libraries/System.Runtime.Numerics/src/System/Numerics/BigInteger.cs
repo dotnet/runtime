@@ -3140,6 +3140,36 @@ namespace System.Numerics
         // IBinaryInteger
         //
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        static BigInteger IBinaryInteger<BigInteger>.Log10(BigInteger value)
+        {
+            value.AssertValid();
+
+            if (IsNegative(value))
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+
+            // For small values stored in _sign, use the fast path
+            if (value._bits is null)
+            {
+                return uint.Log10((uint)value._sign);
+            }
+
+            // For large values, use Log2-based estimation with single correction.
+            // log10(x) = log2(x) * log10(2); we approximate log10(2) as N/2^S.
+            // The smaller fixed-width types (uint, ulong, UInt128) use 1233/4096
+            // (~4.6e-6 error per bit), which is sufficient for up to ~217K bits.
+            // For BigInteger, which has no upper bound on bit count, we use
+            // 1292913986/2^32 (~1.1e-10 error per bit), safe up to ~8.7B bits,
+            // which covers the full BigInteger range.
+            BigInteger log2Value = Log2(value);
+            BigInteger approx = ((log2Value + 1) * 1292913986L) >> 32;
+            BigInteger power = Pow(10, (int)approx);
+
+            return value < power ? approx - 1 : approx;
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
         public static (BigInteger Quotient, BigInteger Remainder) DivRem(BigInteger left, BigInteger right)
         {

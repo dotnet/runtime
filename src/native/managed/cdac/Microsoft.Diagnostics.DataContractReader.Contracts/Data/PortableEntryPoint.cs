@@ -12,7 +12,7 @@ internal sealed class PortableEntryPoint : IData<PortableEntryPoint>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.PortableEntryPoint);
 
-        MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
+        MethodDesc = target.ReadPointerField(address, type, nameof(MethodDesc));
     }
     public TargetPointer MethodDesc { get; }
 }
