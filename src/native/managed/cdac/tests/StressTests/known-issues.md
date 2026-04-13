@@ -24,39 +24,71 @@ and the legacy DAC / runtime's GC stack scanning.
 | StructScenarios | Clean or 1 fail | |
 | ExceptionHandling | 8-9 fail | EH known issue |
 
-## Issue 1: cDAC misses refs from explicit Frames
+## Issue 1: cDAC misses refs from explicit Frames (instruction-level stress only)
 
-**Affected**: All debuggees (intermittent)
+**Affected**: All debuggees at instruction-level GC stress (`DOTNET_GCStress=0x4`)
+**Frequency**: ~3 per 25K verifications (0.01%)
 
-**Pattern**: The DAC reports refs from explicit Frame objects (e.g., InlinedCallFrame)
-that the cDAC does not see. These are Frames on the Thread's frame chain that have
-GcScanRoots implementations. The structured failure output now shows these clearly:
+**Pattern**: The DAC reports refs from explicit Frame objects (e.g., ExternalMethodFrame)
+that the cDAC does not see. The cDAC's `FindGCRefMap` resolves most cases by reading
+the R2R import section `AuxiliaryData`, but at instruction-level stress the timing
+window is wider — the GCRefMap may not be resolved and the Frame's MethodDescPtr
+may also be null (preventing the `PromoteCallerStack` fallback).
 
 ```
 [FRAME_DAC_ONLY] Source=0x... (<frame 0x...>): DAC=1
 ```
 
-## Issue 2: cDAC cannot unwind through native frames (EH first-pass)
+The DAC succeeds because its `GetGCRefMap()` calls `FindGCRefMap(m_pZapModule,
+m_pIndirection)` which independently reads the module's import section tables.
+At allocation-level stress (default), this issue is fully resolved by our
+`FindGCRefMap` implementation.
 
-**Affected**: ExceptionHandling (8-9 failures per run)
+## Issue 2: GcInfo register ref mismatch (instruction-level stress only)
 
-**Pattern**: The cDAC's GcInfoDecoder reports 1 extra live stack slot (`[rbp-8]`)
-from ThrowHelper at the throw-site offset that the native GcInfoDecoder does not
-report. All three walkers (cDAC, DAC, RT) visit ThrowHelper with `Report=true`,
-but the native `EnumGcRefs` produces 0 refs while the cDAC produces 1. Root cause
-is a GcInfo safe-point bitmap decoding difference — needs further investigation.
+**Affected**: All debuggees at instruction-level GC stress
+**Frequency**: ~4 per 25K verifications (0.02%)
 
-Note: The cDAC has `IsInterrupted`/`ExecutionAborted` tracking (matching native
-`CrawlFrame::GetCodeManagerFlags`) but it doesn't help here because managed
-throws don't push `FaultingExceptionFrame`. A hardware exception debuggee
-(e.g., access violation) should be added to verify `ExecutionAborted` works
-for that path.
+**Pattern**: The cDAC reports 1 fewer register-based GC ref than the DAC for
+non-active frames inside QCall/PInvoke boundary methods. The missing ref is
+always in a callee-saved register (non-scratch), with the DAC reporting it as
+live but the cDAC's GcInfoDecoder not finding it in the live-state bitmap.
+
+```
+[FRAME_DIFF] Source=0x... (RuntimeAssembly.GetTypeCore(...)): cDAC=4 DAC=5
+  [DAC_ONLY] Addr=0x0 Obj=0x0 Flags=0x1  ← register-based interior pointer
+```
+
+This appears only at instruction-level stress because:
+1. The GC breakpoint fires at IPs inside QCall transition stubs
+2. At these offsets, the GcInfo may have partially-interruptible safe points
+   where liveness differs between the cDAC's decoded bitmap and the native
+   decoder's
+3. The cDAC and native decoders may compute a different safe-point index
+   for the same code offset, leading to different liveness results
+
+Root cause is likely a subtle difference in how the cDAC's `FindSafePoint`
+or live-state bitmap decoding handles these edge-case offsets.
+
+## EH ThrowHelper (FIXED)
+
+Previously 8-9 failures per run. Fixed by detecting `SoftwareExceptionFrame`
+and `FaultingExceptionFrame` as interrupted frames and setting `ExecutionAborted`
+flag, matching native `CrawlFrame::GetCodeManagerFlags`.
+
+## Allocation-level stress results
+
+At allocation-level stress (`DOTNET_CdacStress=0x51`, the default):
+- All 9 debuggees pass 100% (0 failures across ~45K total verifications)
+
+## Instruction-level stress results
+
+At instruction-level stress (`DOTNET_GCStress=0x4 + DOTNET_CdacStress=0x54`):
+- Comprehensive: 25,522 pass / 7 fail (99.97%)
 
 ## Future work
 
-- Add a hardware exception debuggee (e.g., null dereference / access violation)
-  to test the `IsInterrupted`/`ExecutionAborted` path through `FaultingExceptionFrame`.
-- Investigate the GcInfo safe-point bitmap decoding difference for ThrowHelper.
+- Investigate the GcInfo safe-point bitmap decoding difference for QCall frames
 - Replace `fprintf`-based stress logging in `cdacstress.cpp` with a more
   structured mechanism (e.g., ETW events or StressLog) for better tooling
   integration and reduced I/O overhead during stress runs.
