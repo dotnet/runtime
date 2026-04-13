@@ -4122,8 +4122,7 @@ void ILNativeArrayMarshaler::EmitLoadElementCount(ILCodeStream* pslILEmit)
 namespace
 {
     // Resolve the managed marshaler MethodTable and the element type it marshals.
-    // Both are returned together to guarantee they are consistent (e.g. for enums,
-    // the element type is the underlying primitive, matching the marshaler's T).
+    // Both are returned together to guarantee they are consistent.
     void GetMarshalerAndElementTypes(MarshalInfo* pMarshalInfo, MethodTable** ppMarshalerMT, TypeHandle* pElementType)
 {
     STANDARD_VM_CONTRACT;
@@ -4319,7 +4318,7 @@ namespace
     MethodDesc* pGenericMD = CoreLibBinder::GetMethod(methodId);
 
     // Get both the element type and marshaler type from a single source
-    // to guarantee they are consistent (e.g. enums map to their underlying type).
+    // to guarantee they are consistent.
     TypeHandle thElementType;
     MethodTable* pMarshalerMT;
     GetMarshalerAndElementTypes(pMarshalInfo, &pMarshalerMT, &thElementType);
