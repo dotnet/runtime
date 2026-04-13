@@ -23,16 +23,15 @@ namespace System.Numerics
         internal readonly ulong _upper;
 #endif
 
-        private const int MaxExponent = 6111;
-        private const int MinExponent = -6176;
+        private const int MaxExponent = 6144;
+        private const int MinExponent = -6143;
         private const int Precision = 34;
         private const int ExponentBias = 6176;
-        private const int NumberBitsExponent = 14;
         private static UInt128 PositiveInfinityValue => new UInt128(upper: 0x7800_0000_0000_0000, lower: 0);
         private static UInt128 NegativeInfinityValue => new UInt128(upper: 0xf800_0000_0000_0000, lower: 0);
         private static UInt128 ZeroValue => new UInt128(0, 0);
         private static UInt128 NegativeZeroValue => new UInt128(0x8000_0000_0000_0000, 0);
-        private static UInt128 QuietNaNValue => new UInt128(0x7C00_0000_0000_0000, 0);
+        private static UInt128 QuietNaNValue => new UInt128(0xFC00_0000_0000_0000, 0);
         private static UInt128 MaxInternalValue = new UInt128(upper: 0x5FFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
         private static UInt128 MinInternalValue = new UInt128(upper: 0xDFFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
 
@@ -64,7 +63,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="s">The input to be parsed.</param>
         /// <returns>The equivalent <see cref="Decimal128"/> value representing the input string. If the input exceeds Decimal128's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
-        public static Decimal128 Parse(string s) => Parse(s, NumberStyles.Number, provider: null);
+        public static Decimal128 Parse(string s) => Parse(s, NumberStyles.Float, provider: null);
 
         /// <summary>
         /// Parses a <see cref="Decimal128"/> from a <see cref="string"/> in the given <see cref="NumberStyles"/>.
@@ -75,7 +74,7 @@ namespace System.Numerics
         public static Decimal128 Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
         /// <inheritdoc cref="ISpanParsable{T}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
-        public static Decimal128 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
+        public static Decimal128 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, NumberStyles.Float, provider);
 
         /// <summary>
         /// Parses a <see cref="Decimal128"/> from a <see cref="string"/> and <see cref="IFormatProvider"/>.
@@ -83,7 +82,7 @@ namespace System.Numerics
         /// <param name="s">The input to be parsed.</param>
         /// <param name="provider">A format provider.</param>
         /// <returns>The equivalent <see cref="Decimal128"/> value representing the input string. If the input exceeds Decimal128's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. </returns>
-        public static Decimal128 Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Number, provider);
+        public static Decimal128 Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Float, provider);
 
         /// <summary>
         /// Parses a <see cref="Decimal128"/> from a <see cref="ReadOnlySpan{Char}"/> and <see cref="IFormatProvider"/>.
@@ -120,7 +119,7 @@ namespace System.Numerics
         /// <param name="s">The input to be parsed.</param>
         /// <param name="result">The equivalent <see cref="Decimal128"/> value representing the input string if the parse was successful. If the input exceeds Decimal128's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal128"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse([NotNullWhen(true)] string? s, out Decimal128 result) => TryParse(s, NumberStyles.Number, provider: null, out result);
+        public static bool TryParse([NotNullWhen(true)] string? s, out Decimal128 result) => TryParse(s, NumberStyles.Float, provider: null, out result);
 
         /// <summary>
         /// Tries to parse a <see cref="Decimal128"/> from a <see cref="ReadOnlySpan{Char}"/> in the default parse style.
@@ -128,10 +127,10 @@ namespace System.Numerics
         /// <param name="s">The input to be parsed.</param>
         /// <param name="result">The equivalent <see cref="Decimal128"/> value representing the input string if the parse was successful. If the input exceeds Decimal128's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal128"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse(ReadOnlySpan<char> s, out Decimal128 result) => TryParse(s, NumberStyles.Number, provider: null, out result);
+        public static bool TryParse(ReadOnlySpan<char> s, out Decimal128 result) => TryParse(s, NumberStyles.Float, provider: null, out result);
 
         /// <inheritdoc cref="ISpanParsable{T}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out T)" />
-        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result) => TryParse(s, NumberStyles.Number, provider, out result);
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result) => TryParse(s, NumberStyles.Float, provider, out result);
 
         /// <summary>
         /// Tries to parse a <see cref="Decimal128"/> from a <see cref="string"/> with the given <see cref="IFormatProvider"/>.
@@ -140,7 +139,7 @@ namespace System.Numerics
         /// <param name="provider">A format provider. </param>
         /// <param name="result">The equivalent <see cref="Decimal128"/> value representing the input string if the parse was successful. If the input exceeds Decimal128's range, a <see cref="PositiveInfinityValue"/> or <see cref="NegativeInfinityValue"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal128"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result) => TryParse(s, NumberStyles.Number, provider, out result);
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal128 result) => TryParse(s, NumberStyles.Float, provider, out result);
 
         /// <summary>
         /// Tries to parse a <see cref="Decimal128"/> from a <see cref="ReadOnlySpan{Char}"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
@@ -207,7 +206,7 @@ namespace System.Numerics
         /// </summary>
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is Decimal128 && Equals((Decimal128)obj);
+            return (obj is Decimal128 other) && Equals(other);
         }
 
         /// <summary>
@@ -289,10 +288,6 @@ namespace System.Numerics
                 new UInt128(542101086242752, 4003012203950112768),
             ];
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MaxScale => 6145;
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MinScale => -6175;
-
         static string IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ToDecStr(UInt128 significand)
         {
             return Number.UInt128ToDecStr(significand);
@@ -352,8 +347,6 @@ namespace System.Numerics
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberBitsEncoding => 128;
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberBitsExponent => NumberBitsExponent;
-
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SignMask => new UInt128(0x8000_0000_0000_0000, 0);
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.G0G1Mask => new UInt128(0x6000_0000_0000_0000, 0);
@@ -375,6 +368,16 @@ namespace System.Numerics
         static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsNaN(UInt128 decimalBits)
         {
             return (decimalBits.Upper & NaNMaskUpper) == NaNMaskUpper;
+        }
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.EncodeExponentToG0ThroughGwPlus1(uint biasedExponent)
+        {
+            return biasedExponent << 113;
+        }
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.EncodeExponentToG2ThroughGwPlus3(uint biasedExponent)
+        {
+            return biasedExponent << 111;
         }
     }
 }

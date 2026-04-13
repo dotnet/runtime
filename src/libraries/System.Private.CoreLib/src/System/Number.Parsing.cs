@@ -138,11 +138,11 @@ namespace System
         where TValue : unmanaged, IBinaryInteger<TValue>
     {
         static abstract int Precision { get; }
-        static abstract int MaxScale { get; }
-        static abstract int MinScale { get; }
         static abstract int BufferLength { get; }
         static abstract int MaxExponent { get; }
         static abstract int MinExponent { get; }
+        static virtual int MaxAdjustedExponent => TSelf.MaxExponent - TSelf.Precision + 1;
+        static virtual int MinAdjustedExponent => TSelf.MinExponent - TSelf.Precision + 1;
         static abstract int ExponentBias { get; }
         static abstract TValue PositiveInfinity { get; }
         static abstract TValue NegativeInfinity { get; }
@@ -159,7 +159,6 @@ namespace System
         static abstract TSelf Construct(TValue value);
         static abstract int CountDigits(TValue significand);
         static abstract int NumberBitsEncoding { get; }
-        static abstract int NumberBitsExponent { get; }
         static abstract int NumberBitsSignificand { get; }
         static abstract TValue SignMask { get; }
         static abstract TValue G0G1Mask { get; }
@@ -169,6 +168,8 @@ namespace System
         static abstract TValue GwPlus4SignificandMask { get; } //G(w+4)
         static abstract TValue MostSignificantBitOfSignificandMask { get; }
         static abstract bool IsNaN(TValue decimalBits);
+        static abstract TValue EncodeExponentToG0ThroughGwPlus1(uint biasedExponent);
+        static abstract TValue EncodeExponentToG2ThroughGwPlus3(uint biasedExponent);
     }
 
     internal static partial class Number
@@ -1641,20 +1642,7 @@ namespace System
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
             number.CheckConsistency();
-            TValue value;
-
-            if ((number.DigitsCount == 0) || (number.Scale < TDecimal.MinScale))
-            {
-                value = number.IsNegative ? TDecimal.NegativeZero : TDecimal.Zero;
-            }
-            else if (number.Scale > TDecimal.MaxScale)
-            {
-                value = number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
-            }
-            else
-            {
-                value = NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
-            }
+            TValue value = NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
             return TDecimal.Construct(value);
         }
     }

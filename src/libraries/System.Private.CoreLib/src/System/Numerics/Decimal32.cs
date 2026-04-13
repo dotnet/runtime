@@ -24,11 +24,10 @@ namespace System.Numerics
             _value = value;
         }
 
-        private const int MaxExponent = 90;
-        private const int MinExponent = -101;
+        private const int MaxExponent = 96;
+        private const int MinExponent = -95;
         private const int Precision = 7;
         private const int ExponentBias = 101;
-        private const int NumberBitsExponent = 8;
         private const uint PositiveInfinityValue = 0x7800_0000;
         private const uint NegativeInfinityValue = 0xF800_0000;
         private const uint ZeroValue = 0x0000_0000;
@@ -37,7 +36,7 @@ namespace System.Numerics
         private const uint G0G1Mask = 0x6000_0000;
         private const uint SignMask = 0x8000_0000;
         private const uint MostSignificantBitOfSignificandMask = 0x0080_0000;
-        private const uint NaNMask = 0x7C00_0000;
+        private const uint NaNMask = 0xFC00_0000;
         private const uint MaxSignificand = 9_999_999;
         private const uint MaxInternalValue = 0x77F8_967F; // 9,999,999 x 10^90
         private const uint MinInternalValue = 0xF7F8_967F; // -9,999,999 x 10^90
@@ -291,10 +290,6 @@ namespace System.Numerics
         }
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.CountDigits(uint significand) => FormattingHelpers.CountDigits(significand);
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MaxScale => 97;
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MinScale => -100;
-
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MaxExponent => MaxExponent;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MinExponent => MinExponent;
@@ -312,8 +307,6 @@ namespace System.Numerics
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NumberBitsEncoding => 32;
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NumberBitsExponent => NumberBitsExponent;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.SignMask => SignMask;
 
@@ -336,6 +329,16 @@ namespace System.Numerics
         static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsNaN(uint decimalBits)
         {
             return (decimalBits & NaNMask) == NaNMask;
+        }
+
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.EncodeExponentToG0ThroughGwPlus1(uint biasedExponent)
+        {
+            return biasedExponent << 23;
+        }
+
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.EncodeExponentToG2ThroughGwPlus3(uint biasedExponent)
+        {
+            return biasedExponent << 21;
         }
     }
 }

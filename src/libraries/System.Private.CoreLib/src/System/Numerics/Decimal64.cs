@@ -17,11 +17,10 @@ namespace System.Numerics
     {
         internal readonly ulong _value;
 
-        private const int MaxExponent = 369;
-        private const int MinExponent = -398;
+        private const int MaxExponent = 384;
+        private const int MinExponent = -383;
         private const int Precision = 16;
         private const int ExponentBias = 398;
-        private const int NumberBitsExponent = 10;
         private const ulong PositiveInfinityValue = 0x7800_0000_0000_0000;
         private const ulong NegativeInfinityValue = 0xF800_0000_0000_0000;
         private const ulong ZeroValue = 0x0000_0000_0000_0000;
@@ -30,7 +29,7 @@ namespace System.Numerics
         private const ulong G0G1Mask = 0x6000_0000_0000_0000;
         private const ulong SignMask = 0x8000_0000_0000_0000;
         private const ulong MostSignificantBitOfSignificandMask = 0x0020_0000_0000_0000;
-        private const ulong NaNMask = 0x7C00_0000_0000_0000;
+        private const ulong NaNMask = 0xFC00_0000_0000_0000;
         private const ulong MaxSignificand = 9_999_999_999_999_999;
         private const ulong MaxInternalValue = 0x77FB_86F2_6FC0_FFFF; // 9_999_999_999_999_999 x 10^369
         private const ulong MinInternalValue = 0xF7FB_86F2_6FC0_FFFF; // -9_999_999_999_999_999 x 10^369
@@ -294,10 +293,6 @@ namespace System.Numerics
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.CountDigits(ulong significand) => FormattingHelpers.CountDigits(significand);
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MaxScale => 385;
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MinScale => -397;
-
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MaxExponent => MaxExponent;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MinExponent => MinExponent;
@@ -315,8 +310,6 @@ namespace System.Numerics
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberBitsEncoding => 64;
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberBitsExponent => NumberBitsExponent;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.SignMask => SignMask;
 
@@ -339,6 +332,16 @@ namespace System.Numerics
         static bool IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.IsNaN(ulong decimalBits)
         {
             return (decimalBits & NaNMask) == NaNMask;
+        }
+
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.EncodeExponentToG0ThroughGwPlus1(uint biasedExponent)
+        {
+            return biasedExponent << 53;
+        }
+
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.EncodeExponentToG2ThroughGwPlus3(uint biasedExponent)
+        {
+            return biasedExponent << 51;
         }
     }
 }
