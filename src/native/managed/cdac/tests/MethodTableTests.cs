@@ -501,4 +501,45 @@ public class MethodTableTests
         Assert.Equal(continuationInstanceMethodTablePtr.Value, continuationTypeHandle.Address.Value);
         Assert.True(contract.IsContinuation(continuationTypeHandle));
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void RequiresAlign8_FlagSet_ReturnsTrue(MockTarget.Architecture arch)
+    {
+        TargetPointer methodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockEEClass eeClass = rtsBuilder.AddEEClass("Align8Type");
+                eeClass.CorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
+
+                MockMethodTable methodTable = rtsBuilder.AddMethodTable("Align8Type");
+                methodTable.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.RequiresAlign8;
+                methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                methodTable.NumVirtuals = 3;
+                methodTablePtr = methodTable.Address;
+                eeClass.MethodTable = methodTable.Address;
+                methodTable.EEClassOrCanonMT = eeClass.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(methodTablePtr);
+        Assert.True(contract.RequiresAlign8(typeHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void RequiresAlign8_FlagUnset_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        TargetPointer systemObjectMethodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder => systemObjectMethodTablePtr = rtsBuilder.SystemObjectMethodTable.Address);
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        Contracts.TypeHandle typeHandle = contract.GetTypeHandle(systemObjectMethodTablePtr);
+        Assert.False(contract.RequiresAlign8(typeHandle));
+    }
 }
