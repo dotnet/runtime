@@ -170,7 +170,8 @@ class AffinitySet
 
 public:
 
-    // Delete default copy and move constructors and assignment operators since this class manages a raw pointer.
+    // Delete copy and move constructors and assignment operators since this class manages a raw pointer.
+    AffinitySet() = default;
     AffinitySet(const AffinitySet&) = delete;
     AffinitySet& operator=(const AffinitySet&) = delete;
     AffinitySet(AffinitySet&&) = delete;
