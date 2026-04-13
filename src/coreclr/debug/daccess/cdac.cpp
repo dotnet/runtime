@@ -15,8 +15,19 @@ namespace
     {
         // Load cdac from next to current module (DAC binary)
         PathString path;
+
+        // On Unix, GetCurrentModuleBase() returns a raw dladdr base address, not a PAL HMODULE.
+        // The DAC is typically loaded externally (e.g. by CLRMD via dlopen) and is not registered
+        // in the PAL module list. Use PAL_GetPalHostModule() which properly registers the module.
+#ifdef HOST_UNIX
+        HMODULE hMod = PAL_GetPalHostModule();
+        if (hMod == NULL || WszGetModuleFileName(hMod, path) == 0)
+#else
         if (WszGetModuleFileName((HMODULE)GetCurrentModuleBase(), path) == 0)
+#endif
+        {
             return false;
+        }
 
         SString::Iterator iter = path.End();
         if (!path.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W))
@@ -45,8 +56,13 @@ namespace
 
     int WriteToTargetCallback(uint64_t addr, const uint8_t* buff, uint32_t count, void* context)
     {
-        ICorDebugMutableDataTarget* target = static_cast<ICorDebugMutableDataTarget*>(context);
-        HRESULT hr = target->WriteVirtual((CORDB_ADDRESS)addr, buff, count);
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        ICorDebugMutableDataTarget* mutableTarget = nullptr;
+        HRESULT hr = target->QueryInterface(__uuidof(ICorDebugMutableDataTarget), (void**)&mutableTarget);
+        if (FAILED(hr))
+            return hr;
+        hr = mutableTarget->WriteVirtual((CORDB_ADDRESS)addr, buff, count);
+        mutableTarget->Release();
         if (FAILED(hr))
             return hr;
 
@@ -64,7 +80,7 @@ namespace
     }
 }
 
-CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget* target, IUnknown* legacyImpl)
+CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown* legacyImpl)
 {
     HMODULE cdacLib;
     if (!TryLoadCDACLibrary(&cdacLib))
@@ -112,5 +128,13 @@ void CDAC::CreateSosInterface(IUnknown** sos)
     decltype(&cdac_reader_create_sos_interface) createSosInterface = reinterpret_cast<decltype(&cdac_reader_create_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_create_sos_interface"));
     _ASSERTE(createSosInterface != nullptr);
     int ret = createSosInterface(m_cdac_handle, m_legacyImpl, sos);
+    _ASSERTE(ret == 0);
+}
+
+void CDAC::CreateDacDbiInterface(IUnknown** dbi)
+{
+    decltype(&cdac_reader_create_dacdbi_interface) createDacDbiInterface = reinterpret_cast<decltype(&cdac_reader_create_dacdbi_interface)>(::GetProcAddress(m_module, "cdac_reader_create_dacdbi_interface"));
+    _ASSERTE(createDacDbiInterface != nullptr);
+    int ret = createDacDbiInterface(m_cdac_handle, m_legacyImpl, dbi);
     _ASSERTE(ret == 0);
 }

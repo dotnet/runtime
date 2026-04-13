@@ -215,6 +215,10 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
                     {
                         return InstructionSet_AVX512;
                     }
+                    else if (strcmp(className + 7, "mm") == 0)
+                    {
+                        return InstructionSet_AVX512BMM;
+                    }
                 }
                 else if ((strcmp(className + 6, "CD") == 0) || (strcmp(className + 6, "DQ") == 0))
                 {

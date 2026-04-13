@@ -38,7 +38,7 @@ namespace System.Reflection.Context.Tests
         }
 
         // Tests for projecting constructor
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
         public void Constructor_GetMethodBody_LocalVariables_ReturnsProjectedLocals()
         {
             TypeInfo typeInfo = typeof(TestObject).GetTypeInfo();

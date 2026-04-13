@@ -60,7 +60,7 @@ namespace System.Reflection.Context.Tests
             Assert.True(_customEvent.IsMulticast);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void MetadataToken_ReturnsPositiveValue()
         {
             int token = _customEvent.MetadataToken;
@@ -109,7 +109,7 @@ namespace System.Reflection.Context.Tests
             Assert.Null(raiseMethod);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void GetOtherMethods_ReturnsEmpty()
         {

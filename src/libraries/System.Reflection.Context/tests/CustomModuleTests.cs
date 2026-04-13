@@ -40,7 +40,7 @@ namespace System.Reflection.Context.Tests
             Assert.EndsWith(".dll", fqn);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void MetadataToken_ReturnsValue()
         {
             int token = _customModule.MetadataToken;
@@ -174,13 +174,13 @@ namespace System.Reflection.Context.Tests
             Assert.NotEmpty(types);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void IsResource_ReturnsFalse()
         {
             Assert.False(_customModule.IsResource());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void ResolveField_ReturnsProjectedField()
         {
             FieldInfo originalField = typeof(SecondTestObject).GetField("field");
@@ -189,7 +189,7 @@ namespace System.Reflection.Context.Tests
             Assert.NotNull(resolvedField);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void ResolveMethod_ReturnsProjectedMethod()
         {
             MethodInfo originalMethod = typeof(TestObject).GetMethod("GetMessage");
@@ -198,7 +198,7 @@ namespace System.Reflection.Context.Tests
             Assert.NotNull(resolvedMethod);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void ResolveType_ReturnsProjectedType()
         {
             int token = typeof(TestObject).MetadataToken;
@@ -207,7 +207,7 @@ namespace System.Reflection.Context.Tests
             Assert.Equal(ProjectionConstants.CustomType, resolvedType.GetType().FullName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void ResolveMember_ReturnsProjectedMember()
         {
             MethodInfo originalMethod = typeof(TestObject).GetMethod("GetMessage");

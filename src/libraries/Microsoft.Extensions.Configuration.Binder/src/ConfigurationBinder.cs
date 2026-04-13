@@ -223,7 +223,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (options.ErrorOnUnknownConfiguration)
             {
-                HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
+                HashSet<string> propertyNames = new(modelProperties.Select(GetPropertyName),
                     StringComparer.OrdinalIgnoreCase);
 
                 List<string>? missingPropertyNames = null;
@@ -1138,7 +1138,7 @@ namespace Microsoft.Extensions.Configuration
                 throw new InvalidOperationException(SR.Format(SR.Error_ParameterBeingBoundToIsUnnamed, type));
             }
 
-            var propertyBindingPoint = new BindingPoint(initialValue: config.GetSection(parameterName).Value, isReadOnly: false);
+            var propertyBindingPoint = new BindingPoint(isReadOnly: false);
 
             BindInstance(
                 parameter.ParameterType,

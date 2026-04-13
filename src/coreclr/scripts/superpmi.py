@@ -20,6 +20,7 @@ import argparse
 import asyncio
 import csv
 import datetime
+import html
 import json
 import locale
 import logging
@@ -2946,15 +2947,15 @@ def write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options
                         for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
 
             def write_row(name, diffed_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff, total_num_contexts):
-                write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({:1.2f}%)|{:,d} ({:1.2f}%)|\n".format(
+                write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({}%)|{:,d} ({}%)|\n".format(
                     name,
                     diffed_contexts,
                     num_minopts,
                     num_fullopts,
                     num_missed_base,
-                    num_missed_base / total_num_contexts * 100,
+                    "{:1.2f}".format(num_missed_base / total_num_contexts * 100) if total_num_contexts != 0 else "N/A",
                     num_missed_diff,
-                    num_missed_diff / total_num_contexts * 100))
+                    "{:1.2f}".format(num_missed_diff / total_num_contexts * 100) if total_num_contexts != 0 else "N/A"))
 
             for t in rows:
                 write_row(*t)
@@ -2997,7 +2998,7 @@ def write_example_diffs_to_markdown_summary(write_fh, asm_diffs):
                 for (func_name, diff, diff_text) in examples_to_put_in_summary:
                     base_size = int(diff["Base ActualCodeBytes"])
                     diff_size = int(diff["Diff ActualCodeBytes"])
-                    with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), func_name)):
+                    with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), html.escape(func_name))):
                         write_fh.write(diff_text)
 
 ################################################################################
@@ -3563,7 +3564,7 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
     metrics_with_diffs = set()
     for metric in all_metrics:
         significant_diffs = [(mch, base, diff) for (mch, _, base, diff) in metric_diffs
-                             if metric in base and base[metric] != diff[metric]]
+                             if metric in base and abs(compute_pct(base[metric], diff[metric])) >= 0.001]
         if not significant_diffs:
             continue
 
@@ -4117,9 +4118,12 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
                 if os.path.isfile(mct_file):
                     urls.append(mct_file)
             else:
-                urls += get_files_from_path(mch_file, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mct", ".zip"]))
+                urls += get_files_from_path(mch_file, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mc", ".mct", ".zip"]))
         elif item.lower().startswith("http:") or item.lower().startswith("https:"):  # probably could use urllib.parse to be more precise
             urls.append(item)
+        elif os.path.isdir(item):
+            # If it's a directory, we'll search recursively for .mch and .mc files in it
+            local_mch_files.extend(get_files_from_path(item, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mc"])))
         else:
             # Doesn't appear to be a UNC path (on Windows) or a URL, so just use it as-is.
             local_mch_files.append(item)
@@ -4147,8 +4151,8 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     if len(mct_urls) != 0:
         local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, is_azure_storage=True, display_progress=not skip_progress)
 
-    # Even though we might have downloaded MCT files, only return the set of MCH files.
-    local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch"])]
+    # Even though we might have downloaded MCT files, only return the set of MCH/MC files.
+    local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch", ".mc"])]
 
     return local_mch_files
 
@@ -4694,7 +4698,7 @@ def get_mch_files_for_replay(local_mch_paths, filters):
         # If there are specified filters, only run those matching files.
         mch_files += get_files_from_path(item,
                                          match_func=lambda path:
-                                             any(path.endswith(extension) for extension in [".mch"])
+                                             any(path.lower().endswith(extension) for extension in [".mch", ".mc"])
                                              and ((filters is None) or any(filter_item.lower() in path for filter_item in filters)))
 
     if len(mch_files) == 0:

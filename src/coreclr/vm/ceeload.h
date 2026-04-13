@@ -822,6 +822,9 @@ private:
     // Set the given bit on m_dwTransientFlags. Return true if we won the race to set the bit.
     BOOL SetTransientFlagInterlocked(DWORD dwFlag);
 
+    // Set bits on the m_dwTransientFlags according to the given mask.
+    void SetTransientFlagInterlockedWithMask(DWORD dwFlag, DWORD dwMask);
+
     // Cannoically-cased hashtable of the available class names for
     // case insensitive lookup.  Contains pointers into
     // m_pAvailableClasses.
@@ -970,7 +973,7 @@ private:
         SUPPORTS_DAC;
         _ASSERTE(IsEditAndContinueCapable());
         LOG((LF_ENC, LL_INFO100, "M:EnableEditAndContinue: this:%p, %s\n", this, GetDebugName()));
-        m_dwTransientFlags |= IS_EDIT_AND_CONTINUE;
+        SetTransientFlagInterlocked(IS_EDIT_AND_CONTINUE);
     }
 
 public:
@@ -1603,7 +1606,7 @@ protected:
     void SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules()
     {
         LIMITED_METHOD_CONTRACT;
-        m_dwPersistedFlags |= COMPUTED_WRAP_EXCEPTIONS;
+        m_dwPersistedFlags = m_dwPersistedFlags | COMPUTED_WRAP_EXCEPTIONS;
     }
 public:
 
@@ -1714,6 +1717,7 @@ struct cdac_data<Module>
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
     static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
+    static constexpr size_t SimpleName = offsetof(Module, m_pSimpleName);
     static constexpr size_t Path = offsetof(Module, m_path);
     static constexpr size_t FileName = offsetof(Module, m_fileName);
     static constexpr size_t ReadyToRunInfo = offsetof(Module, m_pReadyToRunInfo);
@@ -1786,27 +1790,37 @@ public:
     void CaptureModuleMetaDataToMemory();
 };
 
-// Module holders
-FORCEINLINE void VoidModuleDestruct(Module *pModule)
+struct ModuleHolderTraits final
 {
+    using Type = Module*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type pModule)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-    if (g_fEEStarted)
-        pModule->Destruct();
+        if (g_fEEStarted && pModule != NULL)
+            pModule->Destruct();
 #endif
-}
+    }
+};
 
-typedef Wrapper<Module*, DoNothing, VoidModuleDestruct, 0> ModuleHolder;
+using ModuleHolder = LifetimeHolder<ModuleHolderTraits>;
 
-
-
-FORCEINLINE void VoidReflectionModuleDestruct(ReflectionModule *pModule)
+struct ReflectionModuleHolderTraits final
 {
+    using Type = ReflectionModule*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type pModule)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-    pModule->Destruct();
+        if (pModule != NULL)
+            pModule->Destruct();
 #endif
-}
+    }
+};
 
-typedef Wrapper<ReflectionModule*, DoNothing, VoidReflectionModuleDestruct, 0> ReflectionModuleHolder;
+using ReflectionModuleHolder = LifetimeHolder<ReflectionModuleHolderTraits>;
 
 
 

@@ -940,7 +940,12 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// True if the W3CIdFlags.Recorded flag is set.
+        /// True if the <see cref="ActivityTraceFlags.RandomTraceId"/> flag is set.
+        /// </summary>
+        public bool HasRandomizedTraceId { get => (ActivityTraceFlags & ActivityTraceFlags.RandomTraceId) != 0; }
+
+        /// <summary>
+        /// True if the <see cref="ActivityTraceFlags.Recorded"/> flag is set.
         /// </summary>
         public bool Recorded { get => (ActivityTraceFlags & ActivityTraceFlags.Recorded) != 0; }
 
@@ -1289,8 +1294,30 @@ namespace System.Diagnostics
                 if (!TrySetTraceIdFromParent())
                 {
                     Func<ActivityTraceId>? traceIdGenerator = TraceIdGenerator;
-                    ActivityTraceId id = traceIdGenerator == null ? ActivityTraceId.CreateRandom() : traceIdGenerator();
+                    ActivityTraceId id;
+
+                    if (traceIdGenerator == null)
+                    {
+                        id = ActivityTraceId.CreateRandom();
+                        // Set RandomTraceId flag when using the default random generator
+                        ActivityTraceFlags |= ActivityTraceFlags.RandomTraceId;
+                    }
+                    else
+                    {
+                        // Using custom generator
+                        id = traceIdGenerator();
+                    }
+
                     _traceId = id.ToHexString();
+                }
+                else
+                {
+                    // When inheriting trace ID from parent, propagate the RandomTraceId flag
+                    // so downstream participants know the trace ID has sufficient randomness
+                    // for probabilistic sampling (W3C Trace Context Level 2).
+                    // This is needed here because TrySetTraceFlagsFromParent() below may be
+                    // skipped when W3CIdFlagsSet is already true (e.g., Recorded set by sampling).
+                    TryPropagateRandomTraceIdFromParent();
                 }
             }
 
@@ -1463,6 +1490,28 @@ namespace System.Diagnostics
                         _w3CIdFlags = ActivityTraceFlagsIsSet;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Propagates the RandomTraceId flag from the parent when a child inherits its trace ID.
+        /// Unlike Recorded (which is set independently per-activity by sampling), RandomTraceId
+        /// reflects a property of the trace ID itself and should be inherited along with it.
+        /// </summary>
+        private void TryPropagateRandomTraceIdFromParent()
+        {
+            if (Parent is not null)
+            {
+                if ((Parent.ActivityTraceFlags & ActivityTraceFlags.RandomTraceId) != 0)
+                {
+                    ActivityTraceFlags |= ActivityTraceFlags.RandomTraceId;
+                }
+            }
+            else if (_parentId is not null && IsW3CId(_parentId)
+                     && HexConverter.IsHexLowerChar(_parentId[53]) && HexConverter.IsHexLowerChar(_parentId[54])
+                     && (ActivityTraceId.HexByteFromChars(_parentId[53], _parentId[54]) & (byte)ActivityTraceFlags.RandomTraceId) != 0)
+            {
+                ActivityTraceFlags |= ActivityTraceFlags.RandomTraceId;
             }
         }
 
@@ -1872,6 +1921,7 @@ namespace System.Diagnostics
     {
         None = 0b_0_0000000,
         Recorded = 0b_0_0000001, // The Activity (or more likely its parents) has been marked as useful to record
+        RandomTraceId = 0b_0_0000010, // The Activity has a randomized TraceId
     }
 
     /// <summary>

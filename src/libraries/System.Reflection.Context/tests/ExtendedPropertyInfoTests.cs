@@ -90,7 +90,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(_readWriteProperty.IsSpecialName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void MetadataToken_ReturnsValue()
         {
             Assert.True(_readWriteProperty.MetadataToken > 0);

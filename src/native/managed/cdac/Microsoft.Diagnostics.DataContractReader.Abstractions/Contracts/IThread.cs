@@ -24,11 +24,12 @@ public enum ThreadState
     Hijacked            = 0x00000080,   // Return address has been hijacked
     Background          = 0x00000200,   // Thread is a background thread
     Unstarted           = 0x00000400,   // Thread has never been started
-    Dead                = 0x00000800,   // Thread is dead
+    Stopped             = 0x00010000,   // Thread has started to shut down
     ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
 }
 
 public record struct ThreadData(
+    TargetPointer ThreadAddress,
     uint Id,
     TargetNUInt OSId,
     ThreadState State,
@@ -53,6 +54,7 @@ public interface IThread : IContract
                            out TargetPointer stackLimit, out TargetPointer frameAddress) => throw new NotImplementedException();
     TargetPointer IdToThread(uint id) => throw new NotImplementedException();
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
+    TargetPointer GetCurrentExceptionHandle(TargetPointer threadPointer) => throw new NotImplementedException();
     TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
 }

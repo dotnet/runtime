@@ -478,6 +478,26 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void DoesNotThrowWhenConfigKeyMatchesConfigurationKeyNameAttribute()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Named_Property", "Yo"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+            config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true);
+
+            Assert.Equal("Yo", instance.NamedProperty);
+        }
+
+        [Fact]
         public void GetDefaultsWhenDataDoesNotExist()
         {
             var dic = new Dictionary<string, string>
@@ -3059,6 +3079,25 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.NotNull(result);
             Assert.Equal(Array.Empty<int>(), result.IEnumerableProperty);
             Assert.Equal(Array.Empty<string>(), result.StringArray);
+        }
+
+        [Fact]
+        public void TestBindingEmptyArrayToConstructorParameter()
+        {
+            string jsonConfig = """
+                {
+                    "ArrayField": []
+                }
+                """;
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build();
+
+            ClassWithArrayConstructorParameter result = configuration.Get<ClassWithArrayConstructorParameter>();
+
+            Assert.NotNull(result);
+            Assert.Empty(result.ArrayField);
         }
 
         [Fact]

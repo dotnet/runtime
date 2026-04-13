@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -130,6 +131,7 @@ namespace System.IO
         /// Creates a stream over a byte*.
         /// </summary>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length)
         {
             Initialize(pointer, length, length, FileAccess.Read);
@@ -139,6 +141,7 @@ namespace System.IO
         /// Creates a stream over a byte*.
         /// </summary>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access)
         {
             Initialize(pointer, length, capacity, access);
@@ -148,6 +151,7 @@ namespace System.IO
         /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
         /// </summary>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         protected unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access)
         {
             ArgumentNullException.ThrowIfNull(pointer);
@@ -293,6 +297,7 @@ namespace System.IO
         /// Pointer to memory at the current Position in the stream.
         /// </summary>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe byte* PositionPointer
         {
             get

@@ -956,6 +956,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA
     { FIRST_NI_AVXVNNI, LAST_NI_AVXVNNI },                      // AVXVNNI
+    { FIRST_NI_AVX512BMM, LAST_NI_AVX512BMM },                  // AVX512BMM
     { FIRST_NI_GFNI, LAST_NI_GFNI },                            // GFNI
     { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },                  // GFNI_V256
     { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },                  // GFNI_V512
@@ -999,7 +1000,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      Atomics
     { FIRST_NI_Vector64, LAST_NI_Vector64 },                    // Vector64
     { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
-    { NI_Illegal, NI_Illegal },                                 // VectorT
+    { FIRST_NI_VectorT, LAST_NI_VectorT },                      // VectorT
     { NI_Illegal, NI_Illegal },                                 //      Dczva
     { NI_Illegal, NI_Illegal },                                 //      Rcpc
     { NI_Illegal, NI_Illegal },                                 //      VectorT128
@@ -1364,6 +1365,15 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     else if (isa == InstructionSet_Vector64)
     {
         if (!isHWIntrinsicEnabled)
+        {
+            return NI_Illegal;
+        }
+    }
+    else if (isa == InstructionSet_VectorT)
+    {
+        // This instruction set should only be set when SVE is enabled.
+        // Baseline Vector<T> will use InstructionSet_VectorT128.
+        if (!comp->compOpportunisticallyDependsOn(InstructionSet_Sve))
         {
             return NI_Illegal;
         }
@@ -2233,7 +2243,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
 #if defined(TARGET_ARM64)
-            if ((simdSize != 8) && (simdSize != 16))
+            if ((simdSize != 8) && (simdSize != 16) && (simdSize != SIZE_UNKNOWN))
 #elif defined(TARGET_XARCH)
             if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
 #endif // TARGET_*
@@ -2403,14 +2413,26 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         }
                         break;
 
-                    case NI_Sve_CreateWhileLessThanMask8Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
-                    case NI_Sve_CreateWhileLessThanMask16Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
-                    case NI_Sve_CreateWhileLessThanMask32Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
-                    case NI_Sve_CreateWhileLessThanMask64Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+                    case NI_Sve_CreateWhileLessThanMaskByte:
+                    case NI_Sve_CreateWhileLessThanMaskDouble:
+                    case NI_Sve_CreateWhileLessThanMaskInt16:
+                    case NI_Sve_CreateWhileLessThanMaskInt32:
+                    case NI_Sve_CreateWhileLessThanMaskInt64:
+                    case NI_Sve_CreateWhileLessThanMaskSByte:
+                    case NI_Sve_CreateWhileLessThanMaskSingle:
+                    case NI_Sve_CreateWhileLessThanMaskUInt16:
+                    case NI_Sve_CreateWhileLessThanMaskUInt32:
+                    case NI_Sve_CreateWhileLessThanMaskUInt64:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskByte:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskDouble:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskInt16:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskInt32:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskInt64:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskSByte:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskSingle:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskUInt16:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskUInt32:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskUInt64:
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op1JitType);
                         break;
 
@@ -2489,9 +2511,21 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
                     case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt32ZeroExtend:
-                    case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
-                    case NI_Sve_GatherVectorWithByteOffsets:
                     case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+                    case NI_Sve_GatherVectorWithByteOffsets:
+                    case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
+                    case NI_Sve2_GatherVectorByteZeroExtendNonTemporal:
+                    case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
+                    case NI_Sve2_GatherVectorInt16WithByteOffsetsSignExtendNonTemporal:
+                    case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
+                    case NI_Sve2_GatherVectorInt32WithByteOffsetsSignExtendNonTemporal:
+                    case NI_Sve2_GatherVectorNonTemporal:
+                    case NI_Sve2_GatherVectorSByteSignExtendNonTemporal:
+                    case NI_Sve2_GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal:
+                    case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
+                    case NI_Sve2_GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal:
+                    case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
+                    case NI_Sve2_GatherVectorWithByteOffsetsNonTemporal:
                         assert(varTypeIsSIMD(op3->TypeGet()));
                         if (numArgs == 3)
                         {

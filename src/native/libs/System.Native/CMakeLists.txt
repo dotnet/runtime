@@ -6,6 +6,7 @@ endif ()
 
 set(NATIVE_SOURCES
     pal_errno.c
+    pal_getosinfo.c
     pal_io.c
     pal_maphardwaretype.c
     pal_memory.c
@@ -56,7 +57,7 @@ else() # WASI
     )
 endif()
 
-if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI OR CLR_CMAKE_TARGET_OPENBSD)
     list (APPEND NATIVE_SOURCES
         pal_crossprocessmutex_unsupported.c)
 else()

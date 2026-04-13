@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+
 using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun

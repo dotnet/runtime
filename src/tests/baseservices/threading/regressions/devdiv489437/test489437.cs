@@ -5,6 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using TestLibrary;
 
 /*
  * Issue description:
@@ -22,7 +23,7 @@ Change description:
 
 public class Test
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         SemaphoreSlim s = new SemaphoreSlim(initialCount: 1);

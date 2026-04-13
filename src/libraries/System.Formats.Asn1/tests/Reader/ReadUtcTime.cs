@@ -6,8 +6,35 @@ using Xunit;
 
 namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class ReadUtcTime
+    public sealed class ReadUtcTimeAsnReaderTests : ReadUtcTimeBase
     {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateClassReader(data, ruleSet, options);
+        }
+    }
+
+    public sealed class ReadUtcTimeValueAsnReaderTests : ReadUtcTimeBase
+    {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateValueReader(data, ruleSet, options);
+        }
+    }
+
+    public abstract class ReadUtcTimeBase
+    {
+        internal abstract AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default);
+
         [Theory]
         // A, B2, C2
         [InlineData(AsnEncodingRules.BER, "17113137303930383130333530332D30373030", 2017, 9, 8, 10, 35, 3, -7, 0)]
@@ -36,7 +63,7 @@ namespace System.Formats.Asn1.Tests.Reader
               "04830000015A" +
               "0000",
             2012, 1, 2, 23, 59, 0, 0, 0)]
-        public static void ParseTime_Valid(
+        public void ParseTime_Valid(
             AsnEncodingRules ruleSet,
             string inputHex,
             int year,
@@ -50,7 +77,7 @@ namespace System.Formats.Asn1.Tests.Reader
         {
             byte[] inputData = inputHex.HexToByteArray();
 
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
             DateTimeOffset value = reader.ReadUtcTime();
 
             Assert.Equal(year, value.Year);
@@ -64,16 +91,15 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Fact]
-        public static void ParseTime_InvalidValue_LegalString()
+        public void ParseTime_InvalidValue_LegalString()
         {
             byte[] inputData = "17113030303030303030303030302D31353030".HexToByteArray();
 
+            AsnReaderWrapper reader = CreateWrapper(inputData, AsnEncodingRules.BER);
+
             var exception = Assert.Throws<AsnContentException>(
-                () =>
-                {
-                    AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER);
-                    reader.ReadUtcTime();
-                });
+                ref reader,
+                static (ref reader) => reader.ReadUtcTime());
 
             Assert.NotNull(exception.InnerException);
             Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
@@ -89,11 +115,11 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(12, 12)]
         [InlineData(99, 12)]
         [InlineData(111, 12)]
-        public static void ReadUtcTime_TwoYearMaximum(int maximum, int interpretedYear)
+        public void ReadUtcTime_TwoYearMaximum(int maximum, int interpretedYear)
         {
             byte[] inputData = "170D3132303130323233353935395A".HexToByteArray();
 
-            AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER);
+            AsnReaderWrapper reader = CreateWrapper(inputData, AsnEncodingRules.BER);
             DateTimeOffset value = reader.ReadUtcTime(maximum);
 
             Assert.Equal(interpretedYear, value.Year);
@@ -109,12 +135,12 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(12, 12)]
         [InlineData(99, 12)]
         [InlineData(111, 12)]
-        public static void ReadUtcTime_TwoYearMaximum_FromOptions(int maximum, int interpretedYear)
+        public void ReadUtcTime_TwoYearMaximum_FromOptions(int maximum, int interpretedYear)
         {
             byte[] inputData = "170D3132303130323233353935395A".HexToByteArray();
 
             AsnReaderOptions options = new AsnReaderOptions { UtcTimeTwoDigitYearMax = maximum };
-            AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER, options);
+            AsnReaderWrapper reader = CreateWrapper(inputData, AsnEncodingRules.BER, options);
             DateTimeOffset value = reader.ReadUtcTime(maximum);
 
             Assert.Equal(interpretedYear, value.Year);
@@ -130,12 +156,12 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(12, 12)]
         [InlineData(99, 12)]
         [InlineData(111, 12)]
-        public static void ReadUtcTime_TwoYearMaximum_FromOptions_CustomTag(int maximum, int interpretedYear)
+        public void ReadUtcTime_TwoYearMaximum_FromOptions_CustomTag(int maximum, int interpretedYear)
         {
             byte[] inputData = "820D3132303130323233353935395A".HexToByteArray();
 
             AsnReaderOptions options = new AsnReaderOptions { UtcTimeTwoDigitYearMax = maximum };
-            AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER, options);
+            AsnReaderWrapper reader = CreateWrapper(inputData, AsnEncodingRules.BER, options);
             DateTimeOffset value = reader.ReadUtcTime(maximum, new Asn1Tag(TagClass.ContextSpecific, 2));
 
             Assert.Equal(interpretedYear, value.Year);
@@ -157,20 +183,22 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("A,B2,C2-MissingDigit", AsnEncodingRules.BER, "17103137303930383130333530332C303730")]
         [InlineData("A,B2,C2-TooLong", AsnEncodingRules.BER, "17123137303930383130333530332B3037303030")]
         [InlineData("WrongTag", AsnEncodingRules.BER, "1A0D3132303130323233353935395A")]
-        public static void ReadUtcTime_Throws(
+        public void ReadUtcTime_Throws(
             string description,
             AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadUtcTime());
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.ReadUtcTime());
         }
 
         [Fact]
-        public static void ReadUtcTime_WayTooBig_Throws()
+        public void ReadUtcTime_WayTooBig_Throws()
         {
             // Need to exceed the length that the shared pool will return for 17:
             byte[] inputData = new byte[4097+4];
@@ -179,28 +207,32 @@ namespace System.Formats.Asn1.Tests.Reader
             inputData[2] = 0x10;
             inputData[3] = 0x01;
 
-            AsnReader reader = new AsnReader(inputData, AsnEncodingRules.BER);
+            AsnReaderWrapper reader = CreateWrapper(inputData, AsnEncodingRules.BER);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadUtcTime());
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.ReadUtcTime());
         }
 
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
         {
             byte[] inputData = "170D3530303130323132333435365A".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.ReadUtcTime(expectedTag: Asn1Tag.Null));
+                static (ref reader) => reader.ReadUtcTime(expectedTag: Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadUtcTime(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 0)));
+                ref reader,
+                static (ref reader) => reader.ReadUtcTime(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
@@ -215,42 +247,52 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
         {
             const int TwoDigitYearMax = 2052;
             byte[] inputData = "850D3530303130323132333435365A".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.ReadUtcTime(expectedTag: Asn1Tag.Null));
+                static (ref reader) => reader.ReadUtcTime(expectedTag: Asn1Tag.Null));
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.ReadUtcTime(TwoDigitYearMax, expectedTag: Asn1Tag.Null));
+                static (ref reader) => reader.ReadUtcTime(TwoDigitYearMax, expectedTag: Asn1Tag.Null));
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<AsnContentException>(() => reader.ReadUtcTime());
-            Assert.True(reader.HasData, "HasData after default tag");
-
-            Assert.Throws<AsnContentException>(() => reader.ReadUtcTime(TwoDigitYearMax));
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.ReadUtcTime());
             Assert.True(reader.HasData, "HasData after default tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadUtcTime(expectedTag: new Asn1Tag(TagClass.Application, 5)));
+                ref reader,
+                static (ref reader) => reader.ReadUtcTime(TwoDigitYearMax));
+            Assert.True(reader.HasData, "HasData after default tag");
+
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.ReadUtcTime(expectedTag: new Asn1Tag(TagClass.Application, 5)));
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadUtcTime(TwoDigitYearMax, expectedTag: new Asn1Tag(TagClass.Application, 5)));
+                ref reader,
+                static (ref reader) => reader.ReadUtcTime(TwoDigitYearMax, expectedTag: new Asn1Tag(TagClass.Application, 5)));
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadUtcTime(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 7)));
+                ref reader,
+                static (ref reader) => reader.ReadUtcTime(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 7)));
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadUtcTime(TwoDigitYearMax, expectedTag: new Asn1Tag(TagClass.ContextSpecific, 7)));
+                ref reader,
+                static (ref reader) => reader.ReadUtcTime(TwoDigitYearMax, expectedTag: new Asn1Tag(TagClass.ContextSpecific, 7)));
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
             Assert.Equal(
@@ -258,7 +300,7 @@ namespace System.Formats.Asn1.Tests.Reader
                 reader.ReadUtcTime(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 5)));
             Assert.False(reader.HasData, "HasData after reading value");
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
 
             Assert.Equal(
                 new DateTimeOffset(2050, 1, 2, 12, 34, 56, TimeSpan.Zero),
@@ -273,20 +315,20 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, "800D3530303130323132333435365A", TagClass.ContextSpecific, 0)]
         [InlineData(AsnEncodingRules.CER, "4C0D3530303130323132333435365A", TagClass.Application, 12)]
         [InlineData(AsnEncodingRules.DER, "DF8A460D3530303130323132333435365A", TagClass.Private, 1350)]
-        public static void ExpectedTag_IgnoresConstructed(
+        public void ExpectedTag_IgnoresConstructed(
             AsnEncodingRules ruleSet,
             string inputHex,
             TagClass tagClass,
             int tagValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            DateTimeOffset val1 = reader.ReadUtcTime(expectedTag:  new Asn1Tag(tagClass, tagValue, true));
+            DateTimeOffset val1 = reader.ReadUtcTime(expectedTag: new Asn1Tag(tagClass, tagValue, true));
 
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
 
             DateTimeOffset val2 = reader.ReadUtcTime(expectedTag: new Asn1Tag(tagClass, tagValue, false));
 

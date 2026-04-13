@@ -10,8 +10,8 @@ namespace System.Reflection.TypeLoading
         private readonly ConstructorInfo _constructor;
         private readonly Func<CustomAttributeArguments>? _argumentsPromise;
 
-        private volatile IList<CustomAttributeTypedArgument>? _lazyFixedArguments;
-        private volatile IList<CustomAttributeNamedArgument>? _lazyNamedArguments;
+        private IList<CustomAttributeTypedArgument>? _lazyFixedArguments;
+        private IList<CustomAttributeNamedArgument>? _lazyNamedArguments;
 
         //
         // For complex custom attributes, use this overload to defer the work of constructing the argument lists until needed.

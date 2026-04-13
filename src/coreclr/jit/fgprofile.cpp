@@ -36,6 +36,9 @@ bool Compiler::fgHaveProfileData()
 //------------------------------------------------------------------------
 // fgHaveProfileWeights: Check if we have a profile that has weights.
 //
+// Returns:
+//    true if profile weights are available
+//
 // Notes:
 //    These weights may come from instrumentation or from synthesis.
 //
@@ -46,6 +49,9 @@ bool Compiler::fgHaveProfileWeights()
 
 //------------------------------------------------------------------------
 // fgRemoveProfileData: Remove all traces of profile info
+//
+// Arguments:
+//   reason -- string describing why profile data is being removed
 //
 // Notes:
 //   Needed if the jit initially thought it was going to optimize
@@ -2421,6 +2427,12 @@ void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& sch
     }
 }
 
+//------------------------------------------------------------------------
+// ValueInstrumentor::Prepare: Prepare for value instrumentation.
+//
+// Arguments:
+//    isPreImport - true if this is the pre-import phase
+//
 void ValueInstrumentor::Prepare(bool isPreImport)
 {
     if (isPreImport)
@@ -2438,6 +2450,14 @@ void ValueInstrumentor::Prepare(bool isPreImport)
 #endif
 }
 
+//------------------------------------------------------------------------
+// ValueInstrumentor::BuildSchemaElements: Build schema elements for value
+//    profiling in the given block.
+//
+// Arguments:
+//    block  - the block to build schema elements for
+//    schema - [IN/OUT] the schema to add elements to
+//
 void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
     if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
@@ -2455,6 +2475,15 @@ void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
     }
 }
 
+//------------------------------------------------------------------------
+// ValueInstrumentor::Instrument: Instrument the given block with value
+//    profiling probes.
+//
+// Arguments:
+//    block         - the block to instrument
+//    schema        - the schema describing the instrumentation
+//    profileMemory - the profile data buffer
+//
 void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
     if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
@@ -4422,6 +4451,9 @@ bool Compiler::fgComputeMissingBlockWeights()
 //   weight2 -- second weight
 //   epsilon -- maximum absolute difference for weights to be considered equal
 //
+// Returns:
+//   true if the weights are within epsilon of each other
+//
 // Notes:
 //   In most cases you should probably call fgProfileWeightsConsistent instead
 //   of this method.
@@ -4438,6 +4470,9 @@ bool Compiler::fgProfileWeightsEqual(weight_t weight1, weight_t weight2, weight_
 // Arguments:
 //   weight1 -- first weight
 //   weight2 -- second weight
+//
+// Returns:
+//   true if the weights are within a small relative percentage of each other
 //
 bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 {
@@ -4459,6 +4494,9 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 //   weight1 -- first weight
 //   weight2 -- second weight
 //   epsilon -- small weight threshold
+//
+// Returns:
+//   true if the weights are consistent or both are smaller than epsilon
 //
 bool Compiler::fgProfileWeightsConsistentOrSmall(weight_t weight1, weight_t weight2, weight_t epsilon)
 {

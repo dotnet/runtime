@@ -96,7 +96,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
     return ret;
 }
 
-extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, PCODE* pStructMarshalStub, SIZE_T* pSize)
+extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIsBlittable, DWORD* pNativeSize)
 {
     QCALL_CONTRACT;
 
@@ -104,39 +104,17 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
 
     BEGIN_QCALL;
 
-    TypeHandle th = TypeHandle::FromPtr(enregisteredTypeHandle);
-
-    if (th.IsBlittable())
+    TypeHandle th = t.AsTypeHandle();
+    if (th.HasLayout())
     {
-        *pStructMarshalStub = (PCODE)NULL;
-        *pSize = th.GetMethodTable()->GetNativeSize();
-        ret = TRUE;
-    }
-    else if (th.HasLayout())
-    {
-        MethodTable* pMT = th.GetMethodTable();
-        MethodDesc* structMarshalStub = NULL;
-
-        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
-        if (pEEMarshalingData != NULL)
-        {
-            GCX_COOP();
-            structMarshalStub = pEEMarshalingData->LookupStructILStubSpeculative(pMT);
-        }
-
-        if (structMarshalStub == NULL)
-        {
-            structMarshalStub = PInvoke::CreateStructMarshalILStub(pMT);
-        }
-
-        *pStructMarshalStub = structMarshalStub->GetSingleCallableAddrOfCode();
-        *pSize = 0;
+        *pIsBlittable = th.IsBlittable();
+        *pNativeSize = th.GetMethodTable()->GetNativeSize();
         ret = TRUE;
     }
     else
     {
-        *pStructMarshalStub = (PCODE)NULL;
-        *pSize = 0;
+        *pIsBlittable = FALSE;
+        *pNativeSize = 0;
     }
 
     END_QCALL;
@@ -355,8 +333,10 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
 
     assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_DEPENDENT);
 
+#if defined(PROFILING_SUPPORTED)
     if (CORProfilerTrackGC())
         return NULL;
+#endif // PROFILING_SUPPORTED
 
     return GetAppDomain()->GetHandleStore()->CreateHandleOfType(obj, static_cast<HandleType>(type));
 }
@@ -381,8 +361,10 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::GCHandleInternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
+#ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackGC())
         FC_RETURN_BOOL(false);
+#endif // PROFILING_SUPPORTED
 
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
     FC_RETURN_BOOL(true);

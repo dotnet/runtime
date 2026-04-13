@@ -6,6 +6,8 @@
 
 // This file contains common definitions shared between the JIT and interpreter.
 
+#include "jitassert.h"
+
 // MEASURE_MEM_ALLOC controls whether memory allocation statistics are collected.
 // When enabled, the arena allocator tracks allocations by category (memory kind)
 // and can report aggregate statistics at shutdown.

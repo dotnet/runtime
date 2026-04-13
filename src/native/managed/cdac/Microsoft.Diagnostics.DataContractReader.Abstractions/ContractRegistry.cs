@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 
@@ -102,6 +103,31 @@ public abstract class ContractRegistry
     /// Gets an instance of the BuiltInCOM contract for the target.
     /// </summary>
     public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();
+    /// <summary>
+    /// Gets an instance of the ConditionalWeakTable contract for the target.
+    /// </summary>
+    public virtual IConditionalWeakTable ConditionalWeakTable => GetContract<IConditionalWeakTable>();
+    /// <summary>
+    /// Gets an instance of the AuxiliarySymbols contract for the target.
+    /// </summary>
+    public virtual IAuxiliarySymbols AuxiliarySymbols => GetContract<IAuxiliarySymbols>();
+    /// <summary>
+    /// Gets an instance of the Debugger contract for the target.
+    /// </summary>
+    public virtual IDebugger Debugger => GetContract<IDebugger>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
+
+    /// <summary>
+    /// Register a contract implementation for a specific version.
+    /// External packages use this to add contract versions or entirely new contract interfaces.
+    /// </summary>
+    public abstract void Register<TContract>(int version, Func<Target, TContract> creator)
+        where TContract : IContract;
+
+    /// <summary>
+    /// Flush all cached data held by contracts in this registry.
+    /// Called when the target process state may have changed (e.g. on resume).
+    /// </summary>
+    public abstract void Flush();
 }
