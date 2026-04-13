@@ -419,8 +419,6 @@ namespace System.Numerics.Tensors
             return curIn;
         }
 
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe Vector256<T> IndexLessThan<T>(Vector256<T> indices1, Vector256<T> indices2) =>
             sizeof(T) == sizeof(long) ? Vector256.LessThan(indices1.AsInt64(), indices2.AsInt64()).As<long, T>() :
