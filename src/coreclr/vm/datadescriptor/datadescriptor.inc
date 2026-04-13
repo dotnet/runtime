@@ -973,6 +973,19 @@ CDAC_TYPE_FIELD(TransitionBlock, TYPE(CalleeSavedRegisters), CalleeSavedRegister
 #ifdef TARGET_ARM
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(ArgumentRegisters), ArgumentRegisters, offsetof(TransitionBlock, m_argumentRegisters))
 #endif // TARGET_ARM
+// Offset to where stack arguments begin (just past the end of the TransitionBlock)
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfArgs, sizeof(TransitionBlock))
+// Offset to where argument registers are saved in the TransitionBlock
+#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfArgumentRegisters, sizeof(TransitionBlock))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfFirstGCRefMapSlot, sizeof(TransitionBlock))
+#elif defined(TARGET_ARM64)
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfArgumentRegisters, offsetof(TransitionBlock, m_argumentRegisters))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfFirstGCRefMapSlot, offsetof(TransitionBlock, m_x8RetBuffReg))
+#else
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfArgumentRegisters, offsetof(TransitionBlock, m_argumentRegisters))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfFirstGCRefMapSlot, offsetof(TransitionBlock, m_argumentRegisters))
+#endif
 CDAC_TYPE_END(TransitionBlock)
 
 #ifdef DEBUGGING_SUPPORTED
@@ -1394,17 +1407,6 @@ CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
 
 CDAC_GLOBAL(MethodDescTokenRemainderBitCount, T_UINT8, METHOD_TOKEN_REMAINDER_BIT_COUNT)
 
-CDAC_GLOBAL(TransitionBlockOffsetOfArgs, T_UINT32, sizeof(TransitionBlock))
-#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
-CDAC_GLOBAL(TransitionBlockOffsetOfArgumentRegisters, T_UINT32, sizeof(TransitionBlock))
-CDAC_GLOBAL(TransitionBlockOffsetOfFirstGCRefMapSlot, T_UINT32, sizeof(TransitionBlock))
-#elif defined(TARGET_ARM64)
-CDAC_GLOBAL(TransitionBlockOffsetOfArgumentRegisters, T_UINT32, offsetof(TransitionBlock, m_argumentRegisters))
-CDAC_GLOBAL(TransitionBlockOffsetOfFirstGCRefMapSlot, T_UINT32, offsetof(TransitionBlock, m_x8RetBuffReg))
-#else
-CDAC_GLOBAL(TransitionBlockOffsetOfArgumentRegisters, T_UINT32, offsetof(TransitionBlock, m_argumentRegisters))
-CDAC_GLOBAL(TransitionBlockOffsetOfFirstGCRefMapSlot, T_UINT32, offsetof(TransitionBlock, m_argumentRegisters))
-#endif
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(FeatureCOMInterop, T_UINT8, 1)
 #else

@@ -19,8 +19,18 @@ internal enum GCRefMapToken
 
 /// <summary>
 /// Managed port of the native GCRefMapDecoder (gcrefmap.h).
-/// Decodes a compact bitstream describing which transition block slots
-/// contain GC references for a given call site.
+///
+/// A GCRefMap is a compact bitstream that describes which transition block slots
+/// contain GC references for a given call site (e.g., in ReadyToRun stubs).
+/// It is used by ExternalMethodFrame and StubDispatchFrame to report GC roots
+/// without needing the full MethodDesc/signature decoding path.
+///
+/// Encoding: each slot is encoded as a variable-length integer using 3 bits per
+/// token (see <see cref="GCRefMapToken"/>), with a high-bit continuation flag.
+/// A "skip" token advances the slot position without reporting. The stream ends
+/// when all slots have been consumed (indicated by a zero byte after the last token).
+///
+/// The native implementation lives in coreclr/inc/gcrefmap.h (GCRefMapDecoder class).
 /// </summary>
 internal ref struct GCRefMapDecoder
 {

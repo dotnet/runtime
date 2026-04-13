@@ -1253,7 +1253,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     /// <summary>
     /// Returns true if the method requires a hidden instantiation argument (generic context parameter).
-    /// Matches native MethodDesc::RequiresInstArg().
+    /// Matches native MethodDesc::RequiresInstArg():
+    /// RequiresInstArg = IsSharedByGenericInstantiations && (HasMethodInstantiation || IsStatic || IsValueType || IsInterface)
     /// </summary>
     public bool RequiresInstArg(MethodDescHandle methodDescHandle)
     {
@@ -1262,15 +1263,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (!IsSharedByGenericInstantiations(methodDesc))
             return false;
 
-        // RequiresInstArg = IsShared && (HasMethodInstantiation || IsStatic || IsValueType || IsInterface)
-        if (methodDesc.Classification == MethodClassification.Instantiated)
-        {
-            InstantiatedMethodDesc imd = AsInstantiatedMethodDesc(methodDesc);
-            if (imd.HasMethodInstantiation)
-                return true;
-        }
+        if (MethodDescHasMethodInstantiation(methodDesc))
+            return true;
 
-        // Check IsStatic, IsValueType, IsInterface on the owning type
         MethodTable mt = _methodTables[methodDesc.MethodTable];
         if (mt.Flags.IsInterface)
             return true;
@@ -1278,11 +1273,27 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (mt.Flags.IsValueType)
             return true;
 
-        // Check IsStatic via metadata
+        if (IsStatic(methodDesc))
+            return true;
+
+        return false;
+    }
+
+    private bool MethodDescHasMethodInstantiation(MethodDesc methodDesc)
+    {
+        if (methodDesc.Classification != MethodClassification.Instantiated)
+            return false;
+
+        InstantiatedMethodDesc imd = AsInstantiatedMethodDesc(methodDesc);
+        return imd.HasMethodInstantiation;
+    }
+
+    private bool IsStatic(MethodDesc methodDesc)
+    {
         try
         {
             uint token = methodDesc.Token;
-            if (token != 0x06000000) // has a valid token
+            if (token != 0x06000000)
             {
                 TypeHandle typeHandle = GetTypeHandle(methodDesc.MethodTable);
                 TargetPointer modulePtr = GetModule(typeHandle);
@@ -1294,14 +1305,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                     MethodDefinitionHandle methodDefHandle =
                         MetadataTokens.MethodDefinitionHandle((int)(token & 0x00FFFFFF));
                     MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-                    if ((methodDef.Attributes & MethodAttributes.Static) != 0)
-                        return true;
+                    return (methodDef.Attributes & MethodAttributes.Static) != 0;
                 }
             }
         }
         catch
         {
-            // If metadata isn't available, conservatively return false
         }
 
         return false;

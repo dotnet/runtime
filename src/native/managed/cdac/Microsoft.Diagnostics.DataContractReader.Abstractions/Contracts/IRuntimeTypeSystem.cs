@@ -185,7 +185,7 @@ public interface IRuntimeTypeSystem : IContract
 
     // Return true if the method uses the async calling convention (CORINFO_CALLCONV_ASYNCCALL).
     // This corresponds to native MethodDesc::IsAsyncMethod().
-    bool IsAsyncMethod(MethodDescHandle methodDesc) => false;
+    bool IsAsyncMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     // Return mdtMethodDef (0x06000000) if the method doesn't have a token, otherwise return the token of the method
     uint GetMethodToken(MethodDescHandle methodDesc) => throw new NotImplementedException();

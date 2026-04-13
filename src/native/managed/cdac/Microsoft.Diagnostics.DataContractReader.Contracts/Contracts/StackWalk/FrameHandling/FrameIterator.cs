@@ -438,7 +438,8 @@ internal sealed class FrameIterator
 
     private uint OffsetFromGCRefMapPos(int pos)
     {
-        uint firstSlotOffset = target.ReadGlobal<uint>(Constants.Globals.TransitionBlockOffsetOfFirstGCRefMapSlot);
+        Target.TypeInfo tbType = target.GetTypeInfo(DataType.TransitionBlock);
+        uint firstSlotOffset = (uint)tbType.Fields["OffsetOfFirstGCRefMapSlot"].Offset;
         return firstSlotOffset + (uint)(pos * target.PointerSize);
     }
 
@@ -454,7 +455,8 @@ internal sealed class FrameIterator
         const int DynamicHelperFrameFlags_ObjectArg = 1;
         const int DynamicHelperFrameFlags_ObjectArg2 = 2;
 
-        uint argRegOffset = target.ReadGlobal<uint>(Constants.Globals.TransitionBlockOffsetOfArgumentRegisters);
+        Target.TypeInfo tbType = target.GetTypeInfo(DataType.TransitionBlock);
+        uint argRegOffset = (uint)tbType.Fields["OffsetOfArgumentRegisters"].Offset;
 
         if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg) != 0)
         {
