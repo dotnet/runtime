@@ -1460,6 +1460,9 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
 {
     assert(successor != nullptr);
 
+    *hasThreadedPreds  = false;
+    *replacementSsaNum = SsaConfig::RESERVED_SSA_NUM;
+
     bool              foundReplacement = false;
     unsigned          replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
     GenTreePhi* const phi              = phiDef->Data()->AsPhi();
@@ -1496,7 +1499,7 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     }
 
     *replacementSsaNum = replacementSsa;
-    return true;
+    return foundReplacement;
 }
 
 //------------------------------------------------------------------------
@@ -1676,7 +1679,7 @@ bool Compiler::optCanRewritePhiUses(JumpThreadInfo& jti)
 //   domBlock - dom block used in inferencing (if any)
 //
 // Returns:
-//   Viability of jump threading: either CannotThread, CanThread, or CanThreadWithPhiBasedRBO.
+//   Viability of jump threading: either CannotThread, CanThread, or NeedsPhiUseResolution.
 //
 Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock)
 {
