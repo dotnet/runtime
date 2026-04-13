@@ -12,7 +12,7 @@
 // On entry:
 //  - BITMASK: bitmask describing pushes, may be volatile register or constant value
 //  - RAX: managed function return value, may be an object or byref
-//  - RCX, RDX, R8, R9: may contain objects or byrefs at the hijack point
+//  - RSI, RDI, RCX, RDX, R8, R9: may contain objects or byrefs at the hijack point
 //  - preserved regs: need to stay preserved, may contain objects or byrefs
 //
 // INVARIANTS
@@ -31,11 +31,13 @@
     push_nonvol_reg r14                          //   ..
     push_nonvol_reg r13                          //   ..
     push_nonvol_reg r12                          //   ..
+    push_register   rdi                          // save RDI, volatile on Unix, might contain an objectref
+    push_register   rsi                          // save RSI, volatile on Unix, might contain an objectref
     push_nonvol_reg rbx                          //   ..
     push_register   \BITMASK                     // save the register bitmask passed in by caller
     push_register   \threadReg                   // Thread * (unused by stackwalker)
     push_nonvol_reg rbp                          // save caller`s RBP
-    mov             \trashReg, [rsp + 14*8]      // Find the return address
+    mov             \trashReg, [rsp + 16*8]      // Find the return address
     push_register   \trashReg                    // save m_RIP
     lea             \trashReg, [rsp + 0]         // trashReg == address of frame
 
@@ -62,6 +64,8 @@
     pop         rax     // discard Thread*
     pop         rax     // discard BITMASK
     pop         rbx
+    pop         rsi
+    pop         rdi
     pop         r12
     pop         r13
     pop         r14
@@ -83,7 +87,7 @@
 //
 // Register state on exit:
 //  R11: thread pointer
-//  RAX, RCX, RDX, R8, R9 preserved, R10 trashed
+//  RAX, RCX, RDX, RSI, RDI, R8, R9 preserved, R10 trashed
 //
 .macro FixupHijackedCallstack
         // preserve volatile argument registers across INLINE_GETTHREAD
@@ -93,7 +97,9 @@
         // preserve RCX as it may contain async continuation return value
         push rcx
 
-        // preserve R8 and R9 as they may contain GC refs
+        // preserve RSI, RDI, R8 and R9 as they may contain GC refs
+        push rsi
+        push rdi
         push r8
         push r9
 
@@ -108,6 +114,8 @@
 
         pop r9
         pop r8
+        pop rdi
+        pop rsi
 
         pop rcx
 
@@ -136,7 +144,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
         ret
 
 LOCAL_LABEL(WaitForGC):
-        mov         r10d, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RCX + PTFF_SAVE_RDX + PTFF_SAVE_R8 + PTFF_SAVE_R9 + PTFF_THREAD_HIJACK
+        mov         r10d, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RSI + PTFF_SAVE_RDI + PTFF_SAVE_RAX + PTFF_SAVE_RCX + PTFF_SAVE_RDX + PTFF_SAVE_R8 + PTFF_SAVE_R9 + PTFF_THREAD_HIJACK
         jmp         C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack, _TEXT
 

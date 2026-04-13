@@ -242,6 +242,8 @@ C_FUNC(\Name):
 #define PTFF_SAVE_R15            0x00000080
 #define PTFF_SAVE_ALL_PRESERVED  0x000000F1   // NOTE: RBP is not included in this set!
 #define PTFF_SAVE_RSP            0x00008000
+#define PTFF_SAVE_RSI            0x00000002   // RSI is saved in hijack handler - in case it contains a GC ref
+#define PTFF_SAVE_RDI            0x00000004   // RDI is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_RAX            0x00000100   // RAX is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_RCX            0x00000200   // RCX is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_RDX            0x00000400   // RDX is saved in hijack handler - in case it contains a GC ref
