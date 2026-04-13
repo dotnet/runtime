@@ -12,6 +12,14 @@
 
 DEFINE_DACGFN(DACNotifyCompilationFinished)
 DEFINE_DACGFN(ThePreStub)
+DEFINE_DACGFN(GenericPInvokeCalliHelper)
+DEFINE_DACGFN(VarargPInvokeStub)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+DEFINE_DACGFN(VarargPInvokeStub_RetBuffArg)
+#endif
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+DEFINE_DACGFN(JIT_TailCall)
+#endif
 
 DEFINE_DACGFN(ThePreStubPatchLabel)
 #ifdef FEATURE_COMINTEROP

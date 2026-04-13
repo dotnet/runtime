@@ -805,7 +805,13 @@ CDAC_TYPE_FIELD(RangeSection, T_POINTER, JitManager, cdac_data<RangeSection>::Ji
 CDAC_TYPE_FIELD(RangeSection, T_INT32, Flags, cdac_data<RangeSection>::Flags)
 CDAC_TYPE_FIELD(RangeSection, T_POINTER, HeapList, cdac_data<RangeSection>::HeapList)
 CDAC_TYPE_FIELD(RangeSection, T_POINTER, R2RModule, cdac_data<RangeSection>::R2RModule)
+CDAC_TYPE_FIELD(RangeSection, T_POINTER, RangeList, cdac_data<RangeSection>::RangeList)
 CDAC_TYPE_END(RangeSection)
+
+CDAC_TYPE_BEGIN(CodeRangeMapRangeList)
+CDAC_TYPE_INDETERMINATE(CodeRangeMapRangeList)
+CDAC_TYPE_FIELD(CodeRangeMapRangeList, T_INT32, RangeListType, cdac_data<CodeRangeMapRangeList>::RangeListType)
+CDAC_TYPE_END(CodeRangeMapRangeList)
 
 CDAC_TYPE_BEGIN(EEJitManager)
 CDAC_TYPE_INDETERMINATE(EEJitManager)
@@ -1412,6 +1418,17 @@ CDAC_GLOBAL(ArrayBaseSize, T_UINT32, ARRAYBASE_BASESIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, T_UINT16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
 CDAC_GLOBAL(StubCodeBlockLast, T_UINT8, STUB_CODE_BLOCK_LAST)
 CDAC_GLOBAL(DefaultADID, T_UINT32, DefaultADID)
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL_POINTER(ThePreStub, &ThePreStub)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL_POINTER(GenericPInvokeCalliHelper, &GenericPInvokeCalliHelper)
+CDAC_GLOBAL_POINTER(VarargPInvokeStub, &VarargPInvokeStub)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+CDAC_GLOBAL_POINTER(VarargPInvokeStub_RetBuffArg, &VarargPInvokeStub_RetBuffArg)
+#endif
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+CDAC_GLOBAL_POINTER(TailCallJitHelper, &JIT_TailCall)
+#endif // TARGET_X86 && !UNIX_X86_ABI
 #ifndef TARGET_UNIX
 CDAC_GLOBAL(SizeOfGenericModeBlock, T_UINT32, sizeof(GenericModeBlock))
 #endif

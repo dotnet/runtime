@@ -793,6 +793,7 @@ template<> struct cdac_data<RangeSection>
     static constexpr size_t Flags = offsetof(RangeSection, _flags);
     static constexpr size_t HeapList = offsetof(RangeSection, _pHeapList);
     static constexpr size_t R2RModule = offsetof(RangeSection, _pR2RModule);
+    static constexpr size_t RangeList = offsetof(RangeSection, _pRangeList);
 };
 
 enum class RangeSectionLockState

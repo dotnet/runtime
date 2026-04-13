@@ -29,6 +29,7 @@ public class ExecutionManagerTests
             [DataType.ReadyToRunInfo] = TargetTestHelpers.CreateTypeInfo(emBuilder.ReadyToRunInfoLayout),
             [DataType.EEJitManager] = TargetTestHelpers.CreateTypeInfo(emBuilder.EEJitManagerLayout),
             [DataType.Module] = TargetTestHelpers.CreateTypeInfo(emBuilder.ModuleLayout),
+            [DataType.CodeRangeMapRangeList] = TargetTestHelpers.CreateTypeInfo(emBuilder.CodeRangeMapRangeListLayout),
             [DataType.HashMap] = TargetTestHelpers.CreateTypeInfo(MockHashMap.CreateLayout(helpers.Arch)),
             [DataType.Bucket] = TargetTestHelpers.CreateTypeInfo(MockHashMapBucket.CreateLayout(helpers.Arch)),
         };
@@ -653,6 +654,105 @@ public class ExecutionManagerTests
         Assert.Equal(hostHeap.Address, hostInfo.HeapAddress.Value);
         Assert.Equal(baseAddr, hostInfo.BaseAddress);
         Assert.Equal(currentAddr, hostInfo.CurrentAddress);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void TryGetStubKind_GlobalConstants(string version, MockTarget.Architecture arch)
+    {
+        IExecutionManager em = CreateExecutionManagerContract(version, arch);
+
+        Assert.Equal(StubKind.PreStub, em.TryGetStubKind(new TargetCodePointer(0x00aa_1000)));
+        Assert.Equal(StubKind.InteropDispatchStub, em.TryGetStubKind(new TargetCodePointer(0x00aa_2000)));
+        Assert.Equal(StubKind.InteropDispatchStub, em.TryGetStubKind(new TargetCodePointer(0x00aa_3000)));
+        Assert.Equal(StubKind.InteropDispatchStub, em.TryGetStubKind(new TargetCodePointer(0x00aa_4000)));
+        Assert.Equal(StubKind.TailCallStub, em.TryGetStubKind(new TargetCodePointer(0x00aa_5000)));
+        Assert.Equal(StubKind.CodeBlockUnknown, em.TryGetStubKind(new TargetCodePointer(0x00aa_9000)));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void TryGetStubKind_RangeListStubs(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0x4000u;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const int stubCodeBlockKindPrecode = 4; // STUB_CODE_BLOCK_STUBPRECODE
+
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                MockRangeSection rangeSection = emBuilder.AddRangeListRangeSection(jittedCode, jitManagerAddress, stubCodeBlockKindPrecode);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
+
+        StubKind kind = em.TryGetStubKind(new TargetCodePointer(codeRangeStart + 0x100));
+        Assert.Equal(StubKind.CodeBlockPrecode, kind);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void TryGetStubKind_CodeHeapStubs(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const uint stubSize = 0x20;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const int stubCodeBlockKindJumpStub = 1; // STUB_CODE_BLOCK_JUMPSTUB
+        ulong stubCodeAddress = 0;
+
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                stubCodeAddress = emBuilder.AddStubCodeBlock(jittedCode, stubSize, stubCodeBlockKindJumpStub).CodeAddress;
+
+                NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+                nibBuilder.AllocateCodeChunk(new TargetCodePointer(stubCodeAddress), stubSize);
+
+                MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+                MockRangeSection rangeSection = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNode.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
+
+        StubKind kind = em.TryGetStubKind(new TargetCodePointer(stubCodeAddress));
+        Assert.Equal(StubKind.CodeBlockJumpStub, kind);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void TryGetStubKind_ManagedCode(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const uint methodSize = 0x450;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const ulong expectedMethodDescAddress = 0x0101_aaa0;
+        ulong methodStart = 0;
+
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            arch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+                methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress).CodeAddress;
+
+                NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+                nibBuilder.AllocateCodeChunk(new TargetCodePointer(methodStart), methodSize);
+
+                MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+                MockRangeSection rangeSection = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNode.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
+
+        StubKind kind = em.TryGetStubKind(new TargetCodePointer(methodStart));
+        Assert.Equal(StubKind.CodeBlockManaged, kind);
     }
 
     public static IEnumerable<object[]> StdArchAllVersions()

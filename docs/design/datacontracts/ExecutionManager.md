@@ -52,6 +52,10 @@ struct CodeBlockHandle
     // Get the exception clause info for the code block
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle);
 
+    // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
+    // or as managed code. Returns CodeBlockUnknown if the address is not recognized.
+    StubKind GetStubKind(TargetCodePointer jittedCodeAddress);
+
     // Extension Methods (implemented in terms of other APIs)
     // Returns true if the code block is a funclet (exception handler, filter, or finally)
     bool IsFunclet(CodeBlockHandle codeInfoHandle);
@@ -143,6 +147,8 @@ Data descriptors used:
 | `RangeSection` | `Flags` | Flags for the range section |
 | `RangeSection` | `HeapList` | Pointer to the heap list |
 | `RangeSection` | `R2RModule` | ReadyToRun module |
+| `RangeSection` | `RangeList` | Pointer to the `CodeRangeMapRangeList` associated with this range section |
+| `CodeRangeMapRangeList` | `RangeListType` | Integer identifying the stub code block kind for this range list |
 | `CodeHeapListNode` | `Next` | Next node |
 | `CodeHeapListNode` | `StartAddress` | Start address of the used portion of the code heap |
 | `CodeHeapListNode` | `EndAddress` | End address of the used portion of the code heap |
@@ -219,6 +225,11 @@ Global variables used:
 | `GCInfoVersion` | uint32 | JITted code GCInfo version |
 | `FeatureOnStackReplacement` | uint8 | 1 if FEATURE_ON_STACK_REPLACEMENT is enabled, 0 otherwise |
 | `FeaturePortableEntrypoints` | uint8 | 1 if FEATURE_PORTABLE_ENTRYPOINTS is enabled, 0 otherwise |
+| `ThePreStub` | TargetPointer | Address of the pre-stub entry point (only present when `FeaturePortableEntrypoints` is disabled) |
+| `GenericPInvokeCalliHelper` | TargetPointer | Address of the generic PInvoke CALLI helper stub |
+| `VarargPInvokeStub` | TargetPointer | Address of the vararg PInvoke stub |
+| `VarargPInvokeStub_RetBuffArg` | TargetPointer | Address of the vararg PInvoke stub with return buffer argument (not present on x86, ARM64, LoongArch64, RISC-V) |
+| `TailCallJitHelper` | TargetPointer | Address of the JIT tail call helper (only present on x86 Windows) |
 | `ObjectMethodTable` | TargetPointer | Pointer to the `System.Object` MethodTable, used for catch-all handler detection |
 
 Contract constants used:
@@ -500,6 +511,36 @@ There are two distinct clause data types. JIT-compiled code uses `EEExceptionCla
 After obtaining the clause array bounds, the common iteration logic classifies each clause by its flags. The native `COR_ILEXCEPTION_CLAUSE` flags are bit flags: `Filter` (0x1), `Finally` (0x2), `Fault` (0x4). If none are set, the clause is `Typed`. For typed clauses, if the `CachedClass` flag (0x10000000) is set (JIT-only, used for dynamic methods), the union field contains a resolved `TypeHandle` pointer; the clause is a catch-all if this pointer equals the `ObjectMethodTable` global. Otherwise, the union field is a metadata `ClassToken`. To determine whether a typed clause is a catch-all handler, the `ClassToken` (which may be a `TypeDef` or `TypeRef`) is resolved to a `MethodTable` via the `Loader` contract's module lookup maps (`TypeDefToMethodTable` or `TypeRefToMethodTable`) and compared against the `ObjectMethodTable` global. For typed clauses without a cached type handle, the module address is resolved by walking `CodeBlockHandle` → `MethodDesc` → `MethodTable` → `TypeHandle` → `Module` via the `RuntimeTypeSystem` contract.
 
 `IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
+
+### Stub Kind Classification
+
+`GetStubKind` classifies a code address as a known stub type or managed code. It first checks the address against well-known global stub pointers (`ThePreStub`, `VarargPInvokeStub`, `VarargPInvokeStub_RetBuffArg`, `GenericPInvokeCalliHelper`, `TailCallJitHelper`). If the address matches one of these, it returns the corresponding `StubKind` immediately.
+
+If no global match is found, the method looks up the address in the `RangeSectionMap`. If a `RangeSection` is found, the JIT manager for that section classifies the code:
+
+- **EEJitManager**: If the range section is a range list, reads the `CodeRangeMapRangeList.RangeListType` to determine the stub code block kind. Otherwise, it uses the nibble map to find the method code start, reads the code header indirect pointer, and checks whether it is a stub code block (value ≤ `StubCodeBlockLast`). If so, the value identifies the specific stub kind.
+- **ReadyToRunJitManager**: Checks whether the address falls within a delay-load method call thunk region.
+
+```csharp
+StubKind GetStubKind(TargetCodePointer jittedCodeAddress)
+{
+    TargetPointer address = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress);
+
+    // Check well-known global stubs
+    if (address == ThePreStub) return StubKind.PreStub;
+    if (address == VarargPInvokeStub || address == VarargPInvokeStub_RetBuffArg
+        || address == GenericPInvokeCalliHelper)
+        return StubKind.InteropDispatchStub;
+    if (address == TailCallJitHelper) return StubKind.TailCallStub;
+
+    // Look up in range section map
+    RangeSection range = FindRangeSection(jittedCodeAddress);
+    if (range == null) return StubKind.CodeBlockUnknown;
+
+    JitManager jitManager = GetJitManager(range);
+    return jitManager.GetStubCodeBlockKind(range, jittedCodeAddress);
+}
+```
 
 ### EE JIT Manager and Code Heap Info
 

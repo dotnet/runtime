@@ -168,6 +168,7 @@ public enum DataType
     ComInterfaceEntry,
     InternalComInterfaceDispatch,
     AuxiliarySymbolInfo,
+    CodeRangeMapRangeList,
 
     /* GC Data Types */
 
