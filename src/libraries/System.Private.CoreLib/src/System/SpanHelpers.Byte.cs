@@ -531,8 +531,8 @@ namespace System
                         Vector128<byte> search = Vector128.Load(searchSpace + offset);
 
                         // Same method as below
-                        uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
-                        if (matches == 0)
+                        Vector128<byte> cmp = Vector128.Equals(Vector128<byte>.Zero, search);
+                        if (cmp == Vector128<byte>.Zero)
                         {
                             // Zero flags set so no matches
                             offset += (nuint)Vector128<byte>.Count;
@@ -540,7 +540,7 @@ namespace System
                         else
                         {
                             // Find bitflag offset of first match and add to current offset
-                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                            return (int)(offset + (uint)Vector128.IndexOfFirstMatch(cmp));
                         }
                     }
 
@@ -553,8 +553,8 @@ namespace System
                         Vector256<byte> search = Vector256.Load(searchSpace + offset);
 
                         // Same method as below
-                        uint matches = Vector256.Equals(Vector256<byte>.Zero, search).ExtractMostSignificantBits();
-                        if (matches == 0)
+                        Vector256<byte> cmp = Vector256.Equals(Vector256<byte>.Zero, search);
+                        if (cmp == Vector256<byte>.Zero)
                         {
                             // Zero flags set so no matches
                             offset += (nuint)Vector256<byte>.Count;
@@ -562,7 +562,7 @@ namespace System
                         else
                         {
                             // Find bitflag offset of first match and add to current offset
-                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                            return (int)(offset + (uint)Vector256.IndexOfFirstMatch(cmp));
                         }
                     }
                     lengthToExamine = GetByteVector512SpanLength(offset, Length);
@@ -571,10 +571,8 @@ namespace System
                         do
                         {
                             Vector512<byte> search = Vector512.Load(searchSpace + offset);
-                            ulong matches = Vector512.Equals(Vector512<byte>.Zero, search).ExtractMostSignificantBits();
-                            // Note that MoveMask has converted the equal vector elements into a set of bit flags,
-                            // So the bit position in 'matches' corresponds to the element offset.
-                            if (matches == 0)
+                            Vector512<byte> cmp = Vector512.Equals(Vector512<byte>.Zero, search);
+                            if (cmp == Vector512<byte>.Zero)
                             {
                                 // Zero flags set so no matches
                                 offset += (nuint)Vector512<byte>.Count;
@@ -582,7 +580,7 @@ namespace System
                             }
 
                             // Find bitflag offset of first match and add to current offset
-                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                            return (int)(offset + (uint)Vector512.IndexOfFirstMatch(cmp));
                         } while (lengthToExamine > offset);
                     }
 
@@ -592,8 +590,8 @@ namespace System
                         Vector256<byte> search = Vector256.Load(searchSpace + offset);
 
                         // Same method as above
-                        uint matches = Vector256.Equals(Vector256<byte>.Zero, search).ExtractMostSignificantBits();
-                        if (matches == 0)
+                        Vector256<byte> cmp = Vector256.Equals(Vector256<byte>.Zero, search);
+                        if (cmp == Vector256<byte>.Zero)
                         {
                             // Zero flags set so no matches
                             offset += (nuint)Vector256<byte>.Count;
@@ -601,7 +599,7 @@ namespace System
                         else
                         {
                             // Find bitflag offset of first match and add to current offset
-                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                            return (int)(offset + (uint)Vector256.IndexOfFirstMatch(cmp));
                         }
                     }
 
@@ -611,8 +609,8 @@ namespace System
                         Vector128<byte> search = Vector128.Load(searchSpace + offset);
 
                         // Same method as above
-                        uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
-                        if (matches == 0)
+                        Vector128<byte> cmp = Vector128.Equals(Vector128<byte>.Zero, search);
+                        if (cmp == Vector128<byte>.Zero)
                         {
                             // Zero flags set so no matches
                             offset += (nuint)Vector128<byte>.Count;
@@ -620,7 +618,7 @@ namespace System
                         else
                         {
                             // Find bitflag offset of first match and add to current offset
-                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                            return (int)(offset + (uint)Vector128.IndexOfFirstMatch(cmp));
                         }
                     }
 
@@ -644,8 +642,8 @@ namespace System
                         Vector128<byte> search = Vector128.Load(searchSpace + offset);
 
                         // Same method as below
-                        uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
-                        if (matches == 0)
+                        Vector128<byte> cmp = Vector128.Equals(Vector128<byte>.Zero, search);
+                        if (cmp == Vector128<byte>.Zero)
                         {
                             // Zero flags set so no matches
                             offset += (nuint)Vector128<byte>.Count;
@@ -653,7 +651,7 @@ namespace System
                         else
                         {
                             // Find bitflag offset of first match and add to current offset
-                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                            return (int)(offset + (uint)Vector128.IndexOfFirstMatch(cmp));
                         }
                     }
 
@@ -663,10 +661,8 @@ namespace System
                         do
                         {
                             Vector256<byte> search = Vector256.Load(searchSpace + offset);
-                            uint matches = Vector256.Equals(Vector256<byte>.Zero, search).ExtractMostSignificantBits();
-                            // Note that MoveMask has converted the equal vector elements into a set of bit flags,
-                            // So the bit position in 'matches' corresponds to the element offset.
-                            if (matches == 0)
+                            Vector256<byte> cmp = Vector256.Equals(Vector256<byte>.Zero, search);
+                            if (cmp == Vector256<byte>.Zero)
                             {
                                 // Zero flags set so no matches
                                 offset += (nuint)Vector256<byte>.Count;
@@ -674,7 +670,7 @@ namespace System
                             }
 
                             // Find bitflag offset of first match and add to current offset
-                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                            return (int)(offset + (uint)Vector256.IndexOfFirstMatch(cmp));
                         } while (lengthToExamine > offset);
                     }
 
@@ -684,8 +680,8 @@ namespace System
                         Vector128<byte> search = Vector128.Load(searchSpace + offset);
 
                         // Same method as above
-                        uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
-                        if (matches == 0)
+                        Vector128<byte> cmp = Vector128.Equals(Vector128<byte>.Zero, search);
+                        if (cmp == Vector128<byte>.Zero)
                         {
                             // Zero flags set so no matches
                             offset += (nuint)Vector128<byte>.Count;
@@ -693,7 +689,7 @@ namespace System
                         else
                         {
                             // Find bitflag offset of first match and add to current offset
-                            return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                            return (int)(offset + (uint)Vector128.IndexOfFirstMatch(cmp));
                         }
                     }
 
@@ -724,8 +720,7 @@ namespace System
                         }
 
                         // Find bitflag offset of first match and add to current offset
-                        uint matches = compareResult.ExtractMostSignificantBits();
-                        return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
+                        return (int)(offset + (uint)Vector128.IndexOfFirstMatch(compareResult));
                     }
 
                     if (offset < (nuint)(uint)Length)

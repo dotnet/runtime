@@ -3713,49 +3713,37 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> equals) where T : struct
         {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
+            return Vector128.IndexOfFirstMatch(equals) + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector256<T> equals) where T : struct
         {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
+            return Vector256.IndexOfFirstMatch(equals) + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector512<T> equals) where T : struct
         {
-            ulong notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
+            return Vector512.IndexOfFirstMatch(equals) + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeLastIndex<T>(nint offset, Vector128<T> equals) where T : struct
         {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)offset + index;
+            return (int)offset + Vector128.IndexOfLastMatch(equals);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeLastIndex<T>(nint offset, Vector256<T> equals) where T : struct
         {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)offset + index;
+            return (int)offset + Vector256.IndexOfLastMatch(equals);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeLastIndex<T>(nint offset, Vector512<T> equals) where T : struct
         {
-            ulong notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = 63 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)offset + index;
+            return (int)offset + Vector512.IndexOfLastMatch(equals);
         }
 
         internal interface INegator<T> where T : struct
