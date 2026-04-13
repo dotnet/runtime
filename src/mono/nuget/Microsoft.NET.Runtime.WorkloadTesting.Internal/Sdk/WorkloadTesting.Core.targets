@@ -110,7 +110,7 @@
       <Output TaskParameter="ExitCode" PropertyName="_DotNetVersionExitCode" />
     </Exec>
 
-    <!-- If `dotnet -version` failed, then run it again, so we can surface the output as *Errors*.
+    <!-- If `dotnet --version` failed, then run it again, so we can surface the output as *Errors*.
          This allows the errors to show up correctly, versus trying to use the output lines with
          the Error task -->
     <Exec Condition="$(_DotNetVersionExitCode) != '0'" Command="$(_DotNetVersionCommand)" CustomErrorRegularExpression=".*"
