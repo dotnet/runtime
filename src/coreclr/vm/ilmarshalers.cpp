@@ -4137,12 +4137,6 @@ namespace
     // Start from the managed element type - this is the authoritative source.
     MethodTable* pElementMT = mops.methodTable;
 
-    // Enums marshal as their underlying primitive type.
-    if (pElementMT->IsEnum())
-    {
-        pElementMT = CoreLibBinder::GetElementType(pElementMT->GetInternalCorElementType());
-    }
-
     TypeHandle thElement(pElementMT);
 
     MethodTable* pEnabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_ENABLED);
