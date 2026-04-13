@@ -21,8 +21,7 @@ public static class TargetFieldExtensions
         where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         Target.FieldInfo field = typeInfo.Fields[fieldName];
-        AssertPrimitiveType<T>(field, fieldName);
-
+        DataDescriptorTypeValidation.AssertPrimitiveType<T>(field.TypeName, $"field '{fieldName}'");
         return target.Read<T>(address + (ulong)field.Offset);
     }
 
@@ -36,8 +35,7 @@ public static class TargetFieldExtensions
         if (!typeInfo.Fields.TryGetValue(fieldName, out Target.FieldInfo field))
             return defaultValue;
 
-        AssertPrimitiveType<T>(field, fieldName);
-
+        DataDescriptorTypeValidation.AssertPrimitiveType<T>(field.TypeName, $"field '{fieldName}'");
         return target.Read<T>(address + (ulong)field.Offset);
     }
 
@@ -47,8 +45,7 @@ public static class TargetFieldExtensions
     public static TargetPointer ReadPointerField(this Target target, ulong address, Target.TypeInfo typeInfo, string fieldName)
     {
         Target.FieldInfo field = typeInfo.Fields[fieldName];
-        AssertPointerType(field, fieldName);
-
+        DataDescriptorTypeValidation.AssertPointerType(field.TypeName, $"field '{fieldName}'");
         return target.ReadPointer(address + (ulong)field.Offset);
     }
 
@@ -61,8 +58,7 @@ public static class TargetFieldExtensions
         if (!typeInfo.Fields.TryGetValue(fieldName, out Target.FieldInfo field))
             return TargetPointer.Null;
 
-        AssertPointerType(field, fieldName);
-
+        DataDescriptorTypeValidation.AssertPointerType(field.TypeName, $"field '{fieldName}'");
         return target.ReadPointer(address + (ulong)field.Offset);
     }
 
@@ -75,7 +71,6 @@ public static class TargetFieldExtensions
         Debug.Assert(
             field.TypeName is null or "" or "nuint",
             $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', expected nuint");
-
         return target.ReadNUInt(address + (ulong)field.Offset);
     }
 
@@ -88,13 +83,11 @@ public static class TargetFieldExtensions
         Debug.Assert(
             field.TypeName is null or "" or "CodePointer",
             $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', expected CodePointer");
-
         return target.ReadCodePointer(address + (ulong)field.Offset);
     }
 
     /// <summary>
     /// Read a field that contains an inline Data struct type, with type validation.
-    /// Returns the data object created by <see cref="Target.IDataCache.GetOrAdd{T}"/>.
     /// </summary>
     public static T ReadDataField<T>(this Target target, ulong address, Target.TypeInfo typeInfo, string fieldName)
         where T : IData<T>
@@ -103,25 +96,21 @@ public static class TargetFieldExtensions
         Debug.Assert(
             field.TypeName is null or "" || field.TypeName == typeof(T).Name,
             $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', reading as {typeof(T).Name}");
-
         return target.ProcessedData.GetOrAdd<T>(address + (ulong)field.Offset);
     }
 
     /// <summary>
     /// Read a field that contains a pointer to a Data struct type, with type validation.
-    /// Reads the pointer, then creates the data object via <see cref="Target.IDataCache.GetOrAdd{T}"/>.
     /// Returns null if the pointer is null.
     /// </summary>
     public static T? ReadDataFieldPointer<T>(this Target target, ulong address, Target.TypeInfo typeInfo, string fieldName)
         where T : IData<T>
     {
         Target.FieldInfo field = typeInfo.Fields[fieldName];
-        AssertPointerType(field, fieldName);
-
+        DataDescriptorTypeValidation.AssertPointerType(field.TypeName, $"field '{fieldName}'");
         TargetPointer pointer = target.ReadPointer(address + (ulong)field.Offset);
         if (pointer == TargetPointer.Null)
             return default;
-
         return target.ProcessedData.GetOrAdd<T>(pointer);
     }
 
@@ -135,47 +124,10 @@ public static class TargetFieldExtensions
         if (!typeInfo.Fields.TryGetValue(fieldName, out Target.FieldInfo field))
             return default;
 
-        AssertPointerType(field, fieldName);
-
+        DataDescriptorTypeValidation.AssertPointerType(field.TypeName, $"field '{fieldName}'");
         TargetPointer pointer = target.ReadPointer(address + (ulong)field.Offset);
         if (pointer == TargetPointer.Null)
             return default;
-
         return target.ProcessedData.GetOrAdd<T>(pointer);
-    }
-
-    [Conditional("DEBUG")]
-    private static void AssertPrimitiveType<T>(Target.FieldInfo field, string fieldName)
-        where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-    {
-        Debug.Assert(
-            field.TypeName is null or "" || IsCompatiblePrimitiveType<T>(field.TypeName),
-            $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', reading as {typeof(T).Name}");
-    }
-
-    [Conditional("DEBUG")]
-    private static void AssertPointerType(Target.FieldInfo field, string fieldName)
-    {
-        Debug.Assert(
-            field.TypeName is null or "" or "pointer",
-            $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', expected pointer");
-    }
-
-    private static bool IsCompatiblePrimitiveType<T>(string typeName)
-        where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-    {
-        return typeName switch
-        {
-            "uint8" => typeof(T) == typeof(byte),
-            "int8" => typeof(T) == typeof(sbyte),
-            "uint16" => typeof(T) == typeof(ushort),
-            "int16" => typeof(T) == typeof(short),
-            "uint32" => typeof(T) == typeof(uint),
-            "int32" => typeof(T) == typeof(int),
-            "uint64" => typeof(T) == typeof(ulong),
-            "int64" => typeof(T) == typeof(long),
-            "bool" => typeof(T) == typeof(byte),
-            _ => false,
-        };
     }
 }

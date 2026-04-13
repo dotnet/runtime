@@ -706,15 +706,13 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value, out string? type) where T : struct, INumber<T>
     {
-        value = null;
-        type = null;
-        if (!_globals.TryGetValue(name, out GlobalValue global) || global.NumericValue is null)
+        if (!TryReadGlobalRaw(name, out ulong? rawValue, out type))
         {
-            // Not found or does not contain a numeric value
+            value = null;
             return false;
         }
-        type = global.Type;
-        value = T.CreateChecked(global.NumericValue.Value);
+        DataDescriptorTypeValidation.AssertGlobalType<T>(type, name);
+        value = T.CreateChecked(rawValue.Value);
         return true;
     }
 
@@ -735,10 +733,11 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value, out string? type)
     {
         value = null;
-        if (!TryReadGlobal(name, out ulong? innerValue, out type))
+        if (!TryReadGlobalRaw(name, out ulong? rawValue, out type))
             return false;
 
-        value = new TargetPointer(innerValue.Value);
+        DataDescriptorTypeValidation.AssertGlobalPointerType(type, name);
+        value = new TargetPointer(rawValue.Value);
         return true;
     }
 
@@ -751,6 +750,18 @@ public sealed unsafe class ContractDescriptorTarget : Target
             throw new InvalidOperationException($"Failed to read global pointer '{name}'.");
 
         return value.Value;
+    }
+
+    private bool TryReadGlobalRaw(string name, [NotNullWhen(true)] out ulong? value, out string? type)
+    {
+        value = null;
+        type = null;
+        if (!_globals.TryGetValue(name, out GlobalValue global) || global.NumericValue is null)
+            return false;
+
+        type = global.Type;
+        value = global.NumericValue;
+        return true;
     }
 
     public override string ReadGlobalString(string name)
