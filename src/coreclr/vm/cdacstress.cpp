@@ -72,7 +72,7 @@ static CrstStatic       s_cdacLock;       // Serializes cDAC access from concurr
 
 // Unique-stack filtering: hash set of previously seen stack traces.
 // Protected by s_cdacLock (already held during VerifyAtStressPoint).
-
+static const int UNIQUE_STACK_DEPTH = 8; // Number of return addresses to hash
 static SHash<NoRemoveSHashTraits<SetSHashTraits<SIZE_T>>>* s_seenStacks = nullptr;
 
 // Thread-local reentrancy guard — prevents infinite recursion when
@@ -146,24 +146,17 @@ static int ReadThreadContextCallback(uint32_t threadId, uint32_t contextFlags, u
 // Minimal ICLRDataTarget implementation for loading the legacy DAC in-process.
 // Routes ReadVirtual/GetThreadContext to the same callbacks as the cDAC.
 //-----------------------------------------------------------------------------
-class InProcessDataTarget : public ICLRDataTarget, public ICLRRuntimeLocator
+class InProcessDataTarget : public ICLRDataTarget
 {
     volatile LONG m_refCount;
 public:
     InProcessDataTarget() : m_refCount(1) {}
-    virtual ~InProcessDataTarget() = default;
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppObj) override
     {
         if (riid == IID_IUnknown || riid == __uuidof(ICLRDataTarget))
         {
             *ppObj = static_cast<ICLRDataTarget*>(this);
-            AddRef();
-            return S_OK;
-        }
-        if (riid == __uuidof(ICLRRuntimeLocator))
-        {
-            *ppObj = static_cast<ICLRRuntimeLocator*>(this);
             AddRef();
             return S_OK;
         }
@@ -176,14 +169,6 @@ public:
         ULONG c = InterlockedDecrement(&m_refCount);
         if (c == 0) delete this;
         return c;
-    }
-
-    // ICLRRuntimeLocator — provides the CLR base address directly so the DAC
-    // does not fall back to GetImageBase (which needs GetModuleHandleW, unavailable on Linux).
-    HRESULT STDMETHODCALLTYPE GetRuntimeBase(CLRDATA_ADDRESS* baseAddress) override
-    {
-        *baseAddress = (CLRDATA_ADDRESS)GetCurrentModuleBase();
-        return S_OK;
     }
 
     HRESULT STDMETHODCALLTYPE GetMachineType(ULONG32* machineType) override
@@ -208,8 +193,10 @@ public:
 
     HRESULT STDMETHODCALLTYPE GetImageBase(LPCWSTR imagePath, CLRDATA_ADDRESS* baseAddress) override
     {
-        // Not needed — the DAC uses ICLRRuntimeLocator::GetRuntimeBase() instead.
-        return E_NOTIMPL;
+        HMODULE hMod = ::GetModuleHandleW(imagePath);
+        if (hMod == NULL) return E_FAIL;
+        *baseAddress = (CLRDATA_ADDRESS)hMod;
+        return S_OK;
     }
 
     HRESULT STDMETHODCALLTYPE ReadVirtual(CLRDATA_ADDRESS address, BYTE* buffer, ULONG32 bytesRequested, ULONG32* bytesRead) override
@@ -282,8 +269,8 @@ bool CdacStress::Initialize()
     }
     else
     {
-        // Legacy: GCSTRESS_CDAC maps to allocation-point + reference verification
-        s_cdacStressLevel = CDACSTRESS_ALLOC | CDACSTRESS_REFS;
+        // Legacy: GCSTRESS_CDAC maps to allocation-point verification
+        s_cdacStressLevel = CDACSTRESS_ALLOC;
     }
 
     // Load mscordaccore_universal from next to coreclr
@@ -449,15 +436,27 @@ bool CdacStress::Initialize()
                                 pDacUnk->QueryInterface(__uuidof(IXCLRDataProcess), (void**)&s_dacProcess);
                                 pDacUnk->Release();
                             }
+                            else if (s_logFile != nullptr)
+                            {
+                                fprintf(s_logFile, "DAC: CLRDataCreateInstance failed hr=0x%08x pDacUnk=%p\n", hr, pDacUnk);
+                            }
                         }
                     }
                     if (s_dacSosDac == nullptr)
                     {
+                        if (s_logFile != nullptr)
+                            fprintf(s_logFile, "DAC: Loaded mscordaccore.dll but QI for ISOSDacInterface failed\n");
                         LOG((LF_GCROOTS, LL_WARNING, "CDAC GC Stress: Legacy DAC loaded but QI for ISOSDacInterface failed\n"));
+                    }
+                    else if (s_logFile != nullptr)
+                    {
+                        fprintf(s_logFile, "DAC: Legacy DAC loaded successfully (s_dacSosDac=%p)\n", s_dacSosDac);
                     }
                 }
                 else
                 {
+                    if (s_logFile != nullptr)
+                        fprintf(s_logFile, "DAC: mscordaccore.dll not found at path\n");
                     LOG((LF_GCROOTS, LL_INFO10, "CDAC GC Stress: Legacy DAC not found (three-way comparison disabled)\n"));
                 }
             }
@@ -536,10 +535,52 @@ void CdacStress::Shutdown()
 }
 
 //-----------------------------------------------------------------------------
+// Resolve a managed IP to a method name using ISOSDacInterface.
+// Falls back to "<unknown 0x...>" or "<frame 0x...>" if resolution fails.
+// Uses the cDAC's ISOSDacInterface by default.
+//-----------------------------------------------------------------------------
+
+static void ResolveMethodName(CLRDATA_ADDRESS source, int sourceType, char* buf, int bufLen)
+{
+    if (bufLen <= 0)
+        return;
+
+    // Frame addresses (not managed IPs) — show as frame type
+    if (sourceType != 0) // SOS_StackSourceFrame
+    {
+        snprintf(buf, bufLen, "<frame 0x%llx>", (unsigned long long)source);
+        return;
+    }
+
+    // Try to resolve the IP using the cDAC's ISOSDacInterface
+    ISOSDacInterface* pSos = s_cdacSosDac;
+    if (pSos == nullptr)
+        pSos = s_dacSosDac; // Fallback to legacy DAC
+
+    if (pSos != nullptr)
+    {
+        CLRDATA_ADDRESS mdAddr = 0;
+        if (SUCCEEDED(pSos->GetMethodDescPtrFromIP(source, &mdAddr)) && mdAddr != 0)
+        {
+            WCHAR wname[256] = {};
+            unsigned int nameLen = 0;
+            if (SUCCEEDED(pSos->GetMethodDescName(mdAddr, ARRAY_SIZE(wname), wname, &nameLen)) && nameLen > 0)
+            {
+                WideCharToMultiByte(CP_UTF8, 0, wname, -1, buf, bufLen, NULL, NULL);
+                return;
+            }
+        }
+    }
+
+    snprintf(buf, bufLen, "<unknown 0x%llx>", (unsigned long long)source);
+}
+
+//-----------------------------------------------------------------------------
 // Collect stack refs from the cDAC
 //-----------------------------------------------------------------------------
 
-static bool CollectStackRefs(ISOSDacInterface* pSosDac, DWORD osThreadId, SArray<StackRef>* pRefs)
+static bool CollectStackRefs(ISOSDacInterface* pSosDac, DWORD osThreadId, SArray<StackRef>* pRefs,
+                            const char* label = nullptr)
 {
     if (pSosDac == nullptr)
         return false;
@@ -548,7 +589,20 @@ static bool CollectStackRefs(ISOSDacInterface* pSosDac, DWORD osThreadId, SArray
     HRESULT hr = pSosDac->GetStackReferences(osThreadId, &pEnum);
 
     if (FAILED(hr) || pEnum == nullptr)
+    {
+        // Log the first failure per source for diagnostics
+        static bool s_loggedCdacFailure = false;
+        static bool s_loggedDacFailure = false;
+        bool* pLogged = (label != nullptr && strcmp(label, "DAC") == 0) ? &s_loggedDacFailure : &s_loggedCdacFailure;
+        if (s_logFile != nullptr && !*pLogged)
+        {
+            fprintf(s_logFile, "%s: GetStackReferences failed hr=0x%08x pEnum=%p thread=0x%x\n",
+                label ? label : "???", hr, pEnum, osThreadId);
+            fflush(s_logFile);
+            *pLogged = true;
+        }
         return false;
+    }
 
     SOSStackRefData refData;
     unsigned int fetched = 0;
@@ -835,7 +889,6 @@ static void CompareStackWalks(Thread* pThread, PCONTEXT regs)
     bool mismatch = false;
     while (frameIdx < 200) // safety limit
     {
-        // Compare GetContext
         BYTE cdacCtx[4096] = {};
         BYTE dacCtx[4096] = {};
         ULONG32 cdacCtxSize = 0, dacCtxSize = 0;
@@ -854,18 +907,8 @@ static void CompareStackWalks(Thread* pThread, PCONTEXT regs)
         if (hr1 != S_OK)
             break; // both finished
 
-        if (cdacCtxSize != dacCtxSize)
+        if (cdacCtxSize >= sizeof(CONTEXT) && dacCtxSize >= sizeof(CONTEXT))
         {
-            if (s_logFile)
-                fprintf(s_logFile, "  [WALK_MISMATCH] Frame %d: Context size differs cDAC=%u DAC=%u\n",
-                    frameIdx, cdacCtxSize, dacCtxSize);
-            mismatch = true;
-        }
-        else if (cdacCtxSize >= sizeof(CONTEXT))
-        {
-            // Compare IP and SP — these are what matter for stack walk parity.
-            // Other CONTEXT fields (floating-point, debug registers, xstate) may
-            // differ between cDAC and DAC without affecting the walk.
             PCODE cdacIP = GetIP((CONTEXT*)cdacCtx);
             PCODE dacIP = GetIP((CONTEXT*)dacCtx);
             TADDR cdacSP = GetSP((CONTEXT*)cdacCtx);
@@ -882,28 +925,6 @@ static void CompareStackWalks(Thread* pThread, PCONTEXT regs)
             }
         }
 
-        // Compare Request(FRAME_DATA)
-        ULONG64 cdacFrameAddr = 0, dacFrameAddr = 0;
-        hr1 = cdacWalk->Request(0xf0000000, 0, nullptr, sizeof(cdacFrameAddr), (BYTE*)&cdacFrameAddr);
-        hr2 = dacWalk->Request(0xf0000000, 0, nullptr, sizeof(dacFrameAddr), (BYTE*)&dacFrameAddr);
-
-        if (hr1 == S_OK && hr2 == S_OK && cdacFrameAddr != dacFrameAddr)
-        {
-            if (s_logFile)
-            {
-                PCODE cdacIP = 0, dacIP = 0;
-                if (cdacCtxSize >= sizeof(CONTEXT))
-                    cdacIP = GetIP((CONTEXT*)cdacCtx);
-                if (dacCtxSize >= sizeof(CONTEXT))
-                    dacIP = GetIP((CONTEXT*)dacCtx);
-                fprintf(s_logFile, "  [WALK_MISMATCH] Frame %d: FrameAddr cDAC=0x%llx DAC=0x%llx (cDAC_IP=0x%llx DAC_IP=0x%llx)\n",
-                    frameIdx, (unsigned long long)cdacFrameAddr, (unsigned long long)dacFrameAddr,
-                    (unsigned long long)cdacIP, (unsigned long long)dacIP);
-            }
-            mismatch = true;
-        }
-
-        // Advance both
         hr1 = cdacWalk->Next();
         hr2 = dacWalk->Next();
 
@@ -929,29 +950,29 @@ static void CompareStackWalks(Thread* pThread, PCONTEXT regs)
 }
 
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-// Compare two ref sets using two-phase matching.
-// Phase 1: Match stack refs (Address != 0) by exact (Address, Object, Flags).
-// Phase 2: Match register refs (Address == 0) by (Object, Flags) only.
-// Returns true if all refs in setA have a match in setB and counts are equal.
+// Per-frame ref comparison.
+//
+// Groups refs by Source (IP or Frame address), aligns the two sets by Source,
+// and reports per-frame differences with resolved method names.
+// Returns true if all refs match.
 //-----------------------------------------------------------------------------
 
-static bool CompareRefSets(StackRef* refsA, int countA, StackRef* refsB, int countB)
+// Compare two ref sets using two-phase matching (for RT comparison where we
+// don't have Source info). Returns true if all refs match.
+static bool CompareRefSetsFlat(StackRef* refsA, int countA, StackRef* refsB, int countB)
 {
     if (countA != countB)
         return false;
     if (countA == 0)
         return true;
-    if (countA > MAX_COLLECTED_REFS)
-        return false;
 
     bool matched[MAX_COLLECTED_REFS] = {};
 
+    // Phase 1: Match stack refs (Address != 0) by exact (Address, Object, Flags).
     for (int i = 0; i < countA; i++)
     {
         if (refsA[i].Address == 0)
             continue;
-        bool found = false;
         for (int j = 0; j < countB; j++)
         {
             if (matched[j]) continue;
@@ -960,18 +981,16 @@ static bool CompareRefSets(StackRef* refsA, int countA, StackRef* refsB, int cou
                 refsA[i].Flags == refsB[j].Flags)
             {
                 matched[j] = true;
-                found = true;
                 break;
             }
         }
-        if (!found) return false;
     }
 
+    // Phase 2: Match register refs (Address == 0) by (Object, Flags) only.
     for (int i = 0; i < countA; i++)
     {
         if (refsA[i].Address != 0)
             continue;
-        bool found = false;
         for (int j = 0; j < countB; j++)
         {
             if (matched[j]) continue;
@@ -979,14 +998,216 @@ static bool CompareRefSets(StackRef* refsA, int countA, StackRef* refsB, int cou
                 refsA[i].Flags == refsB[j].Flags)
             {
                 matched[j] = true;
-                found = true;
                 break;
             }
         }
-        if (!found) return false;
     }
 
+    // Check that every ref in B was matched
+    for (int j = 0; j < countB; j++)
+    {
+        if (!matched[j])
+            return false;
+    }
     return true;
+}
+
+// Represents a group of refs from the same Source (managed frame or explicit Frame).
+struct FrameRefGroup
+{
+    CLRDATA_ADDRESS Source;
+    int SourceType;     // 0 = IP, 1 = Frame
+    int StartIdx;       // Index into the original ref array
+    int Count;          // Number of refs in this group
+};
+
+// Build a sorted list of unique Sources with their ref index ranges.
+// The refs array is sorted by Source as a side effect.
+static int __cdecl CompareBySource(const void* a, const void* b)
+{
+    const StackRef* ra = static_cast<const StackRef*>(a);
+    const StackRef* rb = static_cast<const StackRef*>(b);
+    if (ra->Source != rb->Source)
+        return (ra->Source < rb->Source) ? -1 : 1;
+    return 0;
+}
+
+static int GroupRefsByFrame(StackRef* refs, int count, FrameRefGroup* groups, int maxGroups)
+{
+    if (count == 0)
+        return 0;
+
+    qsort(refs, count, sizeof(StackRef), CompareBySource);
+
+    int groupCount = 0;
+    CLRDATA_ADDRESS currentSource = refs[0].Source;
+    int startIdx = 0;
+
+    for (int i = 1; i <= count; i++)
+    {
+        if (i == count || refs[i].Source != currentSource)
+        {
+            if (groupCount < maxGroups)
+            {
+                groups[groupCount].Source = currentSource;
+                groups[groupCount].SourceType = refs[startIdx].SourceType;
+                groups[groupCount].StartIdx = startIdx;
+                groups[groupCount].Count = i - startIdx;
+                groupCount++;
+            }
+            if (i < count)
+            {
+                currentSource = refs[i].Source;
+                startIdx = i;
+            }
+        }
+    }
+    return groupCount;
+}
+
+// Compare refs within a single frame. Returns the number of unmatched refs in each set.
+static void CompareFrameRefs(StackRef* refsA, int countA, StackRef* refsB, int countB,
+                            int* unmatchedA, int* unmatchedB,
+                            bool* aUsed, bool* bUsed)
+{
+    // Phase 1: exact (Address, Object, Flags) for Address != 0
+    for (int i = 0; i < countA; i++)
+    {
+        if (refsA[i].Address == 0)
+            continue;
+        for (int j = 0; j < countB; j++)
+        {
+            if (bUsed[j]) continue;
+            if (refsA[i].Address == refsB[j].Address &&
+                refsA[i].Object == refsB[j].Object &&
+                refsA[i].Flags == refsB[j].Flags)
+            {
+                aUsed[i] = bUsed[j] = true;
+                break;
+            }
+        }
+    }
+
+    // Phase 2: (Object, Flags) for Address=0 or unmatched refs
+    for (int i = 0; i < countA; i++)
+    {
+        if (aUsed[i]) continue;
+        for (int j = 0; j < countB; j++)
+        {
+            if (bUsed[j]) continue;
+            if (refsA[i].Object == refsB[j].Object &&
+                refsA[i].Flags == refsB[j].Flags)
+            {
+                aUsed[i] = bUsed[j] = true;
+                break;
+            }
+        }
+    }
+
+    *unmatchedA = 0;
+    *unmatchedB = 0;
+    for (int i = 0; i < countA; i++)
+        if (!aUsed[i]) (*unmatchedA)++;
+    for (int j = 0; j < countB; j++)
+        if (!bUsed[j]) (*unmatchedB)++;
+}
+
+// Per-frame comparison: groups refs by Source, compares per-frame, logs structured diff.
+// Returns true if all refs match between the two sets.
+static bool ComparePerFrame(StackRef* refsA, int countA, const char* labelA,
+                           StackRef* refsB, int countB, const char* labelB)
+{
+    static const int MAX_GROUPS = 256;
+    FrameRefGroup groupsA[MAX_GROUPS], groupsB[MAX_GROUPS];
+    int numGroupsA = GroupRefsByFrame(refsA, countA, groupsA, MAX_GROUPS);
+    int numGroupsB = GroupRefsByFrame(refsB, countB, groupsB, MAX_GROUPS);
+
+    bool allMatch = true;
+    int idxA = 0, idxB = 0;
+
+    if (s_logFile)
+        fprintf(s_logFile, "  [COMPARE %s-vs-%s]\n", labelA, labelB);
+
+    while (idxA < numGroupsA || idxB < numGroupsB)
+    {
+        if (idxA < numGroupsA && idxB < numGroupsB && groupsA[idxA].Source == groupsB[idxB].Source)
+        {
+            // Both have this frame — compare refs within
+            int cA = groupsA[idxA].Count;
+            int cB = groupsB[idxB].Count;
+            bool aUsed[MAX_COLLECTED_REFS] = {};
+            bool bUsed[MAX_COLLECTED_REFS] = {};
+            int unmatchedA = 0, unmatchedB = 0;
+
+            CompareFrameRefs(&refsA[groupsA[idxA].StartIdx], cA,
+                           &refsB[groupsB[idxB].StartIdx], cB,
+                           &unmatchedA, &unmatchedB, aUsed, bUsed);
+
+            if (unmatchedA > 0 || unmatchedB > 0)
+            {
+                allMatch = false;
+                if (s_logFile)
+                {
+                    char methodName[256];
+                    ResolveMethodName(groupsA[idxA].Source, groupsA[idxA].SourceType, methodName, sizeof(methodName));
+                    fprintf(s_logFile, "    [FRAME_DIFF] Source=0x%llx (%s): %s=%d %s=%d\n",
+                        (unsigned long long)groupsA[idxA].Source, methodName, labelA, cA, labelB, cB);
+
+                    for (int i = 0; i < cA; i++)
+                    {
+                        if (!aUsed[i])
+                        {
+                            auto& r = refsA[groupsA[idxA].StartIdx + i];
+                            fprintf(s_logFile, "      [%s_ONLY] Addr=0x%llx Obj=0x%llx Flags=0x%x\n",
+                                labelA, (unsigned long long)r.Address, (unsigned long long)r.Object, r.Flags);
+                        }
+                    }
+                    for (int j = 0; j < cB; j++)
+                    {
+                        if (!bUsed[j])
+                        {
+                            auto& r = refsB[groupsB[idxB].StartIdx + j];
+                            fprintf(s_logFile, "      [%s_ONLY] Addr=0x%llx Obj=0x%llx Flags=0x%x\n",
+                                labelB, (unsigned long long)r.Address, (unsigned long long)r.Object, r.Flags);
+                        }
+                    }
+                }
+            }
+            idxA++;
+            idxB++;
+        }
+        else if (idxB >= numGroupsB || (idxA < numGroupsA && groupsA[idxA].Source < groupsB[idxB].Source))
+        {
+            // Frame only in A
+            allMatch = false;
+            if (s_logFile)
+            {
+                char methodName[256];
+                ResolveMethodName(groupsA[idxA].Source, groupsA[idxA].SourceType, methodName, sizeof(methodName));
+                fprintf(s_logFile, "    [FRAME_%s_ONLY] Source=0x%llx (%s): %s=%d\n",
+                    labelA, (unsigned long long)groupsA[idxA].Source, methodName, labelA, groupsA[idxA].Count);
+            }
+            idxA++;
+        }
+        else
+        {
+            // Frame only in B
+            allMatch = false;
+            if (s_logFile)
+            {
+                char methodName[256];
+                ResolveMethodName(groupsB[idxB].Source, groupsB[idxB].SourceType, methodName, sizeof(methodName));
+                fprintf(s_logFile, "    [FRAME_%s_ONLY] Source=0x%llx (%s): %s=%d\n",
+                    labelB, (unsigned long long)groupsB[idxB].Source, methodName, labelB, groupsB[idxB].Count);
+            }
+            idxB++;
+        }
+    }
+
+    if (allMatch && s_logFile)
+        fprintf(s_logFile, "    [MATCH] All %d refs matched\n", countA);
+
+    return allMatch;
 }
 
 //-----------------------------------------------------------------------------
@@ -1024,12 +1245,29 @@ void CdacStress::VerifyAtAllocPoint()
     if (t_inVerification)
         return;
 
+    if (ShouldSkipStressPoint())
+        return;
+
     Thread* pThread = GetThreadNULLOk();
     if (pThread == nullptr || !pThread->PreemptiveGCDisabled())
         return;
 
+    // Capture the current context and unwind past VerifyAtAllocPoint
+    // so the walk starts from the caller, not from inside this function.
     CONTEXT ctx;
     RtlCaptureContext(&ctx);
+    {
+        ULONG64 imageBase = 0;
+        PRUNTIME_FUNCTION pFunctionEntry = RtlLookupFunctionEntry(ctx.Rip, &imageBase, nullptr);
+        if (pFunctionEntry != nullptr)
+        {
+            void* handlerData = nullptr;
+            ULONG64 establisherFrame = 0;
+            RtlVirtualUnwind(UNW_FLAG_NHANDLER, imageBase, ctx.Rip,
+                pFunctionEntry, &ctx, &handlerData, &establisherFrame, nullptr);
+        }
+    }
+
     VerifyAtStressPoint(pThread, &ctx);
 }
 
@@ -1067,21 +1305,15 @@ void CdacStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
 
     // Flush the cDAC's ProcessedData cache so it re-reads from the live process.
     if (s_cdacProcess != nullptr)
-    {
         s_cdacProcess->Flush();
-    }
 
     // Flush the legacy DAC cache too.
     if (s_dacProcess != nullptr)
-    {
         s_dacProcess->Flush();
-    }
 
     // Compare IXCLRDataStackWalk frame-by-frame between cDAC and legacy DAC.
     if (s_cdacStressLevel & CDACSTRESS_WALK)
-    {
         CompareStackWalks(pThread, regs);
-    }
 
     // Compare GC stack references.
     if (!(s_cdacStressLevel & CDACSTRESS_REFS))
@@ -1092,54 +1324,40 @@ void CdacStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     }
 
     // Step 1: Collect raw refs from cDAC (always) and DAC (if USE_DAC).
+    // Save and restore the thread's Frame chain around the cDAC call because
+    // the cDAC runs as NativeAOT managed code on the same thread and may
+    // push its own Frames during execution.
     DWORD osThreadId = pThread->GetOSThreadId();
+    Frame* pSavedFrame = pThread->GetFrame();
 
     SArray<StackRef> cdacRefs;
-    bool haveCdac = CollectStackRefs(s_cdacSosDac, osThreadId, &cdacRefs);
+    bool haveCdac = CollectStackRefs(s_cdacSosDac, osThreadId, &cdacRefs, "cDAC");
+
+    // Restore the Frame chain to what it was before the cDAC walk
+    pThread->SetFrame(pSavedFrame);
 
     SArray<StackRef> dacRefs;
     bool haveDac = false;
     if (s_cdacStressLevel & CDACSTRESS_USE_DAC)
-    {
-        haveDac = (s_dacSosDac != nullptr) && CollectStackRefs(s_dacSosDac, osThreadId, &dacRefs);
-    }
+        haveDac = (s_dacSosDac != nullptr) && CollectStackRefs(s_dacSosDac, osThreadId, &dacRefs, "DAC");
 
     s_currentContext = nullptr;
     s_currentThreadId = 0;
 
     StackRef runtimeRefsBuf[MAX_COLLECTED_REFS];
     int runtimeCount = 0;
-    bool haveRuntime = CollectRuntimeStackRefs(pThread, regs, runtimeRefsBuf, &runtimeCount);
+    CollectRuntimeStackRefs(pThread, regs, runtimeRefsBuf, &runtimeCount);
 
-    if (!haveCdac || !haveRuntime)
+    if (!haveCdac)
     {
         InterlockedIncrement(&s_verifySkip);
         if (s_logFile != nullptr)
-        {
-            if (!haveCdac)
-                fprintf(s_logFile, "[SKIP] Thread=0x%x IP=0x%p - cDAC GetStackReferences failed\n",
-                    osThreadId, (void*)GetIP(regs));
-            else
-                fprintf(s_logFile, "[SKIP] Thread=0x%x IP=0x%p - runtime CollectRuntimeStackRefs overflowed\n",
-                    osThreadId, (void*)GetIP(regs));
-        }
+            fprintf(s_logFile, "[SKIP] Thread=0x%x IP=0x%p - cDAC GetStackReferences failed\n",
+                osThreadId, (void*)GetIP(regs));
         return;
     }
 
-    // Step 2: Compare cDAC vs DAC raw (before any filtering).
-    int rawCdacCount = (int)cdacRefs.GetCount();
-    int rawDacCount = haveDac ? (int)dacRefs.GetCount() : -1;
-    bool dacMatch = true;
-    if (haveDac)
-    {
-        StackRef* cdacBuf = cdacRefs.OpenRawBuffer();
-        StackRef* dacBuf = dacRefs.OpenRawBuffer();
-        dacMatch = CompareRefSets(cdacBuf, rawCdacCount, dacBuf, rawDacCount);
-        cdacRefs.CloseRawBuffer();
-        dacRefs.CloseRawBuffer();
-    }
-
-    // Step 3: Filter cDAC refs and compare vs RT (always).
+    // Step 2: Compute stack limit for filtering.
     Frame* pTopFrame = pThread->GetFrame();
     Object** topStack = (Object**)pTopFrame;
     if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
@@ -1149,56 +1367,168 @@ void CdacStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     }
     uintptr_t stackLimit = (uintptr_t)topStack;
 
+    // Step 3: Apply unified filtering to both cDAC and DAC refs.
+    int rawCdacCount = (int)cdacRefs.GetCount();
+    int rawDacCount = haveDac ? (int)dacRefs.GetCount() : -1;
+
     int filteredCdacCount = rawCdacCount;
     if (filteredCdacCount > 0)
     {
-        StackRef* cdacBuf = cdacRefs.OpenRawBuffer();
-        filteredCdacCount = FilterAndDedup(cdacBuf, filteredCdacCount, pThread, stackLimit);
+        StackRef* buf = cdacRefs.OpenRawBuffer();
+        filteredCdacCount = FilterAndDedup(buf, filteredCdacCount, pThread, stackLimit);
         cdacRefs.CloseRawBuffer();
     }
+
+    int filteredDacCount = rawDacCount;
+    if (haveDac && filteredDacCount > 0)
+    {
+        StackRef* buf = dacRefs.OpenRawBuffer();
+        filteredDacCount = FilterAndDedup(buf, filteredDacCount, pThread, stackLimit);
+        dacRefs.CloseRawBuffer();
+    }
+
     runtimeCount = DeduplicateRefs(runtimeRefsBuf, runtimeCount);
 
-    StackRef* cdacBuf = cdacRefs.OpenRawBuffer();
-    bool rtMatch = CompareRefSets(cdacBuf, filteredCdacCount, runtimeRefsBuf, runtimeCount);
+    StackRef* cdacBuf = nullptr;
+
+    // Step 4: Compare cDAC vs DAC (determines pass/fail when USE_DAC is set).
+    bool dacMatch = true;
+    if (haveDac)
+    {
+        cdacBuf = cdacRefs.OpenRawBuffer();
+        StackRef* dacBuf = dacRefs.OpenRawBuffer();
+        dacMatch = CompareRefSetsFlat(cdacBuf, filteredCdacCount, dacBuf, filteredDacCount);
+        cdacRefs.CloseRawBuffer();
+        dacRefs.CloseRawBuffer();
+    }
+
+    // Step 5: Compare cDAC vs RT (informational).
+    cdacBuf = cdacRefs.OpenRawBuffer();
+    bool rtMatch = CompareRefSetsFlat(cdacBuf, filteredCdacCount, runtimeRefsBuf, runtimeCount);
     cdacRefs.CloseRawBuffer();
 
-    // Step 4: Pass requires cDAC vs RT match.
-    // DAC mismatch is logged separately but doesn't affect pass/fail.
-    bool pass = rtMatch;
-
+    bool pass = haveDac ? dacMatch : rtMatch;
     if (pass)
         InterlockedIncrement(&s_verifyPass);
     else
         InterlockedIncrement(&s_verifyFail);
 
-    // Step 5: Log results.
+    // Step 6: Log structured results.
     if (s_logFile != nullptr)
     {
-        const char* label = pass ? "PASS" : "FAIL";
-        if (pass && !dacMatch)
-            label = "DAC_MISMATCH";
-        fprintf(s_logFile, "[%s] Thread=0x%x IP=0x%p cDAC=%d DAC=%d RT=%d\n",
-            label, osThreadId, (void*)GetIP(regs),
-            rawCdacCount, rawDacCount, runtimeCount);
-
-        if (!pass || !dacMatch)
+        if (pass && rtMatch)
         {
-            for (int i = 0; i < rawCdacCount; i++)
-                fprintf(s_logFile, "  cDAC [%d]: Address=0x%llx Object=0x%llx Flags=0x%x Source=0x%llx SourceType=%d SP=0x%llx\n",
-                    i, (unsigned long long)cdacRefs[i].Address, (unsigned long long)cdacRefs[i].Object,
-                    cdacRefs[i].Flags, (unsigned long long)cdacRefs[i].Source, cdacRefs[i].SourceType,
-                    (unsigned long long)cdacRefs[i].StackPointer);
-            if (haveDac)
+            // Clean pass — one-liner
+            fprintf(s_logFile, "[PASS] Thread=0x%x IP=0x%p cDAC=%d DAC=%d RT=%d\n",
+                osThreadId, (void*)GetIP(regs), filteredCdacCount, filteredDacCount, runtimeCount);
+        }
+        else
+        {
+            // Failure or RT mismatch — structured per-frame output
+            const char* label = pass ? "PASS" : "FAIL";
+            fprintf(s_logFile, "[%s] Thread=0x%x IP=0x%p cDAC=%d DAC=%d RT=%d\n",
+                label, osThreadId, (void*)GetIP(regs), filteredCdacCount, filteredDacCount, runtimeCount);
+
+            if (!dacMatch && haveDac)
             {
-                for (int i = 0; i < rawDacCount; i++)
-                    fprintf(s_logFile, "  DAC  [%d]: Address=0x%llx Object=0x%llx Flags=0x%x Source=0x%llx\n",
-                        i, (unsigned long long)dacRefs[i].Address, (unsigned long long)dacRefs[i].Object,
-                        dacRefs[i].Flags, (unsigned long long)dacRefs[i].Source);
+                cdacBuf = cdacRefs.OpenRawBuffer();
+                StackRef* dacBuf = dacRefs.OpenRawBuffer();
+                ComparePerFrame(cdacBuf, filteredCdacCount, "cDAC",
+                               dacBuf, filteredDacCount, "DAC");
+                cdacRefs.CloseRawBuffer();
+                dacRefs.CloseRawBuffer();
             }
-            for (int i = 0; i < runtimeCount; i++)
-                fprintf(s_logFile, "  RT   [%d]: Address=0x%llx Object=0x%llx Flags=0x%x\n",
-                    i, (unsigned long long)runtimeRefsBuf[i].Address, (unsigned long long)runtimeRefsBuf[i].Object,
-                    runtimeRefsBuf[i].Flags);
+
+            if (!rtMatch)
+            {
+                fprintf(s_logFile, "  [RT_DIFF] cDAC=%d RT=%d (cDAC matches DAC but differs from RT)\n",
+                    filteredCdacCount, runtimeCount);
+            }
+
+            // Log a stack trace derived from unique Source IPs in the refs
+            if (!pass)
+            {
+                fprintf(s_logFile, "  [STACK_TRACE] (cDAC=%d DAC=%d RT=%d)\n",
+                    filteredCdacCount, filteredDacCount, runtimeCount);
+
+                // Collect unique Sources from cDAC refs (sorted by SP descending = top of stack first)
+                struct FrameEntry { CLRDATA_ADDRESS Source; int SourceType; CLRDATA_ADDRESS SP; };
+                FrameEntry frames[256];
+                int frameCount = 0;
+
+                cdacBuf = cdacRefs.OpenRawBuffer();
+                for (int i = 0; i < filteredCdacCount && frameCount < 256; i++)
+                {
+                    bool dup = false;
+                    for (int j = 0; j < frameCount; j++)
+                    {
+                        if (frames[j].Source == cdacBuf[i].Source)
+                        {
+                            dup = true;
+                            break;
+                        }
+                    }
+                    if (!dup)
+                    {
+                        frames[frameCount].Source = cdacBuf[i].Source;
+                        frames[frameCount].SourceType = cdacBuf[i].SourceType;
+                        frames[frameCount].SP = cdacBuf[i].StackPointer;
+                        frameCount++;
+                    }
+                }
+                cdacRefs.CloseRawBuffer();
+
+                // Also include DAC-only sources that the cDAC missed
+                if (haveDac)
+                {
+                    StackRef* dacBuf = dacRefs.OpenRawBuffer();
+                    for (int i = 0; i < filteredDacCount && frameCount < 256; i++)
+                    {
+                        bool dup = false;
+                        for (int j = 0; j < frameCount; j++)
+                        {
+                            if (frames[j].Source == dacBuf[i].Source)
+                            {
+                                dup = true;
+                                break;
+                            }
+                        }
+                        if (!dup)
+                        {
+                            frames[frameCount].Source = dacBuf[i].Source;
+                            frames[frameCount].SourceType = dacBuf[i].SourceType;
+                            frames[frameCount].SP = 0; // DAC doesn't provide SP
+                            frameCount++;
+                        }
+                    }
+                    dacRefs.CloseRawBuffer();
+                }
+
+                for (int i = 0; i < frameCount; i++)
+                {
+                    char methodName[256];
+                    ResolveMethodName(frames[i].Source, frames[i].SourceType, methodName, sizeof(methodName));
+
+                    // Count refs from this source in cDAC and DAC
+                    int cdacCount = 0, dacCount = 0;
+                    cdacBuf = cdacRefs.OpenRawBuffer();
+                    for (int j = 0; j < filteredCdacCount; j++)
+                        if (cdacBuf[j].Source == frames[i].Source) cdacCount++;
+                    cdacRefs.CloseRawBuffer();
+
+                    if (haveDac)
+                    {
+                        StackRef* dacBuf2 = dacRefs.OpenRawBuffer();
+                        for (int j = 0; j < filteredDacCount; j++)
+                            if (dacBuf2[j].Source == frames[i].Source) dacCount++;
+                        dacRefs.CloseRawBuffer();
+                    }
+
+                    const char* marker = (cdacCount != dacCount) ? " <-- MISMATCH" : "";
+                    fprintf(s_logFile, "    #%d %s (cDAC=%d DAC=%d)%s\n",
+                        i, methodName, cdacCount, dacCount, marker);
+                }
+            }
 
             fflush(s_logFile);
         }

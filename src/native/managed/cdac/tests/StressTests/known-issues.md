@@ -1,57 +1,87 @@
 # cDAC Stack Reference Walking — Known Issues
 
 This document tracks known gaps between the cDAC's stack reference enumeration
-and the legacy DAC's `GetStackReferences`.
+and the legacy DAC / runtime's GC stack scanning.
 
 ## Current Test Results
 
-Using `DOTNET_CdacStress` with cDAC-vs-DAC comparison:
+### Unit tests: 1374/1374 pass
 
-| Mode | Non-EH debuggees (6) | ExceptionHandling |
-|------|-----------------------|-------------------|
-| INSTR (0x4 + GCStress=0x4, step=10) | 0 failures | 0-2 failures |
-| ALLOC+UNIQUE (0x101) | 0 failures | 4 failures |
-| Walk comparison (0x20, IP+SP) | 0 mismatches | N/A |
+### ALLOC+WALK+USE_DAC (0x61) — Stack walk frame comparison
+**7/7 debuggees: 100% clean (zero WALK_FAIL) when tested**
 
-## Known Issue: cDAC Cannot Unwind Through Native Frames
+### ALLOC+REFS+USE_DAC (0x51) — Three-way GC ref comparison
 
-**Severity**: Low — only affects live-process stress testing during active
-exception first-pass dispatch. Does not affect dump analysis where the thread
-is suspended with a consistent Frame chain.
+| Debuggee | Typical Result | Notes |
+|----------|---------------|-------|
+| BasicAlloc | Clean or 1 fail | |
+| Comprehensive | Clean or 1 fail | |
+| DeepStack | Clean or 1 fail | |
+| Generics | Clean or 1 fail | |
+| MultiThread | Clean or 1 fail | |
+| PInvoke | Clean | |
+| DynamicMethods | Clean or 2 mismatch | |
+| StructScenarios | Clean or 1 fail | |
+| ExceptionHandling | 8-9 fail | EH known issue |
 
-**Pattern**: `cDAC < DAC` (cDAC reports 4 refs, DAC reports 10-13).
-ExceptionHandling debuggee only, 4 deterministic occurrences per run.
+## Issue 1: cDAC misses refs from explicit Frames
 
-**Root cause**: The cDAC's `AMD64Unwinder.Unwind` (and equivalents for other
-architectures) can only unwind **managed** frames — it checks
-`ExecutionManager.GetCodeBlockHandle(IP)` first and returns false if the IP
-is not in a managed code range. This means it cannot unwind through native
-runtime frames (allocation helpers, EH dispatch code, etc.).
+**Affected**: All debuggees (intermittent)
 
-When the allocation stress point fires during exception first-pass dispatch:
+**Pattern**: The DAC reports refs from explicit Frame objects (e.g., InlinedCallFrame)
+that the cDAC does not see. These are Frames on the Thread's frame chain that have
+GcScanRoots implementations. The structured failure output now shows these clearly:
 
-1. The thread's `m_pFrame` is `FRAME_TOP` (no explicit Frames in the chain
-   because the InlinedCallFrame/SoftwareExceptionFrame have been popped or
-   not yet pushed at that point in the EH dispatch sequence)
-2. The initial IP is in native code (allocation helper)
-3. The cDAC attempts to unwind through native frames but
-   `GetCodeBlockHandle` returns null for native IPs → unwind fails
-4. With no Frames and no ability to unwind, the walk stops early
+```
+[FRAME_DAC_ONLY] Source=0x... (<frame 0x...>): DAC=1
+```
 
-The legacy DAC's `DacStackReferenceWalker::WalkStack` succeeds because
-`StackWalkFrames` calls `VirtualUnwindToFirstManagedCallFrame` which uses
-OS-level unwind (`RtlVirtualUnwind` on Windows, `PAL_VirtualUnwind` on Unix)
-that can unwind ANY native frame using PE `.pdata`/`.xdata` sections.
+## Issue 2: cDAC cannot unwind through native frames (EH first-pass)
 
-**Possible fixes**:
-1. **Ensure Frames are always available** — change the runtime to keep
-   an explicit Frame pushed during allocation points within EH dispatch.
-   The cDAC cannot do OS-level native unwind (it operates on dumps where
-   `RtlVirtualUnwind` is not available). The Frame chain is the only
-   mechanism the cDAC has for transitioning through native code to reach
-   managed frames. If `m_pFrame = FRAME_TOP` when the IP is native, the
-   cDAC cannot proceed.
-2. **Accept as known limitation** — these failures only occur during
-   live-process stress testing at a narrow window during EH first-pass
-   dispatch. In dumps, the exception state is frozen and the Frame chain
-   is consistent.
+**Affected**: ExceptionHandling (8-9 failures per run)
+
+**Pattern**: The cDAC's GcInfoDecoder reports 1 extra live stack slot (`[rbp-8]`)
+from ThrowHelper at the throw-site offset that the native GcInfoDecoder does not
+report. All three walkers (cDAC, DAC, RT) visit ThrowHelper with `Report=true`,
+but the native `EnumGcRefs` produces 0 refs while the cDAC produces 1. Root cause
+is a GcInfo safe-point bitmap decoding difference — needs further investigation.
+
+Note: The cDAC has `IsInterrupted`/`ExecutionAborted` tracking (matching native
+`CrawlFrame::GetCodeManagerFlags`) but it doesn't help here because managed
+throws don't push `FaultingExceptionFrame`. A hardware exception debuggee
+(e.g., access violation) should be added to verify `ExecutionAborted` works
+for that path.
+
+## Future work
+
+- Add a hardware exception debuggee (e.g., null dereference / access violation)
+  to test the `IsInterrupted`/`ExecutionAborted` path through `FaultingExceptionFrame`.
+- Investigate the GcInfo safe-point bitmap decoding difference for ThrowHelper.
+- Replace `fprintf`-based stress logging in `cdacstress.cpp` with a more
+  structured mechanism (e.g., ETW events or StressLog) for better tooling
+  integration and reduced I/O overhead during stress runs.
+
+## Log Format
+
+The stress log uses structured per-frame output with method name resolution:
+
+```
+[PASS] Thread=0x... IP=0x... cDAC=N DAC=N RT=M
+[FAIL] Thread=0x... IP=0x... cDAC=N DAC=M RT=M
+  [COMPARE cDAC-vs-DAC]
+    [FRAME_DIFF] Source=0x... (MethodName): cDAC=X DAC=Y
+      [cDAC_ONLY] Addr=0x... Obj=0x... Flags=0x...
+      [DAC_ONLY] Addr=0x... Obj=0x... Flags=0x...
+    [FRAME_cDAC_ONLY] Source=0x... (MethodName): cDAC=X
+    [FRAME_DAC_ONLY] Source=0x... (<frame 0x...>): DAC=Y
+  [COMPARE cDAC-vs-RT] cDAC=N RT=M (flat comparison)
+    cDAC [i]: Addr=0x... Obj=0x... Flags=0x... Src=MethodName
+    RT   [i]: Addr=0x... Obj=0x... Flags=0x...
+  [DAC_DIFF] cDAC matches RT but differs from DAC
+```
+
+## Analysis tools
+
+The `analysis/` directory contains:
+- `analyze-refs.cs` — Standalone C# script for detailed ref analysis of raw logs.
+  Run with: `dotnet run analyze-refs.cs -- <logfile>`

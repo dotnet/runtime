@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
@@ -8,7 +8,7 @@
   <ItemGroup>
     <!-- DumpTests is a separate test project with its own csproj -->
     <Compile Remove="DumpTests\**" />
-    <!-- StressTests contains debuggee console apps and scripts, not unit tests -->
+    <!-- StressTests is a separate test project with its own csproj and debuggees -->
     <Compile Remove="StressTests\**" />
   </ItemGroup>
 

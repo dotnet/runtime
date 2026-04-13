@@ -1490,6 +1490,9 @@ struct cdac_data<StubDispatchFrame>
 {
     static constexpr size_t RepresentativeMTPtr = offsetof(StubDispatchFrame, m_pRepresentativeMT);
     static constexpr uint32_t RepresentativeSlot = offsetof(StubDispatchFrame, m_representativeSlot);
+    static constexpr size_t GCRefMap = offsetof(StubDispatchFrame, m_pGCRefMap);
+    static constexpr size_t ZapModule = offsetof(StubDispatchFrame, m_pZapModule);
+    static constexpr size_t Indirection = offsetof(StubDispatchFrame, m_pIndirection);
 };
 
 typedef DPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
@@ -1561,9 +1564,19 @@ public:
 #ifdef TARGET_X86
     void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
 #endif
+
+    friend struct ::cdac_data<ExternalMethodFrame>;
 };
 
 typedef DPTR(class ExternalMethodFrame) PTR_ExternalMethodFrame;
+
+template <>
+struct cdac_data<ExternalMethodFrame>
+{
+    static constexpr size_t GCRefMap = offsetof(ExternalMethodFrame, m_pGCRefMap);
+    static constexpr size_t Indirection = offsetof(ExternalMethodFrame, m_pIndirection);
+    static constexpr size_t ZapModule = offsetof(ExternalMethodFrame, m_pZapModule);
+};
 
 class DynamicHelperFrame : public FramedMethodFrame
 {
@@ -1583,9 +1596,66 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return TT_InternalCall;
     }
+
+    friend struct ::cdac_data<DynamicHelperFrame>;
 };
 
 typedef DPTR(class DynamicHelperFrame) PTR_DynamicHelperFrame;
+
+template <>
+struct cdac_data<DynamicHelperFrame>
+{
+    static constexpr size_t DynamicHelperFrameFlags = offsetof(DynamicHelperFrame, m_dynamicHelperFrameFlags);
+};
+
+#ifdef FEATURE_COMINTEROP
+
+//------------------------------------------------------------------------
+// This represents a com to CLR call method prestub.
+// we need to catch exceptions etc. so this frame is not the same
+// as the prestub method frame
+// Note that in rare IJW cases, the immediate caller could be a managed method
+// which pinvoke-inlined a call to a COM interface, which happenned to be
+// implemented by a managed function via COM-interop.
+//------------------------------------------------------------------------
+
+typedef DPTR(class ComPrestubMethodFrame) PTR_ComPrestubMethodFrame;
+
+class ComPrestubMethodFrame : public ComMethodFrame
+{
+    friend class CheckAsmOffsets;
+
+public:
+    // Set the vptr and GSCookie
+    VOID Init();
+
+    int GetFrameType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return TYPE_INTERCEPTION;
+    }
+
+    // ComPrestubMethodFrame should return the same interception type as
+    // code:PrestubMethodFrame.GetInterception.
+    Interception GetInterception_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return INTERCEPTION_PRESTUB;
+    }
+
+    // Our base class is an M2U TransitionType; but we're not. So override and set us back to None.
+    ETransitionType GetTransitionType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return TT_NONE;
+    }
+
+    void ExceptionUnwind_Impl()
+    {
+    }
+};
+
+#endif // FEATURE_COMINTEROP
 
 //------------------------------------------------------------------------
 // This frame protects object references for the EE's convenience.

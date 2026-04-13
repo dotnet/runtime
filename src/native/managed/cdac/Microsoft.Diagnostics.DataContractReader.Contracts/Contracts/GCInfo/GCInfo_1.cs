@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -25,6 +26,12 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
         return handle.GetCodeLength();
+    }
+
+    IReadOnlyList<InterruptibleRange> IGCInfo.GetInterruptibleRanges(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetInterruptibleRanges();
     }
 
     private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)

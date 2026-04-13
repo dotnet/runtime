@@ -68,8 +68,6 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         GC_SPBASE_LAST = GC_FRAMEREG_REL,
     }
 
-    public readonly record struct InterruptibleRange(uint StartOffset, uint EndOffset);
-
     public readonly record struct GcSlotDesc
     {
         /* Register Slot */
@@ -557,6 +555,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         CodeManagerFlags flags,
         Action<uint, GcSlotDesc, uint> reportSlot)
     {
+        // TODO: Remove goto statements from this function
         EnsureDecodedTo(DecodePoints.SlotTable);
 
         bool executionAborted = flags.HasFlag(CodeManagerFlags.ExecutionAborted);
@@ -818,8 +817,13 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     ReportUntracked:
         if (_numUntrackedSlots > 0 && (flags & (CodeManagerFlags.ParentOfFuncletStackFrame | CodeManagerFlags.NoReportUntracked)) == 0)
         {
+            // Native passes reportScratchSlots=true for untracked slots (see native
+            // ReportUntrackedSlots: "Report everything (although there should *never*
+            // be any scratch slots that are untracked)"). In practice the JIT can
+            // produce untracked scratch register slots for interior pointers, so they
+            // must be reported regardless of whether this is a leaf frame.
             for (uint slotIndex = numTracked; slotIndex < _numSlots; slotIndex++)
-                ReportSlot(slotIndex, reportScratchSlots, reportFpBasedSlotsOnly, reportSlot);
+                ReportSlot(slotIndex, reportScratchSlots: true, reportFpBasedSlotsOnly, reportSlot);
         }
 
         return true;

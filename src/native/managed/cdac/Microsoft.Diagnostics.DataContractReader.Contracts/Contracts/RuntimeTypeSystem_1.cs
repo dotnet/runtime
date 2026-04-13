@@ -1251,6 +1251,96 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return AsInstantiatedMethodDesc(methodDesc).Instantiation;
     }
 
+    /// <summary>
+    /// Returns true if the method requires a hidden instantiation argument (generic context parameter).
+    /// Matches native MethodDesc::RequiresInstArg().
+    /// </summary>
+    public bool RequiresInstArg(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (!IsSharedByGenericInstantiations(methodDesc))
+            return false;
+
+        // RequiresInstArg = IsShared && (HasMethodInstantiation || IsStatic || IsValueType || IsInterface)
+        if (methodDesc.Classification == MethodClassification.Instantiated)
+        {
+            InstantiatedMethodDesc imd = AsInstantiatedMethodDesc(methodDesc);
+            if (imd.HasMethodInstantiation)
+                return true;
+        }
+
+        // Check IsStatic, IsValueType, IsInterface on the owning type
+        MethodTable mt = _methodTables[methodDesc.MethodTable];
+        if (mt.Flags.IsInterface)
+            return true;
+
+        if (mt.Flags.IsValueType)
+            return true;
+
+        // Check IsStatic via metadata
+        try
+        {
+            uint token = methodDesc.Token;
+            if (token != 0x06000000) // has a valid token
+            {
+                TypeHandle typeHandle = GetTypeHandle(methodDesc.MethodTable);
+                TargetPointer modulePtr = GetModule(typeHandle);
+                ILoader loader = _target.Contracts.Loader;
+                ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+                MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+                if (mdReader is not null)
+                {
+                    MethodDefinitionHandle methodDefHandle =
+                        MetadataTokens.MethodDefinitionHandle((int)(token & 0x00FFFFFF));
+                    MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+                    if ((methodDef.Attributes & MethodAttributes.Static) != 0)
+                        return true;
+                }
+            }
+        }
+        catch
+        {
+            // If metadata isn't available, conservatively return false
+        }
+
+        return false;
+    }
+
+    private bool IsSharedByGenericInstantiations(MethodDesc methodDesc)
+    {
+        // Check method-level sharing: InstantiatedMethodDesc with SharedMethodInstantiation
+        if (methodDesc.Classification == MethodClassification.Instantiated)
+        {
+            InstantiatedMethodDesc imd = AsInstantiatedMethodDesc(methodDesc);
+            if (imd.IsWrapperStubWithInstantiations)
+                return false;
+
+            // Check SharedMethodInstantiation flag
+            Data.InstantiatedMethodDesc imdData = _target.ProcessedData.GetOrAdd<Data.InstantiatedMethodDesc>(methodDesc.Address);
+            if ((imdData.Flags2 & (ushort)InstantiatedMethodDescFlags2.KindMask)
+                == (ushort)InstantiatedMethodDescFlags2.SharedMethodInstantiation)
+                return true;
+        }
+
+        // Check class-level sharing: canonical MethodTable with generic instantiation
+        MethodTable mt = _methodTables[methodDesc.MethodTable];
+        return mt.IsCanonMT && mt.Flags.HasInstantiation;
+    }
+
+    public bool IsAsyncMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (!methodDesc.HasAsyncMethodData)
+            return false;
+
+        // AsyncMethodData is the last optional slot, placed after NativeCodeSlot.
+        // Read the AsyncMethodFlags (first field) and check for AsyncCall (0x1).
+        TargetPointer asyncDataAddr = methodDesc.GetAddressOfAsyncMethodData();
+        uint asyncFlags = _target.Read<uint>(asyncDataAddr);
+        return (asyncFlags & 0x1) != 0; // AsyncMethodFlags.AsyncCall
+    }
+
     public uint GetMethodToken(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];

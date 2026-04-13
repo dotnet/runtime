@@ -149,6 +149,8 @@ CDAC_TYPE_FIELD(ExceptionInfo, T_UINT8, PassNumber, offsetof(ExInfo, m_passNumbe
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, CSFEHClause, offsetof(ExInfo, m_csfEHClause))
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, CSFEnclosingClause, offsetof(ExInfo, m_csfEnclosingClause))
 CDAC_TYPE_FIELD(ExceptionInfo, T_POINTER, CallerOfActualHandlerFrame, offsetof(ExInfo, m_sfCallerOfActualHandlerFrame))
+CDAC_TYPE_FIELD(ExceptionInfo, T_UINT32, ClauseForCatchHandlerStartPC, offsetof(ExInfo, m_ClauseForCatch) + offsetof(EE_ILEXCEPTION_CLAUSE, HandlerStartPC))
+CDAC_TYPE_FIELD(ExceptionInfo, T_UINT32, ClauseForCatchHandlerEndPC, offsetof(ExInfo, m_ClauseForCatch) + offsetof(EE_ILEXCEPTION_CLAUSE, HandlerEndPC))
 CDAC_TYPE_END(ExceptionInfo)
 
 CDAC_TYPE_BEGIN(ObjectHandle)
@@ -724,6 +726,8 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, HotColdMap, cdac_data<ReadyToRunInfo>
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, DelayLoadMethodCallThunks, cdac_data<ReadyToRunInfo>::DelayLoadMethodCallThunks)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, DebugInfoSection, cdac_data<ReadyToRunInfo>::DebugInfoSection)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, ExceptionInfoSection, cdac_data<ReadyToRunInfo>::ExceptionInfoSection)
+CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, ImportSections, cdac_data<ReadyToRunInfo>::ImportSections)
+CDAC_TYPE_FIELD(ReadyToRunInfo, T_UINT32, NumImportSections, cdac_data<ReadyToRunInfo>::NumImportSections)
 CDAC_TYPE_FIELD(ReadyToRunInfo, TYPE(HashMap), EntryPointToMethodDescMap, cdac_data<ReadyToRunInfo>::EntryPointToMethodDescMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, LoadedImageBase, cdac_data<ReadyToRunInfo>::LoadedImageBase)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, Composite, cdac_data<ReadyToRunInfo>::Composite)
@@ -989,7 +993,22 @@ CDAC_TYPE_SIZE(sizeof(StubDispatchFrame))
 CDAC_TYPE_FIELD(StubDispatchFrame, T_POINTER, RepresentativeMTPtr, cdac_data<StubDispatchFrame>::RepresentativeMTPtr)
 CDAC_TYPE_FIELD(StubDispatchFrame, T_POINTER, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
 CDAC_TYPE_FIELD(StubDispatchFrame, T_UINT32, RepresentativeSlot, cdac_data<StubDispatchFrame>::RepresentativeSlot)
+CDAC_TYPE_FIELD(StubDispatchFrame, T_POINTER, GCRefMap, cdac_data<StubDispatchFrame>::GCRefMap)
+CDAC_TYPE_FIELD(StubDispatchFrame, T_POINTER, ZapModule, cdac_data<StubDispatchFrame>::ZapModule)
+CDAC_TYPE_FIELD(StubDispatchFrame, T_POINTER, Indirection, cdac_data<StubDispatchFrame>::Indirection)
 CDAC_TYPE_END(StubDispatchFrame)
+
+CDAC_TYPE_BEGIN(ExternalMethodFrame)
+CDAC_TYPE_SIZE(sizeof(ExternalMethodFrame))
+CDAC_TYPE_FIELD(ExternalMethodFrame, T_POINTER, GCRefMap, cdac_data<ExternalMethodFrame>::GCRefMap)
+CDAC_TYPE_FIELD(ExternalMethodFrame, T_POINTER, Indirection, cdac_data<ExternalMethodFrame>::Indirection)
+CDAC_TYPE_FIELD(ExternalMethodFrame, T_POINTER, ZapModule, cdac_data<ExternalMethodFrame>::ZapModule)
+CDAC_TYPE_END(ExternalMethodFrame)
+
+CDAC_TYPE_BEGIN(DynamicHelperFrame)
+CDAC_TYPE_SIZE(sizeof(DynamicHelperFrame))
+CDAC_TYPE_FIELD(DynamicHelperFrame, T_INT32, DynamicHelperFrameFlags, cdac_data<DynamicHelperFrame>::DynamicHelperFrameFlags)
+CDAC_TYPE_END(DynamicHelperFrame)
 
 #ifdef FEATURE_HIJACK
 CDAC_TYPE_BEGIN(ResumableFrame)
@@ -1374,6 +1393,18 @@ CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
 #undef FRAME_TYPE_NAME
 
 CDAC_GLOBAL(MethodDescTokenRemainderBitCount, T_UINT8, METHOD_TOKEN_REMAINDER_BIT_COUNT)
+
+CDAC_GLOBAL(TransitionBlockOffsetOfArgs, T_UINT32, sizeof(TransitionBlock))
+#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
+CDAC_GLOBAL(TransitionBlockOffsetOfArgumentRegisters, T_UINT32, sizeof(TransitionBlock))
+CDAC_GLOBAL(TransitionBlockOffsetOfFirstGCRefMapSlot, T_UINT32, sizeof(TransitionBlock))
+#elif defined(TARGET_ARM64)
+CDAC_GLOBAL(TransitionBlockOffsetOfArgumentRegisters, T_UINT32, offsetof(TransitionBlock, m_argumentRegisters))
+CDAC_GLOBAL(TransitionBlockOffsetOfFirstGCRefMapSlot, T_UINT32, offsetof(TransitionBlock, m_x8RetBuffReg))
+#else
+CDAC_GLOBAL(TransitionBlockOffsetOfArgumentRegisters, T_UINT32, offsetof(TransitionBlock, m_argumentRegisters))
+CDAC_GLOBAL(TransitionBlockOffsetOfFirstGCRefMapSlot, T_UINT32, offsetof(TransitionBlock, m_argumentRegisters))
+#endif
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(FeatureCOMInterop, T_UINT8, 1)
 #else

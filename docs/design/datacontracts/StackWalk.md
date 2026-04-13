@@ -60,6 +60,9 @@ This contract depends on the following descriptors:
 | `StubDispatchFrame` | `MethodDescPtr` | Pointer to Frame's method desc |
 | `StubDispatchFrame` | `RepresentativeMTPtr` | Pointer to Frame's method table pointer |
 | `StubDispatchFrame` | `RepresentativeSlot` | Frame's method table slot |
+| `StubDispatchFrame` | `GCRefMap` | Cached pointer to GC reference map blob for caller stack promotion |
+| `ExternalMethodFrame` | `GCRefMap` | Cached pointer to GC reference map blob for caller stack promotion |
+| `DynamicHelperFrame` | `DynamicHelperFrameFlags` | Flags indicating which argument registers contain GC references |
 | `TransitionBlock` | `ReturnAddress` | Return address associated with the TransitionBlock |
 | `TransitionBlock` | `CalleeSavedRegisters` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
 | `TransitionBlock` (arm) | `ArgumentRegisters` | ARM specific `ArgumentRegisters` struct |
@@ -85,11 +88,16 @@ This contract depends on the following descriptors:
 | `ExceptionInfo` | `CallerOfActualHandlerFrame` | Stack frame of the caller of the catch handler |
 | `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested ExInfo |
 | `ExceptionInfo` | `PassNumber` | Exception handling pass (1 or 2) |
+| `ExceptionInfo` | `ClauseForCatchHandlerStartPC` | Start PC offset of the catch handler clause, used for interruptible offset override |
+| `ExceptionInfo` | `ClauseForCatchHandlerEndPC` | End PC offset of the catch handler clause, used for interruptible offset override |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | For each FrameType `<frameType>`, `<frameType>##Identifier` | `FrameIdentifier` enum value | Identifier used to determine concrete type of Frames |
+| `TransitionBlockOffsetOfFirstGCRefMapSlot` | `uint32` | Byte offset within TransitionBlock where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset. |
+| `TransitionBlockOffsetOfArgumentRegisters` | `uint32` | Byte offset of the ArgumentRegisters within the TransitionBlock |
+| `TransitionBlockOffsetOfArgs` | `uint32` | Byte offset of stack arguments (first arg after registers) = `sizeof(TransitionBlock)` |
 
 Constants used:
 | Source | Name | Value | Purpose |

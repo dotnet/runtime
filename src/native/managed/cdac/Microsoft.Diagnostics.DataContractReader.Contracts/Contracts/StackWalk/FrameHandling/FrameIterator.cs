@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -132,20 +135,82 @@ internal sealed class FrameIterator
         }
     }
 
-    public bool IsInlineCallFrameWithActiveCall()
+    /// <summary>
+    /// Returns the return address for the current Frame, matching native Frame::GetReturnAddress().
+    /// Returns TargetPointer.Null if the Frame has no return address (e.g., non-active ICF,
+    /// base Frame types, FuncEvalFrame during exception eval).
+    /// </summary>
+    public TargetPointer GetReturnAddress()
     {
-        if (GetFrameType(target, CurrentFrame.Identifier) != FrameType.InlinedCallFrame)
+        FrameType frameType = GetCurrentFrameType();
+        switch (frameType)
         {
-            return false;
-        }
-        Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(currentFramePointer);
-        return InlinedCallFrameHasActiveCall(inlinedCallFrame);
-    }
+            // InlinedCallFrame: returns 0 if inactive, else m_pCallerReturnAddress
+            case FrameType.InlinedCallFrame:
+                Data.InlinedCallFrame icf = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(currentFramePointer);
+                return InlinedCallFrameHasActiveCall(icf) ? new TargetPointer(icf.CallerReturnAddress) : TargetPointer.Null;
 
-    public static bool IsInlinedCallFrame(Target target, TargetPointer framePointer)
-    {
-        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framePointer);
-        return GetFrameType(target, frame.Identifier) == FrameType.InlinedCallFrame;
+            // TransitionFrame types: read return address from the transition block
+            case FrameType.FramedMethodFrame:
+            case FrameType.CLRToCOMMethodFrame:
+            case FrameType.PInvokeCalliFrame:
+            case FrameType.PrestubMethodFrame:
+            case FrameType.StubDispatchFrame:
+            case FrameType.CallCountingHelperFrame:
+            case FrameType.ExternalMethodFrame:
+            case FrameType.DynamicHelperFrame:
+                Data.FramedMethodFrame fmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(currentFramePointer);
+                Data.TransitionBlock tb = target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
+                return tb.ReturnAddress;
+
+            // SoftwareExceptionFrame: stored m_ReturnAddress
+            case FrameType.SoftwareExceptionFrame:
+                Data.SoftwareExceptionFrame sef = target.ProcessedData.GetOrAdd<Data.SoftwareExceptionFrame>(currentFramePointer);
+                return sef.ReturnAddress;
+
+            // ResumableFrame / RedirectedThreadFrame: RIP from captured context
+            case FrameType.ResumableFrame:
+            case FrameType.RedirectedThreadFrame:
+            {
+                Data.ResumableFrame rf = target.ProcessedData.GetOrAdd<Data.ResumableFrame>(currentFramePointer);
+                IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
+                ctx.ReadFromAddress(target, rf.TargetContextPtr);
+                return ctx.InstructionPointer;
+            }
+
+            // FaultingExceptionFrame: RIP from embedded context
+            case FrameType.FaultingExceptionFrame:
+            {
+                Data.FaultingExceptionFrame fef = target.ProcessedData.GetOrAdd<Data.FaultingExceptionFrame>(currentFramePointer);
+                IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
+                ctx.ReadFromAddress(target, fef.TargetContext);
+                return ctx.InstructionPointer;
+            }
+
+            // HijackFrame: stored m_ReturnAddress
+            case FrameType.HijackFrame:
+                Data.HijackFrame hf = target.ProcessedData.GetOrAdd<Data.HijackFrame>(currentFramePointer);
+                return hf.ReturnAddress;
+
+            // TailCallFrame: stored m_ReturnAddress
+            case FrameType.TailCallFrame:
+                Data.TailCallFrame tcf = target.ProcessedData.GetOrAdd<Data.TailCallFrame>(currentFramePointer);
+                return tcf.ReturnAddress;
+
+            // FuncEvalFrame: returns 0 during exception eval, else from transition block
+            case FrameType.FuncEvalFrame:
+                Data.FuncEvalFrame funcEval = target.ProcessedData.GetOrAdd<Data.FuncEvalFrame>(currentFramePointer);
+                Data.DebuggerEval dbgEval = target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEval.DebuggerEvalPtr);
+                if (dbgEval.EvalDuringException)
+                    return TargetPointer.Null;
+                Data.FramedMethodFrame funcEvalFmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(currentFramePointer);
+                Data.TransitionBlock funcEvalTb = target.ProcessedData.GetOrAdd<Data.TransitionBlock>(funcEvalFmf.TransitionBlockPtr);
+                return funcEvalTb.ReturnAddress;
+
+            // Base Frame and unknown types: return 0 (matches native Frame::GetReturnAddressPtr_Impl)
+            default:
+                return TargetPointer.Null;
+        }
     }
 
     public static string GetFrameName(Target target, TargetPointer frameIdentifier)
@@ -160,7 +225,7 @@ internal sealed class FrameIterator
 
     public FrameType GetCurrentFrameType() => GetFrameType(target, CurrentFrame.Identifier);
 
-    private static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
+    internal static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
     {
         foreach (FrameType frameType in Enum.GetValues<FrameType>())
         {
@@ -233,21 +298,6 @@ internal sealed class FrameIterator
         }
     }
 
-    public static TargetPointer GetReturnAddress(Target target, TargetPointer framePtr)
-    {
-        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
-        FrameType frameType = GetFrameType(target, frame.Identifier);
-        switch (frameType)
-        {
-            case FrameType.InlinedCallFrame:
-                Data.InlinedCallFrame inlinedCallFrame = target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
-                return InlinedCallFrameHasActiveCall(inlinedCallFrame) ? inlinedCallFrame.CallerReturnAddress : TargetPointer.Null;
-            default:
-                // NotImplemented for other frame types
-                return TargetPointer.Null;
-        }
-    }
-
     private static bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame, Target target)
     {
         if (target.PointerSize == sizeof(ulong))
@@ -263,5 +313,418 @@ internal sealed class FrameIterator
     private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
     {
         return frame.CallerReturnAddress != TargetPointer.Null;
+    }
+
+    // ===== Frame GC Root Scanning =====
+
+    /// <summary>
+    /// Scans GC roots for a Frame based on its type.
+    /// Dispatches to the appropriate scanning method (GCRefMap, MetaSig, or custom).
+    /// Matches native Frame::GcScanRoots_Impl virtual dispatch.
+    /// </summary>
+    internal void GcScanRoots(TargetPointer frameAddress, GcScanContext scanContext)
+    {
+        if (frameAddress == TargetPointer.Null)
+            return;
+
+        Data.Frame frameData = target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress);
+        FrameType frameType = GetFrameType(target, frameData.Identifier);
+
+        switch (frameType)
+        {
+            case FrameType.StubDispatchFrame:
+            {
+                Data.FramedMethodFrame fmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
+                Data.StubDispatchFrame sdf = target.ProcessedData.GetOrAdd<Data.StubDispatchFrame>(frameAddress);
+                TargetPointer gcRefMap = sdf.GCRefMap;
+
+                // Resolve GCRefMap via indirection if not yet cached
+                if (gcRefMap == TargetPointer.Null && sdf.Indirection != TargetPointer.Null)
+                    gcRefMap = FindGCRefMap(sdf.ZapModule, sdf.Indirection);
+
+                if (gcRefMap != TargetPointer.Null)
+                    PromoteCallerStackUsingGCRefMap(fmf.TransitionBlockPtr, gcRefMap, scanContext);
+                else
+                    PromoteCallerStack(frameAddress, fmf.TransitionBlockPtr, scanContext);
+                break;
+            }
+
+            case FrameType.ExternalMethodFrame:
+            {
+                Data.FramedMethodFrame fmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
+                Data.ExternalMethodFrame emf = target.ProcessedData.GetOrAdd<Data.ExternalMethodFrame>(frameAddress);
+                TargetPointer gcRefMap = emf.GCRefMap;
+
+                // Resolve GCRefMap via FindGCRefMap if not yet cached by the runtime
+                if (gcRefMap == TargetPointer.Null && emf.Indirection != TargetPointer.Null)
+                    gcRefMap = FindGCRefMap(emf.ZapModule, emf.Indirection);
+
+                if (gcRefMap != TargetPointer.Null)
+                    PromoteCallerStackUsingGCRefMap(fmf.TransitionBlockPtr, gcRefMap, scanContext);
+                else
+                    PromoteCallerStack(frameAddress, fmf.TransitionBlockPtr, scanContext);
+                break;
+            }
+
+            case FrameType.DynamicHelperFrame:
+            {
+                Data.FramedMethodFrame fmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
+                Data.DynamicHelperFrame dhf = target.ProcessedData.GetOrAdd<Data.DynamicHelperFrame>(frameAddress);
+                ScanDynamicHelperFrame(fmf.TransitionBlockPtr, dhf.DynamicHelperFrameFlags, scanContext);
+                break;
+            }
+
+            case FrameType.CallCountingHelperFrame:
+            case FrameType.PrestubMethodFrame:
+            {
+                Data.FramedMethodFrame fmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
+                PromoteCallerStack(frameAddress, fmf.TransitionBlockPtr, scanContext);
+                break;
+            }
+
+            case FrameType.CLRToCOMMethodFrame:
+            case FrameType.ComPrestubMethodFrame:
+                // TODO(stackref): Implement PromoteCallerStack for COM interop frames
+                break;
+
+            case FrameType.HijackFrame:
+                // TODO(stackref): Implement HijackFrame scanning (X86 only with FEATURE_HIJACK)
+                break;
+
+            case FrameType.ProtectValueClassFrame:
+                // TODO(stackref): Implement ProtectValueClassFrame scanning
+                break;
+
+            default:
+                // Base Frame::GcScanRoots_Impl is a no-op for most frame types.
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Decodes a GCRefMap bitstream and reports GC references in the transition block.
+    /// Port of native TransitionFrame::PromoteCallerStackUsingGCRefMap (frames.cpp).
+    /// </summary>
+    private void PromoteCallerStackUsingGCRefMap(
+        TargetPointer transitionBlock,
+        TargetPointer gcRefMapBlob,
+        GcScanContext scanContext)
+    {
+        GCRefMapDecoder decoder = new(target, gcRefMapBlob);
+
+        if (target.PointerSize == 4)
+            decoder.ReadStackPop();
+
+        while (!decoder.AtEnd)
+        {
+            int pos = decoder.CurrentPos;
+            GCRefMapToken token = decoder.ReadToken();
+            uint offset = OffsetFromGCRefMapPos(pos);
+            TargetPointer slotAddress = new(transitionBlock.Value + offset);
+
+            switch (token)
+            {
+                case GCRefMapToken.Skip:
+                    break;
+                case GCRefMapToken.Ref:
+                    scanContext.GCReportCallback(slotAddress, GcScanFlags.None);
+                    break;
+                case GCRefMapToken.Interior:
+                    scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
+                    break;
+                case GCRefMapToken.MethodParam:
+                case GCRefMapToken.TypeParam:
+                    break;
+                case GCRefMapToken.VASigCookie:
+                    // TODO(stackref): Implement VASIG_COOKIE handling
+                    break;
+            }
+        }
+    }
+
+    private uint OffsetFromGCRefMapPos(int pos)
+    {
+        uint firstSlotOffset = target.ReadGlobal<uint>(Constants.Globals.TransitionBlockOffsetOfFirstGCRefMapSlot);
+        return firstSlotOffset + (uint)(pos * target.PointerSize);
+    }
+
+    /// <summary>
+    /// Scans GC roots for a DynamicHelperFrame based on its flags.
+    /// Port of native DynamicHelperFrame::GcScanRoots_Impl (frames.cpp).
+    /// </summary>
+    private void ScanDynamicHelperFrame(
+        TargetPointer transitionBlock,
+        int dynamicHelperFrameFlags,
+        GcScanContext scanContext)
+    {
+        const int DynamicHelperFrameFlags_ObjectArg = 1;
+        const int DynamicHelperFrameFlags_ObjectArg2 = 2;
+
+        uint argRegOffset = target.ReadGlobal<uint>(Constants.Globals.TransitionBlockOffsetOfArgumentRegisters);
+
+        if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg) != 0)
+        {
+            TargetPointer argAddr = new(transitionBlock.Value + argRegOffset);
+            scanContext.GCReportCallback(argAddr, GcScanFlags.None);
+        }
+
+        if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg2) != 0)
+        {
+            TargetPointer argAddr = new(transitionBlock.Value + argRegOffset + (uint)target.PointerSize);
+            scanContext.GCReportCallback(argAddr, GcScanFlags.None);
+        }
+    }
+
+    /// <summary>
+    /// Resolves the GCRefMap for a Frame with m_pIndirection set but m_pGCRefMap not yet cached.
+    /// Port of native FindGCRefMap (frames.cpp:853).
+    /// </summary>
+    private TargetPointer FindGCRefMap(TargetPointer zapModule, TargetPointer indirection)
+    {
+        if (zapModule == TargetPointer.Null || indirection == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        // Get the ReadyToRunInfo from the module
+        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(zapModule);
+        if (module.ReadyToRunInfo == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        Data.ReadyToRunInfo r2rInfo = target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
+        if (r2rInfo.ImportSections == TargetPointer.Null || r2rInfo.NumImportSections == 0)
+            return TargetPointer.Null;
+
+        // Compute RVA = indirection - imageBase
+        ulong imageBase = r2rInfo.LoadedImageBase.Value;
+        uint rva = (uint)(indirection.Value - imageBase);
+
+        // READYTORUN_IMPORT_SECTION layout:
+        //   IMAGE_DATA_DIRECTORY Section (VirtualAddress:4, Size:4) = 8 bytes
+        //   ReadyToRunImportSectionFlags Flags (2 bytes)
+        //   ReadyToRunImportSectionType Type (1 byte)
+        //   BYTE EntrySize (1 byte)
+        //   DWORD Signatures (4 bytes)
+        //   DWORD AuxiliaryData (4 bytes)
+        // Total: 20 bytes
+        const int ImportSectionSize = 20;
+        const int SectionVAOffset = 0;
+        const int SectionSizeOffset = 4;
+        const int EntrySizeOffset = 11;
+        const int AuxiliaryDataOffset = 16;
+
+        TargetPointer sectionsBase = r2rInfo.ImportSections;
+        for (uint i = 0; i < r2rInfo.NumImportSections; i++)
+        {
+            TargetPointer sectionAddr = new(sectionsBase.Value + i * ImportSectionSize);
+            uint sectionVA = target.Read<uint>(sectionAddr + SectionVAOffset);
+            uint sectionSize = target.Read<uint>(sectionAddr + SectionSizeOffset);
+
+            if (rva >= sectionVA && rva < sectionVA + sectionSize)
+            {
+                byte entrySize = target.Read<byte>(sectionAddr + EntrySizeOffset);
+                if (entrySize == 0)
+                    return TargetPointer.Null;
+
+                uint index = (rva - sectionVA) / entrySize;
+                uint auxDataRva = target.Read<uint>(sectionAddr + AuxiliaryDataOffset);
+                if (auxDataRva == 0)
+                    return TargetPointer.Null;
+
+                TargetPointer gcRefMapBase = new(imageBase + auxDataRva);
+
+                // GCRefMap starts with a lookup index for stride-based access.
+                // GCREFMAP_LOOKUP_STRIDE is 1024 in the native code.
+                const uint GCREFMAP_LOOKUP_STRIDE = 1024;
+                uint lookupIndex = index / GCREFMAP_LOOKUP_STRIDE;
+                uint remaining = index % GCREFMAP_LOOKUP_STRIDE;
+
+                // Read the offset from the lookup table (array of DWORDs)
+                uint lookupOffset = target.Read<uint>(new TargetPointer(gcRefMapBase.Value + lookupIndex * 4));
+                TargetPointer p = new(gcRefMapBase.Value + lookupOffset);
+
+                // Linear scan past 'remaining' entries
+                while (remaining > 0)
+                {
+                    // Each entry is a variable-length sequence of bytes where the high bit
+                    // indicates continuation. Skip until we find a byte without the high bit set.
+                    while ((target.Read<byte>(p) & 0x80) != 0)
+                        p = new(p.Value + 1);
+                    p = new(p.Value + 1); // skip the final byte of this entry
+
+                    remaining--;
+                }
+
+                return p;
+            }
+        }
+
+        return TargetPointer.Null;
+    }
+
+    /// <summary>
+    /// Entry point for promoting caller stack GC references via method signature.
+    /// Matches native TransitionFrame::PromoteCallerStack (frames.cpp:1494).
+    /// </summary>
+    private void PromoteCallerStack(
+        TargetPointer frameAddress,
+        TargetPointer transitionBlock,
+        GcScanContext scanContext)
+    {
+        Data.FramedMethodFrame fmf = target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
+        TargetPointer methodDescPtr = fmf.MethodDescPtr;
+        if (methodDescPtr == TargetPointer.Null)
+            return;
+
+        ReadOnlySpan<byte> signature;
+        try
+        {
+            signature = GetMethodSignatureBytes(methodDescPtr);
+        }
+        catch (System.Exception)
+        {
+            return;
+        }
+
+        if (signature.IsEmpty)
+            return;
+
+        MethodSignature<GcTypeKind> methodSig;
+        byte[] sigArray = signature.ToArray();
+        unsafe
+        {
+            fixed (byte* ptr = sigArray)
+            {
+                BlobReader blobReader = new(ptr, sigArray.Length);
+                SignatureDecoder<GcTypeKind, object?> decoder = new(GcSignatureTypeProvider.Instance, metadataReader: null!, genericContext: null);
+                methodSig = decoder.DecodeMethodSignature(ref blobReader);
+            }
+        }
+
+        if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
+        {
+            // TODO(stackref): VarArg path — read VASigCookie from frame
+            return;
+        }
+
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
+
+        bool hasThis = methodSig.Header.IsInstance;
+        bool hasRetBuf = methodSig.ReturnType is GcTypeKind.Other;
+        bool requiresInstArg = false;
+        bool isAsync = false;
+        bool isValueTypeThis = false;
+
+        try
+        {
+            requiresInstArg = rts.RequiresInstArg(mdh);
+            isAsync = rts.IsAsyncMethod(mdh);
+
+            // TODO(stackref): Detect value type 'this' (needs IRuntimeTypeSystem.IsValueType)
+            // TODO(stackref): String constructor clears HasThis
+        }
+        catch
+        {
+        }
+
+        PromoteCallerStackHelper(transitionBlock, methodSig, hasThis, hasRetBuf,
+            requiresInstArg, isAsync, isValueTypeThis, scanContext);
+    }
+
+    /// <summary>
+    /// Core logic for promoting caller stack GC references.
+    /// Matches native TransitionFrame::PromoteCallerStackHelper (frames.cpp:1560).
+    /// </summary>
+    private void PromoteCallerStackHelper(
+        TargetPointer transitionBlock,
+        MethodSignature<GcTypeKind> methodSig,
+        bool hasThis,
+        bool hasRetBuf,
+        bool requiresInstArg,
+        bool isAsync,
+        bool isValueTypeThis,
+        GcScanContext scanContext)
+    {
+        int numRegistersUsed = 0;
+        if (hasThis)
+            numRegistersUsed++;
+        if (hasRetBuf)
+            numRegistersUsed++;
+        if (requiresInstArg)
+            numRegistersUsed++;
+        if (isAsync)
+            numRegistersUsed++;
+
+        bool isArm64 = IsTargetArm64();
+        if (isArm64)
+            numRegistersUsed++;
+
+        if (hasThis)
+        {
+            int thisPos = isArm64 ? 1 : 0;
+            uint thisOffset = OffsetFromGCRefMapPos(thisPos);
+            TargetPointer thisAddr = new(transitionBlock.Value + thisOffset);
+            GcScanFlags thisFlags = isValueTypeThis ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None;
+            scanContext.GCReportCallback(thisAddr, thisFlags);
+        }
+
+        // TODO(stackref): Promote async continuation pointer at its specific offset
+
+        int pos = numRegistersUsed;
+        foreach (GcTypeKind kind in methodSig.ParameterTypes)
+        {
+            uint offset = OffsetFromGCRefMapPos(pos);
+            TargetPointer slotAddress = new(transitionBlock.Value + offset);
+
+            switch (kind)
+            {
+                case GcTypeKind.Ref:
+                    scanContext.GCReportCallback(slotAddress, GcScanFlags.None);
+                    break;
+                case GcTypeKind.Interior:
+                    scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
+                    break;
+                case GcTypeKind.Other:
+                    // TODO(stackref): Value type GCDesc scanning
+                    break;
+                case GcTypeKind.None:
+                    break;
+            }
+            pos++;
+        }
+    }
+
+    private ReadOnlySpan<byte> GetMethodSignatureBytes(TargetPointer methodDescPtr)
+    {
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
+
+        if (rts.IsStoredSigMethodDesc(mdh, out ReadOnlySpan<byte> storedSig))
+            return storedSig;
+
+        uint methodToken = rts.GetMethodToken(mdh);
+        if (methodToken == 0x06000000)
+            return default;
+
+        TargetPointer methodTablePtr = rts.GetMethodTable(mdh);
+        TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
+        TargetPointer modulePtr = rts.GetModule(typeHandle);
+
+        ILoader loader = target.Contracts.Loader;
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+
+        IEcmaMetadata ecmaMetadata = target.Contracts.EcmaMetadata;
+        MetadataReader? mdReader = ecmaMetadata.GetMetadata(moduleHandle);
+        if (mdReader is null)
+            return default;
+
+        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)(methodToken & 0x00FFFFFF));
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+        BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
+        return blobReader.ReadBytes(blobReader.Length);
+    }
+
+    private bool IsTargetArm64()
+    {
+        return target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.Arm64;
     }
 }
