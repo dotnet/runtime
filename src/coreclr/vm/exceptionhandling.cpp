@@ -1652,26 +1652,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExKind exKi
     CONTEXT exceptionContext;
     ClrCaptureContext(&exceptionContext);
 
-#if defined(FEATURE_INTERPRETER) && defined(TARGET_WASM)
-    // On WASM, RtlCaptureContext zeros the context since there are no CPU registers.
-    // The stack frame iterator needs non-zero IP/SP to find interpreter frames.
-    // Set them from the current thread's interpreter frame.
-    Thread* pCurThread = GetThread();
-    if (pCurThread != NULL)
-    {
-        Frame* pFrame = pCurThread->GetFrame();
-        while (pFrame != FRAME_TOP && pFrame->GetFrameIdentifier() != FrameIdentifier::InterpreterFrame)
-        {
-            pFrame = pFrame->PtrNextFrame();
-        }
-        if (pFrame != FRAME_TOP)
-        {
-            InterpreterFrame* pInterpFrame = (InterpreterFrame*)pFrame;
-            pInterpFrame->SetContextToInterpMethodContextFrame(&exceptionContext);
-        }
-    }
-#endif // FEATURE_INTERPRETER && TARGET_WASM
-
     DispatchManagedException(throwable, &exceptionContext, NULL, exKind);
     UNREACHABLE();
 }
