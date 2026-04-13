@@ -60,6 +60,9 @@ namespace System.Diagnostics
                 return 0;
             }
 
+            methodDebugInfo->locals = null;
+            methodDebugInfo->localsSize = 0;
+
             string? assemblyPathString = Marshal.PtrToStringUTF8((IntPtr)assemblyPath);
             if (string.IsNullOrEmpty(assemblyPathString))
             {
