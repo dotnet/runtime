@@ -347,6 +347,13 @@ namespace System.Formats.Tar
                 // LinkName is an absolute path, or path relative to the fileDestinationPath directory.
                 // We don't check if the LinkName is empty. In that case, creation of the link will fail because link targets can't be empty.
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
+                // On Windows, reject rooted but not fully qualified paths ("\Windows\win.ini", "C:foo").
+                // They resolve ambiguously based on the current drive or working directory.
+                // Symlinks are resolved at access time, so Path.GetFullPath cannot reliably determine which drive will be used.
+                if (OperatingSystem.IsWindows() && Path.IsPathRooted(linkName) && !Path.IsPathFullyQualified(linkName))
+                {
+                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
+                }
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
@@ -576,10 +583,10 @@ namespace System.Formats.Tar
 
             if (!OperatingSystem.IsWindows())
             {
-                 const UnixFileMode OwnershipPermissions =
-                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                    UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
-                    UnixFileMode.OtherRead | UnixFileMode.OtherWrite |  UnixFileMode.OtherExecute;
+                const UnixFileMode OwnershipPermissions =
+                   UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                   UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                   UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
 
                 // Restore permissions.
                 // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).

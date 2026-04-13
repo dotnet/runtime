@@ -27,5 +27,26 @@ namespace System.Formats.Tar.Tests
 
             Assert.Equal(0, Directory.GetFileSystemEntries(destination).Count());
         }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_RejectsSymlinkWithRootedTargetOutsideDestination()
+        {
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            // A rooted path that points outside destDir (the target doesn't need to exist).
+            string rootedLinkTarget = @"\Temp\temp.ini";
+
+            string tarPath = Path.Combine(root.Path, "windows_symlink.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "outside.txt") { LinkName = rootedLinkTarget });
+            }
+
+            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+            Assert.Empty(Directory.EnumerateFileSystemEntries(destDir));
+        }
     }
 }
