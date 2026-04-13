@@ -67,7 +67,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName), sourceDirectoryName);
             }
 
             // Rely on Path.GetFullPath for validation of paths
@@ -135,7 +135,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName), sourceDirectoryName));
             }
 
             // Rely on Path.GetFullPath for validation of paths
@@ -190,7 +190,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName), sourceDirectoryName);
             }
 
             // Throws if the destination file exists
@@ -253,7 +253,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName), sourceDirectoryName));
             }
 
             return CreateFromDirectoryInternalAsync(sourceDirectoryName, destinationFileName, includeBaseDirectory, options, cancellationToken);
@@ -309,7 +309,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName);
             }
 
             // Rely on Path.GetFullPath for validation of paths
@@ -377,7 +377,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName));
             }
 
             // Rely on Path.GetFullPath for validation of paths
@@ -440,7 +440,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName);
             }
 
             using FileStream archive = File.OpenRead(sourceFileName);
@@ -509,7 +509,7 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName));
             }
 
             return ExtractToDirectoryInternalAsync(sourceFileName, destinationDirectoryName, options, cancellationToken);

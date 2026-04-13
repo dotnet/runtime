@@ -898,51 +898,38 @@ void SafeVariantClear(VARIANT* pVar)
     }
 }
 
-class VariantEmptyHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>
+struct VariantEmptyHolderTraits final
 {
-public:
-    VariantEmptyHolder(VARIANT* p = NULL) :
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>(p)
+    using Type = VARIANT*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
     {
         WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(VARIANT* p)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>::operator=(p);
+        SafeVariantClear(value);
     }
 };
 
-FORCEINLINE void RecordVariantRelease(VARIANT* value)
+using VariantEmptyHolder = LifetimeHolder<VariantEmptyHolderTraits>;
+
+struct RecordVariantHolderTraits final
 {
-    if (value)
+    using Type = VARIANT*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
     {
-        WRAPPER_NO_CONTRACT;
+        LIMITED_METHOD_CONTRACT;
 
-        if (V_RECORD(value))
-            V_RECORDINFO(value)->RecordDestroy(V_RECORD(value));
-        if (V_RECORDINFO(value))
-            V_RECORDINFO(value)->Release();
-    }
-}
-
-class RecordVariantHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>
-{
-public:
-    RecordVariantHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(VARIANT* p)
-    {
-        WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>::operator=(p);
+        if (value != NULL)
+        {
+            if (V_RECORD(value))
+                V_RECORDINFO(value)->RecordDestroy(V_RECORD(value));
+            if (V_RECORDINFO(value))
+                V_RECORDINFO(value)->Release();
+        }
     }
 };
+
+using RecordVariantHolder = LifetimeHolder<RecordVariantHolderTraits>;
 #endif  // FEATURE_COMINTEROP
 
 /* ------------------------------------------------------------------------- *
@@ -1621,6 +1608,7 @@ void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable 
     LPWSTR *pOle = (LPWSTR *) oleArray;
     LPWSTR *pOleEnd = pOle + cElements;
 
+    PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonRuntimeReentrancy); // IMallocSpy in managed
     while (pOle < pOleEnd)
     {
         LPWSTR lpwstr = *pOle++;
@@ -1756,6 +1744,7 @@ void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *
     LPSTR *pOle = (LPSTR *) oleArray;
     LPSTR *pOleEnd = pOle + cElements;
 
+    PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonRuntimeReentrancy); // IMallocSpy in managed
     while (pOle < pOleEnd)
     {
         LPSTR lpstr = *pOle++;
@@ -2762,7 +2751,7 @@ void OleVariant::MarshalOleVariantForObjectUncommon(OBJECTREF * const & pObj, VA
         convertObjectToVariant.InvokeThrowing(pObj, pOle);
     }
 
-    veh.SuppressRelease();
+    veh.Detach();
 }
 
 void OleVariant::MarshalInterfaceArrayComToOleHelper(BASEARRAYREF *pComArray, void *oleArray,
@@ -3210,7 +3199,7 @@ void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
     }
     CONTRACTL_END;
 
-    SafeArrayPtrHolder pSafeArray = NULL;
+    SafeArrayPtrHolder pSafeArray;
     BASEARRAYREF *pArrayRef = (BASEARRAYREF *) pObj;
     MethodTable *pElemMT = NULL;
 
@@ -3227,8 +3216,7 @@ void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
         pSafeArray = CreateSafeArrayForArrayRef(pArrayRef, vt, pElemMT);
         MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT);
     }
-    V_ARRAY(pOleVariant) = pSafeArray;
-    pSafeArray.SuppressRelease();
+    V_ARRAY(pOleVariant) = pSafeArray.Detach();
 }
 
 void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
@@ -3299,7 +3287,7 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
     ULONG nElem = (*pArrayRef)->GetNumComponents();
     ULONG nRank = (*pArrayRef)->GetRank();
 
-    SafeArrayPtrHolder pSafeArray = NULL;
+    SafeArrayPtrHolder pSafeArray;
 
     IfFailThrow(SafeArrayAllocDescriptorEx(vt, nRank, &pSafeArray));
 
@@ -3384,8 +3372,7 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
         IfFailThrow(SafeArraySetRecordInfo(pSafeArray, pRecInfo));
     }
 
-    pSafeArray.SuppressRelease();
-    RETURN pSafeArray;
+    RETURN pSafeArray.Detach();
 }
 
 //
@@ -3586,7 +3573,7 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
         else
         {
             {
-                PinningHandleHolder handle = GetAppDomain()->CreatePinningHandle((OBJECTREF)Array);
+                PinningHandleHolder handle(GetAppDomain()->CreatePinningHandle((OBJECTREF)Array));
 
                 if (bArrayOfInterfaceWrappers)
                 {
@@ -3684,7 +3671,7 @@ void OleVariant::MarshalArrayRefForSafeArray(SAFEARRAY *pSafeArray,
             pSrcData = (BYTE*)pSafeArray->pvData;
         }
 
-        PinningHandleHolder handle = GetAppDomain()->CreatePinningHandle((OBJECTREF)*pArrayRef);
+        PinningHandleHolder handle(GetAppDomain()->CreatePinningHandle((OBJECTREF)*pArrayRef));
 
         marshal->OleToComArray(pSrcData, pArrayRef, pInterfaceMT);
     }
@@ -3705,7 +3692,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
 
     HRESULT hr = S_OK;
     SafeComHolder<ITypeInfo> pTypeInfo = NULL;
-    RecordVariantHolder pRecHolder = pOleVariant;
+    RecordVariantHolder pRecHolder(pOleVariant);
 
     // Initialize the OLE variant's VT_RECORD fields to NULL.
     V_RECORDINFO(pRecHolder) = NULL;
@@ -3758,7 +3745,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
             V_RECORD(pRecHolder));
     }
 
-    pRecHolder.SuppressRelease();
+    pRecHolder.Detach();
 }
 
 void OleVariant::TransposeArrayData(BYTE *pDestData, BYTE *pSrcData, SIZE_T dwNumComponents, SIZE_T dwComponentSize, SAFEARRAY *pSafeArray, BOOL bSafeArrayToMngArray)
@@ -4176,4 +4163,3 @@ extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOn
     END_QCALL;
 }
 #endif // FEATURE_COMINTEROP
-

@@ -1050,7 +1050,7 @@ void Debugger::InitDebugEventCounting()
     memset(&g_iDbgDebuggerCounter, 0, DBG_DEBUGGER_MAX*sizeof(int));
 
     // retrieve the possible counter for break point
-    CLRConfigStringHolder wstrValue = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DebuggerBreakPoint);
+    CLRConfigStringHolder wstrValue(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DebuggerBreakPoint));
     // The string value is of the following format
     // <Event Name>=Count;<Event Name>=Count;....;
     // The string must end with ;
@@ -1698,9 +1698,10 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
 void Debugger::CleanupTransportSocket(void)
 {
 #if defined(TARGET_UNIX) && defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    if (g_pDbgTransport != NULL)
+    void (*pfnCallback)(void) = VolatileLoad(&g_pfnAbortTransportCallback);
+    if (pfnCallback != NULL)
     {
-        g_pDbgTransport->AbortConnection();
+        pfnCallback();
     }
 #endif // TARGET_UNIX && FEATURE_DBGIPC_TRANSPORT_VM
 }
