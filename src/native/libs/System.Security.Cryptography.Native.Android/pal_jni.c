@@ -190,14 +190,14 @@ jmethodID g_CertPathBuilderBuild;
 jclass    g_CertPathValidatorClass;
 jmethodID g_CertPathValidatorGetInstance;
 jmethodID g_CertPathValidatorValidate;
-jmethodID g_CertPathValidatorGetRevocationChecker; // only in API level 24+
+jmethodID g_CertPathValidatorGetRevocationChecker;
 
 // java/security/cert/CertPathValidatorException
 jclass    g_CertPathValidatorExceptionClass;
 jmethodID g_CertPathValidatorExceptionGetIndex;
-jmethodID g_CertPathValidatorExceptionGetReason; // only in API level 24+
+jmethodID g_CertPathValidatorExceptionGetReason;
 
-// java/security/cert/CertPathValidatorException$BasicReason - only in API level 24+
+// java/security/cert/CertPathValidatorException$BasicReason
 jclass    g_CertPathExceptionBasicReasonClass;
 
 // java/security/cert/CertStore
@@ -222,14 +222,14 @@ jclass    g_PKIXCertPathBuilderResultClass;
 jmethodID g_PKIXCertPathBuilderResultGetCertPath;
 jmethodID g_PKIXCertPathBuilderResultGetTrustAnchor;
 
-// java/security/cert/PKIXReason - only in API level 24+
+// java/security/cert/PKIXReason
 jclass    g_PKIXReasonClass;
 
-// java/security/cert/PKIXRevocationChecker - only in API level 24+
+// java/security/cert/PKIXRevocationChecker
 jclass    g_PKIXRevocationCheckerClass;
 jmethodID g_PKIXRevocationCheckerSetOptions;
 
-// java/security/cert/PKIXRevocationChecker$Option - only in API level 24+
+// java/security/cert/PKIXRevocationChecker$Option
 jclass    g_PKIXRevocationCheckerOptionClass;
 jfieldID  g_PKIXRevocationCheckerOptionOnlyEndEntity;
 
@@ -790,13 +790,13 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     g_CertPathValidatorClass =                  GetClassGRef(env, "java/security/cert/CertPathValidator");
     g_CertPathValidatorGetInstance =            GetMethod(env, true, g_CertPathValidatorClass, "getInstance", "(Ljava/lang/String;)Ljava/security/cert/CertPathValidator;");
     g_CertPathValidatorValidate =               GetMethod(env, false, g_CertPathValidatorClass, "validate", "(Ljava/security/cert/CertPath;Ljava/security/cert/CertPathParameters;)Ljava/security/cert/CertPathValidatorResult;");
-    g_CertPathValidatorGetRevocationChecker =   GetOptionalMethod(env, false, g_CertPathValidatorClass, "getRevocationChecker", "()Ljava/security/cert/CertPathChecker;");
+    g_CertPathValidatorGetRevocationChecker =   GetMethod(env, false, g_CertPathValidatorClass, "getRevocationChecker", "()Ljava/security/cert/CertPathChecker;");
 
     g_CertPathValidatorExceptionClass =     GetClassGRef(env, "java/security/cert/CertPathValidatorException");
     g_CertPathValidatorExceptionGetIndex =  GetMethod(env, false, g_CertPathValidatorExceptionClass, "getIndex", "()I");
-    g_CertPathValidatorExceptionGetReason = GetOptionalMethod(env, false, g_CertPathValidatorExceptionClass, "getReason", "()Ljava/security/cert/CertPathValidatorException$Reason;");
+    g_CertPathValidatorExceptionGetReason = GetMethod(env, false, g_CertPathValidatorExceptionClass, "getReason", "()Ljava/security/cert/CertPathValidatorException$Reason;");
 
-    g_CertPathExceptionBasicReasonClass =   GetOptionalClassGRef(env, "java/security/cert/CertPathValidatorException$BasicReason");
+    g_CertPathExceptionBasicReasonClass =   GetClassGRef(env, "java/security/cert/CertPathValidatorException$BasicReason");
 
     g_CertStoreClass =          GetClassGRef(env, "java/security/cert/CertStore");
     g_CertStoreGetInstance =    GetMethod(env, true, g_CertStoreClass, "getInstance", "(Ljava/lang/String;Ljava/security/cert/CertStoreParameters;)Ljava/security/cert/CertStore;");
@@ -816,16 +816,12 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     g_PKIXCertPathBuilderResultGetCertPath =    GetMethod(env, false, g_PKIXCertPathBuilderResultClass, "getCertPath", "()Ljava/security/cert/CertPath;");
     g_PKIXCertPathBuilderResultGetTrustAnchor = GetMethod(env, false, g_PKIXCertPathBuilderResultClass, "getTrustAnchor", "()Ljava/security/cert/TrustAnchor;");
 
-    g_PKIXReasonClass =   GetOptionalClassGRef(env, "java/security/cert/PKIXReason");
+    g_PKIXReasonClass =   GetClassGRef(env, "java/security/cert/PKIXReason");
+    g_PKIXRevocationCheckerClass =                  GetClassGRef(env, "java/security/cert/PKIXRevocationChecker");
+    g_PKIXRevocationCheckerSetOptions =             GetMethod(env, false, g_PKIXRevocationCheckerClass, "setOptions", "(Ljava/util/Set;)V");
 
-    if (g_CertPathValidatorGetRevocationChecker != NULL)
-    {
-        g_PKIXRevocationCheckerClass =                  GetClassGRef(env, "java/security/cert/PKIXRevocationChecker");
-        g_PKIXRevocationCheckerSetOptions =             GetMethod(env, false, g_PKIXRevocationCheckerClass, "setOptions", "(Ljava/util/Set;)V");
-
-        g_PKIXRevocationCheckerOptionClass =            GetClassGRef(env, "java/security/cert/PKIXRevocationChecker$Option");
-        g_PKIXRevocationCheckerOptionOnlyEndEntity =    GetField(env, true, g_PKIXRevocationCheckerOptionClass, "ONLY_END_ENTITY", "Ljava/security/cert/PKIXRevocationChecker$Option;");
-    }
+    g_PKIXRevocationCheckerOptionClass =            GetClassGRef(env, "java/security/cert/PKIXRevocationChecker$Option");
+    g_PKIXRevocationCheckerOptionOnlyEndEntity =    GetField(env, true, g_PKIXRevocationCheckerOptionClass, "ONLY_END_ENTITY", "Ljava/security/cert/PKIXRevocationChecker$Option;");
 
     g_TrustAnchorClass =            GetClassGRef(env, "java/security/cert/TrustAnchor");
     g_TrustAnchorCtor =             GetMethod(env, false, g_TrustAnchorClass, "<init>", "(Ljava/security/cert/X509Certificate;[B)V");
