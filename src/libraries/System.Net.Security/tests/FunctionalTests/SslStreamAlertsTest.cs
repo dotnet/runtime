@@ -242,17 +242,20 @@ namespace System.Net.Security.Tests
                 Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
 
                 // Client should fail because the self-signed cert is not trusted.
-                await Assert.ThrowsAsync<AuthenticationException>(() => clientTask);
+                // The inner exception should indicate an SSL/TLS alert (not just a
+                // connection close), confirming the server sent a proper alert.
+                AuthenticationException clientEx = await Assert.ThrowsAsync<AuthenticationException>(() => clientTask).WaitAsync(TestConfiguration.PassingTestTimeout);
+                Assert.NotNull(clientEx.InnerException);
 
                 // Server should also fail — either from the handshake or from the
                 // client's alert. In TLS 1.3, the alert may arrive later so we
                 // attempt a data exchange to surface it.
                 try
                 {
-                    await serverTask;
+                    await serverTask.WaitAsync(TestConfiguration.PassingTestTimeout);
                     byte[] buffer = new byte[1];
-                    await server.WriteAsync(buffer);
-                    await server.ReadAsync(buffer);
+                    await server.WriteAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
+                    await server.ReadAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
                     Assert.Fail("Expected an exception from the server side.");
                 }
                 catch (AuthenticationException)
@@ -304,10 +307,10 @@ namespace System.Net.Security.Tests
                 // post-handshake auth, so attempt data exchange to surface it.
                 try
                 {
-                    await serverTask;
+                    await serverTask.WaitAsync(TestConfiguration.PassingTestTimeout);
                     byte[] buffer = new byte[1];
-                    await server.WriteAsync(buffer);
-                    await server.ReadAsync(buffer);
+                    await server.WriteAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
+                    await server.ReadAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
                     Assert.Fail("Expected an exception from the server side.");
                 }
                 catch (AuthenticationException ex)
@@ -321,7 +324,7 @@ namespace System.Net.Security.Tests
                 // Client may or may not throw depending on timing.
                 try
                 {
-                    await clientTask;
+                    await clientTask.WaitAsync(TestConfiguration.PassingTestTimeout);
                 }
                 catch (AuthenticationException)
                 {

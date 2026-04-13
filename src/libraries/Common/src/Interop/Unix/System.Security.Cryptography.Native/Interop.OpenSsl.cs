@@ -707,6 +707,9 @@ internal static partial class Interop
 
                 if (errorCode == Ssl.SslErrorCode.SSL_ERROR_SSL && context.CertificateValidationException is Exception ex)
                 {
+                    // Clear the OpenSSL error queue since we are using our own
+                    // stored exception instead of the OpenSSL error.
+                    Crypto.ErrClearError();
                     handshakeException = ex;
                     context.CertificateValidationException = null;
                 }
