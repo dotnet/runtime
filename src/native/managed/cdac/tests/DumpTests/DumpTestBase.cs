@@ -106,7 +106,7 @@ public abstract class DumpTestBase : IDisposable
             _host.ReadFromTarget,
             writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
-            additionalFactories: [],
+            [Contracts.CoreCLRContracts.Register],
             out _target);
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");

@@ -1134,7 +1134,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     Thread* pThread = GetThread();
     AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
 
-    SafeArrayPtrHolder pSA = NULL;
+    SafeArrayPtrHolder pSA;
     VARIANT safeArrayVar;
     HRESULT hr;
 
@@ -1331,7 +1331,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                 LONG lSafeArrayArg = 0;
                 bByRefArg = FALSE;
                 pSA = SafeArrayCreateVector(VT_VARIANT, 0, iSrcArg - NumNamedArgs + 1);
-                if (pSA.GetValue() == NULL)
+                if (pSA == NULL)
                     COMPlusThrowHR(E_OUTOFMEMORY);
                 V_VT(&safeArrayVar) = VT_VARIANT | VT_ARRAY;
                 V_ARRAY(&safeArrayVar) = pSA;

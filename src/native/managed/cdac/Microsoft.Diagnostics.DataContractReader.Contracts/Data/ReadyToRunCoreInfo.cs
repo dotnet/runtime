@@ -11,7 +11,7 @@ internal sealed class ReadyToRunCoreInfo : IData<ReadyToRunCoreInfo>
     public ReadyToRunCoreInfo(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunCoreInfo);
-        TargetPointer headerAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(Header)].Offset);
+        TargetPointer headerAddress = target.ReadPointerField(address, type, nameof(Header));
         Header = target.ProcessedData.GetOrAdd<ReadyToRunCoreHeader>(headerAddress);
     }
 

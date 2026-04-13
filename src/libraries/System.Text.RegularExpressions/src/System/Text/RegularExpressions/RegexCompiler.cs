@@ -2529,7 +2529,7 @@ namespace System.Text.RegularExpressions
                 EmitNode(yesBranch);
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 Label postYesDoneLabel = doneLabel;
-                if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                 {
                     // resumeAt = 0;
                     Ldc(0);
@@ -2560,7 +2560,7 @@ namespace System.Text.RegularExpressions
                     EmitNode(noBranch);
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (!isAtomic && postNoDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postNoDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 1;
                         Ldc(1);
@@ -2572,7 +2572,7 @@ namespace System.Text.RegularExpressions
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 2;
                         Ldc(2);

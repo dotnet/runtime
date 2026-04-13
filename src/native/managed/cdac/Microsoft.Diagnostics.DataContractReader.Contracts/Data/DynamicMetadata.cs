@@ -10,7 +10,7 @@ internal sealed class DynamicMetadata : IData<DynamicMetadata>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicMetadata);
 
-        Size = target.Read<uint>(address + (ulong)type.Fields[nameof(Size)].Offset);
+        Size = target.ReadField<uint>(address, type, nameof(Size));
         Data = address + (ulong)type.Fields[nameof(Data)].Offset;
     }
 

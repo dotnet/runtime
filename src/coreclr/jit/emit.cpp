@@ -2226,7 +2226,7 @@ void emitter::emitGeneratePrologEpilog()
             case IGPT_FUNCLET_EPILOG:
                 INDEBUG(++funcletEpilogCnt);
                 emitBegFuncletEpilog(igPh);
-                codeGen->genFuncletEpilog();
+                codeGen->genFuncletEpilog(igPhBB);
                 emitEndFuncletEpilog();
                 break;
 
