@@ -146,11 +146,6 @@ namespace System.Diagnostics
         private static unsafe NativeOverlapped* AllocateOverlapped(EventWaitHandle waitHandle)
         {
             NativeOverlapped* overlapped = (NativeOverlapped*)NativeMemory.AllocZeroed((nuint)sizeof(NativeOverlapped));
-
-            overlapped->InternalHigh = IntPtr.Zero;
-            overlapped->InternalLow = IntPtr.Zero;
-            overlapped->OffsetHigh = 0;
-            overlapped->OffsetLow = 0;
             overlapped->EventHandle = SetLowOrderBit(waitHandle);
 
             return overlapped;

@@ -78,7 +78,7 @@ namespace System.Diagnostics
                                 continue;
                             }
 
-                            throw new Win32Exception((int)error);
+                            throw new Win32Exception(Interop.Sys.ConvertErrorPalToPlatform(error));
                         }
 
                         if (triggered == 0)

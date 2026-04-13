@@ -85,7 +85,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false, false)]
         public void ReadAll_ThrowsWhenOutputOrErrorIsInSyncMode(bool bytes, bool standardOutput)
         {
-            Process process = CreateProcess(RemotelyInvokable.StreamBody);
+            Process process = CreateProcess(RemotelyInvokable.Dummy);
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.Start();
@@ -207,6 +207,71 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(standardError, capturedError);
             }
 
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ReadAllText_ReadsInterleavedOutput()
+        {
+            const int iterations = 100;
+            using Process process = CreateProcess(() =>
+            {
+                for (int i = 0; i < iterations; i++)
+                {
+                    Console.Out.Write($"out{i} ");
+                    Console.Out.Flush();
+                    Console.Error.Write($"err{i} ");
+                    Console.Error.Flush();
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            (string standardOutput, string standardError) = process.ReadAllText();
+
+            for (int i = 0; i < iterations; i++)
+            {
+                Assert.Contains($"out{i} ", standardOutput);
+                Assert.Contains($"err{i} ", standardError);
+            }
+
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ReadAllBytes_ReadsBinaryDataWithNullBytes()
+        {
+            string testFilePath = GetTestFilePath();
+            byte[] binaryData = new byte[1024];
+            Random.Shared.NextBytes(binaryData);
+            // Ensure there are null bytes throughout the data.
+            for (int i = 0; i < binaryData.Length; i += 10)
+            {
+                binaryData[i] = 0;
+            }
+
+            File.WriteAllBytes(testFilePath, binaryData);
+
+            Process process = CreateProcess(() =>
+            {
+                Console.OpenStandardInput().CopyTo(Console.OpenStandardOutput());
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            using SafeFileHandle input = File.OpenHandle(testFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            process.StartInfo.StandardInputHandle = input;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            (byte[] standardOutput, byte[] standardError) = process.ReadAllBytes();
+
+            Assert.Equal(binaryData, standardOutput);
+            Assert.Empty(standardError);
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
