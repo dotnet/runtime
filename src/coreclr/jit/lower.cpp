@@ -10430,14 +10430,14 @@ static bool IsStoreCoalescingInvariantNode(Compiler* compiler, GenTree* node, bo
 // Return Value:
 //    true if the constant can participate in store coalescing; otherwise false.
 //
-static bool TryGetStoreCoalescingConstantBits(GenTree* value, size_t* bits)
+static bool TryGetStoreCoalescingConstantBits(GenTree* value, uint64_t* bits)
 {
     assert(bits != nullptr);
     *bits = 0;
 
     if (value->IsCnsIntOrI())
     {
-        *bits = static_cast<size_t>(value->AsIntCon()->IconValue());
+        *bits = static_cast<uint64_t>(value->AsIntCon()->IconValue());
         return true;
     }
 
@@ -10446,17 +10446,15 @@ static bool TryGetStoreCoalescingConstantBits(GenTree* value, size_t* bits)
         if (value->TypeIs(TYP_FLOAT))
         {
             float floatCns = static_cast<float>(value->AsDblCon()->DconValue());
-            memcpy(bits, &floatCns, sizeof(floatCns));
+            *bits          = BitOperations::SingleToUInt32Bits(floatCns);
             return true;
         }
 
 #ifdef TARGET_64BIT
-        // This helper returns bits through size_t, so only 64-bit targets can carry the full payload of a double.
-        // That also matches the current coalescing surface: double-to-integer store retyping only matters when the
-        // resulting 8-byte integer store is supported.
+        // We only need the raw 64-bit payload for targets where the resulting 8-byte coalesced store is supported.
         assert(value->TypeIs(TYP_DOUBLE));
         double doubleCns = value->AsDblCon()->DconValue();
-        memcpy(bits, &doubleCns, sizeof(doubleCns));
+        *bits            = BitOperations::DoubleToUInt64Bits(doubleCns);
         return true;
 #endif
     }
@@ -10777,6 +10775,12 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             return;
         }
 
+        if (((currData.storeFlags | prevData.storeFlags) & (GTF_IND_VOLATILE | GTF_ORDER_SIDEEFF)) != 0)
+        {
+            // Keep volatile and other ordering-sensitive stores in their original form.
+            return;
+        }
+
         bool const allowOverlapOptimization = node->OperIs(GT_STORE_LCL_FLD);
         int const  prevEndOffset            = prevData.offset + static_cast<int>(prevData.accessSize);
         int const  currEndOffset            = currData.offset + static_cast<int>(currData.accessSize);
@@ -11055,8 +11059,8 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
 
         // The integer path below places each constant according to its byte offset, so it doesn't need to swap the
         // values first. Only the SIMD packing paths above need to normalize lower/upper order explicitly.
-        size_t lowerCns = 0;
-        size_t upperCns = 0;
+        uint64_t lowerCns = 0;
+        uint64_t upperCns = 0;
         if (!TryGetStoreCoalescingConstantBits(prevData.value, &lowerCns) ||
             !TryGetStoreCoalescingConstantBits(currData.value, &upperCns))
         {
@@ -11092,23 +11096,24 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         }
 #endif // TARGET_64BIT && FEATURE_HW_INTRINSICS
 
-        size_t prevMask = ~(size_t(0)) >> (sizeof(size_t) - prevData.accessSize) * BITS_PER_BYTE;
-        size_t currMask = ~(size_t(0)) >> (sizeof(size_t) - currData.accessSize) * BITS_PER_BYTE;
-        size_t newMask  = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(newType)) * BITS_PER_BYTE;
+        uint64_t prevMask = ~(uint64_t(0)) >> (sizeof(uint64_t) - prevData.accessSize) * BITS_PER_BYTE;
+        uint64_t currMask = ~(uint64_t(0)) >> (sizeof(uint64_t) - currData.accessSize) * BITS_PER_BYTE;
+        uint64_t newMask  = ~(uint64_t(0)) >> (sizeof(uint64_t) - genTypeSize(newType)) * BITS_PER_BYTE;
         lowerCns &= prevMask;
         upperCns &= currMask;
 
         unsigned const prevShift = static_cast<unsigned>((prevData.offset - minOffset) * BITS_PER_BYTE);
         unsigned const currShift = static_cast<unsigned>((currData.offset - minOffset) * BITS_PER_BYTE);
 
-        size_t prevBits = (lowerCns << prevShift) & newMask;
-        size_t currBits = (upperCns << currShift) & newMask;
+        uint64_t prevBits = (lowerCns << prevShift) & newMask;
+        uint64_t currBits = (upperCns << currShift) & newMask;
 
         // Later stores must overwrite any overlapping bytes from earlier stores.
-        size_t currBitsMask = (currMask << currShift) & newMask;
-        size_t val          = (prevBits & ~currBitsMask) | currBits;
+        uint64_t currBitsMask = (currMask << currShift) & newMask;
+        uint64_t val          = (prevBits & ~currBitsMask) | currBits;
         JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
 
+        assert(currData.value->OperIs(GT_CNS_INT));
         auto* intCon      = currData.value->AsIntCon();
         intCon->gtIconVal = static_cast<ssize_t>(val);
         if (genTypeSize(oldType) == 1 && node->OperIsIndir())
