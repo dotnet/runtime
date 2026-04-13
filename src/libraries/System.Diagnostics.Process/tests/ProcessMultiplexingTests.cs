@@ -233,11 +233,16 @@ namespace System.Diagnostics.Tests
 
             (string standardOutput, string standardError) = process.ReadAllText();
 
+            var expectedOutput = new StringBuilder();
+            var expectedError = new StringBuilder();
             for (int i = 0; i < iterations; i++)
             {
-                Assert.Contains($"out{i} ", standardOutput);
-                Assert.Contains($"err{i} ", standardError);
+                expectedOutput.Append($"out{i} ");
+                expectedError.Append($"err{i} ");
             }
+
+            Assert.Equal(expectedOutput.ToString(), standardOutput);
+            Assert.Equal(expectedError.ToString(), standardError);
 
             Assert.True(process.WaitForExit(WaitInMS));
         }
