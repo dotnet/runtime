@@ -955,7 +955,7 @@ namespace System.StubHelpers
                         ? typeof(IMarshalerOption.EnabledOption)
                         : typeof(IMarshalerOption.DisabledOption)])],
                 TypeCode.Boolean => [typeof(bool), typeof(BoolMarshaler<int>)],
-                _ => []
+                _ => throw new ArgumentException(SR.Arg_PInvokeBadObject)
             };
 
             arrayMarshalerMethods = new ArrayMarshalerMethods
@@ -985,10 +985,18 @@ namespace System.StubHelpers
 
             byte* pNativeHome = arrayMarshalerMethods.convertSpaceToNative((Array)pManagedHome);
 
-            if (IsIn(dwFlags))
+            try
             {
-                Array managedArray = (Array)pManagedHome;
-                arrayMarshalerMethods.convertContentsToNative(managedArray, pNativeHome, managedArray.Length);
+                if (IsIn(dwFlags))
+                {
+                    Array managedArray = (Array)pManagedHome;
+                    arrayMarshalerMethods.convertContentsToNative(managedArray, pNativeHome, managedArray.Length);
+                }
+            }
+            catch
+            {
+                Marshal.FreeCoTaskMem((IntPtr)pNativeHome);
+                throw;
             }
 
             if (IsOut(dwFlags))
