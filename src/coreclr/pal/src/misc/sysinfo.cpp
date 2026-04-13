@@ -163,24 +163,32 @@ PAL_GetLogicalCpuCountFromOS()
         }
 
         cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
-        if (pCpuSet == nullptr)
-        {
-            ASSERT("CPU_ALLOC failed\n");
-            nrcpus = 1;
-        }
-        else
+        if (pCpuSet != nullptr)
         {
             size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
             CPU_ZERO_S(cpuSetSize, pCpuSet);
 
             int st = sched_getaffinity(gPID, cpuSetSize, pCpuSet);
-            if (st != 0)
+            if (st == 0)
+            {
+                nrcpus = CPU_COUNT_S(CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            }
+            else
             {
                 ASSERT("sched_getaffinity failed (%d)\n", errno);
             }
 
-            nrcpus = CPU_COUNT_S(CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
             CPU_FREE(pCpuSet);
+        }
+        else
+        {
+            ASSERT("CPU_ALLOC failed!\n");
+        }
+
+        if (nrcpus < 1)
+        {
+            // If we failed to get the number of CPUs from sched_getaffinity, fall back to getting the total number of CPUs in the system.
+            nrcpus = PAL_GetTotalCpuCount();
         }
 #else // HAVE_SCHED_GETAFFINITY
         nrcpus = PAL_GetTotalCpuCount();

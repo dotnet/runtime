@@ -439,7 +439,7 @@ void ConfigureSignals()
 
 void InitializeCurrentProcessCpuCount()
 {
-    uint32_t count;
+    uint32_t count = 0;
 
     // If the configuration value has been set, it takes precedence. Otherwise, take into account
     // process affinity and CPU quota limit.
@@ -464,24 +464,32 @@ void InitializeCurrentProcessCpuCount()
         }
 
         cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
-        if (pCpuSet == nullptr)
-        {
-            _ASSERTE(!"CPU_ALLOC failed");
-            count = 1;
-        }
-        else
+        if (pCpuSet != nullptr)
         {
             size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
             CPU_ZERO_S(cpuSetSize, pCpuSet);
 
             int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
-            if (st != 0)
+            if (st == 0)
+            {
+                count = (uint32_t)CPU_COUNT_S(CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            }
+            else
             {
                 _ASSERTE(!"sched_getaffinity failed");
             }
 
-            count = (uint32_t)CPU_COUNT_S(CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
             CPU_FREE(pCpuSet);
+        }
+        else
+        {
+            ASSERT("CPU_ALLOC failed!\n");
+        }
+
+        if (count == 0)
+        {
+            // If we failed to get the number of CPUs from sched_getaffinity, fall back to getting the total number of CPUs in the system.
+            count = GCToOSInterface::GetTotalProcessorCount();
         }
 #else // HAVE_SCHED_GETAFFINITY
         count = GCToOSInterface::GetTotalProcessorCount();

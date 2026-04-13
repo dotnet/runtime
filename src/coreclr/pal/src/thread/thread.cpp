@@ -1415,36 +1415,34 @@ CPalThread::ThreadEntry(
         CPU_ZERO_S(cpuSetSize, pCpuSet);
 
         st = sched_getaffinity(gPID, cpuSetSize, pCpuSet);
-        if (st != 0)
+        if (st == 0)
         {
+            st = sched_setaffinity(0, CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            if (st != 0)
+            {
+                if (errno == EPERM || errno == EACCES)
+                {
+                    // Some sandboxed or restricted environments (snap strict confinement,
+                    // vendor-modified Android kernels with strict SELinux policy) block
+                    // sched_setaffinity even when passed a mask extracted via sched_getaffinity.
+                    // Treat this as non-fatal — the thread will continue running on any
+                    // available CPU rather than the originally affinitized one. 
+                    WARN("sched_setaffinity failed with EPERM/EACCES, ignoring\n");
+                }
+                else
+                {
+                    ASSERT("sched_setaffinity failed!\n");
+                    CPU_FREE(pCpuSet);
+                    palError = ERROR_INTERNAL_ERROR;
+                    goto fail;
+                }
+            }
+        }
+        else
+        {
+            // Treat failure to get the affinity mask in release build as non-fatal.
             ASSERT("sched_getaffinity failed!\n");
-            CPU_FREE(pCpuSet);
-            // The sched_getaffinity should never fail for getting affinity of the current process
-            palError = ERROR_INTERNAL_ERROR;
-            goto fail;
         }
-
-        st = sched_setaffinity(0, CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
-        if (st != 0)
-        {
-            if (errno == EPERM || errno == EACCES)
-            {
-                // Some sandboxed or restricted environments (snap strict confinement,
-                // vendor-modified Android kernels with strict SELinux policy) block
-                // sched_setaffinity even when passed a mask extracted via sched_getaffinity.
-                // Treat this as non-fatal — the thread will continue running on any
-                // available CPU rather than the originally affinitized one. 
-                WARN("sched_setaffinity failed with EPERM/EACCES, ignoring\n");
-            }
-            else
-            {
-                ASSERT("sched_setaffinity failed!\n");
-                CPU_FREE(pCpuSet);
-                palError = ERROR_INTERNAL_ERROR;
-                goto fail;
-            }
-        }
-
         CPU_FREE(pCpuSet);
     }
 #endif // HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY

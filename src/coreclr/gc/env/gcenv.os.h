@@ -170,8 +170,16 @@ class AffinitySet
 
 public:
 
+    // Delete default copy and move constructors and assignment operators since this class manages a raw pointer.
+    AffinitySet(const AffinitySet&) = delete;
+    AffinitySet& operator=(const AffinitySet&) = delete;
+    AffinitySet(AffinitySet&&) = delete;
+    AffinitySet& operator=(AffinitySet&&) = delete;
+
     bool Initialize(int cpuCount)
     {
+        assert(m_bitset == nullptr);
+
         m_bitsetDataSize = (cpuCount + BitsPerBitsetEntry - 1) / BitsPerBitsetEntry;
         m_bitset = new (nothrow) uintptr_t[m_bitsetDataSize];
         if (m_bitset == nullptr)

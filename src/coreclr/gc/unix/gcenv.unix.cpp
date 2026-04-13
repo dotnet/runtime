@@ -188,7 +188,7 @@ bool GCToOSInterface::Initialize()
 
         if (st == 0)
         {
-            for (size_t i = 0; i < configuredCpuCount; i++)
+            for (size_t i = 0; i < (size_t)configuredCpuCount; i++)
             {
                 if (CPU_ISSET_S(i, cpuSetSize, pCpuSet))
                 {
