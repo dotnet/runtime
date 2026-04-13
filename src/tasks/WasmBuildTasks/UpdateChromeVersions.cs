@@ -208,7 +208,9 @@ public partial class UpdateChromeVersions : MBU.Task
             existingDoc.Load(ChromeVersionsPath);
             string existingV8VersionNodeName = string.Equals(osIdentifier, "linux", StringComparison.OrdinalIgnoreCase)
                 ? "linux_V8Version"
-                : "win_V8Version";
+                : string.Equals(osIdentifier, "windows", StringComparison.OrdinalIgnoreCase)
+                    ? "win_V8Version"
+                    : throw new LogAsErrorException($"Unknown OS identifier '{osIdentifier}' for V8 version fallback");
             foundV8Version = GetNodeValue(existingDoc, existingV8VersionNodeName);
             if (string.IsNullOrEmpty(foundV8Version))
                 throw new LogAsErrorException($"V8 binary for {osIdentifier} not available on CDN and no existing version found in {ChromeVersionsPath}");
@@ -262,7 +264,7 @@ public partial class UpdateChromeVersions : MBU.Task
         string jsvuPlatform = osPrefix switch
         {
             "Linux_x64" => "linux64",
-            "Win_x64" => "win64",
+            "Win_x64" => "win32",
             _ => throw new ArgumentException($"Unknown OS prefix '{osPrefix}' for V8 binary URL")
         };
         return $"{s_v8CanaryBaseUrl}/v8-{jsvuPlatform}-rel-{v8Version}.zip";
