@@ -870,7 +870,6 @@ namespace System.IO.Compression
                         }
                     }
                 }
-                
                 WriteFileUpdateModeFinalWork(startingOffset, nextFileOffset);
             }
 

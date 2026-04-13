@@ -366,7 +366,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
 
             entriesToWrite = new(_entries.Count);
 
-            foreach(ZipArchiveEntry entry in _entries)
+            foreach (ZipArchiveEntry entry in _entries)
             {
                 if (!entry.OriginallyInArchive)
                 {

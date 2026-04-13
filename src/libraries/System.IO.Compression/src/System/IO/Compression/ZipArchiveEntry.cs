@@ -1009,8 +1009,8 @@ namespace System.IO.Compression
 
         /// <summary>
         /// The position immediately after all entry data (including any trailing data descriptor).
-        /// Pre-computed during the Update-mode write phase from the next entry's local header offset
-        /// or the central directory start offset.
+        /// Computed while reading the central directory from the next entry's local header offset
+        /// or, for the last entry, the central directory start offset.
         /// </summary>
         internal long EndOfLocalEntryData
         {
@@ -1283,7 +1283,7 @@ namespace System.IO.Compression
                     // since the descriptor bytes remain on disk after the compressed data.
                     bool preserveDataDescriptor = _originallyInArchive
                         && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
-                    WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor);
+                    WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor: preserveDataDescriptor);
 
                     // Advance the stream past the compressed data and any trailing data descriptor
                     // by seeking to the pre-computed end-of-entry boundary.

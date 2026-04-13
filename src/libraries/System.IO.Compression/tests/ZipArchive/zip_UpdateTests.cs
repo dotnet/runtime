@@ -1480,8 +1480,9 @@ namespace System.IO.Compression.Tests
         /// <summary>
         /// Creates a zip archive via a non-seekable stream (which forces data descriptor / bit 3),
         /// reopens in Update mode, deletes an entry from the middle, and verifies the remaining
-        /// entries are intact. This exercises offset recalculation in ComputeEntryEndOffsets when
-        /// entries with data descriptors are removed and subsequent entries must shift.
+        /// entries are intact. This exercises the EndOfLocalEntryData values computed while reading
+        /// the central directory, which are then used to correctly shift subsequent entries after
+        /// an entry with a data descriptor is removed.
         /// </summary>
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]

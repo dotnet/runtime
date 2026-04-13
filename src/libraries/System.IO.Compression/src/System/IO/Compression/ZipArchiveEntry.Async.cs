@@ -405,7 +405,7 @@ public partial class ZipArchiveEntry
                 // since the descriptor bytes remain on disk after the compressed data.
                 bool preserveDataDescriptor = _originallyInArchive
                     && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
-                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor, cancellationToken).ConfigureAwait(false);
+                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor: preserveDataDescriptor, cancellationToken).ConfigureAwait(false);
 
                 // Advance the stream past the compressed data and any trailing data descriptor
                 // by seeking to the pre-computed end-of-entry boundary.
