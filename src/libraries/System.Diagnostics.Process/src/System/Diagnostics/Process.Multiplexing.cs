@@ -223,7 +223,8 @@ namespace System.Diagnostics
         /// </summary>
         private static void RentLargerBuffer(ref byte[] buffer, int bytesRead)
         {
-            byte[] newBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length * 2);
+            int newSize = (int)Math.Min((long)buffer.Length * 2, Array.MaxLength);
+            byte[] newBuffer = ArrayPool<byte>.Shared.Rent(newSize);
             Buffer.BlockCopy(buffer, 0, newBuffer, 0, bytesRead);
             ArrayPool<byte>.Shared.Return(buffer);
             buffer = newBuffer;
