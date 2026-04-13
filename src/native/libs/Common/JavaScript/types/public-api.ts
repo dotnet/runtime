@@ -658,7 +658,7 @@ export type DiagnosticsAPIType = {
 export type DiagnosticCommandProviderV2 = {
     keywords: [number, number];
     logLevel: number;
-    provider_name: string;
+    providerName: string;
     arguments: string | null;
 };
 

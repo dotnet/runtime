@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { IDiagnosticConnection, DiagnosticConnectionBase, diagnosticServerEventLoop, scheduleDiagnosticServerEventLoop } from "./common";
-import { mono_log_warn } from "./logging";
+import { DiagnosticConnectionBase } from "./common";
+import { dotnetBrowserUtilsExports, dotnetLogger, dotnetNativeBrowserExports } from "./cross-module";
+import { IDiagnosticConnection } from "./types";
 
-export function createDiagConnectionWs (socket_handle:number, url:string):IDiagnosticConnection {
-    return new DiagnosticConnectionWS(socket_handle, url);
+export function createDiagConnectionWs(socketHandle: number, url: string): IDiagnosticConnection {
+    return new DiagnosticConnectionWS(socketHandle, url);
 }
 
 // this is used together with `dotnet-dsrouter` which will create IPC pipe on your local machine
@@ -16,33 +17,33 @@ export function createDiagConnectionWs (socket_handle:number, url:string):IDiagn
 class DiagnosticConnectionWS extends DiagnosticConnectionBase implements IDiagnosticConnection {
     private ws: WebSocket;
 
-    constructor (client_socket:number, url:string) {
-        super(client_socket);
+    constructor(clientSocket: number, url: string) {
+        super(clientSocket);
         const ws = this.ws = new WebSocket(url);
-        const onMessage = async (evt:MessageEvent<Blob>) => {
+        const onMessage = async (evt: MessageEvent<Blob>) => {
             const buffer = await evt.data.arrayBuffer();
             const message = new Uint8Array(buffer);
             this.messagesReceived.push(message);
-            diagnosticServerEventLoop();
+            dotnetBrowserUtilsExports.runBackgroundTimers();
         };
         ws.addEventListener("open", () => {
             for (const data of this.messagesToSend) {
                 ws.send(data as any);
             }
             this.messagesToSend = [];
-            diagnosticServerEventLoop();
+            dotnetBrowserUtilsExports.runBackgroundTimers();
         }, { once: true });
         ws.addEventListener("message", onMessage);
         ws.addEventListener("error", () => {
-            mono_log_warn("Diagnostic server WebSocket connection was closed unexpectedly.");
+            dotnetLogger.warn("Diagnostic server WebSocket connection was closed unexpectedly.");
             ws.removeEventListener("message", onMessage);
         }, { once: true });
     }
 
-    send (message:Uint8Array):number {
-        scheduleDiagnosticServerEventLoop();
+    send(message: Uint8Array): number {
+        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer();
         // copy the message
-        if (this.ws!.readyState == WebSocket.CLOSED) {
+        if (this.ws!.readyState == WebSocket.CLOSED || this.ws!.readyState == WebSocket.CLOSING) {
             return -1;
         }
         if (this.ws!.readyState == WebSocket.CONNECTING) {
@@ -54,10 +55,9 @@ class DiagnosticConnectionWS extends DiagnosticConnectionBase implements IDiagno
         return message.length;
     }
 
-    close ():number {
-        scheduleDiagnosticServerEventLoop();
+    close(): number {
+        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer();
         this.ws.close();
         return 0;
     }
 }
-
