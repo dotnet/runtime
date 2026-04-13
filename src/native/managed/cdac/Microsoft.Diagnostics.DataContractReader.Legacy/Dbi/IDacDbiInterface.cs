@@ -32,10 +32,10 @@ public struct DacDbiTargetBuffer
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public struct DacDbiDomainAssemblyInfo
+public struct DacDbiAssemblyInfo
 {
     public ulong vmAppDomain;
-    public ulong vmDomainAssembly;
+    public ulong vmAssembly;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -66,7 +66,7 @@ public struct DacDbiThreadAllocInfo
 [StructLayout(LayoutKind.Sequential)]
 public struct DacDbiTypeRefData
 {
-    public ulong vmDomainAssembly;
+    public ulong vmAssembly;
     public uint typeToken;
 }
 
@@ -84,7 +84,7 @@ public struct DacDbiSharedReJitInfo
 public struct DacDbiExceptionCallStackData
 {
     public ulong vmAppDomain;
-    public ulong vmDomainAssembly;
+    public ulong vmAssembly;
     public ulong ip;
     public uint methodDef;
     public Interop.BOOL isLastForeignExceptionFrame;
@@ -166,10 +166,7 @@ public unsafe partial interface IDacDbiInterface
     int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal);
 
     [PreserveSig]
-    int GetAssemblyFromDomainAssembly(ulong vmDomainAssembly, ulong* vmAssembly);
-
-    [PreserveSig]
-    int IsAssemblyFullyTrusted(ulong vmDomainAssembly, Interop.BOOL* pResult);
+    int IsAssemblyFullyTrusted(ulong vmAssembly, Interop.BOOL* pResult);
 
     [PreserveSig]
     int GetAppDomainFullName(ulong vmAppDomain, nint pStrName);
@@ -196,10 +193,10 @@ public unsafe partial interface IDacDbiInterface
     int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData);
 
     [PreserveSig]
-    int GetDomainAssemblyData(ulong vmDomainAssembly, DacDbiDomainAssemblyInfo* pData);
+    int GetAssemblyData(ulong vmAssembly, DacDbiAssemblyInfo* pData);
 
     [PreserveSig]
-    int GetModuleForDomainAssembly(ulong vmDomainAssembly, ulong* pModule);
+    int GetModuleForAssembly(ulong vmAssembly, ulong* pModule);
 
     [PreserveSig]
     int GetAddressType(ulong address, int* pRetVal);
@@ -208,10 +205,10 @@ public unsafe partial interface IDacDbiInterface
     int IsTransitionStub(ulong address, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetCompilerFlags(ulong vmDomainAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC);
+    int GetCompilerFlags(ulong vmAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC);
 
     [PreserveSig]
-    int SetCompilerFlags(ulong vmDomainAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC);
+    int SetCompilerFlags(ulong vmAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC);
 
     [PreserveSig]
     int EnumerateAppDomains(nint fpCallback, nint pUserData);
@@ -355,10 +352,10 @@ public unsafe partial interface IDacDbiInterface
     int ResolveExactGenericArgsToken(uint dwExactGenericArgsTokenIndex, ulong rawToken, ulong* pRetVal);
 
     [PreserveSig]
-    int GetILCodeAndSig(ulong vmDomainAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken);
+    int GetILCodeAndSig(ulong vmAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken);
 
     [PreserveSig]
-    int GetNativeCodeInfo(ulong vmDomainAssembly, uint functionToken, nint pJitManagerList);
+    int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, nint pJitManagerList);
 
     [PreserveSig]
     int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken);
@@ -373,7 +370,7 @@ public unsafe partial interface IDacDbiInterface
     int GetClassInfo(ulong vmAppDomain, ulong thExact, nint pData);
 
     [PreserveSig]
-    int GetInstantiationFieldInfo(ulong vmDomainAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize);
+    int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize);
 
     [PreserveSig]
     int TypeHandleToExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong vmTypeHandle, nint pData);
@@ -409,7 +406,7 @@ public unsafe partial interface IDacDbiInterface
     int GetTypeHandleParams(ulong vmAppDomain, ulong vmTypeHandle, nint pParams);
 
     [PreserveSig]
-    int GetSimpleType(ulong vmAppDomain, int simpleType, uint* pMetadataToken, ulong* pVmModule, ulong* pVmDomainAssembly);
+    int GetSimpleType(ulong vmAppDomain, int simpleType, uint* pMetadataToken, ulong* pVmModule);
 
     [PreserveSig]
     int IsExceptionObject(ulong vmObject, Interop.BOOL* pResult);
@@ -520,7 +517,7 @@ public unsafe partial interface IDacDbiInterface
     int IsValidObject(ulong obj, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetAppDomainForObject(ulong obj, ulong* pApp, ulong* pModule, ulong* pDomainAssembly, Interop.BOOL* pResult);
+    int GetAppDomainForObject(ulong obj, ulong* pApp, ulong* pModule, Interop.BOOL* pResult);
 
     [PreserveSig]
     int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, Interop.BOOL walkFQ, uint handleWalkMask);
@@ -596,7 +593,7 @@ public unsafe partial interface IDacDbiInterface
     int GetDelegateType(ulong delegateObject, int* delegateType);
 
     [PreserveSig]
-    int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionDomainAssembly, uint* pMethodDef);
+    int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef);
 
     [PreserveSig]
     int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
@@ -611,7 +608,7 @@ public unsafe partial interface IDacDbiInterface
     int MetadataUpdatesApplied(Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly);
+    int GetAssemblyFromModule(ulong vmModule, ulong* pvmAssembly);
 
     [PreserveSig]
     int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState);

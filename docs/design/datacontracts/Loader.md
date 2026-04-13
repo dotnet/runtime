@@ -138,7 +138,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `CGrowableSymbolStream` | `Buffer` | Pointer to the raw symbol stream buffer start |
 | `CGrowableSymbolStream` | `Size` | Size of the raw symbol stream buffer |
 | `AppDomain` | `RootAssembly` | Pointer to the root assembly |
-| `AppDomain` | `DomainAssemblyList` | ArrayListBase of assemblies in the AppDomain |
+| `AppDomain` | `AssemblyList` | ArrayListBase of assemblies in the AppDomain |
 | `AppDomain` | `FriendlyName` | Friendly name of the AppDomain |
 | `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
 | `SystemDomain` | `SystemAssembly` | pointer to the system Assembly |
@@ -239,7 +239,7 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
 
     // ArrayListBase encapsulates the data structure defined in arraylist.h
     // It handles reading each contained pointer and exposing them as a C# List
-    ArrayListBase arrayList = // read ArrayListBase starting at appDomain + AppDomain::DomainAssemblyList offset
+    ArrayListBase arrayList = // read ArrayListBase starting at appDomain + AppDomain::AssemblyList offset
 
     foreach (TargetPointer domainAssembly in arrayList.Elements)
     {

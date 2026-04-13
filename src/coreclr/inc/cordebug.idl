@@ -2366,9 +2366,7 @@ interface ICorDebugAppDomain4 : IUnknown
 /* ------------------------------------------------------------------------- *
  * Assembly interface
  * An ICorDebugAssembly instance corresponds to a managed assembly loaded
- * into a specific AppDomain in the CLR.  For assemblies shared between multiple
- * AppDomains (eg. CoreLib), there will be a separate ICorDebugAssembly instance
- * per AppDomain in which it is used.
+ * into a specific AppDomain in the CLR.
  * ------------------------------------------------------------------------- */
 [
     object,
@@ -4849,7 +4847,7 @@ interface ICorDebugInternalFrame : ICorDebugFrame
         STUBFRAME_U2M = 0x0000002,
 
         // AppDomain transition.
-        STUBFRAME_APPDOMAIN_TRANSITION = 0x00000003,
+        // STUBFRAME_APPDOMAIN_TRANSITION = 0x00000003,
 
         // LightWeight method calls.
         STUBFRAME_LIGHTWEIGHT_FUNCTION = 0x00000004,

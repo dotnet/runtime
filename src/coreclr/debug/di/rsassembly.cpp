@@ -24,14 +24,12 @@
  * Assembly class
  * ------------------------------------------------------------------------- */
 CordbAssembly::CordbAssembly(CordbAppDomain *       pAppDomain,
-                             VMPTR_Assembly         vmAssembly,
-                             VMPTR_DomainAssembly   vmDomainAssembly)
+                             VMPTR_Assembly         vmAssembly)
 
     : CordbBase(pAppDomain->GetProcess(),
                 VmPtrToCookie(vmAssembly),
                 enumCordbAssembly),
       m_vmAssembly(vmAssembly),
-      m_vmDomainAssembly(vmDomainAssembly),
       m_pAppDomain(pAppDomain)
 {
     _ASSERTE(!vmAssembly.IsNull());
@@ -79,19 +77,19 @@ void CordbAssembly::Neuter()
 // Callback helper for code:CordbAssembly::DbgAssertAssemblyDeleted
 //
 // Arguments
-//    vmDomainAssembly - domain file in the enumeration
+//    vmAssembly - assembly in the enumeration
 //    pUserData - pointer to the CordbAssembly that we just got an exit event for.
 //
 
 // static
-void CordbAssembly::DbgAssertAssemblyDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void * pUserData)
+void CordbAssembly::DbgAssertAssemblyDeletedCallback(VMPTR_Assembly vmAssembly, void * pUserData)
 {
     CordbAssembly * pThis = reinterpret_cast<CordbAssembly * >(pUserData);
     INTERNAL_DAC_CALLBACK(pThis->GetProcess());
 
-    VMPTR_DomainAssembly vmAssemblyDeleted = pThis->m_vmDomainAssembly;
+    VMPTR_Assembly vmAssemblyDeleted = pThis->m_vmAssembly;
 
-    CONSISTENCY_CHECK_MSGF((vmAssemblyDeleted != vmDomainAssembly),
+    CONSISTENCY_CHECK_MSGF((vmAssemblyDeleted != vmAssembly),
         ("An Assembly Unload event was sent, but the assembly still shows up in the enumeration.\n vmAssemblyDeleted=%p\n",
         VmPtrToCookie(vmAssemblyDeleted)));
 }
@@ -133,11 +131,6 @@ HRESULT CordbAssembly::GetProcess(ICorDebugProcess **ppProcess)
 //
 // Return Value:
 //    S_OK
-//
-// Notes:
-//   On the debugger right-side we currently consider every assembly to belong
-//   to a single AppDomain, and create multiple CordbAssembly instances (one
-//   per AppDomain) to represent domain-neutral assemblies.
 //
 HRESULT CordbAssembly::GetAppDomain(ICorDebugAppDomain **ppAppDomain)
 {
@@ -286,7 +279,7 @@ HRESULT CordbAssembly::IsFullyTrusted( BOOL *pbFullyTrusted )
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     VALIDATE_POINTER_TO_OBJECT(pbFullyTrusted, BOOL*);
 
-    if (m_vmDomainAssembly.IsNull())
+    if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
     // Check for cached result
@@ -304,7 +297,7 @@ HRESULT CordbAssembly::IsFullyTrusted( BOOL *pbFullyTrusted )
         IDacDbiInterface * pDac = pProcess->GetDAC();
 
         BOOL fIsFullTrust;
-        IfFailThrow(pDac->IsAssemblyFullyTrusted(m_vmDomainAssembly, &fIsFullTrust));
+        IfFailThrow(pDac->IsAssemblyFullyTrusted(m_vmAssembly, &fIsFullTrust));
 
         // Once the trust level of an assembly is known, it cannot change.
         m_foptIsFullTrust = fIsFullTrust;

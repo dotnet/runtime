@@ -354,7 +354,7 @@ CDAC_TYPE_END(ProbeExtensionResult)
 CDAC_TYPE_BEGIN(AppDomain)
 CDAC_TYPE_INDETERMINATE(AppDomain)
 CDAC_TYPE_FIELD(AppDomain, T_POINTER, RootAssembly, cdac_data<AppDomain>::RootAssembly)
-CDAC_TYPE_FIELD(AppDomain, TYPE(ArrayListBase), DomainAssemblyList, cdac_data<AppDomain>::DomainAssemblyList)
+CDAC_TYPE_FIELD(AppDomain, TYPE(ArrayListBase), AssemblyList, cdac_data<AppDomain>::AssemblyList)
 CDAC_TYPE_FIELD(AppDomain, T_POINTER, FriendlyName, cdac_data<AppDomain>::FriendlyName)
 CDAC_TYPE_END(AppDomain)
 

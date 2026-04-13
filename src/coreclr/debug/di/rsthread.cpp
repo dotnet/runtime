@@ -1639,8 +1639,8 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    VMPTR_DomainAssembly vmDomainAssembly = pNativeCode->GetModule()->m_vmDomainAssembly;
-    _ASSERTE(!vmDomainAssembly.IsNull());
+    VMPTR_Assembly vmAssembly = pNativeCode->GetModule()->m_vmAssembly;
+    _ASSERTE(!vmAssembly.IsNull());
 
     // If this thread is stopped due to an exception, never allow SetIP
     if (HasException())
@@ -1652,7 +1652,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
     GetProcess()->InitIPCEvent(&event, DB_IPCE_SET_IP, true, GetAppDomain()->GetADToken());
     event.SetIP.fCanSetIPOnly = fCanSetIPOnly;
     event.SetIP.vmThreadToken = m_vmThreadToken;
-    event.SetIP.vmDomainAssembly = vmDomainAssembly;
+    event.SetIP.vmAssembly = vmAssembly;
     event.SetIP.mdMethod = pNativeCode->GetMetadataToken();
     event.SetIP.vmMethodDesc = pNativeCode->GetVMNativeCodeMethodDescToken();
     event.SetIP.startAddress = pNativeCode->GetAddress();
@@ -1664,7 +1664,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
         "mod:0x%x  MethodDef:0x%x offset:0x%x  il?:0x%x\n",
          GetCurrentThreadId(),
          VmPtrToCookie(m_vmThreadToken),
-         VmPtrToCookie(vmDomainAssembly),
+         VmPtrToCookie(vmAssembly),
          pNativeCode->GetMetadataToken(),
          offset,
          fIsIL));
@@ -5073,7 +5073,7 @@ CordbInternalFrame::CordbInternalFrame(CordbThread *          pThread,
         // Find the module of the function.  Note that this module isn't necessarily in the same domain as our frame.
         // FuncEval frames can point to methods they are going to invoke in another domain.
         CordbModule * pModule = NULL;
-        pModule = GetProcess()->LookupOrCreateModule(pData->stubFrame.vmDomainAssembly);
+        pModule = GetProcess()->LookupOrCreateModule(pData->stubFrame.vmAssembly);
         _ASSERTE(pModule != NULL);
 
         //
@@ -9788,7 +9788,7 @@ HRESULT CordbEval::CallParameterizedFunction(ICorDebugFunction *pFunction,
         event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
         event.FuncEval.funcEvalType = m_evalType;
         event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-        event.FuncEval.vmDomainAssembly = m_function->GetModule()->GetRuntimeDomainAssembly();
+        event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeAssembly();
         event.FuncEval.funcEvalKey = hFuncEval.Ptr();
         event.FuncEval.argCount = nArgs;
         event.FuncEval.genericArgsCount = nTypeArgs;
@@ -9971,7 +9971,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
     event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-    event.FuncEval.vmDomainAssembly = m_function->GetModule()->GetRuntimeDomainAssembly();
+    event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = nArgs;
     event.FuncEval.genericArgsCount = nTypeArgs;
@@ -10072,7 +10072,7 @@ HRESULT CordbEval::NewParameterizedObjectNoConstructor(ICorDebugClass * pClass,
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = (mdTypeDef)m_class->m_id;
-    event.FuncEval.vmDomainAssembly = m_class->GetModule()->GetRuntimeDomainAssembly();
+    event.FuncEval.vmAssembly = m_class->GetModule()->GetRuntimeAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = nTypeArgs;
@@ -10167,7 +10167,7 @@ HRESULT CordbEval::NewStringWithLength(LPCWSTR wszString, UINT iLength)
     // Note: no function or module here...
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = mdTypeDefNil;
-    event.FuncEval.vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+    event.FuncEval.vmAssembly = VMPTR_Assembly::NullPtr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = 0;
     event.FuncEval.genericArgsNodeCount = 0;
@@ -10284,7 +10284,7 @@ HRESULT CordbEval::NewParameterizedArray(ICorDebugType * pElementType,
     // Note: no function or module here...
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = mdTypeDefNil;
-    event.FuncEval.vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+    event.FuncEval.vmAssembly = VMPTR_Assembly::NullPtr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = 1;
 
@@ -10976,9 +10976,9 @@ HRESULT CordbAsyncFrame::Init()
         GetProcess()->GetContinueNeuterList()->Add(GetProcess(), this);
 
         // Initialize module and appdomain
-        VMPTR_DomainAssembly vmDomainAssembly;
-        IfFailThrow(GetProcess()->GetDAC()->GetDomainAssemblyFromModule(m_vmModule, &vmDomainAssembly));
-        CordbModule* pModule = GetProcess()->LookupOrCreateModule(vmDomainAssembly);
+        VMPTR_Assembly vmAssembly;
+        IfFailThrow(GetProcess()->GetDAC()->GetAssemblyFromModule(m_vmModule, &vmAssembly));
+        CordbModule* pModule = GetProcess()->LookupOrCreateModule(vmAssembly);
         m_pAppDomain.Assign(pModule->GetAppDomain());
 
         // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.

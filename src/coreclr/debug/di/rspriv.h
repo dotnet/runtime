@@ -2466,13 +2466,10 @@ public:
     CordbModule * GetModuleFromMetaDataInterface(IUnknown *pIMetaData);
 
     // Lookup a module from the cache.  Create and to the cache if needed.
-    CordbModule * LookupOrCreateModule(VMPTR_Module vmModuleToken, VMPTR_DomainAssembly vmDomainAssemblyToken);
-
-    // Lookup a module from the cache.  Create and to the cache if needed.
-    CordbModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssemblyToken);
+    CordbModule * LookupOrCreateModule(VMPTR_Assembly vmAssemblyToken);
 
     // Callback from DAC for module enumeration
-    static void ModuleEnumerationCallback(VMPTR_DomainAssembly vmModule, void * pUserData);
+    static void ModuleEnumerationCallback(VMPTR_Assembly vmAssembly, void * pUserData);
 
     // Use DAC to add any modules for this assembly.
     void PrepopulateModules();
@@ -2482,9 +2479,8 @@ public:
 public:
     ULONG               m_AppDomainId;
 
-    CordbAssembly * LookupOrCreateAssembly(VMPTR_DomainAssembly vmDomainAssembly);
     CordbAssembly * LookupOrCreateAssembly(VMPTR_Assembly vmAssembly);
-    void RemoveAssemblyFromCache(VMPTR_DomainAssembly vmDomainAssembly);
+    void RemoveAssemblyFromCache(VMPTR_Assembly vmAssembly);
 
 
     CordbSafeHashTable<CordbBreakpoint>  m_breakpoints;
@@ -2497,13 +2493,13 @@ public:
                                          // them as special cases.
     CordbSafeHashTable<CordbType>        m_sharedtypes;
 
-    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly, VMPTR_DomainAssembly);
+    CordbAssembly * CacheAssembly(VMPTR_Assembly vmAssembly);
 
 
     // Cache of modules in this appdomain. In the VM, modules live in an assembly.
     // This cache lives on the appdomain because we generally want to do appdomain (or process)
     // wide lookup.
-    // This is indexed by VMPTR_DomainAssembly, which has appdomain affinity.
+    // This is indexed by VMPTR_Assembly.
     // This is populated by code:CordbAppDomain::LookupOrCreateModule (which may be invoked
     // anytime the RS gets hold of a VMPTR), and are removed at the unload event.
     CordbSafeHashTable<CordbModule>      m_modules;
@@ -2514,7 +2510,7 @@ private:
     // anytime the RS gets hold of a VMPTR), and are removed at the unload event.
     CordbSafeHashTable<CordbAssembly>    m_assemblies;
 
-    static void AssemblyEnumerationCallback(VMPTR_DomainAssembly vmDomainAssembly, void * pThis);
+    static void AssemblyEnumerationCallback(VMPTR_Assembly vmAssembly, void * pThis);
     void PrepopulateAssembliesOrThrow();
 
     // Use DAC to refresh our name
@@ -2527,7 +2523,7 @@ private:
     // List of Sweepable objects owned by this AppDomain.
     // This includes some objects taht hold resources in the left-side (mainly
     // as CordbHandleValue, see code:CordbHandleValue::Dispose), as well as:
-    // - Cordb*Value objects that survive across continues and have appdomain affinity.
+    // - Cordb*Value objects that survive across continues.
     LeftSideResourceCleanupList          m_SweepableNeuterList;
 
     VMPTR_AppDomain     m_vmAppDomain;
@@ -2552,8 +2548,7 @@ class CordbAssembly : public CordbBase, public ICorDebugAssembly, ICorDebugAssem
 {
 public:
     CordbAssembly(CordbAppDomain *      pAppDomain,
-                  VMPTR_Assembly        vmAssembly,
-                  VMPTR_DomainAssembly  vmDomainAssembly);
+                  VMPTR_Assembly        vmAssembly);
     virtual ~CordbAssembly();
     virtual void Neuter();
 
@@ -2625,19 +2620,20 @@ public:
 #ifdef _DEBUG
     void DbgAssertAssemblyDeleted();
 
-    static void DbgAssertAssemblyDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void * pUserData);
+    static void DbgAssertAssemblyDeletedCallback(VMPTR_Assembly vmAssembly, void * pUserData);
 #endif // _DEBUG
 
     CordbAppDomain * GetAppDomain()     { return m_pAppDomain; }
 
-    VMPTR_DomainAssembly    GetDomainAssemblyPtr() { return m_vmDomainAssembly; }
+    VMPTR_Assembly GetAssemblyPtr() { return m_vmAssembly; }
 private:
-    VMPTR_Assembly          m_vmAssembly;
-    VMPTR_DomainAssembly    m_vmDomainAssembly;
-    CordbAppDomain *        m_pAppDomain;
+    VMPTR_Assembly   m_vmAssembly;
+    CordbAppDomain * m_pAppDomain;
 
-    StringCopyHolder        m_strAssemblyFileName;
-    Optional<BOOL>          m_foptIsFullTrust;
+    // Optional: the cached value of IsFullyTrusted
+    Optional<BOOL>   m_foptIsFullTrust;
+
+    StringCopyHolder m_strAssemblyFileName;
 };
 
 
@@ -3481,9 +3477,9 @@ public:
 
     // Looks up a previously constructed CordbClass instance without creating. May return NULL if the
     // CordbClass instance doesn't exist.
-    CordbClass * LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_DomainAssembly vmDomainAssembly, mdTypeDef classToken);
+    CordbClass * LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_Assembly vmAssembly, mdTypeDef classToken);
 
-    CordbModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
+    CordbModule * LookupOrCreateModule(VMPTR_Assembly vmAssembly);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     CordbUnmanagedThread *GetUnmanagedThread(DWORD dwThreadId)
@@ -4175,7 +4171,7 @@ class CordbModule : public CordbBase,
 public:
     CordbModule(CordbProcess *      process,
                 VMPTR_Module        vmModule,
-                VMPTR_DomainAssembly    vmDomainAssembly);
+                VMPTR_Assembly      vmAssembly);
 
     virtual ~CordbModule();
     virtual void Neuter();
@@ -4380,9 +4376,9 @@ public:
     // Get the module filename, or NULL if none.  Throws on error.
     const WCHAR * GetModulePath();
 
-    const VMPTR_DomainAssembly GetRuntimeDomainAssembly ()
+    const VMPTR_Assembly GetRuntimeAssembly ()
     {
-        return m_vmDomainAssembly;
+        return m_vmAssembly;
     }
 
     const VMPTR_Module GetRuntimeModule()
@@ -4415,13 +4411,13 @@ public:
     // The collection is filled lazily by LookupOrCreateFunction
     CordbSafeHashTable<CordbFunction> m_functions;
 
-    // The real handle into the VM for a module. This is appdomain aware.
+    // The real handle into the VM for a module's assembly.
     // This is the primary VM counterpart for the CordbModule.
-    VMPTR_DomainAssembly m_vmDomainAssembly;
+    VMPTR_Assembly m_vmAssembly;
 
     VMPTR_Module m_vmModule;
 
-    DWORD            m_EnCCount;
+    DWORD        m_EnCCount;
 
 private:
 
@@ -4764,7 +4760,7 @@ public:
     void DestNaryType(Instantiation *pInst);
 
     CorElementType GetElementType() { return m_elementType; }
-    VMPTR_DomainAssembly GetDomainAssembly();
+    VMPTR_Assembly GetAssembly();
     VMPTR_Module GetModule();
 
     // If this is a ptr type, get the CordbType that it points to.

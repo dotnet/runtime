@@ -18,7 +18,7 @@ The public Thread interface available to managed code intentionally hides the de
 
 The CLR provides equivalent abstractions for managed threads, implemented by the CLR itself. For example, it does not expose the operating system's thread-local storage (TLS) mechanism, but instead provides managed "thread-static" variables. Similarly, it does not expose the native thread's "thread ID," but instead provides a "managed thread ID" which is generated independently of the OS. However, for diagnostic purposes, some details of the underlying native thread may be obtained via types in the System.Diagnostics namespace.
 
-Managed threads require additional functionality typically not needed by native threads. First, managed threads hold GC references on their stacks, so the CLR must be able to enumerate (and possibly modify) these references every time a GC occurs. To do this, the CLR must "suspend" each managed thread (stop it at a point where all of its GC references can be found).  Second, when an AppDomain is unloaded, the CLR must ensure that no thread is executing code in that AppDomain. This requires the ability to force a thread to unwind out of that AppDomain. The CLR does this by injecting a ThreadAbortException into such threads.
+Managed threads require additional functionality typically not needed by native threads. First, managed threads hold GC references on their stacks, so the CLR must be able to enumerate (and possibly modify) these references every time a GC occurs. To do this, the CLR must "suspend" each managed thread (stop it at a point where all of its GC references can be found).  Second, when the AppDomain is unloaded, the CLR must ensure that no thread is executing code in the AppDomain. This requires the ability to force a thread to unwind out of the AppDomain. The CLR does this by injecting a ThreadAbortException into such threads.
 
 Data Structures
 ===============
@@ -110,7 +110,7 @@ Hijacking for GC suspension is done by Thread::SysSuspendForGC. This method atte
 ThreadAbort / AppDomain-Unload
 ==============================
 
-In order to unload an AppDomain, the CLR must ensure that no thread is running in that AppDomain. To accomplish this, all managed threads are enumerated, and "abort" any threads which have stack frames belonging to the AppDomain being unloaded. A ThreadAbortException is "injected" into the running thread, which  causes the thread to unwind (executing backout code along the way) until it is no longer executing in the AppDomain, at which point the ThreadAbortException is translated into an AppDomainUnloaded exception.
+In order to unload the AppDomain, the CLR must ensure that no thread is running in the AppDomain. To accomplish this, all managed threads are enumerated, and "abort" any threads which have stack frames belonging to the AppDomain being unloaded. A ThreadAbortException is "injected" into the running thread, which  causes the thread to unwind (executing backout code along the way) until it is no longer executing in the AppDomain, at which point the ThreadAbortException is translated into an AppDomainUnloaded exception.
 
 ThreadAbortException is a special type of exception. It can be caught by user code, but the CLR ensures that the exception will be rethrown after the user's exception handler is executed. Thus ThreadAbortException is sometimes referred to as "uncatchable," though this is not strictly true.
 

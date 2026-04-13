@@ -138,10 +138,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal)
         => _legacy is not null ? _legacy.GetAppDomainObject(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetAssemblyFromDomainAssembly(ulong vmDomainAssembly, ulong* vmAssembly)
-        => _legacy is not null ? _legacy.GetAssemblyFromDomainAssembly(vmDomainAssembly, vmAssembly) : HResults.E_NOTIMPL;
-
-    public int IsAssemblyFullyTrusted(ulong vmDomainAssembly, Interop.BOOL* pResult)
+    public int IsAssemblyFullyTrusted(ulong vmAssembly, Interop.BOOL* pResult)
     {
         *pResult = Interop.BOOL.TRUE;
         int hr = HResults.S_OK;
@@ -149,7 +146,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null)
         {
             Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsAssemblyFullyTrusted(vmDomainAssembly, &resultLocal);
+            int hrLocal = _legacy.IsAssemblyFullyTrusted(vmAssembly, &resultLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
@@ -267,11 +264,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData)
         => _legacy is not null ? _legacy.GetModuleData(vmModule, pData) : HResults.E_NOTIMPL;
 
-    public int GetDomainAssemblyData(ulong vmDomainAssembly, DacDbiDomainAssemblyInfo* pData)
-        => _legacy is not null ? _legacy.GetDomainAssemblyData(vmDomainAssembly, pData) : HResults.E_NOTIMPL;
+    public int GetAssemblyData(ulong vmAssembly, DacDbiAssemblyInfo* pData)
+        => _legacy is not null ? _legacy.GetAssemblyData(vmAssembly, pData) : HResults.E_NOTIMPL;
 
-    public int GetModuleForDomainAssembly(ulong vmDomainAssembly, ulong* pModule)
-        => _legacy is not null ? _legacy.GetModuleForDomainAssembly(vmDomainAssembly, pModule) : HResults.E_NOTIMPL;
+    public int GetModuleForAssembly(ulong vmAssembly, ulong* pModule)
+        => _legacy is not null ? _legacy.GetModuleForAssembly(vmAssembly, pModule) : HResults.E_NOTIMPL;
 
     public int GetAddressType(ulong address, int* pRetVal)
         => _legacy is not null ? _legacy.GetAddressType(address, pRetVal) : HResults.E_NOTIMPL;
@@ -279,11 +276,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int IsTransitionStub(ulong address, Interop.BOOL* pResult)
         => _legacy is not null ? _legacy.IsTransitionStub(address, pResult) : HResults.E_NOTIMPL;
 
-    public int GetCompilerFlags(ulong vmDomainAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC)
-        => _legacy is not null ? _legacy.GetCompilerFlags(vmDomainAssembly, pfAllowJITOpts, pfEnableEnC) : HResults.E_NOTIMPL;
+    public int GetCompilerFlags(ulong vmAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC)
+        => _legacy is not null ? _legacy.GetCompilerFlags(vmAssembly, pfAllowJITOpts, pfEnableEnC) : HResults.E_NOTIMPL;
 
-    public int SetCompilerFlags(ulong vmDomainAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC)
-        => _legacy is not null ? _legacy.SetCompilerFlags(vmDomainAssembly, fAllowJitOpts, fEnableEnC) : HResults.E_NOTIMPL;
+    public int SetCompilerFlags(ulong vmAssembly, Interop.BOOL fAllowJitOpts, Interop.BOOL fEnableEnC)
+        => _legacy is not null ? _legacy.SetCompilerFlags(vmAssembly, fAllowJitOpts, fEnableEnC) : HResults.E_NOTIMPL;
 
     public int EnumerateAppDomains(nint fpCallback, nint pUserData)
     {
@@ -643,11 +640,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int ResolveExactGenericArgsToken(uint dwExactGenericArgsTokenIndex, ulong rawToken, ulong* pRetVal)
         => _legacy is not null ? _legacy.ResolveExactGenericArgsToken(dwExactGenericArgsTokenIndex, rawToken, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetILCodeAndSig(ulong vmDomainAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken)
-        => _legacy is not null ? _legacy.GetILCodeAndSig(vmDomainAssembly, functionToken, pTargetBuffer, pLocalSigToken) : HResults.E_NOTIMPL;
+    public int GetILCodeAndSig(ulong vmAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken)
+        => _legacy is not null ? _legacy.GetILCodeAndSig(vmAssembly, functionToken, pTargetBuffer, pLocalSigToken) : HResults.E_NOTIMPL;
 
-    public int GetNativeCodeInfo(ulong vmDomainAssembly, uint functionToken, nint pJitManagerList)
-        => _legacy is not null ? _legacy.GetNativeCodeInfo(vmDomainAssembly, functionToken, pJitManagerList) : HResults.E_NOTIMPL;
+    public int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, nint pJitManagerList)
+        => _legacy is not null ? _legacy.GetNativeCodeInfo(vmAssembly, functionToken, pJitManagerList) : HResults.E_NOTIMPL;
 
     public int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken)
         => _legacy is not null ? _legacy.GetNativeCodeInfoForAddr(codeAddress, pCodeInfo, pVmModule, pFunctionToken) : HResults.E_NOTIMPL;
@@ -710,8 +707,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetClassInfo(ulong vmAppDomain, ulong thExact, nint pData)
         => _legacy is not null ? _legacy.GetClassInfo(vmAppDomain, thExact, pData) : HResults.E_NOTIMPL;
 
-    public int GetInstantiationFieldInfo(ulong vmDomainAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize)
-        => _legacy is not null ? _legacy.GetInstantiationFieldInfo(vmDomainAssembly, vmTypeHandle, vmExactMethodTable, pFieldList, pObjectSize) : HResults.E_NOTIMPL;
+    public int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize)
+        => _legacy is not null ? _legacy.GetInstantiationFieldInfo(vmAssembly, vmTypeHandle, vmExactMethodTable, pFieldList, pObjectSize) : HResults.E_NOTIMPL;
 
     public int TypeHandleToExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong vmTypeHandle, nint pData)
         => _legacy is not null ? _legacy.TypeHandleToExpandedTypeInfo(boxed, vmAppDomain, vmTypeHandle, pData) : HResults.E_NOTIMPL;
@@ -812,8 +809,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetTypeHandleParams(ulong vmAppDomain, ulong vmTypeHandle, nint pParams)
         => _legacy is not null ? _legacy.GetTypeHandleParams(vmAppDomain, vmTypeHandle, pParams) : HResults.E_NOTIMPL;
 
-    public int GetSimpleType(ulong vmAppDomain, int simpleType, uint* pMetadataToken, ulong* pVmModule, ulong* pVmDomainAssembly)
-        => _legacy is not null ? _legacy.GetSimpleType(vmAppDomain, simpleType, pMetadataToken, pVmModule, pVmDomainAssembly) : HResults.E_NOTIMPL;
+    public int GetSimpleType(ulong vmAppDomain, int simpleType, uint* pMetadataToken, ulong* pVmModule)
+        => _legacy is not null ? _legacy.GetSimpleType(vmAppDomain, simpleType, pMetadataToken, pVmModule) : HResults.E_NOTIMPL;
 
     public int IsExceptionObject(ulong vmObject, Interop.BOOL* pResult)
         => _legacy is not null ? _legacy.IsExceptionObject(vmObject, pResult) : HResults.E_NOTIMPL;
@@ -1089,8 +1086,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int IsValidObject(ulong obj, Interop.BOOL* pResult)
         => _legacy is not null ? _legacy.IsValidObject(obj, pResult) : HResults.E_NOTIMPL;
 
-    public int GetAppDomainForObject(ulong obj, ulong* pApp, ulong* pModule, ulong* pDomainAssembly, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.GetAppDomainForObject(obj, pApp, pModule, pDomainAssembly, pResult) : HResults.E_NOTIMPL;
+    public int GetAppDomainForObject(ulong obj, ulong* pApp, ulong* pModule, Interop.BOOL* pResult)
+        => _legacy is not null ? _legacy.GetAppDomainForObject(obj, pApp, pModule, pResult) : HResults.E_NOTIMPL;
 
     public int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, Interop.BOOL walkFQ, uint handleWalkMask)
         => _legacy is not null ? _legacy.CreateRefWalk(pHandle, walkStacks, walkFQ, handleWalkMask) : HResults.E_NOTIMPL;
@@ -1311,8 +1308,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetDelegateType(ulong delegateObject, int* delegateType)
         => _legacy is not null ? _legacy.GetDelegateType(delegateObject, delegateType) : HResults.E_NOTIMPL;
 
-    public int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionDomainAssembly, uint* pMethodDef)
-        => _legacy is not null ? _legacy.GetDelegateFunctionData(delegateType, delegateObject, ppFunctionDomainAssembly, pMethodDef) : HResults.E_NOTIMPL;
+    public int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef)
+        => _legacy is not null ? _legacy.GetDelegateFunctionData(delegateType, delegateObject, ppFunctionAssembly, pMethodDef) : HResults.E_NOTIMPL;
 
     public int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain)
         => _legacy is not null ? _legacy.GetDelegateTargetObject(delegateType, delegateObject, ppTargetObj, ppTargetAppDomain) : HResults.E_NOTIMPL;
@@ -1350,8 +1347,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly)
-        => _legacy is not null ? _legacy.GetDomainAssemblyFromModule(vmModule, pVmDomainAssembly) : HResults.E_NOTIMPL;
+    public int GetAssemblyFromModule(ulong vmModule, ulong* pvmAssembly)
+        => _legacy is not null ? _legacy.GetAssemblyFromModule(vmModule, pvmAssembly) : HResults.E_NOTIMPL;
 
     public int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState)
         => _legacy is not null ? _legacy.ParseContinuation(continuationAddress, pDiagnosticIP, pNextContinuation, pState) : HResults.E_NOTIMPL;

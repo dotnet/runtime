@@ -2472,7 +2472,7 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
 
             CordbAppDomain* pAppDomain = GetProcess()->LookupOrCreateAppDomain(currentDacFrame.vmAppDomain);
-            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmDomainAssembly);
+            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmAssembly);
 
             hr = pModule->QueryInterface(IID_ICorDebugModule, reinterpret_cast<void**>(&currentStackFrame.pModule));
             _ASSERTE(SUCCEEDED(hr));
@@ -2706,18 +2706,18 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
     {
         RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
-        VMPTR_DomainAssembly functionDomainAssembly;
+        VMPTR_Assembly functionAssembly;
         mdMethodDef functionMethodDef = 0;
-        hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainAssembly, &functionMethodDef);
+        hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionAssembly, &functionMethodDef);
         if (hr != S_OK)
             return hr;
 
         // TODO: How to ensure results are sanitized?
         // Also, this is expensive. Do we really care that much about this?
         NativeCodeFunctionData nativeCodeForDelFunc;
-        IfFailThrow(pDAC->GetNativeCodeInfo(functionDomainAssembly, functionMethodDef, &nativeCodeForDelFunc));
+        IfFailThrow(pDAC->GetNativeCodeInfo(functionAssembly, functionMethodDef, &nativeCodeForDelFunc));
 
-        RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainAssembly));
+        RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionAssembly));
         func.Assign(funcModule->LookupOrCreateFunction(functionMethodDef, nativeCodeForDelFunc.encVersion));
     }
 

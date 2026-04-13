@@ -15,7 +15,7 @@ struct DbiVersion;
 struct TypeRefData;
 struct TargetBuffer;
 struct ModuleInfo;
-struct DomainAssemblyInfo;
+struct AssemblyInfo;
 struct DacThreadAllocInfo;
 struct NativeVarData;
 struct SequencePoints;
@@ -47,7 +47,6 @@ typedef struct { UINT_PTR m_sp; } FramePointer;
 // VMPTR types - opaque pointer-sized wrappers
 typedef ULONG64 VMPTR_AppDomain;
 typedef ULONG64 VMPTR_OBJECTHANDLE;
-typedef ULONG64 VMPTR_DomainAssembly;
 typedef ULONG64 VMPTR_Assembly;
 typedef ULONG64 VMPTR_Module;
 typedef ULONG64 VMPTR_Thread;
@@ -143,7 +142,7 @@ cpp_quote("#endif")
 // Callback function pointer typedefs
 //
 typedef void (*FP_APPDOMAIN_ENUMERATION_CALLBACK)(VMPTR_AppDomain vmAppDomain, CALLBACK_DATA pUserData);
-typedef void (*FP_ASSEMBLY_ENUMERATION_CALLBACK)(VMPTR_DomainAssembly vmDomainAssembly, CALLBACK_DATA pUserData);
+typedef void (*FP_ASSEMBLY_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
 typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_Module vmModule, CALLBACK_DATA pUserData);
 typedef void (*FP_THREAD_ENUMERATION_CALLBACK)(VMPTR_Thread vmThread, CALLBACK_DATA pUserData);
 typedef BOOL (*FP_INTERNAL_FRAME_ENUMERATION_CALLBACK)(FramePointer fpFrame, CALLBACK_DATA pUserData);
@@ -207,8 +206,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetAppDomainFromId([in] ULONG appdomainId, [out] VMPTR_AppDomain * pRetVal);
     HRESULT GetAppDomainId([in] VMPTR_AppDomain vmAppDomain, [out] ULONG * pRetVal);
     HRESULT GetAppDomainObject([in] VMPTR_AppDomain vmAppDomain, [out] VMPTR_OBJECTHANDLE * pRetVal);
-    HRESULT GetAssemblyFromDomainAssembly([in] VMPTR_DomainAssembly vmDomainAssembly, [out] VMPTR_Assembly * vmAssembly);
-    HRESULT IsAssemblyFullyTrusted([in] VMPTR_DomainAssembly vmDomainAssembly, [out] BOOL * pResult);
+    HRESULT IsAssemblyFullyTrusted([in] VMPTR_Assembly vmAssembly, [out] BOOL * pResult);
     HRESULT GetAppDomainFullName([in] VMPTR_AppDomain vmAppDomain, [in] IDacDbiStringHolder pStrName);
     HRESULT GetModuleSimpleName([in] VMPTR_Module vmModule, [in] IDacDbiStringHolder pStrFilename);
     HRESULT GetAssemblyPath([in] VMPTR_Assembly vmAssembly, [in] IDacDbiStringHolder pStrFilename, [out] BOOL * pResult);
@@ -219,21 +217,21 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetMetadata([in] VMPTR_Module vmModule, [out] struct TargetBuffer * pTargetBuffer);
     HRESULT GetSymbolsBuffer([in] VMPTR_Module vmModule, [out] struct TargetBuffer * pTargetBuffer, [out] SymbolFormat * pSymbolFormat);
     HRESULT GetModuleData([in] VMPTR_Module vmModule, [out] struct ModuleInfo * pData);
-    HRESULT GetDomainAssemblyData([in] VMPTR_DomainAssembly vmDomainAssembly, [out] struct DomainAssemblyInfo * pData);
-    HRESULT GetModuleForDomainAssembly([in] VMPTR_DomainAssembly vmDomainAssembly, [out] VMPTR_Module * pModule);
+    HRESULT GetAssemblyData([in] VMPTR_Assembly vmAssembly, [out] struct AssemblyInfo * pData);
+    HRESULT GetModuleForAssembly([in] VMPTR_Assembly vmAssembly, [out] VMPTR_Module * pModule);
 
     // Address
     HRESULT GetAddressType([in] CORDB_ADDRESS address, [out] AddressType * pRetVal);
     HRESULT IsTransitionStub([in] CORDB_ADDRESS address, [out] BOOL * pResult);
 
     // Compiler
-    HRESULT GetCompilerFlags([in] VMPTR_DomainAssembly vmDomainAssembly, [out] BOOL * pfAllowJITOpts, [out] BOOL * pfEnableEnC);
-    HRESULT SetCompilerFlags([in] VMPTR_DomainAssembly vmDomainAssembly, [in] BOOL fAllowJitOpts, [in] BOOL fEnableEnC);
+    HRESULT GetCompilerFlags([in] VMPTR_Assembly vmAssembly, [out] BOOL * pfAllowJITOpts, [out] BOOL * pfEnableEnC);
+    HRESULT SetCompilerFlags([in] VMPTR_Assembly vmAssembly, [in] BOOL fAllowJitOpts, [in] BOOL fEnableEnC);
 
     // Enumeration
     HRESULT EnumerateAppDomains([in] FP_APPDOMAIN_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
     HRESULT EnumerateAssembliesInAppDomain([in] VMPTR_AppDomain vmAppDomain, [in] FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
-    HRESULT EnumerateModulesInAssembly([in] VMPTR_DomainAssembly vmAssembly, [in] FP_MODULE_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
+    HRESULT EnumerateModulesInAssembly([in] VMPTR_Assembly vmAssembly, [in] FP_MODULE_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
 
     // Debug Events
     HRESULT RequestSyncAtEvent();
@@ -270,7 +268,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetCurrentAppDomain([out] VMPTR_AppDomain * pRetVal);
 
     // Assembly
-    HRESULT ResolveAssembly([in] VMPTR_DomainAssembly vmScope, [in] mdToken tkAssemblyRef, [out] VMPTR_DomainAssembly * pRetVal);
+    HRESULT ResolveAssembly([in] VMPTR_Assembly vmScope, [in] mdToken tkAssemblyRef, [out] VMPTR_Assembly * pRetVal);
 
     // Code and Debugging Info
     HRESULT GetNativeCodeSequencePointsAndVarInfo(
@@ -303,8 +301,8 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetVarArgSig([in] CORDB_ADDRESS VASigCookieAddr, [out] CORDB_ADDRESS * pArgBase, [out] struct TargetBuffer * pRetVal);
     HRESULT RequiresAlign8([in] VMPTR_TypeHandle thExact, [out] BOOL * pResult);
     HRESULT ResolveExactGenericArgsToken([in] DWORD dwExactGenericArgsTokenIndex, [in] GENERICS_TYPE_TOKEN rawToken, [out] GENERICS_TYPE_TOKEN * pRetVal);
-    HRESULT GetILCodeAndSig([in] VMPTR_DomainAssembly vmDomainAssembly, [in] mdToken functionToken, [out] struct TargetBuffer * pCodeInfo, [out] mdToken * pLocalSigToken);
-    HRESULT GetNativeCodeInfo([in] VMPTR_DomainAssembly vmDomainAssembly, [in] mdToken functionToken, [out] struct NativeCodeFunctionData * pCodeInfo);
+    HRESULT GetILCodeAndSig([in] VMPTR_Assembly vmAssembly, [in] mdToken functionToken, [out] struct TargetBuffer * pCodeInfo, [out] mdToken * pLocalSigToken);
+    HRESULT GetNativeCodeInfo([in] VMPTR_Assembly vmAssembly, [in] mdToken functionToken, [out] struct NativeCodeFunctionData * pCodeInfo);
     HRESULT GetNativeCodeInfoForAddr(
         [in] CORDB_ADDRESS codeAddress,
         [out] struct NativeCodeFunctionData * pCodeInfo,
@@ -316,7 +314,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT HasTypeParams([in] VMPTR_TypeHandle th, [out] BOOL * pResult);
     HRESULT GetClassInfo([in] VMPTR_AppDomain vmAppDomain, [in] VMPTR_TypeHandle thExact, [out] struct ClassInfo * pData);
     HRESULT GetInstantiationFieldInfo(
-        [in] VMPTR_DomainAssembly vmDomainAssembly,
+        [in] VMPTR_Assembly vmAssembly,
         [in] VMPTR_TypeHandle vmThExact,
         [in] VMPTR_TypeHandle vmThApprox,
         [out] DacDbiArrayList_FieldData * pFieldList,
@@ -343,8 +341,7 @@ interface IDacDbiInterface : IUnknown
         [in] VMPTR_AppDomain vmAppDomain,
         [in] CorElementType simpleType,
         [out] mdTypeDef * pMetadataToken,
-        [out] VMPTR_Module * pVmModule,
-        [out] VMPTR_DomainAssembly * pVmDomainAssembly);
+        [out] VMPTR_Module * pVmModule);
 
     // Exception and COM Interop
     HRESULT IsExceptionObject([in] VMPTR_Object vmObject, [out] BOOL * pResult);
@@ -414,7 +411,6 @@ interface IDacDbiInterface : IUnknown
         [in] CORDB_ADDRESS obj,
         [out] VMPTR_AppDomain * pApp,
         [out] VMPTR_Module * pModule,
-        [out] VMPTR_DomainAssembly * pDomainAssembly,
         [out] BOOL * pResult);
 
     // Reference Walking
@@ -461,7 +457,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetDelegateFunctionData(
         [in] DelegateType delegateType,
         [in] VMPTR_Object delegateObject,
-        [out] VMPTR_DomainAssembly * ppFunctionDomainAssembly,
+        [out] VMPTR_Assembly * ppFunctionAssembly,
         [out] mdMethodDef * pMethodDef);
     HRESULT GetDelegateTargetObject(
         [in] DelegateType delegateType,
@@ -475,7 +471,7 @@ interface IDacDbiInterface : IUnknown
     // Module Mapping
     HRESULT IsModuleMapped([in] VMPTR_Module pModule, [out] BOOL * isModuleMapped);
     HRESULT MetadataUpdatesApplied([out] BOOL * pResult);
-    HRESULT GetDomainAssemblyFromModule([in] VMPTR_Module vmModule, [out] VMPTR_DomainAssembly * pVmDomainAssembly);
+    HRESULT GetAssemblyFromModule([in] VMPTR_Module vmModule, [out] VMPTR_Assembly * pvmAssembly);
 
     // Async and Continuations
     HRESULT ParseContinuation(

@@ -301,13 +301,11 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainObject(VMPTR_AppDomain vmAppDomain, OUT VMPTR_OBJECTHANDLE * pRetVal) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetAssemblyFromDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Assembly * vmAssembly) = 0;
-
     //
     // Determines whether the runtime security system has assigned full-trust to this assembly.
     //
     // Arguments:
-    //      vmDomainAssembly - VM pointer to the assembly in question.
+    //      vmAssembly - VM pointer to the assembly in question.
     //      pResult - [out] Trust status for the assembly.
     //
     // Return Value:
@@ -317,7 +315,7 @@ public:
     //      Of course trusted malicious code in the process could always cause this API to lie.  However,
     //      an assembly loaded without full-trust should have no way of causing this API to return true.
     //
-    virtual HRESULT STDMETHODCALLTYPE IsAssemblyFullyTrusted(VMPTR_DomainAssembly vmDomainAssembly, OUT BOOL * pResult) = 0;
+    virtual HRESULT STDMETHODCALLTYPE IsAssemblyFullyTrusted(VMPTR_Assembly vmAssembly, OUT BOOL * pResult) = 0;
 
 
     //
@@ -422,8 +420,8 @@ public:
 
     // get a type def resolved across modules
     // Arguments:
-    //     input:  pTypeRefInfo   - domain file and type ref from the referencing module
-    //     output: pTargetRefInfo - domain file and type def from the referenced type (this may
+    //     input:  pTypeRefInfo   - assembly and type ref from the referencing module
+    //     output: pTargetRefInfo - assembly and type def from the referenced type (this may
     //                              come from a module other than the referencing module)
     // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT STDMETHODCALLTYPE ResolveTypeReference(const TypeRefData * pTypeRefInfo, TypeRefData * pTargetRefInfo) = 0;
@@ -529,24 +527,24 @@ public:
     //    pData - required out parameter which will be filled out with module properties
     //
     // Notes:
-    //    See definition of DomainAssemblyInfo for more details about what properties
+    //    See definition of AssemblyInfo for more details about what properties
     //    this gives back.
     virtual HRESULT STDMETHODCALLTYPE GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData) = 0;
 
 
     //
-    // Get properties for a DomainAssembly
+    // Get properties for a Assembly
     //
     // Arguments:
-    //    vmDomainAssembly - vm handle to a DomainAssembly
+    //    vmAssembly - vm handle to a Assembly
     //    pData - required out parameter which will be filled out with module properties
     //
     // Notes:
-    //    See definition of DomainAssemblyInfo for more details about what properties
+    //    See definition of AssemblyInfo for more details about what properties
     //    this gives back.
-    virtual HRESULT STDMETHODCALLTYPE GetDomainAssemblyData(VMPTR_DomainAssembly vmDomainAssembly, OUT DomainAssemblyInfo * pData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyData(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetModuleForDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule) = 0;
 
     //.........................................................................
     // These methods were the methods that DBI was calling from IXClrData in V2.
@@ -610,7 +608,7 @@ public:
     // Get the values of the JIT Optimization and EnC flags.
     //
     // Arguments:
-    //    vmDomainAssembly -   (input) VM DomainAssembly (module) for which we are retrieving flags
+    //    vmAssembly -   (input) VM Assembly (module) for which we are retrieving flags
     //    pfAllowJITOpts - (mandatory output) true iff this is not compiled for debug,
     //                      i.e., without optimization
     //    pfEnableEnc -    (mandatory output) true iff this module has EnC enabled
@@ -623,13 +621,13 @@ public:
     //    ICorDebugCode2::GetCompilerFlags.
     //.........................................................................
 
-    virtual HRESULT STDMETHODCALLTYPE GetCompilerFlags(VMPTR_DomainAssembly vmDomainAssembly, OUT BOOL * pfAllowJITOpts, OUT BOOL * pfEnableEnC) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetCompilerFlags(VMPTR_Assembly vmAssembly, OUT BOOL * pfAllowJITOpts, OUT BOOL * pfEnableEnC) = 0;
 
     //.........................................................................
     // Set the values of the JIT optimization and EnC flags.
     //
     // Arguments:
-    //    vmDomainAssembly -   (input) VM DomainAssembly (module) for which we are retrieving flags
+    //    vmAssembly -   (input) VM Assembly (module) for which we are retrieving flags
     //    pfAllowJITOpts - (input) true iff this should not be compiled for debug,
     //                      i.e., without optimization
     //    pfEnableEnc -    (input) true iff this module should have EnC enabled. If this is
@@ -650,7 +648,7 @@ public:
     //    ICorDebugModule::EnableJITDebugging.
     //.........................................................................
 
-    virtual HRESULT STDMETHODCALLTYPE SetCompilerFlags(VMPTR_DomainAssembly vmDomainAssembly,
+    virtual HRESULT STDMETHODCALLTYPE SetCompilerFlags(VMPTR_Assembly vmAssembly,
                           BOOL             fAllowJitOpts,
                           BOOL             fEnableEnC) = 0;
 
@@ -699,7 +697,7 @@ public:
     //    need this information from the runtime.
     //
 
-    typedef void (*FP_ASSEMBLY_ENUMERATION_CALLBACK)(VMPTR_DomainAssembly vmDomainAssembly, CALLBACK_DATA pUserData);
+    typedef void (*FP_ASSEMBLY_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
     virtual HRESULT STDMETHODCALLTYPE EnumerateAssembliesInAppDomain(VMPTR_AppDomain vmAppDomain, FP_ASSEMBLY_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
 
@@ -712,7 +710,7 @@ public:
     // Arguments:
     //    vmModule - new module from the enumeration
     //    pUserData - user data passed to EnumerateModulesInAssembly
-    typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_DomainAssembly vmModule, CALLBACK_DATA pUserData);
+    typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_Assembly vmModule, CALLBACK_DATA pUserData);
 
     //
     // Enumerates all the code Modules in an assembly.
@@ -729,7 +727,7 @@ public:
     //    - Resource modules (which have no code or metadata)
     //    - Inspection-only modules. These are viewed as pure data from the debugger's perspective.
     //
-    virtual HRESULT STDMETHODCALLTYPE EnumerateModulesInAssembly(VMPTR_DomainAssembly vmAssembly, FP_MODULE_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE EnumerateModulesInAssembly(VMPTR_Assembly vmAssembly, FP_MODULE_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
 
 
@@ -1181,7 +1179,7 @@ public:
     //
     //    The debugger can't duplicate this policy with 100% accuracy, and
     //    so we need DAC to lookup the assembly that was actually loaded.
-    virtual HRESULT STDMETHODCALLTYPE ResolveAssembly(VMPTR_DomainAssembly vmScope, mdToken tkAssemblyRef, OUT VMPTR_DomainAssembly * pRetVal) = 0;
+    virtual HRESULT STDMETHODCALLTYPE ResolveAssembly(VMPTR_Assembly vmScope, mdToken tkAssemblyRef, OUT VMPTR_Assembly * pRetVal) = 0;
 
     //-----------------------------------------------------------------------------
     // Interface for initializing the native/IL sequence points and native var info
@@ -1578,20 +1576,20 @@ public:
     //
     // Arguments:
     //    Input:
-    //    vmDomainAssembly   - module containing metadata for the method
+    //    vmAssembly   - module containing metadata for the method
     //    functionToken  - metadata token for the function
     //    Output (required):
     //    codeInfo       - start address and size of the IL
     //    pLocalSigToken - signature token for the method
     //    pCodeInfo - [out]
-    virtual HRESULT STDMETHODCALLTYPE GetILCodeAndSig(VMPTR_DomainAssembly vmDomainAssembly, mdToken functionToken, OUT TargetBuffer * pCodeInfo, OUT mdToken * pLocalSigToken) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetILCodeAndSig(VMPTR_Assembly vmAssembly, mdToken functionToken, OUT TargetBuffer * pCodeInfo, OUT mdToken * pLocalSigToken) = 0;
 
     // Gets information about a native code blob:
     //    it's method desc, whether it's an instantiated generic, its EnC version number
     //    and hot and cold region information.
     // Arguments:
     //    Input:
-    //        vmDomainAssembly  - module containing metadata for the method
+    //        vmAssembly  - module containing metadata for the method
     //        functionToken - token for the function for which we need code info
     //    Output (required):
     //        pCodeInfo     - data structure describing the native code regions.
@@ -1600,7 +1598,7 @@ public:
     //        is unavailable for any reason, the output parameter will also be
     //        invalid (i.e., pCodeInfo->IsValid is false).
 
-    virtual HRESULT STDMETHODCALLTYPE GetNativeCodeInfo(VMPTR_DomainAssembly vmDomainAssembly, mdToken functionToken, OUT NativeCodeFunctionData * pCodeInfo) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetNativeCodeInfo(VMPTR_Assembly vmAssembly, mdToken functionToken, OUT NativeCodeFunctionData * pCodeInfo) = 0;
 
     // Gets information about a native code blob:
     //    it's method desc, whether it's an instantiated generic, its EnC version number
@@ -1660,7 +1658,7 @@ public:
     // get field information and object size for an instantiated generic
     //
     // Arguments:
-    //     input:  vmDomainAssembly  - module containing metadata for the type
+    //     input:  vmAssembly  - module containing metadata for the type
     //             thExact       - exact type handle for type (may be NULL)
     //             thApprox      - approximate type handle for the type
     //     output:
@@ -1668,7 +1666,7 @@ public:
     //                             contents. Allocated and initialized by this function.
     //             pObjectSize   - size of the instantiated object
     //
-    virtual HRESULT STDMETHODCALLTYPE GetInstantiationFieldInfo(VMPTR_DomainAssembly vmDomainAssembly, VMPTR_TypeHandle vmThExact, VMPTR_TypeHandle vmThApprox, OUT DacDbiArrayList<FieldData> * pFieldList, OUT SIZE_T * pObjectSize) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetInstantiationFieldInfo(VMPTR_Assembly vmAssembly, VMPTR_TypeHandle vmThExact, VMPTR_TypeHandle vmThApprox, OUT DacDbiArrayList<FieldData> * pFieldList, OUT SIZE_T * pObjectSize) = 0;
 
     // use a type handle to get the information needed to create the corresponding RS CordbType instance
     //
@@ -1798,7 +1796,7 @@ public:
     //                              the field token
     //                              the class token for the class to which the field was added
     //                              the offset to the fields
-    //                              the domain file
+    //                              the assembly
     //                              an indication of the type: whether it's a class or value type
     //     output:  pFieldData    - information about the EnC added field
     //              pfStatic      - flag to indicate whether the field is static
@@ -1822,21 +1820,21 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetTypeHandleParams(VMPTR_AppDomain vmAppDomain, VMPTR_TypeHandle vmTypeHandle, OUT TypeParamsList * pParams) = 0;
 
     // GetSimpleType
-    // gets the metadata token and domain file corresponding to a simple type
+    // gets the metadata token and assembly corresponding to a simple type
     // Arguments:
     //     input:  vmAppDomain - Appdomain in which simpleType resides
     //             simpleType  - CorElementType value corresponding to a simple type
     //     output: pMetadataToken - the metadata token corresponding to simpleType,
-    //                              in the scope of vmDomainAssembly.
-    //             vmDomainAssembly   - the domainAssembly for simpleType
+    //                              in the scope of vmAssembly.
+    //             vmAssembly   - the Assembly for simpleType
     //             pVmModule - [out]
     // Notes:
     //    This is inspection-only. If the type is not yet loaded, it will return CORDBG_E_CLASS_NOT_LOADED.
     //    It will not try to load a type.
-    //    If the type has been loaded, vmDomainAssembly will be non-null unless the target is somehow corrupted.
+    //    If the type has been loaded, vmAssembly will be non-null unless the target is somehow corrupted.
     //    In that case, we will return CORDBG_E_TARGET_INCONSISTENT.
 
-    virtual HRESULT STDMETHODCALLTYPE GetSimpleType(VMPTR_AppDomain vmAppDomain, CorElementType simpleType, OUT mdTypeDef * pMetadataToken, OUT VMPTR_Module * pVmModule, OUT VMPTR_DomainAssembly * pVmDomainAssembly) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetSimpleType(VMPTR_AppDomain vmAppDomain, CorElementType simpleType, OUT mdTypeDef * pMetadataToken, OUT VMPTR_Module * pVmModule) = 0;
 
     // For the specified object, check whether the object derives from System.Exception.
     virtual HRESULT STDMETHODCALLTYPE IsExceptionObject(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
@@ -2205,7 +2203,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE IsValidObject(CORDB_ADDRESS obj, OUT BOOL * pResult) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp, OUT VMPTR_Module * pModule, OUT VMPTR_DomainAssembly * pDomainAssembly, OUT BOOL * pResult) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp, OUT VMPTR_Module * pModule, OUT BOOL * pResult) = 0;
 
 
     //   Reference Walking.
@@ -2473,7 +2471,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetDelegateFunctionData(
         DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_DomainAssembly *ppFunctionDomainAssembly,
+        OUT VMPTR_Assembly *ppFunctionAssembly,
         OUT mdMethodDef *pMethodDef) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetDelegateTargetObject(
@@ -2488,7 +2486,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE MetadataUpdatesApplied(OUT BOOL * pResult) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_Assembly *pvmAssembly) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE ParseContinuation(
         CORDB_ADDRESS continuationAddress,

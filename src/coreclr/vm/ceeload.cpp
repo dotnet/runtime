@@ -860,13 +860,6 @@ BOOL Module::IsCollectible()
     return GetAssembly()->IsCollectible();
 }
 
-DomainAssembly* Module::GetDomainAssembly()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return m_pDomainAssembly;
-}
-
 #ifndef DACCESS_COMPILE
 #include "staticallocationhelpers.inl"
 
@@ -1220,13 +1213,6 @@ BOOL Module::IsRuntimeMarshallingEnabled()
         (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
 
     return hr != S_OK;
-}
-
-void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_pDomainAssembly = pDomainAssembly;
 }
 
 //---------------------------------------------------------------------------------------
@@ -2985,7 +2971,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
 
 #endif // DEBUGGING_SUPPORTED
 
-BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOOL attaching)
+BOOL Module::NotifyDebuggerLoad(Assembly * pAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -2996,7 +2982,7 @@ BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOO
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
-        Module * pModule = pDomainAssembly->GetAssembly()->GetModule();
+        Module * pModule = pAssembly->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
 
@@ -3015,8 +3001,7 @@ BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOO
         g_pDebugInterface->LoadModule(this,
                                       m_pPEAssembly->GetPath(),
                                       m_pPEAssembly->GetPath().GetCount(),
-                                      GetAssembly(),
-                                      pDomainAssembly,
+                                      pAssembly,
                                       attaching);
 
         result = TRUE;

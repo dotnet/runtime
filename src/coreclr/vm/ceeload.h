@@ -901,10 +901,6 @@ protected:
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
-    DomainAssembly *GetDomainAssembly();
-
-    void SetDomainAssembly(DomainAssembly *pDomainAssembly);
-
     OBJECTREF GetExposedObject();
     OBJECTREF GetExposedObjectIfExists();
 
@@ -1382,7 +1378,7 @@ private:
 public:
 
     // Debugger stuff
-    BOOL NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int level, BOOL attaching);
+    BOOL NotifyDebuggerLoad(Assembly * pAssembly, int level, BOOL attaching);
     void NotifyDebuggerUnload();
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);
@@ -1569,8 +1565,6 @@ public:
     const ReadyToRun_TypeGenericInfoMap *m_pTypeGenericInfoMap = &ReadyToRun_TypeGenericInfoMap::EmptyInstance;
 
 protected:
-
-    PTR_DomainAssembly      m_pDomainAssembly;
 
 public:
     //-----------------------------------------------------------------------------------------

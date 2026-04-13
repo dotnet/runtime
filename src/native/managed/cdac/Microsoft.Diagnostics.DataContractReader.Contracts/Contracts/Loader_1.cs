@@ -67,7 +67,7 @@ internal readonly struct Loader_1 : ILoader
             throw new ArgumentNullException(nameof(appDomain));
 
         Data.AppDomain domain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(appDomain);
-        ArrayListBase arrayList = _target.ProcessedData.GetOrAdd<ArrayListBase>(domain.DomainAssemblyList);
+        ArrayListBase arrayList = _target.ProcessedData.GetOrAdd<ArrayListBase>(domain.AssemblyList);
 
         foreach (TargetPointer domainAssembly in arrayList.Elements)
         {
