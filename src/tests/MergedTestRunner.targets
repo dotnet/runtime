@@ -17,9 +17,8 @@
     <!--
       Derive a unique identifier from the project's relative directory + filename.
       This ensures that projects with the same filename in different directories
-      (e.g., COOL/finally.csproj vs simple/finally.csproj) get unique aliases and
-      assembly names in the merged runner, preventing both alias collisions and
-      MSBuild conflict resolution from silently dropping references.
+      (e.g., COOL/finally.csproj vs simple/finally.csproj) get unique aliases,
+      preventing alias collisions in the merged runner.
 
       Regex.Replace("%(RelativeDir)%(Filename)", "[^a-zA-Z0-9]", "_")
     -->
@@ -30,12 +29,7 @@
       If the merged test runner was specified to be built as Standalone, don't force the referenced projects to be built that way as well.
       If we're building all tests as standalone, then don't reference the other test projects from the merged wrapper. We'll only build the tests in the wrapper itself
       into it.
-
-      Pass a unique AssemblyName derived from the relative path to each referenced project via
-      AdditionalProperties. This prevents projects with the same filename (e.g., two Target.csproj)
-      from producing identically-named assemblies that would cause conflict resolution to drop one.
     -->
-    <ProjectReference Include="@(MergedWrapperProjectReference)" UndefineProperties="BuildAsStandalone" Condition="'$(BuildAllTestsAsStandalone)' != 'true'"
-        AdditionalProperties="AssemblyName=$([System.Text.RegularExpressions.Regex]::Replace(&quot;%(MergedWrapperProjectReference.RelativeDir)%(MergedWrapperProjectReference.Filename)&quot;, &quot;[^a-zA-Z0-9]&quot;, &quot;_&quot;))" />
+    <ProjectReference Include="@(MergedWrapperProjectReference)" UndefineProperties="BuildAsStandalone" Condition="'$(BuildAllTestsAsStandalone)' != 'true'" />
   </ItemGroup>
 </Project>
