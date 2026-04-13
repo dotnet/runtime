@@ -230,7 +230,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     instrDesc* id = emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
-    id->idInsFmt(fmt);
+    //id->idInsFmt(fmt);
     id->idInsOpt(INS_OPTS_NONE);
 
     id->idReg1(reg1);
@@ -833,7 +833,8 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst)
     instrDescJmp* id = emitNewInstrJmp();
 
     id->idIns(ins);
-    id->idInsFmt(fmt);
+    // TODO TARGET_POWERPC64 - Not using Instruction Formats yet
+    //id->idInsFmt(fmt);
     id->idjShort = false;
 
     if (dst != nullptr)
