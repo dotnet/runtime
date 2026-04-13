@@ -74,8 +74,7 @@ The stress log uses structured per-frame output with method name resolution:
       [DAC_ONLY] Addr=0x... Obj=0x... Flags=0x...
     [FRAME_cDAC_ONLY] Source=0x... (MethodName): cDAC=X
     [FRAME_DAC_ONLY] Source=0x... (<frame 0x...>): DAC=Y
-  [COMPARE cDAC-vs-RT] cDAC=N RT=M (flat comparison)
-    cDAC [i]: Addr=0x... Obj=0x... Flags=0x... Src=MethodName
-    RT   [i]: Addr=0x... Obj=0x... Flags=0x...
-  [DAC_DIFF] cDAC matches RT but differs from DAC
+  [RT_DIFF] cDAC=N RT=M (cDAC matches DAC but differs from RT)
+  [STACK_TRACE] (cDAC=N DAC=M RT=M)
+    #i MethodName (cDAC=X DAC=Y) [<-- MISMATCH]
 ```

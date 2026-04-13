@@ -15,8 +15,8 @@ On failure, it shows per-frame diffs with resolved method names, making it easy 
 which frame and method has mismatched GC references.
 
 Pass/fail semantics:
-- **[PASS]**: cDAC matches runtime (may include `[DAC_DIFF]` annotation if DAC differs)
-- **[FAIL]**: cDAC does NOT match runtime
+- **[PASS]**: cDAC matches DAC (may include `[RT_DIFF]` annotation if RT differs)
+- **[FAIL]**: cDAC does NOT match DAC
 - **[SKIP]**: cDAC GetStackReferences failed (e.g., during EH)
 
 ## Prerequisites

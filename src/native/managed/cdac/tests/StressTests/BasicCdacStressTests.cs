@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 namespace Microsoft.Diagnostics.DataContractReader.Tests.GCStress;
 
 /// <summary>
-/// Runs each debuggee app under corerun with DOTNET_GCStress=0x24 and asserts
+/// Runs each debuggee app under corerun with DOTNET_CdacStress=0x51 and asserts
 /// that the cDAC stack reference verification achieves 100% pass rate.
 /// </summary>
 /// <remarks>

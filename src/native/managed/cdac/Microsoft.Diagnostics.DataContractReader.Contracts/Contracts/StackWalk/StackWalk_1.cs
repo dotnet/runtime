@@ -148,9 +148,6 @@ internal partial class StackWalk_1 : IStackWalk
 
     IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData)
     {
-        // TODO(stackref): This isn't quite right. We need to check if the FilterContext or ProfilerFilterContext
-        // is set and prefer that if either is not null.
-
         // Initialize the walk data directly
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
         FillContextFromThread(context, threadData);
@@ -293,7 +290,6 @@ internal partial class StackWalk_1 : IStackWalk
         // This matches native: Init() produces the first frame, then Filter()+NextRaw() loop.
 
         // global tracking variables
-        bool movedPastFirstExInfo = false;
         bool processNonFilterFunclet = false;
         bool processIntermediaryNonFilterFunclet = false;
         bool didFuncletReportGCReferences = true;
@@ -320,15 +316,6 @@ internal partial class StackWalk_1 : IStackWalk
             bool skipFuncletCallback = true;
 
             TargetPointer pExInfo = GetCurrentExceptionTracker(handle);
-
-            TargetPointer frameSp = handle.State == StackWalkState.SW_FRAME ? handle.FrameAddress : handle.Context.StackPointer;
-            if (pExInfo != TargetPointer.Null && frameSp > pExInfo)
-            {
-                if (!movedPastFirstExInfo)
-                {
-                    movedPastFirstExInfo = true;
-                }
-            }
 
             // by default, there is no funclet for the current frame
             // that reported GC references
