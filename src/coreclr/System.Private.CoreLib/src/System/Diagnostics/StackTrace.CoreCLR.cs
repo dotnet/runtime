@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -9,11 +10,64 @@ namespace System.Diagnostics
 {
     public partial class StackTrace
     {
+        private const string PerfMapSymbolReaderTypeName = "System.Diagnostics.PerfMapSymbolReader, System.Diagnostics.StackTrace, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct PerfMapSequencePointInfoNative
+        {
+            public int lineNumber;
+            public int ilOffset;
+            public char* fileName;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct PerfMapLocalVarInfoNative
+        {
+            public int startOffset;
+            public int endOffset;
+            public char* name;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct PerfMapMethodDebugInfoNative
+        {
+            public PerfMapSequencePointInfoNative* points;
+            public int size;
+            public PerfMapLocalVarInfoNative* locals;
+            public int localsSize;
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StackTrace_GetStackFramesInternal")]
         private static partial void GetStackFramesInternal(ObjectHandleOnStack sfh, [MarshalAs(UnmanagedType.Bool)] bool fNeedFileInfo, ObjectHandleOnStack e);
 
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetInfoForMethod")]
+        private static extern unsafe bool GetPerfMapInfoForMethodFromReader(
+            [UnsafeAccessorType(PerfMapSymbolReaderTypeName)] object? perfMapSymbolReader,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string assemblyPath,
+            int methodToken,
+            IntPtr points,
+            int size);
+
+        [DynamicDependency(nameof(GetInfoForMethod))]
         internal static void GetStackFramesInternal(StackFrameHelper sfh, bool fNeedFileInfo, Exception? e)
             => GetStackFramesInternal(ObjectHandleOnStack.Create(ref sfh), fNeedFileInfo, ObjectHandleOnStack.Create(ref e));
+
+        [UnmanagedCallersOnly]
+        internal static unsafe int GetInfoForMethod(byte* assemblyPath, uint methodToken, PerfMapMethodDebugInfoNative* methodDebugInfo)
+        {
+            if (assemblyPath == null || methodDebugInfo == null || methodDebugInfo->points == null || methodDebugInfo->size <= 0)
+            {
+                return 0;
+            }
+
+            string? assemblyPathString = Marshal.PtrToStringUTF8((IntPtr)assemblyPath);
+            if (string.IsNullOrEmpty(assemblyPathString))
+            {
+                return 0;
+            }
+
+            return GetPerfMapInfoForMethodFromReader(null, assemblyPathString, unchecked((int)methodToken), (IntPtr)methodDebugInfo->points, methodDebugInfo->size) ? 1 : 0;
+        }
 
         internal static int CalculateFramesToSkip(StackFrameHelper StackF, int iNumFrames)
         {

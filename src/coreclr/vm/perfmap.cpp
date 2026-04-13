@@ -9,6 +9,7 @@
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
 #include <clrconfignocache.h>
 #include "perfmap.h"
+#include "gdbjithelpers.h"
 #include "pal.h"
 #include <dn-stdio.h>
 
@@ -27,12 +28,330 @@
 #define TEMP_DIRECTORY_PATH "/data/local/tmp"
 #endif
 
+namespace
+{
+    thread_local int t_jitDumpDebugInfoCallbackDepth = 0;
+
+    // Scope guard to prevent recursive callbacks into the debug-info delegate.
+    class JitDumpDebugInfoCallbackScope
+    {
+    public:
+        JitDumpDebugInfoCallbackScope()
+            : _entered(t_jitDumpDebugInfoCallbackDepth == 0)
+        {
+            if (_entered)
+            {
+                t_jitDumpDebugInfoCallbackDepth = 1;
+            }
+        }
+
+        ~JitDumpDebugInfoCallbackScope()
+        {
+            if (_entered)
+            {
+                t_jitDumpDebugInfoCallbackDepth = 0;
+            }
+        }
+
+        bool Entered() const
+        {
+            return _entered;
+        }
+
+    private:
+        bool _entered;
+    };
+
+    // RAII container for sequence points and locals returned from the managed helper.
+    struct PerfMapMethodDebugInfo
+    {
+        SequencePointInfo* points;
+        int size;
+        LocalVarInfo* locals;
+        int localsSize;
+
+        PerfMapMethodDebugInfo(int numPoints, int numLocals)
+        {
+            points = (SequencePointInfo*)CoTaskMemAlloc(sizeof(SequencePointInfo) * numPoints);
+            if (points == nullptr)
+            {
+                COMPlusThrowOM();
+            }
+
+            memset(points, 0, sizeof(SequencePointInfo) * numPoints);
+            size = numPoints;
+
+            if (numLocals == 0)
+            {
+                locals = nullptr;
+                localsSize = 0;
+                return;
+            }
+
+            locals = (LocalVarInfo*)CoTaskMemAlloc(sizeof(LocalVarInfo) * numLocals);
+            if (locals == nullptr)
+            {
+                CoTaskMemFree(points);
+                COMPlusThrowOM();
+            }
+
+            memset(locals, 0, sizeof(LocalVarInfo) * numLocals);
+            localsSize = numLocals;
+        }
+
+        ~PerfMapMethodDebugInfo()
+        {
+            if (locals != nullptr)
+            {
+                for (int i = 0; i < localsSize; i++)
+                {
+                    CoTaskMemFree(locals[i].name);
+                }
+
+                CoTaskMemFree(locals);
+            }
+
+            if (points != nullptr)
+            {
+                for (int i = 0; i < size; i++)
+                {
+                    CoTaskMemFree(points[i].fileName);
+                }
+
+                CoTaskMemFree(points);
+            }
+        }
+
+        MethodDebugInfo* AsMethodDebugInfo()
+        {
+            return reinterpret_cast<MethodDebugInfo*>(this);
+        }
+    };
+
+    // Header for serialized JIT dump debug info payload.
+    struct JitDumpDebugInfoPayloadHeader
+    {
+        uint64_t codeAddress;
+        uint64_t entryCount;
+    };
+
+    // Entry representing one native offset to source line mapping.
+    struct JitDumpDebugInfoEntry
+    {
+        uint64_t codeAddress;
+        uint32_t lineNumber;
+        uint32_t discriminator;
+    };
+
+    constexpr ULONG32 HiddenLineNumber = 0x00feefee;
+
+    // Allocator used by DebugInfoManager when materializing offset maps.
+    BYTE* PerfMapDebugInfoNew(void*, size_t cBytes)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        return new BYTE[cBytes];
+    }
+
+    template <typename T>
+    void AppendBytes(StackSArray<BYTE>& buffer, const T& value)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        COUNT_T previousCount = buffer.GetCount();
+        buffer.SetCount(previousCount + static_cast<COUNT_T>(sizeof(T)));
+        memcpy(buffer.GetElements() + previousCount, &value, sizeof(T));
+    }
+
+    void AppendBytes(StackSArray<BYTE>& buffer, const void* data, COUNT_T size)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        COUNT_T previousCount = buffer.GetCount();
+        buffer.SetCount(previousCount + size);
+        memcpy(buffer.GetElements() + previousCount, data, size);
+    }
+
+    // Build a serialized jitdump debug-info payload from sequence points for a method.
+    bool TryGetMethodJitDumpDebugInfo(MethodDesc* pMethod, PCODE pCode, BYTE** payload, size_t* payloadSize)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_PREEMPTIVE;
+            PRECONDITION(pMethod != nullptr);
+            PRECONDITION(pCode != nullptr);
+            PRECONDITION(payload != nullptr);
+            PRECONDITION(payloadSize != nullptr);
+        }
+        CONTRACTL_END;
+
+        *payload = nullptr;
+        *payloadSize = 0;
+
+        if (pMethod->IsLCGMethod() || pMethod->IsDynamicMethod())
+        {
+            return false;
+        }
+
+        Module* pModule = pMethod->GetModule();
+        if (pModule == nullptr)
+        {
+            return false;
+        }
+
+        DebugInfoRequest request;
+        request.InitFromStartingAddr(pMethod, PCODEToPINSTR(pCode));
+
+        ULONG32 nativeMapCount = 0;
+        NewHolder<ICorDebugInfo::OffsetMapping> nativeMap(nullptr);
+        if (!DebugInfoManager::GetBoundariesAndVars(
+                request,
+                PerfMapDebugInfoNew,
+                nullptr,
+                BoundsType::Uninstrumented,
+                &nativeMapCount,
+                &nativeMap,
+                nullptr,
+                nullptr))
+        {
+            return false;
+        }
+
+        if (nativeMapCount == 0)
+        {
+            return false;
+        }
+
+        if (getInfoForMethodDelegate == nullptr)
+        {
+            return false;
+        }
+
+        JitDumpDebugInfoCallbackScope callbackScope;
+        if (!callbackScope.Entered())
+        {
+            return false;
+        }
+
+        SString modulePath{pModule->GetPEAssembly()->GetPath()};
+        if (modulePath.IsEmpty())
+        {
+            return false;
+        }
+
+        PerfMapMethodDebugInfo methodDebugInfo(nativeMapCount, 0);
+        if (getInfoForMethodDelegate(modulePath.GetUTF8(), pMethod->GetMemberDef(), methodDebugInfo.AsMethodDebugInfo()) == 0)
+        {
+            return false;
+        }
+
+        if (methodDebugInfo.size == 0)
+        {
+            return false;
+        }
+
+        StackSArray<BYTE> serializedPayload;
+        JitDumpDebugInfoPayloadHeader header = {};
+        header.codeAddress = static_cast<uint64_t>(reinterpret_cast<TADDR>(pCode));
+        header.entryCount = 0;
+        AppendBytes(serializedPayload, header);
+
+        char currentFileName[4 * MAX_LONGPATH] = {};
+        ULONG32 currentLineNumber = 0;
+
+        for (ULONG32 nativeMapIndex = 0; nativeMapIndex < nativeMapCount; nativeMapIndex++)
+        {
+            const ULONG32 ilOffset = nativeMap[nativeMapIndex].ilOffset;
+
+            if ((ilOffset == (ULONG32)ICorDebugInfo::NO_MAPPING) ||
+                (ilOffset == (ULONG32)ICorDebugInfo::PROLOG) ||
+                (ilOffset == (ULONG32)ICorDebugInfo::EPILOG))
+            {
+                continue;
+            }
+
+            int sequencePointIndex = 0;
+            for (; sequencePointIndex < methodDebugInfo.size; sequencePointIndex++)
+            {
+                if ((ULONG32)methodDebugInfo.points[sequencePointIndex].ilOffset >= ilOffset)
+                {
+                    if (((ULONG32)methodDebugInfo.points[sequencePointIndex].ilOffset > ilOffset) && (sequencePointIndex > 0))
+                    {
+                        sequencePointIndex--;
+                    }
+
+                    break;
+                }
+            }
+
+            if (sequencePointIndex == methodDebugInfo.size)
+            {
+                sequencePointIndex--;
+            }
+
+            while ((methodDebugInfo.points[sequencePointIndex].lineNumber == (int)HiddenLineNumber) && (sequencePointIndex > 0))
+            {
+                sequencePointIndex--;
+            }
+
+            if ((methodDebugInfo.points[sequencePointIndex].lineNumber == 0) ||
+                (methodDebugInfo.points[sequencePointIndex].lineNumber == (int)HiddenLineNumber) ||
+                (methodDebugInfo.points[sequencePointIndex].fileName == nullptr))
+            {
+                continue;
+            }
+
+            int convertedLength = WideCharToMultiByte(
+                CP_UTF8,
+                0,
+                methodDebugInfo.points[sequencePointIndex].fileName,
+                -1,
+                currentFileName,
+                ARRAY_SIZE(currentFileName),
+                nullptr,
+                nullptr);
+
+            if (convertedLength == 0)
+            {
+                currentFileName[0] = '\0';
+                continue;
+            }
+
+            currentLineNumber = (ULONG32)methodDebugInfo.points[sequencePointIndex].lineNumber;
+
+            JitDumpDebugInfoEntry entry = {};
+            entry.codeAddress = static_cast<uint64_t>(reinterpret_cast<TADDR>(pCode) + nativeMap[nativeMapIndex].nativeOffset);
+            entry.lineNumber = currentLineNumber;
+            entry.discriminator = 0;
+
+            AppendBytes(serializedPayload, entry);
+            AppendBytes(serializedPayload, currentFileName, static_cast<COUNT_T>(strlen(currentFileName) + 1));
+            header.entryCount++;
+        }
+
+        if (header.entryCount == 0)
+        {
+            return false;
+        }
+
+        memcpy(serializedPayload.GetElements(), &header, sizeof(header));
+
+        *payloadSize = serializedPayload.GetCount();
+        *payload = new BYTE[*payloadSize];
+        memcpy(*payload, serializedPayload.GetElements(), *payloadSize);
+        return true;
+    }
+}
+
 Volatile<bool> PerfMap::s_enabled = false;
 Volatile<bool> PerfMap::s_dependenciesReady = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
 bool PerfMap::s_IndividualAllocationStubReporting = false;
+bool PerfMap::s_EmitDebugInfo = false;
 
 unsigned PerfMap::s_StubsMapped = 0;
 CrstStatic PerfMap::s_csPerfMap;
@@ -77,6 +396,7 @@ void PerfMap::InitializeConfiguration()
     DWORD granularity = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapStubGranularity);
     s_GroupStubsOfSameType = (granularity & 1) != 1;
     s_IndividualAllocationStubReporting = (granularity & 2) != 0;
+    s_EmitDebugInfo = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEmitDebugInfo) != 0;
 }
 
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
@@ -298,7 +618,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
 
     CONTRACTL{
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(pMethod != nullptr);
         PRECONDITION(pCode != nullptr);
@@ -316,9 +636,17 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
         optimizationTier = PrepareCodeConfig::GetJitOptimizationTierStr(pConfig, pMethod);
     }
 
+    NewArrayHolder<BYTE> jitDumpDebugInfo(nullptr);
+    size_t jitDumpDebugInfoSize = 0;
+
     // Logging failures should not cause any exceptions to flow upstream.
     EX_TRY
     {
+        if (PAL_PerfJitDump_IsStarted() && s_EmitDebugInfo)
+        {
+            TryGetMethodJitDumpDebugInfo(pMethod, pCode, &jitDumpDebugInfo, &jitDumpDebugInfoSize);
+        }
+
         // Get the full method signature.
         SString name;
         pMethod->GetFullMethodInfo(name);
@@ -339,7 +667,15 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
                 s_Current->WriteLine(line);
             }
 
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
+            PAL_PerfJitDump_LogMethod(
+                (void*)pCode,
+                codeSize,
+                name.GetUTF8(),
+                jitDumpDebugInfo.GetValue(),
+                jitDumpDebugInfoSize,
+                nullptr,
+                0,
+                /*reportCodeBlock*/true);
         }
     }
     EX_CATCH{} EX_END_CATCH
@@ -380,7 +716,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
         if (methodRegionInfo.hotSize > 0)
         {
             CrstHolder ch(&(s_csPerfMap));
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, 0, nullptr, 0, /*reportCodeBlock*/true);
         }
 
         if (methodRegionInfo.coldSize > 0)
@@ -393,7 +729,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
                 name.Append(W("[PreJit-cold]"));
             }
 
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, 0, nullptr, 0, /*reportCodeBlock*/true);
         }
     }
     EX_CATCH{} EX_END_CATCH
@@ -457,7 +793,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
             // Even when the memory is committed, block-level stubs are reported at commit time
             // before the actual stub code has been written, so the code bytes would be zeros or
             // uninitialized. We therefore skip code bytes for block allocations entirely.
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/ stubAllocationType != PerfMapStubType::Block);
+            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, 0, nullptr, 0, /*reportCodeBlock*/ stubAllocationType != PerfMapStubType::Block);
         }
     }
     EX_CATCH{} EX_END_CATCH

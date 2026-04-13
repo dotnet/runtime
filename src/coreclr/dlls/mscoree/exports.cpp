@@ -15,9 +15,9 @@
 #include <corhost.h>
 #include <configuration.h>
 #include "../../vm/ceemain.h"
-#ifdef FEATURE_GDBJIT
+#if defined(TARGET_UNIX) && (defined(FEATURE_GDBJIT) || defined(FEATURE_PERFMAP))
 #include "../../vm/gdbjithelpers.h"
-#endif // FEATURE_GDBJIT
+#endif // TARGET_UNIX && (FEATURE_GDBJIT || FEATURE_PERFMAP)
 #include "bundle.h"
 #include "pinvokeoverride.h"
 #include <hostinformation.h>
@@ -207,10 +207,10 @@ int coreclr_set_error_writer(coreclr_error_writer_callback_fn error_writer)
     return S_OK;
 }
 
-#ifdef FEATURE_GDBJIT
+#if defined(TARGET_UNIX) && (defined(FEATURE_GDBJIT) || defined(FEATURE_PERFMAP))
 GetInfoForMethodDelegate getInfoForMethodDelegate = NULL;
 extern "C" int coreclr_create_delegate(void*, unsigned int, const char*, const char*, const char*, void**);
-#endif //FEATURE_GDBJIT
+#endif // TARGET_UNIX && (FEATURE_GDBJIT || FEATURE_PERFMAP)
 
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
@@ -328,12 +328,12 @@ int coreclr_initialize(
     {
         host.SuppressRelease();
         *hostHandle = host;
-#ifdef FEATURE_GDBJIT
+#if defined(TARGET_UNIX) && (defined(FEATURE_GDBJIT) || defined(FEATURE_PERFMAP))
         HRESULT createDelegateResult;
         createDelegateResult = coreclr_create_delegate(*hostHandle,
                                                        *domainId,
-                                                       "SOS.NETCore",
-                                                       "SOS.SymbolReader",
+                                                       "System.Private.CoreLib",
+                                                       "System.Diagnostics.StackTrace",
                                                        "GetInfoForMethod",
                                                        (void**)&getInfoForMethodDelegate);
 
@@ -341,7 +341,7 @@ int coreclr_initialize(
         if (!SUCCEEDED(createDelegateResult))
         {
             fprintf(stderr,
-                    "Can't create delegate for 'SOS.SymbolReader.GetInfoForMethod' "
+                    "Can't create delegate for 'System.Diagnostics.StackTrace.GetInfoForMethod' "
                     "method - status: 0x%08x\n", createDelegateResult);
         }
 #endif // _DEBUG

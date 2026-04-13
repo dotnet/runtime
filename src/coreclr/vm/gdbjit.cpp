@@ -498,10 +498,16 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
                     unsigned int &symInfoLen,
                     LocalsInfo &locals)
 {
+    // Guard against re-entrancy
+    static thread_local int t_gdbJitDebugInfoCallbackDepth = 0;
+
     NewArrayHolder<DebuggerILToNativeMap> map;
     ULONG32 numMap;
 
     if (!getInfoForMethodDelegate)
+        return E_FAIL;
+
+    if (t_gdbJitDebugInfoCallbackDepth != 0)
         return E_FAIL;
 
     if (GetMethodNativeMap(methodDescPtr, &numMap, map, &locals.countVars, &locals.vars) != S_OK)
@@ -516,8 +522,13 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
 
     MethodDebugInfo methodDebugInfo(numMap, locals.countVars);
 
-    if (getInfoForMethodDelegate(szModName, methodDescPtr->GetMemberDef(), methodDebugInfo) == FALSE)
+    t_gdbJitDebugInfoCallbackDepth = 1;
+    if (getInfoForMethodDelegate(szModName, methodDescPtr->GetMemberDef(), &methodDebugInfo) == 0)
+    {
+        t_gdbJitDebugInfoCallbackDepth = 0;
         return E_FAIL;
+    }
+    t_gdbJitDebugInfoCallbackDepth = 0;
 
     symInfoLen = numMap;
     symInfo = new SymbolsInfo[numMap];

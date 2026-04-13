@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="System\Diagnostics\PerfMapSymbolReader.cs" />
     <Compile Include="System\Diagnostics\StackTraceSymbols.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolBinder.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolDocument.cs" />
