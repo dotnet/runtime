@@ -399,7 +399,8 @@ int minipal_getcpufeatures(void)
 
             if (hasAvx10v1Dependencies)
             {
-                if ((cpuidInfo[CPUID_EAX] & (1 << 5)) == 0)                                                     // AVX512-BF16
+                if (((cpuidInfo[CPUID_EAX] & (1 << 5)) == 0) ||                                                 // AVX512-BF16
+                    ((cpuidInfo[CPUID_EDX] & (1 << 19)) == 0))                                                   // Avx10
                 {
                     hasAvx10v1Dependencies = false;
                 }
@@ -429,7 +430,7 @@ int minipal_getcpufeatures(void)
 
         if (maxCpuId >= 0x24)
         {
-            if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                                        // Avx10
+            if (hasAvx10v1Dependencies)                                                                          // AVX512-BF16, AVX512-FP16, Avx10
             {
                 // While AVX10 was originally spec'd to allow no V512 support
                 // this was later changed and all implementations must provide
@@ -439,8 +440,7 @@ int minipal_getcpufeatures(void)
 
                 if (((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0) &&                                                // Avx10/V128
                     ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0) &&                                                // Avx10/V256
-                    ((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0) &&                                                // Avx10/V512
-                    hasAvx10v1Dependencies)                                                                     // AVX512-BF16, AVX512-FP16
+                    ((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0))                                                  // Avx10/V512
                 {
                     uint8_t avx10Version = (uint8_t)(cpuidInfo[CPUID_EBX] & 0xFF);
 
