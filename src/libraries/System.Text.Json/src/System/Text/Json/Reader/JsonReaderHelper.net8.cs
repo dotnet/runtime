@@ -36,19 +36,9 @@ namespace System.Text.Json
                                   Vector128.Equals(vec, Vector128.Create(JsonConstants.Quote)) |
                                   Vector128.Equals(vec, Vector128.Create(JsonConstants.BackSlash));
 
-            // TODO: this really should be just Vector128.IndexOfWhereAllBitsSet
-            // but that is not currently optimized in JIT for ARM64, so we do it manually here.
-            if (AdvSimd.IsSupported)
+            if (cmp != Vector128<byte>.Zero)
             {
-                ulong mask = AdvSimd.ShiftRightLogicalNarrowingLower(cmp.AsUInt16(), 4).AsUInt64().ToScalar();
-                if (mask != 0)
-                    return BitOperations.TrailingZeroCount(mask) >> 2;
-            }
-            else
-            {
-                uint mask = cmp.ExtractMostSignificantBits();
-                if (mask != 0)
-                    return BitOperations.TrailingZeroCount(mask);
+                return Vector128.IndexOfWhereAllBitsSet(cmp);
             }
 
             int fallbackIndex = IndexOfQuoteOrAnyControlOrBackSlash_Fallback(span.Slice(Vector128<byte>.Count));
