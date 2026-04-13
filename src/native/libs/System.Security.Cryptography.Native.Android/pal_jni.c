@@ -83,15 +83,6 @@ jmethodID g_SSLParametersGetProtocols;
 jmethodID g_SSLParametersSetApplicationProtocols;
 jmethodID g_SSLParametersSetServerNames;
 
-// com/android/org/conscrypt/OpenSSLEngineImpl
-jclass    g_ConscryptOpenSSLEngineImplClass;
-jfieldID  g_ConscryptOpenSSLEngineImplSslParametersField;
-jfieldID  g_ConscryptOpenSSLEngineImplHandshakeSessionField;
-
-// com/android/org/conscrypt/SSLParametersImpl
-jclass    g_ConscryptSSLParametersImplClass;
-jmethodID g_ConscryptSSLParametersImplSetUseSni;
-
 // javax/net/ssl/SSLContext
 jclass    g_sslCtxClass;
 jmethodID g_sslCtxGetDefaultMethod;
@@ -474,7 +465,6 @@ jmethodID g_SSLSessionGetProtocol;
 jclass    g_SSLEngineResult;
 jmethodID g_SSLEngineResultGetStatus;
 jmethodID g_SSLEngineResultGetHandshakeStatus;
-bool      g_SSLEngineResultStatusLegacyOrder;
 jmethodID g_SSLEngineResultBytesConsumed;
 
 // javax/crypto/KeyAgreement
@@ -778,16 +768,6 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     g_SSLParametersGetProtocols =               GetMethod(env, false,  g_SSLParametersClass, "getProtocols", "()[Ljava/lang/String;");
     g_SSLParametersSetApplicationProtocols =    GetOptionalMethod(env, false,  g_SSLParametersClass, "setApplicationProtocols", "([Ljava/lang/String;)V");
 
-    g_ConscryptOpenSSLEngineImplClass = GetOptionalClassGRef(env, "com/android/org/conscrypt/OpenSSLEngineImpl");
-    if (g_ConscryptOpenSSLEngineImplClass != NULL)
-    {
-        g_ConscryptOpenSSLEngineImplSslParametersField =  GetField(env, false,  g_ConscryptOpenSSLEngineImplClass, "sslParameters", "Lcom/android/org/conscrypt/SSLParametersImpl;");
-        g_ConscryptOpenSSLEngineImplHandshakeSessionField = GetOptionalField(env, false,  g_ConscryptOpenSSLEngineImplClass, "handshakeSession", "Lcom/android/org/conscrypt/OpenSSLSessionImpl;");
-
-        g_ConscryptSSLParametersImplClass = GetClassGRef(env, "com/android/org/conscrypt/SSLParametersImpl");
-        g_ConscryptSSLParametersImplSetUseSni = GetMethod(env, false,  g_ConscryptSSLParametersImplClass, "setUseSni", "(Z)V");
-    }
-
     g_sslCtxClass =                     GetClassGRef(env, "javax/net/ssl/SSLContext");
     g_sslCtxGetDefaultMethod =          GetMethod(env, true,  g_sslCtxClass, "getDefault", "()Ljavax/net/ssl/SSLContext;");
     g_sslCtxGetDefaultSslParamsMethod = GetMethod(env, false, g_sslCtxClass, "getDefaultSSLParameters", "()Ljavax/net/ssl/SSLParameters;");
@@ -1040,19 +1020,15 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     g_KeyManagerFactoryInit =           GetMethod(env, false, g_KeyManagerFactory, "init", "(Ljava/security/KeyStore;[C)V");
     g_KeyManagerFactoryGetKeyManagers = GetMethod(env, false, g_KeyManagerFactory, "getKeyManagers", "()[Ljavax/net/ssl/KeyManager;");
 
-    // Supported on API Level 24 and above
-    g_SNIHostName = GetOptionalClassGRef(env, "javax/net/ssl/SNIHostName");
-    if (g_SNIHostName != NULL)
-    {
-        g_SNIHostNameCtor =                 GetMethod(env, false, g_SNIHostName, "<init>", "(Ljava/lang/String;)V");
-        g_SSLParametersSetServerNames =     GetOptionalMethod(env, false,  g_SSLParametersClass, "setServerNames", "(Ljava/util/List;)V");
-    }
+    g_SNIHostName =                        GetClassGRef(env, "javax/net/ssl/SNIHostName");
+    g_SNIHostNameCtor =                    GetMethod(env, false, g_SNIHostName, "<init>", "(Ljava/lang/String;)V");
+    g_SSLParametersSetServerNames =        GetMethod(env, false,  g_SSLParametersClass, "setServerNames", "(Ljava/util/List;)V");
 
     g_SSLEngine =                       GetClassGRef(env, "javax/net/ssl/SSLEngine");
     g_SSLEngineBeginHandshake =         GetMethod(env, false, g_SSLEngine, "beginHandshake", "()V");
     g_SSLEngineCloseOutbound =          GetMethod(env, false, g_SSLEngine, "closeOutbound", "()V");
     g_SSLEngineGetApplicationProtocol = GetOptionalMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
-    g_SSLEngineGetHandshakeSession =    GetOptionalMethod(env, false, g_SSLEngine, "getHandshakeSession", "()Ljavax/net/ssl/SSLSession;");
+    g_SSLEngineGetHandshakeSession =    GetMethod(env, false, g_SSLEngine, "getHandshakeSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
     g_SSLEngineGetSession =             GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineGetSSLParameters =       GetMethod(env, false, g_SSLEngine, "getSSLParameters", "()Ljavax/net/ssl/SSLParameters;");
@@ -1093,7 +1069,6 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     g_SSLEngineResultGetStatus =            GetMethod(env, false, g_SSLEngineResult, "getStatus", "()Ljavax/net/ssl/SSLEngineResult$Status;");
     g_SSLEngineResultGetHandshakeStatus =   GetMethod(env, false, g_SSLEngineResult, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
     g_SSLEngineResultBytesConsumed =        GetMethod(env, false, g_SSLEngineResult, "bytesConsumed", "()I");
-    g_SSLEngineResultStatusLegacyOrder = android_get_device_api_level() < 24;
 
     g_KeyAgreementClass          = GetClassGRef(env, "javax/crypto/KeyAgreement");
     g_KeyAgreementGetInstance    = GetMethod(env, true, g_KeyAgreementClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/KeyAgreement;");

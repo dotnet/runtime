@@ -95,15 +95,6 @@ extern jmethodID g_SSLParametersGetProtocols;
 extern jmethodID g_SSLParametersSetApplicationProtocols;
 extern jmethodID g_SSLParametersSetServerNames;
 
-// com/android/org/conscrypt/OpenSSLEngineImpl
-extern jclass    g_ConscryptOpenSSLEngineImplClass;
-extern jfieldID  g_ConscryptOpenSSLEngineImplSslParametersField;
-extern jfieldID  g_ConscryptOpenSSLEngineImplHandshakeSessionField;
-
-// com/android/org/conscrypt/SSLParametersImpl
-extern jclass    g_ConscryptSSLParametersImplClass;
-extern jmethodID g_ConscryptSSLParametersImplSetUseSni;
-
 // javax/net/ssl/SSLContext
 extern jclass    g_sslCtxClass;
 extern jmethodID g_sslCtxGetDefaultMethod;
@@ -488,7 +479,6 @@ extern jmethodID g_SSLSessionGetProtocol;
 extern jclass    g_SSLEngineResult;
 extern jmethodID g_SSLEngineResultGetStatus;
 extern jmethodID g_SSLEngineResultGetHandshakeStatus;
-extern bool      g_SSLEngineResultStatusLegacyOrder;
 extern jmethodID g_SSLEngineResultBytesConsumed;
 
 // javax/crypto/KeyAgreement
