@@ -105,6 +105,10 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetThreadTimes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CreateProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.JobObjects.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.JobObjects.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResumeThread.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ResumeThread.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TerminateProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.TerminateProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"

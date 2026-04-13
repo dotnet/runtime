@@ -8,6 +8,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -265,6 +266,26 @@ namespace System.Diagnostics
         /// </value>
         public IList<SafeHandle>? InheritedHandles { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the child process should be terminated when the parent process exits.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// When this property is set to <see langword="true"/>, the operating system will automatically terminate
+        /// the child process when the parent process exits, regardless of whether the parent exits gracefully or crashes.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="UseShellExecute"/> set to <see langword="true"/>.
+        /// </para>
+        /// <para>
+        /// On Windows, this is implemented using Job Objects with the
+        /// <see href="https://learn.microsoft.com/windows/win32/api/winnt/ns-winnt-jobobject_basic_limit_information">JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE</see> flag.
+        /// </para>
+        /// </remarks>
+        /// <value><see langword="true"/> to terminate the child process when the parent exits; otherwise, <see langword="false"/>. The default is <see langword="false"/>.</value>
+        [SupportedOSPlatform("windows")]
+        public bool KillOnParentExit { get; set; }
+
         public Encoding? StandardInputEncoding { get; set; }
 
         public Encoding? StandardErrorEncoding { get; set; }
@@ -425,6 +446,13 @@ namespace System.Diagnostics
             if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
             {
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
+            }
+
+#pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the attribute guards the actual effect
+            if (KillOnParentExit && UseShellExecute)
+#pragma warning restore CA1416
+            {
+                throw new InvalidOperationException(SR.KillOnParentExitCannotBeUsedWithUseShellExecute);
             }
 
             if (InheritedHandles is not null)
