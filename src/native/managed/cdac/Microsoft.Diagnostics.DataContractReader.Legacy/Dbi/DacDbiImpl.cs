@@ -1199,13 +1199,140 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetActiveRejitILCodeVersionNode(ulong vmModule, uint methodTk, ulong* pVmILCodeVersionNode)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetActiveRejitILCodeVersionNode(vmModule, methodTk, pVmILCodeVersionNode) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pVmILCodeVersionNode is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pVmILCodeVersionNode));
+
+            *pVmILCodeVersionNode = 0;
+
+            ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+            ModuleLookupTables lookupTables = loader.GetLookupTables(module);
+            TargetPointer methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out _);
+            if (methodDesc != TargetPointer.Null)
+            {
+                ICodeVersions codeVersions = _target.Contracts.CodeVersions;
+                ILCodeVersionHandle ilCodeVersion = codeVersions.GetActiveILCodeVersion(methodDesc);
+                if (ilCodeVersion.IsValid && ilCodeVersion.IsExplicit && _target.Contracts.TryGetContract<IReJIT>(out IReJIT rejit) && rejit.GetRejitState(ilCodeVersion) == RejitState.Active)
+                {
+                    *pVmILCodeVersionNode = ilCodeVersion.ILCodeVersionNode.Value;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong resultLocal;
+            int hrLocal = _legacy.GetActiveRejitILCodeVersionNode(vmModule, methodTk, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pVmILCodeVersionNode == resultLocal, $"cDAC: {*pVmILCodeVersionNode:x}, DAC: {resultLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
 
     public int GetNativeCodeVersionNode(ulong vmMethod, ulong codeStartAddress, ulong* pVmNativeCodeVersionNode)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeVersionNode(vmMethod, codeStartAddress, pVmNativeCodeVersionNode) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pVmNativeCodeVersionNode is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pVmNativeCodeVersionNode));
+
+            *pVmNativeCodeVersionNode = 0;
+
+            TargetPointer methodDesc = new TargetPointer(vmMethod);
+            TargetCodePointer codeAddress = new TargetCodePointer(codeStartAddress);
+            ICodeVersions codeVersions = _target.Contracts.CodeVersions;
+            bool foundMatch = false;
+
+            foreach (ILCodeVersionHandle ilCodeVersion in codeVersions.GetILCodeVersions(methodDesc))
+            {
+                foreach (NativeCodeVersionHandle nativeCodeVersion in codeVersions.GetNativeCodeVersions(methodDesc, ilCodeVersion))
+                {
+                    if (codeVersions.GetNativeCode(nativeCodeVersion) == codeAddress)
+                    {
+                        if (nativeCodeVersion.IsExplicit)
+                        {
+                            *pVmNativeCodeVersionNode = nativeCodeVersion.CodeVersionNodeAddress.Value;
+                        }
+
+                        foundMatch = true;
+                        break;
+                    }
+                }
+
+                if (foundMatch)
+                {
+                    break;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong resultLocal;
+            int hrLocal = _legacy.GetNativeCodeVersionNode(vmMethod, codeStartAddress, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pVmNativeCodeVersionNode == resultLocal, $"cDAC: {*pVmNativeCodeVersionNode:x}, DAC: {resultLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
 
     public int GetILCodeVersionNode(ulong vmNativeCodeVersionNode, ulong* pVmILCodeVersionNode)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetILCodeVersionNode(vmNativeCodeVersionNode, pVmILCodeVersionNode) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pVmILCodeVersionNode is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pVmILCodeVersionNode));
+
+            *pVmILCodeVersionNode = 0;
+
+            ICodeVersions codeVersions = _target.Contracts.CodeVersions;
+            NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateExplicit(new TargetPointer(vmNativeCodeVersionNode));
+            ILCodeVersionHandle ilCodeVersion = codeVersions.GetILCodeVersion(nativeCodeVersion);
+            if (ilCodeVersion.IsValid && ilCodeVersion.IsExplicit)
+            {
+                *pVmILCodeVersionNode = ilCodeVersion.ILCodeVersionNode.Value;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong resultLocal;
+            int hrLocal = _legacy.GetILCodeVersionNode(vmNativeCodeVersionNode, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pVmILCodeVersionNode == resultLocal, $"cDAC: {*pVmILCodeVersionNode:x}, DAC: {resultLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
 
     public int GetILCodeVersionNodeData(ulong ilCodeVersionNode, DacDbiSharedReJitInfo* pData)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetILCodeVersionNodeData(ilCodeVersionNode, pData) : HResults.E_NOTIMPL;
