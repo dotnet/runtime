@@ -86,6 +86,13 @@ namespace System.Diagnostics
                     writeIndex++;
                 }
 
+                for (int i = writeIndex; i < size; i++)
+                {
+                    nativePoints[i].ilOffset = int.MaxValue;
+                    nativePoints[i].lineNumber = HiddenLineNumber;
+                    nativePoints[i].fileName = null;
+                }
+
                 return writeIndex > 0;
             }
         }
