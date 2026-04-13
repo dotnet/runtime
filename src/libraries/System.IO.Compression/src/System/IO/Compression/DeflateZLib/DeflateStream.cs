@@ -58,10 +58,7 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(stream);
             ArgumentNullException.ThrowIfNull(compressionOptions);
 
-            // Compute windowBits for raw deflate format: negative windowLog
-            // zlib silently upgrades windowBits 8 to 9; zlib-ng rejects 8 outright. Clamp to match classic zlib behavior.
-            int windowLog = compressionOptions.WindowLog == -1 ? 15 : Math.Max(compressionOptions.WindowLog, 9);
-            int windowBits = -windowLog;
+            int windowBits = CompressionFormatHelper.ResolveWindowBits(compressionOptions.WindowLog, CompressionFormat.Deflate);
 
             InitializeDeflater(stream, (ZLibNative.CompressionLevel)compressionOptions.CompressionLevel, (CompressionStrategy)compressionOptions.CompressionStrategy, leaveOpen, windowBits);
         }

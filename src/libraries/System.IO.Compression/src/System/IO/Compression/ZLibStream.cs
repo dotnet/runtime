@@ -57,8 +57,7 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(stream);
             ArgumentNullException.ThrowIfNull(compressionOptions);
 
-            // Compute windowBits for zlib format: positive windowLog
-            int windowBits = compressionOptions.WindowLog == -1 ? ZLibNative.ZLib_DefaultWindowBits : compressionOptions.WindowLog;
+            int windowBits = CompressionFormatHelper.ResolveWindowBits(compressionOptions.WindowLog, CompressionFormat.ZLib);
 
             _deflateStream = new DeflateStream(stream, compressionOptions, leaveOpen, windowBits);
         }
