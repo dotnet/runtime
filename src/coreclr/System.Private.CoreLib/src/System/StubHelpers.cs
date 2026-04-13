@@ -1741,7 +1741,8 @@ namespace System.StubHelpers
                 ref Unsafe.As<byte, char>(ref MemoryMarshal.GetArrayDataReference(managedArray)),
                 length);
             string str = new(chars);
-            Marshal.StringToAnsiString(str, unmanaged, length + 1, TBestFit.Enabled, TThrowOnUnmappable.Enabled);
+            int bufferLength = checked((length + 1) * Marshal.SystemMaxDBCSCharSize);
+            Marshal.StringToAnsiString(str, unmanaged, bufferLength, TBestFit.Enabled, TThrowOnUnmappable.Enabled);
         }
 
         public static unsafe void ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
@@ -1768,9 +1769,9 @@ namespace System.StubHelpers
                 return null;
             }
 
-            // Each char can map to at most SystemMaxDBCSCharSize bytes during conversion,
-            // but the final native layout uses 1 byte per element.
-            int allocSize = checked(managedArray.Length * Marshal.SystemMaxDBCSCharSize);
+            // Each char can map to at most SystemMaxDBCSCharSize bytes during conversion.
+            // StringToAnsiString also writes a null terminator, so allocate space for it.
+            int allocSize = checked((managedArray.Length + 1) * Marshal.SystemMaxDBCSCharSize);
             byte* pNative = (byte*)Marshal.AllocCoTaskMem(allocSize);
             NativeMemory.Clear(pNative, (nuint)allocSize);
             return pNative;
