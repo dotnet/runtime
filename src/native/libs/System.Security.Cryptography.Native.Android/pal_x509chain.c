@@ -308,10 +308,10 @@ static void PopulateValidationError(JNIEnv* env, jobject error, bool isRevocatio
     {
         index = (*env)->CallIntMethod(env, error, g_CertPathValidatorExceptionGetIndex);
 
-        // Get the reason (if the API is available) and convert it to a chain status flag
-        if (g_CertPathValidatorExceptionGetReason != NULL)
+        // Get the reason and convert it to a chain status flag.
+        jobject reason = (*env)->CallObjectMethod(env, error, g_CertPathValidatorExceptionGetReason);
+        if (!CheckJNIExceptions(env) && reason != NULL)
         {
-            jobject reason = (*env)->CallObjectMethod(env, error, g_CertPathValidatorExceptionGetReason);
             chainStatus = ChainStatusFromValidatorExceptionReason(env, reason);
             (*env)->DeleteLocalRef(env, reason);
         }
