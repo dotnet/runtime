@@ -1402,6 +1402,17 @@ namespace System.StubHelpers
 
     internal static unsafe class StructureMarshaler<T>  where T : notnull
     {
+        // Blittable types have a no-op FreeCore (the [Intrinsic] C# body is used) and need no NativeMemory.Clear.
+        // Non-blittable types have a JIT-generated FreeCore stub and require NativeMemory.Clear after cleanup.
+        private static readonly bool s_isBlittable = InitIsBlittable();
+
+        private static bool InitIsBlittable()
+        {
+            RuntimeType type = (RuntimeType)typeof(T);
+            Marshal.HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out _);
+            return isBlittable;
+        }
+
         [Conditional("DEBUG")]
         private static void Validate()
         {
@@ -1457,8 +1468,14 @@ namespace System.StubHelpers
 
         public static void Free(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
-            FreeCore(ref managed, unmanaged, ref cleanupWorkList);
-            NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+            // For blittable types, FreeCore is a no-op and there are no native sub-structures to free.
+            // Calling NativeMemory.Clear on a potentially invalid pointer (e.g., in DestroyStructure tests)
+            // would cause a fault, so we skip cleanup entirely for blittable types.
+            if (unmanaged != null && !s_isBlittable)
+            {
+                FreeCore(ref managed, unmanaged, ref cleanupWorkList);
+                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+            }
         }
     }
 
@@ -1516,6 +1533,9 @@ namespace System.StubHelpers
             internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToManaged => _convertToManaged;
 
             internal static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> Free => _free;
+
+            // s_nativeSizeForBlittableTypes is non-zero for blittable types and zero for non-blittable types.
+            internal static bool IsBlittable => s_nativeSizeForBlittableTypes != 0;
         }
 
         private static void ConvertToUnmanagedCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
@@ -1595,10 +1615,32 @@ namespace System.StubHelpers
             }
         }
 
+        private static bool GetIsBlittable()
+        {
+            try
+            {
+                return CallIsBlittable();
+            }
+            catch (TypeInitializationException ex)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
+                return false; // unreachable
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static bool CallIsBlittable() => Methods.IsBlittable;
+        }
+
         public static void Free(T? managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
         {
-            FreeCore(managed, unmanaged, ref cleanupWorkList);
-            NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+            // For blittable types, FreeCore is a no-op and there are no native sub-structures to free.
+            // Calling NativeMemory.Clear on a potentially invalid pointer (e.g., in DestroyStructure tests)
+            // would cause a fault, so we skip cleanup entirely for blittable types.
+            if (unmanaged != null && !GetIsBlittable())
+            {
+                FreeCore(managed, unmanaged, ref cleanupWorkList);
+                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+            }
         }
     }
 
@@ -1891,23 +1933,24 @@ namespace System.StubHelpers
         private static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetCOMIPFromRCWSlow")]
-        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
+        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pCPCMD, out IntPtr ppTarget, [MarshalAs(UnmanagedType.Bool)] out bool pfNeedsRelease);
 
         internal static IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
         {
             IntPtr rcw = GetCOMIPFromRCW(objSrc, pCPCMD, out ppTarget);
-            if (rcw == IntPtr.Zero)
+            if (rcw != IntPtr.Zero)
             {
-                // If we didn't find the COM interface pointer in the cache we need to release the pointer.
-                pfNeedsRelease = true;
-                return GetCOMIPFromRCWWorker(objSrc, pCPCMD, out ppTarget);
+                pfNeedsRelease = false;
+                return rcw;
             }
-            pfNeedsRelease = false;
-            return rcw;
+
+            // The slow path may create OLE TLS and then still resolve the interface via the RCW cache.
+            // Let the slow path tell us whether it returned an owned pointer that requires cleanup.
+            return GetCOMIPFromRCWWorker(objSrc, pCPCMD, out ppTarget, out pfNeedsRelease);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static IntPtr GetCOMIPFromRCWWorker(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget)
-                => GetCOMIPFromRCWSlow(ObjectHandleOnStack.Create(ref objSrc), pCPCMD, out ppTarget);
+            static IntPtr GetCOMIPFromRCWWorker(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
+                => GetCOMIPFromRCWSlow(ObjectHandleOnStack.Create(ref objSrc), pCPCMD, out ppTarget, out pfNeedsRelease);
         }
 #endif // FEATURE_COMINTEROP
 
@@ -1947,21 +1990,13 @@ namespace System.StubHelpers
         internal static unsafe void LayoutTypeConvertToUnmanaged(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {
             RuntimeType type = (RuntimeType)obj.GetType();
-            bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out int size);
-            Debug.Assert(hasLayout);
-
-            if (isBlittable)
-            {
-                SpanHelpers.Memmove(ref *pNative, ref obj.GetRawData(), (nuint)size);
-                return;
-            }
-
             Marshal.LayoutTypeMarshalerMethods methods = Marshal.LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
 
-            methods.ConvertToUnmanaged(obj, pNative, size, ref pCleanupWorkList);
+            methods.ConvertToUnmanaged(obj, pNative, ref pCleanupWorkList);
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void LayoutTypeConvertToUnmanaged(object* obj, byte* pNative, Exception* pException)
         {
             try
@@ -1978,21 +2013,13 @@ namespace System.StubHelpers
         internal static unsafe void LayoutTypeConvertToManaged(object obj, byte* pNative)
         {
             RuntimeType type = (RuntimeType)obj.GetType();
-            bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out int size);
-            Debug.Assert(hasLayout);
-
-            if (isBlittable)
-            {
-                SpanHelpers.Memmove(ref obj.GetRawData(), ref *pNative, (nuint)size);
-                return;
-            }
-
             Marshal.LayoutTypeMarshalerMethods methods = Marshal.LayoutTypeMarshalerMethods.GetMarshalMethodsForType(type);
 
-            methods.ConvertToManaged(obj, pNative, ref Unsafe.NullRef<CleanupWorkListElement?>());
+            methods.ConvertToManaged(obj, pNative);
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void LayoutTypeConvertToManaged(object* obj, byte* pNative, Exception* pException)
         {
             try

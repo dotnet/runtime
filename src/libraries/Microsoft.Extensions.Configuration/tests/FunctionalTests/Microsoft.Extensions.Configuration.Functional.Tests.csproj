@@ -21,8 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Abstractions\src\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.CommandLine\src\Microsoft.Extensions.Configuration.CommandLine.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.EnvironmentVariables\src\Microsoft.Extensions.Configuration.EnvironmentVariables.csproj" />
@@ -30,6 +28,11 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Json\src\Microsoft.Extensions.Configuration.Json.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.UserSecrets\src\Microsoft.Extensions.Configuration.UserSecrets.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Xml\src\Microsoft.Extensions.Configuration.Xml.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Abstractions\src\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

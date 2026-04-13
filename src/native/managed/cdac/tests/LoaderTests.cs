@@ -24,15 +24,15 @@ public unsafe class LoaderTests
 
     private static ILoader CreateLoaderContract(MockTarget.Architecture arch, Action<MockLoaderBuilder> configure)
     {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockLoaderBuilder loader = new(builder);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockLoaderBuilder loader = new(targetBuilder.MemoryBuilder);
 
         configure(loader);
 
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, CreateContractTypes(loader));
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+        var target = targetBuilder
+            .AddTypes(CreateContractTypes(loader))
+            .AddContract<ILoader>(version: 1)
+            .Build();
         return target.Contracts.Loader;
     }
 
@@ -147,9 +147,8 @@ public unsafe class LoaderTests
 
     private static ISOSDacInterface13 CreateSOSDacInterface13ForHeapTests(MockTarget.Architecture arch)
     {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockLoaderBuilder loader = new(builder);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockLoaderBuilder loader = new(targetBuilder.MemoryBuilder);
         var types = new Dictionary<DataType, Target.TypeInfo>(CreateContractTypes(loader));
 
         // Register LoaderAllocator and VirtualCallStubManager type infos so that
@@ -177,11 +176,12 @@ public unsafe class LoaderTests
             }
         };
 
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, types);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.Loader == Mock.Of<ILoader>(
+        var target = targetBuilder
+            .AddTypes(types)
+            .AddMockContract<ILoader>(Mock.Of<ILoader>(
                 l => l.GetLoaderAllocatorHeaps(It.IsAny<TargetPointer>()) == (IReadOnlyDictionary<string, TargetPointer>)MockHeapDictionary
-                && l.GetGlobalLoaderAllocator() == new TargetPointer(0x100))));
+                && l.GetGlobalLoaderAllocator() == new TargetPointer(0x100)))
+            .Build();
         return new SOSDacImpl(target, null);
     }
 
@@ -325,7 +325,8 @@ public unsafe class LoaderTests
         ushort versionMajor = 0)
     {
         TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.Builder builder = targetBuilder.MemoryBuilder;
         var allocator = builder.CreateAllocator(0x0010_0000, 0x0020_0000);
 
         var probeExtLayout = helpers.LayoutFields([
@@ -422,9 +423,10 @@ public unsafe class LoaderTests
         helpers.WritePointer(peAssemblyFrag.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.PEImage)].Offset, helpers.PointerSize), peImageFrag.Address);
         builder.AddHeapFragment(peAssemblyFrag);
 
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, types);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+        var target = targetBuilder
+            .AddTypes(types)
+            .AddContract<ILoader>(version: 1)
+            .Build();
 
         return (target, new TargetPointer(peAssemblyFrag.Address), new TargetPointer(webcilImage.Address));
     }
