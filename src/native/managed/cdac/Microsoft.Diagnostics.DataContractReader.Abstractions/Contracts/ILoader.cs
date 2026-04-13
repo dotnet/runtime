@@ -19,9 +19,12 @@ public readonly struct ModuleHandle
 [Flags]
 public enum ModuleFlags
 {
-    Tenured = 0x1,                  // Set once we know for sure the Module will not be freed until the appdomain itself exits
-    EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
-    ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
+    Tenured = 0x1,                      // Set once we know for sure the Module will not be freed until the appdomain itself exits
+    JitOptimizationDisabled = 0x2,      // Cached flag: JIT optimizations are disabled
+    EditAndContinue = 0x8,              // Edit and Continue is enabled for this module
+    ReflectionEmit = 0x40,              // Reflection.Emit was used to create this module
+    ProfDisableOptimizations = 0x80,    // Profiler disabled JIT optimizations
+    EncCapable = 0x200,                 // Cached flag: module is Edit and Continue capable
 }
 
 [Flags]

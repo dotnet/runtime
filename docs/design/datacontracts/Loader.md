@@ -15,9 +15,12 @@ readonly struct ModuleHandle
 [Flags]
 enum ModuleFlags
 {
-    Tenured = 0x00000001, // Set once we know for sure the Module will not be freed until the appdomain itself exits
-    EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
-    ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+    Tenured = 0x1,                      // Set once we know for sure the Module will not be freed until the appdomain itself exits
+    JitOptimizationDisabled = 0x2,      // Cached flag: JIT optimizations are disabled
+    EditAndContinue = 0x8,              // Edit and Continue is enabled for this module
+    ReflectionEmit = 0x40,              // Reflection.Emit was used to create this module
+    ProfDisableOptimizations = 0x80,    // Profiler disabled JIT optimizations
+    EncCapable = 0x200,                 // Cached flag: module is Edit and Continue capable
 }
 
 [Flags]
@@ -103,6 +106,7 @@ enum DebuggerAssemblyControlFlags : uint
     DACF_NONE = 0x00,
     DACF_ALLOW_JIT_OPTS = 0x02,
     DACF_ENC_ENABLED = 0x08,
+    DACF_CONTROL_FLAGS_MASK = 0x2E,
 }
 ```
 
@@ -215,12 +219,8 @@ enum ClrModifiableAssemblies : uint
 | `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
 | `DefaultDomainFriendlyName` | string | Friendly name returned when `AppDomain.FriendlyName` is null (matches native `DEFAULT_DOMAIN_FRIENDLY_NAME`) | `"DefaultDomain"` |
 | `MaxWebcilSections` | ushort | Maximum number of COFF sections supported in a Webcil image (must stay in sync with native `WEBCIL_MAX_SECTIONS`) | `16` |
-| `DebuggerInfoMask` | uint | Mask for the debugger info bits within the Module's transient flags | `0x0000Fc00` |
+| `DebuggerInfoMask` | uint | Mask for the debugger info bits within the Module's transient flags | `0x0000FC00` |
 | `DebuggerInfoShift` | int | Bit shift for the debugger info bits within the Module's transient flags | `10` |
-| `IS_JIT_OPTIMIZATION_DISABLED` | uint | Cached flag: JIT optimizations are disabled | `0x00000002` |
-| `IS_EDIT_AND_CONTINUE` | uint | Flag: EnC is enabled for this module | `0x00000008` |
-| `PROF_DISABLE_OPTIMIZATIONS` | uint | Profiler disabled JIT optimizations | `0x00000080` |
-| `IS_ENC_CAPABLE` | uint | Cached flag: module is Edit and Continue capable | `0x00000200` |
 | `DEBUGGER_ALLOW_JIT_OPTS_PRIV` | uint | Debugger allows JIT optimizations (shifted in transient flags) | `0x00000800` |
 
 Contracts used:

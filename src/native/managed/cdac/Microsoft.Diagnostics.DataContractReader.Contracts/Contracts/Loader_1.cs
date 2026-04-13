@@ -23,14 +23,9 @@ internal readonly struct Loader_1 : ILoader
         ReflectionEmit = 0x40,    // Reflection.Emit was used to create this module
     }
 
-    private const uint DebuggerInfoMask = 0x0000Fc00;
+    private const uint DebuggerInfoMask = 0x0000FC00;
     private const int DebuggerInfoShift = 10;
 
-    // Transient flag bits from m_dwTransientFlags used for JIT optimization and EnC logic.
-    private const uint IS_JIT_OPTIMIZATION_DISABLED = 0x00000002;
-    private const uint IS_EDIT_AND_CONTINUE = 0x00000008;
-    private const uint PROF_DISABLE_OPTIMIZATIONS = 0x00000080;
-    private const uint IS_ENC_CAPABLE = 0x00000200;
     private const uint DEBUGGER_ALLOW_JIT_OPTS_PRIV = 0x00000800;
 
     private enum PEImageFlags : uint
@@ -399,13 +394,13 @@ internal readonly struct Loader_1 : ILoader
         uint debuggerInfoBitsMask = DebuggerInfoMask >> DebuggerInfoShift;
         uint updatedFlags = (currentFlags & ~DebuggerInfoMask) | (((uint)newBits & debuggerInfoBitsMask) << DebuggerInfoShift);
 
-        bool jitOptDisabled = (updatedFlags & DEBUGGER_ALLOW_JIT_OPTS_PRIV) == 0 || (updatedFlags & PROF_DISABLE_OPTIMIZATIONS) != 0;
+        bool jitOptDisabled = (updatedFlags & DEBUGGER_ALLOW_JIT_OPTS_PRIV) == 0 || (updatedFlags & (uint)ModuleFlags.ProfDisableOptimizations) != 0;
         if (jitOptDisabled)
-            updatedFlags |= IS_JIT_OPTIMIZATION_DISABLED;
+            updatedFlags |= (uint)ModuleFlags.JitOptimizationDisabled;
         else
-            updatedFlags &= ~IS_JIT_OPTIMIZATION_DISABLED;
+            updatedFlags &= ~(uint)ModuleFlags.JitOptimizationDisabled;
 
-        if ((updatedFlags & IS_ENC_CAPABLE) != 0)
+        if ((updatedFlags & (uint)ModuleFlags.EncCapable) != 0)
         {
             TargetPointer configPtr = _target.ReadGlobalPointer(Constants.Globals.EEConfig);
             Data.EEConfig config = _target.ProcessedData.GetOrAdd<Data.EEConfig>(configPtr);
@@ -414,19 +409,15 @@ internal readonly struct Loader_1 : ILoader
             if (modifiableAssemblies != ClrModifiableAssemblies.None)
             {
                 bool encRequested = (newBits & DebuggerAssemblyControlFlags.DACF_ENC_ENABLED) != 0;
-                bool jitOptsDisabledForEnc = (updatedFlags & IS_JIT_OPTIMIZATION_DISABLED) != 0;
+                bool jitOptsDisabledForEnc = (updatedFlags & (uint)ModuleFlags.JitOptimizationDisabled) != 0;
                 bool setEnC = encRequested || (modifiableAssemblies == ClrModifiableAssemblies.Debug && jitOptsDisabledForEnc);
 
                 if (setEnC)
-                    updatedFlags |= IS_EDIT_AND_CONTINUE;
+                    updatedFlags |= (uint)ModuleFlags.EditAndContinue;
             }
         }
 
-        Target.TypeInfo type = _target.GetTypeInfo(DataType.Module);
-        ulong flagsAddr = handle.Address + (ulong)type.Fields[nameof(Data.Module.Flags)].Offset;
-        _target.Write<uint>(flagsAddr, updatedFlags);
-
-        module.Flags = updatedFlags;
+        module.WriteFlags(_target, updatedFlags);
     }
 
     bool ILoader.IsReadyToRun(ModuleHandle handle)

@@ -14,6 +14,7 @@ internal sealed class Module : IData<Module>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Module);
 
+        _address = address;
         Flags = target.ReadField<uint>(address, type, nameof(Flags));
         Assembly = target.ReadPointerField(address, type, nameof(Assembly));
         PEAssembly = target.ReadPointerField(address, type, nameof(PEAssembly));
@@ -36,6 +37,16 @@ internal sealed class Module : IData<Module>
         TypeRefToMethodTableMap = address + (ulong)type.Fields[nameof(TypeRefToMethodTableMap)].Offset;
         MethodDefToILCodeVersioningStateMap = address + (ulong)type.Fields[nameof(MethodDefToILCodeVersioningStateMap)].Offset;
         DynamicILBlobTable = target.ReadPointerField(address, type, nameof(DynamicILBlobTable));
+    }
+
+    private readonly TargetPointer _address;
+
+    public void WriteFlags(Target target, uint flags)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.Module);
+        ulong flagsAddr = _address + (ulong)type.Fields[nameof(Flags)].Offset;
+        target.Write<uint>(flagsAddr, flags);
+        Flags = flags;
     }
 
     public TargetPointer Assembly { get; init; }
