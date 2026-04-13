@@ -6,26 +6,18 @@ set(CORERUN_IN_BROWSER 0)
 
 if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=corerun.exe)
-elseif(NOT CLR_CMAKE_TARGET_WASI)
+elseif(NOT CLR_CMAKE_TARGET_WASM)
     include(configure.cmake)
 endif()
 
 # Required to expose symbols for global symbol discovery.
 set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
 
-if (CLR_CMAKE_TARGET_WASI)
-    # Minimal WASI host — bypasses full corerun machinery
-    add_executable_clr(corerun
-      corerun-wasi.cpp
-      native.rc
-    )
-else()
-    add_executable_clr(corerun
-      corerun.cpp
-      dotenv.cpp
-      native.rc
-    )
-endif()
+add_executable_clr(corerun
+  corerun.cpp
+  dotenv.cpp
+  native.rc
+)
 
 target_link_libraries(corerun PRIVATE minipal)
 
