@@ -3761,6 +3761,12 @@ void ILAsAnyMarshalerBase::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
 void ILAsAnyMarshalerBase::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
 {
+    // marshaler = new AsAnyMarshaler(managedValue, flags);
+    EmitLoadMngdMarshalerAddr(pslILEmit);
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitLDC(GetAsAnyFlags());
+    pslILEmit->EmitCALL(METHOD__ASANY_MARSHALER__CTOR, 3, 0);
+
     // nativeValue = marshaler.ConvertToNative(managedValue, flags);
     EmitLoadMngdMarshalerAddr(pslILEmit);
     EmitLoadManagedValue(pslILEmit);

@@ -882,32 +882,250 @@ namespace System.StubHelpers
 
     internal struct AsAnyMarshaler
     {
-        private enum BackPropAction
+        private AsAnyMarshalerImplementation? _impl;
+
+        private abstract class AsAnyMarshalerImplementation
         {
-            None,
-            Array,
-            Layout,
-            StringBuilderAnsi,
-            StringBuilderUnicode
+            public abstract IntPtr ConvertToNative(object managed, int dwFlags);
+            public abstract void ConvertToManaged(object managed, IntPtr native);
+            public abstract void ClearNative(IntPtr native);
         }
 
-        private struct ArrayMarshalerMethods
+        private sealed class ArrayImplementation<T, TMarshaler> : AsAnyMarshalerImplementation
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            public unsafe delegate*<Array, byte*, int, void> convertContentsToNative;
-            public unsafe delegate*<Array, byte*, int, void> convertContentsToManaged;
-            public unsafe delegate*<Array, byte*> convertSpaceToNative;
+            private readonly bool _isOut;
+
+            public ArrayImplementation(bool isOut) { _isOut = isOut; }
+
+            public override unsafe IntPtr ConvertToNative(object managed, int dwFlags)
+            {
+                Array array = (Array)managed;
+                byte* pNative = TMarshaler.AllocateSpaceForUnmanaged(array);
+                try
+                {
+                    if (IsIn(dwFlags))
+                        TMarshaler.ConvertContentsToUnmanaged(array, pNative, array.Length);
+                }
+                catch
+                {
+                    Marshal.FreeCoTaskMem((IntPtr)pNative);
+                    throw;
+                }
+
+                return (IntPtr)pNative;
+            }
+
+            public override unsafe void ConvertToManaged(object managed, IntPtr native)
+            {
+                if (!_isOut) return;
+                Array array = (Array)managed;
+                TMarshaler.ConvertContentsToManaged(array, (byte*)native, array.Length);
+            }
+
+            public override void ClearNative(IntPtr native)
+            {
+                if (native != IntPtr.Zero)
+                    Marshal.FreeCoTaskMem(native);
+            }
         }
 
-        private ArrayMarshalerMethods arrayMarshalerMethods;
+        private sealed class StringImplementation : AsAnyMarshalerImplementation
+        {
+            public override unsafe IntPtr ConvertToNative(object managed, int dwFlags)
+            {
+                string str = (string)managed;
 
-        // Type of action to perform after the CLR-to-unmanaged call.
-        private BackPropAction backPropAction;
+                // IsIn, IsOut are ignored for strings - they're always in-only
+                if (IsAnsi(dwFlags))
+                {
+                    return CSTRMarshaler.ConvertToNative(
+                        dwFlags & 0xFFFF, // (throw on unmappable char << 8 | best fit)
+                        str,
+                        IntPtr.Zero);     // unmanaged buffer will be allocated
+                }
 
-        // The managed layout type for BackPropAction.Layout.
-        private Type? layoutType;
+                int allocSize = (str.Length + 1) * 2;
+                IntPtr pNative = Marshal.AllocCoTaskMem(allocSize);
+                Buffer.Memmove(ref *(char*)pNative, ref str.GetRawStringData(), (nuint)str.Length + 1);
 
-        // Cleanup list to be destroyed when clearing the native view (for layouts with SafeHandles).
-        private CleanupWorkListElement? cleanupWorkList;
+                return pNative;
+            }
+
+            public override void ConvertToManaged(object managed, IntPtr native) { }
+
+            public override void ClearNative(IntPtr native)
+            {
+                if (native != IntPtr.Zero)
+                    Marshal.FreeCoTaskMem(native);
+            }
+        }
+
+        private sealed class LayoutImplementation : AsAnyMarshalerImplementation
+        {
+            private readonly Type _layoutType;
+            private readonly bool _isOut;
+            internal CleanupWorkListElement? _cleanupWorkList;
+
+            public LayoutImplementation(Type layoutType, bool isOut)
+            {
+                _layoutType = layoutType;
+                _isOut = isOut;
+            }
+
+            public override unsafe IntPtr ConvertToNative(object managed, int dwFlags)
+            {
+                // Note that the following call will not throw exception if the type
+                // of managed is not marshalable. That's intentional because we
+                // want to maintain the original behavior where this was indicated
+                // by TypeLoadException during the actual field marshaling.
+                int allocSize = Marshal.SizeOfHelper((RuntimeType)_layoutType, false);
+                IntPtr pNative = Marshal.AllocCoTaskMem(allocSize);
+
+                if (IsIn(dwFlags))
+                {
+                    StubHelpers.LayoutTypeConvertToUnmanaged(managed, (byte*)pNative, ref _cleanupWorkList);
+                }
+
+                return pNative;
+            }
+
+            public override unsafe void ConvertToManaged(object managed, IntPtr native)
+            {
+                if (_isOut)
+                    StubHelpers.LayoutTypeConvertToManaged(managed, (byte*)native);
+            }
+
+            public override void ClearNative(IntPtr native)
+            {
+                if (native != IntPtr.Zero)
+                {
+                    Marshal.DestroyStructure(native, _layoutType);
+                    Marshal.FreeCoTaskMem(native);
+                }
+                StubHelpers.DestroyCleanupList(ref _cleanupWorkList);
+            }
+        }
+
+        private sealed class StringBuilderAnsiImplementation : AsAnyMarshalerImplementation
+        {
+            private readonly bool _isOut;
+
+            public StringBuilderAnsiImplementation(bool isOut) { _isOut = isOut; }
+
+            public override unsafe IntPtr ConvertToNative(object managed, int dwFlags)
+            {
+                StringBuilder sb = (StringBuilder)managed;
+
+                // P/Invoke can be used to call Win32 apis that don't strictly follow CLR in/out semantics and thus may
+                // leave garbage in the buffer in circumstances that we can't detect. To prevent us from crashing when
+                // converting the contents back to managed, put a hidden NULL terminator past the end of the official buffer.
+
+                // Unmanaged layout:
+                // +====================================+
+                // | Extra hidden NULL                  |
+                // +====================================+ \
+                // |                                    | |
+                // | [Converted] NULL-terminated string | |- buffer that the target may change
+                // |                                    | |
+                // +====================================+ / <-- native home
+
+                // Cache StringBuilder capacity and length to ensure we don't allocate a certain amount of
+                // native memory and then walk beyond its end if the StringBuilder concurrently grows erroneously.
+                int capacity = sb.Capacity;
+                int length = sb.Length;
+                if (length > capacity)
+                    ThrowHelper.ThrowInvalidOperationException();
+
+                // Note that StringBuilder.Capacity is the number of characters NOT including any terminators.
+                StubHelpers.CheckStringLength(capacity);
+
+                int allocSize = checked((capacity * Marshal.SystemMaxDBCSCharSize) + 4);
+                IntPtr pNative = Marshal.AllocCoTaskMem(allocSize);
+
+                byte* ptr = (byte*)pNative;
+                *(ptr + allocSize - 3) = 0;
+                *(ptr + allocSize - 2) = 0;
+                *(ptr + allocSize - 1) = 0;
+
+                if (IsIn(dwFlags))
+                {
+                    int len = Marshal.StringToAnsiString(sb.ToString(),
+                        ptr, allocSize,
+                        IsBestFit(dwFlags),
+                        IsThrowOn(dwFlags));
+                    Debug.Assert(len < allocSize, "Expected a length less than the allocated size");
+                }
+
+                return pNative;
+            }
+
+            public override unsafe void ConvertToManaged(object managed, IntPtr native)
+            {
+                if (!_isOut) return;
+                int length = native == IntPtr.Zero ? 0 : string.strlen((byte*)native);
+                ((StringBuilder)managed).ReplaceBufferAnsiInternal((sbyte*)native, length);
+            }
+
+            public override void ClearNative(IntPtr native)
+            {
+                if (native != IntPtr.Zero)
+                    Marshal.FreeCoTaskMem(native);
+            }
+        }
+
+        private sealed class StringBuilderUnicodeImplementation : AsAnyMarshalerImplementation
+        {
+            private readonly bool _isOut;
+
+            public StringBuilderUnicodeImplementation(bool isOut) { _isOut = isOut; }
+
+            public override unsafe IntPtr ConvertToNative(object managed, int dwFlags)
+            {
+                StringBuilder sb = (StringBuilder)managed;
+
+                // See StringBuilderAnsiImplementation.ConvertToNative for buffer layout explanation.
+
+                // Cache StringBuilder capacity and length to ensure we don't allocate a certain amount of
+                // native memory and then walk beyond its end if the StringBuilder concurrently grows erroneously.
+                int capacity = sb.Capacity;
+                int length = sb.Length;
+                if (length > capacity)
+                    ThrowHelper.ThrowInvalidOperationException();
+
+                // Note that StringBuilder.Capacity is the number of characters NOT including any terminators.
+                int allocSize = checked((capacity * 2) + 4);
+                IntPtr pNative = Marshal.AllocCoTaskMem(allocSize);
+
+                byte* ptr = (byte*)pNative;
+                *(ptr + allocSize - 1) = 0;
+                *(ptr + allocSize - 2) = 0;
+
+                if (IsIn(dwFlags))
+                {
+                    sb.InternalCopy(pNative, length);
+
+                    int byteLen = length * 2;
+                    *(ptr + byteLen + 0) = 0;
+                    *(ptr + byteLen + 1) = 0;
+                }
+
+                return pNative;
+            }
+
+            public override unsafe void ConvertToManaged(object managed, IntPtr native)
+            {
+                if (!_isOut) return;
+                int length = native == IntPtr.Zero ? 0 : string.wcslen((char*)native);
+                ((StringBuilder)managed).ReplaceBufferInternal((char*)native, length);
+            }
+
+            public override void ClearNative(IntPtr native)
+            {
+                if (native != IntPtr.Zero)
+                    Marshal.FreeCoTaskMem(native);
+            }
+        }
 
         [Flags]
         internal enum AsAnyFlags
@@ -925,329 +1143,92 @@ namespace System.StubHelpers
         private static bool IsThrowOn(int dwFlags) => (dwFlags & (int)AsAnyFlags.IsThrowOn) != 0;
         private static bool IsBestFit(int dwFlags) => (dwFlags & (int)AsAnyFlags.IsBestFit) != 0;
 
-        #region ConvertToNative helpers
-
-        private unsafe IntPtr ConvertArrayToNative(object pManagedHome, int dwFlags)
+        private static AsAnyMarshalerImplementation CreateAnsiCharArrayImplementation(bool isOut, int dwFlags)
         {
-            Type elementType = pManagedHome.GetType().GetElementType()!;
-
-            Type[] marshalerGenericArgs = Type.GetTypeCode(elementType) switch
-             {
-                TypeCode.SByte
-                or TypeCode.Byte
-                or TypeCode.Int16
-                or TypeCode.UInt16
-                or TypeCode.Int32
-                or TypeCode.UInt32
-                or TypeCode.Int64
-                or TypeCode.UInt64
-                or TypeCode.Single
-                or TypeCode.Double => [elementType, typeof(StructureMarshaler<>).MakeGenericType(elementType)],
-                TypeCode.Object when elementType == typeof(nint) || elementType == typeof(nuint) => [elementType, typeof(StructureMarshaler<>).MakeGenericType(elementType)],
-                TypeCode.Char when !IsAnsi(dwFlags) => [typeof(char), typeof(UnicodeCharArrayElementMarshaler)],
-                TypeCode.Char when IsAnsi(dwFlags) => [
-                    typeof(char),
-                    typeof(AnsiCharArrayMarshaler<,>).MakeGenericType([
-                        IsBestFit(dwFlags)
-                        ? typeof(IMarshalerOption.EnabledOption)
-                        : typeof(IMarshalerOption.DisabledOption),
-                        IsThrowOn(dwFlags)
-                        ? typeof(IMarshalerOption.EnabledOption)
-                        : typeof(IMarshalerOption.DisabledOption)])],
-                TypeCode.Boolean => [typeof(bool), typeof(BoolMarshaler<int>)],
-                _ => throw new ArgumentException(SR.Arg_PInvokeBadObject)
+            return (IsBestFit(dwFlags), IsThrowOn(dwFlags)) switch
+            {
+                (true, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.EnabledOption>>(isOut),
+                (true, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.DisabledOption>>(isOut),
+                (false, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.EnabledOption>>(isOut),
+                (false, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.DisabledOption>>(isOut),
             };
-
-            arrayMarshalerMethods = new ArrayMarshalerMethods
-            {
-                convertContentsToManaged = (delegate*<Array, byte*, int, void>)
-                    typeof(StubHelpers)
-                    .GetMethod(
-                        nameof(StubHelpers.ConvertArrayContentsToManaged),
-                        BindingFlags.Public | BindingFlags.Static)!
-                    .MakeGenericMethod(marshalerGenericArgs)
-                    .MethodHandle.GetFunctionPointer(),
-                convertContentsToNative = (delegate*<Array, byte*, int, void>)
-                    typeof(StubHelpers)
-                    .GetMethod(
-                        nameof(StubHelpers.ConvertArrayContentsToUnmanaged),
-                        BindingFlags.Public | BindingFlags.Static)!
-                    .MakeGenericMethod(marshalerGenericArgs)
-                    .MethodHandle.GetFunctionPointer(),
-                convertSpaceToNative = (delegate*<Array, byte*>)
-                    typeof(StubHelpers)
-                    .GetMethod(
-                        nameof(StubHelpers.ConvertArraySpaceToNative),
-                        BindingFlags.Public | BindingFlags.Static)!
-                    .MakeGenericMethod(marshalerGenericArgs)
-                    .MethodHandle.GetFunctionPointer(),
-            };
-
-            byte* pNativeHome = arrayMarshalerMethods.convertSpaceToNative((Array)pManagedHome);
-
-            try
-            {
-                if (IsIn(dwFlags))
-                {
-                    Array managedArray = (Array)pManagedHome;
-                    arrayMarshalerMethods.convertContentsToNative(managedArray, pNativeHome, managedArray.Length);
-                }
-            }
-            catch
-            {
-                Marshal.FreeCoTaskMem((IntPtr)pNativeHome);
-                throw;
-            }
-
-            if (IsOut(dwFlags))
-            {
-                backPropAction = BackPropAction.Array;
-            }
-
-            return (IntPtr)pNativeHome;
         }
 
-        private static IntPtr ConvertStringToNative(string pManagedHome, int dwFlags)
+        internal AsAnyMarshaler(object? pManagedHome, int dwFlags)
         {
-            IntPtr pNativeHome;
+            _impl = null;
 
-            // IsIn, IsOut are ignored for strings - they're always in-only
-            if (IsAnsi(dwFlags))
-            {
-                // marshal the object as Ansi string (UnmanagedType.LPStr)
-                pNativeHome = CSTRMarshaler.ConvertToNative(
-                    dwFlags & 0xFFFF, // (throw on unmappable char << 8 | best fit)
-                    pManagedHome,     //
-                    IntPtr.Zero);     // unmanaged buffer will be allocated
-            }
-            else
-            {
-                // marshal the object as Unicode string (UnmanagedType.LPWStr)
-                int allocSize = (pManagedHome.Length + 1) * 2;
-                pNativeHome = Marshal.AllocCoTaskMem(allocSize);
-                unsafe
-                {
-                    Buffer.Memmove(ref *(char*)pNativeHome, ref pManagedHome.GetRawStringData(), (nuint)pManagedHome.Length + 1);
-                }
-            }
-
-            return pNativeHome;
-        }
-
-        private unsafe IntPtr ConvertStringBuilderToNative(StringBuilder pManagedHome, int dwFlags)
-        {
-            IntPtr pNativeHome;
-
-            // P/Invoke can be used to call Win32 apis that don't strictly follow CLR in/out semantics and thus may
-            // leave garbage in the buffer in circumstances that we can't detect. To prevent us from crashing when
-            // converting the contents back to managed, put a hidden NULL terminator past the end of the official buffer.
-
-            // Unmanaged layout:
-            // +====================================+
-            // | Extra hidden NULL                  |
-            // +====================================+ \
-            // |                                    | |
-            // | [Converted] NULL-terminated string | |- buffer that the target may change
-            // |                                    | |
-            // +====================================+ / <-- native home
-
-            // Cache StringBuilder capacity and length to ensure we don't allocate a certain amount of
-            // native memory and then walk beyond its end if the StringBuilder concurrently grows erroneously.
-            int pManagedHomeCapacity = pManagedHome.Capacity;
-            int pManagedHomeLength = pManagedHome.Length;
-            if (pManagedHomeLength > pManagedHomeCapacity)
-            {
-                ThrowHelper.ThrowInvalidOperationException();
-            }
-
-            // Note that StringBuilder.Capacity is the number of characters NOT including any terminators.
-
-            if (IsAnsi(dwFlags))
-            {
-                StubHelpers.CheckStringLength(pManagedHomeCapacity);
-
-                // marshal the object as Ansi string (UnmanagedType.LPStr)
-                int allocSize = checked((pManagedHomeCapacity * Marshal.SystemMaxDBCSCharSize) + 4);
-                pNativeHome = Marshal.AllocCoTaskMem(allocSize);
-
-                byte* ptr = (byte*)pNativeHome;
-                *(ptr + allocSize - 3) = 0;
-                *(ptr + allocSize - 2) = 0;
-                *(ptr + allocSize - 1) = 0;
-
-                if (IsIn(dwFlags))
-                {
-                    int length = Marshal.StringToAnsiString(pManagedHome.ToString(),
-                        ptr, allocSize,
-                        IsBestFit(dwFlags),
-                        IsThrowOn(dwFlags));
-                    Debug.Assert(length < allocSize, "Expected a length less than the allocated size");
-                }
-                if (IsOut(dwFlags))
-                {
-                    backPropAction = BackPropAction.StringBuilderAnsi;
-                }
-            }
-            else
-            {
-                // marshal the object as Unicode string (UnmanagedType.LPWStr)
-                int allocSize = checked((pManagedHomeCapacity * 2) + 4);
-                pNativeHome = Marshal.AllocCoTaskMem(allocSize);
-
-                byte* ptr = (byte*)pNativeHome;
-                *(ptr + allocSize - 1) = 0;
-                *(ptr + allocSize - 2) = 0;
-
-                if (IsIn(dwFlags))
-                {
-                    pManagedHome.InternalCopy(pNativeHome, pManagedHomeLength);
-
-                    // null-terminate the native string
-                    int length = pManagedHomeLength * 2;
-                    *(ptr + length + 0) = 0;
-                    *(ptr + length + 1) = 0;
-                }
-                if (IsOut(dwFlags))
-                {
-                    backPropAction = BackPropAction.StringBuilderUnicode;
-                }
-            }
-
-            return pNativeHome;
-        }
-
-        private unsafe IntPtr ConvertLayoutToNative(object pManagedHome, int dwFlags)
-        {
-            // Note that the following call will not throw exception if the type
-            // of pManagedHome is not marshalable. That's intentional because we
-            // want to maintain the original behavior where this was indicated
-            // by TypeLoadException during the actual field marshaling.
-            int allocSize = Marshal.SizeOfHelper((RuntimeType)pManagedHome.GetType(), false);
-            IntPtr pNativeHome = Marshal.AllocCoTaskMem(allocSize);
-
-            // marshal the object as class with layout (UnmanagedType.LPStruct)
-            if (IsIn(dwFlags))
-            {
-                StubHelpers.LayoutTypeConvertToUnmanaged(pManagedHome, (byte*)pNativeHome, ref cleanupWorkList);
-            }
-            if (IsOut(dwFlags))
-            {
-                backPropAction = BackPropAction.Layout;
-            }
-            layoutType = pManagedHome.GetType();
-
-            return pNativeHome;
-        }
-
-        #endregion
-
-        internal IntPtr ConvertToNative(object pManagedHome, int dwFlags)
-        {
-            if (pManagedHome == null)
-                return IntPtr.Zero;
+            if (pManagedHome is null)
+                return;
 
             if (pManagedHome is ArrayWithOffset)
                 throw new ArgumentException(SR.Arg_MarshalAsAnyRestriction);
 
-            IntPtr pNativeHome;
-
             if (pManagedHome.GetType().IsArray)
             {
-                // array (LPArray)
-                pNativeHome = ConvertArrayToNative(pManagedHome, dwFlags);
+                Type elementType = pManagedHome.GetType().GetElementType()!;
+                bool isOut = IsOut(dwFlags);
+                _impl = Type.GetTypeCode(elementType) switch
+                {
+                    TypeCode.SByte => new ArrayImplementation<sbyte, StructureMarshaler<sbyte>>(isOut),
+                    TypeCode.Byte => new ArrayImplementation<byte, StructureMarshaler<byte>>(isOut),
+                    TypeCode.Int16 => new ArrayImplementation<short, StructureMarshaler<short>>(isOut),
+                    TypeCode.UInt16 => new ArrayImplementation<ushort, StructureMarshaler<ushort>>(isOut),
+                    TypeCode.Int32 => new ArrayImplementation<int, StructureMarshaler<int>>(isOut),
+                    TypeCode.UInt32 => new ArrayImplementation<uint, StructureMarshaler<uint>>(isOut),
+                    TypeCode.Int64 => new ArrayImplementation<long, StructureMarshaler<long>>(isOut),
+                    TypeCode.UInt64 => new ArrayImplementation<ulong, StructureMarshaler<ulong>>(isOut),
+                    TypeCode.Single => new ArrayImplementation<float, StructureMarshaler<float>>(isOut),
+                    TypeCode.Double => new ArrayImplementation<double, StructureMarshaler<double>>(isOut),
+                    TypeCode.Object when elementType == typeof(nint) => new ArrayImplementation<nint, StructureMarshaler<nint>>(isOut),
+                    TypeCode.Object when elementType == typeof(nuint) => new ArrayImplementation<nuint, StructureMarshaler<nuint>>(isOut),
+                    TypeCode.Char when !IsAnsi(dwFlags) => new ArrayImplementation<char, UnicodeCharArrayElementMarshaler>(isOut),
+                    TypeCode.Char when IsAnsi(dwFlags) => CreateAnsiCharArrayImplementation(isOut, dwFlags),
+                    TypeCode.Boolean => new ArrayImplementation<bool, BoolMarshaler<int>>(isOut),
+                    _ => throw new ArgumentException(SR.Arg_PInvokeBadObject)
+                };
+            }
+            else if (pManagedHome is string)
+            {
+                _impl = new StringImplementation();
+            }
+            else if (pManagedHome is StringBuilder)
+            {
+                bool isOut = IsOut(dwFlags);
+                _impl = IsAnsi(dwFlags)
+                    ? new StringBuilderAnsiImplementation(isOut)
+                    : new StringBuilderUnicodeImplementation(isOut);
+            }
+            else if (pManagedHome.GetType().IsLayoutSequential || pManagedHome.GetType().IsExplicitLayout)
+            {
+                _impl = new LayoutImplementation(pManagedHome.GetType(), IsOut(dwFlags));
             }
             else
             {
-                if (pManagedHome is string strValue)
-                {
-                    // string (LPStr or LPWStr)
-                    pNativeHome = ConvertStringToNative(strValue, dwFlags);
-                }
-                else if (pManagedHome is StringBuilder sbValue)
-                {
-                    // StringBuilder (LPStr or LPWStr)
-                    pNativeHome = ConvertStringBuilderToNative(sbValue, dwFlags);
-                }
-                else if (pManagedHome.GetType().IsLayoutSequential || pManagedHome.GetType().IsExplicitLayout)
-                {
-                    // layout (LPStruct)
-                    pNativeHome = ConvertLayoutToNative(pManagedHome, dwFlags);
-                }
-                else
-                {
-                    // this type is not supported for AsAny marshaling
-                    throw new ArgumentException(SR.Arg_PInvokeBadObject);
-                }
+                throw new ArgumentException(SR.Arg_PInvokeBadObject);
             }
-
-            return pNativeHome;
         }
 
-        internal unsafe void ConvertToManaged(object pManagedHome, IntPtr pNativeHome)
+        internal IntPtr ConvertToNative(object pManagedHome, int dwFlags)
         {
-            switch (backPropAction)
-            {
-                case BackPropAction.Array:
-                    {
-                        Array managedArray = (Array)pManagedHome;
-                        arrayMarshalerMethods.convertContentsToManaged(managedArray, (byte*)pNativeHome, managedArray.Length);
-                        break;
-                    }
+            return _impl?.ConvertToNative(pManagedHome, dwFlags) ?? IntPtr.Zero;
+        }
 
-                case BackPropAction.Layout:
-                    {
-                        StubHelpers.LayoutTypeConvertToManaged(pManagedHome, (byte*)pNativeHome);
-                        break;
-                    }
-
-                case BackPropAction.StringBuilderAnsi:
-                    {
-                        int length;
-                        if (pNativeHome == IntPtr.Zero)
-                        {
-                            length = 0;
-                        }
-                        else
-                        {
-                            length = string.strlen((byte*)pNativeHome);
-                        }
-
-                        ((StringBuilder)pManagedHome).ReplaceBufferAnsiInternal((sbyte*)pNativeHome, length);
-                        break;
-                    }
-
-                case BackPropAction.StringBuilderUnicode:
-                    {
-                        int length;
-                        if (pNativeHome == IntPtr.Zero)
-                        {
-                            length = 0;
-                        }
-                        else
-                        {
-                            length = string.wcslen((char*)pNativeHome);
-                        }
-
-                        ((StringBuilder)pManagedHome).ReplaceBufferInternal((char*)pNativeHome, length);
-                        break;
-                    }
-
-                    // nothing to do for BackPropAction.None
-            }
+        internal void ConvertToManaged(object pManagedHome, IntPtr pNativeHome)
+        {
+            _impl?.ConvertToManaged(pManagedHome, pNativeHome);
         }
 
         internal void ClearNative(IntPtr pNativeHome)
         {
-            if (pNativeHome != IntPtr.Zero)
+            if (_impl is not null)
             {
-                if (layoutType != null)
-                {
-                    // this must happen regardless of BackPropAction
-                    Marshal.DestroyStructure(pNativeHome, layoutType);
-                }
+                _impl.ClearNative(pNativeHome);
+            }
+            else if (pNativeHome != IntPtr.Zero)
+            {
                 Marshal.FreeCoTaskMem(pNativeHome);
             }
-            StubHelpers.DestroyCleanupList(ref cleanupWorkList);
         }
     }  // struct AsAnyMarshaler
 

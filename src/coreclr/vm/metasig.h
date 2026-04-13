@@ -336,6 +336,7 @@ DEFINE_METASIG(SM(PtrSByt_RetStr, P(B), s))
 DEFINE_METASIG(SM(PtrSByt_Int_Int_RetStr, P(B) i i, s))
 DEFINE_METASIG_T(SM(PtrSByt_Int_Int_Encoding_RetStr, P(B) i i C(ENCODING), s))
 DEFINE_METASIG(IM(Obj_Int_RetIntPtr, j i, I))
+DEFINE_METASIG(IM(Obj_Int_RetVoid, j i, v))
 
 
 DEFINE_METASIG(IM(Char_Int_RetVoid, u i, v))
