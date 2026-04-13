@@ -7135,8 +7135,8 @@ private:
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
+    GenTree* fgOptimizeDistributiveArithemtic(GenTreeOp* tree);
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
-    GenTreeOp* fgOptimizeDistributiveArithemtic(GenTreeOp* tree);
     GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
     GenTree* fgOptimizeAddition(GenTreeOp* add);
     GenTree* fgOptimizeMultiply(GenTreeOp* mul);
