@@ -256,7 +256,7 @@ namespace System.Diagnostics.Tests
 
             File.WriteAllBytes(testFilePath, binaryData);
 
-            Process process = CreateProcess(() =>
+            using Process process = CreateProcess(() =>
             {
                 Console.OpenStandardInput().CopyTo(Console.OpenStandardOutput());
                 return RemoteExecutor.SuccessExitCode;
