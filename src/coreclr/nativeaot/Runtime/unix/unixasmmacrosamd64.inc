@@ -245,6 +245,8 @@ C_FUNC(\Name):
 #define PTFF_SAVE_RAX            0x00000100   // RAX is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_RCX            0x00000200   // RCX is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_RDX            0x00000400   // RDX is saved in hijack handler - in case it contains a GC ref
+#define PTFF_SAVE_R8             0x00000800   // R8 is saved in hijack handler - in case it contains a GC ref
+#define PTFF_SAVE_R9             0x00001000   // R9 is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_ALL_SCRATCH    0x00007F00
 #define PTFF_THREAD_HIJACK       0x00100000   // indicates that this is a frame for a hijacked call
 

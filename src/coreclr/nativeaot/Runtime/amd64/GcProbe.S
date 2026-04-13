@@ -6,12 +6,13 @@
 #include <unixasmmacros.inc>
 
 //
-// See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves RAX/RCX/RDX and accepts the register
-// bitmask in R8
+// See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves volatile argument registers
+// and accepts the register bitmask
 //
 // On entry:
 //  - BITMASK: bitmask describing pushes, may be volatile register or constant value
 //  - RAX: managed function return value, may be an object or byref
+//  - RCX, RDX, R8, R9: may contain objects or byrefs at the hijack point
 //  - preserved regs: need to stay preserved, may contain objects or byrefs
 //
 // INVARIANTS
@@ -19,10 +20,12 @@
 // - All preserved registers remain unchanged from their values in managed code.
 //
 .macro PUSH_PROBE_FRAME threadReg, trashReg, BITMASK
+    push_register    r9                          // save R9, it might contain an objectref
+    push_register    r8                          // save R8, it might contain an objectref
     push_register    rdx                         // save RDX, it might contain an objectref
     push_register    rcx                         // save RCX, it might contain an objectref (async continuation)
     push_register    rax                         // save RAX, it might contain an objectref
-    lea             \trashReg, [rsp + 0x20]
+    lea             \trashReg, [rsp + 0x30]
     push_register   \trashReg                    // save caller`s RSP
     push_nonvol_reg r15                          // save preserved registers
     push_nonvol_reg r14                          //   ..
@@ -32,11 +35,11 @@
     push_register   \BITMASK                     // save the register bitmask passed in by caller
     push_register   \threadReg                   // Thread * (unused by stackwalker)
     push_nonvol_reg rbp                          // save caller`s RBP
-    mov             \trashReg, [rsp + 12*8]      // Find the return address
+    mov             \trashReg, [rsp + 14*8]      // Find the return address
     push_register   \trashReg                    // save m_RIP
     lea             \trashReg, [rsp + 0]         // trashReg == address of frame
 
-    // allocate space for xmm0, xmm1 and alignment
+    // allocate space for xmm0, xmm1
     alloc_stack     0x20 + 0
 
     // save xmm0 and xmm1 in case they are used as return values
@@ -67,6 +70,8 @@
     pop         rax
     pop         rcx
     pop         rdx
+    pop         r8
+    pop         r9
 .endm
 
 //
@@ -78,15 +83,19 @@
 //
 // Register state on exit:
 //  R11: thread pointer
-//  RAX, RCX, RDX preserved, other volatile regs trashed
+//  RAX, RCX, RDX, R8, R9 preserved, R10 trashed
 //
 .macro FixupHijackedCallstack
-        // preserve RAX, RDX as they may contain return values
+        // preserve volatile argument registers across INLINE_GETTHREAD
         push rax
         push rdx
 
         // preserve RCX as it may contain async continuation return value
         push rcx
+
+        // preserve R8 and R9 as they may contain GC refs
+        push r8
+        push r9
 
         // align stack
         sub rsp, 0x8
@@ -97,19 +106,22 @@
 
         add rsp, 0x8
 
+        pop r9
+        pop r8
+
         pop rcx
 
         pop rdx
         pop rax
 
         // Fix the stack by pushing the original return address
-        mov         r8, [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        push        r8
+        mov         r10, [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        push        r10
 
         // Clear hijack state
-        xor         r8, r8
-        mov         [r11 + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r8
-        mov         [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress], r8
+        xor         r10, r10
+        mov         [r11 + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r10
+        mov         [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress], r10
 .endm
 
 //
@@ -124,12 +136,12 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
         ret
 
 LOCAL_LABEL(WaitForGC):
-        mov         r8d, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RCX + PTFF_SAVE_RDX + PTFF_THREAD_HIJACK
+        mov         r10d, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RCX + PTFF_SAVE_RDX + PTFF_SAVE_R8 + PTFF_SAVE_R9 + PTFF_THREAD_HIJACK
         jmp         C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack, _TEXT
 
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
-        PUSH_PROBE_FRAME r11, rax, r8
+        PUSH_PROBE_FRAME r11, rax, r10
         END_PROLOGUE
 
         mov         rbx, r11
