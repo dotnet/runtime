@@ -24,15 +24,14 @@ namespace System.Diagnostics
         {
             int outputFd = outputHandle.DangerousGetHandle().ToInt32();
             int errorFd = errorHandle.DangerousGetHandle().ToInt32();
-            bool outputDone = false;
-            bool errorDone = false;
 
-            Interop.PollEvent[] pollFds = new Interop.PollEvent[2];
+            Span<Interop.PollEvent> pollFds = stackalloc Interop.PollEvent[2];
 
             long deadline = timeoutMs >= 0
                 ? Environment.TickCount64 + timeoutMs
                 : long.MaxValue;
 
+            bool outputDone = false, errorDone = false;
             while (!outputDone || !errorDone)
             {
                 int numFds = 0;
@@ -59,19 +58,9 @@ namespace System.Diagnostics
                 }
 
                 int pollTimeout;
-                if (timeoutMs >= 0)
+                if (!TryGetRemainingTimeout(deadline, timeoutMs, out pollTimeout))
                 {
-                    long remaining = deadline - Environment.TickCount64;
-                    if (remaining <= 0)
-                    {
-                        throw new TimeoutException();
-                    }
-
-                    pollTimeout = (int)Math.Min(remaining, int.MaxValue);
-                }
-                else
-                {
-                    pollTimeout = -1; // Infinite
+                    throw new TimeoutException();
                 }
 
                 unsafe
@@ -84,10 +73,12 @@ namespace System.Diagnostics
                         {
                             if (error == Interop.Error.EINTR)
                             {
+                                // We don't re-issue the poll immediately because we need to check
+                                // if we've already exceeded the overall timeout.
                                 continue;
                             }
 
-                            throw new Win32Exception(Marshal.GetLastPInvokeError());
+                            throw new Win32Exception();
                         }
 
                         if (triggered == 0)

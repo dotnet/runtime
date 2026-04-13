@@ -24,12 +24,9 @@ namespace System.Diagnostics
             ref byte[] errorBuffer,
             ref int errorBytesRead)
         {
-            MemoryHandle outputPin = default;
-            MemoryHandle errorPin = default;
-            NativeOverlapped* outputOverlapped = null;
-            NativeOverlapped* errorOverlapped = null;
-            EventWaitHandle? outputEvent = null;
-            EventWaitHandle? errorEvent = null;
+            MemoryHandle outputPin = default, errorPin = default;
+            NativeOverlapped* outputOverlapped = null, errorOverlapped = null;
+            EventWaitHandle? outputEvent = null, errorEvent = null;
 
             try
             {
@@ -42,48 +39,29 @@ namespace System.Diagnostics
                 outputOverlapped = AllocateOverlapped(outputEvent);
                 errorOverlapped = AllocateOverlapped(errorEvent);
 
-                bool outputDone = false;
-                bool errorDone = false;
-
                 WaitHandle[] waitHandles = [outputEvent, errorEvent];
 
                 // Issue initial reads.
-                Interop.Kernel32.ReadFile(outputHandle, (byte*)outputPin.Pointer + outputBytesRead,
-                    outputBuffer.Length - outputBytesRead, IntPtr.Zero, outputOverlapped);
-
-                Interop.Kernel32.ReadFile(errorHandle, (byte*)errorPin.Pointer + errorBytesRead,
-                    errorBuffer.Length - errorBytesRead, IntPtr.Zero, errorOverlapped);
+                Interop.Kernel32.ReadFile(outputHandle, (byte*)outputPin.Pointer, outputBuffer.Length, IntPtr.Zero, outputOverlapped);
+                Interop.Kernel32.ReadFile(errorHandle, (byte*)errorPin.Pointer, errorBuffer.Length, IntPtr.Zero, errorOverlapped);
 
                 long deadline = timeoutMs >= 0
                     ? Environment.TickCount64 + timeoutMs
                     : long.MaxValue;
 
+                bool outputDone = false, errorDone = false;
                 while (!outputDone || !errorDone)
                 {
-                    int waitTimeout;
-                    if (timeoutMs >= 0)
-                    {
-                        long remaining = deadline - Environment.TickCount64;
-                        if (remaining <= 0)
-                        {
-                            CancelPendingIOIfNeeded(outputHandle, outputDone, outputOverlapped);
-                            CancelPendingIOIfNeeded(errorHandle, errorDone, errorOverlapped);
-                            throw new TimeoutException();
-                        }
 
-                        waitTimeout = (int)Math.Min(remaining, int.MaxValue);
-                    }
-                    else
-                    {
-                        waitTimeout = Timeout.Infinite;
-                    }
-
-                    int waitResult = WaitHandle.WaitAny(waitHandles, waitTimeout);
+                    int waitResult = TryGetRemainingTimeout(deadline, timeoutMs, out int remainingMilliseconds)
+                        ? WaitHandle.WaitAny(waitHandles, remainingMilliseconds)
+                        : WaitHandle.WaitTimeout;
 
                     if (waitResult == WaitHandle.WaitTimeout)
                     {
                         CancelPendingIOIfNeeded(outputHandle, outputDone, outputOverlapped);
                         CancelPendingIOIfNeeded(errorHandle, errorDone, errorOverlapped);
+
                         throw new TimeoutException();
                     }
 
@@ -156,7 +134,13 @@ namespace System.Diagnostics
         private static unsafe NativeOverlapped* AllocateOverlapped(EventWaitHandle waitHandle)
         {
             NativeOverlapped* overlapped = (NativeOverlapped*)NativeMemory.AllocZeroed((nuint)sizeof(NativeOverlapped));
-            overlapped->EventHandle = waitHandle.SafeWaitHandle.DangerousGetHandle();
+
+            overlapped->InternalHigh = IntPtr.Zero;
+            overlapped->InternalLow = IntPtr.Zero;
+            overlapped->OffsetHigh = 0;
+            overlapped->OffsetLow = 0;
+            overlapped->EventHandle = SetLowOrderBit(waitHandle);
+
             return overlapped;
         }
 
@@ -168,7 +152,7 @@ namespace System.Diagnostics
             overlapped->InternalLow = IntPtr.Zero;
             overlapped->OffsetHigh = 0;
             overlapped->OffsetLow = 0;
-            overlapped->EventHandle = waitHandle.SafeWaitHandle.DangerousGetHandle();
+            overlapped->EventHandle = SetLowOrderBit(waitHandle);
         }
 
         private static unsafe int GetOverlappedResultForPipe(SafeFileHandle handle, NativeOverlapped* overlapped)
@@ -179,10 +163,10 @@ namespace System.Diagnostics
                 int errorCode = Marshal.GetLastPInvokeError();
                 switch (errorCode)
                 {
-                    case Interop.Errors.ERROR_HANDLE_EOF:
-                    case Interop.Errors.ERROR_BROKEN_PIPE:
-                    case Interop.Errors.ERROR_PIPE_NOT_CONNECTED:
-                        return 0;
+                    case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
+                    case Interop.Errors.ERROR_BROKEN_PIPE: // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
+                    case Interop.Errors.ERROR_PIPE_NOT_CONNECTED: // Named pipe server has disconnected, return 0 to match NamedPipeClientStream behaviour
+                        return 0; // EOF!
                     default:
                         throw new Win32Exception(errorCode);
                 }
@@ -199,11 +183,39 @@ namespace System.Diagnostics
             }
 
             // CancelIoEx marks matching outstanding I/O requests for cancellation.
-            Interop.Kernel32.CancelIoEx(handle, overlapped);
+            // It does not wait for all canceled operations to complete.
+            // When CancelIoEx returns true, it means that the cancel request was successfully queued.
+            if (!Interop.Kernel32.CancelIoEx(handle, overlapped))
+            {
+                // Failure has two common meanings:
+                // ERROR_NOT_FOUND (extremely common). It means:
+                // - The I/O already completed.
+                // - Or it never existed.
+                // - Or it completed between your decision and the call.
+                // Other errors indicate real failures (invalid handle, driver limitation, etc.).
+                int errorCode = Marshal.GetLastPInvokeError();
+                Debug.Assert(errorCode == Interop.Errors.ERROR_NOT_FOUND, $"CancelIoEx failed with {errorCode}.");
+            }
 
-            // We must observe completion before freeing the OVERLAPPED.
+            // We must observe completion before freeing the OVERLAPPED in all the above scenarios.
+            // Use bWait: true to ensure the I/O operation completes before we free the OVERLAPPED structure.
+            // Per MSDN: "Do not reuse or free the OVERLAPPED structure until GetOverlappedResult returns."
             int bytesRead = 0;
-            Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref bytesRead, bWait: true);
+            if (!Interop.Kernel32.GetOverlappedResult(handle, overlapped, ref bytesRead, bWait: true))
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+                Debug.Assert(errorCode is Interop.Errors.ERROR_OPERATION_ABORTED or Interop.Errors.ERROR_BROKEN_PIPE, $"GetOverlappedResult failed with {errorCode}.");
+            }
         }
+
+        /// <summary>
+        /// Returns the event handle with the low-order bit set.
+        /// Per https://learn.microsoft.com/windows/win32/api/ioapiset/nf-ioapiset-getqueuedcompletionstatus,
+        /// setting the low-order bit of hEvent in the OVERLAPPED structure prevents the I/O completion
+        /// from being queued to a completion port bound to the same file object. The kernel masks off
+        /// the bit when signaling, so the event still works normally.
+        /// </summary>
+        private static nint SetLowOrderBit(EventWaitHandle waitHandle)
+            => waitHandle.SafeWaitHandle.DangerousGetHandle() | 1;
     }
 }

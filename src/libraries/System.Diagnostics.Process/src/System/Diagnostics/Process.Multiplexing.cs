@@ -5,6 +5,7 @@ using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
@@ -131,18 +132,15 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.CantGetStandardOut);
             }
-
-            if (_standardError is null)
+            else if (_standardError is null)
             {
                 throw new InvalidOperationException(SR.CantGetStandardError);
             }
-
-            if (_outputStreamReadMode == StreamReadMode.AsyncMode)
+            else if (_outputStreamReadMode == StreamReadMode.AsyncMode)
             {
                 throw new InvalidOperationException(SR.CantMixSyncAsyncOperation);
             }
-
-            if (_errorStreamReadMode == StreamReadMode.AsyncMode)
+            else if (_errorStreamReadMode == StreamReadMode.AsyncMode)
             {
                 throw new InvalidOperationException(SR.CantMixSyncAsyncOperation);
             }
@@ -165,7 +163,7 @@ namespace System.Diagnostics
         {
             int timeoutMs = timeout.HasValue
                 ? (int)timeout.Value.TotalMilliseconds
-                : -1; // Infinite
+                : Timeout.Infinite;
 
             SafeFileHandle outputHandle = GetSafeFileHandleFromStreamReader(_standardOutput!, out SafeHandle outputOwner);
             SafeFileHandle errorHandle = GetSafeFileHandleFromStreamReader(_standardError!, out SafeHandle errorOwner);
@@ -229,6 +227,25 @@ namespace System.Diagnostics
             Buffer.BlockCopy(buffer, 0, newBuffer, 0, bytesRead);
             ArrayPool<byte>.Shared.Return(buffer);
             buffer = newBuffer;
+        }
+
+        private static bool TryGetRemainingTimeout(long deadline, int originalTimeout, out int remainingTimeoutMs)
+        {
+            if (originalTimeout < 0)
+            {
+                remainingTimeoutMs = Timeout.Infinite;
+                return true;
+            }
+
+            long remaining = deadline - Environment.TickCount64;
+            if (remaining <= 0)
+            {
+                remainingTimeoutMs = 0;
+                return false;
+            }
+
+            remainingTimeoutMs = (int)Math.Min(remaining, int.MaxValue);
+            return true;
         }
     }
 }
