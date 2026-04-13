@@ -21,6 +21,18 @@ namespace System.Diagnostics
             public char* fileName;
         }
 
+        private static void FreeAllocatedNames(SequencePointInfoNative* points, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (points[i].fileName != null)
+                {
+                    Marshal.FreeCoTaskMem((IntPtr)points[i].fileName);
+                    points[i].fileName = null;
+                }
+            }
+        }
+
         /// <summary>
         /// Populate a native buffer with sequence points for the specified method token using the assembly's associated or embedded PDB.
         /// </summary>
@@ -40,7 +52,15 @@ namespace System.Diagnostics
 
             using (provider)
             {
-                MetadataReader reader = provider.GetMetadataReader();
+                MetadataReader reader;
+                try
+                {
+                    reader = provider.GetMetadataReader();
+                }
+                catch (BadImageFormatException) { return false; }
+                catch (IOException) { return false; }
+                catch (InvalidOperationException) { return false; }
+
                 Handle handle = MetadataTokens.Handle(methodToken);
                 if (handle.IsNil || handle.Kind != HandleKind.MethodDefinition)
                 {
@@ -67,24 +87,30 @@ namespace System.Diagnostics
 
                 SequencePointInfoNative* nativePoints = (SequencePointInfoNative*)points;
                 int writeIndex = 0;
-                foreach (SequencePoint point in methodInfo.GetSequencePoints())
+                try
                 {
-                    if (writeIndex >= size)
+                    foreach (SequencePoint point in methodInfo.GetSequencePoints())
                     {
-                        break;
-                    }
+                        if (writeIndex >= size)
+                        {
+                            break;
+                        }
 
-                    string? documentName = null;
-                    if (!point.Document.IsNil)
-                    {
-                        documentName = reader.GetString(reader.GetDocument(point.Document).Name);
-                    }
+                        string? documentName = null;
+                        if (!point.Document.IsNil)
+                        {
+                            documentName = reader.GetString(reader.GetDocument(point.Document).Name);
+                        }
 
-                    nativePoints[writeIndex].ilOffset = point.Offset;
-                    nativePoints[writeIndex].lineNumber = point.StartLine == SequencePoint.HiddenLine ? HiddenLineNumber : point.StartLine;
-                    nativePoints[writeIndex].fileName = documentName is null ? null : (char*)Marshal.StringToCoTaskMemUni(documentName);
-                    writeIndex++;
+                        nativePoints[writeIndex].ilOffset = point.Offset;
+                        nativePoints[writeIndex].lineNumber = point.StartLine == SequencePoint.HiddenLine ? HiddenLineNumber : point.StartLine;
+                        nativePoints[writeIndex].fileName = documentName is null ? null : (char*)Marshal.StringToCoTaskMemUni(documentName);
+                        writeIndex++;
+                    }
                 }
+                catch (BadImageFormatException) { FreeAllocatedNames(nativePoints, writeIndex); return false; }
+                catch (IOException) { FreeAllocatedNames(nativePoints, writeIndex); return false; }
+                catch (InvalidOperationException) { FreeAllocatedNames(nativePoints, writeIndex); return false; }
 
                 for (int i = writeIndex; i < size; i++)
                 {
