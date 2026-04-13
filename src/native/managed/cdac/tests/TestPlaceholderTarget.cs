@@ -143,7 +143,7 @@ internal class TestPlaceholderTarget : Target
             var memoryContext = _memBuilder.GetMemoryContext();
             var target = new TestPlaceholderTarget(
                 _arch,
-                _readerOverride ?? _memBuilder.GetMemoryContext().ReadFromTarget,
+                _readerOverride ?? memoryContext.ReadFromTarget,
                 _types,
                 _globals.ToArray(),
                 _globalStrings.ToArray(),

@@ -12,7 +12,7 @@ internal sealed class EEConfig : IData<EEConfig>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.EEConfig);
 
-        ModifiableAssemblies = target.Read<uint>(address + (ulong)type.Fields[nameof(ModifiableAssemblies)].Offset);
+        ModifiableAssemblies = target.ReadField<uint>(address, type, nameof(ModifiableAssemblies));
     }
 
     public uint ModifiableAssemblies { get; init; }
