@@ -316,7 +316,7 @@ public partial class ZipArchiveEntry
     }
 
     // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
-    private async Task<bool> WriteLocalFileHeaderAsync(bool isEmptyFile, bool forceWrite, CancellationToken cancellationToken, bool preserveDataDescriptor = false)
+    private async Task<bool> WriteLocalFileHeaderAsync(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -383,7 +383,7 @@ public partial class ZipArchiveEntry
                     _compressedSize = 0;
                 }
 
-                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, cancellationToken).ConfigureAwait(false);
+                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
 
                 // according to ZIP specs, zero-byte files MUST NOT include file data
                 if (_uncompressedSize != 0)
@@ -405,7 +405,7 @@ public partial class ZipArchiveEntry
                 // since the descriptor bytes remain on disk after the compressed data.
                 bool preserveDataDescriptor = _originallyInArchive
                     && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
-                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, cancellationToken, preserveDataDescriptor).ConfigureAwait(false);
+                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor, cancellationToken).ConfigureAwait(false);
 
                 // Advance the stream past the compressed data and any trailing data descriptor
                 // by seeking to the pre-computed end-of-entry boundary.

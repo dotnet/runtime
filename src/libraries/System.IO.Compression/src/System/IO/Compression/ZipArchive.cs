@@ -844,10 +844,8 @@ namespace System.IO.Compression
                 completeRewriteStartingOffset = startingOffset;
                 entriesToWrite = new(_entries.Count);
 
-                for (int i = 0; i < _entries.Count; i++)
+                foreach (ZipArchiveEntry entry in _entries)
                 {
-                    ZipArchiveEntry entry = _entries[i];
-
                     if (!entry.OriginallyInArchive)
                     {
                         entriesToWrite.Add(entry);
@@ -872,6 +870,7 @@ namespace System.IO.Compression
                         }
                     }
                 }
+                
                 WriteFileUpdateModeFinalWork(startingOffset, nextFileOffset);
             }
 

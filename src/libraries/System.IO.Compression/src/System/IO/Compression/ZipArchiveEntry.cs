@@ -1163,7 +1163,7 @@ namespace System.IO.Compression
             // directly into the header, so a data descriptor is not needed.
             if (isEmptyFile || _archive.ArchiveStream.CanSeek)
             {
-                if (preserveDataDescriptor && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0)
+                if (preserveDataDescriptor)
                 {
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
