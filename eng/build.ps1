@@ -136,48 +136,26 @@ function Get-Help() {
 }
 
 function Check-LongPathSupport() {
-  $repoRoot = Split-Path $PSScriptRoot -Parent
-  $artifactsDir = Join-Path $repoRoot "artifacts"
-  $stampFile = Join-Path $artifactsDir ".long-path-validated"
+  $regValue = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -ErrorAction SilentlyContinue
 
-  if (Test-Path $stampFile) {
+  if ($regValue -and $regValue.LongPathsEnabled -eq 1) {
     return
   }
 
-  $testDir = Join-Path $artifactsDir "tmp"
-  if (-not (Test-Path $testDir)) {
-    New-Item -ItemType Directory -Path $testDir -Force | Out-Null
-  }
-
-  # Build a unique file path that exceeds the 260-character MAX_PATH limit.
-  $uniqueSuffix = "{0}_{1}" -f $PID, ([Guid]::NewGuid().ToString("N"))
-  $basePath = Join-Path $testDir ("longpath_test_{0}_" -f $uniqueSuffix)
-  $padLength = [Math]::Max(32, 270 - $basePath.Length)
-  $testPath = $basePath + ("a" * $padLength) + ".tmp"
-
-  try {
-    [System.IO.File]::WriteAllText($testPath, "test")
-    Remove-Item $testPath -Force -ErrorAction SilentlyContinue
-  }
-  catch {
-    Write-Host ""
-    Write-Host "ERROR: Long file paths are not enabled on this system." -ForegroundColor Red
-    Write-Host "The dotnet/runtime repository requires long path support to build successfully." -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Please follow the instructions at:" -ForegroundColor Yellow
-    Write-Host "  docs\workflow\requirements\windows-requirements.md#enable-long-paths" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "Quick fix:" -ForegroundColor Yellow
-    Write-Host "  1. Enable long paths in Windows (requires admin):" -ForegroundColor White
-    Write-Host "     https://learn.microsoft.com/windows/win32/fileio/maximum-file-path-limitation" -ForegroundColor White
-    Write-Host "  2. Enable long paths in Git:" -ForegroundColor White
-    Write-Host "     git config --system core.longpaths true" -ForegroundColor White
-    Write-Host ""
-    exit 1
-  }
-
-  # Validation passed - stamp so we skip this check on subsequent builds.
-  [System.IO.File]::WriteAllText($stampFile, "Long path support validated on $(Get-Date)")
+  Write-Host ""
+  Write-Host "ERROR: Long file paths are not enabled on this system." -ForegroundColor Red
+  Write-Host "The dotnet/runtime repository requires long path support to build successfully." -ForegroundColor Red
+  Write-Host ""
+  Write-Host "Please follow the instructions at:" -ForegroundColor Yellow
+  Write-Host "  docs\workflow\requirements\windows-requirements.md#enable-long-paths" -ForegroundColor Yellow
+  Write-Host ""
+  Write-Host "Quick fix:" -ForegroundColor Yellow
+  Write-Host "  1. Enable long paths in Windows (requires admin):" -ForegroundColor White
+  Write-Host "     https://learn.microsoft.com/windows/win32/fileio/maximum-file-path-limitation" -ForegroundColor White
+  Write-Host "  2. Enable long paths in Git:" -ForegroundColor White
+  Write-Host "     git config --system core.longpaths true" -ForegroundColor White
+  Write-Host ""
+  exit 1
 }
 
 if ($help) {
