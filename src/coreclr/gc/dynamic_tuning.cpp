@@ -1,6 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR {
+#else // SERVER_GC
+namespace WKS {
+#endif // SERVER_GC
+
 
 // Things we need to manually initialize:
 // gen0 min_size - based on cache
@@ -41,48 +49,6 @@ static static_data static_data_table[latency_level_last - latency_level_first + 
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0}
     },
 };
-
-inline BOOL
-gc_heap::dt_low_ephemeral_space_p (gc_tuning_point tp)
-{
-    BOOL ret = FALSE;
-
-    switch (tp)
-    {
-        case tuning_deciding_condemned_gen:
-#ifndef USE_REGIONS
-        case tuning_deciding_compaction:
-        case tuning_deciding_expansion:
-#endif //USE_REGIONS
-        case tuning_deciding_full_gc:
-        {
-            ret = (!ephemeral_gen_fit_p (tp));
-            break;
-        }
-#ifndef USE_REGIONS
-        case tuning_deciding_promote_ephemeral:
-        {
-            size_t new_gen0size = approximate_new_allocation();
-            ptrdiff_t plan_ephemeral_size = total_ephemeral_size;
-
-            dprintf (GTC_LOG, ("h%d: plan eph size is %zd, new gen0 is %zd",
-                heap_number, plan_ephemeral_size, new_gen0size));
-            // If we were in no_gc_region we could have allocated a larger than normal segment,
-            // and the next seg we allocate will be a normal sized seg so if we can't fit the new
-            // ephemeral generations there, do an ephemeral promotion.
-            ret = ((soh_segment_size - segment_info_size) < (plan_ephemeral_size + new_gen0size));
-            break;
-        }
-#endif //USE_REGIONS
-        default:
-        {
-            assert (!"invalid tuning reason");
-            break;
-        }
-    }
-
-    return ret;
-}
 
 BOOL
 gc_heap::dt_high_frag_p (gc_tuning_point tp,
@@ -144,132 +110,6 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
     }
 
     return ret;
-}
-
-inline BOOL
-gc_heap::dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number)
-{
-    BOOL ret = FALSE;
-
-    switch (tp)
-    {
-        case tuning_deciding_condemned_gen:
-        {
-            if (gen_number == max_generation)
-            {
-                size_t est_maxgen_free = estimated_reclaim (gen_number);
-
-                uint32_t num_heaps = 1;
-#ifdef MULTIPLE_HEAPS
-                num_heaps = gc_heap::n_heaps;
-#endif //MULTIPLE_HEAPS
-
-                size_t min_frag_th = min_reclaim_fragmentation_threshold (num_heaps);
-                dprintf (GTC_LOG, ("h%d, min frag is %zd", heap_number, min_frag_th));
-                ret = (est_maxgen_free >= min_frag_th);
-            }
-            else
-            {
-                assert (0);
-            }
-            break;
-        }
-
-        default:
-            break;
-    }
-
-    return ret;
-}
-
-// DTREVIEW: Right now we only estimate gen2 fragmentation.
-// on 64-bit though we should consider gen1 or even gen0 fragmentation as
-// well
-inline BOOL
-gc_heap::dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t available_mem)
-{
-    BOOL ret = FALSE;
-
-    switch (tp)
-    {
-        case tuning_deciding_condemned_gen:
-        {
-            if (gen_number == max_generation)
-            {
-                dynamic_data* dd = dynamic_data_of (gen_number);
-                float est_frag_ratio = 0;
-                if (dd_current_size (dd) == 0)
-                {
-                    est_frag_ratio = 1;
-                }
-                else if ((dd_fragmentation (dd) == 0) || (dd_fragmentation (dd) + dd_current_size (dd) == 0))
-                {
-                    est_frag_ratio = 0;
-                }
-                else
-                {
-                    est_frag_ratio = (float)dd_fragmentation (dd) / (float)(dd_fragmentation (dd) + dd_current_size (dd));
-                }
-
-                size_t est_frag = (dd_fragmentation (dd) + (size_t)((dd_desired_allocation (dd) - dd_new_allocation (dd)) * est_frag_ratio));
-                dprintf (GTC_LOG, ("h%d: gen%d: current_size is %zd, frag is %zd, est_frag_ratio is %d%%, estimated frag is %zd",
-                    heap_number,
-                    gen_number,
-                    dd_current_size (dd),
-                    dd_fragmentation (dd),
-                    (int)(est_frag_ratio * 100),
-                    est_frag));
-
-                uint32_t num_heaps = 1;
-
-#ifdef MULTIPLE_HEAPS
-                num_heaps = gc_heap::n_heaps;
-#endif //MULTIPLE_HEAPS
-                uint64_t min_frag_th = min_high_fragmentation_threshold(available_mem, num_heaps);
-                //dprintf (GTC_LOG, ("h%d, min frag is %zd", heap_number, min_frag_th));
-                ret = (est_frag >= min_frag_th);
-            }
-            else
-            {
-                assert (0);
-            }
-            break;
-        }
-
-        default:
-            break;
-    }
-
-    return ret;
-}
-
-inline BOOL
-gc_heap::dt_low_card_table_efficiency_p (gc_tuning_point tp)
-{
-    BOOL ret = FALSE;
-
-    switch (tp)
-    {
-    case tuning_deciding_condemned_gen:
-    {
-        /* promote into max-generation if the card table has too many
-        * generation faults besides the n -> 0
-        */
-        ret = (generation_skip_ratio < generation_skip_ratio_threshold);
-        break;
-    }
-
-    default:
-        break;
-    }
-
-    return ret;
-}
-
-inline BOOL
-gc_heap::dt_high_memory_load_p()
-{
-    return ((settings.entry_memory_load >= high_memory_load_th) || g_low_memory_status);
 }
 
 #if defined(USE_REGIONS)
@@ -2217,26 +2057,6 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
 
 #endif //HOST_64BIT
 
-inline
-gc_history_global* gc_heap::get_gc_data_global()
-{
-#ifdef BACKGROUND_GC
-    return (settings.concurrent ? &bgc_data_global : &gc_data_global);
-#else
-    return &gc_data_global;
-#endif //BACKGROUND_GC
-}
-
-inline
-gc_history_per_heap* gc_heap::get_gc_data_per_heap()
-{
-#ifdef BACKGROUND_GC
-    return (settings.concurrent ? &bgc_data_per_heap : &gc_data_per_heap);
-#else
-    return &gc_data_per_heap;
-#endif //BACKGROUND_GC
-}
-
 void gc_heap::compute_new_dynamic_data (int gen_number)
 {
     _ASSERTE(gen_number >= 0);
@@ -2854,3 +2674,5 @@ void gc_heap::accumulate_committed_bytes(heap_segment* seg, size_t& committed_by
         seg = heap_segment_next_rw (seg);
     }
 }
+
+} // namespace WKS/SVR

@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 #ifdef FEATURE_BASICFREEZE
 
 inline
@@ -601,4 +611,6 @@ void gc_heap::sweep_uoh_objects (int gen_num)
 
     _ASSERTE(generation_allocation_segment(gen) != NULL);
 }
+
+} // namespace WKS/SVR
 
