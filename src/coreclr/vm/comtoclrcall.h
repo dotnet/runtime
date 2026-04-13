@@ -16,10 +16,11 @@
 
 #include "util.hpp"
 #include "spinlock.h"
+#include "dllimportcallback.h"
 
 enum ComCallFlags
 {
-    enum_IsVirtual                  = 0x0001,   // If true the method is virtual on the managed side
+    // unused                       = 0x0001,
     enum_IsFieldCall                = 0x0002,   // is field call
     enum_IsGetter                   = 0x0004,   // is field call getter
     enum_NativeInfoInitialized      = 0x0008,   // Has the native info been initialized
@@ -30,7 +31,7 @@ enum ComCallFlags
     enum_NativeVoidRetVal           = 0x0100,   // Native ret val is void
     // unused                       = 0x0200,
     enum_HasMarshalError            = 0x0400,   // The signature is not marshalable and m_StackBytes is a guess
-    enum_IsDelegateInvoke           = 0x0800,   // The method is an 'Invoke' on a delegate
+    // unused                       = 0x0800,
     // unused                       = 0x1000,
     // unused                       = 0x2000,
     // unused                       = 0x4000,
@@ -38,66 +39,12 @@ enum ComCallFlags
     // unused                       = 0x10000
 };
 
-
-//=======================================================================
-// class com call
-//=======================================================================
-
-#if !defined(DACCESS_COMPILE)
-class ComCall
-{
-public:
-    // Encapsulate a SpinLockHolder, so that clients of our lock don't have to know
-    // the details of our implementation.
-    class LockHolder : public SpinLockHolder
-    {
-    public:
-        LockHolder()
-            : SpinLockHolder(ComCall::s_plock)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-
-
-    //---------------------------------------------------------
-    // One-time init
-    //---------------------------------------------------------
-    static void Init();
-
-    //
-    static void PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubFlags);
-
-    //---------------------------------------------------------
-    // Either creates or retrieves from the cache, a stub to
-    // invoke com to CLR
-    // Each call refcounts the returned stub.
-    // This routines throws an exception rather than returning
-    // NULL.
-    //---------------------------------------------------------
-    static PCODE GetComCallMethodStub(ComCallMethodDesc *pMD);
-
-    // pCallMD is either interface or class method - the one returned by
-    // code:ComCallMethodDesc.GetCallMethodDesc on the ComCallMethodDesc
-    // that owns the stub; pFD is the target field
-    static MethodDesc* GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags);
-    static MethodDesc* GetILStubMethodDesc(FieldDesc *pFD, DWORD dwStubFlags);
-
-private:
-    ComCall() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
-
-    static SpinLock* s_plock;
-};
-#endif // DACCESS_COMPILE
-
 //-----------------------------------------------------------------------
-// Operations specific to ComCall methods. This is not a code:MethodDesc.
+// Operations specific to COM->CLR calls. This is not a code:MethodDesc.
 //-----------------------------------------------------------------------
 
 class ComCallMethodDesc
 {
-    friend void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJECTREF orThis, ComMethodFrame *pFrame, Thread *pThread, UINT64* pRetValOut);
-
 public:
     // init method
     void InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD);
@@ -131,21 +78,6 @@ public:
         CONTRACT_END;
 
         RETURN (m_flags & enum_IsGetter);
-    }
-
-    // is a virtual method
-    BOOL IsVirtual()
-    {
-        CONTRACT (BOOL)
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            PRECONDITION(IsMethodCall());
-        }
-        CONTRACT_END;
-
-        RETURN (m_flags & enum_IsVirtual);
     }
 
     BOOL IsNativeR4RetVal()
@@ -188,12 +120,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_flags & enum_HasMarshalError;
-    }
-
-    BOOL IsDelegateInvoke()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_flags & enum_IsDelegateInvoke;
     }
 
     BOOL IsNativeInfoInitialized()
@@ -319,12 +245,6 @@ public:
         return m_StackBytes;
     }
 
-    static DWORD GetOffsetOfReturnThunk()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return -COMMETHOD_PREPAD;
-    }
-
     //get call sig
     PCCOR_SIGNATURE GetSig(DWORD *pcbSigSize = NULL)
     {
@@ -349,29 +269,6 @@ public:
         }
 
         RETURN pSig;
-    }
-
-    // Discard all the resources owned by this ComCallMethodDesc.
-    void Destruct()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-#ifdef TARGET_X86
-        if (m_pwStubStackSlotOffsets != NULL)
-            delete [] m_pwStubStackSlotOffsets;
-#endif // TARGET_X86
-    }
-
-    static void ReleaseComCallMethodDesc(ComCallMethodDesc *pCMD)
-    {
-        WRAPPER_NO_CONTRACT;
-        pCMD->Destruct();
     }
 
     PCODE CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppStubMD);
@@ -420,6 +317,37 @@ private:
     UINT16  m_StackBytes;
 };
 
-typedef Holder<ComCallMethodDesc *, DoNothing<ComCallMethodDesc *>, ComCallMethodDesc::ReleaseComCallMethodDesc> ComCallMethodDescHolder;
+extern "C" void ComCallPreStub();
+
+class ComCallUMThunkMarshInfo final : public UMThunkMarshInfo
+{
+public:
+    ComCallUMThunkMarshInfo(ComCallMethodDesc *pCMD)
+        :m_pCMD(pCMD)
+    {
+    }
+
+    PCODE GetReturnStubForHResult(HRESULT hr);
+
+    virtual PCODE RunTimeInit(bool* pCanSkipPreStub) override;
+
+    PCODE GetPreStubEntryPoint() override
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifdef DACCESS_COMPILE
+        UNREACHABLE_RET();
+#else
+        return GetEEFuncEntryPoint(ComCallPreStub);
+#endif
+    }
+
+    ComCallMethodDesc* GetComCallMethodDesc()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pCMD;
+    }
+private:
+    ComCallMethodDesc* m_pCMD;
+};
 
 #endif // __COMTOCLRCALL_H__

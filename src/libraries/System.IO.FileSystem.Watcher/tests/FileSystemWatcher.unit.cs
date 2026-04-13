@@ -947,9 +947,27 @@ namespace System.IO.Tests
                 watcher.Filters.Add(fileOne.Name);
                 watcher.Filters.Add(fileTwo.Name);
 
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileOne.Delete, cleanup: () => fileOne.Create().Dispose(), expectedPath : fileOne.FullName);
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileTwo.Delete, cleanup: () => fileTwo.Create().Dispose(), expectedPath: fileTwo.FullName );
-                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, fileThree.Delete, cleanup: () => fileThree.Create().Dispose(), expectedPath: fileThree.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileOne.Delete,
+                    cleanup: () =>
+                    {
+                        WaitForPathToBeDeleted(fileOne.FullName);
+                        fileOne.Create().Dispose();
+                    },
+                    expectedPath: fileOne.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileTwo.Delete,
+                    cleanup: () =>
+                    {
+                        WaitForPathToBeDeleted(fileTwo.FullName);
+                        fileTwo.Create().Dispose();
+                    },
+                    expectedPath: fileTwo.FullName);
+                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, fileThree.Delete,
+                    cleanup: () =>
+                    {
+                        WaitForPathToBeDeleted(fileThree.FullName);
+                        fileThree.Create().Dispose();
+                    },
+                    expectedPath: fileThree.FullName);
             }
         }
 
@@ -1013,9 +1031,27 @@ namespace System.IO.Tests
                 watcher.Filters.Add(Path.GetFileName(directoryOne.FullName));
                 watcher.Filters.Add(Path.GetFileName(directoryTwo.FullName));
 
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryOne.Delete(), cleanup: () => directoryOne.Create(), expectedPath: directoryOne.FullName);
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryTwo.Delete(), cleanup: () => directoryTwo.Create(), expectedPath: directoryTwo.FullName);
-                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryThree.Delete(), cleanup: () => directoryThree.Create(), expectedPath: directoryThree.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryOne.Delete(),
+                    cleanup: () =>
+                    {
+                        WaitForPathToBeDeleted(directoryOne.FullName);
+                        directoryOne.Create();
+                    },
+                    expectedPath: directoryOne.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryTwo.Delete(),
+                    cleanup: () =>
+                    {
+                        WaitForPathToBeDeleted(directoryTwo.FullName);
+                        directoryTwo.Create();
+                    },
+                    expectedPath: directoryTwo.FullName);
+                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryThree.Delete(),
+                    cleanup: () =>
+                    {
+                        WaitForPathToBeDeleted(directoryThree.FullName);
+                        directoryThree.Create();
+                    },
+                    expectedPath: directoryThree.FullName);
             }
         }
 

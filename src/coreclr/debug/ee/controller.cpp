@@ -468,15 +468,12 @@ StackTraceTicket::StackTraceTicket(DebuggerUserBreakpoint * p)
 //      caller wants information about a specific frame.
 // CONTEXT* pContext:  A pointer to a CONTEXT structure.  Can be null,
 // we use our temp context.
-// bool suppressUMChainFromCLRToCOMMethodFrameGeneric - A ridiculous flag that is trying to narrowly
-//      target a fix for issue 650903.
 // StackTraceTicket - ticket to ensure that we actually have permission for this stacktrace
 void ControllerStackInfo::GetStackInfo(
     StackTraceTicket ticket,
     Thread *thread,
     FramePointer targetFP,
-    CONTEXT *pContext,
-    bool suppressUMChainFromCLRToCOMMethodFrameGeneric
+    CONTEXT *pContext
     )
 {
     _ASSERTE(thread != NULL);
@@ -504,7 +501,6 @@ void ControllerStackInfo::GetStackInfo(
     m_targetFP  = targetFP;
     m_targetFrameFound = (m_targetFP == LEAF_MOST_FRAME);
     m_specialChainReason = CHAIN_NONE;
-    m_suppressUMChainFromCLRToCOMMethodFrameGeneric = suppressUMChainFromCLRToCOMMethodFrameGeneric;
 
     int result = DebuggerWalkStack(thread,
                                    LEAF_MOST_FRAME,
@@ -563,26 +559,6 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
     // save this info away for later use.
     if (i->m_bottomFP == LEAF_MOST_FRAME)
         i->m_bottomFP = pInfo->fp;
-
-    // This is part of the targeted fix for issue 650903 (see the other
-    // parts in code:TrackUMChain and code:DebuggerStepper::TrapStepOut).
-    //
-    // pInfo->fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric has been
-    // set by TrackUMChain to help us remember that the current frame we're looking at is
-    // CLRToCOMMethodFrameGeneric (we can't rely on looking at pInfo->frame to check
-    // this), and i->m_suppressUMChainFromCLRToCOMMethodFrameGeneric has been set by the
-    // dude initiating this walk to remind us that our goal in life is to do a Step Out
-    // during managed-only debugging. These two things together tell us we should ignore
-    // this frame, rather than erroneously identifying it as the target frame.
-    //
-#ifdef FEATURE_COMINTEROP
-    if(i->m_suppressUMChainFromCLRToCOMMethodFrameGeneric &&
-        (pInfo->chainReason == CHAIN_ENTER_UNMANAGED) &&
-        (pInfo->fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric))
-    {
-        return SWA_CONTINUE;
-    }
-#endif // FEATURE_COMINTEROP
 
     //have we reached the correct frame yet?
     if (!i->m_targetFrameFound &&
@@ -5487,7 +5463,7 @@ InterpreterStepHelper::StepSetupResult InterpreterStepHelper::SetupStep(
                     LOG((LF_CORDB, LL_INFO10000, "ISH::SS: skipIP == nextIP, only one patch needed\n"));
                 }
                 else
-                {                
+                {
                     LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No skip IP for conditional branch!\n"));
                     return SSR_Failed;
                 }
@@ -6908,15 +6884,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         // stack.
         StackTraceTicket ticket(info);
 
-        // The last parameter here is part of a really targeted (*cough* dirty) fix to
-        // disable getting an unwanted UMChain to fix issue 650903 (See
-        // code:ControllerStackInfo::WalkStack and code:TrackUMChain for the other
-        // parts.) In the case of managed step out we know that we aren't interested in
-        // unmanaged frames, and generating that unmanaged frame causes the stackwalker
-        // not to report the managed frame that was at the same SP. However the unmanaged
-        // frame might be used in the mixed-mode step out case so I don't suppress it
-        // there.
-        returnInfo.GetStackInfo(ticket, GetThread(), info->GetReturnFrame().fp, NULL, !(m_rgfMappingStop & STOP_UNMANAGED));
+        returnInfo.GetStackInfo(ticket, GetThread(), info->GetReturnFrame().fp, NULL);
         info = &returnInfo;
 
 #ifdef _DEBUG
@@ -7839,7 +7807,7 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
 
     // With the addition of Async Thunks, it is now possible that an unjitted method trace
     // represents a stub. We need to check for this case and follow the stub trace to find
-    // the real target. 
+    // the real target.
     // Replica patches do not contain a reference to the original trace so we can not rely
     // on the trace type == TRACE_UNJITTED_METHOD to identify this case.
     {
@@ -7877,7 +7845,7 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                     traceOk, traceOk ? trace.GetTraceType() : -1));
             }
 
-            if (traceOk && 
+            if (traceOk &&
                 g_pEEInterface->FollowTrace(&trace) &&
                 PatchTrace(&trace, info.m_activeFrame.fp,
                            (m_rgfMappingStop & STOP_UNMANAGED) ? true : false))
@@ -8935,8 +8903,7 @@ TP_RESULT DebuggerThreadStarter::TriggerPatch(DebuggerControllerPatch *patch,
         else if ((patch->trace.GetTraceType() == TRACE_FRAME_PUSH) && (thread->GetFrame()->IsTransitionToNativeFrame()))
         {
             // If we've got a frame that is transitioning to native, there's no reason to try to keep tracing. So we
-            // bail early and save ourselves some effort. This also works around a problem where we deadlock trying to
-            // do too much work to determine the destination of a CLRToCOMMethodFrame. (See issue 87103.)
+            // bail early and save ourselves some effort.
             //
             // Note: trace call is still enabled, so we can just ignore this patch and wait for trace call to fire
             // again...

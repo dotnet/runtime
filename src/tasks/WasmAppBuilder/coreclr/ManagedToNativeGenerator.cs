@@ -10,9 +10,8 @@ using System.Reflection;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using WasmAppBuilder;
 
-namespace Microsoft.WebAssembly.Build.Tasks;
+namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 public class ManagedToNativeGenerator : Task
 {
@@ -73,7 +72,7 @@ public class ManagedToNativeGenerator : Task
         Dictionary<string, string> _symbolNameFixups = new();
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
         var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode);
-        var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, log);
+        var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, log, isCoreClr: true);
 
         var resolver = new PathAssemblyResolver(managedAssemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");

@@ -13,6 +13,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Runtime.InteropServices;
@@ -87,7 +88,7 @@ namespace Microsoft.Win32.SafeHandles
         public static SafeProcessHandle Start(ProcessStartInfo startInfo)
         {
             ArgumentNullException.ThrowIfNull(startInfo);
-            startInfo.ThrowIfInvalid(out bool anyRedirection);
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
 
             if (anyRedirection)
             {
@@ -98,31 +99,32 @@ namespace Microsoft.Win32.SafeHandles
                 throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
             }
 
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
 
             SafeFileHandle? childInputHandle = startInfo.StandardInputHandle;
             SafeFileHandle? childOutputHandle = startInfo.StandardOutputHandle;
             SafeFileHandle? childErrorHandle = startInfo.StandardErrorHandle;
 
+            using SafeFileHandle? nullDeviceHandle = startInfo.StartDetached
+                && (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
+                ? File.OpenNullHandle()
+                : null;
+
             if (!startInfo.UseShellExecute)
             {
-                if (childInputHandle is null && !OperatingSystem.IsAndroid())
-                {
-                    childInputHandle = Console.OpenStandardInputHandle();
-                }
+                childInputHandle ??= nullDeviceHandle ?? (ProcessUtils.PlatformSupportsConsole ? Console.OpenStandardInputHandle() : null);
+                childOutputHandle ??= nullDeviceHandle ?? (ProcessUtils.PlatformSupportsConsole ? Console.OpenStandardOutputHandle() : null);
+                childErrorHandle ??= nullDeviceHandle ?? (ProcessUtils.PlatformSupportsConsole ? Console.OpenStandardErrorHandle() : null);
 
-                if (childOutputHandle is null && !OperatingSystem.IsAndroid())
-                {
-                    childOutputHandle = Console.OpenStandardOutputHandle();
-                }
-
-                if (childErrorHandle is null && !OperatingSystem.IsAndroid())
-                {
-                    childErrorHandle = Console.OpenStandardErrorHandle();
-                }
+                ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
             }
 
-            return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
+            return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
         }
 
         /// <summary>

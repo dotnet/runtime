@@ -9,8 +9,9 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.Build.Tasks;
-using WasmAppBuilder;
 using JoinedString;
+
+namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 #pragma warning disable CA1067
 #pragma warning disable CS0649

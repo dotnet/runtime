@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)Extensions\ConfigurationRootTest.cs" Link="Common\Extensions\ConfigurationRootTest.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
 
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
   </ItemGroup>
