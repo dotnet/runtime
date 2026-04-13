@@ -2440,10 +2440,10 @@ namespace System.StubHelpers
             return TMarshaler.AllocateSpaceForUnmanaged(managed);
         }
 
-        internal static unsafe T[]? ConvertArraySpaceToManaged<T, TMarshaler>(byte* pNativeHome, int cElements)
+        internal static unsafe Array? ConvertArraySpaceToManaged<T, TMarshaler>(byte* pNativeHome, int cElements)
             where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            return (T[]?)TMarshaler.AllocateSpaceForManaged(pNativeHome, cElements);
+            return TMarshaler.AllocateSpaceForManaged(pNativeHome, cElements);
         }
 
         internal static unsafe void ClearArrayNative<T, TMarshaler>(byte* pNativeHome, int cElements)

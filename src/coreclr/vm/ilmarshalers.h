@@ -3268,9 +3268,6 @@ protected:
     const BinderMethodID m_idClearManaged;
 };
 
-// Base class for array marshalers that use managed IArrayMarshaler<T> implementations
-// for element-by-element conversion. Provides shared VT-to-marshaler-type resolution and
-// generic method instantiation for ConvertArrayContents/FreeArrayContents helpers.
 class ILArrayMarshalerBase : public ILMarshaler
 {
 protected:
@@ -3291,18 +3288,6 @@ protected:
         LIMITED_METHOD_CONTRACT;
         return true;
     }
-
-    void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
-    void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
-    void EmitClearNativeContents(ILCodeStream* pslILEmit) override;
-
-    // Resolve the managed marshaler MethodTable and the element type it marshals.
-    // Both are returned together to guarantee they are consistent (e.g. for enums,
-    // the element type is the underlying primitive, matching the marshaler's T).
-    void GetMarshalerAndElementTypes(MethodTable** ppMarshalerMT, TypeHandle* pElementType);
-
-    // Instantiate one of the generic StubHelpers array methods with the element type and marshaler type.
-    MethodDesc* GetInstantiatedArrayMethod(BinderMethodID methodId);
 
     // Load the native element count onto the evaluation stack.
     // Subclasses implement this differently (dynamic size param vs. fixed count).
@@ -3382,6 +3367,7 @@ protected:
     void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
     void EmitLoadNativeSize(ILCodeStream* pslILEmit) override;
+    void EmitClearNativeContents(ILCodeStream* pslILEmit) override;
     void EmitClearNative(ILCodeStream* pslILEmit) override;
 };
 
