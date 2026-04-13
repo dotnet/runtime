@@ -4209,14 +4209,14 @@ namespace
     case VT_DECIMAL:
     {
         *pElementType = thElement;
-        *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+        *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
         return;
     }
 
     case VT_UI2:
     {
         // System.Char arrays use a dedicated marshaler; other VT_UI2 types (UInt16)
-        // use the standard StructureMarshaler.
+        // use BlittableArrayMarshaler for bulk copy.
         if (thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__CHAR)))
         {
             *pElementType = thElement;
@@ -4225,7 +4225,7 @@ namespace
         else
         {
             *pElementType = thElement;
-            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
         }
         return;
     }

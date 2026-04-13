@@ -1170,18 +1170,18 @@ namespace System.StubHelpers
                 bool isOut = IsOut(dwFlags);
                 _impl = Type.GetTypeCode(elementType) switch
                 {
-                    TypeCode.SByte => new ArrayImplementation<sbyte, StructureMarshaler<sbyte>>(isOut),
-                    TypeCode.Byte => new ArrayImplementation<byte, StructureMarshaler<byte>>(isOut),
-                    TypeCode.Int16 => new ArrayImplementation<short, StructureMarshaler<short>>(isOut),
-                    TypeCode.UInt16 => new ArrayImplementation<ushort, StructureMarshaler<ushort>>(isOut),
-                    TypeCode.Int32 => new ArrayImplementation<int, StructureMarshaler<int>>(isOut),
-                    TypeCode.UInt32 => new ArrayImplementation<uint, StructureMarshaler<uint>>(isOut),
-                    TypeCode.Int64 => new ArrayImplementation<long, StructureMarshaler<long>>(isOut),
-                    TypeCode.UInt64 => new ArrayImplementation<ulong, StructureMarshaler<ulong>>(isOut),
-                    TypeCode.Single => new ArrayImplementation<float, StructureMarshaler<float>>(isOut),
-                    TypeCode.Double => new ArrayImplementation<double, StructureMarshaler<double>>(isOut),
-                    TypeCode.Object when elementType == typeof(nint) => new ArrayImplementation<nint, StructureMarshaler<nint>>(isOut),
-                    TypeCode.Object when elementType == typeof(nuint) => new ArrayImplementation<nuint, StructureMarshaler<nuint>>(isOut),
+                    TypeCode.SByte => new ArrayImplementation<sbyte, BlittableArrayMarshaler<sbyte>>(isOut),
+                    TypeCode.Byte => new ArrayImplementation<byte, BlittableArrayMarshaler<byte>>(isOut),
+                    TypeCode.Int16 => new ArrayImplementation<short, BlittableArrayMarshaler<short>>(isOut),
+                    TypeCode.UInt16 => new ArrayImplementation<ushort, BlittableArrayMarshaler<ushort>>(isOut),
+                    TypeCode.Int32 => new ArrayImplementation<int, BlittableArrayMarshaler<int>>(isOut),
+                    TypeCode.UInt32 => new ArrayImplementation<uint, BlittableArrayMarshaler<uint>>(isOut),
+                    TypeCode.Int64 => new ArrayImplementation<long, BlittableArrayMarshaler<long>>(isOut),
+                    TypeCode.UInt64 => new ArrayImplementation<ulong, BlittableArrayMarshaler<ulong>>(isOut),
+                    TypeCode.Single => new ArrayImplementation<float, BlittableArrayMarshaler<float>>(isOut),
+                    TypeCode.Double => new ArrayImplementation<double, BlittableArrayMarshaler<double>>(isOut),
+                    TypeCode.Object when elementType == typeof(nint) => new ArrayImplementation<nint, BlittableArrayMarshaler<nint>>(isOut),
+                    TypeCode.Object when elementType == typeof(nuint) => new ArrayImplementation<nuint, BlittableArrayMarshaler<nuint>>(isOut),
                     TypeCode.Char when !IsAnsi(dwFlags) => new ArrayImplementation<char, UnicodeCharArrayElementMarshaler>(isOut),
                     TypeCode.Char when IsAnsi(dwFlags) => CreateAnsiCharArrayImplementation(isOut, dwFlags),
                     TypeCode.Boolean => new ArrayImplementation<bool, BoolMarshaler<int>>(isOut),
@@ -1318,6 +1318,46 @@ namespace System.StubHelpers
         internal const int ConvertToUnmanaged = 0;
         internal const int ConvertToManaged = 1;
         internal const int Free = 2;
+    }
+
+    internal sealed class BlittableArrayMarshaler<T> : IArrayMarshaler<T, BlittableArrayMarshaler<T>>
+        where T : unmanaged
+    {
+        static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
+        {
+            Debug.Assert(managedArray is not null);
+            SpanHelpers.Memmove(ref *unmanaged, ref MemoryMarshal.GetArrayDataReference(managedArray), (nuint)length * (nuint)sizeof(T));
+        }
+
+        static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
+        {
+            Debug.Assert(managedArray is not null);
+            SpanHelpers.Memmove(ref MemoryMarshal.GetArrayDataReference(managedArray), ref *unmanaged, (nuint)length * (nuint)sizeof(T));
+        }
+
+        static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.FreeContents(byte* unmanaged, int length)
+        {
+        }
+
+        static unsafe byte* IArrayMarshaler<T, BlittableArrayMarshaler<T>>.AllocateSpaceForUnmanaged(Array? managedArray)
+        {
+            if (managedArray is null)
+                return null;
+
+            int nativeBytes = checked(managedArray.Length * sizeof(T));
+            byte* pNative = (byte*)Marshal.AllocCoTaskMem(nativeBytes);
+            NativeMemory.Clear(pNative, (nuint)nativeBytes);
+
+            return pNative;
+        }
+
+        static unsafe Array? IArrayMarshaler<T, BlittableArrayMarshaler<T>>.AllocateSpaceForManaged(byte* unmanaged, int length)
+        {
+            if (unmanaged is null)
+                return null;
+
+            return new T[length];
+        }
     }
 
     internal sealed unsafe class StructureMarshaler<T> : IArrayElementMarshaler<T, StructureMarshaler<T>> where T : notnull
