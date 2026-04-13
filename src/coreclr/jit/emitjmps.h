@@ -64,6 +64,10 @@ JMP_SMALL(ne    , eq    , bne    )  // NE
 JMP_SMALL(jmp   , jmp   , j      )
 JMP_SMALL(eq    , ne    , beq    )  // EQ
 JMP_SMALL(ne    , eq    , bne    )  // NE
+JMP_SMALL(gt    , le    , bgt    )  // CC=2 (greater)
+JMP_SMALL(le    , gt    , ble    )  // CC=0,1 (less or equal)
+JMP_SMALL(lt    , ge    , blt    )  // CC=1 (less than)
+JMP_SMALL(ge    , lt    , bge    )  // CC=0,2 (greater or equal)
 #else
   #error Unsupported or unset target architecture
 #endif // target type

@@ -47,11 +47,8 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 /*static*/ instruction emitter::emitJumpKindToIns(emitJumpKind jumpKind)
 {
-    _ASSERTE(!"NYI");
-#if 0
     assert((unsigned)jumpKind < ArrLen(emitJumpKindInstructions));
     return emitJumpKindInstructions[jumpKind];
-#endif
 }
 
 /*****************************************************************************
@@ -61,8 +58,6 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 /*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
 {
-    _ASSERTE(!"NYI");
-#if 0
     for (unsigned i = 0; i < ArrLen(emitJumpKindInstructions); i++)
     {
         if (ins == emitJumpKindInstructions[i])
@@ -73,7 +68,6 @@ const emitJumpKind emitReverseJumpKinds[] = {
         }
     }
     unreached();
-#endif
 }
 
 /*****************************************************************************
@@ -82,11 +76,8 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 /*static*/ emitJumpKind emitter::emitReverseJumpKind(emitJumpKind jumpKind)
 {
-    _ASSERTE(!"NYI");
-#if 0
     assert(jumpKind < EJ_COUNT);
     return emitReverseJumpKinds[jumpKind];
-#endif
 }
 
 /*****************************************************************************
@@ -3296,6 +3287,8 @@ void emitter::emitIns_R_I(instruction ins,
             break;
 #endif
         case INS_lgfi:
+        case INS_iihf:
+        case INS_iilf:
             assert(isValidGeneralDatasize(size));
             assert(insOptsNone(opt)); // No explicit LSL here
             // We will automatically determine the shift based upon the imm
@@ -3839,10 +3832,13 @@ void emitter::emitIns_R_R(instruction     ins,
     emitAttr  elemsize = EA_UNKNOWN;
     insFormat fmt      = IF_NONE;
 
-#if 0
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+	case INS_cr:
+            fmt = IF_DR_2E;
+            break;
+#if 0
         case INS_dup:
             // Vector operation
             assert(insOptsAnyArrangement(opt));
@@ -4476,10 +4472,9 @@ void emitter::emitIns_R_R(instruction     ins,
         default:
             // fallback to emit SVE instructions.
             return emitInsSve_R_R(ins, attr, reg1, reg2, opt, sopt);
-
+#endif
     } // end switch (ins)
 
-#endif
 
     instrDesc* id = emitNewInstrSmall(attr);
 
@@ -8356,108 +8351,34 @@ void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, reg
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 {
-    _ASSERTE(!"NYI");
-#if 0
-    insFormat fmt = IF_NONE;
-
-    if (dst != nullptr)
-    {
-        assert(dst->HasFlag(BBF_HAS_LABEL));
-    }
-    else
-    {
-        assert(instrCount != 0);
-    }
-
-    /* Figure out the encoding format of the instruction */
-
-    switch (ins)
-    {
-        case INS_bl_local:
-        case INS_b:
-            // Unconditional jump is a single form.
-            // Assume is long in case we cross hot/cold sections.
-            fmt = IF_BI_0A;
-            break;
-
-        case INS_beq:
-        case INS_bne:
-        case INS_bhs:
-        case INS_blo:
-        case INS_bmi:
-        case INS_bpl:
-        case INS_bvs:
-        case INS_bvc:
-        case INS_bhi:
-        case INS_bls:
-        case INS_bge:
-        case INS_blt:
-        case INS_bgt:
-        case INS_ble:
-            // Assume conditional jump is long.
-            fmt = IF_LARGEJMP;
-            break;
-
-        default:
-            unreached();
-            break;
-    }
-
     instrDescJmp* id = emitNewInstrJmp();
-
     id->idIns(ins);
-    id->idInsFmt(fmt);
-    id->idjShort = false;
-
-#ifdef DEBUG
-    // Mark the finally call
-    if (ins == INS_bl_local && emitComp->compCurBB->KindIs(BBJ_CALLFINALLY))
-    {
-        id->idDebugOnlyInfo()->idFinallyCall = true;
-    }
-#endif // DEBUG
-
+    id->idInsFmt(IF_BI_0A);
+    id->idOpSize(EA_PTRSIZE);
     if (dst != nullptr)
     {
         id->idAddr()->iiaBBlabel = dst;
-
-        // Skip unconditional jump that has a single form.
-        // The target needs to be relocated.
-        id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
-
-#ifdef DEBUG
-        if (emitComp->opts.compLongAddress) // Force long branches
-        {
-            id->idjKeepLong = true;
-        }
-#endif // DEBUG
+        id->idjKeepLong = true;
     }
     else
     {
         id->idAddr()->iiaSetInstrCount(instrCount);
         id->idjKeepLong = false;
-        /* This jump must be short */
-        emitSetShortJump(id);
         id->idSetIsBound();
     }
-
-    /* Record the jump's IG and offset within it */
-
-    id->idjIG   = emitCurIG;
-    id->idjOffs = emitCurIGsize;
-
-    /* Append this jump to this IG's jump list */
-
-    id->idjNext      = emitCurIGjmpList;
-    emitCurIGjmpList = id;
-
+    id->idjShort = false;
+    id->idjIG    = emitCurIG;
+    id->idjOffs  = emitCurIGsize;
+    if (dst != nullptr)
+    {
+        id->idjNext      = emitCurIGjmpList;
+        emitCurIGjmpList = id;
 #if EMITTER_STATS
-    emitTotalIGjmps++;
+        emitTotalIGjmps++;
 #endif
-
+    }
     dispIns(id);
     appendToCurIG(id);
-#endif
 }
 
 /*****************************************************************************
@@ -9743,163 +9664,19 @@ BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, inst
 
 BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 {
-    _ASSERTE(!"NYI");
-#if 0
     instrDescJmp* id = (instrDescJmp*)i;
-
     unsigned srcOffs;
     unsigned dstOffs;
     BYTE*    srcAddr;
     BYTE*    dstAddr;
     ssize_t  distVal;
-
-    // Set default ins/fmt from id.
     instruction ins = id->idIns();
-    insFormat   fmt = id->idInsFmt();
-
-    bool loadLabel    = false;
-    bool isJump       = false;
-    bool loadConstant = false;
-
-    switch (ins)
-    {
-        default:
-            isJump = true;
-            break;
-
-        case INS_tbz:
-        case INS_tbnz:
-        case INS_cbz:
-        case INS_cbnz:
-            isJump = true;
-            break;
-
-        case INS_ldr:
-        case INS_ldrsw:
-            loadConstant = true;
-            break;
-
-        case INS_adr:
-        case INS_adrp:
-            loadLabel = true;
-            break;
-    }
-
-    /* Figure out the distance to the target */
 
     srcOffs = emitCurCodeOffs(dst);
     srcAddr = emitOffsetToPtr(srcOffs);
 
-    if (id->idAddr()->iiaIsJitDataOffset())
-    {
-        assert(loadConstant || loadLabel);
-        int doff = id->idAddr()->iiaGetJitDataOffset();
-        assert(doff >= 0);
-        ssize_t imm = emitGetInsSC(id);
-        assert((imm >= 0) && (imm < 0x1000)); // 0x1000 is arbitrary, currently 'imm' is always 0
-
-        unsigned dataOffs = (unsigned)(doff + imm);
-        assert(dataOffs < emitDataSize());
-        dstAddr = emitDataOffsetToPtr(dataOffs);
-
-        regNumber dstReg  = id->idReg1();
-        regNumber addrReg = dstReg; // an integer register to compute long address.
-        emitAttr  opSize  = id->idOpSize();
-
-        if (loadConstant)
-        {
-            if (id->idjShort)
-            {
-                // ldr x/v, [rel addr] -- load constant from current addr(ip) + rel addr.
-                assert(ins == INS_ldr);
-                assert(fmt == IF_LS_1A);
-                distVal = (ssize_t)(dstAddr - srcAddr);
-                dst     = emitOutputShortConstant(dst, ins, fmt, distVal, dstReg, opSize);
-            }
-            else
-            {
-                // adrp x, [rel page addr] -- compute page address: current page addr + rel page addr
-                assert(fmt == IF_LARGELDC);
-                ssize_t relPageAddr = computeRelPageAddr((size_t)dstAddr, (size_t)srcAddr);
-                if (isVectorRegister(dstReg))
-                {
-                    // Update addrReg with the reserved integer register
-                    // since we cannot use dstReg (vector) to load constant directly from memory.
-
-                    // If loading a 16-byte value, we will need to load directly into dstReg.
-                    // Thus, encode addrReg for the ld1 instruction.
-                    if (opSize == EA_16BYTE)
-                    {
-                        addrReg = encodingSPtoZR(id->idReg2());
-                    }
-                    else
-                    {
-                        addrReg = id->idReg2();
-                    }
-
-                    assert(isGeneralRegister(addrReg));
-                }
-
-                ins = INS_adrp;
-                fmt = IF_DI_1E;
-                dst = emitOutputShortAddress(dst, ins, fmt, relPageAddr, addrReg);
-
-                ssize_t imm12 = (ssize_t)dstAddr & 0xFFF; // 12 bits
-                assert(isValidUimm<12>(imm12));
-
-                // Special case: emit add + ld1 instructions for loading 16-byte data into vector register.
-                if (isVectorRegister(dstReg) && (opSize == EA_16BYTE))
-                {
-                    const emitAttr elemSize = EA_1BYTE;
-                    const insOpts  opt      = optMakeArrangement(opSize, elemSize);
-
-                    assert(isGeneralRegisterOrSP(addrReg));
-                    assert(isValidVectorElemsize(elemSize));
-                    assert(isValidArrangement(opSize, opt));
-
-                    // Calculate page addr + page offs, then emit ld1 instruction.
-                    dst = emitOutputVectorConstant(dst, imm12, dstReg, addrReg, opSize, elemSize);
-                }
-                else
-                {
-                    // ldr x, [x, 0] -- load constant from address into integer register.
-                    ins = INS_ldr;
-                    fmt = IF_LS_2B;
-                    dst = emitOutputShortConstant(dst, ins, fmt, imm12, addrReg, opSize);
-
-                    // fmov v, d -- copy constant in integer register to vector register.
-                    // This is needed only for vector constant.
-                    if (addrReg != dstReg)
-                    {
-                        //  fmov    Vd,Rn                DV_2I  X00111100X100111 000000nnnnnddddd   1E27 0000   Vd,Rn
-                        //  (scalar, from general)
-                        assert(isVectorRegister(dstReg) && isGeneralRegister(addrReg));
-                        ins         = INS_fmov;
-                        fmt         = IF_DV_2I;
-                        code_t code = emitInsCode(ins, fmt);
-
-                        code |= insEncodeReg_Vd(dstReg);  // ddddd
-                        code |= insEncodeReg_Rn(addrReg); // nnnnn
-                        if (id->idOpSize() == EA_8BYTE)
-                        {
-                            code |= 0x80400000; // X ... X
-                        }
-                        dst += emitOutput_Instr(dst, code);
-                    }
-                }
-            }
-        }
-        else
-        {
-            assert(loadLabel);
-            dst = emitOutputLoadLabel(dst, srcAddr, dstAddr, id);
-        }
-
-        return dst;
-    }
-
-    assert(loadLabel || isJump);
-
+//    dstOffs = id->idAddr()->iiaIGlabel->igOffs;
+//    dstAddr = emitOffsetToPtr(dstOffs);
     if (id->idAddr()->iiaHasInstrCount())
     {
         assert(ig != NULL);
@@ -9907,10 +9684,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         unsigned insNum     = emitFindInsNum(ig, id);
         if (instrCount < 0)
         {
-            // Backward branches using instruction count must be within the same instruction group.
             assert(insNum + 1 >= (unsigned)(-instrCount));
         }
-
         dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
         dstAddr = emitOffsetToPtr(dstOffs);
     }
@@ -9919,202 +9694,40 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         dstOffs = id->idAddr()->iiaIGlabel->igOffs;
         dstAddr = emitOffsetToPtr(dstOffs);
     }
-
     distVal = (ssize_t)(dstAddr - srcAddr);
 
-    if (dstOffs <= srcOffs)
+    if (dstOffs > srcOffs)
     {
-#if DEBUG_EMIT
-        /* This is a backward jump - distance is known at this point */
-
-        if (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
-        {
-            size_t blkOffs = id->idjIG->igOffs;
-
-            if (INTERESTING_JUMP_NUM == 0)
-                printf("[3] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
-            printf("[3] Jump  block is at %08X - %02X = %08X\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
-            printf("[3] Jump        is at %08X - %02X = %08X\n", srcOffs, emitOffsAdj, srcOffs - emitOffsAdj);
-            printf("[3] Label block is at %08X - %02X = %08X\n", dstOffs, emitOffsAdj, dstOffs - emitOffsAdj);
-        }
-#endif
-    }
-    else
-    {
-        /* This is a  forward jump - distance will be an upper limit */
-
         emitFwdJumps = true;
-
-        /* The target offset will be closer by at least 'emitOffsAdj', but only if this
-           jump doesn't cross the hot-cold boundary. */
-
         if (!emitJumpCrossHotColdBoundary(srcOffs, dstOffs))
         {
             dstOffs -= emitOffsAdj;
             distVal -= emitOffsAdj;
         }
-
-        /* Record the location of the jump for later patching */
-
         id->idjOffs = dstOffs;
-
-        /* Are we overflowing the id->idjOffs bitfield? */
         if (id->idjOffs != dstOffs)
             IMPL_LIMITATION("Method is too large");
-
-#if DEBUG_EMIT
-        if (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
-        {
-            size_t blkOffs = id->idjIG->igOffs;
-
-            if (INTERESTING_JUMP_NUM == 0)
-                printf("[4] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
-            printf("[4] Jump  block is at %08X\n", blkOffs);
-            printf("[4] Jump        is at %08X\n", srcOffs);
-            printf("[4] Label block is at %08X - %02X = %08X\n", dstOffs + emitOffsAdj, emitOffsAdj, dstOffs);
-        }
-#endif
     }
 
-#ifdef DEBUG
-    if (0 && emitComp->verbose)
-    {
-        size_t sz          = 4;
-        int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
-               dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs, distVal);
-    }
-#endif
-
-    /* For forward jumps, record the address of the distance value */
     id->idjTemp.idjAddr = (distVal > 0) ? dst : NULL;
 
-    assert(insOptsNone(id->idInsOpt()));
-
-    if (isJump)
+    unsigned mask;
+    switch (ins)
     {
-        if (id->idjShort)
-        {
-            // Short conditional/unconditional jump
-            assert(!id->idjKeepLong);
-            assert(emitJumpCrossHotColdBoundary(srcOffs, dstOffs) == false);
-            assert((fmt == IF_BI_0A) || (fmt == IF_BI_0B) || (fmt == IF_BI_1A) || (fmt == IF_BI_1B));
-            dst = emitOutputShortBranch(dst, ins, fmt, distVal, id);
-        }
-        else
-        {
-            // Long conditional/unconditional jump
-
-            if (fmt == IF_LARGEJMP)
-            {
-                // This is a pseudo-instruction format representing a large conditional branch, to allow
-                // us to get a greater branch target range than we can get by using a straightforward conditional
-                // branch. It is encoded as a short conditional branch that branches around a long unconditional
-                // branch.
-                //
-                // Conceptually, we have:
-                //
-                //      b<cond> L_target
-                //
-                // The code we emit is:
-                //
-                //      b<!cond> L_not  // 4 bytes. Note that we reverse the condition.
-                //      b L_target      // 4 bytes
-                //   L_not:
-                //
-                // Note that we don't actually insert any blocks: we simply encode "b <!cond> L_not" as a branch with
-                // the correct offset. Note also that this works for both integer and floating-point conditions, because
-                // the condition inversion takes ordered/unordered into account, preserving NaN behavior. For example,
-                // "GT" (greater than) is inverted to "LE" (less than, equal, or unordered).
-
-                instruction reverseIns;
-                insFormat   reverseFmt;
-
-                switch (ins)
-                {
-                    case INS_cbz:
-                        reverseIns = INS_cbnz;
-                        reverseFmt = IF_BI_1A;
-                        break;
-                    case INS_cbnz:
-                        reverseIns = INS_cbz;
-                        reverseFmt = IF_BI_1A;
-                        break;
-                    case INS_tbz:
-                        reverseIns = INS_tbnz;
-                        reverseFmt = IF_BI_1B;
-                        break;
-                    case INS_tbnz:
-                        reverseIns = INS_tbz;
-                        reverseFmt = IF_BI_1B;
-                        break;
-                    default:
-                        reverseIns = emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(ins)));
-                        reverseFmt = IF_BI_0B;
-                }
-
-                dst = emitOutputShortBranch(dst,
-                                            reverseIns,    // reverse the conditional instruction
-                                            reverseFmt, 8, /* 8 bytes from start of this large conditional
-                                                              pseudo-instruction to L_not. */
-                                            id);
-
-                // Now, pretend we've got a normal unconditional branch, and fall through to the code to emit that.
-                ins = INS_b;
-                fmt = IF_BI_0A;
-
-                // The distVal was computed based on the beginning of the pseudo-instruction,
-                // So subtract the size of the conditional branch so that it is relative to the
-                // unconditional branch.
-                distVal -= 4;
-            }
-
-            assert(fmt == IF_BI_0A);
-            assert((distVal & 1) == 0);
-            code_t     code               = emitInsCode(ins, fmt);
-            const bool doRecordRelocation = emitComp->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
-
-            if (doRecordRelocation)
-            {
-                // dst isn't an actual final target location, just some intermediate
-                // location.  Thus we cannot make any guarantees about distVal (not
-                // even the direction/sign).  Instead we don't encode any offset and
-                // rely on the relocation to do all the work
-            }
-            else
-            {
-                // Branch offset encodings are scaled by 4.
-                noway_assert((distVal & 3) == 0);
-                distVal >>= 2;
-                noway_assert(isValidSimm<26>(distVal));
-
-                // Insert offset into unconditional branch instruction
-                distVal &= 0x3FFFFFFLL;
-                code |= distVal;
-            }
-
-            const unsigned instrSize = emitOutput_Instr(dst, code);
-
-            if (doRecordRelocation)
-            {
-                assert(id->idjKeepLong);
-                if (emitComp->info.compMatchedVM)
-                {
-                    void* target = emitOffsetToPtr(dstOffs);
-                    emitRecordRelocation((void*)dst, target, IMAGE_REL_ARM64_BRANCH26);
-                }
-            }
-
-            dst += instrSize;
-        }
-    }
-    else if (loadLabel)
-    {
-        dst = emitOutputLoadLabel(dst, srcAddr, dstAddr, id);
+        case INS_j:   mask = 15; break;
+        case INS_beq: mask = 8;  break;
+        case INS_bne: mask = 7;  break;
+        case INS_bgt: mask = 2;  break;
+        case INS_ble: mask = 12; break;
+        case INS_blt: mask = 4;  break;
+        case INS_bge: mask = 10; break;
+        default: unreached();
     }
 
+    int32_t offset_hw = (int32_t)(distVal / 2);
+    code_t op = emitInsCode(ins, fmt);
+    S390_RIL_a(dst, op, mask, offset_hw);
     return dst;
-#endif
 }
 
 /*****************************************************************************
@@ -10579,6 +10192,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RIL_a(dst, op, id->idReg1(), imm);
             break;
 
+        case INS_iihf:
+            imm = emitGetInsSC(id);
+            op = emitInsCode(ins, fmt);
+            S390_RIL_a(dst, op, id->idReg1(), imm);
+            break;
+
+        case INS_iilf:
+            imm = emitGetInsSC(id);
+            op = emitInsCode(ins, fmt);
+            S390_RIL_a(dst, op, id->idReg1(), imm);
+            break;
+
         case INS_nop:
             op = emitInsCode(ins, fmt);
             S390_RR(dst, op, 0, 0);
@@ -10627,6 +10252,22 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_mul:
             op = emitInsCode(ins, fmt);
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+        break;
+
+        case INS_cr:
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_j:
+        case INS_beq:
+        case INS_bne:
+        case INS_bgt:
+        case INS_ble:
+        case INS_blt:
+        case INS_bge:
+            dst = emitOutputLJ(ig, dst, id);
+            sz = sizeof(instrDescJmp);
             break;
 
         case INS_msgrkc:

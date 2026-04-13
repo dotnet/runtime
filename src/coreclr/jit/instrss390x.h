@@ -39,6 +39,8 @@ INST(br,		"br",			0,		0x07)
 INST(ret,		"ret",			0,		0x07)
 //// R_R
 INST(lgfi,		"lgfi",			0,		0xc01)
+INST(iihf,              "iihf",                 0,              0xc08)
+INST(iilf,              "iilf",                 0,              0xc09)
 INST(break,		"break",		0,		0x00)
 INST(brk_unix,          "brk_unix",             0,              0xD4200000)
 INST(aebr,      "aebr",         0,      0xb30a)
@@ -134,12 +136,17 @@ INST(lgr,		"lgr",			0,		0xb904)
 // RV64D
 // RV32A + RV64A (R-type, R_R_R)
 
-//s390xmarker:these are just added for the sake of passing the build, remove later
-INST(j,             "j",              0,    0x0000006f)
-INST(beq,           "beq",            0,    0x00000063)
-INST(bne,           "bne",            0,    0x00001063)
+//// Compare (RR format - 2 bytes, sets condition code)
+INST(cr,            "cr",             0,    0x19)
 
-
+//// Conditional Branch (all use BRCL opcode 0xC04, RIL format, 6 bytes)
+INST(j,             "brcl",           0,    0xC04)
+INST(beq,           "brcl",           0,    0xC04)
+INST(bne,           "brcl",           0,    0xC04)
+INST(bgt,           "brcl",           0,    0xC04)
+INST(ble,           "brcl",           0,    0xC04)
+INST(blt,           "brcl",           0,    0xC04)
+INST(bge,           "brcl",           0,    0xC04)
 
 // clang-format on
 /*****************************************************************************/

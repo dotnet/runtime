@@ -540,9 +540,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //            genCodeForIndexAddr(treeNode->AsIndexAddr());
 //            break;
 //
-//        case GT_IND:
-//            genCodeForIndir(treeNode->AsIndir());
-//            break;
+        case GT_IND:
+            genCodeForIndir(treeNode->AsIndir());
+            break;
 
       //  case GT_MUL_LONG:
       //      genCodeForMulLong(treeNode->AsOp());
@@ -584,19 +584,19 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // FEATURE_HW_INTRINSICS
 
- //       case GT_EQ:
- //       case GT_NE:
- //       case GT_LT:
- //       case GT_LE:
- //       case GT_GE:
- //       case GT_GT:
- //       case GT_TEST_NE:
- //       case GT_TEST_EQ:
- //       case GT_CMP:
- //       case GT_TEST:
- //           genConsumeOperands(treeNode->AsOp());
- //           genCodeForCompare(treeNode->AsOp());
- //           break;
+        case GT_EQ:
+        case GT_NE:
+        case GT_LT:
+        case GT_LE:
+        case GT_GE:
+        case GT_GT:
+        case GT_TEST_NE:
+        case GT_TEST_EQ:
+        case GT_CMP:
+        case GT_TEST:
+            genConsumeOperands(treeNode->AsOp());
+            genCodeForCompare(treeNode->AsOp());
+            break;
 
 #ifdef TARGET_ARM64
         case GT_SELECT_NEG:
@@ -623,17 +623,17 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // TARGET_ARM64
 
-//        case GT_JTRUE:
-//            genCodeForJTrue(treeNode->AsOp());
-//            break;
-//
-//        case GT_JCC:
-//            genCodeForJcc(treeNode->AsCC());
-//            break;
-//
-//        case GT_SETCC:
-//            genCodeForSetcc(treeNode->AsCC());
-//            break;
+        case GT_JTRUE:
+            genCodeForJTrue(treeNode->AsOp());
+            break;
+
+        case GT_JCC:
+            genCodeForJcc(treeNode->AsCC());
+            break;
+
+        case GT_SETCC:
+            genCodeForSetcc(treeNode->AsCC());
+            break;
 //
 //        case GT_RETURNTRAP:
 //            genCodeForReturnTrap(treeNode->AsOp());
@@ -2182,43 +2182,19 @@ instruction CodeGen::genGetVolatileLdStIns(instruction   currentIns,
 //
 void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
-    _ASSERTE("!NYI");
-/*
     assert(tree->OperIs(GT_IND));
-
-#ifdef FEATURE_SIMD
-    // Handling of Vector3 type values loaded through indirection.
-    if (tree->TypeGet() == TYP_SIMD12)
-    {
-        genLoadIndTypeSimd12(tree);
-        return;
-    }
-#endif // FEATURE_SIMD
-
+    
     var_types   type      = tree->TypeGet();
     instruction ins       = ins_Load(type);
     regNumber   targetReg = tree->GetRegNum();
-
+    
     genConsumeAddress(tree->Addr());
-
-    bool emitBarrier = false;
-
-    if (tree->IsVolatile())
-    {
-        ins = genGetVolatileLdStIns(ins, targetReg, tree, &emitBarrier);
-    }
-
-    GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), targetReg, tree);
-
-    if (emitBarrier)
-    {
-        // when INS_ldar* could not be used for a volatile load,
-        // we use an ordinary load followed by a load barrier.
-        instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
-    }
-
+    
+    regNumber addrReg = tree->Addr()->GetRegNum();
+    
+    GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(type), targetReg, addrReg, 0);
+    
     genProduceReg(tree);
-*/
 }
 
 //#ifdef TARGET_ARM64
@@ -4456,25 +4432,24 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 // clang-format off
 const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
 {
-#if 0
     { },       // NONE
     { },       // 1
-    { EJ_lt }, // SLT
+    { EJ_lt}, // SLT
     { EJ_le }, // SLE
-    { EJ_ge }, // SGE
+    { EJ_ge}, // SGE
     { EJ_gt }, // SGT
-    { EJ_mi }, // S
-    { EJ_pl }, // NS
+    { }, // S
+    { }, // NS
 
     { EJ_eq }, // EQ
     { EJ_ne }, // NE
-    { EJ_lo }, // ULT
-    { EJ_ls }, // ULE
-    { EJ_hs }, // UGE
-    { EJ_hi }, // UGT
-    { EJ_hs }, // C
-    { EJ_lo }, // NC
-
+    { }, // ULT
+    { }, // ULE
+    { }, // UGE
+    { }, // UGT
+    { }, // C
+    { }, // NC
+#if 0
     { EJ_eq },                // FEQ
     { EJ_gt, GT_AND, EJ_lo }, // FNE
     { EJ_lo },                // FLT
@@ -4554,14 +4529,7 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
 //
 void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
-    _ASSERTE("!NYI");
-/*
-#if !FEATURE_FIXED_OUT_ARGS
-    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
-#endif // !FEATURE_FIXED_OUT_ARGS
-
     GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
-*/
 }
 
 //------------------------------------------------------------------------
@@ -4716,6 +4684,61 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     assert(r == targetReg);
 
     genProduceReg(treeNode);
+}
+
+void CodeGen::genCodeForCompare(GenTreeOp* tree)
+{
+    regNumber targetReg = tree->GetRegNum();
+    GenTree*  op1 = tree->gtOp1;
+    GenTree*  op2 = tree->gtOp2;
+
+    GetEmitter()->emitIns_R_R(INS_cr, EA_4BYTE, op1->GetRegNum(), op2->GetRegNum());
+
+    if (targetReg != REG_NA)
+    {
+        // cr sets CC but doesn't modify registers.
+        // lgfi does NOT alter CC, so CC from cr is preserved.
+        //
+        // Sequence to materialize 0/1:
+        //   lgfi  targetReg, 1       ; assume true
+        //   brcl  <cond>, +1instr   ; if condition met, skip the "load 0"
+        //   lgfi  targetReg, 0       ; condition not met, set to 0
+        instruction branchIns;
+        switch (tree->OperGet())
+        {
+            case GT_GT: branchIns = INS_bgt; break;
+            case GT_EQ: branchIns = INS_beq; break;
+            case GT_NE: branchIns = INS_bne; break;
+            case GT_LE: branchIns = INS_ble; break;
+            case GT_LT: branchIns = INS_blt; break;
+            case GT_GE: branchIns = INS_bge; break;
+            default: unreached();
+        }
+        GetEmitter()->emitIns_R_I(INS_lgfi, EA_4BYTE, targetReg, 1, INS_OPTS_NONE,
+                                  INS_SCALABLE_OPTS_NONE DEBUGARG(0) DEBUGARG(GTF_EMPTY));
+        GetEmitter()->emitIns_J(branchIns, nullptr, 1);
+        GetEmitter()->emitIns_R_I(INS_lgfi, EA_4BYTE, targetReg, 0, INS_OPTS_NONE,
+                                  INS_SCALABLE_OPTS_NONE DEBUGARG(0) DEBUGARG(GTF_EMPTY));
+        genProduceReg(tree);
+    }
+}
+
+void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
+
+    GenTree*  op  = jtrue->gtGetOp1();
+    regNumber reg = genConsumeReg(op);
+
+    GetEmitter()->emitIns_R_I(INS_lgfi, EA_4BYTE, REG_R0, 0);
+    GetEmitter()->emitIns_R_R(INS_cr, EA_4BYTE, reg, REG_R0);
+    inst_JMP(EJ_ne, compiler->compCurBB->GetTrueTarget());
+
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -6737,10 +6760,20 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     }
     else
     {
-        if (/*emitter::emitIns_valid_imm_for_mov(imm, size)*/ 1)
+	if (imm == (ssize_t)(int32_t)imm)
         {
+            // Value fits in 32-bit signed range: lgfi sign-extends to 64 bits
             GetEmitter()->emitIns_R_I(INS_lgfi, size, reg, imm, INS_OPTS_NONE,
                                       INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+        }
+        else
+        {
+            // 64-bit value: use IIHF (high 32 bits) + IILF (low 32 bits)
+            uint64_t val = (uint64_t)imm;
+            GetEmitter()->emitIns_R_I(INS_iihf, EA_8BYTE, reg, (ssize_t)(val >> 32), INS_OPTS_NONE,
+                                      INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            GetEmitter()->emitIns_R_I(INS_iilf, EA_8BYTE, reg, (ssize_t)(val & 0xFFFFFFFF), INS_OPTS_NONE,
+                                      INS_SCALABLE_OPTS_NONE DEBUGARG(0) DEBUGARG(GTF_EMPTY));
         }
 #if 0
         else
