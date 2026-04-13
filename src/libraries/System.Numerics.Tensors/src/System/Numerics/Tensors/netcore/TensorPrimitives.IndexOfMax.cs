@@ -420,13 +420,13 @@ namespace System.Numerics.Tensors
         }
 
         private static int IndexOfFirstMatch<T>(Vector128<T> mask) =>
-            BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
+            Vector128.IndexOfWhereAllBitsSet(mask);
 
         private static int IndexOfFirstMatch<T>(Vector256<T> mask) =>
-            BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
+            Vector256.IndexOfWhereAllBitsSet(mask);
 
         private static int IndexOfFirstMatch<T>(Vector512<T> mask) =>
-            BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
+            Vector512.IndexOfWhereAllBitsSet(mask);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe Vector256<T> IndexLessThan<T>(Vector256<T> indices1, Vector256<T> indices2) =>

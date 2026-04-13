@@ -4176,7 +4176,7 @@ namespace System
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector512<T>.Count);
                     while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
                     {
-                        count += BitOperations.PopCount(Vector512.Equals(Vector512.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        count += Vector512.CountWhereAllBitsSet(Vector512.Equals(Vector512.LoadUnsafe(ref current), targetVector));
                         current = ref Unsafe.Add(ref current, Vector512<T>.Count);
                     }
 
@@ -4191,7 +4191,7 @@ namespace System
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector256<T>.Count);
                     while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
                     {
-                        count += BitOperations.PopCount(Vector256.Equals(Vector256.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        count += Vector256.CountWhereAllBitsSet(Vector256.Equals(Vector256.LoadUnsafe(ref current), targetVector));
                         current = ref Unsafe.Add(ref current, Vector256<T>.Count);
                     }
 
@@ -4206,7 +4206,7 @@ namespace System
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector128<T>.Count);
                     while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
                     {
-                        count += BitOperations.PopCount(Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                        count += Vector128.CountWhereAllBitsSet(Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector));
                         current = ref Unsafe.Add(ref current, Vector128<T>.Count);
                     }
 

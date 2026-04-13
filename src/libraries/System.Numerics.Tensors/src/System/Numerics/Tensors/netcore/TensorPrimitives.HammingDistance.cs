@@ -88,7 +88,7 @@ namespace System.Numerics.Tensors
                             Vector512<T> xVec = Vector512.LoadUnsafe(ref xRef, (uint)i);
                             Vector512<T> yVec = Vector512.LoadUnsafe(ref yRef, (uint)i);
 
-                            count += BitOperations.PopCount((~Vector512.Equals(xVec, yVec)).ExtractMostSignificantBits());
+                            count += Vector512.CountWhereAllBitsSet(~Vector512.Equals(xVec, yVec));
 
                             i += Vector512<T>.Count;
                         }
@@ -104,7 +104,7 @@ namespace System.Numerics.Tensors
                             xVec &= remainderMask;
                             yVec &= remainderMask;
 
-                            count += BitOperations.PopCount((~Vector512.Equals(xVec, yVec)).ExtractMostSignificantBits());
+                            count += Vector512.CountWhereAllBitsSet(~Vector512.Equals(xVec, yVec));
                         }
                     }
                     else
@@ -120,7 +120,7 @@ namespace System.Numerics.Tensors
                             Vector256<T> xVec = Vector256.LoadUnsafe(ref xRef, (uint)i);
                             Vector256<T> yVec = Vector256.LoadUnsafe(ref yRef, (uint)i);
 
-                            count += BitOperations.PopCount((~Vector256.Equals(xVec, yVec)).ExtractMostSignificantBits());
+                            count += Vector256.CountWhereAllBitsSet(~Vector256.Equals(xVec, yVec));
 
                             i += Vector256<T>.Count;
                         }
@@ -136,7 +136,7 @@ namespace System.Numerics.Tensors
                             xVec &= remainderMask;
                             yVec &= remainderMask;
 
-                            count += BitOperations.PopCount((~Vector256.Equals(xVec, yVec)).ExtractMostSignificantBits());
+                            count += Vector256.CountWhereAllBitsSet(~Vector256.Equals(xVec, yVec));
                         }
                     }
                 }
@@ -153,7 +153,7 @@ namespace System.Numerics.Tensors
                         Vector128<T> xVec = Vector128.LoadUnsafe(ref xRef, (uint)i);
                         Vector128<T> yVec = Vector128.LoadUnsafe(ref yRef, (uint)i);
 
-                        count += BitOperations.PopCount((~Vector128.Equals(xVec, yVec)).ExtractMostSignificantBits());
+                        count += Vector128.CountWhereAllBitsSet(~Vector128.Equals(xVec, yVec));
 
                         i += Vector128<T>.Count;
                     }
@@ -169,7 +169,7 @@ namespace System.Numerics.Tensors
                         xVec &= remainderMask;
                         yVec &= remainderMask;
 
-                        count += BitOperations.PopCount((~Vector128.Equals(xVec, yVec)).ExtractMostSignificantBits());
+                        count += Vector128.CountWhereAllBitsSet(~Vector128.Equals(xVec, yVec));
                     }
                 }
             }
