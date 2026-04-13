@@ -27,7 +27,7 @@ public class R2RTestSuites
     [Fact]
     public void BasicCrossModuleInlining()
     {
-        var InlineableLib = new CompiledAssembly
+        var inlineableLib = new CompiledAssembly
         {
             AssemblyName = "InlineableLib",
             SourceResourceNames = ["CrossModuleInlining/Dependencies/InlineableLib.cs"],
@@ -36,10 +36,10 @@ public class R2RTestSuites
         {
             AssemblyName = "BasicCrossModuleInlining",
             SourceResourceNames = ["CrossModuleInlining/BasicInlining.cs"],
-            References = [InlineableLib]
+            References = [inlineableLib]
         };
 
-        var cgInlineableLib = new CrossgenAssembly(InlineableLib){ Kind = Crossgen2InputKind.Reference, Options = [Crossgen2AssemblyOption.CrossModuleOptimization] };
+        var cgInlineableLib = new CrossgenAssembly(inlineableLib){ Kind = Crossgen2InputKind.Reference, Options = [Crossgen2AssemblyOption.CrossModuleOptimization] };
         var cgBasicCrossModuleInlining = new CrossgenAssembly(basicCrossModuleInlining);
 
         new R2RTestRunner(_output).Run(new R2RTestCase(

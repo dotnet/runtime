@@ -23,8 +23,10 @@
     <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
   </ItemGroup>
 
-  <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time -->
+  <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time.
+       Exclude subdirectory sources from compilation since they are compiled in-memory by R2RTestCaseCompiler. -->
   <ItemGroup>
+    <Compile Remove="TestCases/*/**/*.cs" />
     <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 

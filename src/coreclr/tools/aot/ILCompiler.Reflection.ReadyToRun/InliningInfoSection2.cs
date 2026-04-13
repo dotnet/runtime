@@ -125,7 +125,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return $"{moduleName}!{ResolveMethodInModule(rid, moduleIndex)}";
             }
 
-            if (_localMethodMap.TryGetValue((uint)rid, out string name))
+            if (_localMethodMap.TryGetValue((0, (uint)rid), out string name))
                 return name;
 
             return $"<MethodDef 0x{RidToMethodDef(rid):X8}>";
@@ -163,7 +163,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private string TryGetModuleName(uint moduleIndex)
         {
-            if (moduleIndex == 0 && !_r2r.Composite)
+            if (moduleIndex == 0)
                 return Path.GetFileNameWithoutExtension(_r2r.Filename);
 
             try
@@ -176,17 +176,21 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        private Dictionary<uint, string> BuildLocalMethodMap()
+        private Dictionary<(uint ModuleIndex, uint Rid), string> BuildLocalMethodMap()
         {
-            var map = new Dictionary<uint, string>();
-            foreach (var assembly in _r2r.ReadyToRunAssemblies)
+            var map = new Dictionary<(uint ModuleIndex, uint Rid), string>();
+            for (int assemblyIndex = 0; assemblyIndex < _r2r.ReadyToRunAssemblies.Count; assemblyIndex++)
             {
-                foreach (var method in assembly.Methods)
+                uint moduleIndex = _r2r.Composite
+                    ? (uint)(assemblyIndex + _r2r.ComponentAssemblyIndexOffset)
+                    : 0;
+
+                foreach (var method in _r2r.ReadyToRunAssemblies[assemblyIndex].Methods)
                 {
                     if (method.MethodHandle.Kind == HandleKind.MethodDefinition)
                     {
                         uint methodRid = (uint)MetadataTokens.GetRowNumber((MethodDefinitionHandle)method.MethodHandle);
-                        map[methodRid] = method.SignatureString;
+                        map[(moduleIndex, methodRid)] = method.SignatureString;
                     }
                 }
             }
@@ -196,14 +200,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if (instanceEntry.Method.MethodHandle.Kind == HandleKind.MethodDefinition)
                 {
                     uint methodRid = (uint)MetadataTokens.GetRowNumber((MethodDefinitionHandle)instanceEntry.Method.MethodHandle);
-                    map.TryAdd(methodRid, instanceEntry.Method.SignatureString);
+                    map.TryAdd((0, methodRid), instanceEntry.Method.SignatureString);
                 }
             }
 
             return map;
         }
 
-        private Dictionary<uint, string> _localMethodMap;
+        private Dictionary<(uint ModuleIndex, uint Rid), string> _localMethodMap;
 
         public override string ToString()
         {
@@ -225,9 +229,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     uint module = curParser.GetUnsigned();
                     count--;
-                    string moduleName = (int)module < _r2r.ManifestReferences.Count + 1
-                        ? _r2r.GetReferenceAssemblyName((int)module)
-                        : $"<invalid module index {module}>";
+                    string moduleName = TryGetModuleName(module);
                     sb.AppendLine($"Inliners for inlinee {inlineeToken:X8} (module {moduleName}):");
                 }
                 else
@@ -248,9 +250,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     {
                         uint module = curParser.GetUnsigned();
                         count--;
-                        string moduleName = (int)module < _r2r.ManifestReferences.Count + 1
-                            ? _r2r.GetReferenceAssemblyName((int)module)
-                            : $"<invalid module index {module}>";
+                        string moduleName = TryGetModuleName(module);
                         sb.AppendLine($"  {inlinerToken:X8} (module {moduleName})");
                     }
                     else

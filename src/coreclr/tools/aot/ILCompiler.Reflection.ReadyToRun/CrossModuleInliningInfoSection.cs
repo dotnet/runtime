@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
@@ -13,7 +12,7 @@ using Internal.ReadyToRunConstants;
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
-    /// Parser for the CrossModuleInlineInfo section (ReadyToRunSectionType 119, added in R2R v6.2).
+    /// Parser for the CrossModuleInlineInfo section (ReadyToRunSectionType 119, added in R2R v6.3).
     /// This format differs from InliningInfo2 (section 114) — it uses a stream-size counted
     /// encoding with 2-bit flags on the inlinee index and supports ILBody import indices for
     /// cross-module inlinees and inliners.
@@ -143,7 +142,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     uint inlinerDeltaAndFlag = curParser.GetUnsigned();
                     streamSize--;
 
-                    uint moduleIndex = 0;
+                    uint moduleIndex = inlinee.ModuleIndex;
                     if (_multiModuleFormat)
                     {
                         currentRid += inlinerDeltaAndFlag >> (int)CrossModuleInlineFlags.InlinerRidShift;
@@ -179,7 +178,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return ResolveCrossModuleMethod(methodRef.Index);
             }
 
-            return ResolveLocalMethod(methodRef.Index);
+            return ResolveLocalMethod(methodRef.Index, methodRef.ModuleIndex);
         }
 
         /// <summary>
@@ -269,12 +268,11 @@ namespace ILCompiler.Reflection.ReadyToRun
             return $"<ILBody import #{importIndex}>";
         }
 
-        private string ResolveLocalMethod(uint rid)
+        private string ResolveLocalMethod(uint rid, uint moduleIndex)
         {
             _localMethodMap ??= BuildLocalMethodMap();
-            string name;
 
-            return _localMethodMap.TryGetValue(rid, out name)
+            return _localMethodMap.TryGetValue((moduleIndex, rid), out string name)
                 ? name
                 : $"<MethodDef 0x{RidToMethodDef((int)rid):X8}>";
         }
@@ -293,17 +291,21 @@ namespace ILCompiler.Reflection.ReadyToRun
             return default;
         }
 
-        private Dictionary<uint, string> BuildLocalMethodMap()
+        private Dictionary<(uint ModuleIndex, uint Rid), string> BuildLocalMethodMap()
         {
-            var map = new Dictionary<uint, string>();
-            foreach (var assembly in _r2r.ReadyToRunAssemblies)
+            var map = new Dictionary<(uint ModuleIndex, uint Rid), string>();
+            for (int assemblyIndex = 0; assemblyIndex < _r2r.ReadyToRunAssemblies.Count; assemblyIndex++)
             {
-                foreach (var method in assembly.Methods)
+                uint moduleIndex = _r2r.Composite
+                    ? (uint)(assemblyIndex + _r2r.ComponentAssemblyIndexOffset)
+                    : 0;
+
+                foreach (var method in _r2r.ReadyToRunAssemblies[assemblyIndex].Methods)
                 {
                     if (method.MethodHandle.Kind == HandleKind.MethodDefinition)
                     {
                         uint methodRid = (uint)MetadataTokens.GetRowNumber((MethodDefinitionHandle)method.MethodHandle);
-                        map[methodRid] = method.SignatureString;
+                        map[(moduleIndex, methodRid)] = method.SignatureString;
                     }
                 }
             }
@@ -313,7 +315,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if (instanceEntry.Method.MethodHandle.Kind == HandleKind.MethodDefinition)
                 {
                     uint methodRid = (uint)MetadataTokens.GetRowNumber((MethodDefinitionHandle)instanceEntry.Method.MethodHandle);
-                    map.TryAdd(methodRid, instanceEntry.Method.SignatureString);
+                    // Instance methods don't carry a module index — use 0 (owner module) as default.
+                    map.TryAdd((0, methodRid), instanceEntry.Method.SignatureString);
                 }
             }
 
@@ -322,11 +325,11 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private ReadyToRunImportSection _ilBodyImportSection;
         private bool _ilBodyImportSectionResolved;
-        private Dictionary<uint, string> _localMethodMap;
+        private Dictionary<(uint ModuleIndex, uint Rid), string> _localMethodMap;
 
         private string TryGetModuleName(uint moduleIndex)
         {
-            if (moduleIndex == 0 && !_r2r.Composite)
+            if (moduleIndex == 0)
             {
                 return Path.GetFileNameWithoutExtension(_r2r.Filename);
             }
