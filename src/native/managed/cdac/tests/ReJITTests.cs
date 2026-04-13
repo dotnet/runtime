@@ -40,8 +40,8 @@ public class ReJITTests
         TestPlaceholderTarget target = targetBuilder
             .AddTypes(CreateContractTypes(rejitBuilder))
             .AddGlobals((nameof(Constants.Globals.ProfilerControlBlock), rejitBuilder.ProfilerControlBlockGlobalAddress))
-            .AddContract<IReJIT>(static target => ((IContractFactory<IReJIT>)new ReJITFactory()).CreateContract(target, 1))
-            .AddContract<ICodeVersions>(_ => mockCodeVersions.Object)
+            .AddContract<IReJIT>(version: 1)
+            .AddMockContract(mockCodeVersions)
             .Build();
         return new ReJITContractContext(target.Contracts.ReJIT, target);
     }

@@ -36,6 +36,16 @@
 #define OSSL_PKEY_PARAM_EC_COFACTOR  "cofactor"
 #define OSSL_PKEY_PARAM_EC_SEED      "seed"
 
+#define OSSL_PKEY_PARAM_RSA_N            "n"
+#define OSSL_PKEY_PARAM_RSA_E            "e"
+#define OSSL_PKEY_PARAM_RSA_D            "d"
+#define OSSL_PKEY_PARAM_RSA_FACTOR1      "rsa-factor1"
+#define OSSL_PKEY_PARAM_RSA_FACTOR2      "rsa-factor2"
+#define OSSL_PKEY_PARAM_RSA_FACTOR3      "rsa-factor3"
+#define OSSL_PKEY_PARAM_RSA_EXPONENT1    "rsa-exponent1"
+#define OSSL_PKEY_PARAM_RSA_EXPONENT2    "rsa-exponent2"
+#define OSSL_PKEY_PARAM_RSA_COEFFICIENT1 "rsa-coefficient1"
+
 #define OSSL_STORE_INFO_PKEY 4
 #define OSSL_STORE_INFO_PUBKEY 3
 

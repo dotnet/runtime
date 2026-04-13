@@ -1390,7 +1390,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsThreadSuspendedOrHijacked(VMPTR
     {
 
         Thread * pThread = vmThread.GetDacPtr();
-        Thread::ThreadState ts = pThread->GetSnapshotState();
+        Thread::ThreadState ts = pThread->GetState();
         if ((ts & Thread::TS_SyncSuspended) != 0)
         {
             *pResult = TRUE;

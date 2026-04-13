@@ -169,7 +169,7 @@ enum VNFunc
 #define GTNODE(en, st, cm, ivn, ok) VNF_##en,
 #include "gtlist.h"
     VNF_Boundary = GT_COUNT,
-#define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic) VNF_##nm,
+#define ValueNumFuncDef(nm, arity, commute, knownNonNull) VNF_##nm,
 #include "valuenumfuncs.h"
     VNF_COUNT
 };
@@ -300,7 +300,6 @@ private:
         VNFOA_Arity2           = 0x8,  // Bits 2,3,4 encode the arity.
         VNFOA_Arity4           = 0x10, // Bits 2,3,4 encode the arity.
         VNFOA_KnownNonNull     = 0x20, // 1 iff the result is known to be non-null.
-        VNFOA_SharedStatic     = 0x40, // 1 iff this VNF is represent one of the shared static jit helpers
     };
 
     static const unsigned VNFOA_IllegalGenTreeOpShift = 0;
@@ -310,14 +309,12 @@ private:
     static const unsigned VNFOA_MaxArity              = (1 << VNFOA_ArityBits) - 1; // Max arity we can represent.
     static const unsigned VNFOA_ArityMask             = (VNFOA_Arity4 | VNFOA_Arity2 | VNFOA_Arity1);
     static const unsigned VNFOA_KnownNonNullShift     = 5;
-    static const unsigned VNFOA_SharedStaticShift     = 6;
 
     static_assert(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
     static_assert(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
     static_assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
     static_assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
     static_assert(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
-    static_assert(unsigned(VNFOA_SharedStatic) == (1 << VNFOA_SharedStaticShift));
 
     // These enum constants are used to encode the cast operation in the lowest bits by VNForCastOper
     enum VNFCastAttrib
@@ -334,7 +331,7 @@ private:
                                                     bool            commute,
                                                     bool            illegalAsVNFunc,
                                                     GenTreeOperKind kind);
-    static constexpr uint8_t GetOpAttribsForFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic);
+    static constexpr uint8_t GetOpAttribsForFunc(int arity, bool commute, bool knownNonNull);
     static const uint8_t     s_vnfOpAttribs[];
 
     // Returns "true" iff gtOper is a legal value number function.
@@ -830,9 +827,6 @@ public:
 
     // True "iff" vn is a value known to be non-null.  (For example, the result of an allocation...)
     bool IsKnownNonNull(ValueNum vn);
-
-    // True "iff" vn is a value returned by a call to a shared static helper.
-    bool IsSharedStatic(ValueNum vn);
 
     // VNForFunc: We have five overloads, for arities 0, 1, 2, 3 and 4
     ValueNum VNForFunc(var_types typ, VNFunc func);

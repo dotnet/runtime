@@ -7859,6 +7859,7 @@ public:
     //
     PhaseStatus optRedundantBranches();
     bool        optRedundantRelop(BasicBlock* const block);
+    bool        optRedundantDominatingBranch(BasicBlock* const block);
     bool        optRedundantBranch(BasicBlock* const block);
     bool        optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool        optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
@@ -12559,15 +12560,6 @@ public:
                     }
                 }
 
-                if (call->gtCallType == CT_INDIRECT)
-                {
-                    result = WalkTree(&call->gtCallAddr, call);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-
                 if (call->gtControlExpr != nullptr)
                 {
                     result = WalkTree(&call->gtControlExpr, call);
@@ -12576,7 +12568,6 @@ public:
                         return result;
                     }
                 }
-
                 break;
             }
 
