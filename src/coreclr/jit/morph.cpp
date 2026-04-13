@@ -10398,6 +10398,62 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
+// fgOptimizeDistributiveArithemtic: Optimizes distributive operations.
+//
+// Arguments:
+//   tree - the unchecked GT_ADD/GT_SUB/GT_OR/GT_AND tree to optimize.
+//
+// Return Value:
+//   The optimized tree that can have any shape.
+//
+GenTreeOp* Compiler::fgOptimizeDistributiveArithemtic(GenTreeOp* tree)
+{
+    assert(!tree->gtOverflowEx());
+
+    if (((tree->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) || ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0))
+    {
+        return tree;
+    }
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    auto isDistributiveOver = [](genTreeOps op1, genTreeOps op2) {
+        // op1 is distributive over op2 iff:
+        // ((A op2 B) op1 (A op2 C)) <==> (A op1 (B op2 C))
+
+        switch (op1)
+        {
+            case GT_MUL:
+                return op2 == GT_ADD || op2 == GT_SUB;
+
+            case GT_AND:
+                return op2 == GT_OR;
+
+            case GT_OR:
+                return op2 == GT_AND;
+
+            default:
+                return false;
+        }
+    };
+
+    if ((op1->OperGet() == op2->OperGet()) && isDistributiveOver(op1->OperGet(), tree->OperGet()) &&
+        varTypeIsIntegralOrI(tree))
+    {
+        if (GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
+        {
+            tree->AsOp()->gtOp1 = op1->gtGetOp1();
+            tree->AsOp()->gtOp2 = gtNewOperNode(tree->OperGet(), op1->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2());
+            tree->SetOper(op1->OperGet(), GenTree::PRESERVE_VN);
+            fgMorphTreeDone(tree->gtGetOp2());
+        }
+    }
+
+    return tree;
+}
+
+//------------------------------------------------------------------------
 // fgPushConstantsRight: Pushes constants to the right to help canonicalize the shape
 //
 // Arguments:
@@ -10478,6 +10534,11 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
 
             tree = optimizedTree;
         }
+    }
+
+    if (tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR))
+    {
+        tree = fgOptimizeDistributiveArithemtic(tree);
     }
 
     GenTree* optimizedTree = nullptr;
