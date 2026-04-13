@@ -89,9 +89,9 @@ internal partial class StackWalk_1 : IStackWalk
 
         /// <summary>
         /// Update the IsFirst state for the NEXT frame, matching native stackwalk.cpp:
-        /// - After a frameless frame: isFirst = false (line 2202)
-        /// - After a ResumableFrame: isFirst = true (line 2235)
-        /// - After other Frames: isFirst = false (implicit in line 2235 assignment)
+        /// - After a frameless frame: isFirst = false
+        /// - After a ResumableFrame: isFirst = true
+        /// - After other Frames: isFirst = false
         /// </summary>
         public void AdvanceIsFirst()
         {
@@ -197,7 +197,7 @@ internal partial class StackWalk_1 : IStackWalk
                         // If the frame was interrupted by an exception (reached via a
                         // FaultingExceptionFrame), set ExecutionAborted so the GcInfoDecoder
                         // skips live slot reporting at non-interruptible offsets. This matches
-                        // native CrawlFrame::GetCodeManagerFlags (stackwalk.h:252-254).
+                        // native CrawlFrame::GetCodeManagerFlags (stackwalk.h).
                         if (gcFrame.IsInterrupted)
                             codeManagerFlags |= CodeManagerFlags.ExecutionAborted;
 
@@ -668,17 +668,17 @@ internal partial class StackWalk_1 : IStackWalk
                 // GetReturnAddress() != 0, and gates GotoNextFrame on !pInlinedFrame.
                 // pInlinedFrame is set only for active InlinedCallFrames.
                 {
-                    // Detect exception frames (FRAME_ATTR_EXCEPTION) — matching native
-                    // stackwalk.cpp:2239: isInterrupted = (uFrameAttribs & FRAME_ATTR_EXCEPTION) != 0
-                    // Both FaultingExceptionFrame (hardware) and SoftwareExceptionFrame (managed throw)
-                    // have FRAME_ATTR_EXCEPTION set.
                     var frameType = handle.FrameIter.GetCurrentFrameType();
-                    handle.IsInterrupted = frameType is FrameIterator.FrameType.FaultingExceptionFrame
-                                                     or FrameIterator.FrameType.SoftwareExceptionFrame;
 
                     TargetPointer returnAddress = handle.FrameIter.GetReturnAddress();
                     bool isActiveICF = frameType == FrameIterator.FrameType.InlinedCallFrame
                                        && returnAddress != TargetPointer.Null;
+
+                    // Detect exception frames (FRAME_ATTR_EXCEPTION) before advancing.
+                    // Both FaultingExceptionFrame (hardware) and SoftwareExceptionFrame (managed throw)
+                    // have FRAME_ATTR_EXCEPTION set. The resulting managed frame gets ExecutionAborted.
+                    handle.IsInterrupted = frameType is FrameIterator.FrameType.FaultingExceptionFrame
+                                                     or FrameIterator.FrameType.SoftwareExceptionFrame;
 
                     if (returnAddress != TargetPointer.Null)
                     {

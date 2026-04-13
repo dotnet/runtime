@@ -61,11 +61,20 @@ This contract depends on the following descriptors:
 | `StubDispatchFrame` | `RepresentativeMTPtr` | Pointer to Frame's method table pointer |
 | `StubDispatchFrame` | `RepresentativeSlot` | Frame's method table slot |
 | `StubDispatchFrame` | `GCRefMap` | Cached pointer to GC reference map blob for caller stack promotion |
+| `StubDispatchFrame` | `ZapModule` | Module pointer for lazy GCRefMap resolution via import sections |
+| `StubDispatchFrame` | `Indirection` | Import slot pointer for lazy GCRefMap resolution |
 | `ExternalMethodFrame` | `GCRefMap` | Cached pointer to GC reference map blob for caller stack promotion |
+| `ExternalMethodFrame` | `Indirection` | Import slot pointer for lazy GCRefMap resolution |
+| `ExternalMethodFrame` | `ZapModule` | Module pointer for lazy GCRefMap resolution via import sections |
 | `DynamicHelperFrame` | `DynamicHelperFrameFlags` | Flags indicating which argument registers contain GC references |
 | `TransitionBlock` | `ReturnAddress` | Return address associated with the TransitionBlock |
 | `TransitionBlock` | `CalleeSavedRegisters` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
 | `TransitionBlock` (arm) | `ArgumentRegisters` | ARM specific `ArgumentRegisters` struct |
+| `TransitionBlock` | `OffsetOfArgs` | Byte offset of stack arguments (first arg after registers) = `sizeof(TransitionBlock)` |
+| `TransitionBlock` | `ArgumentRegistersOffset` | Byte offset of the ArgumentRegisters within the TransitionBlock |
+| `TransitionBlock` | `FirstGCRefMapSlot` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
+| `ReadyToRunInfo` | `ImportSections` | Pointer to array of `READYTORUN_IMPORT_SECTION` structs for GCRefMap resolution |
+| `ReadyToRunInfo` | `NumImportSections` | Count of import sections in the array |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
 | `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
 | `DebuggerEval` | `EvalDuringException` | Flag used in processing FuncEvalFrame |
@@ -95,9 +104,6 @@ Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | For each FrameType `<frameType>`, `<frameType>##Identifier` | `FrameIdentifier` enum value | Identifier used to determine concrete type of Frames |
-| `TransitionBlockOffsetOfFirstGCRefMapSlot` | `uint32` | Byte offset within TransitionBlock where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset. |
-| `TransitionBlockOffsetOfArgumentRegisters` | `uint32` | Byte offset of the ArgumentRegisters within the TransitionBlock |
-| `TransitionBlockOffsetOfArgs` | `uint32` | Byte offset of stack arguments (first arg after registers) = `sizeof(TransitionBlock)` |
 
 Constants used:
 | Source | Name | Value | Purpose |

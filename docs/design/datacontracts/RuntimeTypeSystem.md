@@ -185,6 +185,14 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
     public virtual bool HasMDContextArg(MethodDescHandle);
 
+    // Return true if the method requires a hidden instantiation argument (generic context parameter).
+    // Corresponds to native MethodDesc::RequiresInstArg().
+    public virtual bool RequiresInstArg(MethodDescHandle methodDesc);
+
+    // Return true if the method uses the async calling convention.
+    // Corresponds to native MethodDesc::IsAsyncMethod().
+    public virtual bool IsAsyncMethod(MethodDescHandle methodDesc);
+
     // Return true if a MethodDesc is in a collectible module
     public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc);
 
