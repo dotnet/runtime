@@ -123,7 +123,7 @@ namespace System.Tests
             }
             finally
             {
-                File.Delete(testFilePath);
+                try { File.Delete(testFilePath); } catch { }
             }
         }
 
@@ -140,12 +140,12 @@ namespace System.Tests
             {
                 Process process = null;
                 using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(
-                    static () =>
+                    static (data) =>
                     {
-                        byte[] bytes = Encoding.UTF8.GetBytes("Hello seekable stdout!");
-                        Console.OpenStandardOutput().Write(bytes);
+                        Console.OpenStandardOutput().Write(Encoding.UTF8.GetBytes(data));
                         return RemoteExecutor.SuccessExitCode;
                     },
+                    outputContent,
                     new RemoteInvokeOptions { Start = false }))
                 {
                     process = handle.Process;
@@ -162,7 +162,7 @@ namespace System.Tests
             }
             finally
             {
-                File.Delete(testFilePath);
+                try { File.Delete(testFilePath); } catch { }
             }
         }
 

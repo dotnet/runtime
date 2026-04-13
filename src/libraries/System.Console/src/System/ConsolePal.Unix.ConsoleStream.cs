@@ -16,11 +16,18 @@ namespace System
             private readonly SafeFileHandle _handle;
 
             /// <summary>
-            /// A FileStream wrapping the handle when it's a seekable file (e.g., a regular file).
-            /// RandomAccess.Read/Write use pread/pwrite which always read/write at a fixed offset;
-            /// for seekable files we need a FileStream to properly track the file position.
+            /// A FileStream wrapping the handle, used to perform reads/writes when the handle is
+            /// seekable. RandomAccess.Read/Write use pread/pwrite which always read/write at a
+            /// fixed offset; passing fileOffset:0 would keep reading/writing at position 0 rather
+            /// than advancing the position, producing incorrect results for seekable files.
             /// </summary>
-            private readonly FileStream? _fileStream;
+            private readonly FileStream _fileStream;
+
+            /// <summary>
+            /// True if the file handle is seekable (e.g. a regular file) and
+            /// <see cref="_fileStream"/> should be used for I/O instead of RandomAccess.
+            /// </summary>
+            private readonly bool _useFileStreamForIo;
 
             private readonly bool _useReadLine;
 
@@ -36,28 +43,18 @@ namespace System
                 _handle = handle;
                 _useReadLine = useReadLine;
 
-                // Create a FileStream to determine if the handle is seekable and to use for
-                // reads/writes on seekable files. RandomAccess.Read/Write use pread/pwrite which
-                // always operate at a specified offset; passing fileOffset:0 would cause them to
-                // read/write at position 0 rather than advancing the file position, which produces
-                // incorrect results for seekable files like regular files.
-                // For non-seekable files (e.g., pipes, terminals), FileStream.CanSeek is false
-                // and we fall back to the original RandomAccess-based path.
-                FileStream fs = new FileStream(handle, access, bufferSize: 0);
-                if (fs.CanSeek)
-                {
-                    _fileStream = fs;
-                }
-                // else: fs is not seekable; let it be GC'd. Its finalizer calls Dispose(false)
-                // which does NOT close the handle (OSFileStreamStrategy.Dispose skips the handle
-                // close when disposing=false), so _handle remains valid.
+                // Create a FileStream wrapper so we can check whether the handle is seekable and,
+                // for seekable handles, use it for reads/writes to properly advance the file position.
+                // The FileStream is always kept alive (never floated for GC) and disposed in Dispose().
+                _fileStream = new FileStream(handle, access, bufferSize: 0);
+                _useFileStreamForIo = _fileStream.CanSeek;
             }
 
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
                 {
-                    _fileStream?.Dispose();
+                    _fileStream.Dispose();
                     _handle.Dispose();
                 }
                 base.Dispose(disposing);
@@ -68,13 +65,13 @@ namespace System
                 _useReadLine ?
                     ConsolePal.StdInReader.ReadLine(buffer) :
 #endif
-                    _fileStream is not null ?
+                    _useFileStreamForIo ?
                         _fileStream.Read(buffer) :
                         RandomAccess.Read(_handle, buffer, fileOffset: 0);
 
             public override void Write(ReadOnlySpan<byte> buffer)
             {
-                if (_fileStream is not null)
+                if (_useFileStreamForIo)
                 {
                     ConsolePal.EnsureConsoleInitialized();
                     lock (Console.Out)
