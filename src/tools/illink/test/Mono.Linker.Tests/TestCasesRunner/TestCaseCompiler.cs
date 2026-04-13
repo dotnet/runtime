@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Linker.Tests.Extensions;
-using NUnit.Framework;
 #if NET
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;

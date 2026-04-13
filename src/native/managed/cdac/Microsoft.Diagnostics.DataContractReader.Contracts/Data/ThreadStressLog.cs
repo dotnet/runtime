@@ -12,13 +12,13 @@ internal sealed class ThreadStressLog : IData<ThreadStressLog>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ThreadStressLog);
 
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        ThreadId = target.Read<ulong>(address + (ulong)type.Fields[nameof(ThreadId)].Offset);
-        WriteHasWrapped = target.Read<byte>(address + (ulong)type.Fields[nameof(WriteHasWrapped)].Offset) != 0;
-        CurrentPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(CurrentPtr)].Offset);
-        ChunkListHead = target.ReadPointer(address + (ulong)type.Fields[nameof(ChunkListHead)].Offset);
-        ChunkListTail = target.ReadPointer(address + (ulong)type.Fields[nameof(ChunkListTail)].Offset);
-        CurrentWriteChunk = target.ReadPointer(address + (ulong)type.Fields[nameof(CurrentWriteChunk)].Offset);
+        Next = target.ReadPointerField(address, type, nameof(Next));
+        ThreadId = target.ReadField<ulong>(address, type, nameof(ThreadId));
+        WriteHasWrapped = target.ReadField<byte>(address, type, nameof(WriteHasWrapped)) != 0;
+        CurrentPtr = target.ReadPointerField(address, type, nameof(CurrentPtr));
+        ChunkListHead = target.ReadPointerField(address, type, nameof(ChunkListHead));
+        ChunkListTail = target.ReadPointerField(address, type, nameof(ChunkListTail));
+        CurrentWriteChunk = target.ReadPointerField(address, type, nameof(CurrentWriteChunk));
     }
 
     public TargetPointer Next { get; init; }

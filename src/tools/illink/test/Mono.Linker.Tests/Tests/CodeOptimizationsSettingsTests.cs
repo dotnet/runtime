@@ -1,35 +1,35 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Mono.Linker.Tests
 {
-    [TestFixture]
+    [TestClass]
     public class CodeOptimizationsSettingsTests
     {
-        [Test]
+        [TestMethod]
         public void GlobalSettingsOnly()
         {
             CodeOptimizationsSettings cos = new CodeOptimizationsSettings(CodeOptimizations.BeforeFieldInit);
             Assert.AreEqual(CodeOptimizations.BeforeFieldInit, cos.Global);
-            Assert.That(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "any"));
-            Assert.False(cos.IsEnabled(CodeOptimizations.Sealer, "any"));
+            Assert.IsTrue(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "any"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.Sealer, "any"));
         }
 
-        [Test]
+        [TestMethod]
         public void OneAssemblyIsExcluded()
         {
             CodeOptimizationsSettings cos = new CodeOptimizationsSettings(CodeOptimizations.BeforeFieldInit);
             cos.Disable(CodeOptimizations.BeforeFieldInit, "testasm.dll");
 
             Assert.AreEqual(CodeOptimizations.BeforeFieldInit, cos.Global);
-            Assert.That(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "any"));
-            Assert.False(cos.IsEnabled(CodeOptimizations.Sealer, "any"));
-            Assert.False(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "testasm.dll"));
+            Assert.IsTrue(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "any"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.Sealer, "any"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "testasm.dll"));
         }
 
-        [Test]
+        [TestMethod]
         public void ExcludedThenIncluded()
         {
             CodeOptimizationsSettings cos = new CodeOptimizationsSettings(CodeOptimizations.BeforeFieldInit);
@@ -37,38 +37,38 @@ namespace Mono.Linker.Tests
             cos.Enable(CodeOptimizations.OverrideRemoval | CodeOptimizations.BeforeFieldInit, "testasm.dll");
 
             Assert.AreEqual(CodeOptimizations.BeforeFieldInit, cos.Global);
-            Assert.That(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "any"));
-            Assert.False(cos.IsEnabled(CodeOptimizations.OverrideRemoval, "any"));
+            Assert.IsTrue(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "any"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.OverrideRemoval, "any"));
 
-            Assert.False(cos.IsEnabled(CodeOptimizations.Sealer, "any"));
-            Assert.That(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "testasm.dll"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.Sealer, "any"));
+            Assert.IsTrue(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "testasm.dll"));
         }
 
-        [Test]
+        [TestMethod]
         public void OnlyOneOptIsDisabled()
         {
             CodeOptimizationsSettings cos = new CodeOptimizationsSettings(CodeOptimizations.OverrideRemoval);
             cos.Disable(CodeOptimizations.BeforeFieldInit, "testasm.dll");
 
-            Assert.False(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "testasm.dll"));
-            Assert.False(cos.IsEnabled(CodeOptimizations.Sealer, "testasm.dll"));
-            Assert.False(cos.IsEnabled(CodeOptimizations.UnreachableBodies, "testasm.dll"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "testasm.dll"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.Sealer, "testasm.dll"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.UnreachableBodies, "testasm.dll"));
         }
 
-        [Test]
+        [TestMethod]
         public void PropagateFromGlobal()
         {
             CodeOptimizationsSettings cos = new CodeOptimizationsSettings(CodeOptimizations.BeforeFieldInit);
             cos.Disable(CodeOptimizations.IPConstantPropagation | CodeOptimizations.OverrideRemoval, "testasm.dll");
 
-            Assert.False(cos.IsEnabled(CodeOptimizations.IPConstantPropagation, "testasm.dll"));
-            Assert.False(cos.IsEnabled(CodeOptimizations.IPConstantPropagation, "any"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.IPConstantPropagation, "testasm.dll"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.IPConstantPropagation, "any"));
 
-            Assert.False(cos.IsEnabled(CodeOptimizations.OverrideRemoval, "testasm.dll"));
-            Assert.False(cos.IsEnabled(CodeOptimizations.OverrideRemoval, "any"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.OverrideRemoval, "testasm.dll"));
+            Assert.IsFalse(cos.IsEnabled(CodeOptimizations.OverrideRemoval, "any"));
 
-            Assert.True(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "testasm.dll"));
-            Assert.True(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "any"));
+            Assert.IsTrue(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "testasm.dll"));
+            Assert.IsTrue(cos.IsEnabled(CodeOptimizations.BeforeFieldInit, "any"));
         }
     }
 }
