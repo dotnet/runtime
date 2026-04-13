@@ -463,7 +463,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *
  *  See the description of frame shapes at genFuncletProlog().
  */
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
@@ -828,7 +828,13 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
     GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+//------------------------------------------------------------------------
+// genCallFinally: Generate a call to a finally.
+//
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
@@ -853,7 +859,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
             instGen(INS_ebreak); // This should never get executed
         }
 
-        return block;
+        return;
     }
     else
     {
@@ -879,8 +885,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
 
         GetEmitter()->emitEnableGC();
-
-        return nextBlock;
     }
 }
 
