@@ -515,7 +515,7 @@ public class MethodTableTests
                 eeClass.CorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
 
                 MockMethodTable methodTable = rtsBuilder.AddMethodTable("Align8Type");
-                methodTable.MTFlags = (uint)MethodTableFlags_1.WFLAGS_HIGH.RequiresAlign8;
+                methodTable.MTFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.Category_ValueType | MethodTableFlags_1.WFLAGS_HIGH.RequiresAlign8);
                 methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
                 methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
                 methodTable.NumVirtuals = 3;
