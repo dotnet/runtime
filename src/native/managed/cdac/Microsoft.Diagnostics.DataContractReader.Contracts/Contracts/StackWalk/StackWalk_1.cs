@@ -78,9 +78,10 @@ internal partial class StackWalk_1 : IStackWalk
             // Only frame types with FRAME_ATTR_RESUMABLE set isFirst=true.
             // FaultingExceptionFrame has FRAME_ATTR_FAULTED (sets hasFaulted)
             // but NOT FRAME_ATTR_RESUMABLE, so it must not be included here.
-            // TODO: HijackFrame only has FRAME_ATTR_RESUMABLE on non-x86 platforms.
-            // When x86 stack walking is supported, this should be conditioned on
-            // the target architecture.
+            // Note: HijackFrame only has FRAME_ATTR_RESUMABLE on non-x86 platforms
+            // (see frames.h). On x86 it uses GcScanRoots_Impl instead of the
+            // resumable frame pattern. When x86 cDAC stack walking is supported,
+            // HijackFrame should be conditioned on the target architecture.
             return ft is FrameIterator.FrameType.ResumableFrame
                       or FrameIterator.FrameType.RedirectedThreadFrame
                       or FrameIterator.FrameType.HijackFrame;
@@ -130,7 +131,7 @@ internal partial class StackWalk_1 : IStackWalk
         // Mirror native Init() -> ProcessCurrentFrame() -> CheckForSkippedFrames():
         // When the initial frame is managed (SW_FRAMELESS), check if there are explicit
         // Frames below the caller SP that should be reported first. The native walker
-        // yields skipped frames BEFORE the containing managed frame on non-x86.
+        // yields skipped frames BEFORE the containing managed frame.
         if (state == StackWalkState.SW_FRAMELESS && CheckForSkippedFrames(stackWalkData))
         {
             stackWalkData.State = StackWalkState.SW_SKIPPED_FRAME;
@@ -162,7 +163,7 @@ internal partial class StackWalk_1 : IStackWalk
         // Mirror native Init() -> ProcessCurrentFrame() -> CheckForSkippedFrames():
         // When the initial frame is managed (SW_FRAMELESS), check if there are explicit
         // Frames below the caller SP that should be reported first. The native walker
-        // yields skipped frames BEFORE the containing managed frame on non-x86.
+        // yields skipped frames BEFORE the containing managed frame.
         if (walkData.State == StackWalkState.SW_FRAMELESS && CheckForSkippedFrames(walkData))
             walkData.State = StackWalkState.SW_SKIPPED_FRAME;
 
