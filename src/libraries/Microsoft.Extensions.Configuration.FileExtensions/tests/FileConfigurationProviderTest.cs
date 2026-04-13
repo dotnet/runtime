@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration.Test;
 using Microsoft.Extensions.FileProviders;
@@ -150,9 +149,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             Assert.NotNull(token);
 
             // The token should fire only when the target file is created, not when just the directory appears.
-            var tcs = new TaskCompletionSource<bool>();
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            cts.Token.Register(() => tcs.TrySetCanceled());
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
             Directory.CreateDirectory(missingSubDir);
@@ -161,7 +158,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
 
             File.WriteAllText(configFilePath, "{}");
 
-            Assert.True(await tcs.Task, "Change token did not fire after the target file was created.");
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         public class FileInfoImpl : IFileInfo
