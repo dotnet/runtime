@@ -139,15 +139,36 @@ namespace System.IO.Compression
         /// </summary>
         /// <param name="inputLength">The input size to get the maximum expected compressed length from.</param>
         /// <returns>A number representing the maximum compressed length for the provided input size.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputLength"/> is negative or exceeds <see cref="uint.MaxValue"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputLength"/> is negative.</exception>
         public static long GetMaxCompressedLength(long inputLength)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(inputLength);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputLength, uint.MaxValue);
 
-            // compressBound() returns the upper bound for zlib-wrapped deflate output.
-            // For raw deflate (no header/trailer) this slightly overestimates, which is safe.
-            return (long)Interop.ZLib.compressBound((uint)inputLength);
+            // This is a managed implementation of zlib-ng's compressBound() formula from compress.c,
+            // which computes the maximum compressed size for zlib-wrapped deflate output.
+            //
+            // The formula mirrors the NO_QUICK_STRATEGY disabled (quick strategy active) path in zlib-ng:
+            //   sourceLen
+            //   + (sourceLen == 0 ? 1 : 0)           // at least one byte for any input
+            //   + (sourceLen < 9 ? 1 : 0)             // one extra byte for lengths less than 9
+            //   + DEFLATE_QUICK_OVERHEAD(sourceLen)    // (sourceLen * (9 - 8) + 7) >> 3 = (sourceLen + 7) >> 3
+            //   + DEFLATE_BLOCK_OVERHEAD               // (3 + 15 + 6) >> 3 = 3
+            //   + ZLIB_WRAPLEN                         // 6 (zlib header + trailer)
+            //
+            // See: src/native/external/zlib-ng/compress.c (lines 88-94)
+            //      src/native/external/zlib-ng/zutil.h (lines 68-78)
+            //
+            // We use a managed implementation instead of calling the native compressBound() P/Invoke
+            // to support input sizes beyond uint.MaxValue. The native function accepts z_uintmax_t,
+            // but the managed P/Invoke signature uses uint, limiting it to ~4 GB.
+            // For raw deflate (no zlib header/trailer), this slightly overestimates, which is safe.
+
+            return inputLength
+                + (inputLength == 0 ? 1 : 0)
+                + (inputLength < 9 ? 1 : 0)
+                + ((inputLength + 7) >> 3)
+                + 3   // DEFLATE_BLOCK_OVERHEAD: (3 + 15 + 6) >> 3
+                + 6;  // ZLIB_WRAPLEN: zlib header (2 bytes) + Adler32 trailer (4 bytes)
         }
 
         /// <summary>
