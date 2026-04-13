@@ -233,8 +233,8 @@ namespace System.Diagnostics.Tests
 
             (string standardOutput, string standardError) = process.ReadAllText();
 
-            var expectedOutput = new StringBuilder();
-            var expectedError = new StringBuilder();
+            StringBuilder expectedOutput = new();
+            StringBuilder expectedError = new();
             for (int i = 0; i < iterations; i++)
             {
                 expectedOutput.Append($"out{i} ");
@@ -261,14 +261,14 @@ namespace System.Diagnostics.Tests
 
             File.WriteAllBytes(testFilePath, binaryData);
 
-            using Process process = CreateProcess(() =>
+            using Process process = CreateProcess(static path =>
             {
-                Console.OpenStandardInput().CopyTo(Console.OpenStandardOutput());
-                return RemoteExecutor.SuccessExitCode;
-            });
+                using FileStream source = File.OpenRead(path);
+                source.CopyTo(Console.OpenStandardOutput());
 
-            using SafeFileHandle input = File.OpenHandle(testFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            process.StartInfo.StandardInputHandle = input;
+                return RemoteExecutor.SuccessExitCode;
+            }, testFilePath);
+
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.Start();
@@ -287,14 +287,14 @@ namespace System.Diagnostics.Tests
             string largeText = new string('A', 100_000);
             File.WriteAllText(testFilePath, largeText);
 
-            Process process = CreateProcess(() =>
+            using Process process = CreateProcess(static path =>
             {
-                Console.OpenStandardInput().CopyTo(Console.OpenStandardOutput());
-                return RemoteExecutor.SuccessExitCode;
-            });
+                using FileStream source = File.OpenRead(path);
+                source.CopyTo(Console.OpenStandardOutput());
 
-            using SafeFileHandle input = File.OpenHandle(testFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            process.StartInfo.StandardInputHandle = input;
+                return RemoteExecutor.SuccessExitCode;
+            }, testFilePath);
+
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.Start();
@@ -314,14 +314,14 @@ namespace System.Diagnostics.Tests
             Random.Shared.NextBytes(largeByteArray);
             File.WriteAllBytes(testFilePath, largeByteArray);
 
-            Process process = CreateProcess(() =>
+            using Process process = CreateProcess(static path =>
             {
-                Console.OpenStandardInput().CopyTo(Console.OpenStandardOutput());
-                return RemoteExecutor.SuccessExitCode;
-            });
+                using FileStream source = File.OpenRead(path);
+                source.CopyTo(Console.OpenStandardOutput());
 
-            using SafeFileHandle input = File.OpenHandle(testFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            process.StartInfo.StandardInputHandle = input;
+                return RemoteExecutor.SuccessExitCode;
+            }, testFilePath);
+
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
             process.Start();
