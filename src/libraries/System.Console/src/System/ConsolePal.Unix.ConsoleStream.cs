@@ -15,6 +15,13 @@ namespace System
             /// <summary>The file descriptor for the opened file.</summary>
             private readonly SafeFileHandle _handle;
 
+            /// <summary>
+            /// A FileStream wrapping the handle when it's a seekable file (e.g., a regular file).
+            /// RandomAccess.Read/Write use pread/pwrite which always read/write at a fixed offset;
+            /// for seekable files we need a FileStream to properly track the file position.
+            /// </summary>
+            private readonly FileStream? _fileStream;
+
             private readonly bool _useReadLine;
 
             /// <summary>Initialize the stream.</summary>
@@ -28,12 +35,29 @@ namespace System
                 Debug.Assert(!handle.IsInvalid, "Expected valid console handle");
                 _handle = handle;
                 _useReadLine = useReadLine;
+
+                // Create a FileStream to determine if the handle is seekable and to use for
+                // reads/writes on seekable files. RandomAccess.Read/Write use pread/pwrite which
+                // always operate at a specified offset; passing fileOffset:0 would cause them to
+                // read/write at position 0 rather than advancing the file position, which produces
+                // incorrect results for seekable files like regular files.
+                // For non-seekable files (e.g., pipes, terminals), FileStream.CanSeek is false
+                // and we fall back to the original RandomAccess-based path.
+                FileStream fs = new FileStream(handle, access, bufferSize: 0);
+                if (fs.CanSeek)
+                {
+                    _fileStream = fs;
+                }
+                // else: fs is not seekable; let it be GC'd. Its finalizer calls Dispose(false)
+                // which does NOT close the handle (OSFileStreamStrategy.Dispose skips the handle
+                // close when disposing=false), so _handle remains valid.
             }
 
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
                 {
+                    _fileStream?.Dispose();
                     _handle.Dispose();
                 }
                 base.Dispose(disposing);
@@ -44,10 +68,25 @@ namespace System
                 _useReadLine ?
                     ConsolePal.StdInReader.ReadLine(buffer) :
 #endif
-                    RandomAccess.Read(_handle, buffer, fileOffset: 0);
+                    _fileStream is not null ?
+                        _fileStream.Read(buffer) :
+                        RandomAccess.Read(_handle, buffer, fileOffset: 0);
 
-            public override void Write(ReadOnlySpan<byte> buffer) =>
-                ConsolePal.WriteFromConsoleStream(_handle, buffer);
+            public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                if (_fileStream is not null)
+                {
+                    ConsolePal.EnsureConsoleInitialized();
+                    lock (Console.Out)
+                    {
+                        _fileStream.Write(buffer);
+                    }
+                }
+                else
+                {
+                    ConsolePal.WriteFromConsoleStream(_handle, buffer);
+                }
+            }
 
             public override void Flush()
             {
