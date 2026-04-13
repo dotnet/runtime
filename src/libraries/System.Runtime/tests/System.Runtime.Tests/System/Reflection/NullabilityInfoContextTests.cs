@@ -1484,7 +1484,6 @@ namespace System.Reflection.Tests
         [MemberData(nameof(TestClassesWithIndexers))]
         public void TestPropertyIndexer(Type type, string propertyName, NullabilityState expectedRead, NullabilityState expectedWrite)
         {
-            var ctx = new NullabilityInfoContext();
             PropertyInfo property = type.GetProperty(propertyName)!;
             NullabilityInfo info = nullabilityContext.Create(property.GetIndexParameters()[0]);
             Assert.Equal(expectedRead, info.ReadState);
