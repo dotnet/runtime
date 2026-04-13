@@ -2217,6 +2217,15 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
             ins = INS_sw;
         else
             ins = INS_sd;
+#elif defined(TARGET_POWERPC64)
+        if (varTypeIsByte(dstType))
+            ins = INS_stb;
+        else if (varTypeIsShort(dstType))
+            ins = INS_sth;
+        else if (TYP_INT == dstType)
+            ins = INS_stw;
+        else
+            ins = INS_std;
 #else
         NYI("ins_Store");
 #endif

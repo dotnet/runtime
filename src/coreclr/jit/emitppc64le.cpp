@@ -160,15 +160,90 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     _ASSERTE(!"NYI");
 }
 
-
 /*****************************************************************************
 *
 *  Add an instruction referencing a stack-based local variable and a register
 */
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
-    //TODO POWERPC64 vikas
-    _ASSERTE(!"NYI POWERPC64");
+    assert(offs >= 0);
+    emitAttr size = EA_SIZE(attr);
+    insFormat fmt = IF_NONE;
+
+    /* Figure out the variable's frame position */
+    bool FPbased;
+    int base = emitComp->lvaFrameAddress(varx, &FPbased);
+    int disp = base + offs;
+    ssize_t imm = disp;
+
+    // Use frame pointer (R31) or stack pointer (R1) as base register
+    regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
+
+    /* Figure out the encoding format of the instruction */
+    switch (ins)
+    {
+        case INS_stb:
+            // Store byte - D-form instruction
+            assert(isGeneralRegister(reg1));
+            assert(size == EA_1BYTE);
+            break;
+
+        case INS_sth:
+            // Store halfword - D-form instruction
+            assert(isGeneralRegister(reg1));
+            assert(size == EA_2BYTE);
+            break;
+
+        case INS_stw:
+            // Store word - D-form instruction
+            assert(isGeneralRegister(reg1));
+            assert(size == EA_4BYTE);
+            break;
+
+        case INS_std:
+            // Store doubleword - DS-form instruction (must be 4-byte aligned)
+            assert(isGeneralRegister(reg1));
+            assert(size == EA_8BYTE);
+            // DS-form requires 4-byte alignment
+            assert((imm & 0x3) == 0);
+            break;
+
+        default:
+            NYI("emitIns_S_R"); // Floating-point stores not yet implemented
+            return;
+    }
+
+    // Validate immediate range
+    if (ins == INS_std)
+    {
+        // DS-form: 14-bit signed immediate, must be 4-byte aligned
+        assert(imm >= -32768 && imm <= 32764);
+        assert((imm & 0x3) == 0);
+    }
+    else
+    {
+        // D-form: 16-bit signed immediate
+        assert(imm >= -32768 && imm <= 32767);
+    }
+
+    // Create instruction descriptor with immediate offset
+    instrDesc* id = emitNewInstrCns(attr, imm);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(INS_OPTS_NONE);
+
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+    id->idSetIsLclVar();
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
 }
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
