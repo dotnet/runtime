@@ -41,33 +41,6 @@ namespace System.Diagnostics
 
                 WaitHandle[] waitHandles = [outputEvent, errorEvent];
 
-                static bool QueueRead(
-                    SafeFileHandle handle,
-                    byte* buffer,
-                    int bufferLength,
-                    NativeOverlapped* overlapped,
-                    EventWaitHandle waitHandle)
-                {
-                    if (Interop.Kernel32.ReadFile(handle, buffer, bufferLength, IntPtr.Zero, overlapped))
-                    {
-                        waitHandle.Set();
-                        return true;
-                    }
-
-                    int error = Marshal.GetLastPInvokeError();
-                    if (error == Interop.Errors.ERROR_IO_PENDING)
-                    {
-                        return true;
-                    }
-
-                    if (error == Interop.Errors.ERROR_BROKEN_PIPE || error == Interop.Errors.ERROR_HANDLE_EOF)
-                    {
-                        return false;
-                    }
-
-                    throw new Win32Exception(error);
-                }
-
                 // Issue initial reads.
                 bool outputDone = !QueueRead(outputHandle, (byte*)outputPin.Pointer, outputBuffer.Length, outputOverlapped, outputEvent);
                 bool errorDone = !QueueRead(errorHandle, (byte*)errorPin.Pointer, errorBuffer.Length, errorOverlapped, errorEvent);
@@ -256,5 +229,32 @@ namespace System.Diagnostics
         /// </summary>
         private static nint SetLowOrderBit(EventWaitHandle waitHandle)
             => waitHandle.SafeWaitHandle.DangerousGetHandle() | 1;
+
+        private static unsafe bool QueueRead(
+            SafeFileHandle handle,
+            byte* buffer,
+            int bufferLength,
+            NativeOverlapped* overlapped,
+            EventWaitHandle waitHandle)
+        {
+            if (Interop.Kernel32.ReadFile(handle, buffer, bufferLength, IntPtr.Zero, overlapped) != 0)
+            {
+                waitHandle.Set();
+                return true;
+            }
+
+            int error = Marshal.GetLastPInvokeError();
+            if (error == Interop.Errors.ERROR_IO_PENDING)
+            {
+                return true;
+            }
+
+            if (error == Interop.Errors.ERROR_BROKEN_PIPE || error == Interop.Errors.ERROR_HANDLE_EOF)
+            {
+                return false;
+            }
+
+            throw new Win32Exception(error);
+        }
     }
 }

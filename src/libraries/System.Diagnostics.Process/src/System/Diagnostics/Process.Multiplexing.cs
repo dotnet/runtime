@@ -215,7 +215,7 @@ namespace System.Diagnostics
                 return new SafeFileHandle(pipeStream.SafePipeHandle.DangerousGetHandle(), ownsHandle: false);
             }
 
-            throw new InvalidOperationException();
+            throw new UnreachableException();
         }
 
         /// <summary>
