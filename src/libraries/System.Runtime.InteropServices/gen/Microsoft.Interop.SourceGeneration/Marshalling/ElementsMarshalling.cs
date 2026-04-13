@@ -106,6 +106,11 @@ namespace Microsoft.Interop
         public abstract StatementSyntax GenerateUnmarshalStatement(StubIdentifierContext context);
         public abstract StatementSyntax GenerateElementCleanupStatement(StubIdentifierContext context);
 
+        /// <summary>
+        /// <code>
+        /// &lt;numElements&gt; = &lt;GetManagedValuesSource&gt;.Length;
+        /// </code>
+        /// </summary>
         public StatementSyntax GenerateNumElementsAssignmentFromManagedValuesSource(StubIdentifierContext context)
         {
             return CollectionSource.GetNumElementsAssignmentFromManagedValuesSource(CollectionSource.TypeInfo, context);
