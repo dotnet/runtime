@@ -952,6 +952,7 @@ internal static partial class Interop
                     TlsAlertMessage alert;
                     if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != SslPolicyErrors.None)
                     {
+                        // the chain is disposed at this point, but the ChainStatus property is still available
                         alert = SslStream.GetAlertMessageFromChain(chain);
                     }
                     else if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != SslPolicyErrors.None)
