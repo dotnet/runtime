@@ -853,7 +853,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         enableWhenDone = true;
     }
 
-    // When DOTNET_GCStressCdacStep > 1, skip most stress points (both cDAC verification
+    // When DOTNET_CdacStressStep > 1, skip most stress points (both cDAC verification
     // and StressHeap) to reduce overhead.
     if (CdacStress::IsInitialized() && CdacStress::ShouldSkipStressPoint())
     {
@@ -1195,7 +1195,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // code and it will just raise a STATUS_ACCESS_VIOLATION.
     pThread->PostGCStressInstructionUpdate((BYTE*)instrPtr, &gcCover->savedCode[offset]);
 
-    // When DOTNET_GCStressCdacStep > 1, skip most stress points (both cDAC verification
+    // When DOTNET_CdacStressStep > 1, skip most stress points (both cDAC verification
     // and StressHeap) to reduce overhead. We still restore the instruction since the
     // breakpoint must be removed regardless.
     if (CdacStress::IsInitialized() && CdacStress::ShouldSkipStressPoint())

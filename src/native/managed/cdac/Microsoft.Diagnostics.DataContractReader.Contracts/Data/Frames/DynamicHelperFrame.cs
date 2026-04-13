@@ -11,7 +11,7 @@ internal class DynamicHelperFrame : IData<DynamicHelperFrame>
     public DynamicHelperFrame(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicHelperFrame);
-        DynamicHelperFrameFlags = target.Read<int>(address + (ulong)type.Fields[nameof(DynamicHelperFrameFlags)].Offset);
+        DynamicHelperFrameFlags = target.ReadField<int>(address, type, nameof(DynamicHelperFrameFlags));
     }
 
     public int DynamicHelperFrameFlags { get; }

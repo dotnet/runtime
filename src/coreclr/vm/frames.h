@@ -1608,55 +1608,6 @@ struct cdac_data<DynamicHelperFrame>
     static constexpr size_t DynamicHelperFrameFlags = offsetof(DynamicHelperFrame, m_dynamicHelperFrameFlags);
 };
 
-#ifdef FEATURE_COMINTEROP
-
-//------------------------------------------------------------------------
-// This represents a com to CLR call method prestub.
-// we need to catch exceptions etc. so this frame is not the same
-// as the prestub method frame
-// Note that in rare IJW cases, the immediate caller could be a managed method
-// which pinvoke-inlined a call to a COM interface, which happenned to be
-// implemented by a managed function via COM-interop.
-//------------------------------------------------------------------------
-
-typedef DPTR(class ComPrestubMethodFrame) PTR_ComPrestubMethodFrame;
-
-class ComPrestubMethodFrame : public ComMethodFrame
-{
-    friend class CheckAsmOffsets;
-
-public:
-    // Set the vptr and GSCookie
-    VOID Init();
-
-    int GetFrameType_Impl()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TYPE_INTERCEPTION;
-    }
-
-    // ComPrestubMethodFrame should return the same interception type as
-    // code:PrestubMethodFrame.GetInterception.
-    Interception GetInterception_Impl()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return INTERCEPTION_PRESTUB;
-    }
-
-    // Our base class is an M2U TransitionType; but we're not. So override and set us back to None.
-    ETransitionType GetTransitionType_Impl()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TT_NONE;
-    }
-
-    void ExceptionUnwind_Impl()
-    {
-    }
-};
-
-#endif // FEATURE_COMINTEROP
-
 //------------------------------------------------------------------------
 // This frame protects object references for the EE's convenience.
 // This frame type actually is created from C++.

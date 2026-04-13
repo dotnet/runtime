@@ -154,7 +154,9 @@ public abstract class CdacStressTestBase
 
         // Default path based on repo layout
         string repoRoot = FindRepoRoot();
-        string rid = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" : "linux";
+        string rid = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows"
+            : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "osx"
+            : "linux";
         string arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
         coreRoot = Path.Combine(repoRoot, "artifacts", "tests", "coreclr", $"{rid}.{arch}.Checked", "Tests", "Core_Root");
 

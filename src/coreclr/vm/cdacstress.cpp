@@ -1346,7 +1346,12 @@ void CdacStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
 
     StackRef runtimeRefsBuf[MAX_COLLECTED_REFS];
     int runtimeCount = 0;
-    CollectRuntimeStackRefs(pThread, regs, runtimeRefsBuf, &runtimeCount);
+    bool rtOverflow = !CollectRuntimeStackRefs(pThread, regs, runtimeRefsBuf, &runtimeCount);
+    if (rtOverflow && s_logFile != nullptr)
+    {
+        fprintf(s_logFile, "[SKIP] Thread=0x%x IP=0x%p - RT overflow (>%d refs)\n",
+            osThreadId, (void*)GetIP(regs), MAX_COLLECTED_REFS);
+    }
 
     if (!haveCdac)
     {

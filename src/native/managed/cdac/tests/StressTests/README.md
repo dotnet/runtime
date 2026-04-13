@@ -31,6 +31,21 @@ Build the runtime with the cDAC stress hook enabled:
 
 ## Running Tests
 
+### Using RunStressTests.ps1
+
+```powershell
+# Run all debuggees (allocation-point verification, no GCStress)
+./RunStressTests.ps1 -SkipBuild
+
+# Run a single debuggee
+./RunStressTests.ps1 -SkipBuild -Debuggee BasicAlloc
+
+# Run with instruction-level GCStress (slower, more thorough)
+./RunStressTests.ps1 -SkipBuild -CdacStress 0x14 -GCStress 0x4
+```
+
+### Using dotnet test (xUnit)
+
 ```powershell
 # Build and run all stress tests
 .\.dotnet\dotnet.exe test src\native\managed\cdac\tests\StressTests

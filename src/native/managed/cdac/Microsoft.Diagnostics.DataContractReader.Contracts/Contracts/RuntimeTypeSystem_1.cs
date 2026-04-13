@@ -1335,10 +1335,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return false;
 
         // AsyncMethodData is the last optional slot, placed after NativeCodeSlot.
-        // Read the AsyncMethodFlags (first field) and check for AsyncCall (0x1).
+        // Read the AsyncMethodFlags (first field) and check for AsyncCall.
         TargetPointer asyncDataAddr = methodDesc.GetAddressOfAsyncMethodData();
         uint asyncFlags = _target.Read<uint>(asyncDataAddr);
-        return (asyncFlags & 0x1) != 0; // AsyncMethodFlags.AsyncCall
+        return (asyncFlags & (uint)AsyncMethodFlags.AsyncCall) != 0;
+    }
+
+    [Flags]
+    private enum AsyncMethodFlags : uint
+    {
+        AsyncCall = 0x1,
     }
 
     public uint GetMethodToken(MethodDescHandle methodDescHandle)

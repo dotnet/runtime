@@ -152,7 +152,6 @@ internal sealed class FrameIterator
 
             // TransitionFrame types: read return address from the transition block
             case FrameType.FramedMethodFrame:
-            case FrameType.CLRToCOMMethodFrame:
             case FrameType.PInvokeCalliFrame:
             case FrameType.PrestubMethodFrame:
             case FrameType.StubDispatchFrame:
@@ -381,11 +380,6 @@ internal sealed class FrameIterator
                 PromoteCallerStack(frameAddress, fmf.TransitionBlockPtr, scanContext);
                 break;
             }
-
-            case FrameType.CLRToCOMMethodFrame:
-            case FrameType.ComPrestubMethodFrame:
-                // TODO(stackref): Implement PromoteCallerStack for COM interop frames
-                break;
 
             case FrameType.HijackFrame:
                 // TODO(stackref): Implement HijackFrame scanning (X86 only with FEATURE_HIJACK)

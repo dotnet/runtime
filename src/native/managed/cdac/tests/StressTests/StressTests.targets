@@ -1,6 +1,6 @@
 <Project>
   <!--
-    GCStress test orchestration targets.
+    cDAC stress test orchestration targets.
     Auto-discovers debuggee projects, builds them, and makes their paths
     available to the test project as runtime config properties.
   -->

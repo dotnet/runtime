@@ -79,9 +79,3 @@ The stress log uses structured per-frame output with method name resolution:
     RT   [i]: Addr=0x... Obj=0x... Flags=0x...
   [DAC_DIFF] cDAC matches RT but differs from DAC
 ```
-
-## Analysis tools
-
-The `analysis/` directory contains:
-- `analyze-refs.cs` — Standalone C# script for detailed ref analysis of raw logs.
-  Run with: `dotnet run analyze-refs.cs -- <logfile>`
