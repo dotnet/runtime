@@ -36,9 +36,10 @@ namespace System.Text.Json
                                   Vector128.Equals(vec, Vector128.Create(JsonConstants.Quote)) |
                                   Vector128.Equals(vec, Vector128.Create(JsonConstants.BackSlash));
 
-            if (cmp != Vector128<byte>.Zero)
+            int idx = Vector128.IndexOfWhereAllBitsSet(cmp);
+            if (idx >= 0)
             {
-                return Vector128.IndexOfWhereAllBitsSet(cmp);
+                return idx;
             }
 
             int fallbackIndex = IndexOfQuoteOrAnyControlOrBackSlash_Fallback(span.Slice(Vector128<byte>.Count));
