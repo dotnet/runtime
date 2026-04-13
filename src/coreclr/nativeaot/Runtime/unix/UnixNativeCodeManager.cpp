@@ -64,19 +64,6 @@ UnixNativeCodeManager::~UnixNativeCodeManager()
 {
 }
 
-static PTR_uint8_t GetAssociatedData(PTR_uint8_t pLSDA)
-{
-    uint8_t unwindBlockFlags = *pLSDA++;
-
-    if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
-        pLSDA += sizeof(int32_t);
-
-    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) == 0)
-        return NULL;
-
-    return pLSDA + *dac_cast<PTR_int32_t>(pLSDA);
-}
-
 #if defined(TARGET_ARM64)
 static size_t readULEB(const uint8_t *&p, const uint8_t *end)
 {
@@ -1681,7 +1668,17 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     if (!FindMethodInfo(ControlPC, (MethodInfo*)&methodInfo))
         return NULL;
 
-    return dac_cast<PTR_VOID>(::GetAssociatedData(methodInfo.pLSDA));
+    PTR_uint8_t p = methodInfo.pLSDA;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
+        p += sizeof(uint32_t);
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) == 0)
+        return NULL;
+
+    return dac_cast<PTR_VOID>(p + *dac_cast<PTR_int32_t>(p));
 }
 
 extern "C" void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
