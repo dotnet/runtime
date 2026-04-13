@@ -977,14 +977,14 @@ CDAC_TYPE_FIELD(TransitionBlock, TYPE(ArgumentRegisters), ArgumentRegisters, off
 CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfArgs, sizeof(TransitionBlock))
 // Offset to where argument registers are saved in the TransitionBlock
 #if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
-CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfArgumentRegisters, sizeof(TransitionBlock))
-CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfFirstGCRefMapSlot, sizeof(TransitionBlock))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegistersOffset, sizeof(TransitionBlock))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, FirstGCRefMapSlot, sizeof(TransitionBlock))
 #elif defined(TARGET_ARM64)
-CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfArgumentRegisters, offsetof(TransitionBlock, m_argumentRegisters))
-CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfFirstGCRefMapSlot, offsetof(TransitionBlock, m_x8RetBuffReg))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegistersOffset, offsetof(TransitionBlock, m_argumentRegisters))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, FirstGCRefMapSlot, offsetof(TransitionBlock, m_x8RetBuffReg))
 #else
-CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfArgumentRegisters, offsetof(TransitionBlock, m_argumentRegisters))
-CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, OffsetOfFirstGCRefMapSlot, offsetof(TransitionBlock, m_argumentRegisters))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, ArgumentRegistersOffset, offsetof(TransitionBlock, m_argumentRegisters))
+CDAC_TYPE_FIELD(TransitionBlock, T_UINT32, FirstGCRefMapSlot, offsetof(TransitionBlock, m_argumentRegisters))
 #endif
 CDAC_TYPE_END(TransitionBlock)
 

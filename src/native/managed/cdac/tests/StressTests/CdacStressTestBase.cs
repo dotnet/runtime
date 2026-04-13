@@ -11,8 +11,8 @@ using Xunit.Abstractions;
 namespace Microsoft.Diagnostics.DataContractReader.Tests.GCStress;
 
 /// <summary>
-/// Base class for cDAC GC stress tests. Runs a debuggee app under corerun
-/// with DOTNET_GCStress=0x24 and parses the verification results.
+/// Base class for cDAC stress tests. Runs a debuggee app under corerun
+/// with DOTNET_CdacStress=0x51 and parses the verification results.
 /// </summary>
 public abstract class CdacStressTestBase
 {

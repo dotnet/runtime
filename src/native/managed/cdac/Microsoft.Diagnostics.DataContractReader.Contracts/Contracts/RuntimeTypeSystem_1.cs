@@ -1253,17 +1253,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     /// <summary>
     /// Returns true if the method requires a hidden instantiation argument (generic context parameter).
-    /// Matches native MethodDesc::RequiresInstArg():
-    /// RequiresInstArg = IsSharedByGenericInstantiations && (HasMethodInstantiation || IsStatic || IsValueType || IsInterface)
+    /// Matches native MethodDesc::RequiresInstArg().
     /// </summary>
     public bool RequiresInstArg(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
+        // RequiresInstArg = IsSharedByGenericInstantiations && (HasMethodInstantiation || IsStatic || IsValueType || IsInterface)
         if (!IsSharedByGenericInstantiations(methodDesc))
             return false;
 
-        if (MethodDescHasMethodInstantiation(methodDesc))
+        if (HasMethodInstantiation(methodDesc))
             return true;
 
         MethodTable mt = _methodTables[methodDesc.MethodTable];
@@ -1273,22 +1273,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (mt.Flags.IsValueType)
             return true;
 
-        if (IsStatic(methodDesc))
+        if (IsStaticMethod(methodDesc))
             return true;
 
         return false;
     }
 
-    private bool MethodDescHasMethodInstantiation(MethodDesc methodDesc)
-    {
-        if (methodDesc.Classification != MethodClassification.Instantiated)
-            return false;
-
-        InstantiatedMethodDesc imd = AsInstantiatedMethodDesc(methodDesc);
-        return imd.HasMethodInstantiation;
-    }
-
-    private bool IsStatic(MethodDesc methodDesc)
+    /// <summary>
+    /// Matches native MethodDesc::IsStatic().
+    /// </summary>
+    private bool IsStaticMethod(MethodDesc methodDesc)
     {
         try
         {
