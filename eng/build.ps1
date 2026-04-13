@@ -149,8 +149,9 @@ function Check-LongPathSupport() {
     New-Item -ItemType Directory -Path $testDir -Force | Out-Null
   }
 
-  # Build a file path that exceeds the 260-character MAX_PATH limit.
-  $basePath = Join-Path $testDir "longpath_test_"
+  # Build a unique file path that exceeds the 260-character MAX_PATH limit.
+  $uniqueSuffix = "{0}_{1}" -f $PID, ([Guid]::NewGuid().ToString("N"))
+  $basePath = Join-Path $testDir ("longpath_test_{0}_" -f $uniqueSuffix)
   $padLength = [Math]::Max(32, 270 - $basePath.Length)
   $testPath = $basePath + ("a" * $padLength) + ".tmp"
 
