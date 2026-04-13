@@ -162,7 +162,7 @@ namespace System.Diagnostics
             ref int errorBytesRead)
         {
             int timeoutMs = timeout.HasValue
-                ? (int)timeout.Value.TotalMilliseconds
+                ? ToTimeoutMilliseconds(timeout.Value)
                 : Timeout.Infinite;
 
             SafeFileHandle outputHandle = GetSafeFileHandleFromStreamReader(_standardOutput!, out SafeHandle outputOwner);

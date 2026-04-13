@@ -41,15 +41,41 @@ namespace System.Diagnostics
 
                 WaitHandle[] waitHandles = [outputEvent, errorEvent];
 
+                static bool QueueRead(
+                    SafeFileHandle handle,
+                    byte* buffer,
+                    int bufferLength,
+                    NativeOverlapped* overlapped,
+                    EventWaitHandle waitHandle)
+                {
+                    if (Interop.Kernel32.ReadFile(handle, buffer, bufferLength, IntPtr.Zero, overlapped))
+                    {
+                        waitHandle.Set();
+                        return true;
+                    }
+
+                    int error = Marshal.GetLastPInvokeError();
+                    if (error == Interop.Errors.ERROR_IO_PENDING)
+                    {
+                        return true;
+                    }
+
+                    if (error == Interop.Errors.ERROR_BROKEN_PIPE || error == Interop.Errors.ERROR_HANDLE_EOF)
+                    {
+                        return false;
+                    }
+
+                    throw new Win32Exception(error);
+                }
+
                 // Issue initial reads.
-                Interop.Kernel32.ReadFile(outputHandle, (byte*)outputPin.Pointer, outputBuffer.Length, IntPtr.Zero, outputOverlapped);
-                Interop.Kernel32.ReadFile(errorHandle, (byte*)errorPin.Pointer, errorBuffer.Length, IntPtr.Zero, errorOverlapped);
+                bool outputDone = !QueueRead(outputHandle, (byte*)outputPin.Pointer, outputBuffer.Length, outputOverlapped, outputEvent);
+                bool errorDone = !QueueRead(errorHandle, (byte*)errorPin.Pointer, errorBuffer.Length, errorOverlapped, errorEvent);
 
                 long deadline = timeoutMs >= 0
                     ? Environment.TickCount64 + timeoutMs
                     : long.MaxValue;
 
-                bool outputDone = false, errorDone = false;
                 while (!outputDone || !errorDone)
                 {
 
@@ -92,8 +118,21 @@ namespace System.Diagnostics
                         ResetOverlapped(currentEvent, currentOverlapped);
 
                         byte* pinPointer = isError ? (byte*)errorPin.Pointer : (byte*)outputPin.Pointer;
-                        Interop.Kernel32.ReadFile(currentHandle, pinPointer + totalBytesRead,
-                            currentBuffer.Length - totalBytesRead, IntPtr.Zero, currentOverlapped);
+                        if (!QueueRead(currentHandle, pinPointer + totalBytesRead,
+                            currentBuffer.Length - totalBytesRead, currentOverlapped, currentEvent))
+                        {
+                            if (isError)
+                            {
+                                errorDone = true;
+                            }
+                            else
+                            {
+                                outputDone = true;
+                            }
+
+                            // Ensure WaitAny won't trigger on this stale handle.
+                            currentEvent.Reset();
+                        }
                     }
                     else
                     {

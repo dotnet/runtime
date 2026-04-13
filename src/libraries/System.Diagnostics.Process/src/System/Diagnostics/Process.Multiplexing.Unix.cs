@@ -78,7 +78,7 @@ namespace System.Diagnostics
                                 continue;
                             }
 
-                            throw new Win32Exception();
+                            throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error));
                         }
 
                         if (triggered == 0)

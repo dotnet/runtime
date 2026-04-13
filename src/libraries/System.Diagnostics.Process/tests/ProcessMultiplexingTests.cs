@@ -137,6 +137,7 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.Throws<TimeoutException>(() => process.ReadAllBytes(TimeSpan.FromMilliseconds(100)));
                 }
+                else
                 {
                     Assert.Throws<TimeoutException>(() => process.ReadAllText(TimeSpan.FromMilliseconds(100)));
                 }
@@ -158,25 +159,25 @@ namespace System.Diagnostics.Tests
         [InlineData("", "just error", false)]
         [InlineData("", "", true)]
         [InlineData("", "", false)]
-        public void ReadAllText_ReadsBothOutputAndError(string? standardOutput, string? standardErrror, bool bytes)
+        public void ReadAllText_ReadsBothOutputAndError(string standardOutput, string standardError, bool bytes)
         {
             using Process process = StartPrintingProcess(
-                string.IsNullOrEmpty(standardOutput) ?  DontPrintAnything : standardOutput,
-                string.IsNullOrEmpty(standardErrror) ? DontPrintAnything : standardErrror);
+                string.IsNullOrEmpty(standardOutput) ? DontPrintAnything : standardOutput,
+                string.IsNullOrEmpty(standardError) ? DontPrintAnything : standardError);
 
             if (bytes)
             {
                 (byte[] capturedOutput, byte[] capturedError) = process.ReadAllBytes();
 
                 Assert.Equal(Encoding.Default.GetBytes(standardOutput), capturedOutput);
-                Assert.Equal(Encoding.Default.GetBytes(standardErrror), capturedError);
+                Assert.Equal(Encoding.Default.GetBytes(standardError), capturedError);
             }
             else
             {
                 (string capturedOutput, string capturedError) = process.ReadAllText();
 
                 Assert.Equal(standardOutput, capturedOutput);
-                Assert.Equal(standardErrror, capturedError);
+                Assert.Equal(standardError, capturedError);
             }
 
             Assert.True(process.WaitForExit(WaitInMS));
