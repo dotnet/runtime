@@ -450,9 +450,9 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             || (stdoutFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdoutFd, STDOUT_FILENO)) != 0)
             || (stderrFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stderrFd, STDERR_FILENO)) != 0)
 #if HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
-            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0)
+            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0) // Change working directory if specified
 #endif
-            ) // Change working directory if specified
+            )
         {
             int saved_errno = result;
             posix_spawn_file_actions_destroy(&file_actions);
