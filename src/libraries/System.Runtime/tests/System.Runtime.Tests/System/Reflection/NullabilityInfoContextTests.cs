@@ -1471,6 +1471,25 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedRead, info.ReadState);
             Assert.Equal(expectedWrite, info.WriteState);
         }
+
+        public static IEnumerable<object[]> TestClassesWithIndexers() => new object[][]
+        {
+            [typeof(ClassWithOnlyIndexedGetProperty), "Item", NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(ClassWithIndexedGetPropertyAndTupleProperty), "Item", NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(ClassWithOnlyIndexedSetProperty), "Item", NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(ClassWithIndexedSetPropertyAndTupleProperty), "Item", NullabilityState.NotNull, NullabilityState.NotNull],
+        };
+
+        [Theory]
+        [MemberData(nameof(TestClassesWithIndexers))]
+        public void TestPropertyIndexer(Type type, string propertyName, NullabilityState expectedRead, NullabilityState expectedWrite)
+        {
+            var ctx = new NullabilityInfoContext();
+            PropertyInfo property = type.GetProperty(propertyName)!;
+            NullabilityInfo info = nullabilityContext.Create(property.GetIndexParameters()[0]);
+            Assert.Equal(expectedRead, info.ReadState);
+            Assert.Equal(expectedWrite, info.WriteState);
+        }
     }
 
 #pragma warning disable CS0649, CS0067, CS0414
@@ -1805,5 +1824,23 @@ namespace System.Reflection.Tests
     {
         public static void GenericMethod<T>([AllowNull] T value) => throw new Exception();
         public static void GenericNotNullMethod<T>([AllowNull] T value) where T : notnull => throw new Exception();
+    }
+    public class ClassWithOnlyIndexedGetProperty
+    {
+        public string this[string name] { get => throw new Exception(); }
+    }
+    public class ClassWithIndexedGetPropertyAndTupleProperty
+    {
+        public string this[string name] { get => throw new Exception(); }
+        public (int A, int B) ValueTupleProp { get; }
+    }
+    public class ClassWithOnlyIndexedSetProperty
+    {
+        public string this[string name] { set => throw new Exception(); }
+    }
+    public class ClassWithIndexedSetPropertyAndTupleProperty
+    {
+        public string this[string name] { set => throw new Exception(); }
+        public (int A, int B) ValueTupleProp { get; }
     }
 }
