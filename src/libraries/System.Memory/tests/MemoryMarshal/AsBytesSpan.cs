@@ -34,5 +34,16 @@ namespace System.SpanTests
             Span<TestHelpers.StructWithReferences> span = new Span<TestHelpers.StructWithReferences>(Array.Empty<TestHelpers.StructWithReferences>());
             TestHelpers.AssertThrows<ArgumentException, TestHelpers.StructWithReferences>(span, (_span) => MemoryMarshal.AsBytes(_span).DontBox());
         }
+
+        [Fact]
+        public static void Span_AsBytes_ImplicitSpanConversion_ReturnsMutableSpan()
+        {
+            // Validates that when an array (which is convertible to both Span<T> and ReadOnlySpan<T>)
+            // is passed to AsBytes, the Span<T> overload is selected, returning Span<byte>.
+            // This is enabled by [OverloadResolutionPriority(1)] on the Span<T> overload.
+            int[] array = [0x44332211];
+            Span<byte> asBytes = MemoryMarshal.AsBytes<int>(array);
+            Assert.Equal(4, asBytes.Length);
+        }
     }
 }

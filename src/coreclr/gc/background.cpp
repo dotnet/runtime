@@ -2102,19 +2102,17 @@ void gc_heap::background_mark_phase ()
 
 #ifdef FEATURE_JAVAMARSHAL
 
-    // FIXME Any reason this code should be different for BGC ? Otherwise extract it to some common method ?
-
 #ifdef MULTIPLE_HEAPS
     dprintf(3, ("Joining for short weak handle scan"));
-    gc_t_join.join(this, gc_join_bridge_processing);
-    if (gc_t_join.joined())
+    bgc_t_join.join(this, gc_join_bridge_processing);
+    if (bgc_t_join.joined())
     {
 #endif //MULTIPLE_HEAPS
         global_bridge_list = GCScan::GcProcessBridgeObjects (max_generation, max_generation, &sc, &num_global_bridge_objs);
 
 #ifdef MULTIPLE_HEAPS
         dprintf (3, ("Starting all gc thread after bridge processing"));
-        gc_t_join.restart();
+        bgc_t_join.restart();
     }
 #endif //MULTIPLE_HEAPS
 

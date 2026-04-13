@@ -1205,8 +1205,7 @@ public:
     Thread* FindClrThreadByTaskId(ULONG64 taskId);
     HRESULT IsPossibleCodeAddress(IN TADDR address);
 
-    PCSTR GetJitHelperName(IN TADDR address,
-                           IN bool dynamicHelpersOnly = false);
+    PCSTR GetJitHelperName(IN TADDR address);
     HRESULT GetFullMethodName(IN MethodDesc* methodDesc,
                               IN ULONG32 symbolChars,
                               IN ULONG32* symbolLen,

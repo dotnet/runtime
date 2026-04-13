@@ -20,6 +20,9 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_MultiModuleVersionBubble = 0x00000040,  // This R2R module has multiple modules within its version bubble
         READYTORUN_FLAG_UnrelatedR2RCode = 0x00000080,          // This R2R module has generic code in it that would not be naturally encoded into this module
         READYTORUN_FLAG_PlatformNativeImage = 0x00000100,       // The owning composite executable is in the platform native format
+        READYTORUN_FLAG_StrippedILBodies = 0x00000200,         // IL method bodies have been stripped from the image
+        READYTORUN_FLAG_StrippedInliningInfo = 0x00000400,     // Inlining info has been stripped from the image
+        READYTORUN_FLAG_StrippedDebugInfo = 0x00000800,        // Debug info has been stripped from the image
     }
 
     public enum ReadyToRunImportSectionType : byte

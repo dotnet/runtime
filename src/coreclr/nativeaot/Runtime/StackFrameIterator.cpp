@@ -1370,6 +1370,16 @@ public:
         UNREFERENCED_PARAMETER(pRegisterSet);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pRdi = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pRsi = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pRcx = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pRdx = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+        pRegisterSet->pR8  = GET_POINTER_TO_FIELD(m_intArgRegs[4]);
+        pRegisterSet->pR9  = GET_POINTER_TO_FIELD(m_intArgRegs[5]);
+    }
+
 #elif defined(TARGET_AMD64)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1394,6 +1404,14 @@ public:
         UNREFERENCED_PARAMETER(pRegisterSet);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pRcx = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pRdx = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pR8  = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pR9  = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+    }
+
 #elif defined(TARGET_ARM)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1416,6 +1434,14 @@ public:
         pRegisterSet->pR11 = GET_POINTER_TO_FIELD(m_pushedR11);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pR0 = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pR1 = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pR2 = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pR3 = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+    }
+
 #elif defined(TARGET_X86)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1435,6 +1461,12 @@ public:
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
         pRegisterSet->pRbp = GET_POINTER_TO_FIELD(m_pushedEBP);
+    }
+
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pRdx = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pRcx = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
     }
 
 #elif defined(TARGET_ARM64)
@@ -1460,6 +1492,19 @@ public:
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pX0 = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pX1 = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pX2 = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pX3 = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+        pRegisterSet->pX4 = GET_POINTER_TO_FIELD(m_intArgRegs[4]);
+        pRegisterSet->pX5 = GET_POINTER_TO_FIELD(m_intArgRegs[5]);
+        pRegisterSet->pX6 = GET_POINTER_TO_FIELD(m_intArgRegs[6]);
+        pRegisterSet->pX7 = GET_POINTER_TO_FIELD(m_intArgRegs[7]);
+        pRegisterSet->pX8 = GET_POINTER_TO_FIELD(m_intArgRegs[8]);
+    }
+
 #elif defined(TARGET_LOONGARCH64)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1480,6 +1525,18 @@ public:
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
+    }
+
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pR4  = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pR5  = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pR6  = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pR7  = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+        pRegisterSet->pR8  = GET_POINTER_TO_FIELD(m_intArgRegs[4]);
+        pRegisterSet->pR9  = GET_POINTER_TO_FIELD(m_intArgRegs[5]);
+        pRegisterSet->pR10 = GET_POINTER_TO_FIELD(m_intArgRegs[6]);
+        pRegisterSet->pR11 = GET_POINTER_TO_FIELD(m_intArgRegs[7]);
     }
 
 #elif defined(TARGET_RISCV64)
@@ -1504,6 +1561,18 @@ public:
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pA0 = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pA1 = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pA2 = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pA3 = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+        pRegisterSet->pA4 = GET_POINTER_TO_FIELD(m_intArgRegs[4]);
+        pRegisterSet->pA5 = GET_POINTER_TO_FIELD(m_intArgRegs[5]);
+        pRegisterSet->pA6 = GET_POINTER_TO_FIELD(m_intArgRegs[6]);
+        pRegisterSet->pA7 = GET_POINTER_TO_FIELD(m_intArgRegs[7]);
+    }
+
 #elif defined(TARGET_WASM)
 private:
     // WASMTODO: #error NYI for this arch
@@ -1514,6 +1583,12 @@ public:
     PTR_uintptr_t get_LowerBoundForConservativeReporting() { PORTABILITY_ASSERT("@TODO: FIXME:WASM"); return NULL; }
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
+    {
+        UNREFERENCED_PARAMETER(pRegisterSet);
+        PORTABILITY_ASSERT("@TODO: FIXME:WASM");
+    }
+
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
     {
         UNREFERENCED_PARAMETER(pRegisterSet);
         PORTABILITY_ASSERT("@TODO: FIXME:WASM");
@@ -1551,6 +1626,7 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
     UniversalTransitionStackFrame * stackFrame = (PTR_UniversalTransitionStackFrame)m_RegDisplay.SP;
 
     stackFrame->UnwindNonVolatileRegisters(&m_RegDisplay);
+    stackFrame->UnwindVolatileArgRegisters(&m_RegDisplay);
 
     PTR_uintptr_t addressOfPushedCallerIP = stackFrame->get_AddressOfPushedCallerIP();
     m_RegDisplay.SetIP(PCODEToPINSTR(*addressOfPushedCallerIP));

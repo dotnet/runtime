@@ -351,6 +351,11 @@ struct MethodTableAuxiliaryData
         };
     };
 
+    // Lazily initialized cache for the version-resilient hash code of this MethodTable.
+    // A stored value of 0 indicates the field hasn't been set yet.
+    // Placed here to fill the 4-byte alignment padding between m_dwFlags and m_pLoaderModule,
+    // so this field adds no extra size to the struct on 64-bit platforms.
+    int m_cachedVersionResilientHashCode;
 
     PTR_Module m_pLoaderModule;
 
@@ -1805,8 +1810,10 @@ public:
     // Returns MethodTable that GetRestoredSlot get its values from
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
-    // Used to map methods on the same slot between instantiations.
-    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD, AsyncVariantLookup asyncVariantLookup = (AsyncVariantLookup)0);
+    // Used to map to "the same" method between instantiations. 
+    MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD);
+    // Maps methods between instantiations + filters/adjusts the result according to the lookup.
+    MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantLookup asyncVariantLookup);
 
     //-------------------------------------------------------------------
     // BoxedEntryPoint MethodDescs.
