@@ -122,7 +122,7 @@ static void* volatile s_gssLib = NULL;
 static int32_t ensure_gss_shim_initialized(void)
 {
     void* lib = dlopen(gss_lib_name, RTLD_LAZY);
-    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
+    if (lib == NULL) { return -1; }
 
     // check is someone else has opened and published s_gssLib already
     if (!pal_atomic_cas_ptr(&s_gssLib, lib, NULL))
