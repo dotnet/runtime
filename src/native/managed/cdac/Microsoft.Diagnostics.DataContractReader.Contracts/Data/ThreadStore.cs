@@ -13,7 +13,11 @@ internal sealed class ThreadStore : IData<ThreadStore>
         Target.TypeInfo type = target.GetTypeInfo(DataType.ThreadStore);
 
         ThreadCount = target.ReadField<int>(address, type, nameof(ThreadCount));
-        FirstThreadLink = target.ReadPointerField(address, type, nameof(FirstThreadLink));
+        // FirstThreadLink is an embedded SLink struct. Read the SLink.Next pointer
+        // from the field's address to get the first thread link pointer.
+        Target.TypeInfo slinkType = target.GetTypeInfo(DataType.SLink);
+        TargetPointer slinkAddr = address + (ulong)type.Fields[nameof(FirstThreadLink)].Offset;
+        FirstThreadLink = target.ReadPointerField(slinkAddr, slinkType, "Next");
         UnstartedCount = target.ReadField<int>(address, type, nameof(UnstartedCount));
         BackgroundCount = target.ReadField<int>(address, type, nameof(BackgroundCount));
         PendingCount = target.ReadField<int>(address, type, nameof(PendingCount));
