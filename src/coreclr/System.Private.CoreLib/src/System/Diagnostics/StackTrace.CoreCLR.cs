@@ -63,13 +63,20 @@ namespace System.Diagnostics
             methodDebugInfo->locals = null;
             methodDebugInfo->localsSize = 0;
 
-            string? assemblyPathString = Marshal.PtrToStringUTF8((IntPtr)assemblyPath);
-            if (string.IsNullOrEmpty(assemblyPathString))
+            try
+            {
+                string? assemblyPathString = Marshal.PtrToStringUTF8((IntPtr)assemblyPath);
+                if (string.IsNullOrEmpty(assemblyPathString))
+                {
+                    return 0;
+                }
+
+                return GetPerfMapInfoForMethodFromReader(null, assemblyPathString, unchecked((int)methodToken), (IntPtr)methodDebugInfo->points, methodDebugInfo->size) ? 1 : 0;
+            }
+            catch
             {
                 return 0;
             }
-
-            return GetPerfMapInfoForMethodFromReader(null, assemblyPathString, unchecked((int)methodToken), (IntPtr)methodDebugInfo->points, methodDebugInfo->size) ? 1 : 0;
         }
 
         internal static int CalculateFramesToSkip(StackFrameHelper StackF, int iNumFrames)
