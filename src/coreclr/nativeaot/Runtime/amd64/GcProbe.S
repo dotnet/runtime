@@ -91,36 +91,36 @@
 //
 .macro FixupHijackedCallstack
         // preserve volatile argument registers across INLINE_GETTHREAD
-        push rax
-        push rdx
+        push_register rax
+        push_register rdx
 
         // preserve RCX as it may contain async continuation return value
-        push rcx
+        push_register rcx
 
         // preserve RSI, RDI, R8 and R9 as they may contain GC refs
-        push rsi
-        push rdi
-        push r8
-        push r9
+        push_register rsi
+        push_register rdi
+        push_register r8
+        push_register r9
 
         // align stack
-        sub rsp, 0x8
+        alloc_stack 0x8
 
         // rax = GetThread(), makes nested calls
         INLINE_GETTHREAD
         mov r11, rax
 
-        add rsp, 0x8
+        free_stack 0x8
 
-        pop r9
-        pop r8
-        pop rdi
-        pop rsi
+        pop_register r9
+        pop_register r8
+        pop_register rdi
+        pop_register rsi
 
-        pop rcx
+        pop_register rcx
 
-        pop rdx
-        pop rax
+        pop_register rdx
+        pop_register rax
 
         // Fix the stack by pushing the original return address
         mov         r10, [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress]
