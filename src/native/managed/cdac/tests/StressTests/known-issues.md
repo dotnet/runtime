@@ -76,29 +76,37 @@ walker that:
 2. Delegates standard ECMA-335 type codes to the existing `GcSignatureTypeProvider`
 3. Handles `ELEMENT_TYPE_CMOD_INTERNAL` (0x22) similarly if encountered
 
-## Issue 2: GcInfo register ref mismatch (instruction-level stress only)
+## Issue 2: Stack walker code offset difference (instruction-level stress only)
 
-**Affected**: QCall boundary methods during EventSource initialization
+**Affected**: Methods during EventSource initialization
 **Frequency**: ~4 per 25K verifications (0.02%)
+**Root cause**: IDENTIFIED — cDAC and DAC unwinders compute different frame IPs
 
-**Pattern**: The cDAC reports 1 fewer register-based GC ref than the DAC for
-methods at specific instruction offsets. The preceding instruction offset (IP-4)
-always passes with identical counts.
+**Where it happens**: The cDAC's stack unwinder in `StackWalk_1.Next()` produces
+a different return address for deep frames compared to the native `StackFrameIterator`.
+This causes `EnumGcRefsForManagedFrame` to be called with a different code offset,
+selecting a different safe point whose liveness bitmap has different register state.
 
-Affected methods (consistent across runs):
-- `EventSource.AddProviderEnumKind` — `Obj=0x..., Flags=0x0` (normal object ref)
-- `RuntimeAssembly.GetTypeCore` (QCall) — `Obj=0x0, Flags=0x1` (null interior pointer)
-- `ModuleHandle.GetDynamicMethod` (QCall) — `Obj=0x..., Flags=0x1` (interior pointer)
+**Confirmed via parallel GcInfo tracing**: Both the native and cDAC `GcInfoDecoder`
+read the SAME GcInfo blob and produce IDENTICAL liveness bits for the same
+(offset, safePointIndex) pair. The slot table decoding, bit positions, and live
+state bitmaps all match exactly. The divergence is upstream — in the code offset
+passed to `EnumerateLiveSlots`.
 
-```
-[FRAME_DIFF] Source=0x... (GetTypeCore(QCall...)): cDAC=4 DAC=5
-  [DAC_ONLY] Addr=0x0 Obj=0x0 Flags=0x1  ← register-based interior pointer
-```
+**Evidence**: For `GetTypeCore` (codeLen=0x1C4, numSP=23):
+- Both decoders: `numTracked=5, numUntracked=0, liveStateBitOffset=262`
+- Both decoders produce identical results at offsets 0x45, 0x55, 0x97, 0x191
+- The native walker visits additional offsets (0xae, 0xe0, 0x113) the cDAC never sees
+- At these additional offsets, different safe points produce different liveness
 
-Root cause is a subtle difference in how the cDAC's `GcInfoDecoder.EnumerateLiveSlots`
-handles partially-interruptible safe point liveness at these specific code offsets.
-The native decoder finds the register slot live at this IP but the cDAC does not.
-Further investigation requires side-by-side GcInfo tracing with slot-level output.
+**Missing registers**: RAX (Reg=0) and R8 (Reg=8) — both scratch registers.
+The difference in which offset the walker uses leads to a different safe point
+where these registers are live (native) vs dead (cDAC).
+
+**Follow-up**: Investigate why the cDAC's `IPlatformAgnosticContext.Unwind()` produces
+a different return address for deep frames in this specific call chain. This likely
+involves a difference in how `RtlVirtualUnwind` or the cDAC's unwind path handles
+the frame at the QCall transition boundary.
 
 ## EH ThrowHelper (FIXED)
 

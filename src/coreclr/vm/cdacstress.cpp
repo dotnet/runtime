@@ -1158,8 +1158,9 @@ static bool ComparePerFrame(StackRef* refsA, int countA, const char* labelA,
                         if (!aUsed[i])
                         {
                             auto& r = refsA[groupsA[idxA].StartIdx + i];
-                            fprintf(s_logFile, "      [%s_ONLY] Addr=0x%llx Obj=0x%llx Flags=0x%x\n",
-                                labelA, (unsigned long long)r.Address, (unsigned long long)r.Object, r.Flags);
+                            fprintf(s_logFile, "      [%s_ONLY] Addr=0x%llx Obj=0x%llx Flags=0x%x Reg=%d Off=%d SP=0x%llx\n",
+                                labelA, (unsigned long long)r.Address, (unsigned long long)r.Object, r.Flags,
+                                r.Register, r.Offset, (unsigned long long)r.StackPointer);
                         }
                     }
                     for (int j = 0; j < cB; j++)
@@ -1167,8 +1168,9 @@ static bool ComparePerFrame(StackRef* refsA, int countA, const char* labelA,
                         if (!bUsed[j])
                         {
                             auto& r = refsB[groupsB[idxB].StartIdx + j];
-                            fprintf(s_logFile, "      [%s_ONLY] Addr=0x%llx Obj=0x%llx Flags=0x%x\n",
-                                labelB, (unsigned long long)r.Address, (unsigned long long)r.Object, r.Flags);
+                            fprintf(s_logFile, "      [%s_ONLY] Addr=0x%llx Obj=0x%llx Flags=0x%x Reg=%d Off=%d SP=0x%llx\n",
+                                labelB, (unsigned long long)r.Address, (unsigned long long)r.Object, r.Flags,
+                                r.Register, r.Offset, (unsigned long long)r.StackPointer);
                         }
                     }
                 }
