@@ -4330,7 +4330,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters())
         {
             // We set FP to be after LR, FP
-            frameLocalsDelta = 2 * REGSIZE_BYTES;
+            frameLocalsDelta = opts.IsOSR() ? 0 : 2 * REGSIZE_BYTES;
             frameBoundary    = opts.IsOSR() ? -info.compPatchpointInfo->TotalFrameSize() : 0;
             if (info.compIsVarArgs)
                 frameBoundary -= MAX_REG_ARG * REGSIZE_BYTES;
