@@ -5724,17 +5724,17 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->AsyncSynchronizationContextOffset());
     }
 
-#if defined(TARGET_AMD64)
     // Record callee save registers.
-    // Currently only needed for x64.
     //
     regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FPBASE;
+#ifdef TARGET_ARM64
+    rsPushRegs |= RBM_LR;
+#endif
     patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
     JITDUMP("--OSR-- Tier0 callee saves: ");
     JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
     JITDUMP("\n");
-#endif
 
     // Register this with the runtime.
     info.compCompHnd->setPatchpointInfo(patchpointInfo);

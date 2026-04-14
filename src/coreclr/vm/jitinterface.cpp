@@ -11386,6 +11386,17 @@ void CEECodeGenInfo::reportMetadata(
     EE_TO_JIT_TRANSITION_LEAF();
 }
 
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+struct AltJitPatchpointInfo
+{
+    AltJitPatchpointInfo* Next;
+    MethodDesc* Method;
+    PatchpointInfo* Info;
+};
+
+static AltJitPatchpointInfo* s_altJitPatchpointInfoList;
+#endif
+
 void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     CONTRACTL {
@@ -11400,6 +11411,23 @@ void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
     // We receive ownership of the array
     _ASSERTE(m_pPatchpointInfoFromJit == NULL);
     m_pPatchpointInfoFromJit = patchpointInfo;
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    if (m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT))
+    {
+        uint32_t ppiSize = patchpointInfo->PatchpointInfoSize();
+        PatchpointInfo *newPpi = new (new uint8_t[ppiSize]) PatchpointInfo;
+        newPpi->Initialize(patchpointInfo->NumberOfLocals(), patchpointInfo->TotalFrameSize());
+        newPpi->Copy(patchpointInfo);
+
+        AltJitPatchpointInfo* newInfo = new AltJitPatchpointInfo;
+        newInfo->Next = s_altJitPatchpointInfoList;
+        newInfo->Method = m_pMethodBeingCompiled;
+        newInfo->Info = newPpi;
+        s_altJitPatchpointInfoList = newInfo;
+    }
+#endif
+
 #else
     UNREACHABLE();
 #endif
@@ -11423,6 +11451,21 @@ PatchpointInfo* CEEJitInfo::getOSRInfo(unsigned* ilOffset)
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     result = m_pPatchpointInfoFromRuntime;
     *ilOffset = m_ilOffset;
+
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+    if (m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT))
+    {
+        for (AltJitPatchpointInfo* altJitPpi = s_altJitPatchpointInfoList; altJitPpi != NULL; altJitPpi = altJitPpi->Next)
+        {
+            if (altJitPpi->Method == m_pMethodBeingCompiled)
+            {
+                result = altJitPpi->Info;
+                break;
+            }
+        }
+    }
+#endif
+
 #endif
 
     EE_TO_JIT_TRANSITION();

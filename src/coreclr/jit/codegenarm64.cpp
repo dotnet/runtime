@@ -45,6 +45,11 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
     rsRestoreRegs |= RBM_LR; // We must save/restore the return address (in the LR register)
 
+    if (m_compiler->opts.IsOSR())
+    {
+        rsRestoreRegs &= ~m_compiler->info.compPatchpointInfo->CalleeSaveRegisters();
+    }
+
     regMaskTP regsToRestoreMask = rsRestoreRegs;
 
     const int totalFrameSize = genTotalFrameSize();
@@ -55,6 +60,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     const int calleeSaveSpOffset = m_compiler->compFrameInfo.calleeSaveSpOffset;
     const int calleeSaveSpDelta  = m_compiler->compFrameInfo.calleeSaveSpDelta;
     const int offsetSpToSavedFp  = m_compiler->compFrameInfo.offsetSpToSavedFp;
+    bool restoreFplr = (rsRestoreRegs & RBM_FP) != 0;
 
     switch (frameType)
     {
@@ -127,12 +133,19 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                 GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, alignmentAdjustment2);
                 m_compiler->unwindSetFrameReg(REG_FPBASE, alignmentAdjustment2);
 
-                // Generate:
-                //      ldp fp,lr,[sp]
-                //      add sp,sp,#remainingFrameSz
+                if (restoreFplr)
+                {
+                    // Generate:
+                    //      ldp fp,lr,[sp]
+                    //      add sp,sp,#remainingFrameSz
 
-                JITDUMP("    alignmentAdjustment2=%d\n", alignmentAdjustment2);
-                genEpilogRestoreRegPair(REG_FP, REG_LR, alignmentAdjustment2, spAdjustment2, false, REG_IP1, nullptr);
+                    JITDUMP("    alignmentAdjustment2=%d\n", alignmentAdjustment2);
+                    genEpilogRestoreRegPair(REG_FP, REG_LR, alignmentAdjustment2, spAdjustment2, false, REG_IP1, nullptr);
+                }
+                else
+                {
+                    genStackPointerAdjustment(spAdjustment2, REG_IP1, nullptr, /* reportUnwindData */ true);
+                }
             }
             else
             {
@@ -146,15 +159,22 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                     m_compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
                 }
 
-                // Generate:
-                //      ldp fp,lr,[sp,#outsz]
-                //      add sp,sp,#remainingFrameSz     ; might need to load this constant in a scratch register if
-                //                                      ; it's large
+                if (restoreFplr)
+                {
+                    // Generate:
+                    //      ldp fp,lr,[sp,#outsz]
+                    //      add sp,sp,#remainingFrameSz     ; might need to load this constant in a scratch register if
+                    //                                      ; it's large
 
-                JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
+                    JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
-                genEpilogRestoreRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, remainingFrameSz, false,
-                                        REG_IP1, nullptr);
+                    genEpilogRestoreRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, remainingFrameSz, false,
+                                            REG_IP1, nullptr);
+                }
+                else
+                {
+                    genStackPointerAdjustment(remainingFrameSz, REG_IP1, nullptr, /* reportUnwindData */ true);
+                }
             }
 
             // Unlike frameType=1 or frameType=2 that restore SP at the end,
@@ -213,12 +233,20 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     {
         case 1:
         {
-            // Generate:
-            //      ldp fp,lr,[sp],#framesz
+            if (restoreFplr)
+            {
+                // Generate:
+                //      ldp fp,lr,[sp],#framesz
 
-            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, totalFrameSize,
-                                          INS_OPTS_POST_INDEX);
-            m_compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
+                GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, totalFrameSize,
+                                              INS_OPTS_POST_INDEX);
+                m_compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
+                m_compiler->unwindAllocStack(totalFrameSize);
+            }
             break;
         }
 
@@ -228,9 +256,12 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             //      ldp fp,lr,[sp,#outsz]
             //      add sp,sp,#framesz
 
-            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
-                                          m_compiler->lvaOutgoingArgSpaceSize);
-            m_compiler->unwindSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize);
+            if (restoreFplr)
+            {
+                GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
+                                              m_compiler->lvaOutgoingArgSpaceSize);
+                m_compiler->unwindSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize);
+            }
 
             GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
             m_compiler->unwindAllocStack(totalFrameSize);
@@ -250,30 +281,15 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         }
     }
 
-    // For OSR, we must also adjust the SP to remove the Tier0 frame.
+    // For OSR we must also restore callee saves from tier0 frame and pop it.
     //
     if (m_compiler->opts.IsOSR())
     {
         PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
         const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
-        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes\n", tier0FrameSize);
 
-        // Tier0 size may exceed simple immediate. We're in the epilog so not clear if we can
-        // use a scratch reg. So just do two subtracts if necessary.
-        //
-        int spAdjust = tier0FrameSize;
-        if (!GetEmitter()->emitIns_valid_imm_for_add(tier0FrameSize, EA_PTRSIZE))
-        {
-            const int lowPart  = spAdjust & 0xFFF;
-            const int highPart = spAdjust - lowPart;
-            assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
-            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
-            m_compiler->unwindAllocStack(highPart);
-            spAdjust = lowPart;
-        }
-        assert(GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE));
-        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
-        m_compiler->unwindAllocStack(spAdjust);
+        regsToRestoreMask = patchpointInfo->CalleeSaveRegisters();
+        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, tier0FrameSize - genCountBits(regsToRestoreMask) * REGSIZE_BYTES, tier0FrameSize);
     }
 }
 
@@ -5557,7 +5573,7 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     //
     PatchpointInfo* const patchpointInfo             = m_compiler->info.compPatchpointInfo;
     regMaskTP const tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
-    assert((tier0CalleeSaves & RBM_ALLINT) == tier0CalleeSaves);
+    assert((tier0CalleeSaves & RBM_ALLFLOAT) == RBM_NONE);
     int const             tier0CalleeSaveUsedSize = genCountBits(tier0CalleeSaves) * REGSIZE_BYTES;
 
     JITDUMP("--OSR--- tier0 has already saved ");

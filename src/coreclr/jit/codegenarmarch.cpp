@@ -4484,13 +4484,14 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     // The amount to subtract from SP before starting to store the callee-saved registers. It might be folded into the
     // first save instruction as a "predecrement" amount, if possible.
     int calleeSaveSpDelta = 0;
+    bool saveFplr = (maskSaveRegsInt & RBM_FP) != 0;
 
     if (isFramePointerUsed())
     {
-        // We need to save both FP and LR.
-
-        assert((maskSaveRegsInt & RBM_FP) != 0);
-        assert((maskSaveRegsInt & RBM_LR) != 0);
+        // Either we need to save both FP and LR or none of them. The latter
+        // happens only for OSR functions that inherit FP/LR from the tier0
+        // frame.
+        assert(((maskSaveRegsInt & RBM_FP) != 0) == ((maskSaveRegsInt & RBM_LR) != 0));
 
         // If we need to generate a GS cookie, we need to make sure the saved frame pointer and return address
         // (FP and LR) are protected from buffer overrun by the GS cookie. If FP/LR are at the lowest addresses,
@@ -4534,12 +4535,21 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
             assert(totalFrameSize <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
 
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -totalFrameSize,
-                                          INS_OPTS_PRE_INDEX);
-            m_compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
+            if (saveFplr)
+            {
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -totalFrameSize,
+                                              INS_OPTS_PRE_INDEX);
+                m_compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
 
-            maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                          // We've already saved FP/LR
-            offset = (int)m_compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // 2 for FP/LR
+                maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                          // We've already saved FP/LR
+                offset = (int)m_compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // 2 for FP/LR
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
+                m_compiler->unwindAllocStack(totalFrameSize);
+                offset = m_compiler->compLclFrameSize;
+            }
         }
         else if ((totalFrameSize <= 512) && !m_compiler->opts.compDbgEnC)
         {
@@ -4585,14 +4595,21 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
                 GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
                 m_compiler->unwindAllocStack(totalFrameSize);
 
-                assert(m_compiler->lvaOutgoingArgSpaceSize + 2 * REGSIZE_BYTES <= (unsigned)totalFrameSize);
+                if (saveFplr)
+                {
+                    assert(m_compiler->lvaOutgoingArgSpaceSize + 2 * REGSIZE_BYTES <= (unsigned)totalFrameSize);
 
-                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
-                                              m_compiler->lvaOutgoingArgSpaceSize);
-                m_compiler->unwindSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize);
+                    GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
+                                                  m_compiler->lvaOutgoingArgSpaceSize);
+                    m_compiler->unwindSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize);
 
-                maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                          // We've already saved FP/LR
-                offset = (int)m_compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // 2 for FP/LR
+                    maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                          // We've already saved FP/LR
+                    offset = (int)m_compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // 2 for FP/LR
+                }
+                else
+                {
+                    offset = (int)m_compiler->compLclFrameSize;
+                }
             }
         }
         else
@@ -4681,10 +4698,13 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
                 frameType = 3;
 
-                calleeSaveSpDeltaUnaligned -= 2 * REGSIZE_BYTES; // 2 for FP, LR which we'll save later.
+                if (saveFplr)
+                {
+                    calleeSaveSpDeltaUnaligned -= 2 * REGSIZE_BYTES; // 2 for FP, LR which we'll save later.
 
-                // We'll take care of these later, but callee-saved regs code shouldn't see them.
-                maskSaveRegsInt &= ~(RBM_FP | RBM_LR);
+                    // We'll take care of these later, but callee-saved regs code shouldn't see them.
+                    maskSaveRegsInt &= ~(RBM_FP | RBM_LR);
+                }
             }
 
             assert(calleeSaveSpDeltaUnaligned >= 0);
@@ -4779,7 +4799,15 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
             JITDUMP("    spAdjustment2=%d\n", spAdjustment2);
 
-            genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegZeroed);
+            if (saveFplr)
+            {
+                genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegZeroed);
+            }
+            else
+            {
+                genStackPointerAdjustment(-spAdjustment2, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+            }
+
             offset += spAdjustment2;
 
             // Now subtract off the #outsz (or the rest of the #outsz if it was unaligned, and the above "sub"
@@ -4804,8 +4832,16 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         }
         else
         {
-            genPrologSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false, initReg,
-                                 pInitRegZeroed);
+            if (saveFplr)
+            {
+                genPrologSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false, initReg,
+                                     pInitRegZeroed);
+            }
+            else
+            {
+                genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+            }
+
             offset += remainingFrameSz;
 
             offsetSpToSavedFp = m_compiler->lvaOutgoingArgSpaceSize;
