@@ -177,7 +177,15 @@ PALTEST(threading_CreateProcessW_test3_paltest_createprocessw_test3, "threading/
              "a directory of the same name in PATH\n", GetLastError());
     }
 
-    WaitForSingleObject(pi.hProcess, 30000);
+    dwExitCode = WaitForSingleObject(pi.hProcess, 30000);
+    if (dwExitCode != WAIT_OBJECT_0)
+    {
+        TerminateProcess(pi.hProcess, 0);
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+        CleanupTestDirs(tmpDir1, blockerDir, tmpDir2, symlinkPath);
+        Fail("Child process did not complete in time (WaitForSingleObject returned %u)\n", dwExitCode);
+    }
 
     if (!GetExitCodeProcess(pi.hProcess, &dwExitCode))
     {
