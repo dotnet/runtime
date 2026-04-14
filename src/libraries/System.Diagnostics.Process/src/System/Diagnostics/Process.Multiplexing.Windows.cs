@@ -183,10 +183,6 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Cancels a pending overlapped I/O and waits for completion before returning.
-        /// See Raymond Chen's series on safe cancellation:
-        /// https://devblogs.microsoft.com/oldnewthing/20110202-00/?p=11613
-        /// https://devblogs.microsoft.com/oldnewthing/20110203-00/?p=11603
-        /// https://devblogs.microsoft.com/oldnewthing/20110204-00/?p=11583
         /// </summary>
         private static unsafe void CancelPendingIOIfNeeded(SafeFileHandle handle, bool done, NativeOverlapped* overlapped)
         {
