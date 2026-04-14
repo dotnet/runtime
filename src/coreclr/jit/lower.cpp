@@ -5956,7 +5956,8 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                     // indirection safely since that could cause the read to overrun the end of a buffer.
                     // Instead, wrap the indirection in a cast to zero extend it.
                     GenTreeCast* cast =
-                        m_compiler->gtNewCastNode(nativeReturnType, retVal, true, varTypeToUnsigned(nativeReturnType));
+                        m_compiler->gtNewCastNode(nativeReturnType, retVal, true, TypeGet(retVal));
+                    assert(cast->IsZeroExtending());
                     BlockRange().InsertBefore(ret, cast);
                     ContainCheckCast(cast);
                     retValUse.ReplaceWith(cast);
