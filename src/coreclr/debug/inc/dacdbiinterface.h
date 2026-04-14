@@ -301,22 +301,6 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainObject(VMPTR_AppDomain vmAppDomain, OUT VMPTR_OBJECTHANDLE * pRetVal) = 0;
 
-    //
-    // Determines whether the runtime security system has assigned full-trust to this assembly.
-    //
-    // Arguments:
-    //      vmAssembly - VM pointer to the assembly in question.
-    //      pResult - [out] Trust status for the assembly.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //      Of course trusted malicious code in the process could always cause this API to lie.  However,
-    //      an assembly loaded without full-trust should have no way of causing this API to return true.
-    //
-    virtual HRESULT STDMETHODCALLTYPE IsAssemblyFullyTrusted(VMPTR_Assembly vmAssembly, OUT BOOL * pResult) = 0;
-
 
     //
     // Get the full AD friendly name for the given EE AppDomain.
@@ -542,7 +526,7 @@ public:
     // Notes:
     //    See definition of AssemblyInfo for more details about what properties
     //    this gives back.
-    virtual HRESULT STDMETHODCALLTYPE GetAssemblyData(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyInfo(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule) = 0;
 

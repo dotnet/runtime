@@ -200,7 +200,7 @@ BOOL LoaderAllocator::Release()
     }
     CONTRACTL_END;
 
-    // Only actually destroy the domain assembly when all references to it are gone.
+    // Only actually destroy the assembly when all references to it are gone.
     // This should preserve behavior in the debugger such that an UnloadModule event
     // will occur before the underlying data structure cease functioning.
 #ifndef DACCESS_COMPILE

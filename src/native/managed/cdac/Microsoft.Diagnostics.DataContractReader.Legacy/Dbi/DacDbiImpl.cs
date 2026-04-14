@@ -138,23 +138,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal)
         => _legacy is not null ? _legacy.GetAppDomainObject(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
 
-    public int IsAssemblyFullyTrusted(ulong vmAssembly, Interop.BOOL* pResult)
-    {
-        *pResult = Interop.BOOL.TRUE;
-        int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsAssemblyFullyTrusted(vmAssembly, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
-        return hr;
-    }
-
     public int GetAppDomainFullName(ulong vmAppDomain, nint pStrName)
     {
         int hr = HResults.S_OK;
@@ -264,8 +247,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData)
         => _legacy is not null ? _legacy.GetModuleData(vmModule, pData) : HResults.E_NOTIMPL;
 
-    public int GetAssemblyData(ulong vmAssembly, DacDbiAssemblyInfo* pData)
-        => _legacy is not null ? _legacy.GetAssemblyData(vmAssembly, pData) : HResults.E_NOTIMPL;
+    public int GetAssemblyInfo(ulong vmAssembly, DacDbiAssemblyInfo* pData)
+        => _legacy is not null ? _legacy.GetAssemblyInfo(vmAssembly, pData) : HResults.E_NOTIMPL;
 
     public int GetModuleForAssembly(ulong vmAssembly, ulong* pModule)
         => _legacy is not null ? _legacy.GetModuleForAssembly(vmAssembly, pModule) : HResults.E_NOTIMPL;
@@ -1347,8 +1330,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetAssemblyFromModule(ulong vmModule, ulong* pvmAssembly)
-        => _legacy is not null ? _legacy.GetAssemblyFromModule(vmModule, pvmAssembly) : HResults.E_NOTIMPL;
+    public int GetAssemblyFromModule(ulong vmModule, ulong* pVmAssembly)
+        => _legacy is not null ? _legacy.GetAssemblyFromModule(vmModule, pVmAssembly) : HResults.E_NOTIMPL;
 
     public int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState)
         => _legacy is not null ? _legacy.ParseContinuation(continuationAddress, pDiagnosticIP, pNextContinuation, pState) : HResults.E_NOTIMPL;

@@ -664,8 +664,8 @@ public:
     // Gets properties for a module
     HRESULT STDMETHODCALLTYPE GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData);
 
-    // Gets properties for a domain assembly
-    HRESULT STDMETHODCALLTYPE GetAssemblyData(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData);
+    // Gets properties for an assembly
+    HRESULT STDMETHODCALLTYPE GetAssemblyInfo(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData);
 
     HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule);
 
@@ -756,10 +756,6 @@ public:
 
     // Given an assembly ref token and metadata scope (via the Assembly), resolve the assembly.
     HRESULT STDMETHODCALLTYPE ResolveAssembly(VMPTR_Assembly vmScope, mdToken tkAssemblyRef, OUT VMPTR_Assembly * pRetVal);
-
-    // Determines whether the runtime security system has assigned full-trust to this assembly.
-    HRESULT STDMETHODCALLTYPE IsAssemblyFullyTrusted(VMPTR_Assembly vmAssembly, OUT BOOL * pResult);
-
 
     // Hijack the thread
     HRESULT STDMETHODCALLTYPE Hijack(VMPTR_Thread vmThread, ULONG32 dwThreadId, const EXCEPTION_RECORD * pRecord, T_CONTEXT * pOriginalContext, ULONG32 cbSizeContext, EHijackReason::EHijackReason reason, void * pUserData, CORDB_ADDRESS * pRemoteContextAddr);

@@ -62,7 +62,7 @@ CordbModule::CordbModule(
     {
         AssemblyInfo dfInfo;
 
-        IfFailThrow(pProcess->GetDAC()->GetAssemblyData(vmAssembly, &dfInfo)); // throws
+        IfFailThrow(pProcess->GetDAC()->GetAssemblyInfo(vmAssembly, &dfInfo)); // throws
 
         m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
         _ASSERTE(m_pAppDomain == pProcess->GetAppDomain());

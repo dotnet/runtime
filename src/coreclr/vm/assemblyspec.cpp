@@ -279,7 +279,7 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
 
     if(pParentAssembly != NULL)
     {
-        // Get the PEAssembly associated with the parent's domain assembly
+        // Get the PEAssembly associated with the parent's assembly
         PEAssembly *pParentPEAssembly = pParentAssembly->GetPEAssembly();
         pParentAssemblyBinder = pParentPEAssembly->GetAssemblyBinder();
     }

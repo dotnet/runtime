@@ -2051,22 +2051,6 @@ void Module::BuildClassForModule()
 
 #endif // !DACCESS_COMPILE
 
-// Returns true iff the debugger should be notified about this module
-//
-// Notes:
-//   Debugger doesn't need to be notified about modules that can't be executed.
-//   (we do not have such cases at the moment)
-//
-//   This should be immutable for an instance of a module. That ensures that the debugger gets consistent
-//   notifications about it. It this value mutates, than the debugger may miss relevant notifications.
-BOOL Module::IsVisibleToDebugger()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    return TRUE;
-}
-
 ReadyToRunLoadedImage * Module::GetReadyToRunImage()
 {
     LIMITED_METHOD_CONTRACT;
@@ -2941,14 +2925,6 @@ void Module::UpdateDynamicMetadataIfNeeded()
         return;
     }
 
-    // Since serializing metadata to an auxiliary buffer is only needed by the debugger,
-    // we should only be doing this for modules that the debugger can see.
-    if (!IsVisibleToDebugger())
-    {
-        return;
-    }
-
-
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -2974,10 +2950,6 @@ void Module::UpdateDynamicMetadataIfNeeded()
 BOOL Module::NotifyDebuggerLoad(Assembly * pAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
-
-    // We don't notify the debugger about modules that don't contain any code.
-    if (!IsVisibleToDebugger())
-        return FALSE;
 
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
@@ -3029,10 +3001,6 @@ void Module::NotifyDebuggerUnload()
 
     AppDomain* pDomain = AppDomain::GetCurrentDomain();
     if (!pDomain->IsDebuggerAttached())
-        return;
-
-    // We don't notify the debugger about modules that don't contain any code.
-    if (!IsVisibleToDebugger())
         return;
 
     LookupMap<PTR_MethodTable>::Iterator typeDefIter(&m_TypeDefToMethodTableMap);

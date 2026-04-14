@@ -1619,6 +1619,11 @@ typedef CordbEnumerator<RSSmartPtr<CordbThread>,
                         ICorDebugThreadEnum, IID_ICorDebugThreadEnum,
                         QueryInterfaceConvert<RSSmartPtr<CordbThread>, ICorDebugThread, IID_ICorDebugThread> > CordbThreadEnumerator;
 
+typedef CordbEnumerator<RSSmartPtr<CordbAppDomain>,
+                        ICorDebugAppDomain*,
+                        ICorDebugAppDomainEnum, IID_ICorDebugAppDomainEnum,
+                        QueryInterfaceConvert<RSSmartPtr<CordbAppDomain>, ICorDebugAppDomain, IID_ICorDebugAppDomain> > CordbAppDomainEnumerator;
+
 // Template classes must be fully defined rather than just declared in the header
 #include "rsenumerator.hpp"
 
@@ -2466,7 +2471,7 @@ public:
     CordbModule * GetModuleFromMetaDataInterface(IUnknown *pIMetaData);
 
     // Lookup a module from the cache.  Create and to the cache if needed.
-    CordbModule * LookupOrCreateModule(VMPTR_Assembly vmAssemblyToken);
+    CordbModule * LookupOrCreateModule(VMPTR_Assembly vmAssemblyToken, VMPTR_Module vmModuleToken = VMPTR_Module::NullPtr());
 
     // Callback from DAC for module enumeration
     static void ModuleEnumerationCallback(VMPTR_Assembly vmAssembly, void * pUserData);
@@ -2629,9 +2634,6 @@ public:
 private:
     VMPTR_Assembly   m_vmAssembly;
     CordbAppDomain * m_pAppDomain;
-
-    // Optional: the cached value of IsFullyTrusted
-    Optional<BOOL>   m_foptIsFullTrust;
 
     StringCopyHolder m_strAssemblyFileName;
 };
@@ -3479,8 +3481,6 @@ public:
     // CordbClass instance doesn't exist.
     CordbClass * LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_Assembly vmAssembly, mdTypeDef classToken);
 
-    CordbModule * LookupOrCreateModule(VMPTR_Assembly vmAssembly);
-
 #ifdef FEATURE_INTEROP_DEBUGGING
     CordbUnmanagedThread *GetUnmanagedThread(DWORD dwThreadId)
     {
@@ -3699,9 +3699,6 @@ private:
     // Callback for AppDomain enumeration
     static void AppDomainEnumerationCallback(VMPTR_AppDomain vmAppDomain, void * pUserData);
 
-    // Helper to create a new CordbAppDomain around the vmptr and cache it
-    CordbAppDomain * CacheAppDomain(VMPTR_AppDomain vmAppDomain);
-
     // Helper to traverse Appdomains in target and build up our cache.
     void PrepopulateAppDomainsOrThrow();
 
@@ -3880,7 +3877,7 @@ public:
     CordbSafeHashTable<CordbUnmanagedThread>  m_unmanagedThreads;
 #endif // FEATURE_INTEROP_DEBUGGING
 
-    CordbSafeHashTable<CordbAppDomain>        m_appDomains;
+    CordbAppDomain*        m_pAppDomain;
 
     // Since a stepper can begin in one appdomain, and complete in another,
     // we put the hashtable here, rather than on specific appdomains.

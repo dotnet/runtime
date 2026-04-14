@@ -791,7 +791,7 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
             if (!vmAssembly.IsNull())
             {
                 AssemblyInfo info;
-                IfFailThrow(pDac->GetAssemblyData(vmAssembly, &info));
+                IfFailThrow(pDac->GetAssemblyInfo(vmAssembly, &info));
                 vmAppDomain = info.vmAppDomain;
             }
             IfFailThrow(pDac->GetClassInfo(vmAppDomain, vmTypeHandle, &m_classInfo));

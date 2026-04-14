@@ -559,7 +559,7 @@ void BulkStaticsLogger::LogAllStatics()
                     WriteEntry(domain, address, *address, field);
                 } // foreach static field
             }
-        } // foreach domain assembly
+        } // foreach assembly
     } // foreach AppDomain
 } // BulkStaticsLogger::LogAllStatics
 

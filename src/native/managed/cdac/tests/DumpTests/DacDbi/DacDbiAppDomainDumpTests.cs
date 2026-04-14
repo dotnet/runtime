@@ -120,30 +120,6 @@ public class DacDbiAppDomainDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public unsafe void IsAssemblyFullyTrusted_ReturnsTrue(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        ILoader loader = Target.Contracts.Loader;
-        TargetPointer appDomainPtr = Target.ReadGlobalPointer(Constants.Globals.AppDomain);
-        ulong appDomain = Target.ReadPointer(appDomainPtr);
-        IEnumerable<ModuleHandle> modules = loader.GetModuleHandles(new TargetPointer(appDomain),
-            AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
-
-        foreach (ModuleHandle module in modules)
-        {
-            TargetPointer moduleAddr = loader.GetModule(module);
-            Interop.BOOL result;
-            int hr = dbi.IsAssemblyFullyTrusted(moduleAddr, &result);
-            Assert.Equal(System.HResults.S_OK, hr);
-            Assert.Equal(Interop.BOOL.TRUE, result);
-            break;
-        }
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
     public unsafe void GetConnectionID_ReturnsZero(TestConfiguration config)
     {
         InitializeDumpTest(config);

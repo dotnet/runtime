@@ -5070,10 +5070,9 @@ CordbInternalFrame::CordbInternalFrame(CordbThread *          pThread,
     // Some internal frames may not have a Function associated w/ them.
     if (!IsNilToken(m_funcMetadataToken))
     {
-        // Find the module of the function.  Note that this module isn't necessarily in the same domain as our frame.
-        // FuncEval frames can point to methods they are going to invoke in another domain.
+        // Find the module of the function.
         CordbModule * pModule = NULL;
-        pModule = GetProcess()->LookupOrCreateModule(pData->stubFrame.vmAssembly);
+        pModule = pCurrentAppDomain->LookupOrCreateModule(pData->stubFrame.vmAssembly);
         _ASSERTE(pModule != NULL);
 
         //
@@ -10976,10 +10975,9 @@ HRESULT CordbAsyncFrame::Init()
         GetProcess()->GetContinueNeuterList()->Add(GetProcess(), this);
 
         // Initialize module and appdomain
-        VMPTR_Assembly vmAssembly;
-        IfFailThrow(GetProcess()->GetDAC()->GetAssemblyFromModule(m_vmModule, &vmAssembly));
-        CordbModule* pModule = GetProcess()->LookupOrCreateModule(vmAssembly);
-        m_pAppDomain.Assign(pModule->GetAppDomain());
+        CordbAppDomain *pAppDomain = GetProcess()->GetAppDomain();
+        CordbModule* pModule = pAppDomain->LookupOrCreateModule(VMPTR_Assembly::NullPtr(), m_vmModule);
+        m_pAppDomain.Assign(pAppDomain);
 
         // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.
         m_pCode.Assign(pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));

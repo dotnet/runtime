@@ -4438,9 +4438,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetadata(VMPTR_Module vmModule
 
         Module     * pModule = vmModule.GetDacPtr();
 
-        // Target should only be asking about modules that are visible to debugger.
-        _ASSERTE(pModule->IsVisibleToDebugger());
-
         // For dynamic modules, metadata is stored as an eagerly-serialized buffer hanging off the Reflection Module.
         if (pModule->IsReflectionEmit())
         {
@@ -4487,9 +4484,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSymbolsBuffer(VMPTR_Module vmM
 
         Module * pModule = vmModule.GetDacPtr();
 
-        // Target should only be asking about modules that are visible to debugger.
-        _ASSERTE(pModule->IsVisibleToDebugger());
-
         PTR_CGrowableStream pStream = pModule->GetInMemorySymbolStream();
         if (pStream == NULL)
         {
@@ -4532,8 +4526,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleForAssembly(VMPTR_Assemb
 }
 
 
-// Implement IDacDbiInterface::GetAssemblyData
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAssemblyData(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData)
+// Implement IDacDbiInterface::GetAssemblyInfo
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAssemblyInfo(VMPTR_Assembly vmAssembly, OUT AssemblyInfo * pData)
 {
     DD_ENTER_MAY_THROW;
 
@@ -4678,18 +4672,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateModulesInAssembly(VMPTR_
 
         Assembly * pAssembly = vmAssembly.GetDacPtr();
 
-        // Debugger isn't notified of Resource / Inspection-only modules.
-        if (pAssembly->GetModule()->IsVisibleToDebugger())
-        {
-            // If domain assembly isn't yet loaded, just return
-            if (!pAssembly->IsLoaded())
-                return hr;
+        // If assembly isn't yet loaded, just return
+        if (!pAssembly->IsLoaded())
+            return hr;
 
-            VMPTR_Assembly vmAssembly = VMPTR_Assembly::NullPtr();
-            vmAssembly.SetHostPtr(pAssembly);
-
-            fpCallback(vmAssembly, pUserData);
-        }
+        fpCallback(vmAssembly, pUserData);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -4715,21 +4702,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ResolveAssembly(VMPTR_Assembly vm
             vmAssembly.SetHostPtr(pReferencedAssembly);
         }
         *pRetVal = vmAssembly;
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-// Determines whether the runtime security system has assigned full-trust to this assembly.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsAssemblyFullyTrusted(VMPTR_Assembly vmAssembly, OUT BOOL * pResult)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        *pResult = TRUE;
     }
     EX_CATCH_HRESULT(hr);
     return hr;

@@ -808,22 +808,24 @@ CordbAssembly * CordbAppDomain::LookupOrCreateAssembly(VMPTR_Assembly vmAssembly
 //    lazily.
 //    Never returns null.  Throws on error.
 //
-// Notes:
-//    If you don't know which appdomain the module is in, use code:CordbProcess::LookupOrCreateModule.
-//
-CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Assembly vmAssembly)
+CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Assembly vmAssembly, VMPTR_Module vmModule)
 {
     INTERNAL_API_ENTRY(this);
     CordbModule * pModule;
 
     RSLockHolder lockHolder(GetProcess()->GetProcessLock()); // @dbgtodo  locking: push this up.
 
-    _ASSERTE(!vmAssembly.IsNull());
+    _ASSERTE(!vmAssembly.IsNull() || !vmModule.IsNull()); // need at least one to lookup the other
 
-    VMPTR_Module vmModule;
-    IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule));
+    if (vmModule.IsNull())
+    {
+        IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule));
+    }
 
-    _ASSERTE(!vmModule.IsNull());
+    else if (vmAssembly.IsNull())
+    {
+        IfFailThrow(GetProcess()->GetDAC()->GetAssemblyFromModule(vmModule, &vmAssembly));
+    }
 
     // check to see if the module is present in this app domain
     pModule = m_modules.GetBase(VmPtrToCookie(vmModule));

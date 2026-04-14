@@ -2717,7 +2717,7 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
         NativeCodeFunctionData nativeCodeForDelFunc;
         IfFailThrow(pDAC->GetNativeCodeInfo(functionAssembly, functionMethodDef, &nativeCodeForDelFunc));
 
-        RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionAssembly));
+        RSSmartPtr<CordbModule> funcModule(GetAppDomain()->LookupOrCreateModule(functionAssembly));
         func.Assign(funcModule->LookupOrCreateFunction(functionMethodDef, nativeCodeForDelFunc.encVersion));
     }
 

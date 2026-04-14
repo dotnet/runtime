@@ -166,9 +166,6 @@ public unsafe partial interface IDacDbiInterface
     int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal);
 
     [PreserveSig]
-    int IsAssemblyFullyTrusted(ulong vmAssembly, Interop.BOOL* pResult);
-
-    [PreserveSig]
     int GetAppDomainFullName(ulong vmAppDomain, nint pStrName);
 
     [PreserveSig]
@@ -193,7 +190,7 @@ public unsafe partial interface IDacDbiInterface
     int GetModuleData(ulong vmModule, DacDbiModuleInfo* pData);
 
     [PreserveSig]
-    int GetAssemblyData(ulong vmAssembly, DacDbiAssemblyInfo* pData);
+    int GetAssemblyInfo(ulong vmAssembly, DacDbiAssemblyInfo* pData);
 
     [PreserveSig]
     int GetModuleForAssembly(ulong vmAssembly, ulong* pModule);
@@ -608,7 +605,7 @@ public unsafe partial interface IDacDbiInterface
     int MetadataUpdatesApplied(Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetAssemblyFromModule(ulong vmModule, ulong* pvmAssembly);
+    int GetAssemblyFromModule(ulong vmModule, ulong* pVmAssembly);
 
     [PreserveSig]
     int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState);

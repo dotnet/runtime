@@ -911,8 +911,6 @@ protected:
 
     BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return (m_dwTransientFlags & IS_REFLECTION_EMIT) != 0; }
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
-    // Returns true iff the debugger can see this module.
-    BOOL IsVisibleToDebugger();
 
     virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
 

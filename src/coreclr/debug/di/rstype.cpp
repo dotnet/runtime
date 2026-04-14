@@ -1623,9 +1623,7 @@ HRESULT CordbType::InitStringOrObjectClass(BOOL fForceInit)
         //
         // Step 2) Lookup CordbClass based off token + Module.
         //
-        VMPTR_Assembly vmAssembly;
-        IfFailThrow(GetProcess()->GetDAC()->GetAssemblyFromModule(vmModule, &vmAssembly));
-        CordbModule * pTypeModule = m_appdomain->LookupOrCreateModule(vmAssembly);
+        CordbModule * pTypeModule = m_appdomain->LookupOrCreateModule(VMPTR_Assembly::NullPtr(), vmModule);
 
         _ASSERTE(pTypeModule != NULL);
         IfFailThrow(pTypeModule->LookupOrCreateClass(metadataToken, &m_pClass));

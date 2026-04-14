@@ -279,32 +279,8 @@ HRESULT CordbAssembly::IsFullyTrusted( BOOL *pbFullyTrusted )
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     VALIDATE_POINTER_TO_OBJECT(pbFullyTrusted, BOOL*);
 
-    if (m_vmAssembly.IsNull())
-        return E_UNEXPECTED;
-
-    // Check for cached result
-    if( m_foptIsFullTrust.HasValue() )
-    {
-        *pbFullyTrusted = m_foptIsFullTrust.GetValue();
-        return S_OK;
-    }
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        CordbProcess * pProcess = m_pAppDomain->GetProcess();
-        IDacDbiInterface * pDac = pProcess->GetDAC();
-
-        BOOL fIsFullTrust;
-        IfFailThrow(pDac->IsAssemblyFullyTrusted(m_vmAssembly, &fIsFullTrust));
-
-        // Once the trust level of an assembly is known, it cannot change.
-        m_foptIsFullTrust = fIsFullTrust;
-
-        *pbFullyTrusted = fIsFullTrust;
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
+    // All assemblies in CoreCLR are fully trusted.
+    *pbFullyTrusted = TRUE;
+    return S_OK;
 }
 
