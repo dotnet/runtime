@@ -1561,8 +1561,7 @@ private:
             assert((m_attribs >= CEA_Func0) && (m_attribs <= CEA_Func4));
             assert(numArgs == (unsigned)(m_attribs - CEA_Func0));
             assert(m_funcAppElemSize == sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * numArgs);
-            return reinterpret_cast<VNDefFuncAppFlexible*>(
-                (char*)m_defs + offsetWithinChunk * m_funcAppElemSize);
+            return reinterpret_cast<VNDefFuncAppFlexible*>((char*)m_defs + offsetWithinChunk * m_funcAppElemSize);
         }
 
         template <int N>

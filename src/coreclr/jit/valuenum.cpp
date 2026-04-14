@@ -1748,25 +1748,25 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
             break;
 
         case CEA_Func0:
-            m_defs = new (alloc) VNFunc[ChunkSize];
+            m_defs            = new (alloc) VNFunc[ChunkSize];
             m_funcAppElemSize = sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * 0;
             break;
 
         case CEA_Func1:
             m_funcAppElemSize = sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * 1;
-            m_defs = alloc.allocate<char>(m_funcAppElemSize * ChunkSize);
+            m_defs            = alloc.allocate<char>(m_funcAppElemSize * ChunkSize);
             break;
         case CEA_Func2:
             m_funcAppElemSize = sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * 2;
-            m_defs = alloc.allocate<char>(m_funcAppElemSize * ChunkSize);
+            m_defs            = alloc.allocate<char>(m_funcAppElemSize * ChunkSize);
             break;
         case CEA_Func3:
             m_funcAppElemSize = sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * 3;
-            m_defs = alloc.allocate<char>(m_funcAppElemSize * ChunkSize);
+            m_defs            = alloc.allocate<char>(m_funcAppElemSize * ChunkSize);
             break;
         case CEA_Func4:
             m_funcAppElemSize = sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * 4;
-            m_defs = alloc.allocate<char>(m_funcAppElemSize * ChunkSize);
+            m_defs            = alloc.allocate<char>(m_funcAppElemSize * ChunkSize);
             break;
         default:
             unreached();
@@ -9996,7 +9996,6 @@ bool ValueNumStore::GetVNFunc(ValueNum vn, VNFuncApp* funcApp)
 
     return false;
 }
-
 
 //----------------------------------------------------------------------------------
 // IsVNBinFunc: A specialized version of GetVNFunc that checks if the given ValueNum
