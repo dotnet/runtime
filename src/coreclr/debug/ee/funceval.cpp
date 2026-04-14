@@ -1266,8 +1266,27 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
 
     DebuggerIPCE_FuncEvalArgData *argData = pDE->GetArgData();
 
-    // Gather signature type info for each argument.
+    // GC-protect all arg addresses as interior pointers before any GC-triggering
+    // operations (GatherFuncEvalArgInfo walks the signature, GetRetTypeHandleThrowing
+    // resolves types — both can trigger GC). Some argAddr values may point into
+    // managed objects on the GC heap (e.g. fields of heap-allocated objects).
+    // Protecting them ensures the GC updates these pointers if objects move.
     SIZE_T cbAllocSize;
+    if (!(ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(void *), cbAllocSize)) ||
+        (cbAllocSize != (size_t)(cbAllocSize)))
+    {
+        ThrowHR(COR_E_OVERFLOW);
+    }
+    void **pArgAddrs = (void **)_alloca(cbAllocSize);
+    memset(pArgAddrs, 0, cbAllocSize);
+    for (unsigned i = 0; i < pDE->m_argCount; i++)
+    {
+        if (argData[i].argAddr != NULL)
+            pArgAddrs[i] = (void *)(argData[i].argAddr);
+    }
+    GCPROTECT_BEGININTERIOR_ARRAY(*pArgAddrs, pDE->m_argCount);
+
+    // Gather signature type info for each argument.
     if (!(ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(FuncEvalArgInfo), cbAllocSize)) ||
         (cbAllocSize != (size_t)(cbAllocSize)))
     {
@@ -1282,24 +1301,6 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     {
         pDE->m_resultType = mSig.GetRetTypeHandleThrowing();
     }
-
-    // GC-protect all arg addresses as interior pointers.
-    // Some argAddr values may point into managed objects on the GC heap
-    // (e.g. fields of heap-allocated objects). Protecting them ensures the
-    // GC updates these pointers if objects move during boxing below.
-    if (!(ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(void *), cbAllocSize)) ||
-        (cbAllocSize != (size_t)(cbAllocSize)))
-    {
-        ThrowHR(COR_E_OVERFLOW);
-    }
-    void **pArgAddrs = (void **)_alloca(cbAllocSize);
-    memset(pArgAddrs, 0, cbAllocSize);
-    for (unsigned i = 0; i < pDE->m_argCount; i++)
-    {
-        if (argData[i].argAddr != NULL)
-            pArgAddrs[i] = (void *)(argData[i].argAddr);
-    }
-    GCPROTECT_BEGININTERIOR_ARRAY(*pArgAddrs, pDE->m_argCount);
 
     struct
     {
@@ -1347,13 +1348,13 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
         OBJECTREF   *pThisObj;
         PTRARRAYREF *pArgs;
         INT32        isNewObj;
-    } contract;
+    } invokeArgs;
 
-    contract.pMD = pDE->m_md;
-    contract.pOwnerMT = pDE->m_ownerTypeHandle.GetMethodTable();
-    contract.pThisObj = &ucoGc.thisArg;
-    contract.pArgs = &ucoGc.argsArray;
-    contract.isNewObj = (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT) ? 1 : 0;
+    invokeArgs.pMD = pDE->m_md;
+    invokeArgs.pOwnerMT = pDE->m_ownerTypeHandle.GetMethodTable();
+    invokeArgs.pThisObj = &ucoGc.thisArg;
+    invokeArgs.pArgs = &ucoGc.argsArray;
+    invokeArgs.isNewObj = (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT) ? 1 : 0;
 
     LOG((LF_CORDB, LL_EVERYTHING,
          "Func eval for %s::%s via UCOA\n",
@@ -1361,7 +1362,7 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
          pDE->m_md->m_pszDebugMethodName));
 
     UnmanagedCallersOnlyCaller funcEvalInvoker(METHOD__RUNTIME_HELPERS__INVOKE_FUNC_EVAL);
-    funcEvalInvoker.InvokeThrowing(&contract, &ucoGc.resultObj);
+    funcEvalInvoker.InvokeThrowing(&invokeArgs, &ucoGc.resultObj);
 
     // Unpack results.
     LOG((LF_CORDB, LL_EVERYTHING, "FuncEval call has returned\n"));
