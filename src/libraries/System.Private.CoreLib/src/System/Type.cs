@@ -609,19 +609,7 @@ namespace System
         /// The type argument of the <see cref="Nullable{T}"/> type if the current type represents
         /// a closed generic <see cref="Nullable{T}"/>; otherwise, <see langword="null"/>.
         /// </returns>
-        public virtual Type? GetNullableUnderlyingType()
-        {
-            if (IsGenericType && !IsGenericTypeDefinition)
-            {
-                Type genericType = GetGenericTypeDefinition();
-                if (ReferenceEquals(genericType, typeof(Nullable<>)))
-                {
-                    return GetGenericArguments()[0];
-                }
-            }
-
-            return null;
-        }
+        public virtual Type? GetNullableUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "The single instance field on enum types is never trimmed")]

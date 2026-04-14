@@ -13186,6 +13186,7 @@ namespace System.Reflection
         public override bool IsFunctionPointer { get { throw null; } }
         public override bool IsGenericMethodParameter { get { throw null; } }
         public override bool IsGenericTypeParameter { get { throw null; } }
+        public override System.Type? GetNullableUnderlyingType() { throw null; }
         public override bool IsSZArray { get { throw null; } }
         public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsUnmanagedFunctionPointer { get { throw null; } }

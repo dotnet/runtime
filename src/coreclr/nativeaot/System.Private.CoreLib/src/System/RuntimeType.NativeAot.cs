@@ -122,6 +122,20 @@ namespace System
             return Enum.InternalGetUnderlyingType(this);
         }
 
+        public override Type? GetNullableUnderlyingType()
+        {
+            if (IsGenericType && !IsGenericTypeDefinition)
+            {
+                Type genericType = GetGenericTypeDefinition();
+                if (ReferenceEquals(genericType, typeof(Nullable<>)))
+                {
+                    return GetGenericArguments()[0];
+                }
+            }
+
+            return null;
+        }
+
         public override bool IsEnumDefined(object value)
         {
             ArgumentNullException.ThrowIfNull(value);
