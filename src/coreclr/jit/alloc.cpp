@@ -332,7 +332,10 @@ void ArenaAllocator::dumpMaxMemStats(FILE* file)
 
 void* __cdecl operator new(std::size_t size)
 {
-    assert(!"Global new called; use HostAllocator if long-lived allocation was intended");
+    // The PAL is statically linked into the JIT and may call operator new
+    // during PAL initialization (e.g. AllocTHREAD). Do not assert here —
+    // the assert is fatal in Checked builds and crashes every Checked
+    // Android build during jitStartup.
 
     if (size == 0)
     {
@@ -350,8 +353,6 @@ void* __cdecl operator new(std::size_t size)
 
 void* __cdecl operator new[](std::size_t size)
 {
-    assert(!"Global new called; use HostAllocator if long-lived allocation was intended");
-
     if (size == 0)
     {
         size++;
