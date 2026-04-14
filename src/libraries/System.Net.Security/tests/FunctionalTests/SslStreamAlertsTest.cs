@@ -241,28 +241,30 @@ namespace System.Net.Security.Tests
                 Task serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
                 Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
 
-                // Client should fail because the self-signed cert is not trusted.
-                // The inner exception should indicate an SSL/TLS alert (not just a
-                // connection close), confirming the server sent a proper alert.
-                AuthenticationException clientEx = await Assert.ThrowsAsync<AuthenticationException>(() => clientTask).WaitAsync(TestConfiguration.PassingTestTimeout);
-                Assert.NotNull(clientEx.InnerException);
+                // Client should fail because the validation failed locally, and it should send an alert.
+                await Assert.ThrowsAsync<AuthenticationException>(() => clientTask).WaitAsync(TestConfiguration.PassingTestTimeout);
 
-                // Server should also fail — either from the handshake or from the
-                // client's alert. In TLS 1.3, the alert may arrive later so we
-                // attempt a data exchange to surface it.
-                try
+                // Server side should receive the alert and fail the handshake, the exact timing depends on the platform
+                // Windows: after the handshake, during data exchange
+                // Linux: during the handshake
+                Exception exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
                 {
-                    await serverTask.WaitAsync(TestConfiguration.PassingTestTimeout);
+                    await serverTask;
                     byte[] buffer = new byte[1];
                     await server.WriteAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
                     await server.ReadAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
-                    Assert.Fail("Expected an exception from the server side.");
-                }
-                catch (AuthenticationException)
+                }).WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                Assert.NotNull(exception.InnerException);
+                if (PlatformDetection.IsWindows)
                 {
+                    Assert.IsType<IOException>(exception);
+                    Assert.IsType<Win32Exception>(exception.InnerException);
                 }
-                catch (IOException)
+
+                if (PlatformDetection.IsLinux)
                 {
+                    Assert.IsType<AuthenticationException>(exception);
                 }
             }
         }
@@ -302,35 +304,30 @@ namespace System.Net.Security.Tests
                 Task serverTask = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
                 Task clientTask = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
 
-                // Server should fail because the client cert is not trusted.
-                // In TLS 1.3, the failure may occur after the handshake during
-                // post-handshake auth, so attempt data exchange to surface it.
-                try
+                // Server should fail because the validation failed locally, and it should send an alert.
+                await Assert.ThrowsAsync<AuthenticationException>(() => serverTask).WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                // Client side should receive the alert and fail the handshake, the exact timing depends on the platform
+                // Windows: after the handshake, during data exchange
+                // Linux: during the handshake
+                Exception exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
                 {
-                    await serverTask.WaitAsync(TestConfiguration.PassingTestTimeout);
+                    await clientTask;
                     byte[] buffer = new byte[1];
-                    await server.WriteAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
-                    await server.ReadAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
-                    Assert.Fail("Expected an exception from the server side.");
-                }
-                catch (AuthenticationException ex)
+                    await client.WriteAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
+                    await client.ReadAsync(buffer).AsTask().WaitAsync(TestConfiguration.PassingTestTimeout);
+                }).WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                Assert.NotNull(exception.InnerException);
+                if (PlatformDetection.IsWindows)
                 {
-                    Assert.Contains("chain", ex.ToString(), StringComparison.OrdinalIgnoreCase);
-                }
-                catch (IOException)
-                {
+                    Assert.IsType<IOException>(exception);
+                    Assert.IsType<Win32Exception>(exception.InnerException);
                 }
 
-                // Client may or may not throw depending on timing.
-                try
+                if (PlatformDetection.IsLinux)
                 {
-                    await clientTask.WaitAsync(TestConfiguration.PassingTestTimeout);
-                }
-                catch (AuthenticationException)
-                {
-                }
-                catch (IOException)
-                {
+                    Assert.IsType<AuthenticationException>(exception);
                 }
             }
         }
