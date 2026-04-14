@@ -138,6 +138,9 @@ INST(lgr,		"lgr",			0,		0xb904)
 
 //// Compare (RR format - 2 bytes, sets condition code)
 INST(cr,            "cr",             0,    0x19)
+INST(cgr,       "cgr",          0,      0xB920)
+INST(clr,       "clr",          0,      0x15)
+INST(clgr,      "clgr",         0,      0xB921)
 
 //// Conditional Branch (all use BRCL opcode 0xC04, RIL format, 6 bytes)
 INST(j,             "brcl",           0,    0xC04)

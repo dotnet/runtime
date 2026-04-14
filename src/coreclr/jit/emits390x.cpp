@@ -3836,6 +3836,9 @@ void emitter::emitIns_R_R(instruction     ins,
     switch (ins)
     {
 	case INS_cr:
+    	case INS_cgr:
+    	case INS_clr:
+    	case INS_clgr:
             fmt = IF_DR_2E;
             break;
 #if 0
@@ -10255,8 +10258,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         break;
 
         case INS_cr:
+        case INS_clr:
             op = emitInsCode(ins, fmt);
             S390_RR(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_cgr:
+        case INS_clgr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
             break;
 
         case INS_j:

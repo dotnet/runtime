@@ -4692,7 +4692,17 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     GenTree*  op1 = tree->gtOp1;
     GenTree*  op2 = tree->gtOp2;
 
-    GetEmitter()->emitIns_R_R(INS_cr, EA_4BYTE, op1->GetRegNum(), op2->GetRegNum());
+    var_types op1Type = genActualType(op1->TypeGet());
+    emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
+    bool isUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
+
+    instruction cmpIns;
+    if (cmpSize == EA_8BYTE)
+        cmpIns = isUnsigned ? INS_clgr : INS_cgr;
+    else
+        cmpIns = isUnsigned ? INS_clr : INS_cr;
+
+    GetEmitter()->emitIns_R_R(cmpIns, cmpSize, op1->GetRegNum(), op2->GetRegNum());
 
     if (targetReg != REG_NA)
     {
