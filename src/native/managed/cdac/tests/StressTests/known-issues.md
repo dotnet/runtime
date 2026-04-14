@@ -24,23 +24,57 @@ and the legacy DAC / runtime's GC stack scanning.
 | StructScenarios | 0 failures | |
 | ExceptionHandling | 0 failures | Fixed via ExecutionAborted |
 
-## Issue 1: cDAC misses refs from explicit Frames (instruction-level stress only)
+## Issue 1: ELEMENT_TYPE_INTERNAL in PromoteCallerStack (instruction-level stress only)
 
-**Affected**: All debuggees at instruction-level GC stress (`DOTNET_GCStress=0x4`)
+**Affected**: Explicit Frames whose method signature contains `ELEMENT_TYPE_INTERNAL` (0x21)
 **Frequency**: ~3 per 25K verifications (0.01%)
+**Root cause**: IDENTIFIED — follow-up fix needed
 
-**Pattern**: The DAC reports 1 ref from an explicit Frame object that the cDAC's
-stack walk does not visit. All 3 failures hit the same Frame address across
-consecutive instruction-level breakpoints.
+**Where it happens**: `FrameIterator.PromoteCallerStack()` in
+`src/native/managed/cdac/.../Contracts/StackWalk/FrameHandling/FrameIterator.cs`
+(around line 604). This is the fallback path used when a Frame's GCRefMap is
+unavailable and we must decode the method signature to determine which caller
+arguments are GC references.
+
+**Pattern**: The DAC reports 1 ref from an explicit Frame that the cDAC fails to scan.
+The `PromoteCallerStack` fallback decodes the method signature using
+`System.Reflection.Metadata.SignatureDecoder`, which only handles standard ECMA-335
+type codes. Runtime-internal signatures (generated for IL stubs, marshalling stubs,
+unsafe accessors, etc.) may contain `ELEMENT_TYPE_INTERNAL` (0x21), which encodes a
+raw pointer-sized `TypeHandle` directly in the signature blob. The SRM decoder doesn't
+recognize this type code and throws `BadImageFormatException`.
 
 ```
-[FRAME_DAC_ONLY] Source=0x378b7c210 (<frame 0x378b7c210>): DAC=1
+System.BadImageFormatException: Unexpected SignatureTypeCode: (0x21).
+   at SignatureDecoder`2.DecodeType(BlobReader&, Boolean, Int32)
+   at SignatureDecoder`2.DecodeGenericTypeInstance(BlobReader&)
+   at FrameIterator.PromoteCallerStack(...)
+   at FrameIterator.GcScanRoots(...)
 ```
 
-This is NOT a GCRefMap issue — the Frame is simply not enumerated by the cDAC
-walker. The `FindGCRefMap` + `FindReadyToRunModule` fallback is working correctly
-for the ExternalMethodFrame/StubDispatchFrame cases (those are fully resolved at
-allocation-level stress).
+The exception is caught by the per-frame exception handler in `WalkStackReferences()`
+(`StackWalk_1.cs`, around line 245), which silently swallows it and continues the
+walk — causing the Frame's GC refs to be unreported.
+
+**How the DAC handles it**: The native DAC uses `MetaSig` + `ArgIterator`
+(`frames.cpp:1520-1596`) instead of the SRM decoder. `MetaSig` natively understands
+`ELEMENT_TYPE_INTERNAL` — it reads the embedded TypeHandle pointer and follows it to
+determine the actual type for GC classification.
+
+**How the Legacy cDAC handles it**: `SigFormat.cs` (line 157-175) already handles
+`ELEMENT_TYPE_INTERNAL` by reading the pointer-sized TypeHandle, resolving it via
+`RuntimeTypeSystem.GetTypeHandle()`, and checking `GetSignatureCorElementType()`.
+
+**Current workaround**: A `catch (BadImageFormatException)` in `PromoteCallerStack`
+returns without reporting refs for the frame.
+
+**Follow-up fix**: Replace the SRM `SignatureDecoder` usage with a custom signature
+walker that:
+1. Pre-processes the signature bytes, handling `ELEMENT_TYPE_INTERNAL` (0x21) by
+   reading the pointer-sized TypeHandle and resolving through `RuntimeTypeSystem`
+   (following the pattern in `SigFormat.cs:157-175`)
+2. Delegates standard ECMA-335 type codes to the existing `GcSignatureTypeProvider`
+3. Handles `ELEMENT_TYPE_CMOD_INTERNAL` (0x22) similarly if encountered
 
 ## Issue 2: GcInfo register ref mismatch (instruction-level stress only)
 
