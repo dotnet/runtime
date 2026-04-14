@@ -34,7 +34,7 @@ namespace System.Net.Security
                     throw OpenSsl.CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
-                using (SafeSslHandle ssl = SafeSslHandle.Create(innerContext, false))
+                using (SafeSslHandle ssl = SafeSslHandle.Create(innerContext, new SslAuthenticationOptions() { IsServer = false }))
                 {
                     if (ssl.IsInvalid)
                     {

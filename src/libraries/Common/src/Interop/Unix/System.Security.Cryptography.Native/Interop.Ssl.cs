@@ -397,7 +397,7 @@ namespace Microsoft.Win32.SafeHandles
         private bool _isServer;
         private bool _handshakeCompleted;
 
-        public GCHandle AuthOptionsHandle;
+        private WeakGCHandle<SslAuthenticationOptions> _authOptionsHandle;
         // Reference to the parent SSL_CTX handle in the SSL_CTX is being cached. Only used for
         // refcount management.
         public SafeSslContextHandle? SslContextHandle;
@@ -432,7 +432,7 @@ namespace Microsoft.Win32.SafeHandles
             _handshakeCompleted = true;
         }
 
-        public static SafeSslHandle Create(SafeSslContextHandle context, bool isServer)
+        public static SafeSslHandle Create(SafeSslContextHandle context, SslAuthenticationOptions options)
         {
             SafeBioHandle readBio = Interop.Crypto.CreateMemoryBio();
             SafeBioHandle writeBio = Interop.Crypto.CreateMemoryBio();
@@ -444,7 +444,9 @@ namespace Microsoft.Win32.SafeHandles
                 handle.Dispose(); // will make IsInvalid==true if it's not already
                 return handle;
             }
-            handle._isServer = isServer;
+            handle._isServer = options.IsServer;
+            handle._authOptionsHandle = new WeakGCHandle<SslAuthenticationOptions>(options);
+            Interop.Ssl.SslSetData(handle, WeakGCHandle<SslAuthenticationOptions>.ToIntPtr(handle._authOptionsHandle));
 
             // SslSetBio will transfer ownership of the BIO handles to the SSL context
             try
@@ -463,7 +465,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw;
             }
 
-            if (isServer)
+            if (options.IsServer)
             {
                 Interop.Ssl.SslSetAcceptState(handle);
             }
@@ -499,10 +501,11 @@ namespace Microsoft.Win32.SafeHandles
 
             SslContextHandle?.Dispose();
 
-            if (AuthOptionsHandle.IsAllocated)
+            if (_authOptionsHandle.IsAllocated)
             {
                 Interop.Ssl.SslSetData(handle, IntPtr.Zero);
-                AuthOptionsHandle.Free();
+                _authOptionsHandle.Dispose();
+                _authOptionsHandle = default;
             }
 
             IntPtr h = handle;

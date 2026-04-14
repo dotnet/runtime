@@ -1155,7 +1155,7 @@ namespace System.Net.Security
 
             if (NetEventSource.Log.IsEnabled())
             {
-                LogCertificateValidation(remoteCertValidationCallback, sslPolicyErrors, success, chain!);
+                LogCertificateValidation(remoteCertValidationCallback, sslPolicyErrors, success, chain);
                 NetEventSource.Info(this, $"Cert validation, remote cert = {_remoteCertificate}");
             }
 
@@ -1293,7 +1293,7 @@ namespace System.Net.Security
             return TlsAlertMessage.BadCertificate;
         }
 
-        private void LogCertificateValidation(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslPolicyErrors sslPolicyErrors, bool success, X509Chain chain)
+        private void LogCertificateValidation(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslPolicyErrors sslPolicyErrors, bool success, X509Chain? chain)
         {
             if (!NetEventSource.Log.IsEnabled())
                 return;
@@ -1313,8 +1313,9 @@ namespace System.Net.Security
 
                 if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0)
                 {
+                    Debug.Assert(chain != null);
                     string chainStatusString = "ChainStatus: ";
-                    foreach (X509ChainStatus chainStatus in chain.ChainStatus)
+                    foreach (X509ChainStatus chainStatus in chain!.ChainStatus)
                     {
                         chainStatusString += "\t" + chainStatus.StatusInformation;
                     }
