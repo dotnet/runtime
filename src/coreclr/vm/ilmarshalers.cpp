@@ -4447,6 +4447,10 @@ void ILNativeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
 {
     STANDARD_VM_CONTRACT;
 
+    ILCodeLabel* pSkipLabel = pslILEmit->NewCodeLabel();
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitBRFALSE(pSkipLabel);
+
     MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED);
 
     EmitLoadManagedValue(pslILEmit);
@@ -4455,11 +4459,17 @@ void ILNativeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     pslILEmit->EmitLDLEN();
     pslILEmit->EmitCONV_I4();
     pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 3, 0);
+
+    pslILEmit->EmitLabel(pSkipLabel);
 }
 
 void ILNativeArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
+
+    ILCodeLabel* pSkipLabel = pslILEmit->NewCodeLabel();
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitBRFALSE(pSkipLabel);
 
     MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_MANAGED);
 
@@ -4469,6 +4479,8 @@ void ILNativeArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
     pslILEmit->EmitLDLEN();
     pslILEmit->EmitCONV_I4();
     pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 3, 0);
+
+    pslILEmit->EmitLabel(pSkipLabel);
 }
 
 void ILNativeArrayMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)

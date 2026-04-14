@@ -390,7 +390,22 @@ VOID ParseNativeType(Module*                     pModule,
                 pMT = CoreLibBinder::GetElementType(pMT->GetInternalCorElementType());
             }
 
-            *pNFD = NativeFieldDescriptor(pFD, GetNativeMethodTableForVarType(mops.elementType, pMT), mops.additive);
+            MethodTable *pNativeMT;
+            switch (mops.elementNativeType)
+            {
+            case NATIVE_TYPE_BOOLEAN:
+                pNativeMT = CoreLibBinder::GetClass(CLASS__INT32);
+                break;
+            case NATIVE_TYPE_I1:
+            case NATIVE_TYPE_U1:
+                pNativeMT = CoreLibBinder::GetClass(CLASS__BYTE);
+                break;
+            default:
+                pNativeMT = GetNativeMethodTableForVarType(mops.elementType, pMT);
+                break;
+            }
+
+            *pNFD = NativeFieldDescriptor(pFD, pNativeMT, mops.additive);
             break;
         }
         case MarshalInfo::MARSHAL_TYPE_FIXED_CSTR:
