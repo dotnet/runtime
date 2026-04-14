@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -24,14 +23,14 @@ namespace System.Diagnostics
             ref byte[] errorBuffer,
             ref int errorBytesRead)
         {
-            MemoryHandle outputPin = default, errorPin = default;
+            PinnedGCHandle<byte[]> outputPin = default, errorPin = default;
             NativeOverlapped* outputOverlapped = null, errorOverlapped = null;
             EventWaitHandle? outputEvent = null, errorEvent = null;
 
             try
             {
-                outputPin = outputBuffer.AsMemory().Pin();
-                errorPin = errorBuffer.AsMemory().Pin();
+                outputPin = new PinnedGCHandle<byte[]>(outputBuffer);
+                errorPin = new PinnedGCHandle<byte[]>(errorBuffer);
 
                 outputEvent = new EventWaitHandle(initialState: false, EventResetMode.ManualReset);
                 errorEvent = new EventWaitHandle(initialState: false, EventResetMode.ManualReset);
@@ -42,8 +41,8 @@ namespace System.Diagnostics
                 WaitHandle[] waitHandles = [outputEvent, errorEvent];
 
                 // Issue initial reads.
-                bool outputDone = !QueueRead(outputHandle, (byte*)outputPin.Pointer, outputBuffer.Length, outputOverlapped, outputEvent);
-                bool errorDone = !QueueRead(errorHandle, (byte*)errorPin.Pointer, errorBuffer.Length, errorOverlapped, errorEvent);
+                bool outputDone = !QueueRead(outputHandle, outputPin.GetAddressOfArrayData(), outputBuffer.Length, outputOverlapped, outputEvent);
+                bool errorDone = !QueueRead(errorHandle, errorPin.GetAddressOfArrayData(), errorBuffer.Length, errorOverlapped, errorEvent);
 
                 long deadline = timeoutMs >= 0
                     ? Environment.TickCount64 + timeoutMs
@@ -79,18 +78,17 @@ namespace System.Diagnostics
 
                         if (totalBytesRead == currentBuffer.Length)
                         {
-                            ref MemoryHandle currentPin = ref (isError ? ref errorPin : ref outputPin);
-                            currentPin.Dispose();
+                            ref PinnedGCHandle<byte[]> currentPin = ref (isError ? ref errorPin : ref outputPin);
 
                             RentLargerBuffer(ref currentBuffer, totalBytesRead);
 
-                            currentPin = currentBuffer.AsMemory().Pin();
+                            currentPin.Target = currentBuffer;
                         }
 
                         // Reset the event and overlapped for next read.
                         ResetOverlapped(currentEvent, currentOverlapped);
 
-                        byte* pinPointer = isError ? (byte*)errorPin.Pointer : (byte*)outputPin.Pointer;
+                        byte* pinPointer = isError ? errorPin.GetAddressOfArrayData() : outputPin.GetAddressOfArrayData();
                         if (!QueueRead(currentHandle, pinPointer + totalBytesRead,
                             currentBuffer.Length - totalBytesRead, currentOverlapped, currentEvent))
                         {

@@ -223,16 +223,13 @@ namespace System.Diagnostics
         /// </summary>
         private static void RentLargerBuffer(ref byte[] buffer, int bytesRead)
         {
-            if (buffer.Length >= Array.MaxLength)
-            {
-                throw new OutOfMemoryException();
-            }
-
             int newSize = (int)Math.Min((long)buffer.Length * 2, Array.MaxLength);
+            newSize = Math.Max(buffer.Length + 1, newSize);
             byte[] newBuffer = ArrayPool<byte>.Shared.Rent(newSize);
             Buffer.BlockCopy(buffer, 0, newBuffer, 0, bytesRead);
-            ArrayPool<byte>.Shared.Return(buffer);
+            byte[] oldBuffer = buffer;
             buffer = newBuffer;
+            ArrayPool<byte>.Shared.Return(oldBuffer);
         }
 
         private static bool TryGetRemainingTimeout(long deadline, int originalTimeout, out int remainingTimeoutMs)

@@ -90,7 +90,7 @@ namespace System.Diagnostics
 
                 for (int i = 0; i < numFds; i++)
                 {
-                    if ((pollFds[i].TriggeredEvents & (Interop.PollEvents.POLLIN | Interop.PollEvents.POLLHUP | Interop.PollEvents.POLLERR)) == Interop.PollEvents.POLLNONE)
+                    if (pollFds[i].TriggeredEvents == Interop.PollEvents.POLLNONE)
                     {
                         continue;
                     }
