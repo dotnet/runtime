@@ -5332,9 +5332,31 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         Range lenRng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
         if (idxRng.IsConstantRange() && lenRng.IsConstantRange())
         {
-            // idx.lo >= 0 && idx.hi < len.lo --> drop bounds check
-            if (idxRng.LowerLimit().GetConstant() >= 0 &&
-                idxRng.UpperLimit().GetConstant() < lenRng.LowerLimit().GetConstant())
+            int idxLo = idxRng.LowerLimit().GetConstant();
+            int idxHi = idxRng.UpperLimit().GetConstant();
+            int lenLo = lenRng.LowerLimit().GetConstant();
+
+            // GT_BOUNDS_CHECK node has an implicit contract - the length node must always be non-negative.
+            // So we additionally tighten the lower bound of lenLo to be ">= 1" when we also have a
+            // "length != 0" assertion for it.
+            if ((idxLo == 0) && (idxHi == 0) && (lenLo <= 0))
+            {
+                BitVecOps::Iter iter(apTraits, assertions);
+                unsigned        bvIndex = 0;
+                while (iter.NextElem(&bvIndex))
+                {
+                    const AssertionDsc& assertion = optGetAssertion(GetAssertionIndex(bvIndex));
+                    if (assertion.IsConstantInt32Assertion() && assertion.KindIs(OAK_NOT_EQUAL) &&
+                        (assertion.GetOp1().GetVN() == vnCurLen) && (assertion.GetOp2().GetIntConstant() == 0))
+                    {
+                        lenLo = 1;
+                        break;
+                    }
+                }
+            }
+
+            // index is always within [0..lenLo) --> drop bounds check
+            if ((idxLo >= 0) && (idxHi < lenLo))
             {
                 return dropBoundsCheck(INDEBUG("upper bound of index is less than lower bound of length"));
             }
