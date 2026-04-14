@@ -60,7 +60,6 @@ namespace System.Diagnostics
                 return 0;
             }
 
-            methodDebugInfo->locals = null;
             methodDebugInfo->localsSize = 0;
 
             try
