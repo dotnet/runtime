@@ -1790,7 +1790,7 @@ namespace System.StubHelpers
 #if TARGET_WINDOWS
             uint flags = TBestFit.Enabled ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
             Interop.BOOL defaultCharUsed = Interop.BOOL.FALSE;
-            Interop.Kernel32.WideCharToMultiByte(
+            int result = Interop.Kernel32.WideCharToMultiByte(
                 Interop.Kernel32.CP_ACP,
                 flags,
                 pChars,
@@ -1799,6 +1799,11 @@ namespace System.StubHelpers
                 length,
                 null,
                 TThrowOnUnmappable.Enabled ? &defaultCharUsed : null);
+
+            if (result == 0 && length > 0)
+            {
+                throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
+            }
 
             if (defaultCharUsed != Interop.BOOL.FALSE)
             {
@@ -1815,13 +1820,18 @@ namespace System.StubHelpers
             Debug.Assert(managedArray.GetType().GetElementType() == typeof(char));
             char* pChars = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(managedArray));
 #if TARGET_WINDOWS
-            Interop.Kernel32.MultiByteToWideChar(
+            int result = Interop.Kernel32.MultiByteToWideChar(
                 Interop.Kernel32.CP_ACP,
                 Interop.Kernel32.MB_PRECOMPOSED,
                 unmanaged,
                 length,
                 pChars,
                 length);
+
+            if (result == 0 && length > 0)
+            {
+                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+            }
 #else
             Encoding.UTF8.GetChars(unmanaged, length, pChars, length);
 #endif

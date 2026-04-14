@@ -41,8 +41,7 @@ class OleVariant
                                             SAFEARRAY* pSafeArray,
                                             VARTYPE vt,
                                             MethodTable* pInterfaceMT,
-                                            PCODE pConvertContentsCode,
-                                            BOOL fSafeArrayIsValid = TRUE);
+                                            PCODE pConvertContentsCode);
 
     static void MarshalArrayRefForSafeArray(SAFEARRAY* pSafeArray,
                                             BASEARRAYREF* pArrayRef,

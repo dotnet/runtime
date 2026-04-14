@@ -2022,8 +2022,7 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
                                              SAFEARRAY *pSafeArray,
                                              VARTYPE vt,
                                              MethodTable *pInterfaceMT,
-                                             PCODE pConvertContentsCode,
-                                             BOOL fSafeArrayIsValid /*= TRUE*/)
+                                             PCODE pConvertContentsCode)
 {
     CONTRACTL
     {

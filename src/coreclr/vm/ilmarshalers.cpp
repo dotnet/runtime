@@ -4790,8 +4790,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSaf
                                                 (SAFEARRAY*)*pNativeHome,
                                                 pThis->m_vt,
                                                 pThis->m_pElementMT,
-                                                pThis->m_pConvertContentsToNativeCode,
-                                                (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_NativeDataValid));
+                                                pThis->m_pConvertContentsToNativeCode);
     }
 
     GCPROTECT_END();
