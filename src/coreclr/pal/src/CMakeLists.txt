@@ -206,6 +206,13 @@ set(SOURCES
   thread/threadsusp.cpp
 )
 
+if(CLR_CMAKE_TARGET_ANDROID)
+  list(APPEND SOURCES
+    crashreport/crashjsonwriter.cpp
+    crashreport/inproccrashreporter.cpp
+  )
+endif()
+
 set_source_files_properties(
     com/guid.cpp
     PROPERTIES

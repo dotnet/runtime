@@ -157,6 +157,7 @@ Parameters:
 (no return value)
 --*/
 VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize);
+BOOL PROCIsCrashReportEnabled();
 
 /*++
 Function:
