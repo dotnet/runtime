@@ -84,13 +84,15 @@ public class ElidedBoundsChecks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static byte FirstElementAfterEmptyCheck(ReadOnlySpan<byte> span)
+    static bool TryStripFirstChar(ref ReadOnlySpan<char> span, char value)
     {
         // X64-NOT: CORINFO_HELP_RNGCHKFAIL
         // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
-        if (span.IsEmpty)
-            return 0;
-        return span[0];
+        if (!span.IsEmpty && span[0] == value)
+        {
+            return true;
+        }
+        return false;
     }
 
     [Fact]
@@ -129,10 +131,12 @@ public class ElidedBoundsChecks
         if (IndexPlusConstLessThanLen("hello".AsSpan()) != false)
             return 0;
 
-        if (FirstElementAfterEmptyCheck(new byte[] { 42 }) != 42)
+        ReadOnlySpan<char> chars = "hello".AsSpan();
+        if (TryStripFirstChar(ref chars, 'h') != true)
             return 0;
 
-        if (FirstElementAfterEmptyCheck(Array.Empty<byte>()) != 0)
+        chars = ReadOnlySpan<char>.Empty;
+        if (TryStripFirstChar(ref chars, 'h') != false)
             return 0;
 
         return 100;
