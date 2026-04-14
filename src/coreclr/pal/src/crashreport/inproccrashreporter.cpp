@@ -27,6 +27,7 @@ static CrashJsonWriter s_jsonWriter;
 // inspection hooks before the later strict-safety hardening slices.
 static volatile InProcCrashReportIsManagedThreadCallback g_isManagedThreadCallback = NULL;
 static volatile InProcCrashReportWalkStackCallback g_walkStackCallback = NULL;
+static volatile InProcCrashReportGetExceptionCallback g_getExceptionCallback = NULL;
 static volatile InProcCrashReportEnumerateThreadsCallback g_enumerateThreadsCallback = NULL;
 
 struct MultiThreadJsonContext
@@ -35,6 +36,9 @@ struct MultiThreadJsonContext
     void* signalContext;
     int threadCount;
     int sawCrashThread;
+    int hasCrashException;
+    const char* crashExceptionType;
+    uint32_t crashExceptionHResult;
 };
 
 static
@@ -109,6 +113,8 @@ void
 JsonThreadCallback(
     uint64_t osThreadId,
     int isCrashThread,
+    const char* exceptionType,
+    uint32_t exceptionHResult,
     void* ctx);
 
 static
@@ -117,14 +123,30 @@ WriteToLog(
     const char* msg,
     int len);
 
+static
+const char*
+GetExceptionTypeCode(
+    int signal);
+
 void
 InProcCrashReportGenerate(
     int signal,
     siginfo_t* siginfo,
     void* context)
 {
-    (void)signal;
     (void)siginfo;
+
+    char exTypeBuf[256];
+    char exMsgBuf[512];
+    uint32_t exHresult = 0;
+    exTypeBuf[0] = '\0';
+    exMsgBuf[0] = '\0';
+
+    int hasException = 0;
+    if (g_getExceptionCallback != NULL && signal != SIGSEGV && signal != SIGBUS)
+    {
+        hasException = g_getExceptionCallback(exTypeBuf, sizeof(exTypeBuf), exMsgBuf, sizeof(exMsgBuf), &exHresult);
+    }
 
     CrashJsonInit(&s_jsonWriter);
 
@@ -154,7 +176,7 @@ InProcCrashReportGenerate(
     CrashJsonOpenArray(&s_jsonWriter, "threads");
     if (g_enumerateThreadsCallback != NULL)
     {
-        MultiThreadJsonContext threadContext = { &s_jsonWriter, context, 0, 0 };
+        MultiThreadJsonContext threadContext = { &s_jsonWriter, context, 0, 0, hasException, exTypeBuf, exHresult };
         uint64_t crashingTid = static_cast<uint64_t>(THREADSilentGetCurrentThreadId());
 
         g_enumerateThreadsCallback(crashingTid, JsonThreadCallback, JsonThreadFrameCallback, &threadContext);
@@ -178,6 +200,15 @@ InProcCrashReportGenerate(
             FormatHexValue(nativeThreadId, sizeof(nativeThreadId), crashingTid);
             CrashJsonWriteString(&s_jsonWriter, "native_thread_id", nativeThreadId);
 
+            if (hasException)
+            {
+                char hresultBuffer[32];
+                FormatHexValue(hresultBuffer, sizeof(hresultBuffer), exHresult);
+
+                CrashJsonWriteString(&s_jsonWriter, "managed_exception_type", exTypeBuf);
+                CrashJsonWriteString(&s_jsonWriter, "managed_exception_hresult", hresultBuffer);
+            }
+
             WriteRegistersToJson(&s_jsonWriter, context);
             CrashJsonOpenArray(&s_jsonWriter, "stack_frames");
             WriteCrashSiteFrameToJson(&s_jsonWriter, context);
@@ -198,6 +229,15 @@ InProcCrashReportGenerate(
         FormatHexValue(nativeThreadId, sizeof(nativeThreadId), crashingTid);
         CrashJsonWriteString(&s_jsonWriter, "native_thread_id", nativeThreadId);
 
+        if (hasException)
+        {
+            char hresultBuffer[32];
+            FormatHexValue(hresultBuffer, sizeof(hresultBuffer), exHresult);
+
+            CrashJsonWriteString(&s_jsonWriter, "managed_exception_type", exTypeBuf);
+            CrashJsonWriteString(&s_jsonWriter, "managed_exception_hresult", hresultBuffer);
+        }
+
         WriteRegistersToJson(&s_jsonWriter, context);
         CrashJsonOpenArray(&s_jsonWriter, "stack_frames");
         WriteCrashSiteFrameToJson(&s_jsonWriter, context);
@@ -213,7 +253,7 @@ InProcCrashReportGenerate(
     CrashJsonCloseObject(&s_jsonWriter);
 
     CrashJsonOpenObject(&s_jsonWriter, "parameters");
-    CrashJsonWriteString(&s_jsonWriter, "ExceptionType", "0x00000000");
+    CrashJsonWriteString(&s_jsonWriter, "ExceptionType", hasException ? "0x05000000" : GetExceptionTypeCode(signal));
 #ifdef __APPLE__
     CrashJsonWriteString(&s_jsonWriter, "OSVersion", "");
     CrashJsonWriteString(&s_jsonWriter, "SystemModel", "");
@@ -238,6 +278,13 @@ InProcCrashReportSetStackWalker(
     InProcCrashReportWalkStackCallback callback)
 {
     g_walkStackCallback = callback;
+}
+
+void
+InProcCrashReportSetExceptionResolver(
+    InProcCrashReportGetExceptionCallback callback)
+{
+    g_getExceptionCallback = callback;
 }
 
 void
@@ -610,6 +657,8 @@ void
 JsonThreadCallback(
     uint64_t osThreadId,
     int isCrashThread,
+    const char* exceptionType,
+    uint32_t exceptionHResult,
     void* ctx)
 {
     MultiThreadJsonContext* threadContext = reinterpret_cast<MultiThreadJsonContext*>(ctx);
@@ -633,6 +682,23 @@ JsonThreadCallback(
     FormatHexValue(nativeThreadId, sizeof(nativeThreadId), osThreadId);
     CrashJsonWriteString(threadContext->writer, "native_thread_id", nativeThreadId);
 
+    if (isCrashThread && threadContext->hasCrashException)
+    {
+        char hresultBuffer[32];
+        FormatHexValue(hresultBuffer, sizeof(hresultBuffer), threadContext->crashExceptionHResult);
+
+        CrashJsonWriteString(threadContext->writer, "managed_exception_type", threadContext->crashExceptionType);
+        CrashJsonWriteString(threadContext->writer, "managed_exception_hresult", hresultBuffer);
+    }
+    else if (exceptionType != NULL && exceptionType[0] != '\0')
+    {
+        char hresultBuffer[32];
+        FormatHexValue(hresultBuffer, sizeof(hresultBuffer), exceptionHResult);
+
+        CrashJsonWriteString(threadContext->writer, "managed_exception_type", exceptionType);
+        CrashJsonWriteString(threadContext->writer, "managed_exception_hresult", hresultBuffer);
+    }
+
     if (isCrashThread)
     {
         WriteRegistersToJson(threadContext->writer, threadContext->signalContext);
@@ -642,5 +708,30 @@ JsonThreadCallback(
     if (isCrashThread)
     {
         WriteCrashSiteFrameToJson(threadContext->writer, threadContext->signalContext);
+    }
+}
+
+const char*
+GetExceptionTypeCode(
+    int signal)
+{
+    switch (signal)
+    {
+        case SIGSEGV:
+            return "0x20000000";
+        case SIGABRT:
+            return "0x30000000";
+        case SIGBUS:
+            return "0x60000000";
+        case SIGILL:
+            return "0x50000000";
+        case SIGFPE:
+            return "0x70000000";
+        case SIGTRAP:
+            return "0x03000000";
+        case SIGTERM:
+            return "0x02000000";
+        default:
+            return "0x00000000";
     }
 }

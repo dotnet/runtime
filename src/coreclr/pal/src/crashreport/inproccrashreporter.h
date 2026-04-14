@@ -34,9 +34,20 @@ typedef void (*InProcCrashReportWalkStackCallback)(
 
 void InProcCrashReportSetStackWalker(InProcCrashReportWalkStackCallback callback);
 
+typedef int (*InProcCrashReportGetExceptionCallback)(
+    char* exceptionTypeBuf,
+    int exceptionTypeBufSize,
+    char* exceptionMsgBuf,
+    int exceptionMsgBufSize,
+    uint32_t* hresult);
+
+void InProcCrashReportSetExceptionResolver(InProcCrashReportGetExceptionCallback callback);
+
 typedef void (*InProcCrashReportThreadCallback)(
     uint64_t osThreadId,
     int isCrashThread,
+    const char* exceptionType,
+    uint32_t exceptionHResult,
     void* ctx);
 
 typedef void (*InProcCrashReportEnumerateThreadsCallback)(

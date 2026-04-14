@@ -120,6 +120,102 @@ CrashReportIsCurrentThreadManaged()
 }
 
 static
+int
+CrashReportGetExceptionForThread(
+    Thread* pThread,
+    char* exceptionTypeBuf,
+    int exceptionTypeBufSize,
+    uint32_t* hresult)
+{
+    if (exceptionTypeBufSize > 0)
+    {
+        exceptionTypeBuf[0] = '\0';
+    }
+
+    if (hresult != NULL)
+    {
+        *hresult = 0;
+    }
+
+    OBJECTREF throwable = pThread->GetThrowable();
+    if (throwable == NULL)
+    {
+        return 0;
+    }
+
+    MethodTable* pMT = throwable->GetMethodTable();
+    if (pMT != NULL)
+    {
+        mdTypeDef cl = pMT->GetCl();
+        Module* pModule = pMT->GetModule();
+        if (pModule != NULL)
+        {
+            IMDInternalImport* pImport = pModule->GetMDImport();
+            if (pImport != NULL && cl != mdTypeDefNil)
+            {
+                LPCUTF8 className = NULL;
+                LPCUTF8 namespaceName = NULL;
+                pImport->GetNameOfTypeDef(cl, &className, &namespaceName);
+
+                int index = 0;
+                if (namespaceName != NULL)
+                {
+                    while (*namespaceName != '\0' && index < exceptionTypeBufSize - 1)
+                    {
+                        exceptionTypeBuf[index++] = *namespaceName++;
+                    }
+                }
+
+                if (className != NULL)
+                {
+                    if (index > 0 && index < exceptionTypeBufSize - 1)
+                    {
+                        exceptionTypeBuf[index++] = '.';
+                    }
+
+                    while (*className != '\0' && index < exceptionTypeBufSize - 1)
+                    {
+                        exceptionTypeBuf[index++] = *className++;
+                    }
+                }
+
+                exceptionTypeBuf[index] = '\0';
+            }
+        }
+    }
+
+    if (hresult != NULL)
+    {
+        *hresult = static_cast<uint32_t>(((EXCEPTIONREF)throwable)->GetHResult());
+    }
+
+    return 1;
+}
+
+static
+int
+CrashReportGetException(
+    char* exceptionTypeBuf,
+    int exceptionTypeBufSize,
+    char* exceptionMsgBuf,
+    int exceptionMsgBufSize,
+    uint32_t* hresult)
+{
+    Thread* pThread = GetThreadAsyncSafe();
+    if (pThread == NULL)
+    {
+        return 0;
+    }
+
+    if (exceptionMsgBufSize > 0)
+    {
+        exceptionMsgBuf[0] = '\0';
+    }
+
+    return CrashReportGetExceptionForThread(pThread, exceptionTypeBuf, exceptionTypeBufSize, hresult);
+}
+
+static
 void
 CrashReportEnumerateThreads(
     uint64_t crashingTid,
@@ -141,7 +237,11 @@ CrashReportEnumerateThreads(
         uint64_t crashOsId = static_cast<uint64_t>(pCrashThread->GetOSThreadId());
         if (crashOsId == crashingTid)
         {
-            threadCallback(crashOsId, 1, ctx);
+            char exceptionType[256];
+            uint32_t hresult = 0;
+            int hasException = CrashReportGetExceptionForThread(pCrashThread, exceptionType, sizeof(exceptionType), &hresult);
+
+            threadCallback(crashOsId, 1, hasException ? exceptionType : "", hresult, ctx);
 
             WalkContext walkContext = { frameCallback, ctx };
             pCrashThread->StackWalkFrames(FrameCallbackAdapter, &walkContext,
@@ -167,7 +267,11 @@ CrashReportEnumerateThreads(
         }
 
         bool isCrashThread = !crashThreadHandled && osThreadId == crashingTid;
-        threadCallback(osThreadId, isCrashThread ? 1 : 0, ctx);
+        char exceptionType[256];
+        uint32_t hresult = 0;
+        int hasException = CrashReportGetExceptionForThread(pThread, exceptionType, sizeof(exceptionType), &hresult);
+
+        threadCallback(osThreadId, isCrashThread ? 1 : 0, hasException ? exceptionType : "", hresult, ctx);
         if (isCrashThread)
         {
             crashThreadHandled = true;
@@ -193,6 +297,7 @@ CrashReportRegisterStackWalker()
 {
     InProcCrashReportSetCurrentThreadManagedResolver(CrashReportIsCurrentThreadManaged);
     InProcCrashReportSetStackWalker(CrashReportWalkStack);
+    InProcCrashReportSetExceptionResolver(CrashReportGetException);
     InProcCrashReportSetThreadEnumerator(CrashReportEnumerateThreads);
 }
 
