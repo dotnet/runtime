@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             Assert.Contains(physicalPath, exception.Message);
         }
 
-        // FileSystemWatcher is unreliable under load on .Net Framework, making this test flaky
+        // FileSystemWatcher is unreliable under load on .NET Framework, making this test flaky
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
         public async Task ResolveFileProvider_WithMissingParentDirectory_WatchTokenFiresWhenFileCreated()
         {
@@ -151,7 +151,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
 
             // The token should fire only when the target file is created, not when just the directory appears.
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            using var changeCallbackRegistration = token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
             Directory.CreateDirectory(missingSubDir);
             await Task.Delay(500);
