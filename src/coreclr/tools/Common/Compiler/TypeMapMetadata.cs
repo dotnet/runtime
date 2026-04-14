@@ -453,6 +453,10 @@ namespace ILCompiler
 
                         case [{ Value: string typeName }, { Value: TypeDesc targetType }, { Value: TypeDesc trimTargetType }]:
                         {
+                            // Strip parameterized types (array, pointer, byref) to use the element type as the trim target,
+                            // since those types cannot be tracked at the definition level by the compiler.
+                            while (trimTargetType is ParameterizedType paramType)
+                                trimTargetType = paramType.ParameterType;
                             typeMapState.AddExternalTypeMapEntry(typeName, targetType, trimTargetType);
                             break;
                         }
@@ -473,6 +477,10 @@ namespace ILCompiler
                         return;
                     }
 
+                    // Strip parameterized types (array, pointer, byref) to use the element type as the source type,
+                    // since those types cannot be tracked at the definition level by the compiler.
+                    while (type is ParameterizedType paramType)
+                        type = paramType.ParameterType;
                     typeMapState.AddAssociatedTypeMapEntry(type, associatedType);
                 }
             }
