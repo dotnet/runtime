@@ -22,6 +22,18 @@ namespace SourceGenerators
             SpecialType = type.OriginalDefinition.SpecialType;
         }
 
+        /// <summary>
+        /// Creates a TypeRef for a synthetic type that doesn't exist in the compilation.
+        /// </summary>
+        public TypeRef(string name, string fullyQualifiedName)
+        {
+            Name = name;
+            FullyQualifiedName = fullyQualifiedName;
+            IsValueType = false;
+            TypeKind = TypeKind.Class;
+            SpecialType = SpecialType.None;
+        }
+
         public string Name { get; }
 
         /// <summary>

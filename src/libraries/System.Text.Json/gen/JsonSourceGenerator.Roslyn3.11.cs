@@ -102,11 +102,14 @@ namespace System.Text.Json.SourceGeneration
 
                     foreach ((TypeDeclarationSyntax typeDeclaration, SemanticModel semanticModel) in receiver.PocoTypeDeclarations)
                     {
-                        PocoTypeGenerationSpec? pocoSpec = parser.ParsePocoTypeGenerationSpec(typeDeclaration, semanticModel, executionContext.CancellationToken);
-                        if (pocoSpec is not null)
+                        (PocoTypeGenerationSpec Poco, ContextGenerationSpec Context)? result = parser.ParsePocoTypeGenerationSpec(typeDeclaration, semanticModel, executionContext.CancellationToken);
+                        if (result is not null)
                         {
                             Emitter emitter = new(executionContext);
-                            emitter.EmitPocoType(pocoSpec);
+                            // Emit the full backing context
+                            emitter.Emit(result.Value.Context);
+                            // Emit the static JsonTypeInfo property on the partial type
+                            emitter.EmitPocoTypeProperty(result.Value.Poco);
                         }
                     }
 

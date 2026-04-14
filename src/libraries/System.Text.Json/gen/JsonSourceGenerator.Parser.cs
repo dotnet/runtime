@@ -214,8 +214,10 @@ namespace System.Text.Json.SourceGeneration
 
             /// <summary>
             /// Parses a type declaration annotated with the parameterless [JsonSerializable] attribute.
+            /// Returns a tuple of (PocoTypeGenerationSpec, ContextGenerationSpec) where the ContextGenerationSpec
+            /// is a synthetic context that can be emitted using the existing Emit() infrastructure.
             /// </summary>
-            public PocoTypeGenerationSpec? ParsePocoTypeGenerationSpec(TypeDeclarationSyntax typeDeclaration, SemanticModel semanticModel, CancellationToken cancellationToken)
+            public (PocoTypeGenerationSpec Poco, ContextGenerationSpec Context)? ParsePocoTypeGenerationSpec(TypeDeclarationSyntax typeDeclaration, SemanticModel semanticModel, CancellationToken cancellationToken)
             {
                 if (!_compilationContainsCoreJsonTypes)
                 {
@@ -307,18 +309,65 @@ namespace System.Text.Json.SourceGeneration
 
                 string typeName = typeSymbol.Name;
                 string generatedContextName = $"__JsonContext_{typeName}";
+                string? ns = typeSymbol.ContainingNamespace is { IsGlobalNamespace: false } nsSymbol ? nsSymbol.ToDisplayString() : null;
+                string fqContextName = ns != null ? $"global::{ns}.{generatedContextName}" : $"global::{generatedContextName}";
 
-                return new PocoTypeGenerationSpec
+                // Ensure context-scoped metadata caches are empty.
+                Debug.Assert(_typesToGenerate.Count == 0);
+                Debug.Assert(_generatedTypes.Count == 0);
+
+                _contextClassLocation = location;
+
+                // Enqueue the annotated type for type graph traversal
+                _typesToGenerate.Enqueue(new TypeToGenerate
                 {
-                    TypeRef = new(typeSymbol),
+                    Type = _knownSymbols.Compilation.EraseCompileTimeMetadata(typeSymbol),
+                    Mode = generationMode,
+                    TypeInfoPropertyName = null,
+                    Location = location,
+                    AttributeLocation = parameterlessAttribute.GetLocation(),
+                });
+
+                // Walk the transitive type graph generating specs for every encountered type.
+                // Use the annotated type itself as the context type for accessibility checks.
+                while (_typesToGenerate.Count > 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    TypeToGenerate typeToGenerate = _typesToGenerate.Dequeue();
+                    if (!_generatedTypes.ContainsKey(typeToGenerate.Type))
+                    {
+                        TypeGenerationSpec spec = ParseTypeGenerationSpec(typeToGenerate, typeSymbol, options: null);
+                        _generatedTypes.Add(typeToGenerate.Type, spec);
+                    }
+                }
+
+                var contextGenSpec = new ContextGenerationSpec
+                {
+                    ContextType = new TypeRef(generatedContextName, fqContextName),
+                    GeneratedTypes = _generatedTypes.Values.OrderBy(t => t.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
+                    Namespace = ns,
+                    ContextClassDeclarations = new[] { $"internal sealed partial class {generatedContextName}" }.ToImmutableEquatableArray(),
+                    GeneratedOptionsSpec = null,
+                };
+
+                var pocoSpec = new PocoTypeGenerationSpec
+                {
+                    TypeRef = new TypeRef(typeSymbol),
                     TypeName = typeName,
                     TypeInfoPropertyName = propertyName,
-                    Namespace = typeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
+                    Namespace = ns,
                     TypeDeclarations = typeDeclarations.ToImmutableEquatableArray(),
                     GeneratedContextName = generatedContextName,
                     GenerationMode = generationMode,
                     IsValueType = typeSymbol.IsValueType,
                 };
+
+                // Clear the caches of generated metadata between the processing of types.
+                _generatedTypes.Clear();
+                _typesToGenerate.Clear();
+                _contextClassLocation = null;
+
+                return (pocoSpec, contextGenSpec);
             }
 
             private static bool TryGetNestedTypeDeclarations(TypeDeclarationSyntax contextClassSyntax, SemanticModel semanticModel, CancellationToken cancellationToken, [NotNullWhen(true)] out List<string>? typeDeclarations)

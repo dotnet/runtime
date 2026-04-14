@@ -91,7 +91,7 @@ namespace System.Text.Json.SourceGeneration
             context.RegisterSourceOutput(diagnostics, EmitDiagnostics);
 
             // Pipeline 2: POCO-based source generation (parameterless [JsonSerializable] on data types)
-            IncrementalValuesProvider<(PocoTypeGenerationSpec?, ImmutableArray<Diagnostic>)> pocoGenerationSpecs = context.SyntaxProvider
+            IncrementalValuesProvider<((PocoTypeGenerationSpec Poco, ContextGenerationSpec Context)?, ImmutableArray<Diagnostic>)> pocoGenerationSpecs = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
                     context,
@@ -109,9 +109,9 @@ namespace System.Text.Json.SourceGeneration
                     {
 #pragma warning restore RS1035
                         Parser parser = new(tuple.Right);
-                        PocoTypeGenerationSpec? pocoSpec = parser.ParsePocoTypeGenerationSpec(tuple.Left.TypeDeclaration, tuple.Left.SemanticModel, cancellationToken);
+                        (PocoTypeGenerationSpec Poco, ContextGenerationSpec Context)? result = parser.ParsePocoTypeGenerationSpec(tuple.Left.TypeDeclaration, tuple.Left.SemanticModel, cancellationToken);
                         ImmutableArray<Diagnostic> pocoDiagnostics = parser.Diagnostics.ToImmutableArray();
-                        return (pocoSpec, pocoDiagnostics);
+                        return (result, pocoDiagnostics);
 #pragma warning disable RS1035
                     }
                     finally
@@ -121,7 +121,7 @@ namespace System.Text.Json.SourceGeneration
 #pragma warning restore RS1035
                 });
 
-            IncrementalValuesProvider<PocoTypeGenerationSpec?> pocoSpecs =
+            IncrementalValuesProvider<(PocoTypeGenerationSpec Poco, ContextGenerationSpec Context)?> pocoSpecs =
                 pocoGenerationSpecs.Select(static (t, _) => t.Item1);
 
             context.RegisterSourceOutput(pocoSpecs, EmitPocoSource);
@@ -167,9 +167,9 @@ namespace System.Text.Json.SourceGeneration
             }
         }
 
-        private static void EmitPocoSource(SourceProductionContext sourceProductionContext, PocoTypeGenerationSpec? pocoSpec)
+        private static void EmitPocoSource(SourceProductionContext sourceProductionContext, (PocoTypeGenerationSpec Poco, ContextGenerationSpec Context)? result)
         {
-            if (pocoSpec is null)
+            if (result is null)
             {
                 return;
             }
@@ -180,7 +180,10 @@ namespace System.Text.Json.SourceGeneration
             try
             {
                 Emitter emitter = new(sourceProductionContext);
-                emitter.EmitPocoType(pocoSpec);
+                // Emit the full backing context using the existing infrastructure
+                emitter.Emit(result.Value.Context);
+                // Emit the static JsonTypeInfo property on the partial type
+                emitter.EmitPocoTypeProperty(result.Value.Poco);
             }
             finally
             {
