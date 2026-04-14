@@ -33058,24 +33058,24 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             break;
                         }
                     }
-                    else if (otherNode->OperIsHWIntrinsic())
+                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
                     {
-                        GenTreeHWIntrinsic* otherIntrinsic   = otherNode->AsHWIntrinsic();
-                        NamedIntrinsic      otherIntrinsicId = otherIntrinsic->GetHWIntrinsicId();
-
-                        if (HWIntrinsicInfo::ReturnsPerElementMask(otherIntrinsicId) &&
-                            (genTypeSize(simdBaseType) == genTypeSize(otherIntrinsic->GetSimdBaseType())))
+                        // Handle `Equals(PerElementMask, AllBitsSet)` and `Equals(AllBitsSet, PerElementMask)` for
+                        // integrals
+                        if (cnsNode->IsVectorAllBitsSet())
                         {
-                            // This optimization is only safe if we know the other node produces
-                            // AllBitsSet or Zero per element and if the outer comparison is the
-                            // same size as what the other node produces for its mask
+                            // We are comparing something that is known per element to be either
+                            // AllBitsSet or Zero, with AllBitsSet.
+                            //
+                            // In such a case:
+                            // * `AllBitsSet == AllBitsSet` is true and so produces `AllBitsSet`
+                            // * `AllBitsSet == Zero` is false and so produces `Zero`
+                            //
+                            // This means that we are not changing anything and can just return
+                            // the per element mask
 
-                            // Handle `(Mask == AllBitsSet) == Mask` and `(AllBitsSet == Mask) == Mask` for integrals
-                            if (cnsNode->IsVectorAllBitsSet())
-                            {
-                                resultNode = otherNode;
-                                break;
-                            }
+                            resultNode = otherNode;
+                            break;
                         }
                     }
                     break;
@@ -33243,6 +33243,25 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             int64_t allBitsSet = -1;
                             cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, allBitsSet);
                             resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                            break;
+                        }
+                    }
+                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
+                    {
+                        // Handle `~Equals(PerElementMask, Zero)` and `~Equals(Zero, PerElementMask)` for integrals
+                        if (cnsNode->IsVectorZero())
+                        {
+                            // We are comparing something that is known per element to be either
+                            // AllBitsSet or Zero, with Zero.
+                            //
+                            // In such a case:
+                            // * `AllBitsSet != Zero` is true and so produces `AllBitsSet`
+                            // * `Zero != Zero` is false and so produces `Zero`
+                            //
+                            // This means that we are not changing anything and can just return
+                            // the per element mask
+
+                            resultNode = otherNode;
                             break;
                         }
                     }
