@@ -853,26 +853,41 @@ EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transi
 HCIMPLEND
 
 #ifdef TARGET_WASM
-// WASM doesn't have assembly stubs, so provide thin wrapper entry points
-// that call the _Impl functions with NULL (which zeros the context)
+// WASM doesn't have assembly stubs, but the FCALL calling convention passes the callersStackPointer in as a hidden argument.
+// WASM-TODO At the moment actual handling of the R2R stack walk isn't implemented, so if there isn't an actual R2R stack
+// just pass NULL for the transition block, but the check is left in place for future implementation of R2R stack walking on WASM.
 HCIMPL1(void, IL_Throw, Object* obj)
 {
     FCALL_CONTRACT;
-    IL_Throw_Impl(0, obj, NULL, 0);
+
+    TransitionBlock block;
+    block.m_ReturnAddress = 0;
+    block.m_StackPointer = callersStackPointer;
+
+    IL_Throw_Impl(0, obj, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block, 0);
 }
 HCIMPLEND
 
 HCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
-    IL_Rethrow_Impl(0, NULL, 0);
+
+    TransitionBlock block;
+    block.m_ReturnAddress = 0;
+    block.m_StackPointer = callersStackPointer;
+
+    IL_Rethrow_Impl(0, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block, 0);
 }
 HCIMPLEND
 
 HCIMPL1(void, IL_ThrowExact, Object* obj)
 {
     FCALL_CONTRACT;
-    IL_ThrowExact_Impl(0, obj, NULL, 0);
+    TransitionBlock block;
+    block.m_ReturnAddress = 0;
+    block.m_StackPointer = callersStackPointer;
+
+    IL_ThrowExact_Impl(0, obj, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block, 0);
 }
 HCIMPLEND
 #endif // TARGET_WASM

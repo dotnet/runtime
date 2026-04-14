@@ -14,11 +14,11 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoin
 
 #define WASM_WRAPPER_FUNC_INITIAL \
 { \
-    asm ("local.get 0\n" /* Capture callersFramePointer onto the stack for calling _IMPL function*/ \
-         "local.get 0\n" /* Capture callersFramePointer onto the stack for setting the __stack_pointer */ \
+    asm ("local.get 0\n" /* Capture callersStackPointer onto the stack for calling _IMPL function*/ \
+         "local.get 0\n" /* Capture callersStackPointer onto the stack for setting the __stack_pointer */ \
          "global.get __stack_pointer\n" /* Get current value of stack global */ \
-         "local.set 0\n"  /* Store current stack global into callersFramePointer local */ \
-         "global.set __stack_pointer\n" /* Set stack global to the initial value of callersFramePointer, which is the current stack pointer for the interpreter call */
+         "local.set 0\n"  /* Store current stack global into callersStackPointer local */ \
+         "global.set __stack_pointer\n" /* Set stack global to the initial value of callersStackPointer, which is the current stack pointer for the interpreter call */
 
 #define WASM_WRAPPER_FUNC_EPILOG(_method) \
              "call %0\n" /* Call the actual implementation function*/ \
@@ -27,56 +27,56 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoin
              "return" :: "i" (_method ## _IMPL)); \
 }
 
-#define WASM_WRAPPER_FUNC_0(_rettype, _method) __attribute__((naked)) _rettype _method(uintptr_t callersFramePointer) WASM_WRAPPER_FUNC_INITIAL WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_1(_rettype, _method, a) __attribute__((naked)) _rettype _method(uintptr_t callersFramePointer, a) WASM_WRAPPER_FUNC_INITIAL "local.get 1\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_2(_rettype, _method, a, b) __attribute__((naked)) _rettype _method(uintptr_t callersFramePointer, a, b) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_3(_rettype, _method, a, b, c) __attribute__((naked)) _rettype _method(uintptr_t callersFramePointer, a, b, c) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_4(_rettype, _method, a, b, c, d) __attribute__((naked)) _rettype _method(uintptr_t callersFramePointer, a, b, c, d) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_5(_rettype, _method, a, b, c, d, e) __attribute__((naked)) _rettype _method(uintptr_t callersFramePointer, a, b, c, d, e) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_6(_rettype, _method, a, b, c, d, e, f) __attribute__((naked)) _rettype _method(uintptr_t callersFramePointer, a, b, c, d, e, f) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_7(_rettype, _method, a, b, c, d, e, f, g) __attribute__((naked)) _rettype _method(uintptr_t callersFramePointer, a, b, c, d, e, f, g) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_8(_rettype, _method, a, b, c, d, e, f, g, h) __attribute__((naked)) _rettype _method(uintptr_t callersFramePointer, a, b, c, d, e, f, g, h) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\nlocal.get 8\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_9(_rettype, _method, a, b, c, d, e, f, g, h, i) __attribute__((naked)) _rettype _method(uintptr_t callersFramePointer, a, b, c, d, e, f, g, h, i) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\nlocal.get 8\nlocal.get 9\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_0(_rettype, _method) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer) WASM_WRAPPER_FUNC_INITIAL WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_1(_rettype, _method, a) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a) WASM_WRAPPER_FUNC_INITIAL "local.get 1\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_2(_rettype, _method, a, b) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_3(_rettype, _method, a, b, c) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_4(_rettype, _method, a, b, c, d) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_5(_rettype, _method, a, b, c, d, e) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_6(_rettype, _method, a, b, c, d, e, f) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_7(_rettype, _method, a, b, c, d, e, f, g) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f, g) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_8(_rettype, _method, a, b, c, d, e, f, g, h) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f, g, h) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\nlocal.get 8\n" WASM_WRAPPER_FUNC_EPILOG(_method)
+#define WASM_WRAPPER_FUNC_9(_rettype, _method, a, b, c, d, e, f, g, h, i) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f, g, h, i) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\nlocal.get 8\nlocal.get 9\n" WASM_WRAPPER_FUNC_EPILOG(_method)
 
-#define WASM_CALLABLE_FUNC_0(_rettype, _method) _rettype _method ## _IMPL (uintptr_t callersFramePointer); \
+#define WASM_CALLABLE_FUNC_0(_rettype, _method) _rettype _method ## _IMPL (uintptr_t callersStackPointer); \
     WASM_WRAPPER_FUNC_0(_rettype, _method) \
-    _rettype _method ## _IMPL (uintptr_t callersFramePointer)
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer)
 
-#define WASM_CALLABLE_FUNC_1(_rettype, _method, a) _rettype _method ## _IMPL (uintptr_t callersFramePointer, a); \
+#define WASM_CALLABLE_FUNC_1(_rettype, _method, a) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a); \
     WASM_WRAPPER_FUNC_1(_rettype, _method, a) \
-    _rettype _method ## _IMPL (uintptr_t callersFramePointer, a)
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a)
 
-#define WASM_CALLABLE_FUNC_2(_rettype, _method, a, b) _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b); \
+#define WASM_CALLABLE_FUNC_2(_rettype, _method, a, b) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b); \
     WASM_WRAPPER_FUNC_2(_rettype, _method, a, b) \
-    _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b)
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b)
 
-#define WASM_CALLABLE_FUNC_3(_rettype, _method, a, b, c) _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c); \
+#define WASM_CALLABLE_FUNC_3(_rettype, _method, a, b, c) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c); \
     WASM_WRAPPER_FUNC_3(_rettype, _method, a, b, c) \
-    _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c)
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c)
 
-#define WASM_CALLABLE_FUNC_4(_rettype, _method, a, b, c, d) _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d); \
+#define WASM_CALLABLE_FUNC_4(_rettype, _method, a, b, c, d) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d); \
     WASM_WRAPPER_FUNC_4(_rettype, _method, a, b, c, d) \
-    _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d)
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d)
 
-#define WASM_CALLABLE_FUNC_5(_rettype, _method, a, b, c, d, e) _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d, e); \
+#define WASM_CALLABLE_FUNC_5(_rettype, _method, a, b, c, d, e) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e); \
     WASM_WRAPPER_FUNC_5(_rettype, _method, a, b, c, d, e) \
-    _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d, e)
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e)
 
-#define WASM_CALLABLE_FUNC_6(_rettype, _method, a, b, c, d, e, f) _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d, e, f); \
+#define WASM_CALLABLE_FUNC_6(_rettype, _method, a, b, c, d, e, f) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f); \
     WASM_WRAPPER_FUNC_6(_rettype, _method, a, b, c, d, e, f) \
-    _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d, e, f)
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f)
 
-#define WASM_CALLABLE_FUNC_7(_rettype, _method, a, b, c, d, e, f, g) _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d, e, f, g); \
+#define WASM_CALLABLE_FUNC_7(_rettype, _method, a, b, c, d, e, f, g) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g); \
     WASM_WRAPPER_FUNC_7(_rettype, _method, a, b, c, d, e, f, g) \
-    _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d, e, f, g)
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g)
 
-#define WASM_CALLABLE_FUNC_8(_rettype, _method, a, b, c, d, e, f, g, h) _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d, e, f, g, h); \
+#define WASM_CALLABLE_FUNC_8(_rettype, _method, a, b, c, d, e, f, g, h) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g, h); \
     WASM_WRAPPER_FUNC_8(_rettype, _method, a, b, c, d, e, f, g, h) \
-    _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d, e, f, g, h)
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g, h)
 
-#define WASM_CALLABLE_FUNC_9(_rettype, _method, a, b, c, d, e, f, g, h, i) _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d, e, f, g, h, i); \
+#define WASM_CALLABLE_FUNC_9(_rettype, _method, a, b, c, d, e, f, g, h, i) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g, h, i); \
     WASM_WRAPPER_FUNC_9(_rettype, _method, a, b, c, d, e, f, g, h, i) \
-    _rettype _method ## _IMPL (uintptr_t callersFramePointer, a, b, c, d, e, f, g, h, i)
+    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g, h, i)
 
 // -------------------------------------------------
 // Logic that will eventually mostly be pregenerated for R2R to interpreter code
@@ -89,7 +89,8 @@ namespace
         {
             TransitionBlock block;
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         void * result = NULL;
         
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, 0, (int8_t*)&result);
@@ -102,7 +103,8 @@ namespace
             TransitionBlock block;
             int64_t args[1];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
@@ -117,7 +119,8 @@ namespace
             TransitionBlock block;
             int64_t args[2];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
@@ -133,7 +136,8 @@ namespace
             TransitionBlock block;
             int64_t args[3];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         transitionBlock.args[2] = (int64_t)arg2;
@@ -151,7 +155,8 @@ namespace
             TransitionBlock block;
             int64_t args[4];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         transitionBlock.args[2] = (int64_t)arg2;
@@ -168,7 +173,8 @@ namespace
         {
             TransitionBlock block;
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         void * result = NULL;
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, 0, (int8_t*)&result);
         return (int32_t)result;
@@ -180,7 +186,8 @@ namespace
             TransitionBlock block;
             int64_t args[1];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
@@ -195,7 +202,8 @@ namespace
             TransitionBlock block;
             int64_t args[2];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
@@ -211,7 +219,8 @@ namespace
             TransitionBlock block;
             int64_t args[3];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         transitionBlock.args[2] = (int64_t)arg2;
@@ -228,7 +237,8 @@ namespace
             TransitionBlock block;
             int64_t args[4];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         transitionBlock.args[2] = (int64_t)arg2;
@@ -246,7 +256,8 @@ namespace
             TransitionBlock block;
             int64_t args[5];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         transitionBlock.args[2] = (int64_t)arg2;
@@ -265,7 +276,8 @@ namespace
             TransitionBlock block;
             int64_t args[6];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         transitionBlock.args[2] = (int64_t)arg2;
@@ -285,7 +297,8 @@ namespace
             TransitionBlock block;
             int64_t args[7];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         transitionBlock.args[2] = (int64_t)arg2;
@@ -306,7 +319,8 @@ namespace
             TransitionBlock block;
             int64_t args[8];
         } transitionBlock;
-        transitionBlock.block.m_ReturnAddress = callersFramePointer;
+        transitionBlock.block.m_ReturnAddress = 0;
+        transitionBlock.block.m_StackPointer = callersStackPointer;
         transitionBlock.args[0] = (int64_t)arg0;
         transitionBlock.args[1] = (int64_t)arg1;
         transitionBlock.args[2] = (int64_t)arg2;

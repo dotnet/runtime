@@ -2141,7 +2141,17 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
     }
 
     _ASSERTE((PCODE)targetIp == (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint));
-    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)block->m_ReturnAddress);
+
+    // Copy arguments to the stack
+    if (argsSize > 0)
+    {
+        _ASSERTE(args != NULL);
+        InterpThreadContext *threadContext = GetInterpThreadContext();
+        int8_t* sp = threadContext->pStackPointer;
+        memcpy(sp, args, argsSize);
+    }
+
+    (void)ExecuteInterpretedMethod(block, (TADDR)targetIp, retBuff);
     return;
 }
 

@@ -5,9 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Build.Framework;
-using WasmAppBuilder;
 
-namespace Microsoft.WebAssembly.Build.Tasks;
+namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 //
 // Scans assemblies for methods marked with MethodImplAttributes.InternalCall
