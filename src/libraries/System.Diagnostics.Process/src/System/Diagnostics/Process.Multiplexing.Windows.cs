@@ -38,7 +38,8 @@ namespace System.Diagnostics
                 outputOverlapped = AllocateOverlapped(outputEvent);
                 errorOverlapped = AllocateOverlapped(errorEvent);
 
-                WaitHandle[] waitHandles = [outputEvent, errorEvent];
+                // Error output gets index 0 so WaitAny services it first when both are signaled.
+                WaitHandle[] waitHandles = [errorEvent, outputEvent];
 
                 // Issue initial reads.
                 bool outputDone = !QueueRead(outputHandle, outputPin.GetAddressOfArrayData(), outputBuffer.Length, outputOverlapped, outputEvent);
@@ -63,7 +64,7 @@ namespace System.Diagnostics
                         throw new TimeoutException();
                     }
 
-                    bool isError = waitResult == 1;
+                    bool isError = waitResult == 0;
                     NativeOverlapped* currentOverlapped = isError ? errorOverlapped : outputOverlapped;
                     SafeFileHandle currentHandle = isError ? errorHandle : outputHandle;
                     ref int totalBytesRead = ref (isError ? ref errorBytesRead : ref outputBytesRead);
@@ -180,6 +181,13 @@ namespace System.Diagnostics
             return bytesRead;
         }
 
+        /// <summary>
+        /// Cancels a pending overlapped I/O and waits for completion before returning.
+        /// See Raymond Chen's series on safe cancellation:
+        /// https://devblogs.microsoft.com/oldnewthing/20110202-00/?p=11613
+        /// https://devblogs.microsoft.com/oldnewthing/20110203-00/?p=11603
+        /// https://devblogs.microsoft.com/oldnewthing/20110204-00/?p=11583
+        /// </summary>
         private static unsafe void CancelPendingIOIfNeeded(SafeFileHandle handle, bool done, NativeOverlapped* overlapped)
         {
             if (done)
