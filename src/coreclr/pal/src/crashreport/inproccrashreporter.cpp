@@ -7,6 +7,7 @@
 
 #include "inproccrashreporter.h"
 #include "crashjsonwriter.h"
+#include "moduleenumerator.h"
 
 #include <unistd.h>
 #include <string.h>
@@ -61,7 +62,11 @@ InProcCrashReportGenerate(
     CrashJsonWriteString(&s_jsonWriter, "version", version);
     CrashJsonCloseObject(&s_jsonWriter);
 
-    CrashJsonWriteString(&s_jsonWriter, "process_name", "");
+    char processName[256];
+    if (CrashModulesTryGetProcessName(processName, sizeof(processName)))
+    {
+        CrashJsonWriteString(&s_jsonWriter, "process_name", processName);
+    }
 
     CrashJsonOpenArray(&s_jsonWriter, "threads");
     // TODO: Replace with actual thread enumeration.

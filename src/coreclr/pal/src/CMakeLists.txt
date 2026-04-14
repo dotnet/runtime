@@ -210,6 +210,7 @@ if(CLR_CMAKE_TARGET_ANDROID)
   list(APPEND SOURCES
     crashreport/crashjsonwriter.cpp
     crashreport/inproccrashreporter.cpp
+    crashreport/moduleenumerator.cpp
   )
 endif()
 
