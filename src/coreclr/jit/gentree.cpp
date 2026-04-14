@@ -31560,57 +31560,112 @@ bool GenTree::IsInvariant() const
 
 //-------------------------------------------------------------------
 // IsVectorPerElementMask: returns true if this node is a vector constant per-element mask
-//                         (every element has either all bits set or none of them).
+//                         (every element has either all bits set or none of them) for the
+//                         given simd size and base type.
 //
 // Arguments:
 //    simdBaseType - the base type of the constant being checked.
 //    simdSize     - the size of the SIMD type of the intrinsic.
 //
 // Returns:
-//     True if this node is a vector constant per-element mask.
+//     True if this node is a per-element mask compatible with simdBaseType and simdSize
 //
 bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const
 {
 #ifdef FEATURE_SIMD
-    if (IsCnsVec())
+    // This should be kept in sync with ValueNumStore::IsVectorPerElementMask
+
+    unsigned elementCount = GenTreeVecCon::ElementCount(simdSize, simdBaseType);
+
+    if (OperIsConst())
     {
-        const GenTreeVecCon* vecCon = AsVecCon();
-
-        int elementCount = vecCon->ElementCount(simdSize, simdBaseType);
-
-        switch (simdBaseType)
+        if (IsCnsVec())
         {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u8[0], elementCount);
-            case TYP_SHORT:
-            case TYP_USHORT:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u16[0], elementCount);
-            case TYP_INT:
-            case TYP_UINT:
-            case TYP_FLOAT:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u32[0], elementCount);
-            case TYP_LONG:
-            case TYP_ULONG:
-            case TYP_DOUBLE:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u64[0], elementCount);
-            default:
-                unreached();
+            const GenTreeVecCon* vecCon = AsVecCon();
+            return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal, simdBaseType, elementCount);
         }
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        else if (IsCnsMsk())
+        {
+            // For constant MASK we need to ensure that only the
+            // lowest elementCount bits are set. If there are more
+            // then we are likely in a scenario where the mask would
+            // get treated incorrectly.
+            //
+            // Consider for example something that expects 2 bits but
+            // finds 3 or more set. This ends up somewhat undefined
+            // behavior as we will ignoring the upper bits and this
+            // could lead to incorrect results.
+
+            const GenTreeMskCon* mskCon = AsMskCon();
+            uint64_t             mask   = mskCon->gtSimdMaskVal.GetRawBits();
+            return (mask & simdmask_t::GetBitMask(elementCount)) == mask;
+        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+        return false;
     }
-    else if (OperIsHWIntrinsic())
+
+    NamedIntrinsic intrinsicId           = NI_Illegal;
+    unsigned       intrinsicSimdSize     = 0;
+    var_types      intrinsicSimdBaseType = TYP_UNKNOWN;
+
+    if (OperIsHWIntrinsic())
     {
-        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
-        const NamedIntrinsic      intrinsicId = intrinsic->GetHWIntrinsicId();
+        const GenTreeHWIntrinsic* intrinsic = AsHWIntrinsic();
+
+        intrinsicId           = intrinsic->GetHWIntrinsicId();
+        intrinsicSimdSize     = intrinsic->GetSimdSize();
+        intrinsicSimdBaseType = intrinsic->GetSimdBaseType();
 
         if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsicId))
         {
-            // We directly return a per-element mask
-            return true;
+            if (varTypeIsMask(TypeGet()))
+            {
+                // When producing a MASK result, we need to ensure the
+                // element counts line up as otherwise we end up with
+                // a bitmask that may be interpreted incorrectly and
+                // lead to bad codegen.
+                //
+                // Consider for example that we have V128<uint> and
+                // so we expect 4 bits. However we are producing a
+                // mask for a V128<ulong> and so give 2 bits instead.
+                // If we produce all true we get 0b11 but the consumer
+                // needs 0b1111 for it to be used correctly. So the
+                // upper two elements are incorrectly treated as false
+                //
+                // Inversely we would expect 2-bits like 0b11 and would
+                // get four bits like 0b1011 instead. So we'd end up
+                // treating both elements as a match when the upper ulong
+                // only had half of it match and so shouldn't be counted.
+
+                return elementCount == GenTreeVecCon::ElementCount(intrinsicSimdSize, intrinsicSimdBaseType);
+            }
+            else
+            {
+                assert(varTypeIsSIMD(TypeGet()));
+                assert(simdSize == intrinsicSimdSize);
+
+                // When producing a SIMD result, we need for it to
+                // have a base type that is the same size or larger
+                // as what we expect.
+                //
+                // Consider for example us expecting `byte` and the
+                // intrinsic here produces `ushort`. In that case we
+                // expect every byte to be either `0x00` or `0xFF`
+                // and the intrinsic produces either `0x0000` or `0xFFFF`
+                // and so it meets this need.
+                //
+                // However, the inverse is not safe as we would expect
+                // `0x0000` or `0xFFFF`, but the intrinsic could produce
+                // `0x00FF` or `0xFF00` which fails the expectation.
+
+                return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
+            }
         }
 
         bool       isScalar = false;
-        genTreeOps oper     = intrinsic->GetOperForHWIntrinsicId(&isScalar);
+        genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
 
         switch (oper)
         {
@@ -31622,6 +31677,11 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
             case GT_XOR_NOT:
             {
                 // We are a binary bitwise operation where both inputs are per-element masks
+                //
+                // While some cases like OR could combine in ways that produce a usable mask
+                // there isn't any way to statically determine this for non-constants and
+                // the constant cases should've already been folded.
+
                 return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize) &&
                        intrinsic->Op(2)->IsVectorPerElementMask(simdBaseType, simdSize);
             }
@@ -31640,10 +31700,6 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
         }
 
         return false;
-    }
-    else if (IsCnsMsk())
-    {
-        return true;
     }
 #endif // FEATURE_SIMD
 
