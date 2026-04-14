@@ -559,5 +559,39 @@ namespace System.Net.Mail.Tests
             Assert.Equal("\" asciin;,oqu o.tesws \"", result[6].User);
             Assert.Equal("this.test.this", result[6].Host);
         }
+
+        [Theory]
+        [InlineData("test\r@example.com")]
+        [InlineData("test\n@example.com")]
+        [InlineData("test\r\n@example.com")]
+        [InlineData("Display\r\nName <test@example.com>")]
+        [InlineData("test@example\r.com")]
+        [InlineData("test@example\n.com")]
+        [InlineData("test@example.com\r\n")]
+        public void TryParseAddress_WithCROrLF_ShouldThrow(string address)
+        {
+            Assert.Throws<FormatException>(() => MailAddressParser.TryParseAddress(address, out _, throwExceptionIfFail: true));
+        }
+
+        [Theory]
+        [InlineData("test\r@example.com")]
+        [InlineData("test\n@example.com")]
+        [InlineData("test\r\n@example.com")]
+        [InlineData("Display\r\nName <test@example.com>")]
+        [InlineData("test@example\r.com")]
+        [InlineData("test@example\n.com")]
+        [InlineData("test@example.com\r\n")]
+        public void TryParseAddress_WithCROrLF_ShouldReturnFalse(string address)
+        {
+            Assert.False(MailAddressParser.TryParseAddress(address, out _, throwExceptionIfFail: false));
+        }
+
+        [Fact]
+        public void ParseMultipleAddresses_WithCROrLF_ShouldThrow()
+        {
+            Assert.Throws<FormatException>(() => MailAddressParser.ParseMultipleAddresses("a@b.com, test\r\n@example.com"));
+            Assert.Throws<FormatException>(() => MailAddressParser.ParseMultipleAddresses("test\n@example.com, a@b.com"));
+            Assert.Throws<FormatException>(() => MailAddressParser.ParseMultipleAddresses("a@b.com, c@d.com, e\r@f.com"));
+        }
     }
 }
