@@ -5140,7 +5140,7 @@ int CodeGenInterface::genSPtoFPdelta() const
 
         if (!m_compiler->opts.IsOSR())
         {
-            delta = delta - 2 /* FP, LR */ * REGSIZE_BYTES;
+            delta -= 2 /* FP, LR */ * REGSIZE_BYTES;
         }
     }
     else

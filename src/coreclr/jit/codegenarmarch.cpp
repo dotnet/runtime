@@ -4851,15 +4851,21 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     else if (frameType == 4)
     {
         assert(genSaveFpLrWithAllCalleeSavedRegisters);
-        offsetSpToSavedFp = calleeSaveSpDelta - (m_compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
-                            2 * REGSIZE_BYTES; // -2 for FP, LR
+        offsetSpToSavedFp = calleeSaveSpDelta - (m_compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0);
+        if (!m_compiler->opts.IsOSR())
+        {
+            offsetSpToSavedFp -= 2 * REGSIZE_BYTES; // -2 for FP, LR
+        }
     }
     else if (frameType == 5)
     {
         assert(genSaveFpLrWithAllCalleeSavedRegisters);
 
-        offsetSpToSavedFp = calleeSaveSpDelta - (m_compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
-                            2 * REGSIZE_BYTES; // -2 for FP, LR
+        offsetSpToSavedFp = calleeSaveSpDelta - (m_compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0);
+        if (!m_compiler->opts.IsOSR())-
+        {
+            offsetSpToSavedFp -= 2 * REGSIZE_BYTES; // -2 for FP, LR
+        }
         JITDUMP("    offsetSpToSavedFp=%d\n", offsetSpToSavedFp);
         genEstablishFramePointer(offsetSpToSavedFp, /* reportUnwindData */ true);
 
