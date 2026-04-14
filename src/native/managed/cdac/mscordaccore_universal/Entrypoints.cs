@@ -77,10 +77,26 @@ internal static class Entrypoints
         if (target == null)
             return -1;
 
-        object? legacyImpl = legacyImplPtr != IntPtr.Zero
-            ? cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None)
-            : null;
-        Legacy.SOSDacImpl impl = new(target, legacyImpl);
+        object? legacyImpl = null;
+        object? prevent_release = null;
+        if (legacyImplPtr != IntPtr.Zero)
+        {
+            object legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
+            // When CDAC_NO_FALLBACK is set, we don't use the legacy impl for fallback
+            // but we must hold a reference to it because the native CDAC class stores
+            // a raw pointer (m_legacyImpl) that assumes it outlives the CDAC.
+            bool noFallback = Environment.GetEnvironmentVariable("CDAC_NO_FALLBACK") == "1";
+            if (noFallback)
+            {
+                prevent_release = legacyObj;
+            }
+            else
+            {
+                legacyImpl = legacyObj;
+            }
+        }
+
+        Legacy.SOSDacImpl impl = new(target, legacyImpl, prevent_release);
         nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         *obj = ptr;
         return 0;
@@ -112,17 +128,27 @@ internal static class Entrypoints
 
         ComWrappers cw = new StrategyBasedComWrappers();
         object? legacyObj = null;
+        object? prevent_release = null;
         if (legacyImplPtr != IntPtr.Zero)
         {
-            legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
-            if (legacyObj is not Legacy.IDacDbiInterface)
+            object wrapped = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
+            bool noFallback = Environment.GetEnvironmentVariable("CDAC_NO_FALLBACK") == "1";
+            if (noFallback)
             {
-                *obj = IntPtr.Zero;
-                return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
+                prevent_release = wrapped;
+            }
+            else
+            {
+                legacyObj = wrapped;
+                if (legacyObj is not Legacy.IDacDbiInterface)
+                {
+                    *obj = IntPtr.Zero;
+                    return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
+                }
             }
         }
 
-        Legacy.DacDbiImpl impl = new(target, legacyObj);
+        Legacy.DacDbiImpl impl = new(target, legacyObj, prevent_release);
         *obj = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         return HResults.S_OK;
     }

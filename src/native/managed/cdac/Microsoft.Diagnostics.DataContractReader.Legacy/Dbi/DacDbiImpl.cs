@@ -16,6 +16,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 {
     private readonly Target _target;
     private readonly IDacDbiInterface? _legacy;
+    private readonly object? _prevent_release;
 
     // IStringHolder is a native C++ abstract class (not COM) with a single virtual method:
     //   virtual HRESULT AssignCopy(const WCHAR* psz) = 0;
@@ -37,10 +38,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
     }
 
-    public DacDbiImpl(Target target, object? legacyObj)
+    public DacDbiImpl(Target target, object? legacyObj, object? prevent_release = null)
     {
         _target = target;
         _legacy = legacyObj as IDacDbiInterface;
+        _prevent_release = prevent_release;
     }
 
     public int CheckDbiVersion(DbiVersion* pVersion)

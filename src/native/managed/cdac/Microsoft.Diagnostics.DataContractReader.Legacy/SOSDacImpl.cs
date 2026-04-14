@@ -44,6 +44,11 @@ public sealed unsafe partial class SOSDacImpl
     private readonly Lazy<TargetPointer> _objectMethodTable;
     private readonly ulong _rcwMask = 1UL;
 
+    // Prevents the legacy DAC RCW from being released when fallback is disabled.
+    // The native CDAC class holds a raw pointer (m_legacyImpl) to the legacy DAC
+    // that must remain valid for the lifetime of this object.
+    private readonly object? _prevent_release;
+
     private readonly ISOSDacInterface? _legacyImpl;
     private readonly ISOSDacInterface2? _legacyImpl2;
     private readonly ISOSDacInterface3? _legacyImpl3;
@@ -64,9 +69,10 @@ public sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
 
-    public SOSDacImpl(Target target, object? legacyObj)
+    public SOSDacImpl(Target target, object? legacyObj, object? prevent_release = null)
     {
         _target = target;
+        _prevent_release = prevent_release;
         _stringMethodTable = new Lazy<TargetPointer>(
             () => _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.StringMethodTable)));
 
