@@ -461,6 +461,7 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
 //    tmpReg                   - An available temporary register. Needed for the case of large frames.
 //    pTmpRegIsZero            - If we use tmpReg, and pTmpRegIsZero is non-null, we set *pTmpRegIsZero to 'false'.
 //                               Otherwise, we don't touch it.
+//    unwindOnly               - If true, we only generate unwind codes, and do not actually emit instructions to save
 //
 // Return Value:
 //    None.
@@ -471,7 +472,8 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
                                    int       spDelta,
                                    bool      useSaveNextPair,
                                    regNumber tmpReg,
-                                   bool*     pTmpRegIsZero)
+                                   bool*     pTmpRegIsZero,
+                                   bool      unwindOnly)
 {
     assert(spOffset >= 0);
     assert(spDelta <= 0);
@@ -483,6 +485,8 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
     if (spDelta != 0)
     {
         assert(!useSaveNextPair);
+        assert(!unwindOnly);
+
         if ((spOffset == 0) && (spDelta >= -512))
         {
             // We can use pre-indexed addressing.
@@ -509,7 +513,10 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
         // 64-bit STP offset range: -512 to 504, multiple of 8.
         assert(spOffset <= 504);
         assert((spOffset % 8) == 0);
-        GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
+        if (!unwindOnly)
+        {
+            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
+        }
 
         if (TargetOS::IsUnix && m_compiler->generateCFIUnwindCodes())
         {
@@ -545,11 +552,12 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
 //    tmpReg                   - An available temporary register. Needed for the case of large frames.
 //    pTmpRegIsZero            - If we use tmpReg, and pTmpRegIsZero is non-null, we set *pTmpRegIsZero to 'false'.
 //                               Otherwise, we don't touch it.
+//    unwindOnly               - If true, we only generate unwind codes, and do not actually emit instructions to save
 //
 // Return Value:
 //    None.
 
-void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
+void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool unwindOnly)
 {
     assert(spOffset >= 0);
     assert(spDelta <= 0);
@@ -558,6 +566,7 @@ void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNum
     bool needToSaveRegs = true;
     if (spDelta != 0)
     {
+        assert(!unwindOnly);
         if ((spOffset == 0) && (spDelta >= -256))
         {
             // We can use pre-index addressing.
@@ -576,9 +585,12 @@ void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNum
 
     if (needToSaveRegs)
     {
-        // str REG, [SP, #offset]
-        // 64-bit STR offset range: 0 to 32760, multiple of 8.
-        GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
+        if (!unwindOnly)
+        {
+            // str REG, [SP, #offset]
+            // 64-bit STR offset range: 0 to 32760, multiple of 8.
+            GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
+        }
         m_compiler->unwindSaveReg(reg1, spOffset);
     }
 }
@@ -839,8 +851,9 @@ int CodeGen::genGetSlotSizeForRegsInMask(regMaskTP regsMask)
 //   regsMask             - a mask of registers for prolog generation;
 //   spDelta              - if non-zero, the amount to add to SP before the first register save (or together with it);
 //   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
+//   unwindOnly           - if true, only generate unwind codes, and do not actually emit instructions to save.
 //
-void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset)
+void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset, bool unwindOnly)
 {
     const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
 
@@ -855,12 +868,12 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
             // We can use a STP instruction.
             if (genReverseAndPairCalleeSavedRegisters)
             {
-                genPrologSaveRegPair(regPair.reg2, regPair.reg1, spOffset, spDelta, false, REG_IP0, nullptr);
+                genPrologSaveRegPair(regPair.reg2, regPair.reg1, spOffset, spDelta, false, REG_IP0, nullptr, unwindOnly);
             }
             else
             {
                 genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_IP0,
-                                     nullptr);
+                                     nullptr, unwindOnly);
             }
 
             spOffset += 2 * slotSize;
@@ -868,7 +881,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
         else
         {
             // No register pair; we use a STR instruction.
-            genPrologSaveReg(regPair.reg1, spOffset, spDelta, REG_IP0, nullptr);
+            genPrologSaveReg(regPair.reg1, spOffset, spDelta, REG_IP0, nullptr, unwindOnly);
             spOffset += slotSize;
         }
 
@@ -913,7 +926,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 //    The save set can contain LR in which case LR is saved along with the other callee-saved registers.
 //    But currently Jit doesn't use frames without frame pointer on arm64.
 //
-void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta, bool unwindOnly)
 {
     assert(spDelta <= 0);
     assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
@@ -921,6 +934,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     unsigned regsToSaveCount = genCountBits(regsToSaveMask);
     if (regsToSaveCount == 0)
     {
+        assert(!unwindOnly);
         if (spDelta != 0)
         {
             // Currently this is the case for varargs only
@@ -943,21 +957,21 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     if (maskSaveRegsFloat != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, spDelta, lowestCalleeSavedOffset);
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, spDelta, lowestCalleeSavedOffset, unwindOnly);
         spDelta = 0;
         lowestCalleeSavedOffset += genCountBits(maskSaveRegsFloat) * FPSAVE_REGSIZE_BYTES;
     }
 
     if (maskSaveRegsInt != RBM_NONE)
     {
-        genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset);
+        genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset, unwindOnly);
         spDelta = 0;
         lowestCalleeSavedOffset += genCountBits(maskSaveRegsInt) * FPSAVE_REGSIZE_BYTES;
     }
 
     if (maskSaveRegsFrame != RBM_NONE)
     {
-        genPrologSaveRegPair(REG_FP, REG_LR, lowestCalleeSavedOffset, spDelta, false, REG_IP0, nullptr);
+        genPrologSaveRegPair(REG_FP, REG_LR, lowestCalleeSavedOffset, spDelta, false, REG_IP0, nullptr, unwindOnly);
         // No need to update spDelta, lowestCalleeSavedOffset since they're not used after this.
     }
 }
@@ -5531,6 +5545,32 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 }
 
 #endif // FEATURE_SIMD
+
+void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
+{
+    assert(m_compiler->compGeneratingProlog);
+    assert(m_compiler->opts.IsOSR());
+    assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
+
+    // Figure out which set of int callee saves was already saved by Tier0.
+    // Emit appropriate unwind.
+    //
+    PatchpointInfo* const patchpointInfo             = m_compiler->info.compPatchpointInfo;
+    regMaskTP const tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
+    assert((tier0CalleeSaves & RBM_ALLINT) == tier0CalleeSaves);
+    int const             tier0CalleeSaveUsedSize = genCountBits(tier0CalleeSaves) * REGSIZE_BYTES;
+
+    JITDUMP("--OSR--- tier0 has already saved ");
+    JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
+    JITDUMP("\n");
+
+    m_compiler->unwindAllocStack((unsigned)patchpointInfo->TotalFrameSize());
+
+    assert((tier0CalleeSaves & (RBM_FP | RBM_LR)) == (RBM_FP | RBM_LR));
+
+    int offset = patchpointInfo->TotalFrameSize() - tier0CalleeSaveUsedSize;
+    genSaveCalleeSavedRegistersHelp(tier0CalleeSaves, offset, /* spDelta */ 0, /* unwindOnly */ true);
+}
 
 #ifdef PROFILING_SUPPORTED
 

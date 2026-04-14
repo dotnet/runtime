@@ -10011,7 +10011,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
 //
-void CodeGen::genPushCalleeSavedRegisters()
+void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
     assert(m_compiler->compGeneratingProlog);
 

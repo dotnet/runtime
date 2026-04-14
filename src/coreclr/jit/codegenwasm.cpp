@@ -85,7 +85,7 @@ void CodeGen::genBeginFnProlog()
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: no-op since we don't need to save anything.
 //
-void CodeGen::genPushCalleeSavedRegisters()
+void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
 }
 

@@ -4967,6 +4967,15 @@ void CodeGen::genFinalizeFrame()
 
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
+#if defined(TARGET_ARM64)
+    // We inherit registers saved by tier0. Avoid saving those.
+    if (m_compiler->opts.IsOSR())
+    {
+        PatchpointInfo* ppi = m_compiler->info.compPatchpointInfo;
+        maskCalleeRegsPushed &= ~ppi->CalleeSaveRegisters();
+    }
+#endif
+
     m_compiler->compCalleeRegsPushed = genCountBits(maskCalleeRegsPushed);
 
 #ifdef DEBUG
@@ -5053,11 +5062,11 @@ void CodeGen::genFnProlog()
 
     genBeginFnProlog();
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // For some targets, emit a "phantom prolog" to account for the actions taken
     // in the tier0 frame that impact FP and SP on entry to the OSR method.
     //
-    // x64 handles this differently; the phantom prolog unwind is emitted in
+    // x64/arm64 handle this differently; the phantom prolog unwind is emitted in
     // genOSRRecordTier0CalleeSavedRegistersAndFrame.
     //
     if (m_compiler->opts.IsOSR())
@@ -5320,10 +5329,10 @@ void CodeGen::genFnProlog()
 
     const bool isRoot = (m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
-#ifdef TARGET_AMD64
-    const bool isOSRx64Root = isRoot && m_compiler->opts.IsOSR();
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    const bool inheritsCalleeSaves = isRoot && m_compiler->opts.IsOSR();
 #else
-    const bool isOSRx64Root = false;
+    const bool inheritsCalleeSaves = false;
 #endif // TARGET_AMD64
 
     regMaskTP tempMask = initRegs & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
@@ -5352,7 +5361,7 @@ void CodeGen::genFnProlog()
     // For x64 OSR root frames, we can't use any as of yet unsaved
     // callee save as initReg, as we defer saving these until later in
     // the prolog, and we don't have normal arg regs.
-    if (isOSRx64Root)
+    if (inheritsCalleeSaves)
     {
         initReg = REG_SCRATCH; // REG_EAX
     }
@@ -5360,7 +5369,7 @@ void CodeGen::genFnProlog()
     // For arm64 OSR root frames, we may need a scratch register for large
     // offset addresses. Use a register that won't be allocated.
     //
-    if (isRoot && m_compiler->opts.IsOSR())
+    if (inheritsCalleeSaves)
     {
         initReg = REG_IP1;
     }
@@ -5419,23 +5428,24 @@ void CodeGen::genFnProlog()
 
     unsigned extraFrameSize = 0;
 
-#ifdef TARGET_XARCH
-
-#ifdef TARGET_AMD64
-    if (isOSRx64Root)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    if (inheritsCalleeSaves)
     {
         // Account for the Tier0 callee saves
         //
         genOSRRecordTier0CalleeSavedRegistersAndFrame();
 
+#ifdef TARGET_AMD64
         // We don't actually push any callee saves on the OSR frame,
         // but we still reserve space, so account for this when
         // allocating the local frame.
         //
         extraFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES;
+#endif
     }
-#endif // TARGET_AMD64
+#endif
 
+#ifdef TARGET_XARCH
     if (doubleAlignOrFramePointerUsed())
     {
         // OSR methods handle "saving" FP specially.
@@ -5444,7 +5454,7 @@ void CodeGen::genFnProlog()
         // Tier0 method. The save we do here is just to set up a
         // proper RBP-based frame chain link.
         //
-        if (isOSRx64Root && isFramePointerUsed())
+        if (inheritsCalleeSaves && isFramePointerUsed())
         {
             GetEmitter()->emitIns_R_AR(INS_mov, EA_8BYTE, initReg, REG_FPBASE, 0);
             inst_RV(INS_push, initReg, TYP_REF);
@@ -5460,9 +5470,9 @@ void CodeGen::genFnProlog()
             inst_RV(INS_push, REG_FPBASE, TYP_REF);
             m_compiler->unwindPush(REG_FPBASE);
         }
-#ifndef TARGET_AMD64 // On AMD64, establish the frame pointer after the "sub rsp"
+#ifdef TARGET_X86 // On AMD64, establish the frame pointer after the "sub rsp"
         genEstablishFramePointer(0, /*reportUnwindData*/ true);
-#endif // !TARGET_AMD64
+#endif // TARGET_X86
 
 #if DOUBLE_ALIGN
         if (m_compiler->genDoubleAlign())
@@ -5476,16 +5486,21 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    genPushCalleeSavedRegisters(initReg, &initRegZeroed);
+    bool pushesCalleeSaves = true;
+#ifdef TARGET_AMD64
+    // For OSR x64 we need canonical epilogs (sequence of pops). Hence we do
+    // not push any register in the prolog, we rather store them in the area
+    // allocated by the tier0 method.
+    // For OSR on other platforms we have no such requirement, instead we
+    // restore tier0 saved callee saves from its area, but then push the additional
+    // callee saves in the OSR method prologs as normal.
+    pushesCalleeSaves = !inheritsCalleeSaves;
+#endif
 
-#else  // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
-
-    if (!isOSRx64Root)
+    if (pushesCalleeSaves)
     {
-        genPushCalleeSavedRegisters();
+        genPushCalleeSavedRegisters(initReg, &initRegZeroed);
     }
-#endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 #ifdef TARGET_ARM
     bool needToEstablishFP        = false;
@@ -5530,14 +5545,14 @@ void CodeGen::genFnProlog()
     }
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
-#ifdef TARGET_AMD64
-    // For x64 OSR we have to finish saving int callee saves.
+    // For x64 OSR we have to finish saving callee saves.
     //
-    if (isOSRx64Root)
+#ifdef TARGET_AMD64
+    if (inheritsCalleeSaves)
     {
         genOSRSaveRemainingCalleeSavedRegisters();
     }
-#endif // TARGET_AMD64
+#endif
 
     //-------------------------------------------------------------------------
 

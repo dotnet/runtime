@@ -4285,16 +4285,12 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc
 //------------------------------------------------------------------------
 // genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
 //
-// Arguments (arm64):
+// Arguments:
 //    initReg        - A scratch register (that gets set to zero on some platforms).
 //    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 //
-#if defined(TARGET_ARM64)
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
-#else
-void CodeGen::genPushCalleeSavedRegisters()
-#endif
 {
     assert(m_compiler->compGeneratingProlog);
 
@@ -4343,6 +4339,12 @@ void CodeGen::genPushCalleeSavedRegisters()
     // is not worth it.
     //
     rsPushRegs |= RBM_LR; // We must save the return address (in the LR register)
+
+    if (m_compiler->opts.IsOSR())
+    {
+        PatchpointInfo* ppi = m_compiler->info.compPatchpointInfo;
+        rsPushRegs &= ~ppi->CalleeSaveRegisters();
+    }
 
     regSet.rsMaskCalleeSaved = rsPushRegs;
 

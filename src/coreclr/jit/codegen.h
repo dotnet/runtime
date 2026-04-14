@@ -363,6 +363,8 @@ protected:
     void genClearStackVec3ArgUpperBits();
 #endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
+
+    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 #if defined(TARGET_ARM64)
     bool genInstrWithConstant(instruction ins,
                               emitAttr    attr,
@@ -380,9 +382,10 @@ protected:
                               int       spDelta,
                               bool      useSaveNextPair,
                               regNumber tmpReg,
-                              bool*     pTmpRegIsZero);
+                              bool*     pTmpRegIsZero,
+                              bool      unwindOnly = false);
 
-    void genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
+    void genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool unwindOnly);
 
     void genEpilogRestoreRegPair(regNumber reg1,
                                  regNumber reg2,
@@ -422,13 +425,11 @@ protected:
 
     static int genGetSlotSizeForRegsInMask(regMaskTP regsMask);
 
-    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
+    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset, bool unwindOnly = false);
     void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
 
-    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
+    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta, bool unwindOnly = false);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
-
-    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool genInstrWithConstant(instruction ins,
@@ -443,16 +444,10 @@ protected:
 
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset);
-    void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
-
-#else
-    void genPushCalleeSavedRegisters();
 #endif
 
-#if defined(TARGET_AMD64)
     void genOSRRecordTier0CalleeSavedRegistersAndFrame();
     void genOSRSaveRemainingCalleeSavedRegisters();
-#endif // TARGET_AMD64
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
