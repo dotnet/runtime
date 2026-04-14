@@ -33,4 +33,31 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.False(string.IsNullOrEmpty(holder.Value), "AppDomain name should not be empty");
     }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetTypeHandle_ReturnsMethodTableForTypeDef(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        // Get the well-known System.Object MethodTable
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
+
+        // Get its TypeDef token and module pointer
+        uint token = rts.GetTypeDefToken(objectHandle);
+        Assert.Equal(0x02000000u, token & 0xFF000000u);
+
+        TargetPointer modulePtr = rts.GetModule(objectHandle);
+        Assert.NotEqual(TargetPointer.Null, modulePtr);
+
+        // DacDbi GetTypeHandle should resolve the same token back to the same MethodTable
+        ulong result;
+        int hr = dbi.GetTypeHandle(modulePtr.Value, token, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(objectMT.Value, result);
+    }
 }

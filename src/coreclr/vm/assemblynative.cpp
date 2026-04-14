@@ -196,13 +196,13 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 
         // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())
-            THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
+            THROW_BAD_FORMAT(BFA_BAD_IL, static_cast<PEImage*>(pILImage));
 
         LoaderAllocator* pLoaderAllocator = pBinder->GetLoaderAllocator();
         if (pLoaderAllocator && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
         {
             // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
-            THROW_BAD_FORMAT(BFA_IJW_IN_COLLECTIBLE_ALC, pILImage.GetValue());
+            THROW_BAD_FORMAT(BFA_IJW_IN_COLLECTIBLE_ALC, static_cast<PEImage*>(pILImage));
         }
     }
 

@@ -151,7 +151,18 @@ bool GCToOSInterface::Initialize()
         return false;
     }
 
+    int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+    if (configuredCpuCount == -1)
+    {
+        return false;
+    }
+
     g_totalCpuCount = cpuCount;
+
+    if (!g_processAffinitySet.Initialize(configuredCpuCount))
+    {
+        return false;
+    }
 
     if (!minipal_initialize_memory_barrier_process_wide())
     {
@@ -162,29 +173,42 @@ bool GCToOSInterface::Initialize()
 
 #if HAVE_SCHED_GETAFFINITY
 
-    cpu_set_t cpuSet;
-    int st = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuSet);
-
-    if (st == 0)
     {
-        for (size_t i = 0; i < CPU_SETSIZE; i++)
+        // Use a dynamically allocated cpu_set_t to support systems with more than CPU_SETSIZE (typically 1024) CPUs.
+        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        if (pCpuSet == nullptr)
         {
-            if (CPU_ISSET(i, &cpuSet))
+            return false;
+        }
+
+        size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+        CPU_ZERO_S(cpuSetSize, pCpuSet);
+
+        int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
+
+        if (st == 0)
+        {
+            for (size_t i = 0; i < (size_t)configuredCpuCount; i++)
             {
-                g_processAffinitySet.Add(i);
+                if (CPU_ISSET_S(i, cpuSetSize, pCpuSet))
+                {
+                    g_processAffinitySet.Add(i);
+                }
             }
         }
-    }
-    else
-    {
-        // We should not get any of the errors that the sched_getaffinity can return since none
-        // of them applies for the current thread, so this is an unexpected kind of failure.
-        assert(false);
+        else
+        {
+            // We should not get any of the errors that the sched_getaffinity can return since none
+            // of them applies for the current thread, so this is an unexpected kind of failure.
+            assert(false);
+        }
+
+        CPU_FREE(pCpuSet);
     }
 
 #else // HAVE_SCHED_GETAFFINITY
 
-    for (size_t i = 0; i < g_totalCpuCount; i++)
+    for (size_t i = 0; i < configuredCpuCount; i++)
     {
         g_processAffinitySet.Add(i);
     }
@@ -941,7 +965,7 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     if (!configAffinitySet->IsEmpty())
     {
         // Update the process affinity set using the configured set
-        for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
+        for (size_t i = 0; i < g_totalCpuCount; i++)
         {
             if (g_processAffinitySet.Contains(i) && !configAffinitySet->Contains(i))
             {
@@ -1296,6 +1320,11 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
     return g_totalCpuCount;
 }
 
+uint32_t GCToOSInterface::GetMaxProcessorCount()
+{
+    return (uint32_t)g_processAffinitySet.MaxCpuCount();
+}
+
 bool GCToOSInterface::CanEnableGCNumaAware()
 {
     return g_numaAvailable;
@@ -1318,7 +1347,9 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     bool success = false;
 
     uint16_t availableProcNumber = 0;
-    for (size_t procNumber = 0; procNumber < MAX_SUPPORTED_CPUS; procNumber++)
+
+    size_t maxCpuCount = g_processAffinitySet.MaxCpuCount();
+    for (size_t procNumber = 0; procNumber < maxCpuCount; procNumber++)
     {
         if (g_processAffinitySet.Contains(procNumber))
         {
