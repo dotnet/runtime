@@ -4262,6 +4262,20 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         Range relopRange = RangeCheck::GetRangeFromAssertions(this, relopVN, assertions);
 
         int relopResult;
+        if (!relopRange.IsSingleValueConstant(&relopResult))
+        {
+            // Retry by obtaining operand ranges individually. This accounts for cases where the 
+            // relopVN's operands differ from the physical op1 and op2 due to optimization passes.
+            ValueNum  actualOp1VN = optConservativeNormalVN(op1);
+            VNFuncApp relopFuncApp;
+            if (vnStore->GetVNFunc(relopVN, &relopFuncApp) && (relopFuncApp.m_args[0] != actualOp1VN))
+            {
+                Range op1Range = RangeCheck::GetRangeFromAssertions(this, actualOp1VN, assertions);
+                Range op2Range = RangeCheck::GetRangeFromAssertions(this, optConservativeNormalVN(op2), assertions);
+                relopRange     = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Range, op2Range);
+            }
+        }
+
         if (relopRange.IsSingleValueConstant(&relopResult))
         {
             assert((relopResult == 0) || (relopResult == 1));
