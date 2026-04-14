@@ -67,12 +67,12 @@ namespace System.IO
 
         private static unsafe int ReadSyncUsingAsyncHandle(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
-            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            ManualResetEvent resetEvent = new(false);
             NativeOverlapped* overlapped = null;
 
             try
             {
-                overlapped = AllocNativeOverlappedForSyncHandle(handle, fileOffset, resetEvent);
+                overlapped = AllocNativeOverlappedWithEventHandle(handle, fileOffset, resetEvent);
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
@@ -153,12 +153,12 @@ namespace System.IO
                 return;
             }
 
-            ManualResetEvent resetEvent = new ManualResetEvent(false);
+            ManualResetEvent resetEvent = new(false);
             NativeOverlapped* overlapped = null;
 
             try
             {
-                overlapped = AllocNativeOverlappedForSyncHandle(handle, fileOffset, resetEvent);
+                overlapped = AllocNativeOverlappedWithEventHandle(handle, fileOffset, resetEvent);
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
@@ -701,7 +701,7 @@ namespace System.IO
             }
         }
 
-        private static unsafe NativeOverlapped* AllocNativeOverlappedForSyncHandle(SafeFileHandle handle, long fileOffset, EventWaitHandle waitHandle)
+        private static unsafe NativeOverlapped* AllocNativeOverlappedWithEventHandle(SafeFileHandle handle, long fileOffset, EventWaitHandle waitHandle)
         {
             NativeOverlapped* result = (NativeOverlapped*)NativeMemory.AllocZeroed((nuint)sizeof(NativeOverlapped));
 
