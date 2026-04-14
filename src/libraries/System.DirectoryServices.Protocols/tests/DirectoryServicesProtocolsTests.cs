@@ -196,6 +196,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(true)]
         [InlineData(false)]
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)] // TODO(60972): Enable on Linux/OSX when enabling the certificate acceptance callback
         public void TestVerifyServerCertificateCallback_LDAPS(bool acceptCertificate)
         {
             using (X509Certificate2 cert = CreateServerCertificate())
@@ -234,6 +235,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(true)]
         [InlineData(false)]
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)] // TODO(60972): Enable on Linux/OSX when enabling the certificate acceptance callback
         public void TestVerifyServerCertificateCallback_StartTLS(bool acceptCertificate)
         {
             using (X509Certificate2 cert = CreateServerCertificate())
