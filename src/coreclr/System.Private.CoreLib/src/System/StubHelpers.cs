@@ -1786,56 +1786,45 @@ namespace System.StubHelpers
         {
             Debug.Assert(managedArray is not null);
             Debug.Assert(managedArray.GetType().GetElementType() == typeof(char));
-            ReadOnlySpan<char> chars = new(
-                ref Unsafe.As<byte, char>(ref MemoryMarshal.GetArrayDataReference(managedArray)),
-                length);
-            string str = new(chars);
-            // Use a temporary buffer for the full conversion (including null terminator that
-            // StringToAnsiString appends) to avoid writing past the native buffer for fixed
-            // arrays where the native buffer is exactly 'length' bytes.
-            int tempBufferLength = checked((length + 1) * Marshal.SystemMaxDBCSCharSize);
-            byte* heapBuffer = null;
-            Span<byte> tempSpan = tempBufferLength <= 256
-                ? stackalloc byte[tempBufferLength]
-                : new Span<byte>(heapBuffer = (byte*)NativeMemory.Alloc((nuint)tempBufferLength), tempBufferLength);
-            try
+            char* pChars = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(managedArray));
+#if TARGET_WINDOWS
+            uint flags = TBestFit.Enabled ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
+            Interop.BOOL defaultCharUsed = Interop.BOOL.FALSE;
+            Interop.Kernel32.WideCharToMultiByte(
+                Interop.Kernel32.CP_ACP,
+                flags,
+                pChars,
+                length,
+                unmanaged,
+                length,
+                null,
+                TThrowOnUnmappable.Enabled ? &defaultCharUsed : null);
+
+            if (defaultCharUsed != Interop.BOOL.FALSE)
             {
-                fixed (byte* tempBuffer = tempSpan)
-                {
-                    int convertedBytes = Marshal.StringToAnsiString(str, tempBuffer, tempBufferLength, TBestFit.Enabled, TThrowOnUnmappable.Enabled);
-                    // Copy at most 'length' bytes (one byte per element for ANSI char arrays).
-                    int bytesToCopy = Math.Min(convertedBytes, length);
-                    SpanHelpers.Memmove(ref *unmanaged, ref *tempBuffer, (nuint)bytesToCopy);
-                }
+                throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
             }
-            finally
-            {
-                if (heapBuffer != null)
-                    NativeMemory.Free(heapBuffer);
-            }
+#else
+            Encoding.UTF8.GetBytes(pChars, length, unmanaged, length);
+#endif
         }
 
         public static unsafe void ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
         {
             Debug.Assert(managedArray is not null);
             Debug.Assert(managedArray.GetType().GetElementType() == typeof(char));
-            Span<char> chars = new Span<char>(
-                ref Unsafe.As<byte, char>(ref MemoryMarshal.GetArrayDataReference(managedArray)),
-                length);
-            fixed (char* pChars = chars)
-            {
+            char* pChars = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(managedArray));
 #if TARGET_WINDOWS
-                Interop.Kernel32.MultiByteToWideChar(
-                    Interop.Kernel32.CP_ACP,
-                    Interop.Kernel32.MB_PRECOMPOSED,
-                    unmanaged,
-                    length,
-                    pChars,
-                    length);
+            Interop.Kernel32.MultiByteToWideChar(
+                Interop.Kernel32.CP_ACP,
+                Interop.Kernel32.MB_PRECOMPOSED,
+                unmanaged,
+                length,
+                pChars,
+                length);
 #else
-                Encoding.UTF8.GetChars(unmanaged, length, pChars, length);
+            Encoding.UTF8.GetChars(unmanaged, length, pChars, length);
 #endif
-            }
         }
 
         public static unsafe void FreeContents(byte* unmanaged, int length)
@@ -1850,8 +1839,7 @@ namespace System.StubHelpers
             }
 
             // Each char can map to at most SystemMaxDBCSCharSize bytes during conversion.
-            // StringToAnsiString also writes a null terminator, so allocate space for it.
-            int allocSize = checked((managedArray.Length + 1) * Marshal.SystemMaxDBCSCharSize);
+            int allocSize = checked(managedArray.Length * Marshal.SystemMaxDBCSCharSize);
             byte* pNative = (byte*)Marshal.AllocCoTaskMem(allocSize);
             NativeMemory.Clear(pNative, (nuint)allocSize);
             return pNative;
