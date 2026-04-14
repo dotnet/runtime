@@ -8,7 +8,41 @@
 #pragma once
 
 #include <signal.h>
+#include <stdint.h>
 
 // Generate an in-proc crash report. Called from PROCCreateCrashDumpIfEnabled.
 // All arguments come from the signal handler and are signal-safe to read.
 void InProcCrashReportGenerate(int signal, siginfo_t* siginfo, void* context);
+
+typedef int (*InProcCrashReportIsManagedThreadCallback)();
+
+void InProcCrashReportSetCurrentThreadManagedResolver(InProcCrashReportIsManagedThreadCallback callback);
+
+typedef void (*InProcCrashReportFrameCallback)(
+    uint64_t ip,
+    uint64_t stackPointer,
+    const char* methodName,
+    const char* className,
+    const char* moduleName,
+    uint32_t nativeOffset,
+    uint32_t token,
+    void* ctx);
+
+typedef void (*InProcCrashReportWalkStackCallback)(
+    InProcCrashReportFrameCallback frameCallback,
+    void* ctx);
+
+void InProcCrashReportSetStackWalker(InProcCrashReportWalkStackCallback callback);
+
+typedef void (*InProcCrashReportThreadCallback)(
+    uint64_t osThreadId,
+    int isCrashThread,
+    void* ctx);
+
+typedef void (*InProcCrashReportEnumerateThreadsCallback)(
+    uint64_t crashingTid,
+    InProcCrashReportThreadCallback threadCallback,
+    InProcCrashReportFrameCallback frameCallback,
+    void* ctx);
+
+void InProcCrashReportSetThreadEnumerator(InProcCrashReportEnumerateThreadsCallback callback);

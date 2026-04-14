@@ -310,6 +310,7 @@ set(VM_SOURCES_WKS
     comutilnative.cpp
     coreassemblyspec.cpp
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
+    crashreportstackwalker.cpp
     customattribute.cpp
     custommarshalerinfo.cpp
     autotrace.cpp

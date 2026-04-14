@@ -116,6 +116,7 @@
 //     boxing this describes this feature.
 
 #include "common.h"
+#include "crashreportstackwalker.h"
 
 #include "vars.hpp"
 #include "log.h"
@@ -696,6 +697,7 @@ void EEStartupHelper()
 
 #ifdef HOST_ANDROID
         PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
+        CrashReportRegisterStackWalker();
 #endif // HOST_ANDROID
 
 #ifdef STRESS_LOG
