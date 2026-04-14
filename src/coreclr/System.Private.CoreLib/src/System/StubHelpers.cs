@@ -1249,10 +1249,10 @@ namespace System.StubHelpers
         {
             Debug.Assert(managedArray is not null);
             Debug.Assert(managedArray.GetType().GetElementType() == typeof(T));
-            ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray));
+            Span<T> elements = new(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray)), managedArray.Length);
             for (int i = 0; i < length; i++)
             {
-                TSelf.ConvertToManaged(ref Unsafe.Add(ref firstElement, i), unmanaged);
+                TSelf.ConvertToManaged(ref elements[i], unmanaged);
                 unmanaged += TSelf.UnmanagedSize;
             }
         }
@@ -1261,10 +1261,10 @@ namespace System.StubHelpers
         {
             Debug.Assert(managedArray is not null);
             Debug.Assert(managedArray.GetType().GetElementType() == typeof(T));
-            ref T firstElement = ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray));
+            Span<T> elements = new(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray)), managedArray.Length);
             for (int i = 0; i < length; i++)
             {
-                TSelf.ConvertToUnmanaged(ref Unsafe.Add(ref firstElement, i), unmanaged);
+                TSelf.ConvertToUnmanaged(ref elements[i], unmanaged);
                 unmanaged += TSelf.UnmanagedSize;
             }
         }
@@ -1326,12 +1326,14 @@ namespace System.StubHelpers
         static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
         {
             Debug.Assert(managedArray is not null);
+            Debug.Assert(managedArray.GetType().GetElementType() == typeof(T));
             SpanHelpers.Memmove(ref *unmanaged, ref MemoryMarshal.GetArrayDataReference(managedArray), (nuint)length * (nuint)sizeof(T));
         }
 
         static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
         {
             Debug.Assert(managedArray is not null);
+            Debug.Assert(managedArray.GetType().GetElementType() == typeof(T));
             SpanHelpers.Memmove(ref MemoryMarshal.GetArrayDataReference(managedArray), ref *unmanaged, (nuint)length * (nuint)sizeof(T));
         }
 
