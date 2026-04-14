@@ -1790,27 +1790,37 @@ public:
     void CaptureModuleMetaDataToMemory();
 };
 
-// Module holders
-FORCEINLINE void VoidModuleDestruct(Module *pModule)
+struct ModuleHolderTraits final
 {
+    using Type = Module*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type pModule)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-    if (g_fEEStarted)
-        pModule->Destruct();
+        if (g_fEEStarted && pModule != NULL)
+            pModule->Destruct();
 #endif
-}
+    }
+};
 
-typedef Wrapper<Module*, DoNothing, VoidModuleDestruct, 0> ModuleHolder;
+using ModuleHolder = LifetimeHolder<ModuleHolderTraits>;
 
-
-
-FORCEINLINE void VoidReflectionModuleDestruct(ReflectionModule *pModule)
+struct ReflectionModuleHolderTraits final
 {
+    using Type = ReflectionModule*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type pModule)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-    pModule->Destruct();
+        if (pModule != NULL)
+            pModule->Destruct();
 #endif
-}
+    }
+};
 
-typedef Wrapper<ReflectionModule*, DoNothing, VoidReflectionModuleDestruct, 0> ReflectionModuleHolder;
+using ReflectionModuleHolder = LifetimeHolder<ReflectionModuleHolderTraits>;
 
 
 

@@ -65,6 +65,8 @@ namespace ILCompiler.DependencyAnalysis
         public bool IsComponentModule;
         public bool StripInliningInfo;
         public bool StripDebugInfo;
+        public bool StripILBodies;
+        public HashSet<MethodDesc> CompiledMethodDefs;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -524,6 +526,19 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public HashSet<MethodDesc> BuildCompiledMethodDefsSet()
+        {
+            Debug.Assert(MarkingComplete);
+
+            var set = new HashSet<MethodDesc>();
+            foreach (MethodWithGCInfo compiled in EnumerateCompiledMethods())
+            {
+                set.Add(compiled.Method.GetTypicalMethodDefinition());
+            }
+
+            return set;
+        }
+
         private struct MethodFixupKey : IEquatable<MethodFixupKey>
         {
             public readonly ReadyToRunFixupKind FixupKind;
@@ -644,11 +659,12 @@ namespace ILCompiler.DependencyAnalysis
         private struct ILBodyFixupSignatureFixupKey : IEquatable<ILBodyFixupSignatureFixupKey>
         {
             public readonly ReadyToRunFixupKind FixupKind;
-            public readonly EcmaMethod Method;
+            public readonly MethodDesc Method;
 
-            public ILBodyFixupSignatureFixupKey(ReadyToRunFixupKind fixupKind, EcmaMethod method)
+            public ILBodyFixupSignatureFixupKey(ReadyToRunFixupKind fixupKind, MethodDesc method)
             {
                 FixupKind = fixupKind;
+                Debug.Assert(method.IsTypicalMethodDefinition);
                 Method = method;
             }
             public bool Equals(ILBodyFixupSignatureFixupKey other) => FixupKind == other.FixupKind && Method.Equals(other.Method);
@@ -660,7 +676,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<ILBodyFixupSignatureFixupKey, ILBodyFixupSignature> _ilBodySignatures =
             new NodeCache<ILBodyFixupSignatureFixupKey, ILBodyFixupSignature>((key) => new ILBodyFixupSignature(key.FixupKind, key.Method));
 
-        public ILBodyFixupSignature ILBodyFixupSignature(ReadyToRunFixupKind fixupKind, EcmaMethod method)
+        public ILBodyFixupSignature ILBodyFixupSignature(ReadyToRunFixupKind fixupKind, MethodDesc method)
         {
             return _ilBodySignatures.GetOrAdd(new ILBodyFixupSignatureFixupKey(fixupKind, method));
         }
@@ -1179,7 +1195,8 @@ namespace ILCompiler.DependencyAnalysis
             isHidden = false;
             if (node == Header)
             {
-                return new Utf8String("RTR_HEADER"u8);
+                string symbolName = CompositeImageSettings?.ReadyToRunHeaderSymbolName;
+                return new Utf8String(string.IsNullOrEmpty(symbolName) ? "RTR_HEADER" : symbolName);
             }
             return default;
         }

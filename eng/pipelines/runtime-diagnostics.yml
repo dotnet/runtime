@@ -104,6 +104,7 @@ extends:
           jobParameters:
             name: cDAC
             useCdac: true
+            classFilter: SOS
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
@@ -156,6 +157,7 @@ extends:
           jobParameters:
             name: DAC
             useCdac: false
+            classFilter: SOS
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
