@@ -21,21 +21,18 @@ public class BuiltInCOMTests
         ISyncBlock? syncBlock = null,
         int minAlign = 16)
     {
-        TargetTestHelpers targetTestHelpers = new(arch);
-        MockMemorySpace.Builder builder = new(targetTestHelpers);
-        MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd, minAlign: minAlign);
-        MockBuiltInComBuilder builtInCom = new(builder, allocator, arch);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd, minAlign: minAlign);
+        MockBuiltInComBuilder builtInCom = new(targetBuilder.MemoryBuilder, allocator, arch);
         configure(builtInCom);
 
-        var target = new TestPlaceholderTarget(
-            arch,
-            builder.GetMemoryContext().ReadFromTarget,
-            CreateContractTypes(builtInCom),
-            CreateContractGlobals(builtInCom));
         ISyncBlock syncBlockContract = syncBlock ?? Mock.Of<ISyncBlock>();
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.BuiltInCOM == ((IContractFactory<IBuiltInCOM>)new BuiltInCOMFactory()).CreateContract(target, 1)
-              && c.SyncBlock == syncBlockContract));
+        var target = targetBuilder
+            .AddTypes(CreateContractTypes(builtInCom))
+            .AddGlobals(CreateContractGlobals(builtInCom))
+            .AddContract<IBuiltInCOM>(version: 1)
+            .AddMockContract<ISyncBlock>(syncBlockContract)
+            .Build();
         return target.Contracts.BuiltInCOM;
     }
 

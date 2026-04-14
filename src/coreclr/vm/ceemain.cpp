@@ -668,7 +668,7 @@ void EEStartupHelper()
 
 #ifdef FEATURE_TIERED_COMPILATION
         TieredCompilationManager::StaticInitialize();
-        CallCountingManager::StaticInitialize();
+        CallCountingStub::StaticInitialize();
 #endif // FEATURE_TIERED_COMPILATION
 
         OnStackReplacementManager::StaticInitialize();
