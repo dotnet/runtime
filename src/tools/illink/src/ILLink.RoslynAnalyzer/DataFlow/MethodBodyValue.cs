@@ -20,8 +20,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public MethodBodyValue(ISymbol owningSymbol, ControlFlowGraph cfg)
         {
-            if (owningSymbol is not (IMethodSymbol or IFieldSymbol or IPropertySymbol))
-                throw new InvalidOperationException($"Unexpected owning symbol type '{owningSymbol.GetType()}' for MethodBodyValue.");
+            Debug.Assert(owningSymbol is (IMethodSymbol or IFieldSymbol or IPropertySymbol));
             OwningSymbol = owningSymbol;
             ControlFlowGraph = cfg;
         }
