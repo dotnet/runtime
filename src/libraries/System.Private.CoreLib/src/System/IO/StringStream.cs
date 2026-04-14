@@ -22,10 +22,12 @@ public sealed class StringStream : Stream
     private readonly Encoding _encoding;
     private int _charPosition;
     private bool _disposed;
+    private bool _encoderFlushed;
 
     // Spillover buffer for multibyte encodings: when the caller's buffer is too small
     // to hold even one encoded scalar (e.g., ReadByte with UTF-16), we encode into
     // this buffer and serve bytes from it across subsequent Read/ReadByte calls.
+    // Also used to hold final encoder flush bytes when the caller's buffer had no room.
     private byte[]? _pendingBytes;
     private int _pendingOffset;
     private int _pendingCount;
@@ -98,7 +100,7 @@ public sealed class StringStream : Stream
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (buffer.Length == 0 || (_charPosition >= _text.Length && _pendingCount == 0))
+        if (buffer.Length == 0 || (_charPosition >= _text.Length && _pendingCount == 0 && _encoderFlushed))
         {
             return 0;
         }
@@ -134,8 +136,7 @@ public sealed class StringStream : Stream
             {
                 _pendingBytes ??= new byte[_encoding.GetMaxByteCount(2)];
                 int charsToEncode = Math.Min(2, remaining.Length);
-                bool flush = _charPosition + charsToEncode >= _text.Length;
-                _encoder.Convert(remaining.Slice(0, charsToEncode), _pendingBytes, flush, out int charsUsed, out int bytesUsed, out _);
+                _encoder.Convert(remaining.Slice(0, charsToEncode), _pendingBytes, flush: false, out int charsUsed, out int bytesUsed, out _);
                 _charPosition += charsUsed;
 
                 int toCopy = Math.Min(bytesUsed, buffer.Length);
@@ -153,16 +154,33 @@ public sealed class StringStream : Stream
                 _encoder.Convert(remaining, buffer, flush: false, out int charsUsed, out int bytesUsed, out _);
                 _charPosition += charsUsed;
                 totalBytesWritten += bytesUsed;
+            }
+        }
 
-                // If we consumed all remaining input, flush encoder state.
-                if (_charPosition >= _text.Length && bytesUsed > 0)
+        // If all input chars are consumed but the encoder hasn't been flushed,
+        // flush any remaining encoder state (e.g., stateful encoding reset sequences).
+        // Always flush into _pendingBytes (which is guaranteed large enough) to
+        // avoid ArgumentException if the caller's remaining buffer is too small.
+        if (_charPosition >= _text.Length && !_encoderFlushed && _pendingCount == 0)
+        {
+            _pendingBytes ??= new byte[_encoding.GetMaxByteCount(2)];
+            _encoder.Convert(ReadOnlySpan<char>.Empty, _pendingBytes, flush: true, out _, out int flushBytes, out _);
+            _encoderFlushed = true;
+
+            if (flushBytes > 0)
+            {
+                Span<byte> flushTarget = buffer.Slice(totalBytesWritten);
+                int toCopy = Math.Min(flushBytes, flushTarget.Length);
+                if (toCopy > 0)
                 {
-                    Span<byte> flushBuf = buffer.Slice(bytesUsed);
-                    if (flushBuf.Length > 0)
-                    {
-                        _encoder.Convert(ReadOnlySpan<char>.Empty, flushBuf, flush: true, out _, out int flushBytes, out _);
-                        totalBytesWritten += flushBytes;
-                    }
+                    _pendingBytes.AsSpan(0, toCopy).CopyTo(flushTarget);
+                    totalBytesWritten += toCopy;
+                }
+
+                if (toCopy < flushBytes)
+                {
+                    _pendingOffset = toCopy;
+                    _pendingCount = flushBytes - toCopy;
                 }
             }
         }

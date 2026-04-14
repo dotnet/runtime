@@ -214,6 +214,9 @@ public sealed class ReadOnlyMemoryStream : MemoryStream
     public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
     /// <inheritdoc/>
+    public override void WriteByte(byte value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+
+    /// <inheritdoc/>
     public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
     /// <inheritdoc/>

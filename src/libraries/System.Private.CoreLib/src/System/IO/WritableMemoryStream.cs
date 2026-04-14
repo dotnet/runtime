@@ -18,6 +18,7 @@ public sealed class WritableMemoryStream : MemoryStream
 {
     private Memory<byte> _buffer;
     private int _position;
+    private int _length;
     private bool _isOpen;
 
     /// <summary>
@@ -27,6 +28,7 @@ public sealed class WritableMemoryStream : MemoryStream
     public WritableMemoryStream(Memory<byte> buffer) : base()
     {
         _buffer = buffer;
+        _length = 0;
         _isOpen = true;
     }
 
@@ -57,7 +59,7 @@ public sealed class WritableMemoryStream : MemoryStream
         {
             EnsureNotClosed();
 
-            return _buffer.Length;
+            return _length;
         }
     }
 
@@ -87,7 +89,7 @@ public sealed class WritableMemoryStream : MemoryStream
         ReadOnlySpan<byte> span = _buffer.Span;
         int position = _position;
 
-        if ((uint)position < (uint)span.Length)
+        if ((uint)position < (uint)_length)
         {
             _position++;
             return span[position];
@@ -109,7 +111,7 @@ public sealed class WritableMemoryStream : MemoryStream
     {
         EnsureNotClosed();
 
-        int remaining = _buffer.Length - _position;
+        int remaining = _length - _position;
         if (remaining <= 0 || buffer.Length == 0)
         {
             return 0;
@@ -155,10 +157,10 @@ public sealed class WritableMemoryStream : MemoryStream
         ValidateCopyToArguments(destination, bufferSize);
         EnsureNotClosed();
 
-        if (_buffer.Length > _position)
+        if (_length > _position)
         {
-            destination.Write(((ReadOnlyMemory<byte>)_buffer).Span.Slice(_position));
-            _position = _buffer.Length;
+            destination.Write(((ReadOnlyMemory<byte>)_buffer).Span.Slice(_position, _length - _position));
+            _position = _length;
         }
     }
 
@@ -168,10 +170,10 @@ public sealed class WritableMemoryStream : MemoryStream
         ValidateCopyToArguments(destination, bufferSize);
         EnsureNotClosed();
 
-        if (_buffer.Length > _position)
+        if (_length > _position)
         {
-            ReadOnlyMemory<byte> content = ((ReadOnlyMemory<byte>)_buffer).Slice(_position);
-            _position = _buffer.Length;
+            ReadOnlyMemory<byte> content = ((ReadOnlyMemory<byte>)_buffer).Slice(_position, _length - _position);
+            _position = _length;
 
             return destination.WriteAsync(content, cancellationToken).AsTask();
         }
@@ -190,6 +192,11 @@ public sealed class WritableMemoryStream : MemoryStream
         }
 
         _buffer.Span[_position++] = value;
+
+        if (_position > _length)
+        {
+            _length = _position;
+        }
     }
 
     /// <inheritdoc/>
@@ -204,6 +211,11 @@ public sealed class WritableMemoryStream : MemoryStream
     {
         EnsureNotClosed();
 
+        if (buffer.Length == 0)
+        {
+            return;
+        }
+
         if (_position > _buffer.Length - buffer.Length)
         {
             throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
@@ -211,6 +223,11 @@ public sealed class WritableMemoryStream : MemoryStream
 
         buffer.CopyTo(_buffer.Span.Slice(_position));
         _position += buffer.Length;
+
+        if (_position > _length)
+        {
+            _length = _position;
+        }
     }
 
     /// <inheritdoc/>
@@ -298,13 +315,13 @@ public sealed class WritableMemoryStream : MemoryStream
     public override byte[] ToArray()
     {
         EnsureNotClosed();
-        if (_buffer.Length == 0)
+        if (_length == 0)
         {
             return Array.Empty<byte>();
         }
 
-        byte[] copy = GC.AllocateUninitializedArray<byte>(_buffer.Length);
-        ((ReadOnlyMemory<byte>)_buffer).Span.CopyTo(copy);
+        byte[] copy = GC.AllocateUninitializedArray<byte>(_length);
+        ((ReadOnlyMemory<byte>)_buffer).Span.Slice(0, _length).CopyTo(copy);
         return copy;
     }
 
@@ -314,9 +331,9 @@ public sealed class WritableMemoryStream : MemoryStream
         ArgumentNullException.ThrowIfNull(stream);
         EnsureNotClosed();
 
-        if (_buffer.Length > 0)
+        if (_length > 0)
         {
-            stream.Write(((ReadOnlyMemory<byte>)_buffer).Span);
+            stream.Write(((ReadOnlyMemory<byte>)_buffer).Span.Slice(0, _length));
         }
     }
 

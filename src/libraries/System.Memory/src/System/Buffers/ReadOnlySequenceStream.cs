@@ -72,6 +72,10 @@ namespace System.Buffers
                 {
                     _position = _sequence.End;
                 }
+                else if (value >= _absolutePosition)
+                {
+                    _position = _sequence.GetPosition(value - _absolutePosition, _position);
+                }
                 else
                 {
                     _position = _sequence.GetPosition(value, _sequence.Start);
@@ -111,6 +115,23 @@ namespace System.Buffers
             return n;
         }
 
+        /// <inheritdoc />
+        public override int ReadByte()
+        {
+            EnsureNotDisposed();
+
+            if (_absolutePosition >= _sequence.Length)
+            {
+                return -1;
+            }
+
+            ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
+            byte value = remaining.FirstSpan[0];
+            _position = _sequence.GetPosition(1, _position);
+            _absolutePosition++;
+            return value;
+        }
+
         /// <inheritdoc/>
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -135,6 +156,58 @@ namespace System.Buffers
 
             int bytesRead = Read(buffer.Span);
             return new ValueTask<int>(bytesRead);
+        }
+
+        /// <inheritdoc />
+        public override void CopyTo(Stream destination, int bufferSize)
+        {
+            ValidateCopyToArguments(destination, bufferSize);
+            EnsureNotDisposed();
+
+            if (_absolutePosition >= _sequence.Length)
+            {
+                return;
+            }
+
+            ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
+            foreach (ReadOnlyMemory<byte> segment in remaining)
+            {
+                destination.Write(segment.Span);
+            }
+
+            _position = _sequence.End;
+            _absolutePosition = _sequence.Length;
+        }
+
+        /// <inheritdoc />
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            ValidateCopyToArguments(destination, bufferSize);
+            EnsureNotDisposed();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            if (_absolutePosition >= _sequence.Length)
+            {
+                return Task.CompletedTask;
+            }
+
+            return CopyToAsyncCore(destination, cancellationToken);
+        }
+
+        private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
+        {
+            ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
+            foreach (ReadOnlyMemory<byte> segment in remaining)
+            {
+                await destination.WriteAsync(segment, cancellationToken).ConfigureAwait(false);
+            }
+
+            _position = _sequence.End;
+            _absolutePosition = _sequence.Length;
         }
 
         /// <inheritdoc />
@@ -178,6 +251,10 @@ namespace System.Buffers
             {
                 _position = _sequence.End;
             }
+            else if (absolutePosition >= _absolutePosition)
+            {
+                _position = _sequence.GetPosition(absolutePosition - _absolutePosition, _position);
+            }
             else
             {
                 _position = _sequence.GetPosition(absolutePosition, _sequence.Start);
@@ -201,6 +278,7 @@ namespace System.Buffers
         protected override void Dispose(bool disposing)
         {
             _isDisposed = true;
+            _sequence = default;
             base.Dispose(disposing);
         }
     }
