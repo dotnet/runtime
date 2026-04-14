@@ -36,8 +36,7 @@ namespace System.Net.Mail.Tests
             yield return new object[] { "testuser@[mail.com]" };
             yield return new object[] { "testuser@[ mail.com] " };
             yield return new object[] { "testuser@[mail.com ]" };
-            yield return new object[] { "testuser@[mail.com \r\n ]" };
-            yield return new object[] { "testuser@[ \r\n mail.com]" };
+            yield return new object[] { "testuser@[mail.com  ]" };
             yield return new object[] { "testuser@[  mail.com]" };
             yield return new object[] { "testuser <testuser@mail.com>" };
             yield return new object[] { "Test\u3044\u3069 User <testUser1@NCLMailTest.com>" };
@@ -90,8 +89,8 @@ namespace System.Net.Mail.Tests
             yield return new object[] { "\"disp \f lay\" <\"testsome\"@NCLMailTest.com>" };
             yield return new object[] { "\"EscapedUnicode \\\u3044\\\u3069 display\" <testUser1@NCLMailTest.com>" };
             yield return new object[] { "(Unicode \u3044 Comment) <\"testsome\"@NCLMailTest.com>" };
-            yield return new object[] { "\"display \r\n name\" <\"folding\"@domain.com>" };
-            yield return new object[] { "\"test\r\n test\"@mail.com" };
+            yield return new object[] { "\"display  name\" <\"folding\"@domain.com>" };
+            yield return new object[] { "\"test test\"@mail.com" };
             // Email Address Internationalization (EAI)
             yield return new object[] { "UnicodeUserName \"Test\u3044\u3069\"@NCLMailTest.com" };
             yield return new object[] { "<\"EscapedUnicode \\\u3044\\\u3069 User\"@NCLMailTest.com>" };
@@ -127,6 +126,10 @@ namespace System.Net.Mail.Tests
             yield return new object[] { "Bob \"display\" <user@host>" };
             yield return new object[] { "testuser@[mail.com \r ]" };
             yield return new object[] { "testuser@[mail.com \n ]" };
+            yield return new object[] { "testuser@[mail.com \r\n ]" };
+            yield return new object[] { "testuser@[ \r\n mail.com]" };
+            yield return new object[] { "\"display \r\n name\" <\"folding\"@domain.com>" };
+            yield return new object[] { "\"test\r\n test\"@mail.com" };
             yield return new object[] { "testuser@[mail\u3069.com]" }; // No unicode allowed in square brackets
             yield return new object[] { "invalid@unicode\uD800.com" }; // D800 is a high surrogate
             yield return new object[] { "invalid@unicode\uD800.com" }; // D800 is a high surrogate
