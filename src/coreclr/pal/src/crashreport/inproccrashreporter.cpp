@@ -94,6 +94,10 @@ JsonFrameCallback(
     const char* moduleName,
     uint32_t nativeOffset,
     uint32_t token,
+    uint32_t ilOffset,
+    uint32_t moduleTimestamp,
+    uint32_t moduleSize,
+    const char* moduleGuid,
     void* ctx);
 
 static
@@ -106,6 +110,10 @@ JsonThreadFrameCallback(
     const char* moduleName,
     uint32_t nativeOffset,
     uint32_t token,
+    uint32_t ilOffset,
+    uint32_t moduleTimestamp,
+    uint32_t moduleSize,
+    const char* moduleGuid,
     void* ctx);
 
 static
@@ -579,6 +587,10 @@ JsonFrameCallback(
     const char* moduleName,
     uint32_t nativeOffset,
     uint32_t token,
+    uint32_t ilOffset,
+    uint32_t moduleTimestamp,
+    uint32_t moduleSize,
+    const char* moduleGuid,
     void* ctx)
 {
     CrashJsonWriter* writer = reinterpret_cast<CrashJsonWriter*>(ctx);
@@ -590,11 +602,17 @@ JsonFrameCallback(
     char stackPointerBuffer[32];
     char nativeOffsetBuffer[32];
     char tokenBuffer[32];
+    char ilOffsetBuffer[32];
+    char moduleTimestampBuffer[32];
+    char moduleSizeBuffer[32];
 
     FormatHexValue(ipBuffer, sizeof(ipBuffer), ip);
     FormatHexValue(stackPointerBuffer, sizeof(stackPointerBuffer), stackPointer);
     FormatHexValue(nativeOffsetBuffer, sizeof(nativeOffsetBuffer), nativeOffset);
     FormatHexValue(tokenBuffer, sizeof(tokenBuffer), token);
+    FormatHexValue(ilOffsetBuffer, sizeof(ilOffsetBuffer), ilOffset);
+    FormatHexValue(moduleTimestampBuffer, sizeof(moduleTimestampBuffer), moduleTimestamp);
+    FormatHexValue(moduleSizeBuffer, sizeof(moduleSizeBuffer), moduleSize);
 
     CrashJsonOpenObject(writer, NULL);
     CrashJsonWriteString(writer, "stack_pointer", stackPointerBuffer);
@@ -617,9 +635,22 @@ JsonFrameCallback(
         CrashJsonWriteString(writer, "method_name", fullName);
         CrashJsonWriteString(writer, "is_managed", "true");
         CrashJsonWriteString(writer, "token", tokenBuffer);
+        CrashJsonWriteString(writer, "il_offset", ilOffsetBuffer);
         if (moduleName != NULL)
         {
             CrashJsonWriteString(writer, "filename", moduleName);
+        }
+        if (moduleTimestamp != 0)
+        {
+            CrashJsonWriteString(writer, "timestamp", moduleTimestampBuffer);
+        }
+        if (moduleSize != 0)
+        {
+            CrashJsonWriteString(writer, "sizeofimage", moduleSizeBuffer);
+        }
+        if (moduleGuid != NULL && moduleGuid[0] != '\0')
+        {
+            CrashJsonWriteString(writer, "guid", moduleGuid);
         }
     }
     else
@@ -647,10 +678,14 @@ JsonThreadFrameCallback(
     const char* moduleName,
     uint32_t nativeOffset,
     uint32_t token,
+    uint32_t ilOffset,
+    uint32_t moduleTimestamp,
+    uint32_t moduleSize,
+    const char* moduleGuid,
     void* ctx)
 {
     MultiThreadJsonContext* threadContext = reinterpret_cast<MultiThreadJsonContext*>(ctx);
-    JsonFrameCallback(ip, stackPointer, methodName, className, moduleName, nativeOffset, token, threadContext->writer);
+    JsonFrameCallback(ip, stackPointer, methodName, className, moduleName, nativeOffset, token, ilOffset, moduleTimestamp, moduleSize, moduleGuid, threadContext->writer);
 }
 
 void

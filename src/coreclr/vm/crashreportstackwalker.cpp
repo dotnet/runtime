@@ -5,7 +5,10 @@
 
 #include "common.h"
 #include "codeman.h"
+#include "dbginterface.h"
 #include "method.hpp"
+#include "peassembly.h"
+#include <minipal/guid.h>
 
 #ifdef HOST_ANDROID
 
@@ -82,6 +85,7 @@ FrameCallbackAdapter(
     }
 
     uint32_t nativeOffset = pCF->HasFaulted() ? 0 : pCF->GetRelOffset();
+    uint32_t ilOffset = 0;
     uint64_t ip = 0;
     uint64_t stackPointer = 0;
     PREGDISPLAY pRD = pCF->GetRegisterSet();
@@ -91,7 +95,45 @@ FrameCallbackAdapter(
         stackPointer = static_cast<uint64_t>(GetRegdisplaySP(pRD));
     }
 
-    ctx->callback(ip, stackPointer, methodName, classNameBuf, moduleName, nativeOffset, static_cast<uint32_t>(token), ctx->userCtx);
+    if (g_pDebugInterface != NULL && pMD != NULL)
+    {
+        DWORD resolvedILOffset = 0;
+        if (g_pDebugInterface->GetILOffsetFromNative(
+            pMD,
+            reinterpret_cast<LPCBYTE>(static_cast<TADDR>(ip)),
+            nativeOffset,
+            &resolvedILOffset))
+        {
+            ilOffset = resolvedILOffset;
+        }
+    }
+
+    uint32_t moduleTimestamp = 0;
+    uint32_t moduleSize = 0;
+    char moduleGuid[MINIPAL_GUID_BUFFER_LEN];
+    moduleGuid[0] = '\0';
+
+    if (pModule != NULL)
+    {
+        PEAssembly* pPEAssembly = pModule->GetPEAssembly();
+        if (pPEAssembly != NULL && pPEAssembly->HasLoadedPEImage())
+        {
+            moduleTimestamp = pPEAssembly->GetLoadedLayout()->GetTimeDateStamp();
+            moduleSize = static_cast<uint32_t>(pPEAssembly->GetLoadedLayout()->GetSize());
+        }
+
+        IMDInternalImport* pImport = pModule->GetMDImport();
+        if (pImport != NULL)
+        {
+            GUID mvid;
+            if (SUCCEEDED(pImport->GetScopeProps(NULL, &mvid)))
+            {
+                minipal_guid_as_string(mvid, moduleGuid, MINIPAL_GUID_BUFFER_LEN);
+            }
+        }
+    }
+
+    ctx->callback(ip, stackPointer, methodName, classNameBuf, moduleName, nativeOffset, static_cast<uint32_t>(token), ilOffset, moduleTimestamp, moduleSize, moduleGuid, ctx->userCtx);
     return SWA_CONTINUE;
 }
 

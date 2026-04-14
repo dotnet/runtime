@@ -26,6 +26,10 @@ typedef void (*InProcCrashReportFrameCallback)(
     const char* moduleName,
     uint32_t nativeOffset,
     uint32_t token,
+    uint32_t ilOffset,
+    uint32_t moduleTimestamp,
+    uint32_t moduleSize,
+    const char* moduleGuid,
     void* ctx);
 
 typedef void (*InProcCrashReportWalkStackCallback)(
