@@ -12,63 +12,59 @@ and the legacy DAC / runtime's GC stack scanning.
 
 ### ALLOC+REFS+USE_DAC (0x51) — Three-way GC ref comparison
 
-| Debuggee | Typical Result | Notes |
-|----------|---------------|-------|
-| BasicAlloc | Clean or 1 fail | |
-| Comprehensive | Clean or 1 fail | |
-| DeepStack | Clean or 1 fail | |
-| Generics | Clean or 1 fail | |
-| MultiThread | Clean or 1 fail | |
-| PInvoke | Clean | |
-| DynamicMethods | Clean or 2 mismatch | |
-| StructScenarios | Clean or 1 fail | |
-| ExceptionHandling | 8-9 fail | EH known issue |
+| Debuggee | Result | Notes |
+|----------|--------|-------|
+| BasicAlloc | 0 failures | |
+| Comprehensive | 0 failures | |
+| DeepStack | 0 failures | |
+| Generics | 0 failures | |
+| MultiThread | 0 failures | |
+| PInvoke | 0 failures | Windows only |
+| DynamicMethods | 0 failures | |
+| StructScenarios | 0 failures | |
+| ExceptionHandling | 0 failures | Fixed via ExecutionAborted |
 
 ## Issue 1: cDAC misses refs from explicit Frames (instruction-level stress only)
 
 **Affected**: All debuggees at instruction-level GC stress (`DOTNET_GCStress=0x4`)
 **Frequency**: ~3 per 25K verifications (0.01%)
 
-**Pattern**: The DAC reports refs from explicit Frame objects (e.g., ExternalMethodFrame)
-that the cDAC does not see. The cDAC's `FindGCRefMap` resolves most cases by reading
-the R2R import section `AuxiliaryData`, but at instruction-level stress the timing
-window is wider — the GCRefMap may not be resolved and the Frame's MethodDescPtr
-may also be null (preventing the `PromoteCallerStack` fallback).
+**Pattern**: The DAC reports 1 ref from an explicit Frame object that the cDAC's
+stack walk does not visit. All 3 failures hit the same Frame address across
+consecutive instruction-level breakpoints.
 
 ```
-[FRAME_DAC_ONLY] Source=0x... (<frame 0x...>): DAC=1
+[FRAME_DAC_ONLY] Source=0x378b7c210 (<frame 0x378b7c210>): DAC=1
 ```
 
-The DAC succeeds because its `GetGCRefMap()` calls `FindGCRefMap(m_pZapModule,
-m_pIndirection)` which independently reads the module's import section tables.
-At allocation-level stress (default), this issue is fully resolved by our
-`FindGCRefMap` implementation.
+This is NOT a GCRefMap issue — the Frame is simply not enumerated by the cDAC
+walker. The `FindGCRefMap` + `FindReadyToRunModule` fallback is working correctly
+for the ExternalMethodFrame/StubDispatchFrame cases (those are fully resolved at
+allocation-level stress).
 
 ## Issue 2: GcInfo register ref mismatch (instruction-level stress only)
 
-**Affected**: All debuggees at instruction-level GC stress
+**Affected**: QCall boundary methods during EventSource initialization
 **Frequency**: ~4 per 25K verifications (0.02%)
 
 **Pattern**: The cDAC reports 1 fewer register-based GC ref than the DAC for
-non-active frames inside QCall/PInvoke boundary methods. The missing ref is
-always in a callee-saved register (non-scratch), with the DAC reporting it as
-live but the cDAC's GcInfoDecoder not finding it in the live-state bitmap.
+methods at specific instruction offsets. The preceding instruction offset (IP-4)
+always passes with identical counts.
+
+Affected methods (consistent across runs):
+- `EventSource.AddProviderEnumKind` — `Obj=0x..., Flags=0x0` (normal object ref)
+- `RuntimeAssembly.GetTypeCore` (QCall) — `Obj=0x0, Flags=0x1` (null interior pointer)
+- `ModuleHandle.GetDynamicMethod` (QCall) — `Obj=0x..., Flags=0x1` (interior pointer)
 
 ```
-[FRAME_DIFF] Source=0x... (RuntimeAssembly.GetTypeCore(...)): cDAC=4 DAC=5
+[FRAME_DIFF] Source=0x... (GetTypeCore(QCall...)): cDAC=4 DAC=5
   [DAC_ONLY] Addr=0x0 Obj=0x0 Flags=0x1  ← register-based interior pointer
 ```
 
-This appears only at instruction-level stress because:
-1. The GC breakpoint fires at IPs inside QCall transition stubs
-2. At these offsets, the GcInfo may have partially-interruptible safe points
-   where liveness differs between the cDAC's decoded bitmap and the native
-   decoder's
-3. The cDAC and native decoders may compute a different safe-point index
-   for the same code offset, leading to different liveness results
-
-Root cause is likely a subtle difference in how the cDAC's `FindSafePoint`
-or live-state bitmap decoding handles these edge-case offsets.
+Root cause is a subtle difference in how the cDAC's `GcInfoDecoder.EnumerateLiveSlots`
+handles partially-interruptible safe point liveness at these specific code offsets.
+The native decoder finds the register slot live at this IP but the cDAC does not.
+Further investigation requires side-by-side GcInfo tracing with slot-level output.
 
 ## EH ThrowHelper (FIXED)
 
@@ -84,7 +80,9 @@ At allocation-level stress (`DOTNET_CdacStress=0x51`, the default):
 ## Instruction-level stress results
 
 At instruction-level stress (`DOTNET_GCStress=0x4 + DOTNET_CdacStress=0x54`):
-- Comprehensive: 25,522 pass / 7 fail (99.97%)
+- Comprehensive: 25,461 pass / 7 fail (99.97%)
+  - 4 FRAME_DIFF (GcInfo register mismatch at QCall boundaries)
+  - 3 FRAME_DAC_ONLY (missing explicit Frame in cDAC walk)
 
 ## Future work
 
