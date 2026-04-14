@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     yield return new CombinedDependencyListEntry(
                         context.MetadataTypeSymbol(targetType),
-                        context.NecessaryTypeSymbol(trimmingTargetType),
+                        GetTrimTargetTypeNode(context, trimmingTargetType),
                         "Type in external type map is cast target");
 
                     // If the trimming target type has a canonical form, it could be created at runtime by the type loader.
@@ -89,13 +89,25 @@ namespace ILCompiler.DependencyAnalysis
                 var (targetType, trimmingTargetType) = entry.Value;
 
                 if (trimmingTargetType is null
-                    || factory.NecessaryTypeSymbol(trimmingTargetType).Marked)
+                    || GetTrimTargetTypeNode(factory, trimmingTargetType).Marked)
                 {
                     IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
                     Debug.Assert(targetNode.Marked);
                     yield return (entry.Key, targetNode);
                 }
             }
+        }
+
+        // Array types (and other parameterized types) are tracked in the dependency graph via their
+        // constructed EEType node (which is what code marks when allocating or using an array).
+        // NecessaryTypeSymbol for arrays is never marked by normal code patterns, so we use
+        // MaximallyConstructableType for ParameterizedType (arrays/pointers/byrefs), which returns
+        // the ConstructedTypeSymbol for arrays and falls back to NecessaryTypeSymbol for pointer/byref.
+        private static IEETypeNode GetTrimTargetTypeNode(NodeFactory context, TypeDesc trimmingTargetType)
+        {
+            if (trimmingTargetType is ParameterizedType)
+                return context.MaximallyConstructableType(trimmingTargetType);
+            return context.NecessaryTypeSymbol(trimmingTargetType);
         }
 
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
