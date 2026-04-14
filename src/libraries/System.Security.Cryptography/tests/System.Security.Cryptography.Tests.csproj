@@ -20,7 +20,7 @@
     <XUnitUseRandomizedTestOrderer>true</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
+  <Import Project="$(CommonPath)System\Security\Cryptography\AsnWriter\System.Security.Cryptography.AsnWriter.Shared.projitems" />
   <ItemGroup>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</Link>

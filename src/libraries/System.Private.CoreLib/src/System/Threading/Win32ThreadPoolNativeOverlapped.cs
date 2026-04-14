@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -28,6 +29,7 @@ namespace System.Threading
             get { return s_dataArray![_dataIndex]; }
         }
 
+        [RequiresUnsafe]
         internal static unsafe Win32ThreadPoolNativeOverlapped* Allocate(IOCompletionCallback callback, object? state, object? pinData, PreAllocatedOverlapped? preAllocated, bool flowExecutionControl)
         {
             Win32ThreadPoolNativeOverlapped* overlapped = AllocateNew();
@@ -43,6 +45,7 @@ namespace System.Threading
             return overlapped;
         }
 
+        [RequiresUnsafe]
         private static unsafe Win32ThreadPoolNativeOverlapped* AllocateNew()
         {
             IntPtr freePtr;
@@ -154,6 +157,7 @@ namespace System.Threading
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe void Free(Win32ThreadPoolNativeOverlapped* overlapped)
         {
             // Reset all data.
@@ -181,6 +185,7 @@ namespace System.Threading
             return (Win32ThreadPoolNativeOverlapped*)overlapped;
         }
 
+        [RequiresUnsafe]
         internal static unsafe void CompleteWithCallback(uint errorCode, uint bytesWritten, Win32ThreadPoolNativeOverlapped* overlapped)
         {
             OverlappedData data = overlapped->Data;

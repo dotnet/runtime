@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Strategies;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -12,18 +13,100 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal const FileOptions NoBuffering = (FileOptions)0x20000000;
+        private const FileOptions UninitializedOptions = (FileOptions)(-1);
         private long _length = -1; // negative means that hasn't been fetched.
         private bool _lengthCanBeCached; // file has been opened for reading and not shared for writing.
-        private volatile FileOptions _fileOptions = (FileOptions)(-1);
+        private FileOptions _fileOptions = UninitializedOptions;
 
         public SafeFileHandle() : base(true)
         {
         }
 
+        public static partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        {
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+            SafeFileHandle? tempReadHandle;
+            SafeFileHandle? tempWriteHandle;
+
+            // When neither end is async, use the simple CreatePipe API
+            if (!asyncRead && !asyncWrite)
+            {
+                bool ret = Interop.Kernel32.CreatePipe(out tempReadHandle, out tempWriteHandle, ref securityAttributes, 0);
+                if (!ret)
+                {
+                    throw new Win32Exception();
+                }
+
+                Debug.Assert(!tempReadHandle.IsInvalid);
+                Debug.Assert(!tempWriteHandle.IsInvalid);
+
+                tempReadHandle._fileOptions = FileOptions.None;
+                tempWriteHandle._fileOptions = FileOptions.None;
+            }
+            else
+            {
+                // When one or both ends are async, use named pipes to support async I/O.
+
+                // From https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-createnamedpipea#remarks:
+                // "Windows 10, version 1709:  Pipes are only supported within an app-container; ie,
+                // from one UWP process to another UWP process that's part of the same app.
+                // Also, named pipes must use the syntax \\.\pipe\LOCAL\ for the pipe name."
+                // That is why we use "LOCAL" namespace for the pipe name,
+                // so that it works in AppContainer and outside of it.
+                string pipeName = $@"\\.\pipe\LOCAL\dotnet_{Guid.NewGuid():N}";
+
+                // Security: we don't need to specify a security descriptor, because
+                // we allow only for 1 instance of the pipe and immediately open the write end,
+                // so there is no time window for another process to open the pipe with different permissions.
+                // Even if that happens, we are going to fail to open the write end and throw an exception, so there is no security risk.
+
+                // Determine the open mode for the read end
+                int openMode = (int)Interop.Kernel32.PipeOptions.PIPE_ACCESS_INBOUND |
+                               Interop.Kernel32.FileOperations.FILE_FLAG_FIRST_PIPE_INSTANCE; // Only one can be created with this name
+
+                if (asyncRead)
+                {
+                    openMode |= Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED; // Asynchronous I/O
+                }
+
+                const int pipeMode = (int)(Interop.Kernel32.PipeOptions.PIPE_TYPE_BYTE | Interop.Kernel32.PipeOptions.PIPE_READMODE_BYTE); // Data is read from the pipe as a stream of bytes
+
+                tempReadHandle = Interop.Kernel32.CreateNamedPipeFileHandle(
+                    pipeName,
+                    openMode,
+                    pipeMode,
+                    maxInstances: 1, // we don't want anybody else to open this pipe
+                    outBufferSize: 0, // unused (we use it only for reading)
+                    inBufferSize: 4 * 4096, // CreatePipe uses a 4096 buffer by default, we use bigger buffer for better performance
+                    defaultTimeout: (int)TimeSpan.FromSeconds(120).TotalMilliseconds, // same as the default for CreatePipe
+                    ref securityAttributes);
+
+                try
+                {
+                    if (tempReadHandle.IsInvalid)
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    tempReadHandle._fileOptions = asyncRead ? FileOptions.Asynchronous : FileOptions.None;
+                    FileOptions writeOptions = asyncWrite ? FileOptions.Asynchronous : FileOptions.None;
+                    tempWriteHandle = Open(pipeName, FileMode.Open, FileAccess.Write, FileShare.Read, writeOptions, preallocationSize: 0);
+                }
+                catch
+                {
+                    tempReadHandle.Dispose();
+
+                    throw;
+                }
+            }
+
+            readHandle = tempReadHandle;
+            writeHandle = tempWriteHandle;
+        }
+
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
 
-        internal bool IsNoBuffering => (GetFileOptions() & NoBuffering) != 0;
+        internal bool IsNoBuffering => (GetFileOptions() & FileStreamHelpers.NoBuffering) != 0;
 
         internal bool CanSeek => !IsClosed && Type == FileHandleType.RegularFile;
 
@@ -62,15 +145,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static unsafe SafeFileHandle CreateFile(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
-            if ((share & FileShare.Inheritable) != 0)
-            {
-                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-                {
-                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    bInheritHandle = Interop.BOOL.TRUE
-                };
-            }
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create((share & FileShare.Inheritable) != 0);
 
             int fAccess =
                 ((access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
@@ -134,9 +209,10 @@ namespace Microsoft.Win32.SafeHandles
             {
                 int errorCode = Marshal.GetLastPInvokeError();
 
-                // Only throw for errors that indicate there is not enough space.
-                // SetFileInformationByHandle fails with ERROR_DISK_FULL in certain cases when the size is disallowed by filesystem,
-                // such as >4GB on FAT32 volume. We cannot distinguish them currently.
+                // Only throw for errors that indicate there is not enough space or the file is too large.
+                // SetFileInformationByHandle fails with ERROR_DISK_FULL when the size is disallowed by filesystem,
+                // such as >4GB on a FAT32 volume, and with ERROR_INVALID_PARAMETER on NTFS when the requested
+                // allocation size exceeds the maximum file size supported by the filesystem or volume configuration.
                 if (errorCode is Interop.Errors.ERROR_DISK_FULL or
                     Interop.Errors.ERROR_FILE_TOO_LARGE or
                     Interop.Errors.ERROR_INVALID_PARAMETER)
@@ -204,7 +280,7 @@ namespace Microsoft.Win32.SafeHandles
         internal unsafe FileOptions GetFileOptions()
         {
             FileOptions fileOptions = _fileOptions;
-            if (fileOptions != (FileOptions)(-1))
+            if (fileOptions != UninitializedOptions)
             {
                 return fileOptions;
             }
@@ -247,7 +323,7 @@ namespace Microsoft.Win32.SafeHandles
             }
             if ((options & Interop.NtDll.CreateOptions.FILE_NO_INTERMEDIATE_BUFFERING) != 0)
             {
-                result |= NoBuffering;
+                result |= FileStreamHelpers.NoBuffering;
             }
 
             return _fileOptions = result;
@@ -255,11 +331,34 @@ namespace Microsoft.Win32.SafeHandles
 
         internal FileHandleType GetFileTypeCore()
         {
+            Debug.Assert(Path is null || _fileOptions != UninitializedOptions, "When Path is set, _fileOptions are also provided.");
+
             int kernelFileType = Interop.Kernel32.GetFileType(this);
+            // GetFileType returns FILE_TYPE_UNKNOWN both when the type is unknown and when an error occurs.
+            // Check GetLastError to distinguish the two cases.
+            if (kernelFileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN)
+            {
+                int error = Marshal.GetLastPInvokeError();
+                if (error != Interop.Errors.ERROR_SUCCESS)
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(error, Path);
+                }
+                return FileHandleType.Unknown;
+            }
+
             return kernelFileType switch
             {
                 Interop.Kernel32.FileTypes.FILE_TYPE_CHAR => FileHandleType.CharacterDevice,
                 Interop.Kernel32.FileTypes.FILE_TYPE_PIPE => GetPipeOrSocketType(),
+                // GetFileType can return FILE_TYPE_DISK for regular files, directories and symbolic links.
+                // When Path is not null, it means that the handle was created by SafeFileHandle.Open.
+                // This method resolves symbolic links, so it can't be a symbolic link.
+                // However, it accepts FILE_FLAG_BACKUP_SEMANTICS as an option,
+                // which makes it possible to open a directory.
+                // So when Path is not null and options don't include FILE_FLAG_BACKUP_SEMANTICS,
+                // it's a regular file. In such case, we don't need to call GetDiskBasedType() which would be
+                // an extra sys-call.
+                Interop.Kernel32.FileTypes.FILE_TYPE_DISK when Path is not null && ((_fileOptions & FileStreamHelpers.BackupOrRestore) == 0) => FileHandleType.RegularFile,
                 Interop.Kernel32.FileTypes.FILE_TYPE_DISK => GetDiskBasedType(),
                 _ => FileHandleType.Unknown
             };

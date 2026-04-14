@@ -41,7 +41,10 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <NoWarn>$(NoWarn),0419,0649</NoWarn>
+    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
+    <NoWarn>$(NoWarn);CS9368</NoWarn>
     <Nullable>enable</Nullable>
+    <Features>$(Features);runtime-async=on</Features>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
     <DefineConstants>CORECLR;NETCOREAPP;SYSTEM_PRIVATE_CORELIB</DefineConstants>
@@ -274,6 +277,7 @@
     <Compile Include="$(BclSourcesRoot)\System\OleAutBinder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\IDispatchHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\ComDataHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumVariantViewOfEnumerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumeratorToEnumVariantMarshaler.cs" />

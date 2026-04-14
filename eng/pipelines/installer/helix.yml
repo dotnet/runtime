@@ -21,9 +21,10 @@ steps:
           /p:Configuration=$(_BuildConfig)
           /p:TargetArchitecture=${{ parameters.archType }}
           /p:TargetOS=${{ parameters.osGroup }}
-      Creator: ${{ parameters.creator }}
       ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: ${{ replace(lower(join('+', parameters.helixQueues)), '.open', '') }}
+        Creator: ''
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        Creator: ${{ parameters.creator }}
         HelixTargetQueues: ${{ join('+', parameters.helixQueues) }}

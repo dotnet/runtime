@@ -142,6 +142,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public long? CurrentEstimatedSize { get { throw null; } init { } }
         public long TotalHits { get { throw null; } init { } }
         public long TotalMisses { get { throw null; } init { } }
+        public long TotalEvictions { get { throw null; } init { } }
     }
     public partial class PostEvictionCallbackRegistration
     {

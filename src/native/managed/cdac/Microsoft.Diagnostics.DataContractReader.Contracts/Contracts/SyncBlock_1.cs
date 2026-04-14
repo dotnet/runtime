@@ -17,11 +17,11 @@ internal readonly struct SyncBlock_1 : ISyncBlock
     private readonly TargetPointer _syncTableEntries;
     private readonly ulong _syncBlockLinkOffset;
 
-    internal SyncBlock_1(Target target, TargetPointer syncTableEntries, ulong syncBlockLinkOffset)
+    internal SyncBlock_1(Target target)
     {
         _target = target;
-        _syncTableEntries = syncTableEntries;
-        _syncBlockLinkOffset = syncBlockLinkOffset;
+        _syncTableEntries = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
+        _syncBlockLinkOffset = (ulong)target.GetTypeInfo(DataType.SyncBlock).Fields[nameof(Data.SyncBlock.LinkNext)].Offset;
     }
 
     public TargetPointer GetSyncBlock(uint index)
