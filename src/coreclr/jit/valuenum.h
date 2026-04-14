@@ -169,7 +169,7 @@ enum VNFunc
 #define GTNODE(en, st, cm, ivn, ok) VNF_##en,
 #include "gtlist.h"
     VNF_Boundary = GT_COUNT,
-#define ValueNumFuncDef(nm, arity, commute, knownNonNull) VNF_##nm,
+#define ValueNumFuncDef(nm, arity, knownNonNull) VNF_##nm,
 #include "valuenumfuncs.h"
     VNF_COUNT
 };
@@ -295,23 +295,20 @@ private:
     enum VNFOpAttrib
     {
         VNFOA_IllegalGenTreeOp = 0x1,  // corresponds to a genTreeOps value that is not a legal VN func.
-        VNFOA_Commutative      = 0x2,  // 1 iff the function is commutative.
-        VNFOA_Arity1           = 0x4,  // Bits 2,3,4 encode the arity.
-        VNFOA_Arity2           = 0x8,  // Bits 2,3,4 encode the arity.
-        VNFOA_Arity4           = 0x10, // Bits 2,3,4 encode the arity.
-        VNFOA_KnownNonNull     = 0x20, // 1 iff the result is known to be non-null.
+        VNFOA_Arity1           = 0x2,  // Bits 1,2,3 encode the arity.
+        VNFOA_Arity2           = 0x4,  // Bits 1,2,3 encode the arity.
+        VNFOA_Arity4           = 0x8,  // Bits 1,2,3 encode the arity.
+        VNFOA_KnownNonNull     = 0x10, // 1 iff the result is known to be non-null.
     };
 
     static const unsigned VNFOA_IllegalGenTreeOpShift = 0;
-    static const unsigned VNFOA_CommutativeShift      = 1;
-    static const unsigned VNFOA_ArityShift            = 2;
+    static const unsigned VNFOA_ArityShift            = 1;
     static const unsigned VNFOA_ArityBits             = 3;
     static const unsigned VNFOA_MaxArity              = (1 << VNFOA_ArityBits) - 1; // Max arity we can represent.
     static const unsigned VNFOA_ArityMask             = (VNFOA_Arity4 | VNFOA_Arity2 | VNFOA_Arity1);
-    static const unsigned VNFOA_KnownNonNullShift     = 5;
+    static const unsigned VNFOA_KnownNonNullShift     = 4;
 
     static_assert(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
-    static_assert(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
     static_assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
     static_assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
     static_assert(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
@@ -328,10 +325,9 @@ private:
     // Helpers and an array of length GT_COUNT, mapping genTreeOp values to their VNFOpAttrib.
     static constexpr uint8_t GetOpAttribsForArity(genTreeOps oper, GenTreeOperKind kind);
     static constexpr uint8_t GetOpAttribsForGenTree(genTreeOps      oper,
-                                                    bool            commute,
                                                     bool            illegalAsVNFunc,
                                                     GenTreeOperKind kind);
-    static constexpr uint8_t GetOpAttribsForFunc(int arity, bool commute, bool knownNonNull);
+    static constexpr uint8_t GetOpAttribsForFunc(int arity, bool knownNonNull);
     static const uint8_t     s_vnfOpAttribs[];
 
     // Returns "true" iff gtOper is a legal value number function.
@@ -2312,12 +2308,6 @@ FORCEINLINE simdmask_t ValueNumStore::ConstantValueInternal<simdmask_t>(ValueNum
 inline bool ValueNumStore::GenTreeOpIsLegalVNFunc(genTreeOps gtOper)
 {
     return (s_vnfOpAttribs[gtOper] & VNFOA_IllegalGenTreeOp) == 0;
-}
-
-// static
-inline bool ValueNumStore::VNFuncIsCommutative(VNFunc vnf)
-{
-    return (s_vnfOpAttribs[vnf] & VNFOA_Commutative) != 0;
 }
 
 inline bool ValueNumStore::VNFuncIsComparison(VNFunc vnf)
