@@ -577,6 +577,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Contains(diagnostics, d => d.Id == "IL2026" && d.IsSuppressed);
             Assert.Contains(diagnostics, d => d.Id == "IL3050" && d.IsSuppressed);
             Assert.DoesNotContain(diagnostics, d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed);
+
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
         }
 
         /// <summary>
@@ -612,6 +614,92 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Contains(diagnostics, d => d.Id == "IL2026" && d.IsSuppressed);
             Assert.Contains(diagnostics, d => d.Id == "IL3050" && d.IsSuppressed);
             Assert.DoesNotContain(diagnostics, d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed);
+
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+        }
+
+        /// <summary>
+        /// Verifies that the set of IL2026/IL3050 diagnostics suppressed by the suppressor
+        /// matches exactly the set of calls intercepted by the source generator.
+        /// Catches both under-suppression (https://github.com/dotnet/runtime/issues/94544)
+        /// and over-suppression (https://github.com/dotnet/runtime/issues/96643).
+        /// </summary>
+        private static async Task VerifySuppressedCallsMatchInterceptedCalls(ConfigBindingGenRunResult result)
+        {
+            Assert.NotNull(result.GenerationSpec);
+
+            // Collect all intercepted line numbers from the generator spec.
+            HashSet<int> interceptedLines = GetInterceptedLines(result.GenerationSpec);
+            Assert.NotEmpty(interceptedLines);
+
+            // Run the ILLink analyzer + suppressor on the input compilation (pre-interceptor).
+            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.InputCompilation);
+
+            // Every suppressed IL2026/IL3050 diagnostic should be on an intercepted line.
+            foreach (Diagnostic d in diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && d.IsSuppressed))
+            {
+                int line = d.Location.GetLineSpan().StartLinePosition.Line + 1;
+                Assert.True(interceptedLines.Contains(line),
+                    $"Suppressed {d.Id} at line {line} but no interceptor was generated for that call site.");
+            }
+
+            // Every intercepted line should have its IL2026/IL3050 diagnostics suppressed.
+            var unsuppressed = diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed).ToList();
+            foreach (Diagnostic d in unsuppressed)
+            {
+                int line = d.Location.GetLineSpan().StartLinePosition.Line + 1;
+                Assert.False(interceptedLines.Contains(line),
+                    $"Unsuppressed {d.Id} at line {line} but an interceptor was generated for that call site.");
+            }
+        }
+
+        private static HashSet<int> GetInterceptedLines(SourceGenerationSpec spec)
+        {
+            var lines = new HashSet<int>();
+            InterceptorInfo info = spec.InterceptorInfo;
+
+            AddLocations(info.ConfigBinder);
+            AddTypedLocations(info.ConfigBinder_Bind_instance);
+            AddTypedLocations(info.ConfigBinder_Bind_instance_BinderOptions);
+            AddTypedLocations(info.ConfigBinder_Bind_key_instance);
+
+            return lines;
+
+            void AddLocations(IEnumerable<InvocationLocationInfo>? locationInfos)
+            {
+                if (locationInfos is null)
+                    return;
+
+                foreach (InvocationLocationInfo loc in locationInfos)
+                {
+                    lines.Add(GetLineNumber(loc));
+                }
+            }
+
+            void AddTypedLocations(IEnumerable<TypedInterceptorInvocationInfo>? typedInfos)
+            {
+                if (typedInfos is null)
+                    return;
+
+                foreach (TypedInterceptorInvocationInfo typed in typedInfos)
+                {
+                    AddLocations(typed.Locations);
+                }
+            }
+        }
+
+        private static int GetLineNumber(InvocationLocationInfo loc)
+        {
+            if (loc.LineNumber != 0)
+            {
+                return loc.LineNumber;
+            }
+
+            // v1 interceptor: parse line from display location, e.g. "path(line,col)"
+            string display = loc.InterceptableLocationGetDisplayLocation();
+            int parenIndex = display.LastIndexOf('(');
+            int commaIndex = display.IndexOf(',', parenIndex);
+            return int.Parse(display.Substring(parenIndex + 1, commaIndex - parenIndex - 1));
         }
 
         private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsWithSuppressor(Compilation compilation)

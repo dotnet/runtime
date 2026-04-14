@@ -99,6 +99,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(source);
             Assert.Empty(result.Diagnostics);
             Assert.True(source.Value.SourceText.Lines.Count > 10);
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
         }
 
         private static bool s_initializedInterceptorVersion;
