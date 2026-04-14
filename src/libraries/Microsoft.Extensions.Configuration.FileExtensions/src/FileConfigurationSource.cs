@@ -68,26 +68,17 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Creates a physical file provider for the nearest existing directory if no file provider has been set, for absolute Path.
+        /// Creates a physical file provider for the file's directory if no file provider has been set, for absolute Path.
         /// </summary>
         public void ResolveFileProvider()
         {
             if (FileProvider == null &&
                 !string.IsNullOrEmpty(Path) &&
-                System.IO.Path.IsPathRooted(Path))
+                System.IO.Path.IsPathRooted(Path) &&
+                System.IO.Path.GetDirectoryName(Path) is string directory)
             {
-                string? directory = System.IO.Path.GetDirectoryName(Path);
-                string? pathToFile = System.IO.Path.GetFileName(Path);
-                while (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-                {
-                    pathToFile = System.IO.Path.Combine(System.IO.Path.GetFileName(directory), pathToFile);
-                    directory = System.IO.Path.GetDirectoryName(directory);
-                }
-                if (Directory.Exists(directory))
-                {
-                    FileProvider = new PhysicalFileProvider(directory);
-                    Path = pathToFile;
-                }
+                FileProvider = new PhysicalFileProvider(directory);
+                Path = System.IO.Path.GetFileName(Path);
             }
         }
     }

@@ -4,6 +4,7 @@
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -540,6 +541,209 @@ namespace System
             }
         }
 
+        private static unsafe void FormatFloatingPointAsHex<TNumber, TChar>(ref ValueListBuilder<TChar> vlb, TNumber value, char fmt, int precision, NumberFormatInfo info)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert((fmt | 0x20) == 'x');
+            Debug.Assert(TNumber.IsFinite(value));
+
+            bool isNegative = TNumber.IsNegative(value);
+
+            if (isNegative)
+            {
+                vlb.Append(info.NegativeSignTChar<TChar>());
+            }
+
+            vlb.Append(TChar.CastFrom('0'));
+            vlb.Append(TChar.CastFrom(fmt));
+
+            ulong fraction = ExtractFractionAndBiasedExponent(value, out int exponent);
+
+            if (fraction == 0)
+            {
+                // +/- 0
+                vlb.Append(TChar.CastFrom('0'));
+
+                if (precision > 0)
+                {
+                    vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+                    vlb.AppendSpan(precision).Fill(TChar.CastFrom('0'));
+                }
+
+                // Exponent sign is always emitted ('+' or '-'), consistent with the 'E' format.
+                vlb.Append(TChar.CastFrom(fmt == 'X' ? 'P' : 'p'));
+                vlb.Append(TChar.CastFrom('+'));
+                vlb.Append(TChar.CastFrom('0'));
+
+                return;
+            }
+
+            // ExtractFractionAndBiasedExponent returns (note: despite the name, the exponent is unbiased):
+            //   For normal:   fraction = (1 << DenormalMantissaBits) | mantissa, exponent = biasedExp - ExponentBias - DenormalMantissaBits
+            //   For denormal: fraction = mantissa, exponent = MinBinaryExponent - DenormalMantissaBits
+            //
+            // We want the form: 1.xxxxx * 2^e
+            // So we need to normalize so that the leading 1 bit is at bit DenormalMantissaBits.
+            // For normal numbers, this is already the case.
+            // For denormal numbers, we need to shift left until the leading 1 is there.
+
+            int mantissaBits = TNumber.DenormalMantissaBits;
+
+            if (fraction < (1UL << mantissaBits))
+            {
+                // Denormal: shift the leading 1 up to the implicit bit position
+                int lz = BitOperations.LeadingZeroCount(fraction) - (63 - mantissaBits);
+                fraction <<= lz;
+                exponent -= lz;
+            }
+
+            // Now fraction has the leading 1 at bit [mantissaBits], and the remaining bits below.
+            // The unbiased exponent for the value is: exponent + mantissaBits (since fraction is
+            // really fraction * 2^exponent, and we want 1.xxx * 2^actualExponent).
+            int actualExponent = exponent + mantissaBits;
+
+            // Strip the implicit leading 1 to get the fractional bits
+            ulong significandBits = fraction & ((1UL << mantissaBits) - 1);
+
+            // Leading digit is normally '1' for non-zero (the implicit bit)
+            int leadingDigit = 1;
+
+            // Determine how many hex digits to emit for the fractional part
+            int defaultHexDigits = (mantissaBits + 3) / 4;
+
+            if (precision == 0)
+            {
+                // Round significandBits into the leading digit
+                ulong half = (mantissaBits > 0) ? (1UL << (mantissaBits - 1)) : 0;
+                if (significandBits > half || (significandBits == half && (leadingDigit & 1) != 0))
+                {
+                    leadingDigit++;
+                    // leadingDigit can't exceed 2 since it started at 1
+                }
+
+                significandBits = 0;
+            }
+
+            vlb.Append(TChar.CastFrom((char)('0' + leadingDigit)));
+
+            if (precision > 0)
+            {
+                ulong shifted;
+
+                if (precision < defaultHexDigits)
+                {
+                    // Need to round
+                    int bitsToKeep = precision * 4;
+                    int bitsToDiscard = mantissaBits - bitsToKeep;
+
+                    // bitsToDiscard is always in (0, mantissaBits) here because precision >= 1
+                    // (we're in the precision > 0 branch) and precision < defaultHexDigits
+                    // (checked above), so bitsToKeep < mantissaBits and bitsToDiscard > 0.
+                    // For all IEEE types mantissaBits <= 52, so bitsToDiscard < 64.
+                    Debug.Assert(bitsToDiscard > 0 && bitsToDiscard < 64);
+                    if (bitsToDiscard > 0 && bitsToDiscard < 64)
+                    {
+                        ulong roundBit = 1UL << (bitsToDiscard - 1);
+                        ulong discardedBits = significandBits & ((1UL << bitsToDiscard) - 1);
+                        bool roundUp = discardedBits > roundBit || (discardedBits == roundBit && ((significandBits >> bitsToDiscard) & 1) != 0);
+
+                        if (roundUp)
+                        {
+                            significandBits = (significandBits >> bitsToDiscard) + 1;
+
+                            // Check if rounding overflowed into leading digit
+                            if (significandBits >= (1UL << bitsToKeep))
+                            {
+                                significandBits = 0;
+                                actualExponent++;
+                            }
+                        }
+                        else
+                        {
+                            significandBits >>= bitsToDiscard;
+                        }
+
+                        shifted = significandBits << (64 - bitsToKeep);
+                    }
+                    else
+                    {
+                        shifted = significandBits << (64 - mantissaBits);
+                    }
+                }
+                else
+                {
+                    shifted = significandBits << (64 - mantissaBits);
+                }
+
+                vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+
+                // Emit real nibbles
+                int realDigits = Math.Min(precision, defaultHexDigits);
+                for (int i = 0; i < realDigits; i++)
+                {
+                    vlb.Append(TChar.CastFrom(fmt == 'X' ? HexConverter.ToCharUpper((int)(shifted >> 60)) : HexConverter.ToCharLower((int)(shifted >> 60))));
+                    shifted <<= 4;
+                }
+
+                // Emit padding zeros (when precision > defaultHexDigits)
+                int padCount = precision - realDigits;
+                if (padCount > 0)
+                {
+                    vlb.AppendSpan(padCount).Fill(TChar.CastFrom('0'));
+                }
+            }
+            else if (precision < 0)
+            {
+                // Default precision: emit significant hex digits, trimming trailing zeros.
+                // Compute trailing zero nibbles from the nibble-aligned representation.
+                int trimmedDigits = 0;
+                if (significandBits != 0)
+                {
+                    // Align significand to nibble boundary (pad LSB so total bits = defaultHexDigits * 4),
+                    // then count trailing zero nibbles via trailing zero bits.
+                    int paddingBits = defaultHexDigits * 4 - mantissaBits;
+                    ulong nibbleAligned = significandBits << paddingBits;
+                    int trailingZeroBits = BitOperations.TrailingZeroCount(nibbleAligned);
+                    trimmedDigits = defaultHexDigits - (trailingZeroBits / 4);
+
+                    if (trimmedDigits > 0)
+                    {
+                        vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+
+                        ulong shifted = significandBits << (64 - mantissaBits);
+                        for (int i = 0; i < trimmedDigits; i++)
+                        {
+                            vlb.Append(TChar.CastFrom(fmt == 'X' ? HexConverter.ToCharUpper((int)(shifted >> 60)) : HexConverter.ToCharLower((int)(shifted >> 60))));
+                            shifted <<= 4;
+                        }
+                    }
+                }
+            }
+
+            // Emit exponent: p+NNN or p-NNN
+            // The exponent sign is always ASCII '+'/'-' per IEEE 754 §5.12.3,
+            // independent of NumberFormatInfo (which only governs the leading value sign).
+            vlb.Append(TChar.CastFrom(fmt == 'X' ? 'P' : 'p'));
+
+            if (actualExponent >= 0)
+            {
+                vlb.Append(TChar.CastFrom('+'));
+            }
+            else
+            {
+                vlb.Append(TChar.CastFrom('-'));
+                actualExponent = -actualExponent;
+            }
+
+            // Write exponent digits
+            Debug.Assert(actualExponent >= 0);
+            int digitCount = FormattingHelpers.CountDigits((uint)actualExponent);
+            TChar* pExponent = stackalloc TChar[digitCount];
+            UInt32ToDecChars(pExponent + digitCount, (uint)actualExponent);
+            vlb.Append(new ReadOnlySpan<TChar>(pExponent, digitCount));
+        }
+
         public static string FormatFloat<TNumber>(TNumber value, string? format, NumberFormatInfo info)
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
         {
@@ -605,6 +809,14 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int precision);
+
+            // Handle hex float formatting (X/x format specifier)
+            if ((fmt | 0x20) == 'x')
+            {
+                FormatFloatingPointAsHex(ref vlb, value, fmt, precision, info);
+                return null;
+            }
+
             byte* pDigits = stackalloc byte[TNumber.NumberBufferLength];
 
             if (fmt == '\0')
@@ -1521,6 +1733,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe TChar* Int32ToHexChars<TChar>(TChar* buffer, uint value, int hexBase, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1577,6 +1790,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe TChar* UInt32ToBinaryChars<TChar>(TChar* buffer, uint value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1614,6 +1828,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe void WriteTwoDigits<TChar>(uint value, TChar* ptr) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1630,6 +1845,7 @@ namespace System
         /// This method performs best when the starting index is a constant literal.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe void WriteFourDigits<TChar>(uint value, TChar* ptr) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1651,6 +1867,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe void WriteDigits<TChar>(uint value, TChar* ptr, int count) where TChar : unmanaged, IUtfChar<TChar>
         {
             TChar* cur;
@@ -1667,6 +1884,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1696,6 +1914,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1955,6 +2174,7 @@ namespace System
 
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
 #endif
         private static unsafe TChar* Int64ToHexChars<TChar>(TChar* buffer, ulong value, int hexBase, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -2027,6 +2247,7 @@ namespace System
 
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
 #endif
         private static unsafe TChar* UInt64ToBinaryChars<TChar>(TChar* buffer, ulong value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -2088,6 +2309,7 @@ namespace System
 
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
 #endif
         internal static unsafe TChar* UInt64ToDecChars<TChar>(TChar* bufferEnd, ulong value) where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -2127,6 +2349,7 @@ namespace System
 
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
 #endif
         internal static unsafe TChar* UInt64ToDecChars<TChar>(TChar* bufferEnd, ulong value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -2388,6 +2611,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe TChar* Int128ToHexChars<TChar>(TChar* buffer, UInt128 value, int hexBase, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             ulong lower = value.Lower;
@@ -2451,6 +2675,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe TChar* UInt128ToBinaryChars<TChar>(TChar* buffer, UInt128 value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             ulong lower = value.Lower;
@@ -2499,6 +2724,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe TChar* UInt128ToDecChars<TChar>(TChar* bufferEnd, UInt128 value) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -2511,6 +2737,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe TChar* UInt128ToDecChars<TChar>(TChar* bufferEnd, UInt128 value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));

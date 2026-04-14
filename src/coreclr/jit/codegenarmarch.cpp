@@ -518,16 +518,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genAsyncResumeInfo(treeNode->AsVal());
             break;
 
-        case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
-                          ~fullIntArgRegMask(m_compiler->info.compCallConv)) == 0);
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-            // the runtime side requires the codegen here to be consistent
-            emit->emitDisableRandomNops();
-#endif // PSEUDORANDOM_NOP_INSERTION
-            break;
-
         case GT_LABEL:
             genPendingCallLabel = genCreateTempLabel();
 #if defined(TARGET_ARM)
@@ -3079,7 +3069,6 @@ void CodeGen::genCall(GenTreeCall* call)
 
         if (target != nullptr)
         {
-            // Indirect fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
             genConsumeReg(target);
         }
 #ifdef FEATURE_READYTORUN
@@ -3124,7 +3113,7 @@ void CodeGen::genCall(GenTreeCall* call)
     regMaskTP killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
-        CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+        CorInfoHelpFunc helpFunc = call->GetHelperNum();
         killMask                 = m_compiler->compHelperCallKillSet(helpFunc);
     }
 
@@ -3157,7 +3146,7 @@ void CodeGen::genCall(GenTreeCall* call)
         else
         {
 #ifdef TARGET_ARM
-            if (call->IsHelperCall(m_compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+            if (call->IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
             {
                 // The CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
                 // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
@@ -3170,7 +3159,7 @@ void CodeGen::genCall(GenTreeCall* call)
             else
 #endif // TARGET_ARM
 #ifdef TARGET_ARM64
-                if (call->IsHelperCall(m_compiler, CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
+                if (call->IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
             {
                 returnReg = genFirstRegNumFromMask(RBM_INTERFACELOOKUP_FOR_SLOT_RETURN);
             }
@@ -3391,7 +3380,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
         // indirection cell but we should not try to optimize.
         regNumber callThroughIndirReg = REG_NA;
-        if (!call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
         {
             callThroughIndirReg = getCallIndirectionCellReg(call);
         }

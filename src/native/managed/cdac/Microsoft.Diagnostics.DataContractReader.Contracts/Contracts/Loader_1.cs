@@ -245,18 +245,18 @@ internal readonly struct Loader_1 : ILoader
 
         TargetPointer headerBase = imageLayout.Base;
         Data.WebcilHeader webcilHeader = _target.ProcessedData.GetOrAdd<Data.WebcilHeader>(headerBase);
-        Target.TypeInfo webcilHeaderType = _target.GetTypeInfo(DataType.WebcilHeader);
-        Target.TypeInfo webcilSectionType = _target.GetTypeInfo(DataType.WebcilSectionHeader);
 
         ushort numSections = webcilHeader.CoffSections;
         if (numSections == 0 || numSections > MaxWebcilSections)
             throw new InvalidOperationException("Invalid Webcil section count.");
 
-        TargetPointer sectionTableBase = headerBase + webcilHeaderType.Size!.Value;
+        if (webcilHeader.VersionMajor != 0 && webcilHeader.VersionMajor != 1)
+            throw new InvalidOperationException("Unsupported Webcil version.");
+        TargetPointer sectionTableBase = headerBase + webcilHeader.Size; // See docs/design/mono/webcil.md
 
         for (int i = 0; i < numSections; i++)
         {
-            TargetPointer sectionPtr = sectionTableBase + (uint)(i * (int)webcilSectionType.Size!.Value);
+            TargetPointer sectionPtr = sectionTableBase + (uint)(i * (int)16); // See docs/design/mono/webcil.md
             Data.WebcilSectionHeader section = _target.ProcessedData.GetOrAdd<Data.WebcilSectionHeader>(sectionPtr);
 
             uint rvaUnsigned = (uint)rva;
@@ -273,9 +273,9 @@ internal readonly struct Loader_1 : ILoader
         throw new InvalidOperationException("Failed to resolve RVA in Webcil image.");
     }
 
-    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
+    private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNullOk)
     {
-        if (rva == 0)
+        if (rva == 0 && !isNullOk)
             return TargetPointer.Null;
         Data.PEAssembly assembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
         if (assembly.PEImage == TargetPointer.Null)
@@ -291,6 +291,10 @@ internal readonly struct Loader_1 : ILoader
             offset = RvaToOffset(rva, peImageLayout);
         return peImageLayout.Base + offset;
     }
+
+    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva) => GetRvaData(peAssemblyPtr, rva, false);
+
+    TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => GetRvaData(peAssemblyPtr, rva, true);
 
     bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
     {
@@ -370,6 +374,25 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return GetFlags(module);
+    }
+
+    bool ILoader.IsReadyToRun(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.ReadyToRunInfo != TargetPointer.Null;
+    }
+
+    bool ILoader.TryGetSimpleName(ModuleHandle handle, out string simpleName)
+    {
+        simpleName = string.Empty;
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.SimpleName != TargetPointer.Null)
+        {
+            simpleName = _target.ReadUtf8String(module.SimpleName, strict: true);
+            return true;
+        }
+        else
+            return false;
     }
 
     string ILoader.GetPath(ModuleHandle handle)

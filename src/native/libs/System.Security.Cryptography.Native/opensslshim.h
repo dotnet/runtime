@@ -165,6 +165,12 @@ c_static_assert(EVP_PKEY_PUBLIC_KEY == 134);
 #define OSSL_SIGNATURE_PARAM_MU "mu"
 #endif
 
+#ifndef RSA_FLAG_EXT_PKEY
+#define RSA_FLAG_EXT_PKEY 0x0020
+#else
+c_static_assert(RSA_FLAG_EXT_PKEY == 0x0020);
+#endif
+
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include "apibridge_30_rev.h"
 #endif
@@ -200,6 +206,26 @@ int EC_POINT_set_affine_coordinates_GF2m(
 int SSL_CTX_set_ciphersuites(SSL_CTX *ctx, const char *str);
 int SSL_set_ciphersuites(SSL *s, const char *str);
 const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
+#endif
+
+#if !HAVE_OPENSSL_RSA_PRIMITIVE
+// In portable build, we need to support legacy RSA functions even if they were not present
+// on the build OS. The shim will detect their presence at runtime.
+#undef HAVE_OPENSSL_RSA_PRIMITIVE
+#define HAVE_OPENSSL_RSA_PRIMITIVE 1
+
+typedef struct rsa_st RSA;
+typedef struct rsa_meth_st RSA_METHOD;
+
+const RSA* EVP_PKEY_get0_RSA(const EVP_PKEY* pkey);
+int EVP_PKEY_set1_RSA(EVP_PKEY* pkey, RSA* key);
+const RSA_METHOD* RSA_get_method(const RSA* rsa);
+int RSA_get_multi_prime_extra_count(const RSA* rsa);
+void RSA_get0_key(const RSA* r, const BIGNUM** n, const BIGNUM** e, const BIGNUM** d);
+void RSA_get0_factors(const RSA* r, const BIGNUM** p, const BIGNUM** q);
+void RSA_get0_crt_params(const RSA* r, const BIGNUM** dmp1, const BIGNUM** dmq1, const BIGNUM** iqmp);
+int RSA_meth_get_flags(const RSA_METHOD* meth);
+int RSA_test_flags(const RSA* r, int flags);
 #endif
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_4_0_RTM
@@ -346,7 +372,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(d2i_PKCS7_bio) \
     REQUIRED_FUNCTION(d2i_PKCS8_PRIV_KEY_INFO) \
     REQUIRED_FUNCTION(d2i_PUBKEY) \
-    REQUIRED_FUNCTION(d2i_RSAPublicKey) \
     REQUIRED_FUNCTION(d2i_X509) \
     REQUIRED_FUNCTION(d2i_X509_bio) \
     REQUIRED_FUNCTION(d2i_X509_CRL) \
@@ -528,11 +553,10 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_PKEY_fromdata_init) \
     RENAMED_FUNCTION(EVP_PKEY_get_base_id, EVP_PKEY_base_id) \
     RENAMED_FUNCTION(EVP_PKEY_get_bits, EVP_PKEY_bits) \
-    REQUIRED_FUNCTION(EVP_PKEY_get0_RSA) \
+    LIGHTUP_FUNCTION(EVP_PKEY_get0_RSA) \
     LIGHTUP_FUNCTION(EVP_PKEY_get0_type_name) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_EC_KEY) \
-    REQUIRED_FUNCTION(EVP_PKEY_get1_RSA) \
     LIGHTUP_FUNCTION(EVP_PKEY_is_a) \
     REQUIRED_FUNCTION(EVP_PKEY_keygen) \
     REQUIRED_FUNCTION(EVP_PKEY_keygen_init) \
@@ -540,7 +564,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_PKEY_public_check) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_EC_KEY) \
-    REQUIRED_FUNCTION(EVP_PKEY_set1_RSA) \
+    LIGHTUP_FUNCTION(EVP_PKEY_set1_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_sign) \
     REQUIRED_FUNCTION(EVP_PKEY_sign_init) \
     LIGHTUP_FUNCTION(EVP_PKEY_sign_message_init) \
@@ -644,26 +668,14 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(PKCS7_free) \
     REQUIRED_FUNCTION(RAND_bytes) \
     REQUIRED_FUNCTION(RAND_poll) \
-    REQUIRED_FUNCTION(RSA_check_key) \
-    REQUIRED_FUNCTION(RSA_free) \
-    REQUIRED_FUNCTION(RSA_generate_key_ex) \
-    REQUIRED_FUNCTION(RSA_get_method) \
-    REQUIRED_FUNCTION(RSA_get_multi_prime_extra_count) \
-    REQUIRED_FUNCTION(RSA_get0_crt_params) \
-    REQUIRED_FUNCTION(RSA_get0_factors) \
-    REQUIRED_FUNCTION(RSA_get0_key) \
-    REQUIRED_FUNCTION(RSA_meth_get_flags) \
-    REQUIRED_FUNCTION(RSA_new) \
+    LIGHTUP_FUNCTION(RSA_get_method) \
+    LIGHTUP_FUNCTION(RSA_get_multi_prime_extra_count) \
+    LIGHTUP_FUNCTION(RSA_get0_crt_params) \
+    LIGHTUP_FUNCTION(RSA_get0_factors) \
+    LIGHTUP_FUNCTION(RSA_get0_key) \
+    LIGHTUP_FUNCTION(RSA_meth_get_flags) \
     REQUIRED_FUNCTION(RSA_pkey_ctx_ctrl) \
-    REQUIRED_FUNCTION(RSA_PKCS1_OpenSSL) \
-    REQUIRED_FUNCTION(RSA_set0_crt_params) \
-    REQUIRED_FUNCTION(RSA_set0_factors) \
-    REQUIRED_FUNCTION(RSA_set0_key) \
-    REQUIRED_FUNCTION(RSA_set_method) \
-    REQUIRED_FUNCTION(RSA_size) \
-    REQUIRED_FUNCTION(RSA_test_flags) \
-    REQUIRED_FUNCTION(RSA_up_ref) \
-    REQUIRED_FUNCTION(RSA_verify) \
+    LIGHTUP_FUNCTION(RSA_test_flags) \
     LIGHTUP_FUNCTION(SSL_CIPHER_find) \
     REQUIRED_FUNCTION(SSL_CIPHER_get_bits) \
     REQUIRED_FUNCTION(SSL_CIPHER_get_id) \
@@ -911,7 +923,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define d2i_PKCS7_bio d2i_PKCS7_bio_ptr
 #define d2i_PKCS8_PRIV_KEY_INFO d2i_PKCS8_PRIV_KEY_INFO_ptr
 #define d2i_PUBKEY d2i_PUBKEY_ptr
-#define d2i_RSAPublicKey d2i_RSAPublicKey_ptr
 #define d2i_X509 d2i_X509_ptr
 #define d2i_X509_bio d2i_X509_bio_ptr
 #define d2i_X509_CRL d2i_X509_CRL_ptr
@@ -1095,7 +1106,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_get0_type_name EVP_PKEY_get0_type_name_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
-#define EVP_PKEY_get1_RSA EVP_PKEY_get1_RSA_ptr
 #define EVP_PKEY_is_a EVP_PKEY_is_a_ptr
 #define EVP_PKEY_keygen EVP_PKEY_keygen_ptr
 #define EVP_PKEY_keygen_init EVP_PKEY_keygen_init_ptr
@@ -1212,28 +1222,16 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define PKCS7_free PKCS7_free_ptr
 #define RAND_bytes RAND_bytes_ptr
 #define RAND_poll RAND_poll_ptr
-#define RSA_check_key RSA_check_key_ptr
-#define RSA_free RSA_free_ptr
-#define RSA_generate_key_ex RSA_generate_key_ex_ptr
 #define RSA_get0_crt_params RSA_get0_crt_params_ptr
 #define RSA_get0_factors RSA_get0_factors_ptr
 #define RSA_get0_key RSA_get0_key_ptr
 #define RSA_get_method RSA_get_method_ptr
 #define RSA_get_multi_prime_extra_count RSA_get_multi_prime_extra_count_ptr
 #define RSA_meth_get_flags RSA_meth_get_flags_ptr
-#define RSA_new RSA_new_ptr
 #define RSA_pkey_ctx_ctrl RSA_pkey_ctx_ctrl_ptr
-#define RSA_PKCS1_OpenSSL RSA_PKCS1_OpenSSL_ptr
 #define RSA_public_decrypt RSA_public_decrypt_ptr
 #define RSA_public_encrypt RSA_public_encrypt_ptr
-#define RSA_set0_crt_params RSA_set0_crt_params_ptr
-#define RSA_set0_factors RSA_set0_factors_ptr
-#define RSA_set0_key RSA_set0_key_ptr
-#define RSA_set_method RSA_set_method_ptr
-#define RSA_size RSA_size_ptr
 #define RSA_test_flags RSA_test_flags_ptr
-#define RSA_up_ref RSA_up_ref_ptr
-#define RSA_verify RSA_verify_ptr
 #define SSL_CIPHER_get_bits SSL_CIPHER_get_bits_ptr
 #define SSL_CIPHER_find SSL_CIPHER_find_ptr
 #define SSL_CIPHER_get_id SSL_CIPHER_get_id_ptr
@@ -1422,9 +1420,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define sk_SSL_CIPHER_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(SSL_CIPHER)*)0))
 #define sk_X509_NAME_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509_NAME)*)0))
 #define sk_X509_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509)*)0))
-
-// type-safe OPENSSL_sk_new_null
-#define sk_X509_new_null() (STACK_OF(X509)*)OPENSSL_sk_new_null()
 
 // type-safe OPENSSL_sk_push
 #define sk_X509_push(stack,value) OPENSSL_sk_push((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0), (const void*)(1 ? value : (X509*)0))

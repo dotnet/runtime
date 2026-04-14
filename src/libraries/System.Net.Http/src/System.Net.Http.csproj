@@ -144,8 +144,8 @@
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
-    <Compile Include="$(CommonPath)System\NullableBool.cs"
-             Link="Common\System\NullableBool.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="Common\System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
              Link="Common\System\Net\ArrayBuffer.cs"/>
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs"
@@ -181,6 +181,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
+    <Compile Include="System\Net\Http\LocalAppContextSwitches.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
