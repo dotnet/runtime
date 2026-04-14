@@ -1376,14 +1376,15 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     {
         CorElementType retET = pDE->m_resultType.GetSignatureCorElementType();
 
-        if (pDE->m_resultType.IsValueType() || IsElementTypeSpecial(retET))
+        if (retET == ELEMENT_TYPE_VALUETYPE || IsElementTypeSpecial(retET))
         {
+            // True value types (structs) and reference types — return as boxed object.
             pDE->m_result[0] = ObjToArgSlot(ucoGc.resultObj);
             pDE->m_retValueBoxing = Debugger::AllBoxed;
         }
         else
         {
-            // Primitive return — unbox into m_result
+            // Primitive return (bool, int, float, etc.) — unbox into m_result.
             memset(pDE->m_result, 0, sizeof(pDE->m_result));
             void *pRetData = ucoGc.resultObj->GetData();
             unsigned retSize = ucoGc.resultObj->GetMethodTable()->GetNumInstanceFieldBytes();
@@ -1401,10 +1402,7 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
 
     // Create strong handle to prevent GC collection of object results.
     {
-        CorElementType retClassET = pDE->m_resultType.GetSignatureCorElementType();
-        if ((pDE->m_retValueBoxing == Debugger::AllBoxed) ||
-            pDE->m_resultType.IsValueType() ||
-            IsElementTypeSpecial(retClassET))
+        if (pDE->m_retValueBoxing == Debugger::AllBoxed)
         {
             LOG((LF_CORDB, LL_EVERYTHING, "Creating strong handle for boxed DoNormalFuncEval result.\n"));
             OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result[0]));
