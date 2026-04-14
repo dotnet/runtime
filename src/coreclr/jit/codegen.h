@@ -1316,9 +1316,9 @@ protected:
     void genFloatReturn(GenTree* treeNode);
 #endif // TARGET_X86
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
     void genSimpleReturn(GenTree* treeNode);
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_POWERPC64
 
     void genReturn(GenTree* treeNode);
 

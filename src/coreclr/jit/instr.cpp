@@ -1985,7 +1985,7 @@ instruction CodeGen::ins_Copy(var_types dstType)
 
     if (varTypeUsesIntReg(dstType))
     {
-#if defined(TARGET_XARCH) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
         return INS_mov;
 #else
         NYI("ins_Copy");

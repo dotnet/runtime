@@ -254,6 +254,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForStoreLclVar(treeNode->AsLclVar());
             break;
 
+	case GT_LCL_VAR:
+	    genCodeForLclVar(treeNode->AsLclVar());
+	    break;
+
+	case GT_RETFILT:
+	case GT_RETURN:
+	    genReturn(treeNode);
+	    break;
+
         default:
 	    abort();
     }
@@ -492,6 +501,88 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             }
         }
         genUpdateLifeStore(lclNode, targetReg, varDsc);
+    }
+}
+
+//------------------------------------------------------------------------
+// genSimpleReturn: Generate code for a simple return (non-struct, non-void).
+//
+// Arguments:
+//    treeNode - The GT_RETURN/GT_RETFILT/GT_SWIFT_ERROR_RET tree node with non-struct and non-void type
+//
+// Return Value:
+//    None
+//
+void CodeGen::genSimpleReturn(GenTree* treeNode)
+{
+    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
+    GenTree*  op1        = treeNode->AsOp()->GetReturnValue();
+    var_types targetType = treeNode->TypeGet();
+
+    assert(targetType != TYP_STRUCT);
+    assert(targetType != TYP_VOID);
+
+    regNumber retReg = varTypeUsesFloatArgReg(treeNode) ? REG_FLOATRET : REG_INTRET;
+
+    bool movRequired = (op1->GetRegNum() != retReg);
+
+    if (!movRequired)
+    {
+        if (op1->OperGet() == GT_LCL_VAR)
+        {
+            GenTreeLclVarCommon* lcl            = op1->AsLclVarCommon();
+            const LclVarDsc*     varDsc         = compiler->lvaGetDesc(lcl);
+            bool                 isRegCandidate = varDsc->lvIsRegCandidate();
+            if (isRegCandidate && ((op1->gtFlags & GTF_SPILLED) == 0))
+            {
+                // We may need to generate a zero-extending mov instruction to load the value from this GT_LCL_VAR
+
+                var_types op1Type = genActualType(op1->TypeGet());
+                var_types lclType = genActualType(varDsc->TypeGet());
+
+                if (genTypeSize(op1Type) < genTypeSize(lclType))
+                {
+                    movRequired = true;
+                }
+            }
+        }
+    }
+
+    // For PPC64LE, use inst_Mov to move the return value to the appropriate return register
+    inst_Mov(targetType, retReg, op1->GetRegNum(), /* canSkip */ !movRequired);
+}
+
+//------------------------------------------------------------------------
+// genCodeForLclVar: Produce code for a GT_LCL_VAR node.
+//
+// Arguments:
+//    tree - the GT_LCL_VAR node
+//
+void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
+{
+    unsigned varNum = tree->GetLclNum();
+    assert(varNum < compiler->lvaCount);
+
+    LclVarDsc* varDsc         = compiler->lvaGetDesc(varNum);
+    bool       isRegCandidate = varDsc->lvIsRegCandidate();
+
+    // lcl_vars are not defs
+    assert((tree->gtFlags & GTF_VAR_DEF) == 0);
+
+    // If this is a register candidate that has been spilled, genConsumeReg() will
+    // reload it at the point of use. Otherwise, if it's not in a register, we load it here.
+    if (!isRegCandidate && !tree->IsMultiReg() && ((tree->gtFlags & GTF_SPILLED) == 0))
+    {
+        var_types targetType = varDsc->GetRegisterType(tree);
+
+        // targetType must be a normal scalar type and not a TYP_STRUCT
+        assert(targetType != TYP_STRUCT);
+
+        instruction ins  = ins_Load(targetType);
+        emitAttr    attr = emitActualTypeSize(targetType);
+
+        GetEmitter()->emitIns_R_S(ins, attr, tree->GetRegNum(), varNum, 0);
+        genProduceReg(tree);
     }
 }
 

@@ -7160,9 +7160,9 @@ void CodeGen::genReturn(GenTree* treeNode)
             // exit point where it is actually dead.
             genConsumeReg(op1);
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
             genSimpleReturn(treeNode);
-#else // !TARGET_ARM64 || !TARGET_LOONGARCH64 || !TARGET_RISCV64
+#else // !TARGET_ARM64 || !TARGET_LOONGARCH64 || !TARGET_RISCV64 || !TARGET_POWERPC64
 #if defined(TARGET_X86)
             if (varTypeUsesFloatReg(treeNode))
             {
