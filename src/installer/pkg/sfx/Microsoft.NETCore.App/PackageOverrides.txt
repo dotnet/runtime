@@ -1,4 +1,13 @@
 Microsoft.CSharp|4.7.0
+Microsoft.Extensions.Caching.Abstractions|${ProductVersion}
+Microsoft.Extensions.Configuration.Abstractions|${ProductVersion}
+Microsoft.Extensions.DependencyInjection.Abstractions|${ProductVersion}
+Microsoft.Extensions.Diagnostics.Abstractions|${ProductVersion}
+Microsoft.Extensions.FileProviders.Abstractions|${ProductVersion}
+Microsoft.Extensions.Hosting.Abstractions|${ProductVersion}
+Microsoft.Extensions.Logging.Abstractions|${ProductVersion}
+Microsoft.Extensions.Options|${ProductVersion}
+Microsoft.Extensions.Primitives|${ProductVersion}
 Microsoft.VisualBasic|10.4.0
 Microsoft.Win32.Primitives|4.3.0
 Microsoft.Win32.Registry|5.0.0

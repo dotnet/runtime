@@ -90,6 +90,7 @@ class PerLoopInfo;         // defined in inductionvariableopts.cpp
 class RangeCheck;          // defined in rangecheck.h
 #ifdef TARGET_WASM
 class WasmInterval; // defined in fgwasm.h
+enum class WasmValueType : unsigned;
 #endif
 #ifdef DEBUG
 struct IndentStack;
@@ -100,6 +101,7 @@ class Lowering; // defined in lower.h
 // The following are defined in this file, Compiler.h
 
 class Compiler;
+class FuncInfoRange;
 
 /*****************************************************************************
  *                  Unwind info
@@ -1695,6 +1697,8 @@ enum FuncKind : BYTE
     FUNC_COUNT
 };
 
+constexpr unsigned ROOT_FUNC_IDX = 0;
+
 class emitLocation;
 
 struct FuncInfoDsc
@@ -1704,6 +1708,27 @@ struct FuncInfoDsc
     unsigned short funEHIndex; // index, into the ebd table, of innermost EH clause corresponding to this
                                // funclet. It is only valid if funKind field indicates this is a
                                // EH-related funclet: FUNC_HANDLER or FUNC_FILTER
+
+#if !HAS_FIXED_REGISTER_SET
+    regNumber funStackPointerReg;
+    regNumber funFramePointerReg;
+#endif
+
+#if defined(TARGET_WASM)
+    struct WasmLocalsDecl
+    {
+        WasmValueType Type;
+        unsigned      Count;
+    };
+
+    jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
+#endif // defined(TARGET_WASM)  
+
+    EHblkDsc*            GetEHDesc(Compiler* comp) const;
+    BasicBlock*          GetStartBlock(Compiler* comp) const;
+    BasicBlock*          GetLastBlock(Compiler* comp) const;
+    BasicBlockRangeList  Blocks(Compiler* comp) const;
+    unsigned             GetFuncletIdx(Compiler* comp) const;
 
 #if defined(TARGET_AMD64)
 
@@ -2387,6 +2412,10 @@ public:
     bool TryRegionsIncludeHandlerBlocks() const { return m_tryRegionsIncludeHandlerBlocks; }
 
     bool HasMultipleEntryTryRegions() const { return m_hasMultipleEntryTryRegions; }
+
+    void AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
+
+    void RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
 
 #ifdef DEBUG
     static void Dump(FlowGraphTryRegions* regions);
@@ -5342,30 +5371,6 @@ private:
                                                             GenTree*    dereferencedAddress,
                                                             InlArgInfo* inlArgInfo);
 
-    typedef JitHashTable<CORINFO_METHOD_HANDLE, JitPtrKeyFuncs<struct CORINFO_METHOD_STRUCT_>, CORINFO_METHOD_HANDLE> HelperToManagedMap;
-    HelperToManagedMap* m_helperToManagedMap = nullptr;
-
-public:
-    HelperToManagedMap* GetHelperToManagedMap()
-    {
-        if (m_helperToManagedMap == nullptr)
-        {
-            m_helperToManagedMap = new (getAllocator()) HelperToManagedMap(getAllocator());
-        }
-        return m_helperToManagedMap;
-    }
-    bool HelperToManagedMapLookup(CORINFO_METHOD_HANDLE helperCallHnd, CORINFO_METHOD_HANDLE* userCallHnd)
-    {
-        if (m_helperToManagedMap == nullptr)
-        {
-            return false;
-        }
-        bool found = m_helperToManagedMap->Lookup(helperCallHnd, userCallHnd);
-        return found;
-    }
-private:
-
-    void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
@@ -5808,6 +5813,15 @@ public:
     {
         return BasicBlockRangeList(startBlock, endBlock);
     }
+
+    // Funcs/Funclets: convenience methods for enabling range-based `for` iteration over the
+    // method's root function and its EH funclets, e.g.:
+    // 1.   for (FuncInfoDsc* const func : Funcs()) ...
+    // 2.   for (FuncInfoDsc* const funclet : Funclets()) ...
+    // 3.   for (FuncInfoDsc* const funclet : Funclets().Reverse()) ...
+    //
+    FuncInfoRange Funcs() const;
+    FuncInfoRange Funclets() const;
 
     // This array, managed by the SSA numbering infrastructure, keeps "outlined composite SSA numbers".
     // See "SsaNumInfo::GetNum" for more details on when this is needed.
@@ -7843,13 +7857,23 @@ public:
 
     // Redundant branch opts
     //
-    PhaseStatus optRedundantBranches();
-    bool        optRedundantRelop(BasicBlock* const block);
-    bool        optRedundantBranch(BasicBlock* const block);
-    bool        optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
-    bool        optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
-    bool        optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
-    bool        optJumpThreadCore(JumpThreadInfo& jti);
+    enum class JumpThreadCheckResult
+    {
+        CannotThread,
+        CanThread,
+        NeedsPhiUseResolution,
+    };
+
+    PhaseStatus           optRedundantBranches();
+    bool                  optRedundantRelop(BasicBlock* const block);
+    bool                  optRedundantDominatingBranch(BasicBlock* const block);
+    bool                  optRedundantBranch(BasicBlock* const block);
+    bool                  optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool                  optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
+    JumpThreadCheckResult optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
+    bool optFindPhiUsesInBlockAndSuccessors(BasicBlock* block, GenTreeLclVar* phiDef, JumpThreadInfo& jti);
+    bool optCanRewritePhiUses(JumpThreadInfo& jti);
+    bool optJumpThreadCore(JumpThreadInfo& jti);
 
     enum class ReachabilityResult
     {
@@ -9787,17 +9811,24 @@ public:
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
-        if (compExactlyDependsOn(InstructionSet_VectorT128))
+#if defined(DEBUG)
+        if (JitConfig.JitUseScalableVectorT() && compExactlyDependsOn(InstructionSet_VectorT))
         {
-            return FP_REGSIZE_BYTES;
+            return SIZE_UNKNOWN;
         }
         else
-        {
-            // TODO: We should be returning 0 here, but there are a number of
-            // places that don't quite get handled correctly in that scenario
+#endif // DEBUG
+            if (compExactlyDependsOn(InstructionSet_VectorT128))
+            {
+                return FP_REGSIZE_BYTES;
+            }
+            else
+            {
+                // TODO: We should be returning 0 here, but there are a number of
+                // places that don't quite get handled correctly in that scenario
 
-            return FP_REGSIZE_BYTES;
-        }
+                return FP_REGSIZE_BYTES;
+            }
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
@@ -12538,15 +12569,6 @@ public:
                     }
                 }
 
-                if (call->gtCallType == CT_INDIRECT)
-                {
-                    result = WalkTree(&call->gtCallAddr, call);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-
                 if (call->gtControlExpr != nullptr)
                 {
                     result = WalkTree(&call->gtControlExpr, call);
@@ -12555,7 +12577,6 @@ public:
                         return result;
                     }
                 }
-
                 break;
             }
 
@@ -12848,6 +12869,194 @@ public:
         return iterator(m_end);
     }
 };
+
+inline EHblkDsc* FuncInfoDsc::GetEHDesc(Compiler* comp) const
+{
+    assert(funKind != FUNC_ROOT);
+
+    EHblkDsc* const ehDsc = comp->ehGetDsc(funEHIndex);
+    assert(ehDsc != nullptr);
+
+    return ehDsc;
+}
+
+inline BasicBlock* FuncInfoDsc::GetStartBlock(Compiler* comp) const
+{
+    if (funKind == FUNC_ROOT)
+    {
+        assert(comp->fgFirstBB != nullptr);
+        return comp->fgFirstBB;
+    }
+
+    EHblkDsc* const ehDsc = GetEHDesc(comp);
+
+    if (funKind == FUNC_FILTER)
+    {
+        assert(ehDsc->HasFilter());
+        return ehDsc->ebdFilter;
+    }
+
+    assert(funKind == FUNC_HANDLER);
+    return ehDsc->ebdHndBeg;
+}
+
+inline BasicBlock* FuncInfoDsc::GetLastBlock(Compiler* comp) const
+{
+    if (funKind == FUNC_ROOT)
+    {
+        return comp->fgLastBBInMainFunction();
+    }
+
+    EHblkDsc* const ehDsc = GetEHDesc(comp);
+
+    if (funKind == FUNC_FILTER)
+    {
+        assert(ehDsc->HasFilter());
+        return ehDsc->BBFilterLast();
+    }
+
+    assert(funKind == FUNC_HANDLER);
+    return ehDsc->ebdHndLast;
+}
+
+inline BasicBlockRangeList FuncInfoDsc::Blocks(Compiler* comp) const
+{
+    return BasicBlockRangeList(GetStartBlock(comp), GetLastBlock(comp));
+}
+
+inline unsigned FuncInfoDsc::GetFuncletIdx(Compiler* comp) const
+{
+    assert((comp->compFuncInfos <= this) && (this < (comp->compFuncInfos + comp->compFuncInfoCount)));
+    unsigned funcletIdx = (unsigned)(this - comp->compFuncInfos);
+    assert(this == &comp->compFuncInfos[funcletIdx]);
+    return funcletIdx;
+}
+
+// FuncInfoRange: adapter class for forward or reverse iteration of a contiguous range of function/funclet
+// descriptors using range-based `for`, e.g.:
+//    for (FuncInfoDsc* const func : compiler->Funcs())
+//    for (FuncInfoDsc* const funclet : compiler->Funclets().Reverse())
+//
+class FuncInfoRange
+{
+    FuncInfoDsc* m_begin;
+    FuncInfoDsc* m_end;
+
+public:
+    class iterator
+    {
+        FuncInfoDsc* m_funcInfo;
+
+    public:
+        iterator(FuncInfoDsc* funcInfo)
+            : m_funcInfo(funcInfo)
+        {
+        }
+
+        FuncInfoDsc* operator*() const
+        {
+            return m_funcInfo;
+        }
+
+        iterator& operator++()
+        {
+            ++m_funcInfo;
+            return *this;
+        }
+
+        bool operator!=(const iterator& other) const
+        {
+            return m_funcInfo != other.m_funcInfo;
+        }
+    };
+
+    class ReverseIterator
+    {
+        FuncInfoDsc* m_funcInfo;
+
+    public:
+        ReverseIterator(FuncInfoDsc* funcInfo)
+            : m_funcInfo(funcInfo)
+        {
+        }
+
+        FuncInfoDsc* operator*() const
+        {
+            return m_funcInfo - 1;
+        }
+
+        ReverseIterator& operator++()
+        {
+            --m_funcInfo;
+            return *this;
+        }
+
+        bool operator!=(const ReverseIterator& other) const
+        {
+            return m_funcInfo != other.m_funcInfo;
+        }
+    };
+
+    class ReverseView
+    {
+        FuncInfoDsc* m_begin;
+        FuncInfoDsc* m_end;
+
+    public:
+        ReverseView(FuncInfoDsc* begin, FuncInfoDsc* end)
+            : m_begin(begin)
+            , m_end(end)
+        {
+        }
+
+        ReverseIterator begin() const
+        {
+            return ReverseIterator(m_begin);
+        }
+
+        ReverseIterator end() const
+        {
+            return ReverseIterator(m_end);
+        }
+    };
+
+    FuncInfoRange(FuncInfoDsc* begin, FuncInfoDsc* end)
+        : m_begin(begin)
+        , m_end(end)
+    {
+        assert(m_begin <= m_end);
+        assert((m_begin != nullptr) || (m_begin == m_end));
+    }
+
+    iterator begin() const
+    {
+        return iterator(m_begin);
+    }
+
+    iterator end() const
+    {
+        return iterator(m_end);
+    }
+
+    ReverseView Reverse() const
+    {
+        return ReverseView(m_end, m_begin);
+    }
+};
+
+inline FuncInfoRange Compiler::Funcs() const
+{
+    assert(fgFuncletsCreated);
+    assert(compFuncInfoCount > 0);
+    return FuncInfoRange(compFuncInfos, compFuncInfos + compFuncInfoCount);
+}
+
+inline FuncInfoRange Compiler::Funclets() const
+{
+    assert(fgFuncletsCreated);
+    assert(compFuncInfoCount > 0);
+    return FuncInfoRange(compFuncInfos + 1, compFuncInfos + compFuncInfoCount);
+}
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

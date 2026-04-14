@@ -50,7 +50,7 @@ We continued using this tooling, and extended its use to x64 builds which were n
 
 ## Host toolchain setup
 
-Our build images are based on the latest release of [Azure Linux](https://github.com/microsoft/azurelinux) (CBL-Mariner 2.0 in [earlier](#evolution-of-libc-targeting) versions), where we have full control over the supply chain of our build tools, without sacrificing compatibility. We strive to use the latest versions of our toolchain components, installing them from the Azure Linux package sources where available, or building them from source where we need more control.
+Our build images are based on the latest release of [Azure Linux](https://github.com/microsoft/azurelinux), where we have full control over the supply chain of our build tools, without sacrificing compatibility. We strive to use the latest versions of our toolchain components, installing them from the Azure Linux package sources where available, or building them from source where we need more control.
 
 Tools that we install as Azure Linux packages include CMake, debootstrap, and header files needed to build the crosscomponents (tools designed to run on the build host but produce code for the target, like the crossgen compiler used to produce ready-to-run code for the framework libraries).
 
@@ -146,6 +146,6 @@ deps & builder --> base
 
 In .NET 7 when this project started, we learned that Amazon Linux 2 had an older glibc than we initially targed in our arm64 builds. We had been targeting glibc 2.27 from Ubuntu 18.04. We [enabled](https://github.com/dotnet/runtime/pull/80866) compatibility with Amazon Linux 2 by moving the arm64 builds to target Ubuntu 16.04 with glibc 2.23. At that time we still used an Ubuntu host image to build the arm64 product, but now we were targeting a different version than the host, which was an Ubuntu 18.04 image.
 
-.NET 8 was the first release that [unified](https://github.com/dotnet/runtime/issues/83428) all of our Linux builds to use cross-compilation, and to build on a Microsoft-supported Linux distribution (CBL-Mariner 2.0 at the time of release). Before this our x64 glibc and musl builds were not using a sysroot. With this setup we unified all of the Linux builds to target a common version of glibc (2.23 from Ubuntu 16.04) or musl libc (1.2.2 from Alpine 3.13).
+.NET 8 was the first release that [unified](https://github.com/dotnet/runtime/issues/83428) all of our Linux builds to use cross-compilation, and to build on a Microsoft-supported Linux distribution in the Azure Linux family. Before this our x64 glibc and musl builds were not using a sysroot. With this setup we unified all of the Linux builds to target a common version of glibc (2.23 from Ubuntu 16.04) or musl libc (1.2.2 from Alpine 3.13).
 
 In .NET 9 we [moved](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/pull/1015) our builds to Azure Linux 3.0, which was easy to do thanks to the separation between the host and target versions. We also discovered that our supported Linux distributions were moving to 64-bit `time_t` on arm32 to solve the [Y2038](https://github.com/dotnet/runtime/blob/main/docs/design/features/y2038.md) problem. The flexibility of the sysroot approach made it easy to update our arm32 builds to target a more recent distribution with support for 64-bit `time_t`, without requiring any other changes to the build images.

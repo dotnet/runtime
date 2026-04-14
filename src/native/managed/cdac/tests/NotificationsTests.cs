@@ -18,8 +18,11 @@ public class NotificationsTests
 
     private static INotifications CreateContract()
     {
-        var target = new TestPlaceholderTarget(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true }, (_, _) => -1);
-        return ((IContractFactory<INotifications>)new NotificationsFactory()).CreateContract(target, 1);
+        var target = new TestPlaceholderTarget.Builder(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true })
+            .UseReader((_, _) => -1)
+            .AddContract<INotifications>(version: 1)
+            .Build();
+        return target.Contracts.Notifications;
     }
 
     private static ReadOnlySpan<TargetPointer> MakeExInfo(params ulong[] values)

@@ -18,6 +18,10 @@ namespace ILCompiler.DependencyAnalysis
         // COFF relocation types
         IMAGE_REL_BASED_ADDR32NB             = 0x0B,   // The 32-bit address without an image base (RVA)
 
+        // Webcil Relocation Types
+        IMAGE_REL_BASED_WASM32_TABLE         = 0x0C,
+        IMAGE_REL_BASED_WASM64_TABLE         = 0x0D,
+
         // General relocation types
         IMAGE_REL_BASED_REL32                = 0x10,   // 32-bit relative address from byte following reloc
         IMAGE_REL_BASED_THUMB_BRANCH24       = 0x13,   // Thumb2: based B, BL
@@ -48,13 +52,15 @@ namespace ILCompiler.DependencyAnalysis
         WASM_MEMORY_ADDR_SLEB      = 0x203,  // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
                                                        //  e.g. taking the address of a C++ global.
         WASM_MEMORY_ADDR_REL_SLEB  = 0x204,   // Wasm: a relative linear memory index encoded as a 5-byte varint32. Used as the immediate argument of an i32.const instruction,
-                                                       // e.g. in R2R scenarios, encoding an offset from __image_base
+                                                       // e.g. in R2R scenarios, encoding an offset from $imageBase
         WASM_TYPE_INDEX_LEB        = 0x205,  // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
 
         WASM_GLOBAL_INDEX_LEB      = 0x206,  // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
 
         WASM_TABLE_INDEX_I32       = 0x207,  // Wasm: a table index encoded as a 4-byte uint32, e.g. for storing the "address" of a function into linear memory
         WASM_TABLE_INDEX_I64       = 0x208,  // Wasm: a table index encoded as a 8-byte uint64, e.g. for storing the "address" of a function into linear memory
+        WASM_MEMORY_ADDR_REL_LEB   = 0x209,  // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
+                                                       // e.g. in R2R scenarios as an offset from $imageBase
 
         //
         // Relocation operators related to TLS access
@@ -652,6 +658,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_GLOBAL_INDEX_LEB:
                 case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_MEMORY_ADDR_LEB:
+                case RelocType.WASM_MEMORY_ADDR_REL_LEB:
                     DwarfHelper.WritePaddedULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
                     return;
 
@@ -706,6 +713,7 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.WASM_GLOBAL_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_SLEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_MEMORY_ADDR_REL_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_REL_SLEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_TABLE_INDEX_I32 => 4,
                 RelocType.WASM_TABLE_INDEX_I64 => 8,
@@ -779,6 +787,7 @@ namespace ILCompiler.DependencyAnalysis
                     return 0;
 
                 case RelocType.WASM_MEMORY_ADDR_LEB:
+                case RelocType.WASM_MEMORY_ADDR_REL_LEB:
                     return checked((long)DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32)));
 
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
@@ -806,6 +815,12 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_DIR64:
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
                     return relocationType;
+
+                case RelocType.WASM_TABLE_INDEX_I32:
+                    return RelocType.IMAGE_REL_BASED_WASM32_TABLE;
+
+                case RelocType.WASM_TABLE_INDEX_I64:
+                    return RelocType.IMAGE_REL_BASED_WASM64_TABLE;
 
                 default:
                     return RelocType.IMAGE_REL_BASED_ABSOLUTE;

@@ -916,7 +916,7 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
                 bool modHeap = true;
                 if (call->IsHelperCall())
                 {
-                    CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+                    CorInfoHelpFunc helpFunc = call->GetHelperNum();
 
                     if (!Compiler::s_helperCallProperties.MutatesHeap(helpFunc) &&
                         !Compiler::s_helperCallProperties.MayRunCctor(helpFunc))

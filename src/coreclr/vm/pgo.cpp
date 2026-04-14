@@ -1230,9 +1230,29 @@ HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, ICorJitInfo
 
 // Stub version for !FEATURE_PGO builds
 //
-HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, NewArrayHolder<BYTE> *pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData)
+HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pReadyToRunInfo,
+                                                              Module* pModule,
+                                                              ReadyToRunLoadedImage* pNativeImage,
+                                                              BYTE* pR2RFormatData,
+                                                              size_t pR2RFormatDataMaxSize,
+                                                              BYTE** pAllocatedData,
+                                                              ICorJitInfo::PgoInstrumentationSchema** ppSchema,
+                                                              UINT32 *pCountSchemaItems,
+                                                              BYTE**pInstrumentationData)
 {
     *pAllocatedData = NULL;
+    *ppSchema = NULL;
+    *pCountSchemaItems = 0;
+    *pInstrumentationData = NULL;
+    return E_NOTIMPL;
+}
+
+// Stub version for !FEATURE_PGO builds
+//
+HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE **pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource)
+{
+    *pAllocatedData = NULL;
+    *ppSchema = NULL;
     *pCountSchemaItems = 0;
     *pInstrumentationData = NULL;
     return E_NOTIMPL;
@@ -1244,7 +1264,7 @@ void PgoManager::VerifyAddress(void* address)
 
 // Stub version for !FEATURE_PGO builds
 //
-void PgoManager::CreatePgoManager(PgoManager** ppMgr, bool loaderAllocator)
+void PgoManager::CreatePgoManager(PgoManager* volatile* ppMgr, bool loaderAllocator)
 {
     *ppMgr = NULL;
 }

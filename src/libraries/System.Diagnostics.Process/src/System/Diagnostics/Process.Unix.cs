@@ -355,9 +355,9 @@ namespace System.Diagnostics
             return new SafeProcessHandle(_processId, GetSafeWaitHandle());
         }
 
-        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)
         {
-            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
+            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, out ProcessWaitState.Holder? waitStateHolder);
             Debug.Assert(!startedProcess.IsInvalid);
 
             _waitStateHolder = waitStateHolder;
@@ -434,14 +434,5 @@ namespace System.Diagnostics
 
         private static bool WaitForInputIdleCore(int _ /*milliseconds*/) => throw new InvalidOperationException(SR.InputIdleUnknownError);
 
-        /// <summary>Gets the friendly name of the process.</summary>
-        public string ProcessName
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.ProcessName;
-            }
-        }
     }
 }
