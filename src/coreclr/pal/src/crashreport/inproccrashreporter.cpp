@@ -462,6 +462,10 @@ WriteCrashSiteFrameToJson(
     uint64_t spValue = GetStackPointer(context);
     char ip[32] = "0x0";
     char sp[32] = "0x0";
+    uint64_t moduleBase = 0;
+    char moduleBaseBuffer[32];
+    char moduleName[256];
+    moduleName[0] = '\0';
 
     FormatHexValue(ip, sizeof(ip), ipValue);
     FormatHexValue(sp, sizeof(sp), spValue);
@@ -470,6 +474,15 @@ WriteCrashSiteFrameToJson(
     CrashJsonWriteString(writer, "is_managed", "false");
     CrashJsonWriteString(writer, "stack_pointer", sp);
     CrashJsonWriteString(writer, "native_address", ip);
+    if (CrashModulesTryLookupModuleForAddress(ipValue, &moduleBase, moduleName, sizeof(moduleName)))
+    {
+        char imageOffset[32];
+        FormatHexValue(moduleBaseBuffer, sizeof(moduleBaseBuffer), moduleBase);
+        FormatHexValue(imageOffset, sizeof(imageOffset), ipValue - moduleBase);
+        CrashJsonWriteString(writer, "module_address", moduleBaseBuffer);
+        CrashJsonWriteString(writer, "native_image_offset", imageOffset);
+        CrashJsonWriteString(writer, "native_module", moduleName);
+    }
     CrashJsonCloseObject(writer);
 }
 
@@ -522,6 +535,9 @@ JsonFrameCallback(
     void* ctx)
 {
     CrashJsonWriter* writer = reinterpret_cast<CrashJsonWriter*>(ctx);
+    uint64_t moduleBase = 0;
+    char nativeModuleName[256];
+    nativeModuleName[0] = '\0';
 
     char ipBuffer[32];
     char stackPointerBuffer[32];
@@ -537,6 +553,15 @@ JsonFrameCallback(
     CrashJsonWriteString(writer, "stack_pointer", stackPointerBuffer);
     CrashJsonWriteString(writer, "native_address", ipBuffer);
     CrashJsonWriteString(writer, "native_offset", nativeOffsetBuffer);
+    if (CrashModulesTryLookupModuleForAddress(ip, &moduleBase, nativeModuleName, sizeof(nativeModuleName)))
+    {
+        char moduleAddress[32];
+        char nativeImageOffset[32];
+        FormatHexValue(moduleAddress, sizeof(moduleAddress), moduleBase);
+        FormatHexValue(nativeImageOffset, sizeof(nativeImageOffset), ip - moduleBase);
+        CrashJsonWriteString(writer, "module_address", moduleAddress);
+        CrashJsonWriteString(writer, "native_image_offset", nativeImageOffset);
+    }
 
     if (methodName != NULL)
     {
@@ -553,7 +578,11 @@ JsonFrameCallback(
     else
     {
         CrashJsonWriteString(writer, "is_managed", "false");
-        if (moduleName != NULL)
+        if (nativeModuleName[0] != '\0')
+        {
+            CrashJsonWriteString(writer, "native_module", nativeModuleName);
+        }
+        else if (moduleName != NULL)
         {
             CrashJsonWriteString(writer, "native_module", moduleName);
         }
