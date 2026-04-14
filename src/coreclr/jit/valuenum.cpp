@@ -9279,7 +9279,7 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
             //
             // Consider for example something that expects 2 bits but
             // finds 3 or more set. This ends up somewhat undefined
-            // behavior as we will ignoring the upper bits and this
+            // behavior as we will ignore the upper bits and this
             // could lead to incorrect results.
 
             simdmask_t simdMaskVal = GetConstantSimdMask(vn);
@@ -10155,7 +10155,7 @@ bool ValueNumStore::IsVNHWIntrinsicFunc(
     assert(funcApp->m_arity != 0);
     VNFuncApp simdType;
 
-    if (GetVNFunc(funcApp->m_args[funcApp->m_arity - 1], &simdType))
+    if (!GetVNFunc(funcApp->m_args[funcApp->m_arity - 1], &simdType))
     {
         return false;
     }
@@ -10166,8 +10166,8 @@ bool ValueNumStore::IsVNHWIntrinsicFunc(
     assert(IsVNConstant(simdType.m_args[1]));
 
     *intrinsicId  = static_cast<NamedIntrinsic>((funcId - VNF_HWI_FIRST) + (NI_HW_INTRINSIC_START + 1));
-    *simdSize     = static_cast<uint32_t>(GetConstantInt32(funcApp->m_args[0]));
-    *simdBaseType = static_cast<var_types>(GetConstantInt32(funcApp->m_args[1]));
+    *simdSize     = static_cast<uint32_t>(GetConstantInt32(simdType.m_args[0]));
+    *simdBaseType = static_cast<var_types>(GetConstantInt32(simdType.m_args[1]));
 
     return true;
 #else

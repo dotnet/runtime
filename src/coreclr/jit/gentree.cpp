@@ -31594,7 +31594,7 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
             //
             // Consider for example something that expects 2 bits but
             // finds 3 or more set. This ends up somewhat undefined
-            // behavior as we will ignoring the upper bits and this
+            // behavior as we will ignore the upper bits and this
             // could lead to incorrect results.
 
             const GenTreeMskCon* mskCon = AsMskCon();
