@@ -477,8 +477,19 @@ internal sealed class FrameIterator
     /// </summary>
     private TargetPointer FindGCRefMap(TargetPointer zapModule, TargetPointer indirection)
     {
-        if (zapModule == TargetPointer.Null || indirection == TargetPointer.Null)
+        if (indirection == TargetPointer.Null)
             return TargetPointer.Null;
+
+        // If ZapModule is null, resolve it from the indirection address.
+        // Matches native GetGCRefMap which calls FindModuleForGCRefMap(m_pIndirection)
+        // → ExecutionManager::FindReadyToRunModule.
+        if (zapModule == TargetPointer.Null)
+        {
+            IExecutionManager eman = target.Contracts.ExecutionManager;
+            zapModule = eman.FindReadyToRunModule(indirection);
+            if (zapModule == TargetPointer.Null)
+                return TargetPointer.Null;
+        }
 
         // Get the ReadyToRunInfo from the module
         Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(zapModule);

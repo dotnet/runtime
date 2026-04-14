@@ -63,11 +63,17 @@ internal partial class StackWalk_1 : IStackWalk
         public bool IsFirst { get; set; } = true;
 
         // Track isInterrupted like native CrawlFrame::isInterrupted.
-        // Set when the walker transitions through a Frame with FRAME_ATTR_EXCEPTION
-        // (e.g., FaultingExceptionFrame). When true, the managed frame reached via
-        // that Frame's return address was interrupted by an exception, and EnumGcRefs
-        // should use ExecutionAborted to skip live slot reporting at non-interruptible offsets.
+        // Set in UpdateState when transitioning to SW_FRAMELESS after processing a Frame
+        // with FRAME_ATTR_EXCEPTION (e.g., FaultingExceptionFrame). When true, the managed
+        // frame reached via that Frame's return address was interrupted by an exception,
+        // and EnumGcRefs should use ExecutionAborted to skip live slot reporting at
+        // non-interruptible offsets.
         public bool IsInterrupted { get; set; }
+
+        // The frame type of the last SW_FRAME processed by Next().
+        // Used by UpdateState to detect exception frames (FRAME_ATTR_EXCEPTION) and
+        // set IsInterrupted when transitioning to a managed frame.
+        public FrameIterator.FrameType? LastProcessedFrameType { get; set; }
 
         public bool IsCurrentFrameResumable()
         {
@@ -674,11 +680,9 @@ internal partial class StackWalk_1 : IStackWalk
                     bool isActiveICF = frameType == FrameIterator.FrameType.InlinedCallFrame
                                        && returnAddress != TargetPointer.Null;
 
-                    // Detect exception frames (FRAME_ATTR_EXCEPTION) before advancing.
-                    // Both FaultingExceptionFrame (hardware) and SoftwareExceptionFrame (managed throw)
-                    // have FRAME_ATTR_EXCEPTION set. The resulting managed frame gets ExecutionAborted.
-                    handle.IsInterrupted = frameType is FrameIterator.FrameType.FaultingExceptionFrame
-                                                     or FrameIterator.FrameType.SoftwareExceptionFrame;
+                    // Record the frame type so UpdateState can detect exception frames
+                    // and set IsInterrupted when transitioning to the managed frame.
+                    handle.LastProcessedFrameType = frameType;
 
                     if (returnAddress != TargetPointer.Null)
                     {
@@ -713,6 +717,18 @@ internal partial class StackWalk_1 : IStackWalk
         if (isManaged)
         {
             handle.State = StackWalkState.SW_FRAMELESS;
+
+            // Detect exception frames (FRAME_ATTR_EXCEPTION) when transitioning to managed.
+            // Both FaultingExceptionFrame (hardware) and SoftwareExceptionFrame (managed throw)
+            // have FRAME_ATTR_EXCEPTION set. The resulting managed frame gets ExecutionAborted,
+            // causing GcInfoDecoder to skip live slot reporting at non-interruptible offsets.
+            if (handle.LastProcessedFrameType is FrameIterator.FrameType.FaultingExceptionFrame
+                                              or FrameIterator.FrameType.SoftwareExceptionFrame)
+            {
+                handle.IsInterrupted = true;
+            }
+            handle.LastProcessedFrameType = null;
+
             if (CheckForSkippedFrames(handle))
             {
                 handle.State = StackWalkState.SW_SKIPPED_FRAME;
