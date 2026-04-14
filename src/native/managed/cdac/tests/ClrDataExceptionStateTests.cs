@@ -85,7 +85,6 @@ public unsafe class ExceptionStateTests
             AllocContextLimit: TargetPointer.Null,
             Frame: TargetPointer.Null,
             FirstNestedException: firstNestedException,
-            TEB: TargetPointer.Null,
             LastThrownObjectHandle: lastThrownObjectHandle,
             NextThread: TargetPointer.Null));
 
@@ -464,7 +463,6 @@ public unsafe class ExceptionStateTests
             AllocContextLimit: TargetPointer.Null,
             Frame: TargetPointer.Null,
             FirstNestedException: firstNestedException,
-            TEB: TargetPointer.Null,
             LastThrownObjectHandle: lastThrownObjectHandle,
             NextThread: TargetPointer.Null));
 

@@ -178,7 +178,6 @@ internal sealed class MockThread : TypedView
     private const string FrameFieldName = "Frame";
     private const string CachedStackBaseFieldName = "CachedStackBase";
     private const string CachedStackLimitFieldName = "CachedStackLimit";
-    private const string TEBFieldName = "TEB";
     private const string LastThrownObjectFieldName = "LastThrownObject";
     private const string LinkNextFieldName = "LinkNext";
     private const string ExceptionTrackerFieldName = "ExceptionTracker";
@@ -198,7 +197,6 @@ internal sealed class MockThread : TypedView
             .AddPointerField(FrameFieldName)
             .AddPointerField(CachedStackBaseFieldName)
             .AddPointerField(CachedStackLimitFieldName)
-            .AddPointerField(TEBFieldName)
             .AddPointerField(LastThrownObjectFieldName)
             .AddPointerField(LinkNextFieldName)
             .AddPointerField(ExceptionTrackerFieldName)
