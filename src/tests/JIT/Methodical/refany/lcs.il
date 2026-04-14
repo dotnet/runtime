@@ -18,6 +18,8 @@
 {
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace JitTest_lcs_refany_il
 {
   .class public auto ansi LCS
@@ -591,7 +593,11 @@
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
-      .entrypoint
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('https://github.com/dotnet/runtime/issues/34196')
+        int32(0x2) // Mono
+      }
+    .entrypoint
       .maxstack  5
       .locals (string[] V_0,
                int32[] V_1,

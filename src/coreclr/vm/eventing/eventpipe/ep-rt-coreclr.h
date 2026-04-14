@@ -532,7 +532,7 @@ ep_rt_config_value_get_config (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeConfig));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(static_cast<LPWSTR>(value)));
 }
 
 static
@@ -542,7 +542,7 @@ ep_rt_config_value_get_output_path (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputPath));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(static_cast<LPWSTR>(value)));
 }
 
 static
@@ -741,7 +741,7 @@ ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
 	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
-	return reinterpret_cast<EventPipeWaitHandle>(wait_event->event->GetHandleUNHOSTED ());
+	return reinterpret_cast<EventPipeWaitHandle>(wait_event->event->GetOSEvent ());
 }
 
 static
@@ -1031,7 +1031,7 @@ void
 ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
 	STATIC_CONTRACT_NOTHROW;
-    
+
 #ifdef HOST_WINDOWS
     SYSTEMTIME value;
     GetSystemTime (&value);

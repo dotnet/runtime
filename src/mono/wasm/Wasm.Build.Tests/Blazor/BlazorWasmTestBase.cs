@@ -23,8 +23,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     protected readonly PublishOptions _defaultBlazorPublishOptions;
     private readonly BuildOptions _defaultBlazorBuildOptions;
 
-    protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-                : base(output, buildContext, new WasmSdkBasedProjectProvider(output, DefaultTargetFrameworkForBlazor))
+    protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, string? targetFramework = null)
+                : base(output, buildContext, new WasmSdkBasedProjectProvider(output, targetFramework ?? DefaultTargetFrameworkForBlazor))
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
         _defaultBlazorPublishOptions = _defaultPublishOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs };
@@ -49,27 +49,42 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
                 """ }
         };
 
+    private const int InteractionTimeoutMs = 60_000;
+
     private Func<RunOptions, IPage, Task>? _executeAfterLoaded = async (runOptions, page) =>
         {
             if (runOptions is BlazorRunOptions bro && bro.CheckCounter)
             {
-                await page.Locator("text=Counter").ClickAsync();
-                var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+                // Wait for the Counter nav link to be visible, then use an extended click
+                // timeout so Playwright can wait for the element to become stable before
+                // clicking. On slow CI machines (Windows Docker containers), Blazor's
+                // layout reflows can otherwise trigger flaky TimeoutExceptions.
+                var counterLink = page.Locator("text=Counter");
+                await counterLink.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = InteractionTimeoutMs });
+                await counterLink.ClickAsync(new() { Timeout = InteractionTimeoutMs });
+
+                var status = page.Locator("p[role='status']");
+                await status.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = InteractionTimeoutMs });
+                var txt = await status.InnerHTMLAsync();
                 Assert.Equal("Current count: 0", txt);
 
-                await page.Locator("text=\"Click me\"").ClickAsync();
-                await Task.Delay(300);
-                txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-                Assert.Equal("Current count: 1", txt);
+                var clickMe = page.Locator("text=\"Click me\"");
+                await clickMe.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = InteractionTimeoutMs });
+                await clickMe.ClickAsync(new() { Timeout = InteractionTimeoutMs });
+
+                // Wait for the counter to reflect the click instead of a fixed delay
+                await page.WaitForFunctionAsync(
+                    """selector => document.querySelector(selector)?.textContent?.trim() === 'Current count: 1'""",
+                    "p[role='status']",
+                    new() { Timeout = InteractionTimeoutMs });
             }
         };
 
     protected void UpdateHomePage() =>
         UpdateFile(Path.Combine("Pages", "Home.razor"), blazorHomePageReplacements);
 
-    public void InitBlazorWasmProjectDir(string id, string? targetFramework = null)
+    public void InitBlazorWasmProjectDir(string id)
     {
-        targetFramework ??= DefaultTargetFrameworkForBlazor;
         InitPaths(id);
         if (Directory.Exists(_projectDir))
             Directory.Delete(_projectDir, recursive: true);
@@ -77,7 +92,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 
         File.WriteAllText(Path.Combine(_projectDir, "nuget.config"),
                             GetNuGetConfigWithLocalPackagesPath(
-                                        GetNuGetConfigPathFor(targetFramework),
+                                        GetNuGetConfigPath(),
                                         s_buildEnv.BuiltNuGetsPath));
 
         File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));

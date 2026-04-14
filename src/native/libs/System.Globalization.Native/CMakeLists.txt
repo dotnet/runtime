@@ -1,5 +1,5 @@
 # Required for StaticICULinking
-cmake_minimum_required(VERSION 3.10..3.20)
+cmake_minimum_required(VERSION 3.10..3.26)
 
 project(System.Globalization.Native C)
 
@@ -16,6 +16,7 @@ if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     add_compile_options(-Wno-documentation)
     add_compile_options(-Wno-documentation-unknown-command)
     add_compile_options(-Wno-reserved-identifier)
+    add_compile_options(-Wno-c++-keyword)
 
     # Workaround for https://unicode-org.atlassian.net/browse/ICU-20601
     add_compile_options(-Wno-extra-semi-stmt)

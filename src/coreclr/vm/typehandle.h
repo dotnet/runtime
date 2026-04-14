@@ -80,6 +80,7 @@ class ComCallWrapperTemplate;
 // The entries in these tables (i.e. the code) are, however, often shared.
 // Clients of TypeHandle don't need to know any of this detail; just use the
 // GetInstantiation and HasInstantiation methods.
+// [cDAC] [RuntimeTypeSystem]: If ever the scheme of having the lower two bits be zero for MethodTables and two for TypeDescs is changed, version the RuntimeTypeSystem cDAC contract.
 
 class TypeHandle
 {
@@ -697,6 +698,7 @@ public:
 
     bool ContainsAllOneType(TypeHandle th)
     {
+        LIMITED_METHOD_DAC_CONTRACT;
         for (DWORD i = GetNumArgs(); i > 0;)
         {
             if ((*this)[--i] != th)

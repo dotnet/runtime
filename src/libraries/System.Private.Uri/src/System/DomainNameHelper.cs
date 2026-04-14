@@ -224,6 +224,11 @@ namespace System
             // b) if label is ascii and ace and not valid idn then just lowercase it
             // c) if label is ascii and ace and is valid idn then get its unicode eqvl
             // d) if label is unicode then clean it by running it through idnmapping
+
+            // Buffer for intermediate ASCII form when processing non-ASCII labels
+            // Max label length is 63 chars, but punycode can expand - 256 is a safe upper bound
+            Span<char> asciiBuffer = stackalloc char[256];
+
             for (int i = 0; i < hostname.Length; i++)
             {
                 if (i != 0)
@@ -241,11 +246,15 @@ namespace System
 
                 if (!Ascii.IsValid(label))
                 {
+                    // For non-ASCII labels, first convert to ASCII (punycode), then to normalized Unicode
+                    // Use span-based APIs to avoid intermediate string allocations
                     try
                     {
-                        string asciiForm = s_idnMapping.GetAscii(hostname, i, label.Length);
+                        bool asciiSuccess = s_idnMapping.TryGetAscii(label, asciiBuffer, out int asciiWritten);
+                        Debug.Assert(asciiSuccess, "TryGetAscii should always succeed with a 255-char buffer for valid IDN labels");
 
-                        dest.Append(s_idnMapping.GetUnicode(asciiForm));
+                        // Now convert the ASCII form to Unicode and append directly to dest
+                        AppendIdnUnicode(asciiBuffer.Slice(0, asciiWritten), ref dest);
                     }
                     catch (ArgumentException)
                     {
@@ -258,10 +267,10 @@ namespace System
 
                     if (label.StartsWith("xn--", StringComparison.Ordinal))
                     {
-                        // check ace validity
+                        // Check ace validity - use span-based API to avoid string allocation
                         try
                         {
-                            dest.Append(s_idnMapping.GetUnicode(hostname, i, label.Length));
+                            AppendIdnUnicode(label, ref dest);
                             aceValid = true;
                         }
                         catch (ArgumentException)
@@ -282,6 +291,21 @@ namespace System
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Converts ASCII (punycode) to Unicode and appends directly to the ValueStringBuilder.
+        /// </summary>
+        private static void AppendIdnUnicode(scoped ReadOnlySpan<char> ascii, ref ValueStringBuilder dest)
+        {
+            int charsWritten;
+
+            while (!s_idnMapping.TryGetUnicode(ascii, dest.RawChars.Slice(dest.Length), out charsWritten))
+            {
+                dest.EnsureCapacity(dest.Capacity + 1);
+            }
+
+            dest.Length += charsWritten;
         }
     }
 }

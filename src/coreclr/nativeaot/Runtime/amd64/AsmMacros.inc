@@ -358,6 +358,7 @@ PTFF_SAVE_R15           equ 00000080h
 PTFF_SAVE_ALL_PRESERVED equ 000000F7h   ;; NOTE: RBP is not included in this set!
 PTFF_SAVE_RSP           equ 00008000h
 PTFF_SAVE_RAX           equ 00000100h   ;; RAX is saved in hijack handler - in case it contains a GC ref
+PTFF_SAVE_RCX           equ 00000200h   ;; RCX is saved in hijack handler - in case it contains a GC ref
 PTFF_SAVE_ALL_SCRATCH   equ 00007F00h
 PTFF_THREAD_HIJACK      equ 00100000h   ;; indicates that this is a frame for a hijacked call
 

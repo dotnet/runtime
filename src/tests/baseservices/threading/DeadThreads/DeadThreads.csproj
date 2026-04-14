@@ -9,4 +9,7 @@
     <CLRTestEnvironmentVariable Include="DOTNET_Thread_DeadThreadCountThresholdForGCTrigger" Value="8" />
     <CLRTestEnvironmentVariable Include="DOTNET_Thread_DeadThreadGCTriggerPeriodMilliseconds" Value="3e8" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

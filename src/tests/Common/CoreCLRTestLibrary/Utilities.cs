@@ -69,7 +69,6 @@ namespace TestLibrary
         public static bool IsLinux => OperatingSystem.IsLinux();
         public static bool IsFreeBSD => OperatingSystem.IsFreeBSD();
         public static bool IsMacOSX => OperatingSystem.IsMacOS();
-        public static bool IsWindows7 => IsWindows && Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor == 1;
         public static bool IsWindowsNanoServer => (!IsWindowsIoTCore && GetInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
 
         // Windows 10 October 2018 Update
@@ -93,6 +92,7 @@ namespace TestLibrary
 
         // return whether or not the OS is a 64 bit OS
         public static bool Is64 => (IntPtr.Size == 8);
+        public static bool Is32 => (IntPtr.Size == 4);
 
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
@@ -103,11 +103,9 @@ namespace TestLibrary
         {
             get
             {
-                if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DOTNET_Interpreter")))
+                if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled)
                     return true;
-                if (int.TryParse(Environment.GetEnvironmentVariable("DOTNET_InterpMode") ?? "", out int mode) && (mode > 0))
-                    return true;
-                return false;
+                return CoreClrConfigurationDetection.IsCoreClrInterpreter;
             }
         }
 

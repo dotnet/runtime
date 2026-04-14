@@ -438,7 +438,7 @@ namespace System.Collections.Generic
             Entry[]? entries = _entries;
             Debug.Assert(entries is not null);
 
-            // Grow capacity if necessary to accomodate the extra entry.
+            // Grow capacity if necessary to accommodate the extra entry.
             if (entries.Length == _count)
             {
                 Resize(HashHelpers.ExpandPrime(entries.Length));
@@ -1079,7 +1079,7 @@ namespace System.Collections.Generic
         private void Resize(int newSize, bool forceNewHashCodes = false)
         {
             Debug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType, "Value types never rehash.");
-            Debug.Assert(newSize >= _count, "The requested size must accomodate all of the current elements.");
+            Debug.Assert(newSize >= _count, "The requested size must accommodate all of the current elements.");
 
             // Create the new arrays. We allocate both prior to storing either; in case one of the allocation fails,
             // we want to avoid corrupting the data structure.

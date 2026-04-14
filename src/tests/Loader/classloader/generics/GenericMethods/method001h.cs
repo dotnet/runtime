@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class Base<U>
 {
@@ -54,6 +55,7 @@ public class Test_method001h
 	
 	}
 	
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

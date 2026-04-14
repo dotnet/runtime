@@ -59,6 +59,19 @@ namespace VirtualStaticInterfaceMethods
         public static string WhichMethod(T b) => throw null;
     }
 
+    interface ICovariantInstance<out T>
+    {
+        string Func() => throw null;
+    }
+
+    interface ICovariantInstanceDim<out T> : ICovariantInstance<T>
+    {
+        string ICovariantInstance<T>.Func() => throw null;
+    }
+
+    class CovariantInstanceDimBase : ICovariantInstanceDim<Base> { }
+    class CovariantInstanceDimDerived : CovariantInstanceDimBase, ICovariantInstanceDim<Derived> { }
+
     class Base { }
     class Mid : Base { }
     class Derived : Mid { }

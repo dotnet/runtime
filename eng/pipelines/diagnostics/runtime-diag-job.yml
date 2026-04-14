@@ -38,6 +38,7 @@ parameters:
   disableComponentGovernance: ''
   liveRuntimeDir: ''
   useCdac: false
+  classFilter: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -88,6 +89,7 @@ jobs:
       - _TestArgs: '-test'
       - _Cross: ''
       - _CdacArgs: ''
+      - _ClassFilterArgs: ''
 
       - _buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
 
@@ -102,6 +104,9 @@ jobs:
 
       - ${{ if eq(parameters.useCdac, 'true') }}:
         - _CdacArgs: '-useCdac'
+
+      - ${{ if ne(parameters.classFilter, '') }}:
+        - _ClassFilterArgs: '-classfilter ${{ parameters.classFilter }}'
 
       # For testing msrc's and service releases. The RuntimeSourceVersion is either "default" or the service release version to test
       - _InternalInstallArgs: ''
@@ -142,31 +147,12 @@ jobs:
     - checkout: diagnostics
       clean: true
       fetchDepth: $(checkoutFetchDepth)
+      fetchTags: false
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.hostedOs, 'windows')) }}:
-        - task: Bash@3
-          displayName: Setup Private Feeds Credentials
-          inputs:
-            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
-            arguments: $(Build.SourcesDirectory)/NuGet.config $Token
-          env:
-            Token: $(dn-bot-dnceng-artifact-feeds-rw)
-      - ${{ else }}:
-        - task: PowerShell@2
-          displayName: Setup Private Feeds Credentials
-          inputs:
-            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
-            arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
-          env:
-            Token: $(dn-bot-dnceng-artifact-feeds-rw)
-        # Run the NuGetAuthenticate task after the internal feeds are added to the nuget.config
-        # This ensures that creds are set appropriately for all feeds in the config, and that the
-        # credential provider is installed.
-        - task: NuGetAuthenticate@1
+    - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
@@ -219,6 +205,7 @@ jobs:
           $(_TestArgs)
           $(_Cross)
           $(_InternalInstallArgs)
+          $(_ClassFilterArgs)
           /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
       ${{ if eq(parameters.testOnly, 'true') }}:
         displayName: Test

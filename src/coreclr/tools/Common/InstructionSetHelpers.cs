@@ -17,7 +17,7 @@ namespace System.CommandLine
     internal static partial class Helpers
     {
         public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, int maxVectorTBitWidth, bool isVectorTOptimistic, TargetArchitecture targetArchitecture, TargetOS targetOS,
-            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool optimizingForSize, bool isReadyToRun)
+            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool allowOptimistic, bool isReadyToRun)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
 
@@ -31,7 +31,7 @@ namespace System.CommandLine
 
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
             {
-                if (isReadyToRun && (targetOS != TargetOS.OSX))
+                if (isReadyToRun && targetOS != TargetOS.OSX && targetOS != TargetOS.MacCatalyst)
                 {
                     // ReadyToRun can presume AVX2, BMI1, BMI2, F16C, FMA, LZCNT, and MOVBE
                     instructionSetSupportBuilder.AddSupportedInstructionSet("x86-64-v3");
@@ -67,6 +67,11 @@ namespace System.CommandLine
                         instructionSetSupportBuilder.AddSupportedInstructionSet("armv8.2-a");
                         instructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
                     }
+                    else if (targetOS is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.tvOS or TargetOS.tvOSSimulator)
+                    {
+                        // ReadyToRun on iOS/tvOS can only presume armv8.0-a
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("armv8-a");
+                    }
                     else
                     {
                         // While Unix needs a lower baseline due to things like Raspberry PI
@@ -86,11 +91,6 @@ namespace System.CommandLine
                     }
                 }
             }
-
-            // Whether to allow optimistically expanding the instruction sets beyond what was specified.
-            // We seed this from optimizingForSize - if we're size-optimizing, we don't want to unnecessarily
-            // compile both branches of IsSupported checks.
-            bool allowOptimistic = !optimizingForSize;
 
             bool throttleAvx512 = false;
 

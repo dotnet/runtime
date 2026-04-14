@@ -15,13 +15,21 @@ namespace ILLink.RoslynAnalyzer.Tests
 {
     internal static class TestCaseCompilation
     {
-        private static readonly ImmutableArray<DiagnosticAnalyzer> SupportedDiagnosticAnalyzers =
-            ImmutableArray.Create<DiagnosticAnalyzer>(
-                new RequiresDynamicCodeAnalyzer(),
-                new COMAnalyzer(),
-                new RequiresAssemblyFilesAnalyzer(),
-                new RequiresUnreferencedCodeAnalyzer(),
-                new DynamicallyAccessedMembersAnalyzer());
+        private static readonly ImmutableArray<DiagnosticAnalyzer> SupportedDiagnosticAnalyzers = CreateSupportedDiagnosticAnalyzers();
+
+        private static ImmutableArray<DiagnosticAnalyzer> CreateSupportedDiagnosticAnalyzers()
+        {
+            var builder = ImmutableArray.CreateBuilder<DiagnosticAnalyzer>();
+            builder.Add(new RequiresDynamicCodeAnalyzer());
+            builder.Add(new COMAnalyzer());
+            builder.Add(new RequiresAssemblyFilesAnalyzer());
+            builder.Add(new RequiresUnreferencedCodeAnalyzer());
+            builder.Add(new DynamicallyAccessedMembersAnalyzer());
+#if DEBUG
+            builder.Add(new RequiresUnsafeAnalyzer());
+#endif
+            return builder.ToImmutable();
+        }
 
         public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation(
             string src,
@@ -29,8 +37,9 @@ namespace ILLink.RoslynAnalyzer.Tests
             (string, string)[]? globalAnalyzerOptions = null,
             IEnumerable<MetadataReference>? additionalReferences = null,
             IEnumerable<SyntaxTree>? additionalSources = null,
-            IEnumerable<AdditionalText>? additionalFiles = null)
-            => CreateCompilation(CSharpSyntaxTree.ParseText(src, new CSharpParseOptions(LanguageVersion.Preview)), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
+            IEnumerable<AdditionalText>? additionalFiles = null,
+            bool allowUnsafe = false)
+            => CreateCompilation(CSharpSyntaxTree.ParseText(src, new CSharpParseOptions(LanguageVersion.Preview)),consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles, allowUnsafe);
 
         public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation(
             SyntaxTree src,
@@ -38,7 +47,8 @@ namespace ILLink.RoslynAnalyzer.Tests
             (string, string)[]? globalAnalyzerOptions = null,
             IEnumerable<MetadataReference>? additionalReferences = null,
             IEnumerable<SyntaxTree>? additionalSources = null,
-            IEnumerable<AdditionalText>? additionalFiles = null)
+            IEnumerable<AdditionalText>? additionalFiles = null,
+            bool allowUnsafe = false)
         {
             var mdRef = MetadataReference.CreateFromFile(typeof(Mono.Linker.Tests.Cases.Expectations.Metadata.BaseMetadataAttribute).Assembly.Location);
             additionalReferences ??= Array.Empty<MetadataReference>();
@@ -64,10 +74,16 @@ namespace ILLink.RoslynAnalyzer.Tests
                 syntaxTrees: sources,
                 references: SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences().Add(mdRef).AddRange(additionalReferences),
                 new CSharpCompilationOptions(consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary,
+                    allowUnsafe: allowUnsafe,
                     specificDiagnosticOptions: new Dictionary<string, ReportDiagnostic>
                     {
                         // Allow the polyfilled DynamicallyAccessedMembersAttribute to take precedence over the one in corelib.
-                        { "CS0436", ReportDiagnostic.Suppress }
+                        { "CS0436", ReportDiagnostic.Suppress },
+                        // Suppress assembly reference version mismatch warnings. The linker test assemblies are built against
+                        // NetCoreAppToolCurrent, but during test execution we recompile individual test files against the live
+                        // libraries along with a reference to one of the already-built linker test assemblies.
+                        { "CS1701", ReportDiagnostic.Suppress },
+                        { "CS1702", ReportDiagnostic.Suppress }
                     }));
             var analyzerOptions = new AnalyzerOptions(
                 additionalFiles: additionalFiles?.ToImmutableArray() ?? ImmutableArray<AdditionalText>.Empty,

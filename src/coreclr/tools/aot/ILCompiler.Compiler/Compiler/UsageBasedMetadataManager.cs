@@ -231,10 +231,11 @@ namespace ILCompiler
             out Dictionary<MethodDesc, int> methodMetadataMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
             out Dictionary<FieldDesc, int> fieldMetadataMappings,
-            out List<StackTraceMapping> stackTraceMapping)
+            out List<StackTraceMapping> stackTraceMapping,
+            out List<ReflectionStackTraceMapping> reflectionStackTraceMapping)
         {
             ComputeMetadata(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory),
-                factory, out metadataBlob, out typeMappings, out methodMappings, out methodMetadataMappings, out fieldMappings, out fieldMetadataMappings, out stackTraceMapping);
+                factory, out metadataBlob, out typeMappings, out methodMappings, out methodMetadataMappings, out fieldMappings, out fieldMetadataMappings, out stackTraceMapping, out reflectionStackTraceMapping);
         }
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)

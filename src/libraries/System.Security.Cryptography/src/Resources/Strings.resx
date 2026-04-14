@@ -918,9 +918,6 @@
   <data name="CryptSetKeyParam_Failed" xml:space="preserve">
     <value>CryptSetKeyParam failed with error code {0}.</value>
   </data>
-  <data name="CspParameter_invalid" xml:space="preserve">
-    <value>CSPParameters cannot be null</value>
-  </data>
   <data name="HashNameMultipleSetNotSupported" xml:space="preserve">
     <value>Setting the hashname after it's already been set is not supported on this platform.</value>
   </data>

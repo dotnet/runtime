@@ -9,16 +9,16 @@ namespace System.Globalization
 {
     public sealed partial class IdnMapping
     {
-        private unsafe string NlsGetAsciiCore(string unicodeString, char* unicode, int count)
+        private string NlsGetAsciiCore(string unicodeString, int index, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(unicodeString != null && unicodeString.Length >= count);
 
+            ReadOnlySpan<char> unicode = unicodeString.AsSpan(index, count);
             uint flags = NlsFlags;
 
             // Determine the required length
-            int length = Interop.Normaliz.IdnToAscii(flags, unicode, count, null, 0);
+            int length = Interop.Normaliz.IdnToAscii(flags, unicode, count, Span<char>.Empty, 0);
             if (length == 0)
             {
                 ThrowForZeroLength(unicode: true);
@@ -28,44 +28,71 @@ namespace System.Globalization
             const int StackAllocThreshold = 512; // arbitrary limit to switch from stack to heap allocation
             if ((uint)length < StackAllocThreshold)
             {
-                char* output = stackalloc char[length];
-                return NlsGetAsciiCore(unicodeString, unicode, count, flags, output, length);
+                Span<char> output = stackalloc char[length];
+                return NlsGetAsciiCore(unicodeString, unicode, flags, output);
             }
             else
             {
                 char[] output = new char[length];
-                fixed (char* pOutput = &output[0])
-                {
-                    return NlsGetAsciiCore(unicodeString, unicode, count, flags, pOutput, length);
-                }
+                return NlsGetAsciiCore(unicodeString, unicode, flags, output);
             }
         }
 
-        private static unsafe string NlsGetAsciiCore(string unicodeString, char* unicode, int count, uint flags, char* output, int outputLength)
+        private static string NlsGetAsciiCore(string unicodeString, ReadOnlySpan<char> unicode, uint flags, Span<char> output)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(unicodeString != null && unicodeString.Length >= count);
 
-            int length = Interop.Normaliz.IdnToAscii(flags, unicode, count, output, outputLength);
+            int length = Interop.Normaliz.IdnToAscii(flags, unicode, unicode.Length, output, output.Length);
             if (length == 0)
             {
                 ThrowForZeroLength(unicode: true);
             }
-            Debug.Assert(length == outputLength);
-            return GetStringForOutput(unicodeString, unicode, count, output, length);
+            Debug.Assert(length == output.Length);
+            return GetStringForOutput(unicodeString, unicode, output.Slice(0, length));
         }
 
-        private unsafe string NlsGetUnicodeCore(string asciiString, char* ascii, int count)
+        private bool NlsTryGetAsciiCore(ReadOnlySpan<char> unicode, Span<char> destination, out int charsWritten)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(asciiString != null && asciiString.Length >= count);
 
             uint flags = NlsFlags;
 
             // Determine the required length
-            int length = Interop.Normaliz.IdnToUnicode(flags, ascii, count, null, 0);
+            int length = Interop.Normaliz.IdnToAscii(flags, unicode, unicode.Length, Span<char>.Empty, 0);
+            if (length == 0)
+            {
+                ThrowForZeroLength(unicode: true);
+            }
+
+            if (length > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            // Do the conversion
+            int actualLength = Interop.Normaliz.IdnToAscii(flags, unicode, unicode.Length, destination, destination.Length);
+            if (actualLength == 0)
+            {
+                ThrowForZeroLength(unicode: true);
+            }
+
+            charsWritten = actualLength;
+            return true;
+        }
+
+        private string NlsGetUnicodeCore(string asciiString, int index, int count)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseNls);
+
+            ReadOnlySpan<char> ascii = asciiString.AsSpan(index, count);
+            uint flags = NlsFlags;
+
+            // Determine the required length
+            int length = Interop.Normaliz.IdnToUnicode(flags, ascii, count, Span<char>.Empty, 0);
             if (length == 0)
             {
                 ThrowForZeroLength(unicode: false);
@@ -75,32 +102,59 @@ namespace System.Globalization
             const int StackAllocThreshold = 512; // arbitrary limit to switch from stack to heap allocation
             if ((uint)length < StackAllocThreshold)
             {
-                char* output = stackalloc char[length];
-                return NlsGetUnicodeCore(asciiString, ascii, count, flags, output, length);
+                Span<char> output = stackalloc char[length];
+                return NlsGetUnicodeCore(asciiString, ascii, flags, output);
             }
             else
             {
                 char[] output = new char[length];
-                fixed (char* pOutput = &output[0])
-                {
-                    return NlsGetUnicodeCore(asciiString, ascii, count, flags, pOutput, length);
-                }
+                return NlsGetUnicodeCore(asciiString, ascii, flags, output);
             }
         }
 
-        private static unsafe string NlsGetUnicodeCore(string asciiString, char* ascii, int count, uint flags, char* output, int outputLength)
+        private static string NlsGetUnicodeCore(string asciiString, ReadOnlySpan<char> ascii, uint flags, Span<char> output)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(asciiString != null && asciiString.Length >= count);
 
-            int length = Interop.Normaliz.IdnToUnicode(flags, ascii, count, output, outputLength);
+            int length = Interop.Normaliz.IdnToUnicode(flags, ascii, ascii.Length, output, output.Length);
             if (length == 0)
             {
                 ThrowForZeroLength(unicode: false);
             }
-            Debug.Assert(length == outputLength);
-            return GetStringForOutput(asciiString, ascii, count, output, length);
+            Debug.Assert(length == output.Length);
+            return GetStringForOutput(asciiString, ascii, output.Slice(0, length));
+        }
+
+        private bool NlsTryGetUnicodeCore(ReadOnlySpan<char> ascii, Span<char> destination, out int charsWritten)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseNls);
+
+            uint flags = NlsFlags;
+
+            // Determine the required length
+            int length = Interop.Normaliz.IdnToUnicode(flags, ascii, ascii.Length, Span<char>.Empty, 0);
+            if (length == 0)
+            {
+                ThrowForZeroLength(unicode: false);
+            }
+
+            if (length > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            // Do the conversion
+            int actualLength = Interop.Normaliz.IdnToUnicode(flags, ascii, ascii.Length, destination, destination.Length);
+            if (actualLength == 0)
+            {
+                ThrowForZeroLength(unicode: false);
+            }
+
+            charsWritten = actualLength;
+            return true;
         }
 
         private uint NlsFlags

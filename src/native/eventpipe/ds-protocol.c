@@ -396,7 +396,10 @@ ds_ipc_message_try_parse_value (
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (value != NULL);
-	EP_ASSERT ((buffer_len - value_len) <= buffer_len);
+	EP_ASSERT (*buffer_len >= value_len);
+
+	if (*buffer_len < value_len)
+		return false;
 
 	memcpy (value, *buffer, value_len);
 	*buffer = *buffer + value_len;

@@ -28,6 +28,7 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public override bool IsDnsEligible { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         /// Gets a bool value that indicates whether the Internet Protocol (IP) address is transient.
@@ -38,6 +39,7 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public override bool IsTransient { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         /// [To be supplied.]
@@ -48,6 +50,7 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public override long AddressPreferredLifetime { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         /// [To be supplied.]
@@ -58,6 +61,7 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public override long AddressValidLifetime { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         /// Specifies the amount of time remaining on the Dynamic Host Configuration Protocol (DHCP) lease for this IP address.
@@ -68,6 +72,7 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public override long DhcpLeaseLifetime { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         /// Gets a value that indicates the state of the duplicate address detection algorithm.
@@ -78,6 +83,7 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public override DuplicateAddressDetectionState DuplicateAddressDetectionState { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         /// Gets a value that identifies the source of a unicast IP address prefix.
@@ -88,6 +94,7 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public override PrefixOrigin PrefixOrigin { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         /// Gets a value that identifies the source of a unicast IP address suffix.
@@ -98,6 +105,7 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public override SuffixOrigin SuffixOrigin { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override IPAddress IPv4Mask

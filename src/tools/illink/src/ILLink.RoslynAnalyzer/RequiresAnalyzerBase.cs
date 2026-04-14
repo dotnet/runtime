@@ -131,7 +131,7 @@ namespace ILLink.RoslynAnalyzer
             in DiagnosticContext diagnosticContext)
         {
             // Do not emit any diagnostic if caller is annotated with the attribute too.
-            if (containingSymbol.IsInRequiresScope(RequiresAttributeName, out _))
+            if (IsInRequiresScope(containingSymbol, in diagnosticContext))
                 return;
 
             if (CreateSpecialIncompatibleMembersDiagnostic(incompatibleMembers, member, diagnosticContext))
@@ -148,6 +148,11 @@ namespace ILLink.RoslynAnalyzer
                 return;
 
             CreateRequiresDiagnostic(member, requiresAttribute, diagnosticContext);
+        }
+
+        protected virtual bool IsInRequiresScope(ISymbol containingSymbol, in DiagnosticContext context)
+        {
+            return containingSymbol.IsInRequiresScope(RequiresAttributeName, out _);
         }
 
         private void AnalyzeImplicitBaseCtor(SymbolAnalysisContext context)

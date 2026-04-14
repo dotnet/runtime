@@ -30,17 +30,17 @@ int fsetpos_64(FILE* stream, int64_t pos)
     return fsetpos(stream, &fpos);
 }
 
-HRESULT HRESULTFromErrno()
+HRESULT HRESULTFromErr(int err)
 {
     // maps the common I/O errors
     // based on FILEGetLastErrorFromErrno
 
     // stdio functions aren't guaranteed to preserve GetLastError.
-    // errno should be used as source of truth.
+    // errno/ferror should be used as source of truth.
     
     DWORD win32Err;
 
-    switch(errno)
+    switch(err)
     {
     case 0:
         win32Err = ERROR_SUCCESS;

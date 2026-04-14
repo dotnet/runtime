@@ -196,9 +196,10 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'osx'">12.0</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'maccatalyst'">15.2</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(TargetOS.StartsWith('ios')) or $(TargetOS.StartsWith('tvos')))">12.2</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'osx'">$(macOSVersionMin)</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'maccatalyst'">$(MacCatalystVersionMin)</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and $(TargetOS.StartsWith('ios'))">$(iOSVersionMin)</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and $(TargetOS.StartsWith('tvos'))">$(tvOSVersionMin)</AppleMinOSVersion>
 
       <_AppleSdkName Condition="'$(TargetOS)' == 'ios'">iphoneos</_AppleSdkName>
       <_AppleSdkName Condition="'$(TargetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
@@ -252,13 +253,13 @@
       <_MachLinkerArg Include="-Wl,-dead_strip" />
     </ItemGroup>
 
-    <Exec Command="&quot;$(_AppleClang)&quot; --version" IgnoreExitCode="true" StandardOutputImportance="Low" IgnoreStandardErrorWarningFormat="true" ConsoleToMSBuild="true">
+    <Exec Command="xcodebuild -version" IgnoreExitCode="true" StandardOutputImportance="Low" IgnoreStandardErrorWarningFormat="true" ConsoleToMSBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
       <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
     </Exec>
 
     <PropertyGroup Condition="('$(_XcodeVersionStringExitCode)' == '0' or '$(_XcodeVersionStringExitCode)' == '1') and '$(_XcodeVersionString)' != ''">
-      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '[1-9]\d*'))</_XcodeVersion>
+      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '(?&lt;=Xcode\s)[1-9]\d*'))</_XcodeVersion>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false'">

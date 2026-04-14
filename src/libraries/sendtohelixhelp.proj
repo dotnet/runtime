@@ -39,6 +39,7 @@
         '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">06:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetsAppleMobile)' == 'true'">01:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'android'">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'">01:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'wasi'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
@@ -173,6 +174,7 @@
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
+    <HelixProperties Condition="'$(WorkItemPrefix)' != ''" Include="jobName" Value="$(WorkItemPrefix.TrimEnd('-'))" />
   </ItemGroup>
 
   <!-- Ensure that all HelixPreCommand items are ready before this -->
@@ -341,6 +343,12 @@
 
   <Target Name="PrintBuildTargetFramework">
     <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
+  </Target>
+
+  <Target Name="SetHelixJobName" BeforeTargets="CoreTest">
+    <PropertyGroup>
+      <HelixJobName Condition="'$(WorkItemPrefix)' != ''">$(WorkItemPrefix.TrimEnd('-'))</HelixJobName>
+    </PropertyGroup>
   </Target>
 
   <!--

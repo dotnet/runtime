@@ -74,6 +74,8 @@ namespace System.Net
 
                 if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
+                    ValidateAlpnProtocolListSize(sslAuthenticationOptions.ApplicationProtocols);
+
                     if (sslAuthenticationOptions.IsClient)
                     {
                         // On macOS coreTls supports only client side.
@@ -368,7 +370,12 @@ namespace System.Net
         {
             Debug.Assert(sslContext != null);
 
-            IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates.Count + 1];
+            const int StackallocThreshold = 128;
+
+            int certCount = context!.IntermediateCertificates.Count + 1;
+            Span<IntPtr> ptrs = certCount <= StackallocThreshold ?
+                stackalloc IntPtr[certCount] :
+                new IntPtr[certCount];
 
             for (int i = 0; i < context.IntermediateCertificates.Count; i++)
             {
@@ -391,6 +398,19 @@ namespace System.Net
             ptrs[0] = context!.TargetCertificate.Handle;
 
             Interop.AppleCrypto.SslSetCertificate(sslContext, ptrs);
+        }
+
+        private static void ValidateAlpnProtocolListSize(List<SslApplicationProtocol> applicationProtocols)
+        {
+            int protocolListSize = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                protocolListSize += protocol.Protocol.Length + 1;
+                if (protocolListSize > ushort.MaxValue)
+                {
+                    throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
+                }
+            }
         }
     }
 }

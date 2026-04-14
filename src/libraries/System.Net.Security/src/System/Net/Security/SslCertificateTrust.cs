@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
@@ -22,10 +21,8 @@ namespace System.Net.Security
             }
 #endif
             if (sendTrustInHandshake && !System.OperatingSystem.IsLinux() && !System.OperatingSystem.IsMacOS() &&
-                // Necessary functions are available only on win 8 onwards
-                !OperatingSystem.IsWindowsVersionAtLeast(6, 2))
+                !System.OperatingSystem.IsWindows())
             {
-                // to be removed when implemented.
                 throw new PlatformNotSupportedException(SR.net_ssl_trust_handshake);
             }
             if (!store.IsOpen)

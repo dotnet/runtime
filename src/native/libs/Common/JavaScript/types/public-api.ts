@@ -10,11 +10,10 @@ import type { EmscriptenModule, NativePointer, TypedArray } from "./emscripten";
 export interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
+     * @deprecated This method is no longer supported and will be removed in a future version.
      */
     withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
@@ -78,20 +77,23 @@ export interface DotnetHostBuilder {
      */
     create(): Promise<RuntimeAPI>;
     /**
+     * Runs the Main() method of the application and keeps the runtime alive.
+     * You can provide "command line" arguments for the Main() method using
+     * - dotnet.withApplicationArguments("A", "B", "C")
+     * - dotnet.withApplicationArgumentsFromQuery()
+     */
+    runMain(): Promise<number>;
+    /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
      * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      * Note: after the runtime exits, it would reject all further calls to the API.
-     * You can use runMain() if you want to keep the runtime alive.
+     * You can use run() if you want to keep the runtime alive.
      */
-    run(): Promise<number>;
+    runMainAndExit(): Promise<number>;
 }
 export type LoaderConfig = {
-    /**
-     * Additional search locations for assets.
-     */
-    remoteSources?: string[];
     /**
      * It will not fail the startup is .pdb files can't be downloaded
      */
@@ -326,10 +328,6 @@ export interface AssetEntry {
      */
     culture?: string;
     /**
-     * If true, an attempt will be made to load the asset from each location in LoaderConfig.remoteSources.
-     */
-    loadRemote?: boolean;
-    /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */
     isOptional?: boolean;
@@ -410,7 +408,12 @@ export type AssetBehaviors = SingleAssetBehaviors |
     /**
      * The javascript module that came from nuget package .
      */
-    | "js-module-library-initializer";
+    | "js-module-library-initializer"
+    /**
+     * Managed assembly packaged as Webcil v 1.0
+     */
+    | "webcil"
+    ;
 export declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.
@@ -432,7 +435,6 @@ export declare const enum GlobalizationMode {
 
 export type DotnetModuleConfig = {
     config?: LoaderConfig;
-    configSrc?: string;
     onConfigLoaded?: (config: LoaderConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
@@ -464,12 +466,6 @@ export type RunAPIType = {
      * @param reason could be a string or an Error object.
      */
     exit: (code: number, reason?: any) => void;
-    /**
-     * Sets the environment variable for the "process"
-     * @param name
-     * @param value
-     */
-    setEnvironmentVariable: (name: string, value: string) => void;
     /**
      * Returns the [JSExport] methods of the assembly with the given name
      * @param assemblyName
@@ -728,9 +724,6 @@ export declare function exit(exitCode: number, reason?: any): void;
 
 export declare const dotnet: DotnetHostBuilder;
 
-declare global {
-    function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
-}
 export declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 

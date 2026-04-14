@@ -59,7 +59,7 @@ All the tools you need should've been installed by Visual Studio at this point. 
 
 Here are the links where you can download these tools:
 
-- *CMake*: https://cmake.org/download (minimum required version is 3.20)
+- *CMake*: https://cmake.org/download (minimum required version is 3.26)
 - *Ninja*: https://github.com/ninja-build/ninja/releases (latest version is most recommended)
 - *Python*: https://www.python.org/downloads/windows (minimum required version is 3.7.4)
 

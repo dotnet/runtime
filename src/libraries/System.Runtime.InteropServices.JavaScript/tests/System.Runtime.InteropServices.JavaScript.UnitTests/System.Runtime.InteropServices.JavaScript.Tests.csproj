@@ -9,12 +9,11 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
-    <FeatureWasmManagedThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
-    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(WasmEnableThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
-    <XunitShowProgress Condition="'$(FeatureWasmManagedThreads)' == 'true'">true</XunitShowProgress>
+    <XunitShowProgress Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</XunitShowProgress>
     <NoWarn>$(NoWarn);IL2103;IL2025;IL2111;IL2122</NoWarn>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <!-- This test library intentionally references inbox P2Ps as it needs the implementation, instead of the contract.
@@ -41,9 +40,9 @@
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JSImportGenerator\JSImports.g.cs" />
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JsExportGenerator\JSExports.g.cs" />
 
-    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
-    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" />
-    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\timers.mjs" />
+    <Content Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" Link="wwwroot\JavaScriptTestHelper.mjs" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" Link="wwwroot\SecondRuntimeTest.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\timers.mjs" Link="wwwroot\timers.mjs" CopyToOutputDirectory="PreserveNewest" />
 
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="..\JavaScriptLibrary\JavaScriptLibrary.csproj" />
@@ -56,13 +55,13 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(FeatureWasmManagedThreads)' != 'true'">
+  <ItemGroup Condition="'$(WasmEnableThreads)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(FeatureWasmManagedThreads)' == 'true'">
+  <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTest.Http.cs" />
@@ -71,9 +70,6 @@
 
     <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
     <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\test.json" />
-
-    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
-    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\test.json" />
   </ItemGroup>
 
 </Project>

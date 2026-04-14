@@ -11,6 +11,7 @@ public class foo
     private static object s_o = typeof(string);
     [Fact]
     [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/122013", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot), nameof(TestLibrary.Utilities.Is32))]
     public static int TestEntryPoint()
     {
         bool f = typeof(string) == s_o as Type;

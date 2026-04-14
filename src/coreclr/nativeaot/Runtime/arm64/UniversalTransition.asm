@@ -89,7 +89,7 @@
     TEXTAREA
 
     MACRO
-        UNIVERSAL_TRANSITION $FunctionName
+        UNIVERSAL_TRANSITION $FunctionName, $ReturnResult
 
     NESTED_ENTRY Rhp$FunctionName
 
@@ -142,17 +142,20 @@
         ;; Restore FP and LR registers, and free the allocated stack block
         EPILOG_RESTORE_REG_PAIR   fp, lr, #STACK_SIZE!
 
+        IF $ReturnResult == 0
         ;; Tailcall to the target address.
         EPILOG_NOP br x12
+        ELSE
+        ;; Return target address
+        EPILOG_NOP mov x15, x12
+        ret
+        ENDIF
 
     NESTED_END Rhp$FunctionName
 
     MEND
 
-    ; To enable proper step-in behavior in the debugger, we need to have two instances
-    ; of the thunk. For the first one, the debugger steps into the call in the function,
-    ; for the other, it steps over it.
-    UNIVERSAL_TRANSITION UniversalTransition
-    UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
+    UNIVERSAL_TRANSITION UniversalTransitionTailCall, 0
+    UNIVERSAL_TRANSITION UniversalTransitionReturnResult, 1
 
     END

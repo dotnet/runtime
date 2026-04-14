@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 
@@ -15,7 +16,11 @@ namespace System.Threading
         {
             private static readonly short ThreadsToKeepAlive = DetermineThreadsToKeepAlive();
 
-            private const int SemaphoreSpinCountDefault = 70;
+            // Spinning in the threadpool semaphore is not always useful.
+            // For example the new workitems may be produced by non-pool threads and could only arrive if pool threads start blocking.
+            // We will limit spinning to roughly 512-1024 spinwaits, each taking 35-50ns. That should be under 50 usec total.
+            // For reference the wakeup latency of a futex/event with threads queued up is reported to be in 5-50 usec range. (year 2025)
+            private const int SemaphoreSpinCountDefault = 9;
 
             // This value represents an assumption of how much uncommitted stack space a worker thread may use in the future.
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of
@@ -42,9 +47,8 @@ namespace System.Threading
             /// </summary>
             private static readonly LowLevelLifoSemaphore s_semaphore =
                 new LowLevelLifoSemaphore(
-                    0,
                     MaxPossibleThreadCount,
-                    AppContextConfigHelper.GetInt32ComPlusOrDotNetConfig(
+                    (uint)AppContextConfigHelper.GetInt32ComPlusOrDotNetConfig(
                         "System.Threading.ThreadPool.UnfairSemaphoreSpinLimit",
                         "ThreadPool_UnfairSemaphoreSpinLimit",
                         SemaphoreSpinCountDefault,
@@ -112,12 +116,13 @@ namespace System.Threading
 
                 while (true)
                 {
-                    bool spinWait = true;
-                    while (semaphore.Wait(timeoutMs, spinWait))
+                    while (semaphore.Wait(timeoutMs))
                     {
-                        WorkerDoWork(threadPoolInstance, ref spinWait);
+                        WorkerDoWork(threadPoolInstance);
                     }
 
+                    // We've timed out waiting on the semaphore. Time to exit.
+                    // In rare cases we may be asked to keep running/waiting.
                     if (ShouldExitWorker(threadPoolInstance, threadAdjustmentLock))
                     {
                         break;
@@ -125,57 +130,35 @@ namespace System.Threading
                 }
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static void WorkerDoWork(PortableThreadPool threadPoolInstance, ref bool spinWait)
+            private static void WorkerDoWork(PortableThreadPool threadPoolInstance)
             {
-                bool alreadyRemovedWorkingWorker = false;
-                while (TakeActiveRequest(threadPoolInstance))
+                do
                 {
-                    threadPoolInstance._separated.lastDequeueTime = Environment.TickCount;
-                    if (!ThreadPoolWorkQueue.Dispatch())
+                    // We generally avoid spurious wakes as they are wasteful, so we nearly always should see a request.
+                    // However, we allow external wakes when thread goals change, which can result in "stolen" requests,
+                    // thus sometimes there is no active request and we need to check.
+                    if (threadPoolInstance._separated._hasOutstandingThreadRequest != 0 &&
+                        Interlocked.Exchange(ref threadPoolInstance._separated._hasOutstandingThreadRequest, 0) != 0)
                     {
-                        // ShouldStopProcessingWorkNow() caused the thread to stop processing work, and it would have
-                        // already removed this working worker in the counts. This typically happens when hill climbing
-                        // decreases the worker thread count goal.
-                        alreadyRemovedWorkingWorker = true;
-                        break;
+                        // We took the request, now we must Dispatch some work items.
+                        threadPoolInstance.NotifyDispatchProgress(Environment.TickCount);
+                        if (!ThreadPoolWorkQueue.Dispatch())
+                        {
+                            // We are above goal and would have already removed this working worker in the counts.
+                            return;
+                        }
                     }
 
-                    if (threadPoolInstance._separated.numRequestedWorkers <= 0)
-                    {
-                        break;
-                    }
-
-                    // In highly bursty cases with short bursts of work, especially in the portable thread pool
-                    // implementation, worker threads are being released and entering Dispatch very quickly, not finding
-                    // much work in Dispatch, and soon afterwards going back to Dispatch, causing extra thrashing on
-                    // data and some interlocked operations, and similarly when the thread pool runs out of work. Since
-                    // there is a pending request for work, introduce a slight delay before serving the next request.
-                    // The spin-wait is mainly for when the sleep is not effective due to there being no other threads
-                    // to schedule.
-                    Thread.UninterruptibleSleep0();
-                    if (!Environment.IsSingleProcessor)
-                    {
-                        Thread.SpinWait(1);
-                    }
-                }
-
-                // Don't spin-wait on the semaphore next time if the thread was actively stopped from processing work,
-                // as it's unlikely that the worker thread count goal would be increased again so soon afterwards that
-                // the semaphore would be released within the spin-wait window
-                spinWait = !alreadyRemovedWorkingWorker;
-
-                if (!alreadyRemovedWorkingWorker)
-                {
-                    // If we woke up but couldn't find a request, or ran out of work items to process, we need to update
-                    // the number of working workers to reflect that we are done working for now
-                    RemoveWorkingWorker(threadPoolInstance);
-                }
+                    // We could not find more work in the queue and will try to stop being active.
+                    // One caveat - in Saturated state we have seen a thread request but could not signal for a worker
+                    // to come and see to it. Thus in Saturated state, one thread will clear the state and will come
+                    // back for another try to clear the thread request and do Dispatch - without consuming a signal.
+                    // See `TryIncrementProcessingWork` for details about Saturated state.
+                } while (!TryRemoveWorkingWorker(threadPoolInstance));
             }
 
             // returns true if the worker is shutting down
             // returns false if we should do another iteration
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static bool ShouldExitWorker(PortableThreadPool threadPoolInstance, LowLevelLock threadAdjustmentLock)
             {
                 // The thread cannot exit if it has IO pending, otherwise the IO may be canceled
@@ -235,80 +218,67 @@ namespace System.Threading
             }
 
             /// <summary>
-            /// Reduce the number of working workers by one, but maybe add back a worker (possibily this thread) if a thread request comes in while we are marking this thread as not working.
+            /// Tries to reduce the number of working workers by one.
+            /// If we are in a Saturated state, clears the state instead and returns false.
+            /// Returns true if number of active threads was actually reduced.
+            /// See `TryDecrementProcessingWork` for details about Saturated state.
             /// </summary>
-            private static void RemoveWorkingWorker(PortableThreadPool threadPoolInstance)
+            private static bool TryRemoveWorkingWorker(PortableThreadPool threadPoolInstance)
             {
-                // A compare-exchange loop is used instead of Interlocked.Decrement or Interlocked.Add to defensively prevent
-                // NumProcessingWork from underflowing. See the setter for NumProcessingWork.
-                ThreadCounts counts = threadPoolInstance._separated.counts;
+                uint collisionCount = 0;
                 while (true)
                 {
-                    ThreadCounts newCounts = counts;
-                    newCounts.NumProcessingWork--;
-
-                    ThreadCounts countsBeforeUpdate =
-                        threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
-                    if (countsBeforeUpdate == counts)
+                    ThreadCounts oldCounts = threadPoolInstance._separated.counts;
+                    ThreadCounts newCounts = oldCounts;
+                    bool decremented = newCounts.TryDecrementProcessingWork();
+                    if (threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, oldCounts) == oldCounts)
                     {
-                        break;
+                        return decremented;
                     }
 
-                    counts = countsBeforeUpdate;
-                }
-
-                // It's possible that we decided we had thread requests just before a request came in,
-                // but reduced the worker count *after* the request came in.  In this case, we might
-                // miss the notification of a thread request.  So we wake up a thread (maybe this one!)
-                // if there is work to do.
-                if (threadPoolInstance._separated.numRequestedWorkers > 0)
-                {
-                    MaybeAddWorkingWorker(threadPoolInstance);
+                    // This can be fairly contentious when threadpool runs out of work and all threads try to leave.
+                    Backoff.Exponential(collisionCount++);
                 }
             }
 
+            /// In Saturated state does nothing.
+            /// Otherwise increments the active worker count and signals the semaphore.
+            /// Incrementing the count turns on the Saturated state if the active thread limit is reached.
+            /// See `TryIncrementProcessingWork` for details about Saturated state.
             internal static void MaybeAddWorkingWorker(PortableThreadPool threadPoolInstance)
             {
-                ThreadCounts counts = threadPoolInstance._separated.counts;
-                short numExistingThreads, numProcessingWork, newNumExistingThreads, newNumProcessingWork;
+                ThreadCounts oldCounts, newCounts;
+                bool incremented;
+                uint collisionCount = 0;
                 while (true)
                 {
-                    numProcessingWork = counts.NumProcessingWork;
-                    if (numProcessingWork >= counts.NumThreadsGoal)
-                    {
-                        return;
-                    }
-
-                    newNumProcessingWork = (short)(numProcessingWork + 1);
-                    numExistingThreads = counts.NumExistingThreads;
-                    newNumExistingThreads = Math.Max(numExistingThreads, newNumProcessingWork);
-
-                    ThreadCounts newCounts = counts;
-                    newCounts.NumProcessingWork = newNumProcessingWork;
-                    newCounts.NumExistingThreads = newNumExistingThreads;
-
-                    ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
-
-                    if (oldCounts == counts)
+                    oldCounts = threadPoolInstance._separated.counts;
+                    newCounts = oldCounts;
+                    incremented = newCounts.TryIncrementProcessingWork();
+                    newCounts.NumExistingThreads = Math.Max(newCounts.NumProcessingWork, newCounts.NumExistingThreads);
+                    if (threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, oldCounts) == oldCounts)
                     {
                         break;
                     }
 
-                    counts = oldCounts;
+                    // This is less contentious than Remove as reasons to add threads are more complex to avoid adding too many too fast.
+                    // We can still see some amount of failed interlocked operations here when a burst of work is scheduled.
+                    Backoff.Exponential(collisionCount++);
                 }
 
-                int toCreate = newNumExistingThreads - numExistingThreads;
-                int toRelease = newNumProcessingWork - numProcessingWork;
-
-                if (toRelease > 0)
+                if (!incremented)
                 {
-                    s_semaphore.Release(toRelease);
+                    return;
                 }
 
-                while (toCreate > 0)
+                Debug.Assert(newCounts.NumProcessingWork - oldCounts.NumProcessingWork == 1);
+                s_semaphore.Signal();
+
+                int toCreate = newCounts.NumExistingThreads - oldCounts.NumExistingThreads;
+                Debug.Assert(toCreate == 0 || toCreate == 1);
+                if (toCreate != 0)
                 {
                     CreateWorkerThread();
-                    toCreate--;
                 }
             }
 
@@ -326,10 +296,7 @@ namespace System.Threading
                     // When there are more threads processing work than the thread count goal, it may have been decided
                     // to decrease the number of threads. Stop processing if the counts can be updated. We may have more
                     // threads existing than the thread count goal and that is ok, the cold ones will eventually time out if
-                    // the thread count goal is not increased again. This logic is a bit different from the original CoreCLR
-                    // code from which this implementation was ported, which turns a processing thread into a retired thread
-                    // and checks for pending requests like RemoveWorkingWorker. In this implementation there are
-                    // no retired threads, so only the count of threads processing work is considered.
+                    // the thread count goal is not increased again.
                     if (counts.NumProcessingWork <= counts.NumThreadsGoal)
                     {
                         return false;
@@ -346,21 +313,6 @@ namespace System.Threading
                     }
                     counts = oldCounts;
                 }
-            }
-
-            private static bool TakeActiveRequest(PortableThreadPool threadPoolInstance)
-            {
-                int count = threadPoolInstance._separated.numRequestedWorkers;
-                while (count > 0)
-                {
-                    int prevCount = Interlocked.CompareExchange(ref threadPoolInstance._separated.numRequestedWorkers, count - 1, count);
-                    if (prevCount == count)
-                    {
-                        return true;
-                    }
-                    count = prevCount;
-                }
-                return false;
             }
         }
     }

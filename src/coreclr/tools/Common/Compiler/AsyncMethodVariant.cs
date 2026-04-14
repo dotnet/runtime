@@ -78,5 +78,27 @@ namespace ILCompiler
         {
             return method.GetTypicalMethodDefinition() is AsyncMethodVariant;
         }
+
+        public static bool IsAsyncThunk(this MethodDesc method)
+        {
+            return method.IsAsyncVariant() ^ method.IsAsync;
+        }
+
+        public static bool IsCompilerGeneratedILBodyForAsync(this MethodDesc method)
+        {
+            return method.IsAsyncThunk() || method is AsyncResumptionStub;
+        }
+
+        public static MethodDesc GetAsyncVariant(this MethodDesc method)
+        {
+            Debug.Assert(!method.IsAsyncVariant());
+            return ((CompilerTypeSystemContext)method.Context).GetAsyncVariantMethod(method);
+        }
+
+        public static MethodDesc GetTargetOfAsyncVariant(this MethodDesc method)
+        {
+            Debug.Assert(method.IsAsyncVariant());
+            return ((CompilerTypeSystemContext)method.Context).GetTargetOfAsyncVariantMethod(method);
+        }
     }
 }

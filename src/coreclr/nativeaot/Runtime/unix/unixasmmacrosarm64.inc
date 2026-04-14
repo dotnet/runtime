@@ -330,6 +330,7 @@ C_FUNC(\Name):
 #define PTFF_SAVE_SP            0x00000400
 #define PTFF_SAVE_X0            0x00000800
 #define PTFF_SAVE_X1            0x00001000
+#define PTFF_SAVE_X2            0x00002000
 #define PTFF_SAVE_ALL_PRESERVED 0x000003FF  // NOTE: x19-x28
 #define PTFF_THREAD_HIJACK_HI   0x00000001  // upper 32 bits of the PTFF_THREAD_HIJACK
 

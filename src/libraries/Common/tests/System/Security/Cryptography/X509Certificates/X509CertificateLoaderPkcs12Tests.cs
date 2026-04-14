@@ -744,7 +744,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             Pkcs12LoaderLimits limits = Pkcs12LoaderLimits.Defaults;
 
-#if !NET10_0_OR_GREATER
+#if !NET
             if (allowDuplicates)
             {
                 limits = Pkcs12LoaderLimits.DangerousNoLimits;
@@ -754,7 +754,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // remove the edit lock
             limits = new Pkcs12LoaderLimits(limits)
             {
-#if NET10_0_OR_GREATER
+#if NET
                 AllowDuplicateAttributes = allowDuplicates,
 #endif
                 PreserveCertificateAlias = false,

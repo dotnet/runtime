@@ -36,6 +36,10 @@ namespace ILLink.Shared.TrimAnalysis
 
         public FlowAnnotations(Logger logger, ILProvider ilProvider, CompilerGeneratedState compilerGeneratedState)
         {
+#if !ILTRIM
+            ilProvider = new AsyncMaskingILProvider(ilProvider);
+#endif
+
             _hashtable = new TypeAnnotationsHashtable(logger, ilProvider, compilerGeneratedState);
             _logger = logger;
             ILProvider = ilProvider;
@@ -299,7 +303,7 @@ namespace ILLink.Shared.TrimAnalysis
             private readonly CompilerGeneratedState _compilerGeneratedState;
 
             public TypeAnnotationsHashtable(Logger logger, ILProvider ilProvider, CompilerGeneratedState compilerGeneratedState) =>
-                (_logger, _ilProvider, _compilerGeneratedState) = (logger, new AsyncMaskingILProvider(ilProvider), compilerGeneratedState);
+                (_logger, _ilProvider, _compilerGeneratedState) = (logger, ilProvider, compilerGeneratedState);
 
             private static DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMembersAttribute(MetadataReader reader, CustomAttributeHandleCollection customAttributeHandles)
             {

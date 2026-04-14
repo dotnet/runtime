@@ -30,6 +30,7 @@
 #define XArchIntrinsicConstants_Vaes (1 << 15)
 #define XArchIntrinsicConstants_WaitPkg (1 << 16)
 #define XArchIntrinsicConstants_X86Serialize (1 << 17)
+#define XArchIntrinsicConstants_AVX512Bmm (1 << 18)
 #endif // HOST_X86 || HOST_AMD64
 
 #if defined(HOST_ARM64)
@@ -44,6 +45,11 @@
 #define ARM64IntrinsicConstants_Rcpc2 (1 << 8)
 #define ARM64IntrinsicConstants_Sve (1 << 9)
 #define ARM64IntrinsicConstants_Sve2 (1 << 10)
+#define ARM64IntrinsicConstants_Sha3 (1 << 11)
+#define ARM64IntrinsicConstants_Sm4 (1 << 12)
+#define ARM64IntrinsicConstants_SveAes (1 << 13)
+#define ARM64IntrinsicConstants_SveSha3 (1 << 14)
+#define ARM64IntrinsicConstants_SveSm4 (1 << 15)
 
 #include <assert.h>
 
@@ -55,6 +61,7 @@ static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_A
 #if defined(HOST_RISCV64)
 #define RiscV64IntrinsicConstants_Zba (1 << 0)
 #define RiscV64IntrinsicConstants_Zbb (1 << 1)
+#define RiscV64IntrinsicConstants_Zbs (1 << 2)
 #endif // HOST_RISCV64
 
 #ifdef __cplusplus

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -6,7 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using WasmAppBuilder;
+
+namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 internal static class SignatureMapper
 {
@@ -142,6 +143,17 @@ internal static class SignatureMapper
         'n' => "ARG_IND",
         _ => throw new InvalidSignatureCharException(c)
     };
+
+    public static string TypeToNameType(Type t, LogAdapter log)
+    {
+        char? c = TypeToChar(t, log, out _);
+        if (c == null)
+        {
+            throw new InvalidSignatureCharException('?');
+        }
+
+        return CharToNameType(c.Value);
+    }
 
     public static bool IsVoidSignature(string signature) => signature[0] == 'v';
 }

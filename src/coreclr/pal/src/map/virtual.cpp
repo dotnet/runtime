@@ -715,7 +715,8 @@ VIRTUALCommitMemory(
     TRACE( "Committing the memory now..\n");
 
     nProtect = W32toUnixAccessControl(flProtect);
-
+    pRetVal = (void *) StartBoundary;
+    
 #ifndef TARGET_WASM
     // Commit the pages
     if (mprotect((void *) StartBoundary, MemSize, nProtect) != 0)
@@ -733,7 +734,6 @@ VIRTUALCommitMemory(
     }
 #endif
 
-    pRetVal = (void *) StartBoundary;
     goto done;
 
 #ifndef TARGET_WASM

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 # Set the project name
 project(CoreCLR)
@@ -79,8 +79,7 @@ endif()
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   set(STATIC_LIBS_ONLY 1)
   if(CLR_CMAKE_TARGET_BROWSER)
-    # WASM-TODO set GEN_PINVOKE to 1 once we generate them. static entrypoint.c prevents C linker from trimming, when IL trimming trims PInvokes
-    set(GEN_PINVOKE 0)
+    set(GEN_PINVOKE 1)
     set(BUILD_LIBS_NATIVE_BROWSER 1)
     set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/libs-native)
     set(CORERUN_LIBS_ONLY 1)
@@ -201,8 +200,6 @@ include_directories("debug/inc")
 include_directories("debug/inc/${ARCH_SOURCES_DIR}")
 include_directories("debug/inc/dump")
 include_directories("md/inc")
-include_directories("classlibnative/bcltype")
-include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")
 include_directories("interpreter/inc")
@@ -299,7 +296,6 @@ if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
 endif()
 
 add_subdirectory(binder)
-add_subdirectory(classlibnative)
 add_subdirectory(dlls)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)

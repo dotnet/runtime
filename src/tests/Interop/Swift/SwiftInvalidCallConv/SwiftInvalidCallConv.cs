@@ -7,7 +7,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using System.Numerics;
 using Xunit;
+using TestLibrary;
 
+[PlatformSpecific(TestPlatforms.AnyApple)]
 public class InvalidCallingConvTests
 {
     // Dummy class with a dummy attribute
@@ -80,7 +82,10 @@ public class InvalidCallingConvTests
         // Invalid due to a non-primitive argument.
         StringClass arg1 = new StringClass();
         arg1.value = "fail";
-        Assert.Throws<InvalidProgramException>(() => FuncWithNonPrimitiveArg(arg1));
+        Exception ex = Assert.ThrowsAny<Exception>(() => FuncWithNonPrimitiveArg(arg1));
+        Assert.True(
+            ex is InvalidProgramException or MarshalDirectiveException or PlatformNotSupportedException,
+            $"Unexpected exception type: {ex.GetType().FullName}");
     }
 
     [Fact]

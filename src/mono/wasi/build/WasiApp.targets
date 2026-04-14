@@ -176,6 +176,7 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','wasi-wasm'))</_MonoAotCrossCompilerPath>
       <_WasmDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-default.rsp'))</_WasmDefaultFlagsRsp>
       <_WasmDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-link.rsp'))</_WasmDefaultLinkFlagsRsp>
+      <_WasmLlvmSizeRsp>$(_WasmIntermediateOutputPath)emcc-llvmsize.rsp</_WasmLlvmSizeRsp>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>

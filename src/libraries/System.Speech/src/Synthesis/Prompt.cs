@@ -47,9 +47,9 @@ namespace System.Speech.Synthesis
             {
                 case SynthesisMediaType.Text:
                 case SynthesisMediaType.Ssml:
-                    string localPath;
-                    string mimeType;
-                    Uri baseUri;
+                    string? localPath;
+                    string? mimeType;
+                    Uri? baseUri;
                     using (Stream stream = s_resourceLoader.LoadFile(promptFile, out mimeType, out baseUri, out localPath))
                     {
                         try
@@ -92,7 +92,7 @@ namespace System.Speech.Synthesis
             }
         }
 
-        internal object Synthesizer
+        internal object? Synthesizer
         {
             set
             {
@@ -108,7 +108,7 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// What errors occurred during this operation?
         /// </summary>
-        internal Exception Exception { get; set; }
+        internal Exception? Exception { get; set; }
 
         #endregion
 
@@ -122,7 +122,7 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// Audio data
         /// </summary>
-        internal Uri _audio;
+        internal Uri? _audio;
 
         /// <summary>
         /// Unused at this point
@@ -146,7 +146,7 @@ namespace System.Speech.Synthesis
         /// <summary>
         /// The synthesizer this prompt is played on
         /// </summary>
-        private object _synthesizer;
+        private object? _synthesizer;
 
         private static readonly ResourceLoader s_resourceLoader = new();
 

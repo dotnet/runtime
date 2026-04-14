@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Apple;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs12;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -77,20 +74,9 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     try
                     {
-                        unsafe
-                        {
-                            fixed (byte* pin = rawData)
-                            {
-                                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
-
-                                using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
-                                {
-                                    PfxAsn.Decode(ref reader, manager.Memory, out _);
-                                }
-
-                                contentType = X509ContentType.Pkcs12;
-                            }
-                        }
+                        ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
+                        ValuePfxAsn.Decode(ref reader, out _);
+                        contentType = X509ContentType.Pkcs12;
                     }
                     catch (CryptographicException)
                     {

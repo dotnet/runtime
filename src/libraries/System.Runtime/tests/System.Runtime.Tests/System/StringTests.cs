@@ -67,7 +67,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSimpleActiveCodePage))]
+        [ConditionalFact(typeof(StringTests), nameof(IsSimpleActiveCodePage))]
         public static unsafe void Ctor_SBytePtr_DoesNotAccessInvalidPage()
         {
             // Allocates a buffer of all ' ' followed by a null terminator,
@@ -271,47 +271,47 @@ namespace System.Tests
         public static IEnumerable<object[]> Contains_Rune_StringComparison_TestData()
         {
             // CurrentCulture
-            yield return new object[] { "Hello", 'H', StringComparison.CurrentCulture, true };
-            yield return new object[] { "Hello", 'Z', StringComparison.CurrentCulture, false };
-            yield return new object[] { "Hello", 'e', StringComparison.CurrentCulture, true };
-            yield return new object[] { "Hello", 'E', StringComparison.CurrentCulture, false };
-            yield return new object[] { "", 'H', StringComparison.CurrentCulture, false };
-            yield return new object[] { "", '\u0301', StringComparison.CurrentCulture, false }; // Using non-ASCII character to test ICU path
+            yield return new object[] { "Hello", new Rune('H'), StringComparison.CurrentCulture, true };
+            yield return new object[] { "Hello", new Rune('Z'), StringComparison.CurrentCulture, false };
+            yield return new object[] { "Hello", new Rune('e'), StringComparison.CurrentCulture, true };
+            yield return new object[] { "Hello", new Rune('E'), StringComparison.CurrentCulture, false };
+            yield return new object[] { "", new Rune('H'), StringComparison.CurrentCulture, false };
+            yield return new object[] { "", new Rune('\u0301'), StringComparison.CurrentCulture, false }; // Using non-ASCII character to test ICU path
 
             // CurrentCultureIgnoreCase
-            yield return new object[] { "Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true };
-            yield return new object[] { "Hello", 'Z', StringComparison.CurrentCultureIgnoreCase, false };
-            yield return new object[] { "Hello", 'e', StringComparison.CurrentCultureIgnoreCase, true };
-            yield return new object[] { "Hello", 'E', StringComparison.CurrentCultureIgnoreCase, true };
-            yield return new object[] { "", 'H', StringComparison.CurrentCultureIgnoreCase, false };
+            yield return new object[] { "Hello", new Rune('H'), StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "Hello", new Rune('Z'), StringComparison.CurrentCultureIgnoreCase, false };
+            yield return new object[] { "Hello", new Rune('e'), StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "Hello", new Rune('E'), StringComparison.CurrentCultureIgnoreCase, true };
+            yield return new object[] { "", new Rune('H'), StringComparison.CurrentCultureIgnoreCase, false };
 
             // InvariantCulture
-            yield return new object[] { "Hello", 'H', StringComparison.InvariantCulture, true };
-            yield return new object[] { "Hello", 'Z', StringComparison.InvariantCulture, false };
-            yield return new object[] { "Hello", 'e', StringComparison.InvariantCulture, true };
-            yield return new object[] { "Hello", 'E', StringComparison.InvariantCulture, false };
-            yield return new object[] { "", 'H', StringComparison.InvariantCulture, false };
+            yield return new object[] { "Hello", new Rune('H'), StringComparison.InvariantCulture, true };
+            yield return new object[] { "Hello", new Rune('Z'), StringComparison.InvariantCulture, false };
+            yield return new object[] { "Hello", new Rune('e'), StringComparison.InvariantCulture, true };
+            yield return new object[] { "Hello", new Rune('E'), StringComparison.InvariantCulture, false };
+            yield return new object[] { "", new Rune('H'), StringComparison.InvariantCulture, false };
 
             // InvariantCultureIgnoreCase
-            yield return new object[] { "Hello", 'H', StringComparison.InvariantCultureIgnoreCase, true };
-            yield return new object[] { "Hello", 'Z', StringComparison.InvariantCultureIgnoreCase, false };
-            yield return new object[] { "Hello", 'e', StringComparison.InvariantCultureIgnoreCase, true };
-            yield return new object[] { "Hello", 'E', StringComparison.InvariantCultureIgnoreCase, true };
-            yield return new object[] { "", 'H', StringComparison.InvariantCultureIgnoreCase, false };
+            yield return new object[] { "Hello", new Rune('H'), StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "Hello", new Rune('Z'), StringComparison.InvariantCultureIgnoreCase, false };
+            yield return new object[] { "Hello", new Rune('e'), StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "Hello", new Rune('E'), StringComparison.InvariantCultureIgnoreCase, true };
+            yield return new object[] { "", new Rune('H'), StringComparison.InvariantCultureIgnoreCase, false };
 
             // Ordinal
-            yield return new object[] { "Hello", 'H', StringComparison.Ordinal, true };
-            yield return new object[] { "Hello", 'Z', StringComparison.Ordinal, false };
-            yield return new object[] { "Hello", 'e', StringComparison.Ordinal, true };
-            yield return new object[] { "Hello", 'E', StringComparison.Ordinal, false };
-            yield return new object[] { "", 'H', StringComparison.Ordinal, false };
+            yield return new object[] { "Hello", new Rune('H'), StringComparison.Ordinal, true };
+            yield return new object[] { "Hello", new Rune('Z'), StringComparison.Ordinal, false };
+            yield return new object[] { "Hello", new Rune('e'), StringComparison.Ordinal, true };
+            yield return new object[] { "Hello", new Rune('E'), StringComparison.Ordinal, false };
+            yield return new object[] { "", new Rune('H'), StringComparison.Ordinal, false };
 
             // OrdinalIgnoreCase
-            yield return new object[] { "Hello", 'H', StringComparison.OrdinalIgnoreCase, true };
-            yield return new object[] { "Hello", 'Z', StringComparison.OrdinalIgnoreCase, false };
-            yield return new object[] { "Hello", 'e', StringComparison.OrdinalIgnoreCase, true };
-            yield return new object[] { "Hello", 'E', StringComparison.OrdinalIgnoreCase, true };
-            yield return new object[] { "", 'H', StringComparison.OrdinalIgnoreCase, false };
+            yield return new object[] { "Hello", new Rune('H'), StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "Hello", new Rune('Z'), StringComparison.OrdinalIgnoreCase, false };
+            yield return new object[] { "Hello", new Rune('e'), StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "Hello", new Rune('E'), StringComparison.OrdinalIgnoreCase, true };
+            yield return new object[] { "", new Rune('H'), StringComparison.OrdinalIgnoreCase, false };
 
             // Non-BMP rune (GRINNING FACE) with OrdinalIgnoreCase
             yield return new object[] { "hello world", new Rune(0x1F600), StringComparison.OrdinalIgnoreCase, false };

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -23,14 +24,6 @@ namespace System
         /// <summary>Ensures that the console has been initialized for use.</summary>
         internal static void EnsureConsoleInitialized()
         { }
-
-        private static bool IsWindows7()
-        {
-            // Version lies for all apps from the OS kick in starting with Windows 8 (6.2). They can
-            // also be added via appcompat (by the OS or the users) so this can only be used as a hint.
-            Version version = Environment.OSVersion.Version;
-            return version.Major == 6 && version.Minor == 1;
-        }
 
         public static Stream OpenStandardInput() =>
             GetStandardFile(
@@ -96,6 +89,18 @@ namespace System
             byte junkByte = 0x41;
             int r = Interop.Kernel32.WriteFile(outErrHandle, &junkByte, 0, out _, IntPtr.Zero);
             return r != 0; // In Win32 apps w/ no console, bResult should be 0 for failure.
+        }
+
+        public static SafeFileHandle OpenStandardInputHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE);
+
+        public static SafeFileHandle OpenStandardOutputHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE);
+
+        public static SafeFileHandle OpenStandardErrorHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_ERROR_HANDLE);
+
+        private static SafeFileHandle OpenStandardHandle(int handleType)
+        {
+            IntPtr handle = Interop.Kernel32.GetStdHandle(handleType);
+            return new SafeFileHandle(handle, ownsHandle: false);
         }
 
         public static Encoding InputEncoding
@@ -658,14 +663,9 @@ namespace System
                                 throw Win32Marshal.GetExceptionForWin32Error(error, string.Empty);
                         }
                     }
-                    else if (result >= builder.Capacity - 1 || (IsWindows7() && result >= builder.Capacity / sizeof(char) - 1))
+                    else if (result >= builder.Capacity - 1)
                     {
                         // Our buffer was full. As this API truncates we need to increase our size and reattempt.
-                        // Note that Windows 7 copies count of bytes into the output buffer but returns count of chars
-                        // and as such our buffer is only "half" its actual size.
-                        //
-                        // (If we're Windows 10 with a version lie to 7 this will be inefficient so we'll want to remove
-                        //  this workaround when we no longer support Windows 7)
                         builder.EnsureCapacity(builder.Capacity * 2);
                         continue;
                     }

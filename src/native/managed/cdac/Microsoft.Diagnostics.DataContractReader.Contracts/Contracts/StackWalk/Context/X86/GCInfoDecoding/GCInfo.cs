@@ -223,7 +223,6 @@ public record GCInfo
                     case GcTransitionPointer gcTransitionPointer:
                         if (gcTransitionPointer.Act == Action.PUSH)
                         {
-                            // FEATURE_EH_FUNCLETS implies fullArgInfo
                             // when there is fullArgInfo, the current depth is incremented by the number of pushed arguments
                             depth++;
                         }

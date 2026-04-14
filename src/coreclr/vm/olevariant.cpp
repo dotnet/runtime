@@ -898,51 +898,38 @@ void SafeVariantClear(VARIANT* pVar)
     }
 }
 
-class VariantEmptyHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>
+struct VariantEmptyHolderTraits final
 {
-public:
-    VariantEmptyHolder(VARIANT* p = NULL) :
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>(p)
+    using Type = VARIANT*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
     {
         WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(VARIANT* p)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>::operator=(p);
+        SafeVariantClear(value);
     }
 };
 
-FORCEINLINE void RecordVariantRelease(VARIANT* value)
+using VariantEmptyHolder = LifetimeHolder<VariantEmptyHolderTraits>;
+
+struct RecordVariantHolderTraits final
 {
-    if (value)
+    using Type = VARIANT*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
     {
-        WRAPPER_NO_CONTRACT;
+        LIMITED_METHOD_CONTRACT;
 
-        if (V_RECORD(value))
-            V_RECORDINFO(value)->RecordDestroy(V_RECORD(value));
-        if (V_RECORDINFO(value))
-            V_RECORDINFO(value)->Release();
-    }
-}
-
-class RecordVariantHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>
-{
-public:
-    RecordVariantHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(VARIANT* p)
-    {
-        WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>::operator=(p);
+        if (value != NULL)
+        {
+            if (V_RECORD(value))
+                V_RECORDINFO(value)->RecordDestroy(V_RECORD(value));
+            if (V_RECORDINFO(value))
+                V_RECORDINFO(value)->Release();
+        }
     }
 };
+
+using RecordVariantHolder = LifetimeHolder<RecordVariantHolderTraits>;
 #endif  // FEATURE_COMINTEROP
 
 /* ------------------------------------------------------------------------- *
@@ -950,7 +937,7 @@ public:
  * ------------------------------------------------------------------------- */
 
 void OleVariant::MarshalBoolArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                          MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+                                          MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -982,8 +969,7 @@ void OleVariant::MarshalBoolArrayOleToCom(void *oleArray, BASEARRAYREF *pComArra
 void OleVariant::MarshalBoolArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                           MethodTable *pInterfaceMT, BOOL fBestFitMapping,
                                           BOOL fThrowOnUnmappableChar,
-                                          BOOL fOleArrayIsValid, SIZE_T cElements,
-                                          PCODE pManagedMarshalerCode)
+                                          BOOL fOleArrayIsValid, SIZE_T cElements)
 {
     CONTRACTL
     {
@@ -1015,7 +1001,7 @@ void OleVariant::MarshalBoolArrayComToOle(BASEARRAYREF *pComArray, void *oleArra
  * ------------------------------------------------------------------------- */
 
 void OleVariant::MarshalWinBoolArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                          MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+                                          MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1047,8 +1033,7 @@ void OleVariant::MarshalWinBoolArrayOleToCom(void *oleArray, BASEARRAYREF *pComA
 void OleVariant::MarshalWinBoolArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                           MethodTable *pInterfaceMT, BOOL fBestFitMapping,
                                           BOOL fThrowOnUnmappableChar,
-                                          BOOL fOleArrayIsValid, SIZE_T cElements,
-                                          PCODE pManagedMarshalerCode)
+                                          BOOL fOleArrayIsValid, SIZE_T cElements)
 {
     CONTRACTL
     {
@@ -1080,7 +1065,7 @@ void OleVariant::MarshalWinBoolArrayComToOle(BASEARRAYREF *pComArray, void *oleA
  * ------------------------------------------------------------------------- */
 
 void OleVariant::MarshalCBoolArrayOleToCom(void* oleArray, BASEARRAYREF* pComArray,
-                                        MethodTable* pInterfaceMT, PCODE pManagedMarshalerCode)
+                                        MethodTable* pInterfaceMT)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1115,8 +1100,7 @@ void OleVariant::MarshalCBoolArrayOleToCom(void* oleArray, BASEARRAYREF* pComArr
 void OleVariant::MarshalCBoolArrayComToOle(BASEARRAYREF* pComArray, void* oleArray,
                                         MethodTable* pInterfaceMT, BOOL fBestFitMapping,
                                         BOOL fThrowOnUnmappableChar, BOOL fOleArrayIsValid,
-                                        SIZE_T cElements,
-                                        PCODE pManagedMarshalerCode)
+                                        SIZE_T cElements)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1151,7 +1135,7 @@ void OleVariant::MarshalCBoolArrayComToOle(BASEARRAYREF* pComArray, void* oleArr
  * ------------------------------------------------------------------------- */
 
 void OleVariant::MarshalAnsiCharArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                          MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+                                          MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1189,7 +1173,7 @@ void OleVariant::MarshalAnsiCharArrayOleToCom(void *oleArray, BASEARRAYREF *pCom
 void OleVariant::MarshalAnsiCharArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                           MethodTable *pInterfaceMT, BOOL fBestFitMapping,
                                           BOOL fThrowOnUnmappableChar, BOOL fOleArrayIsValid,
-                                          SIZE_T cElements, PCODE pManagedMarshalerCode)
+                                          SIZE_T cElements)
 {
     CONTRACTL
     {
@@ -1222,7 +1206,7 @@ void OleVariant::MarshalAnsiCharArrayComToOle(BASEARRAYREF *pComArray, void *ole
 
 #ifdef FEATURE_COMINTEROP
 void OleVariant::MarshalInterfaceArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                               MethodTable *pElementMT, PCODE pManagedMarshalerCode)
+                                               MethodTable *pElementMT)
 {
     CONTRACTL
     {
@@ -1241,50 +1225,40 @@ void OleVariant::MarshalInterfaceArrayOleToCom(void *oleArray, BASEARRAYREF *pCo
     IUnknown **pOle = (IUnknown **) oleArray;
     IUnknown **pOleEnd = pOle + elementCount;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    OBJECTREF *pCom = (OBJECTREF *) unprotectedArray->GetDataPtr();
+    OBJECTREF *pCom = (OBJECTREF *) (*pComArray)->GetDataPtr();
 
     OBJECTREF obj = NULL;
     GCPROTECT_BEGIN(obj)
     {
-        while (pOle < pOleEnd)
+        GCPROTECT_BEGININTERIOR(pCom)
         {
-            IUnknown *unk = *pOle++;
-
-            if (unk == NULL)
-                obj = NULL;
-            else
-                GetObjectRefFromComIP(&obj, unk);
-
-            //
-            // Make sure the object can be cast to the destination type.
-            //
-
-            if (pElementMT != NULL && !CanCastComObject(obj, pElementMT))
+            while (pOle < pOleEnd)
             {
-                StackSString ssObjClsName;
-                StackSString ssDestClsName;
-                obj->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
-                pElementMT->_GetFullyQualifiedNameForClass(ssDestClsName);
-                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,
-                             ssObjClsName.GetUnicode(), ssDestClsName.GetUnicode());
+                IUnknown *unk = *pOle++;
+
+                if (unk == NULL)
+                    obj = NULL;
+                else
+                    GetObjectRefFromComIP(&obj, unk);
+
+                //
+                // Make sure the object can be cast to the destination type.
+                //
+
+                if (pElementMT != NULL && !CanCastComObject(obj, pElementMT))
+                {
+                    StackSString ssObjClsName;
+                    StackSString ssDestClsName;
+                    obj->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
+                    pElementMT->_GetFullyQualifiedNameForClass(ssDestClsName);
+                    COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,
+                                 ssObjClsName.GetUnicode(), ssDestClsName.GetUnicode());
+                }
+
+                SetObjectReference(pCom++, obj);
             }
-
-            //
-            // Reset pCom pointer only if array object has moved, rather than
-            // recomputing every time through the loop.  Beware implicit calls to
-            // ValidateObject inside OBJECTREF methods.
-            //
-
-            if (*(void **)&unprotectedArray != *(void **)&*pComArray)
-            {
-                SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-                unprotectedArray = *pComArray;
-                pCom = (OBJECTREF *) (unprotectedArray->GetAddress() + currentOffset);
-            }
-
-            SetObjectReference(pCom++, obj);
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
@@ -1292,14 +1266,14 @@ void OleVariant::MarshalInterfaceArrayOleToCom(void *oleArray, BASEARRAYREF *pCo
 void OleVariant::MarshalIUnknownArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                               MethodTable *pElementMT, BOOL fBestFitMapping,
                                               BOOL fThrowOnUnmappableChar,
-                                              BOOL fOleArrayIsValid, SIZE_T cElements, PCODE pManagedMarshalerCode)
+                                              BOOL fOleArrayIsValid, SIZE_T cElements)
 {
     WRAPPER_NO_CONTRACT;
 
     MarshalInterfaceArrayComToOleHelper(pComArray, oleArray, pElementMT, FALSE, cElements);
 }
 
-void OleVariant::ClearInterfaceArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearInterfaceArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1332,7 +1306,7 @@ void OleVariant::ClearInterfaceArray(void *oleArray, SIZE_T cElements, MethodTab
  * ------------------------------------------------------------------------- */
 
 void OleVariant::MarshalBSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                          MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+                                          MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1348,36 +1322,25 @@ void OleVariant::MarshalBSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComArra
     STRINGREF stringObj = NULL;
     GCPROTECT_BEGIN(stringObj)
     {
-    ASSERT_PROTECTED(pComArray);
-    SIZE_T elementCount = (*pComArray)->GetNumComponents();
+        ASSERT_PROTECTED(pComArray);
+        SIZE_T elementCount = (*pComArray)->GetNumComponents();
 
-    BSTR *pOle = (BSTR *) oleArray;
-    BSTR *pOleEnd = pOle + elementCount;
+        BSTR *pOle = (BSTR *) oleArray;
+        BSTR *pOleEnd = pOle + elementCount;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    STRINGREF *pCom = (STRINGREF *) unprotectedArray->GetDataPtr();
-
-    while (pOle < pOleEnd)
-    {
-        BSTR bstr = *pOle++;
-
-            ConvertBSTRToString(bstr, &stringObj);
-
-        //
-        // Reset pCom pointer only if array object has moved, rather than
-        // recomputing it every time through the loop.  Beware implicit calls to
-        // ValidateObject inside OBJECTREF methods.
-        //
-
-        if (*(void **)&unprotectedArray != *(void **)&*pComArray)
+        STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
+        GCPROTECT_BEGININTERIOR(pCom)
         {
-            SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-            unprotectedArray = *pComArray;
-            pCom = (STRINGREF *) (unprotectedArray->GetAddress() + currentOffset);
-        }
+            while (pOle < pOleEnd)
+            {
+                BSTR bstr = *pOle++;
 
-            SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) stringObj);
+                ConvertBSTRToString(bstr, &stringObj);
+
+                SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) stringObj);
+            }
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
@@ -1385,7 +1348,7 @@ void OleVariant::MarshalBSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComArra
 void OleVariant::MarshalBSTRArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                           MethodTable *pInterfaceMT, BOOL fBestFitMapping,
                                           BOOL fThrowOnUnmappableChar,
-                                          BOOL fOleArrayIsValid, SIZE_T cElements, PCODE pManagedMarshalerCode)
+                                          BOOL fOleArrayIsValid, SIZE_T cElements)
 {
     CONTRACTL
     {
@@ -1401,30 +1364,27 @@ void OleVariant::MarshalBSTRArrayComToOle(BASEARRAYREF *pComArray, void *oleArra
     STRINGREF stringObj = NULL;
     GCPROTECT_BEGIN(stringObj)
     {
-    ASSERT_PROTECTED(pComArray);
+        ASSERT_PROTECTED(pComArray);
 
-    BSTR *pOle = (BSTR *) oleArray;
-    BSTR *pOleEnd = pOle + cElements;
+        BSTR *pOle = (BSTR *) oleArray;
+        BSTR *pOleEnd = pOle + cElements;
 
-    STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
-
-    while (pOle < pOleEnd)
-    {
-            stringObj = *pCom++;
-            BSTR bstr = ConvertStringToBSTR(&stringObj);
-
-        //
-        // We aren't calling anything which might cause a GC, so don't worry about
-        // the array moving here.
-        //
-
-            *pOle++ = bstr;
+        STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
+        GCPROTECT_BEGININTERIOR(pCom)
+        {
+            while (pOle < pOleEnd)
+            {
+                stringObj = *pCom++;
+                BSTR bstr = ConvertStringToBSTR(&stringObj);
+                *pOle++ = bstr;
+            }
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
 
-void OleVariant::ClearBSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearBSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1454,7 +1414,7 @@ void OleVariant::ClearBSTRArray(void *oleArray, SIZE_T cElements, MethodTable *p
  * Structure marshaling routines
  * ------------------------------------------------------------------------- */
 void OleVariant::MarshalNonBlittableRecordArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                                        MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+                                                        MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1469,28 +1429,14 @@ void OleVariant::MarshalNonBlittableRecordArrayOleToCom(void *oleArray, BASEARRA
 
     ASSERT_PROTECTED(pComArray);
 
-    SIZE_T elementCount = (*pComArray)->GetNumComponents();
-    SIZE_T elemSize     = pInterfaceMT->GetNativeSize();
-
-    BYTE *pOle = (BYTE *) oleArray;
-    BYTE *pOleEnd = pOle + elemSize * elementCount;
-
-    SIZE_T dstofs = ArrayBase::GetDataPtrOffset( (*pComArray)->GetMethodTable() );
-    while (pOle < pOleEnd)
-    {
-        BYTE* managedData = (BYTE*)(*(LPVOID*)pComArray) + dstofs;
-
-        MarshalStructViaILStubCode(pManagedMarshalerCode, managedData, pOle, StructMarshalStubs::MarshalOperation::Unmarshal);
-
-        dstofs += (*pComArray)->GetComponentSize();
-        pOle += elemSize;
-    }
+    UnmanagedCallersOnlyCaller convertToManaged(METHOD__STUBHELPERS__NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_MANAGED);
+    convertToManaged.InvokeThrowing(pComArray, oleArray, pInterfaceMT, pInterfaceMT->GetNativeSize());
 }
 
 void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                           MethodTable *pInterfaceMT, BOOL fBestFitMapping,
                                           BOOL fThrowOnUnmappableChar,
-                                          BOOL fOleArrayIsValid, SIZE_T cElements, PCODE pManagedMarshalerCode)
+                                          BOOL fOleArrayIsValid, SIZE_T cElements)
 {
     CONTRACTL
     {
@@ -1516,19 +1462,11 @@ void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray,
         FillMemory(pOle, pOleEnd - pOle, 0);
     }
 
-    const SIZE_T compSize = (*pComArray)->GetComponentSize();
-    SIZE_T offset = 0;
-    while (pOle < pOleEnd)
-    {
-        BYTE* managedData = (*pComArray)->GetDataPtr() + offset;
-        MarshalStructViaILStubCode(pManagedMarshalerCode, managedData, pOle, StructMarshalStubs::MarshalOperation::Marshal);
-
-        pOle += elemSize;
-        offset += compSize;
-    }
+    UnmanagedCallersOnlyCaller convertToUnmanaged(METHOD__STUBHELPERS__NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_UNMANAGED);
+    convertToUnmanaged.InvokeThrowing(pComArray, oleArray, pInterfaceMT, pInterfaceMT->GetNativeSize());
 }
 
-void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1540,16 +1478,8 @@ void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, 
     }
     CONTRACTL_END;
 
-    SIZE_T elemSize     = pInterfaceMT->GetNativeSize();
-    SIZE_T componentSize = TypeHandle(pInterfaceMT).MakeSZArray().GetMethodTable()->GetComponentSize();
-    BYTE *pOle = (BYTE *) oleArray;
-    BYTE *pOleEnd = pOle + elemSize * cElements;
-    while (pOle < pOleEnd)
-    {
-        MarshalStructViaILStubCode(pManagedMarshalerCode, nullptr, pOle, StructMarshalStubs::MarshalOperation::Cleanup);
-
-        pOle += elemSize;
-    }
+    UnmanagedCallersOnlyCaller free(METHOD__STUBHELPERS__NONBLITTABLE_STRUCTURE_ARRAY_FREE);
+    free.InvokeThrowing(oleArray, cElements, pInterfaceMT, pInterfaceMT->GetNativeSize());
 }
 
 
@@ -1558,7 +1488,7 @@ void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, 
  * ------------------------------------------------------------------------- */
 
 void OleVariant::MarshalLPWSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                            MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+                                            MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1577,40 +1507,29 @@ void OleVariant::MarshalLPWSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComAr
     LPWSTR *pOle = (LPWSTR *) oleArray;
     LPWSTR *pOleEnd = pOle + elementCount;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    STRINGREF *pCom = (STRINGREF *) unprotectedArray->GetDataPtr();
-
-    while (pOle < pOleEnd)
+    STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
+    GCPROTECT_BEGININTERIOR(pCom)
     {
-        LPWSTR lpwstr = *pOle++;
-
-        STRINGREF string;
-        if (lpwstr == NULL)
-            string = NULL;
-        else
-            string = StringObject::NewString(lpwstr);
-
-        //
-        // Reset pCom pointer only if array object has moved, rather than
-        // recomputing it every time through the loop.  Beware implicit calls to
-        // ValidateObject inside OBJECTREF methods.
-        //
-
-        if (*(void **)&unprotectedArray != *(void **)&*pComArray)
+        while (pOle < pOleEnd)
         {
-            SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-            unprotectedArray = *pComArray;
-            pCom = (STRINGREF *) (unprotectedArray->GetAddress() + currentOffset);
-        }
+            LPWSTR lpwstr = *pOle++;
 
-        SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) string);
+            STRINGREF string;
+            if (lpwstr == NULL)
+                string = NULL;
+            else
+                string = StringObject::NewString(lpwstr);
+
+            SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) string);
+        }
     }
+    GCPROTECT_END();
 }
 
 void OleVariant::MarshalLPWSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                              MethodTable *pInterfaceMT, BOOL fBestFitMapping,
                                              BOOL fThrowOnUnmappableChar,
-                                             BOOL fOleArrayIsValid, SIZE_T cElements, PCODE pManagedMarshalerCode)
+                                             BOOL fOleArrayIsValid, SIZE_T cElements)
 {
     CONTRACTL
     {
@@ -1674,7 +1593,7 @@ void OleVariant::MarshalLPWSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleA
     GCPROTECT_END();
 }
 
-void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1689,6 +1608,7 @@ void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable 
     LPWSTR *pOle = (LPWSTR *) oleArray;
     LPWSTR *pOleEnd = pOle + cElements;
 
+    PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonRuntimeReentrancy); // IMallocSpy in managed
     while (pOle < pOleEnd)
     {
         LPWSTR lpwstr = *pOle++;
@@ -1703,7 +1623,7 @@ void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable 
  * ------------------------------------------------------------------------- */
 
 void OleVariant::MarshalLPSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                           MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+                                           MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1722,40 +1642,29 @@ void OleVariant::MarshalLPSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComArr
     LPSTR *pOle = (LPSTR *) oleArray;
     LPSTR *pOleEnd = pOle + elementCount;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    STRINGREF *pCom = (STRINGREF *) unprotectedArray->GetDataPtr();
-
-    while (pOle < pOleEnd)
+    STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
+    GCPROTECT_BEGININTERIOR(pCom)
     {
-        LPSTR lpstr = *pOle++;
-
-        STRINGREF string;
-        if (lpstr == NULL)
-            string = NULL;
-        else
-            string = StringObject::NewString(lpstr);
-
-        //
-        // Reset pCom pointer only if array object has moved, rather than
-        // recomputing it every time through the loop.  Beware implicit calls to
-        // ValidateObject inside OBJECTREF methods.
-        //
-
-        if (*(void **)&unprotectedArray != *(void **)&*pComArray)
+        while (pOle < pOleEnd)
         {
-            SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-            unprotectedArray = *pComArray;
-            pCom = (STRINGREF *) (unprotectedArray->GetAddress() + currentOffset);
-        }
+            LPSTR lpstr = *pOle++;
 
-        SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) string);
+            STRINGREF string;
+            if (lpstr == NULL)
+                string = NULL;
+            else
+                string = StringObject::NewString(lpstr);
+
+            SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) string);
+        }
     }
+    GCPROTECT_END();
 }
 
 void OleVariant::MarshalLPSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                             MethodTable *pInterfaceMT, BOOL fBestFitMapping,
                                             BOOL fThrowOnUnmappableChar,
-                                            BOOL fOleArrayIsValid, SIZE_T cElements, PCODE pManagedMarshalerCode)
+                                            BOOL fOleArrayIsValid, SIZE_T cElements)
 {
     CONTRACTL
     {
@@ -1820,7 +1729,7 @@ void OleVariant::MarshalLPSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleAr
     GCPROTECT_END();
 }
 
-void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1835,6 +1744,7 @@ void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *
     LPSTR *pOle = (LPSTR *) oleArray;
     LPSTR *pOleEnd = pOle + cElements;
 
+    PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonRuntimeReentrancy); // IMallocSpy in managed
     while (pOle < pOleEnd)
     {
         LPSTR lpstr = *pOle++;
@@ -1849,7 +1759,7 @@ void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *
  * ------------------------------------------------------------------------- */
 
 void OleVariant::MarshalDateArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                          MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+                                          MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -1882,7 +1792,7 @@ void OleVariant::MarshalDateArrayOleToCom(void *oleArray, BASEARRAYREF *pComArra
 void OleVariant::MarshalDateArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                           MethodTable *pInterfaceMT, BOOL fBestFitMapping,
                                           BOOL fThrowOnUnmappableChar,
-                                          BOOL fOleArrayIsValid, SIZE_T cElements, PCODE pManagedMarshalerCode)
+                                          BOOL fOleArrayIsValid, SIZE_T cElements)
 {
     CONTRACTL
     {
@@ -1970,7 +1880,7 @@ void OleVariant::MarshalRecordVariantOleToObject(const VARIANT *pOleVariant,
 #endif // FEATURE_COMINTEROP
 
 void OleVariant::MarshalRecordArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                            MethodTable *pElementMT, PCODE pManagedMarshalerCode)
+                                            MethodTable *pElementMT)
 {
     CONTRACTL
     {
@@ -1995,14 +1905,14 @@ void OleVariant::MarshalRecordArrayOleToCom(void *oleArray, BASEARRAYREF *pComAr
     {
         // The array is non blittable so we need to marshal the elements.
         _ASSERTE(pElementMT->HasLayout());
-        MarshalNonBlittableRecordArrayOleToCom(oleArray, pComArray, pElementMT, pManagedMarshalerCode);
+        MarshalNonBlittableRecordArrayOleToCom(oleArray, pComArray, pElementMT);
     }
 }
 
 void OleVariant::MarshalRecordArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                             MethodTable *pElementMT, BOOL fBestFitMapping,
                                             BOOL fThrowOnUnmappableChar,
-                                            BOOL fOleArrayIsValid, SIZE_T cElements, PCODE pManagedMarshalerCode)
+                                            BOOL fOleArrayIsValid, SIZE_T cElements)
 {
     CONTRACTL
     {
@@ -2026,12 +1936,12 @@ void OleVariant::MarshalRecordArrayComToOle(BASEARRAYREF *pComArray, void *oleAr
     {
         // The array is non blittable so we need to marshal the elements.
         _ASSERTE(pElementMT->HasLayout());
-        MarshalNonBlittableRecordArrayComToOle(pComArray, oleArray, pElementMT, fBestFitMapping, fThrowOnUnmappableChar, fOleArrayIsValid, cElements, pManagedMarshalerCode);
+        MarshalNonBlittableRecordArrayComToOle(pComArray, oleArray, pElementMT, fBestFitMapping, fThrowOnUnmappableChar, fOleArrayIsValid, cElements);
     }
 }
 
 
-void OleVariant::ClearRecordArray(void *oleArray, SIZE_T cElements, MethodTable *pElementMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearRecordArray(void *oleArray, SIZE_T cElements, MethodTable *pElementMT)
 {
     CONTRACTL
     {
@@ -2046,7 +1956,7 @@ void OleVariant::ClearRecordArray(void *oleArray, SIZE_T cElements, MethodTable 
     if (!pElementMT->IsBlittable())
     {
         _ASSERTE(pElementMT->HasLayout());
-        ClearNonBlittableRecordArray(oleArray, cElements, pElementMT, pManagedMarshalerCode);
+        ClearNonBlittableRecordArray(oleArray, cElements, pElementMT);
     }
 }
 
@@ -2199,7 +2109,7 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
         }
         else
         {
-            MethodDescCallSite castVariant(METHOD__VARIANT__CAST_VARIANT);
+            UnmanagedCallersOnlyCaller castVariant(METHOD__VARIANT__CAST_VARIANT);
 
             // MarshalOleRefVariantForObjectNoCast has checked that the variant is not an array
             // so we can use the marshal cast helper to coerce the object to the proper type.
@@ -2207,11 +2117,7 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
             VariantInit(&vtmp);
             VARTYPE vt = V_VT(pOle) & ~VT_BYREF;
 
-            ARG_SLOT args[3];
-            args[0] = ObjToArgSlot(*pObj);
-            args[1] = (ARG_SLOT)vt;
-            args[2] = PtrToArgSlot(&vtmp);
-            castVariant.Call(args);
+            castVariant.InvokeThrowing(pObj, (INT32)vt, &vtmp);
 
             // Managed implementation of CastVariant should either return correct type or throw.
             _ASSERTE(V_VT(&vtmp) == vt);
@@ -2801,10 +2707,8 @@ void OleVariant::MarshalObjectForOleVariantUncommon(const VARIANT *pOle, OBJECTR
     }
     else
     {
-        MethodDescCallSite convertVariantToObject(METHOD__VARIANT__CONVERT_VARIANT_TO_OBJECT);
-        ARG_SLOT args[] = { PtrToArgSlot(pOle) };
-        SetObjectReference( pObj,
-                            convertVariantToObject.Call_RetOBJECTREF(args) );
+        UnmanagedCallersOnlyCaller convertVariantToObject(METHOD__VARIANT__CONVERT_VARIANT_TO_OBJECT);
+        convertVariantToObject.InvokeThrowing(pOle, pObj);
     }
 }
 
@@ -2843,17 +2747,11 @@ void OleVariant::MarshalOleVariantForObjectUncommon(OBJECTREF * const & pObj, VA
     }
     else
     {
-        MethodDescCallSite convertObjectToVariant(METHOD__VARIANT__CONVERT_OBJECT_TO_VARIANT);
-
-        ARG_SLOT args[] = {
-                ObjToArgSlot(*pObj),
-                PtrToArgSlot(pOle),
-                };
-
-        convertObjectToVariant.Call(args);
+        UnmanagedCallersOnlyCaller convertObjectToVariant(METHOD__VARIANT__CONVERT_OBJECT_TO_VARIANT);
+        convertObjectToVariant.InvokeThrowing(pObj, pOle);
     }
 
-    veh.SuppressRelease();
+    veh.Detach();
 }
 
 void OleVariant::MarshalInterfaceArrayComToOleHelper(BASEARRAYREF *pComArray, void *oleArray,
@@ -2892,54 +2790,50 @@ void OleVariant::MarshalInterfaceArrayComToOleHelper(BASEARRAYREF *pComArray, vo
     IUnknown **pOleEnd = pOle + cElements;
 
     // Retrieve the start of the data in the managed array.
-    BASEARRAYREF unprotectedArray = *pComArray;
-    OBJECTREF *pCom = (OBJECTREF *) unprotectedArray->GetDataPtr();
+    OBJECTREF *pCom = (OBJECTREF *) (*pComArray)->GetDataPtr();
 
     OBJECTREF TmpObj = NULL;
     GCPROTECT_BEGIN(TmpObj)
     {
-        MethodTable *pLastElementMT = NULL;
-
-        while (pOle < pOleEnd)
+        GCPROTECT_BEGININTERIOR(pCom)
         {
-            TmpObj = *pCom++;
+            MethodTable *pLastElementMT = NULL;
 
-            IUnknown *unk;
-            if (TmpObj == NULL)
-                unk = NULL;
-            else
+            while (pOle < pOleEnd)
             {
-                if (bHeterogenous)
+                TmpObj = *pCom++;
+
+                IUnknown *unk;
+                if (TmpObj == NULL)
+                    unk = NULL;
+                else
                 {
-                    // Inspect the type of each element separately (cache the last type for perf).
-                    if (TmpObj->GetMethodTable() != pLastElementMT)
+                    if (bHeterogenous)
                     {
-                        pLastElementMT = TmpObj->GetMethodTable();
-                        pElementMT = GetDefaultInterfaceMTForClass(pLastElementMT, &bDispatch);
+                        // Inspect the type of each element separately (cache the last type for perf).
+                        if (TmpObj->GetMethodTable() != pLastElementMT)
+                        {
+                            pLastElementMT = TmpObj->GetMethodTable();
+                            pElementMT = GetDefaultInterfaceMTForClass(pLastElementMT, &bDispatch);
+                        }
+                    }
+
+                    if (pElementMT)
+                    {
+                        // Convert to COM IP based on an interface MT (a specific interface will be exposed).
+                        unk = GetComIPFromObjectRef(&TmpObj, pElementMT);
+                    }
+                    else
+                    {
+                        // Convert to COM IP exposing either IDispatch or IUnknown.
+                        unk = GetComIPFromObjectRef(&TmpObj, (bDispatch ? ComIpType_Dispatch : ComIpType_Unknown), NULL);
                     }
                 }
 
-                if (pElementMT)
-                {
-                    // Convert to COM IP based on an interface MT (a specific interface will be exposed).
-                    unk = GetComIPFromObjectRef(&TmpObj, pElementMT);
-                }
-                else
-                {
-                    // Convert to COM IP exposing either IDispatch or IUnknown.
-                    unk = GetComIPFromObjectRef(&TmpObj, (bDispatch ? ComIpType_Dispatch : ComIpType_Unknown), NULL);
-                }
-            }
-
-            *pOle++ = unk;
-
-            if (*(void **)&unprotectedArray != *(void **)&*pComArray)
-            {
-                SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-                unprotectedArray = *pComArray;
-                pCom = (OBJECTREF *) (unprotectedArray->GetAddress() + currentOffset);
+                *pOle++ = unk;
             }
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
@@ -3039,7 +2933,7 @@ HRESULT OleVariant::ClearAndInsertContentsIntoByrefRecordVariant(VARIANT* pOle, 
 void OleVariant::MarshalIDispatchArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                                MethodTable *pElementMT, BOOL fBestFitMapping,
                                                BOOL fThrowOnUnmappableChar, BOOL fOleArrayIsValid,
-                                               SIZE_T cElements, PCODE pManagedMarshalerCode)
+                                               SIZE_T cElements)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -3052,7 +2946,7 @@ void OleVariant::MarshalIDispatchArrayComToOle(BASEARRAYREF *pComArray, void *ol
  * ------------------------------------------------------------------------- */
 
 void OleVariant::MarshalCurrencyArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                              MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+                                              MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -3081,7 +2975,7 @@ void OleVariant::MarshalCurrencyArrayOleToCom(void *oleArray, BASEARRAYREF *pCom
 void OleVariant::MarshalCurrencyArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                               MethodTable *pInterfaceMT, BOOL fBestFitMapping,
                                               BOOL fThrowOnUnmappableChar,
-                                              BOOL fOleArrayIsValid, SIZE_T cElements, PCODE pManagedMarshalerCode)
+                                              BOOL fOleArrayIsValid, SIZE_T cElements)
 {
     CONTRACTL
     {
@@ -3110,7 +3004,7 @@ void OleVariant::MarshalCurrencyArrayComToOle(BASEARRAYREF *pComArray, void *ole
  * ------------------------------------------------------------------------- */
 
 void OleVariant::MarshalVariantArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
-                                             MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+                                             MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -3129,28 +3023,22 @@ void OleVariant::MarshalVariantArrayOleToCom(void *oleArray, BASEARRAYREF *pComA
     VARIANT *pOle = (VARIANT *) oleArray;
     VARIANT *pOleEnd = pOle + elementCount;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    OBJECTREF *pCom = (OBJECTREF *) unprotectedArray->GetDataPtr();
+    OBJECTREF *pCom = (OBJECTREF *) (*pComArray)->GetDataPtr();
 
     OBJECTREF TmpObj = NULL;
     GCPROTECT_BEGIN(TmpObj)
     {
-        while (pOle < pOleEnd)
+        GCPROTECT_BEGININTERIOR(pCom)
         {
-            // Marshal the OLE variant into a temp managed variant.
-            MarshalObjectForOleVariant(pOle++, &TmpObj);
-
-            // Reset pCom pointer only if array object has moved, rather than
-            // recomputing it every time through the loop.  Beware implicit calls to
-            // ValidateObject inside OBJECTREF methods.
-            if (*(void **)&unprotectedArray != *(void **)&*pComArray)
+            while (pOle < pOleEnd)
             {
-                SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-                unprotectedArray = *pComArray;
-                pCom = (OBJECTREF *) (unprotectedArray->GetAddress() + currentOffset);
+                // Marshal the OLE variant into a temp managed variant.
+                MarshalObjectForOleVariant(pOle++, &TmpObj);
+
+                SetObjectReference(pCom++, TmpObj);
             }
-            SetObjectReference(pCom++, TmpObj);
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
@@ -3158,7 +3046,7 @@ void OleVariant::MarshalVariantArrayOleToCom(void *oleArray, BASEARRAYREF *pComA
 void OleVariant::MarshalVariantArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
                                              MethodTable *pInterfaceMT, BOOL fBestFitMapping,
                                              BOOL fThrowOnUnmappableChar,
-                                             BOOL fOleArrayIsValid, SIZE_T cElements, PCODE pManagedMarshalerCode)
+                                             BOOL fOleArrayIsValid, SIZE_T cElements)
 {
     CONTRACTL
     {
@@ -3197,52 +3085,46 @@ void OleVariant::MarshalVariantArrayComToOle(BASEARRAYREF *pComArray, void *oleA
     VARIANT *pOle = (VARIANT *) oleArray;
     VARIANT *pOleEnd = pOle + elementCount * nOleArrayStepLength;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    OBJECTREF *pCom = (OBJECTREF *) unprotectedArray->GetDataPtr();
+    OBJECTREF *pCom = (OBJECTREF *) (*pComArray)->GetDataPtr();
 
     OBJECTREF TmpObj = NULL;
     GCPROTECT_BEGIN(TmpObj)
     {
-        while (pOle != pOleEnd)
+        GCPROTECT_BEGININTERIOR(pCom)
         {
-            // Reset pCom pointer only if array object has moved, rather than
-            // recomputing it every time through the loop.  Beware implicit calls to
-            // ValidateObject inside OBJECTREF methods.
-            if (*(void **)&unprotectedArray != *(void **)&*pComArray)
+            while (pOle != pOleEnd)
             {
-                SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-                unprotectedArray = *pComArray;
-                pCom = (OBJECTREF *) (unprotectedArray->GetAddress() + currentOffset);
-            }
-            TmpObj = *pCom++;
+                TmpObj = *pCom++;
 
-            // Marshal the temp managed variant into the OLE variant.
-            if (fOleArrayIsValid)
-            {
-                // We firstly try MarshalCommonOleRefVariantForObject for VT_BYREF variant because
-                // MarshalOleVariantForObject() VariantClear the variant and does not keep the VT_BYREF.
-                // For back compating the old behavior(we used MarshalOleVariantForObject in the previous
-                //  version) that casts the managed object to Variant based on the object's MethodTable,
-                // MarshalCommonOleRefVariantForObject is used instead of MarshalOleRefVariantForObject so
-                // that cast will not be done based on the VT of the variant.
-                if (!((pOle->vt & VT_BYREF) &&
-                       SUCCEEDED(MarshalCommonOleRefVariantForObject(&TmpObj, pOle))))
-                    if (pOle->vt & VT_BYREF || !fMarshalByrefArgOnly)
-                        MarshalOleVariantForObject(&TmpObj, pOle);
-            }
-            else
-            {
-                // The contents of pOle is undefined, don't try to handle byrefs.
-                MarshalOleVariantForObject(&TmpObj, pOle);
-            }
+                // Marshal the temp managed variant into the OLE variant.
+                if (fOleArrayIsValid)
+                {
+                    // We firstly try MarshalCommonOleRefVariantForObject for VT_BYREF variant because
+                    // MarshalOleVariantForObject() VariantClear the variant and does not keep the VT_BYREF.
+                    // For back compating the old behavior(we used MarshalOleVariantForObject in the previous
+                    //  version) that casts the managed object to Variant based on the object's MethodTable,
+                    // MarshalCommonOleRefVariantForObject is used instead of MarshalOleRefVariantForObject so
+                    // that cast will not be done based on the VT of the variant.
+                    if (!((pOle->vt & VT_BYREF) &&
+                           SUCCEEDED(MarshalCommonOleRefVariantForObject(&TmpObj, pOle))))
+                        if (pOle->vt & VT_BYREF || !fMarshalByrefArgOnly)
+                            MarshalOleVariantForObject(&TmpObj, pOle);
+                }
+                else
+                {
+                    // The contents of pOle is undefined, don't try to handle byrefs.
+                    MarshalOleVariantForObject(&TmpObj, pOle);
+                }
 
-            pOle += nOleArrayStepLength;
+                pOle += nOleArrayStepLength;
+            }
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
 
-void OleVariant::ClearVariantArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearVariantArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT)
 {
     CONTRACTL
     {
@@ -3293,17 +3175,9 @@ void OleVariant::MarshalArrayVariantOleToObject(const VARIANT* pOleVariant,
         if (vt == VT_RECORD)
             pElemMT = GetElementTypeForRecordSafeArray(pSafeArray).GetMethodTable();
 
-        MethodDesc* pStructMarshalStub = nullptr;
-        if (vt == VT_RECORD && !pElemMT->IsBlittable())
-        {
-            GCX_PREEMP();
-
-            pStructMarshalStub = PInvoke::CreateStructMarshalILStub(pElemMT);
-        }
-
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
         SetObjectReference(pObj, pArrayRef);
-        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pStructMarshalStub != nullptr ? pStructMarshalStub->GetMultiCallableAddrOfCode() : NULL, pElemMT);
+        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT);
     }
     else
     {
@@ -3325,7 +3199,7 @@ void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
     }
     CONTRACTL_END;
 
-    SafeArrayPtrHolder pSafeArray = NULL;
+    SafeArrayPtrHolder pSafeArray;
     BASEARRAYREF *pArrayRef = (BASEARRAYREF *) pObj;
     MethodTable *pElemMT = NULL;
 
@@ -3337,23 +3211,12 @@ void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
 
     pElemMT = GetArrayElementTypeWrapperAware(pArrayRef).GetMethodTable();
 
-    MethodDesc* pStructMarshalStub = nullptr;
-    GCPROTECT_BEGIN(*pArrayRef);
-    if (vt == VT_RECORD && !pElemMT->IsBlittable())
-    {
-        GCX_PREEMP();
-
-        pStructMarshalStub = PInvoke::CreateStructMarshalILStub(pElemMT);
-    }
-    GCPROTECT_END();
-
     if (*pArrayRef != NULL)
     {
         pSafeArray = CreateSafeArrayForArrayRef(pArrayRef, vt, pElemMT);
-        MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT, pStructMarshalStub != nullptr ? pStructMarshalStub->GetMultiCallableAddrOfCode() : NULL);
+        MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT);
     }
-    V_ARRAY(pOleVariant) = pSafeArray;
-    pSafeArray.SuppressRelease();
+    V_ARRAY(pOleVariant) = pSafeArray.Detach();
 }
 
 void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
@@ -3380,17 +3243,9 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
         if (vt == VT_RECORD)
             pElemMT = GetElementTypeForRecordSafeArray(pSafeArray).GetMethodTable();
 
-        MethodDesc* pStructMarshalStub = nullptr;
-        if (vt == VT_RECORD && !pElemMT->IsBlittable())
-        {
-            GCX_PREEMP();
-
-            pStructMarshalStub = PInvoke::CreateStructMarshalILStub(pElemMT);
-        }
-
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
         SetObjectReference(pObj, pArrayRef);
-        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pStructMarshalStub != nullptr ? pStructMarshalStub->GetMultiCallableAddrOfCode() : NULL, pElemMT);
+        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pElemMT);
     }
     else
     {
@@ -3432,7 +3287,7 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
     ULONG nElem = (*pArrayRef)->GetNumComponents();
     ULONG nRank = (*pArrayRef)->GetRank();
 
-    SafeArrayPtrHolder pSafeArray = NULL;
+    SafeArrayPtrHolder pSafeArray;
 
     IfFailThrow(SafeArrayAllocDescriptorEx(vt, nRank, &pSafeArray));
 
@@ -3517,8 +3372,7 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
         IfFailThrow(SafeArraySetRecordInfo(pSafeArray, pRecInfo));
     }
 
-    pSafeArray.SuppressRelease();
-    RETURN pSafeArray;
+    RETURN pSafeArray.Detach();
 }
 
 //
@@ -3665,7 +3519,6 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
                                              SAFEARRAY *pSafeArray,
                                              VARTYPE vt,
                                              MethodTable *pInterfaceMT,
-                                             PCODE pManagedMarshalerCode,
                                              BOOL fSafeArrayIsValid /*= TRUE*/)
 {
     CONTRACTL
@@ -3720,7 +3573,7 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
         else
         {
             {
-                PinningHandleHolder handle = GetAppDomain()->CreatePinningHandle((OBJECTREF)Array);
+                PinningHandleHolder handle(GetAppDomain()->CreatePinningHandle((OBJECTREF)Array));
 
                 if (bArrayOfInterfaceWrappers)
                 {
@@ -3730,7 +3583,7 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
                     // element according to its specific default interface.
                     pInterfaceMT = NULL;
                 }
-                marshal->ComToOleArray(&Array, pSafeArray->pvData, pInterfaceMT, TRUE, FALSE, fSafeArrayIsValid, dwNumComponents, pManagedMarshalerCode);
+                marshal->ComToOleArray(&Array, pSafeArray->pvData, pInterfaceMT, TRUE, FALSE, fSafeArrayIsValid, dwNumComponents);
             }
 
             if (pSafeArray->cDims != 1)
@@ -3751,7 +3604,6 @@ void OleVariant::MarshalSafeArrayForArrayRef(BASEARRAYREF *pArrayRef,
 void OleVariant::MarshalArrayRefForSafeArray(SAFEARRAY *pSafeArray,
                                              BASEARRAYREF *pArrayRef,
                                              VARTYPE vt,
-                                             PCODE pManagedMarshalerCode,
                                              MethodTable *pInterfaceMT)
 {
     CONTRACTL
@@ -3819,9 +3671,9 @@ void OleVariant::MarshalArrayRefForSafeArray(SAFEARRAY *pSafeArray,
             pSrcData = (BYTE*)pSafeArray->pvData;
         }
 
-        PinningHandleHolder handle = GetAppDomain()->CreatePinningHandle((OBJECTREF)*pArrayRef);
+        PinningHandleHolder handle(GetAppDomain()->CreatePinningHandle((OBJECTREF)*pArrayRef));
 
-        marshal->OleToComArray(pSrcData, pArrayRef, pInterfaceMT, pManagedMarshalerCode);
+        marshal->OleToComArray(pSrcData, pArrayRef, pInterfaceMT);
     }
 }
 
@@ -3840,9 +3692,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
 
     HRESULT hr = S_OK;
     SafeComHolder<ITypeInfo> pTypeInfo = NULL;
-    RecordVariantHolder pRecHolder = pOleVariant;
-
-    BOOL bSuccess = FALSE;
+    RecordVariantHolder pRecHolder(pOleVariant);
 
     // Initialize the OLE variant's VT_RECORD fields to NULL.
     V_RECORDINFO(pRecHolder) = NULL;
@@ -3882,16 +3732,20 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     V_RECORD(pRecHolder) = V_RECORDINFO(pRecHolder)->RecordCreate();
     IfNullThrow(V_RECORD(pRecHolder));
 
-    // Marshal the contents of the value class into the record.
-    MethodDesc* pStructMarshalStub;
+    if (pValueClassMT->IsBlittable())
     {
-        GCX_PREEMP();
-        pStructMarshalStub = PInvoke::CreateStructMarshalILStub(pValueClassMT);
+        // If the value class is blittable, then we can just copy the bits over.
+        memcpyNoGCRefs(V_RECORD(pRecHolder), (*pBoxedValueClass)->GetData(), pValueClassMT->GetNativeSize());
+    }
+    else
+    {
+        UnmanagedCallersOnlyCaller convertToUnmanaged(METHOD__STUBHELPERS__LAYOUT_TYPE_CONVERT_TO_UNMANAGED);
+        convertToUnmanaged.InvokeThrowing(
+            pBoxedValueClass,
+            V_RECORD(pRecHolder));
     }
 
-    MarshalStructViaILStub(pStructMarshalStub, (*pBoxedValueClass)->GetData(), (BYTE*)V_RECORD(pRecHolder), StructMarshalStubs::MarshalOperation::Marshal);
-
-    pRecHolder.SuppressRelease();
+    pRecHolder.Detach();
 }
 
 void OleVariant::TransposeArrayData(BYTE *pDestData, BYTE *pSrcData, SIZE_T dwNumComponents, SIZE_T dwComponentSize, SAFEARRAY *pSafeArray, BOOL bSafeArrayToMngArray)
@@ -4266,10 +4120,8 @@ void OleVariant::ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj)
     if (bstr == NULL)
         return;
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__CONVERT_TO_MANAGED);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(bstr);
-    CALL_MANAGED_METHOD_RETREF(*pStringObj, STRINGREF, args);
+    UnmanagedCallersOnlyCaller convertToManaged(METHOD__BSTRMARSHALER__CONVERT_TO_MANAGED_UCO);
+    convertToManaged.InvokeThrowing((INT_PTR)bstr, pStringObj);
 }
 
 BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
@@ -4286,20 +4138,28 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
     }
     CONTRACT_END;
 
-    // Initiatilize the return BSTR value to null.
-    BSTR bstr = NULL;
-
     if (*pStringObj == NULL)
     {
         RETURN NULL;
     }
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(nullptr);
-    CALL_MANAGED_METHOD(bstr, BSTR, args);
-    RETURN bstr;
+    UnmanagedCallersOnlyCaller convertToNative(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE_UCO);
+    RETURN (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj);
+}
+
+extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    GCX_COOP();
+
+    OBJECTREF objRef = obj.Get();
+    GCPROTECT_BEGIN(objRef);
+    V_VT(pOle) = VT_RECORD;
+    OleVariant::ConvertValueClassToVariant(&objRef, pOle);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
 #endif // FEATURE_COMINTEROP
-

@@ -181,6 +181,7 @@ namespace System.Text.Json
         public static System.Text.Json.JsonNamingPolicy CamelCase { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy KebabCaseLower { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy KebabCaseUpper { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy PascalCase { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy SnakeCaseLower { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy SnakeCaseUpper { get { throw null; } }
         public abstract string ConvertName(string name);
@@ -457,11 +458,13 @@ namespace System.Text.Json
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Getting a converter for a type may require reflection which depends on unreferenced code.")]
         public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo GetTypeInfo(System.Type type) { throw null; }
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> GetTypeInfo<T>() { throw null; }
         public void MakeReadOnly() { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Populating unconfigured TypeInfoResolver properties with the reflection resolver requires runtime code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Populating unconfigured TypeInfoResolver properties with the reflection resolver requires unreferenced code.")]
         public void MakeReadOnly(bool populateMissingResolver) { }
         public bool TryGetTypeInfo(System.Type type, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.Json.Serialization.Metadata.JsonTypeInfo? typeInfo) { throw null; }
+        public bool TryGetTypeInfo<T>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>? typeInfo) { throw null; }
     }
     public enum JsonTokenType : byte
     {
@@ -584,7 +587,9 @@ namespace System.Text.Json
         public System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Reset() { }
         public void Reset(System.Buffers.IBufferWriter<byte> bufferWriter) { }
+        public void Reset(System.Buffers.IBufferWriter<byte> bufferWriter, System.Text.Json.JsonWriterOptions options) { }
         public void Reset(System.IO.Stream utf8Json) { }
+        public void Reset(System.IO.Stream utf8Json, System.Text.Json.JsonWriterOptions options) { }
         public void WriteBase64String(System.ReadOnlySpan<byte> utf8PropertyName, System.ReadOnlySpan<byte> bytes) { }
         public void WriteBase64String(System.ReadOnlySpan<char> propertyName, System.ReadOnlySpan<byte> bytes) { }
         public void WriteBase64String(string propertyName, System.ReadOnlySpan<byte> bytes) { }
@@ -1048,7 +1053,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonExtensionDataAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Interface | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonIgnoreAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonIgnoreAttribute() { }
@@ -1076,6 +1081,14 @@ namespace System.Text.Json.Serialization
         SnakeCaseUpper = 3,
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
+        PascalCase = 6,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=false)]
+    public partial class JsonNamingPolicyAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonNamingPolicyAttribute(System.Text.Json.Serialization.JsonKnownNamingPolicy namingPolicy) { }
+        protected JsonNamingPolicyAttribute(System.Text.Json.JsonNamingPolicy namingPolicy) { }
+        public System.Text.Json.JsonNamingPolicy NamingPolicy { get { throw null; } }
     }
     public enum JsonKnownReferenceHandler
     {
@@ -1344,6 +1357,11 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateImmutableEnumerableInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo, System.Func<System.Collections.Generic.IEnumerable<TElement>, TCollection> createRangeFunc) where TCollection : System.Collections.Generic.IEnumerable<TElement> { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateIReadOnlyDictionaryInfo<TCollection, TKey, TValue>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> where TKey : notnull { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateISetInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Generic.ISet<TElement> { throw null; }
+
+#if NET
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateIReadOnlySetInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Generic.IReadOnlySet<TElement> { throw null; }
+#endif
+
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateListInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Generic.List<TElement> { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<System.Memory<TElement>> CreateMemoryInfo<TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<System.Memory<TElement>> collectionInfo) { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> CreateObjectInfo<T>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonObjectInfoValues<T> objectInfo) where T : notnull { throw null; }

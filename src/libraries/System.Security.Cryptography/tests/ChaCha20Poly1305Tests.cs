@@ -443,7 +443,7 @@ namespace System.Security.Cryptography.Tests
     {
         public static bool RuntimeSaysIsNotSupported => !ChaCha20Poly1305.IsSupported;
 
-        [ConditionalFact(nameof(RuntimeSaysIsNotSupported))]
+        [ConditionalFact(typeof(ChaCha20Poly1305IsSupportedTests), nameof(RuntimeSaysIsNotSupported))]
         public static void CtorThrowsPNSEIfNotSupported()
         {
             byte[] key = RandomNumberGenerator.GetBytes(256 / 8);
