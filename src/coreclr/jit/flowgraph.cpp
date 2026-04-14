@@ -615,7 +615,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return false;
     }
     GenTreeCall* call = tree->AsCall();
-    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
+    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(call->GetHelperNum()))
     {
         assert(call->IsNoReturn());
         noway_assert(call->gtFlags & GTF_EXCEPT);
@@ -1049,7 +1049,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         fptrValTree->gtFptrDelegateTarget = true;
         targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
-    else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    else if (oper == GT_CALL && targetMethod->AsCall()->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
         assert(targetMethod->AsCall()->gtArgs.CountArgs() == 3);
         GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();

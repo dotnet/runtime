@@ -443,14 +443,14 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
 
                 // Now make an indirect call through the function pointer
-                call->AsCall()->gtCallAddr = fptr;
+                call->AsCall()->gtControlExpr = fptr;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
                 if (needsFatPointerHandling)
                 {
                     const unsigned fptrLclNum = lvaGrabTemp(true DEBUGARG("fat pointer temp"));
                     impStoreToTemp(fptrLclNum, fptr, CHECK_SPILL_ALL);
-                    call->AsCall()->gtCallAddr = gtNewLclvNode(fptrLclNum, genActualType(fptr->TypeGet()));
+                    call->AsCall()->gtControlExpr = gtNewLclvNode(fptrLclNum, genActualType(fptr->TypeGet()));
                     addFatPointerCandidate(call->AsCall());
                 }
 #ifdef FEATURE_READYTORUN
@@ -1637,7 +1637,7 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
     //    ->
     //  addr->hasValue != 0 ? NOP : ArgumentNullException.ThrowIfNull(null, valueNameTmp)
     //
-    if (opts.OptimizationEnabled() || !value->IsHelperCall(this, CORINFO_HELP_BOX_NULLABLE))
+    if (opts.OptimizationEnabled() || !value->IsHelperCall(CORINFO_HELP_BOX_NULLABLE))
     {
         // We're not boxing - bail out.
         // NOTE: when opts are enabled, we remove the box as is (with better CQ)
@@ -2843,8 +2843,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         GenTree* arrayLengthNode;
 
 #ifdef FEATURE_READYTORUN
-        if (newArrayCall->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1) ||
-            newArrayCall->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_MAYBEFROZEN))
+        if (newArrayCall->AsCall()->IsHelperCall(CORINFO_HELP_READYTORUN_NEWARR_1) ||
+            newArrayCall->AsCall()->IsHelperCall(CORINFO_HELP_NEWARR_1_MAYBEFROZEN))
         {
             // Array length is 1st argument for readytorun helper
             arrayLengthNode = newArrayCall->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();

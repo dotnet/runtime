@@ -7857,14 +7857,23 @@ public:
 
     // Redundant branch opts
     //
-    PhaseStatus optRedundantBranches();
-    bool        optRedundantRelop(BasicBlock* const block);
-    bool        optRedundantDominatingBranch(BasicBlock* const block);
-    bool        optRedundantBranch(BasicBlock* const block);
-    bool        optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
-    bool        optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
-    bool        optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
-    bool        optJumpThreadCore(JumpThreadInfo& jti);
+    enum class JumpThreadCheckResult
+    {
+        CannotThread,
+        CanThread,
+        NeedsPhiUseResolution,
+    };
+
+    PhaseStatus           optRedundantBranches();
+    bool                  optRedundantRelop(BasicBlock* const block);
+    bool                  optRedundantDominatingBranch(BasicBlock* const block);
+    bool                  optRedundantBranch(BasicBlock* const block);
+    bool                  optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool                  optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
+    JumpThreadCheckResult optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
+    bool optFindPhiUsesInBlockAndSuccessors(BasicBlock* block, GenTreeLclVar* phiDef, JumpThreadInfo& jti);
+    bool optCanRewritePhiUses(JumpThreadInfo& jti);
+    bool optJumpThreadCore(JumpThreadInfo& jti);
 
     enum class ReachabilityResult
     {
@@ -12560,15 +12569,6 @@ public:
                     }
                 }
 
-                if (call->gtCallType == CT_INDIRECT)
-                {
-                    result = WalkTree(&call->gtCallAddr, call);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
-                }
-
                 if (call->gtControlExpr != nullptr)
                 {
                     result = WalkTree(&call->gtControlExpr, call);
@@ -12577,7 +12577,6 @@ public:
                         return result;
                     }
                 }
-
                 break;
             }
 
