@@ -420,8 +420,8 @@ check_c_source_compiles(
     "
     KEVENT_HAS_VOID_UDATA)
 
-# do not use sendfile() on Apple mobile platforms, it causes SIGSYS at runtime on devices
-if(NOT CLR_CMAKE_TARGET_APPLE_MOBILE)
+# do not use sendfile() on iOS/tvOS, it causes SIGSYS at runtime on devices
+if(NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     check_c_source_compiles(
         "
         #include <sys/sendfile.h>
