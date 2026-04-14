@@ -114,18 +114,22 @@ namespace System.Tests
             using var mlc = new MetadataLoadContext(resolver);
 
             Assembly coreAssembly = mlc.LoadFromAssemblyName("System.Runtime");
-            Type intType = coreAssembly.GetType("System.Int32")!;
-            Type nullableIntType = coreAssembly.GetType("System.Nullable`1")!.MakeGenericType(intType);
+            Type intType = coreAssembly.GetType("System.Int32", throwOnError: true)!;
+            Type nullableIntType = coreAssembly.GetType("System.Nullable`1", throwOnError: true)!.MakeGenericType(intType);
 
             // Test via Nullable.GetUnderlyingType (forwards to the virtual)
             Type? underlying = Nullable.GetUnderlyingType(nullableIntType);
             Assert.NotNull(underlying);
             Assert.Equal("System.Int32", underlying.FullName);
+            Assert.Same(intType, underlying);
+            Assert.NotSame(typeof(int), underlying);
 
             // Test via Type.GetNullableUnderlyingType directly
             Type? underlyingDirect = nullableIntType.GetNullableUnderlyingType();
             Assert.NotNull(underlyingDirect);
             Assert.Equal("System.Int32", underlyingDirect.FullName);
+            Assert.Same(intType, underlyingDirect);
+            Assert.NotSame(typeof(int), underlyingDirect);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
@@ -136,9 +140,9 @@ namespace System.Tests
             using var mlc = new MetadataLoadContext(resolver);
 
             Assembly coreAssembly = mlc.LoadFromAssemblyName("System.Runtime");
-            Type intType = coreAssembly.GetType("System.Int32")!;
-            Type stringType = coreAssembly.GetType("System.String")!;
-            Type kvpType = coreAssembly.GetType("System.Collections.Generic.KeyValuePair`2")!.MakeGenericType(intType, stringType);
+            Type intType = coreAssembly.GetType("System.Int32", throwOnError: true)!;
+            Type stringType = coreAssembly.GetType("System.String", throwOnError: true)!;
+            Type kvpType = coreAssembly.GetType("System.Collections.Generic.KeyValuePair`2", throwOnError: true)!.MakeGenericType(intType, stringType);
 
             Assert.Null(Nullable.GetUnderlyingType(intType));
             Assert.Null(Nullable.GetUnderlyingType(stringType));
@@ -157,7 +161,7 @@ namespace System.Tests
             using var mlc = new MetadataLoadContext(resolver);
 
             Assembly coreAssembly = mlc.LoadFromAssemblyName("System.Runtime");
-            Type openNullableType = coreAssembly.GetType("System.Nullable`1")!;
+            Type openNullableType = coreAssembly.GetType("System.Nullable`1", throwOnError: true)!;
 
             Assert.Null(Nullable.GetUnderlyingType(openNullableType));
             Assert.Null(openNullableType.GetNullableUnderlyingType());
