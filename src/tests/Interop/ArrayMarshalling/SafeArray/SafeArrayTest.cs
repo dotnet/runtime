@@ -89,7 +89,6 @@ public class SafeArrayMarshallingTest
     }
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
-    [SkipOnMono("Requires COM support")]
     public static void MultidimensionalIntArray()
     {
         const int rows = 3;
@@ -110,7 +109,6 @@ public class SafeArrayMarshallingTest
     }
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
-    [SkipOnMono("Requires COM support")]
     public static void MultidimensionalIntArrayRoundTrip()
     {
         const int rows = 3;
@@ -122,7 +120,6 @@ public class SafeArrayMarshallingTest
     }
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
-    [SkipOnMono("Requires COM support")]
     public static void MultidimensionalBoolArray()
     {
         const int rows = 2;
@@ -143,7 +140,6 @@ public class SafeArrayMarshallingTest
     }
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
-    [SkipOnMono("Requires COM support")]
     public static void MultidimensionalBoolArrayRoundTrip()
     {
         const int rows = 2;
@@ -155,7 +151,6 @@ public class SafeArrayMarshallingTest
     }
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
-    [SkipOnMono("Requires COM support")]
     public static void MultidimensionalStringArray()
     {
         const int rows = 2;
@@ -176,7 +171,6 @@ public class SafeArrayMarshallingTest
     }
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
-    [SkipOnMono("Requires COM support")]
     public static void MultidimensionalStringArrayRoundTrip()
     {
         const int rows = 2;
