@@ -56,7 +56,7 @@ namespace Internal.JitInterface
         public readonly ModuleToken Token;
         public readonly bool OwningTypeNotDerivedFromToken;
 
-        public FieldWithToken(FieldDesc field, ModuleToken token)
+        public FieldWithToken(FieldDesc field, ModuleToken token, bool forceOwningTypeNotDerivedFromToken = false)
         {
             Field = field;
             Token = token;
@@ -74,6 +74,10 @@ namespace Internal.JitInterface
                 default:
                     break;
                 }
+            }
+            if (forceOwningTypeNotDerivedFromToken)
+            {
+                OwningTypeNotDerivedFromToken = true;
             }
         }
 
@@ -330,10 +334,12 @@ namespace Internal.JitInterface
             if (methodWithToken == null)
                 return false;
 
-            bool equals = Method == methodWithToken.Method && Token.Equals(methodWithToken.Token)
-                && OwningType == methodWithToken.OwningType && ConstrainedType == methodWithToken.ConstrainedType
+            bool equals = Method == methodWithToken.Method
+                && Token.Equals(methodWithToken.Token)
+                && OwningType == methodWithToken.OwningType
+                && ConstrainedType == methodWithToken.ConstrainedType
                 && Unboxing == methodWithToken.Unboxing
-                && OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken && OwningType == methodWithToken.OwningType;
+                && OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken;
 
             return equals;
         }
@@ -1384,8 +1390,8 @@ namespace Internal.JitInterface
 
         private FieldWithToken ComputeFieldWithToken(FieldDesc field, ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
-            ModuleToken token = HandleToModuleToken(ref pResolvedToken, out _);
-            return new FieldWithToken(field, token);
+            ModuleToken token = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
+            return new FieldWithToken(field, token, strippedInstantiation);
         }
 
         private MethodWithToken ComputeMethodWithToken(MethodDesc method, ref CORINFO_RESOLVED_TOKEN pResolvedToken, TypeDesc constrainedType, bool unboxing)
@@ -1398,7 +1404,7 @@ namespace Internal.JitInterface
                 devirtualizedMethodOwner = HandleToObject(pResolvedToken.hClass);
             }
 
-            // For crossgen-generated il stubs, we may only have access to the method token for the typical method defition.
+            // For crossgen-generated IL stubs, we may only have access to the method token for the typical method definition.
             // This means that the owning type of the method may not be encoded in the method token.
             // bool methodTokenMightNotEncodeOwningType = MethodBeingCompiled.IsCompilerGeneratedILBodyForAsync();
             return new MethodWithToken(method, token, constrainedType: constrainedType, unboxing: unboxing, genericContextObject: context, devirtualizedMethodOwner: devirtualizedMethodOwner, forceOwningTypeFromMethodDesc: strippedInstantiation);
@@ -1433,9 +1439,7 @@ namespace Internal.JitInterface
                     context = entityFromContext(pResolvedToken.tokenContext);
                 }
 
-                var x = HandleToModuleToken(ref pResolvedToken, out bool s);
-                strippedInstantiation = s;
-                return x;
+                return HandleToModuleToken(ref pResolvedToken, out strippedInstantiation);
             }
         }
 

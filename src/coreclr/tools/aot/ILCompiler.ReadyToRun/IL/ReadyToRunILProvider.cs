@@ -177,7 +177,7 @@ namespace Internal.IL
             return false;
         }
 
-        public static bool NeedsTaskReturningThunk(MethodDesc method)
+        private static bool NeedsTaskReturningThunk(MethodDesc method)
         {
             Debug.Assert(method.IsTypicalMethodDefinition);
             if (method is not EcmaMethod ecmaMethod)
@@ -195,7 +195,7 @@ namespace Internal.IL
             return false;
         }
 
-        public static bool NeedsAsyncThunk(MethodDesc method)
+        private static bool NeedsAsyncThunk(MethodDesc method)
         {
             Debug.Assert(method.IsTypicalMethodDefinition);
             if (method is not AsyncMethodVariant)
