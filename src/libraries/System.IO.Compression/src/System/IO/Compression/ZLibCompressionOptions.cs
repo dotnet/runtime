@@ -66,6 +66,7 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException">The value is less than -1 or greater than 15, or between 0 and 7.</exception>
         /// <remarks>
         /// Can accept -1 or any value between 8 and 15 (inclusive). Larger values result in better compression at the expense of memory usage.
+        /// When used with <see cref="DeflateStream"/> or <see cref="GZipStream"/>, a value of 8 is treated as 9 by the underlying implementation.
         /// -1 requests the default window log which is currently equivalent to 15 (32KB window). The default value is -1.
         /// </remarks>
         public int WindowLog
