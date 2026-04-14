@@ -9,12 +9,22 @@
 #include "crashjsonwriter.h"
 
 #include <unistd.h>
+#include <string.h>
 
 #ifdef __ANDROID__
 #include <android/log.h>
 #endif
 
+// Include the .NET version string instead of linking because it is "static".
+#include "_version.c"
+
 static CrashJsonWriter s_jsonWriter;
+
+static
+void
+GetVersionString(
+    char* buffer,
+    int bufferSize);
 
 static
 void
@@ -46,7 +56,9 @@ InProcCrashReportGenerate(
 #elif defined(__arm__)
     CrashJsonWriteString(&s_jsonWriter, "architecture", "arm");
 #endif
-    CrashJsonWriteString(&s_jsonWriter, "version", "");
+    char version[sizeof(sccsid) + 1];
+    GetVersionString(version, sizeof(version));
+    CrashJsonWriteString(&s_jsonWriter, "version", version);
     CrashJsonCloseObject(&s_jsonWriter);
 
     CrashJsonWriteString(&s_jsonWriter, "process_name", "");
@@ -149,4 +161,41 @@ WriteToLog(
 #else
     write(STDERR_FILENO, msg, len);
 #endif
+}
+
+void
+GetVersionString(
+    char* buffer,
+    int bufferSize)
+{
+    if (buffer == NULL || bufferSize <= 0)
+    {
+        return;
+    }
+
+    if (bufferSize == 1)
+    {
+        buffer[0] = '\0';
+        return;
+    }
+
+    buffer[0] = '\0';
+
+    const char* version = sccsid;
+    const char versionPrefix[] = "@(#)Version ";
+    if (strncmp(version, versionPrefix, sizeof(versionPrefix) - 1) != 0)
+    {
+        return;
+    }
+    version += sizeof(versionPrefix) - 1;
+
+    int index = 0;
+    while (version[index] != '\0' && index < bufferSize - 2)
+    {
+        buffer[index] = version[index];
+        index++;
+    }
+
+    buffer[index++] = ' ';
+    buffer[index] = '\0';
 }
