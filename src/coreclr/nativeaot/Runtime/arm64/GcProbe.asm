@@ -16,7 +16,7 @@
 m_CallersSP field 8      ; SP at routine entry
             field 8  * 8 ; x0..x7
             field 8      ; padding for 16-byte alignment of q regs
-            field 4  * 16; q0..q3
+            field 8  * 16; q0..q7
 PROBE_FRAME_SIZE    field 0
 
     ;; See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return/argument registers
@@ -53,9 +53,11 @@ PROBE_FRAME_SIZE    field 0
         PROLOG_NOP stp         x4, x5,   [sp, #0x98]
         PROLOG_NOP stp         x6, x7,   [sp, #0xA8]
 
-        ;; Save the FP/HFA/HVA return registers
+        ;; Save the FP argument registers
         PROLOG_NOP stp         q0, q1,   [sp, #0xC0]
         PROLOG_NOP stp         q2, q3,   [sp, #0xE0]
+        PROLOG_NOP stp         q4, q5,   [sp, #0x100]
+        PROLOG_NOP stp         q6, q7,   [sp, #0x120]
 
         ;; Perform the rest of the PInvokeTransitionFrame initialization.
         ;;   str         $threadReg,[sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]       ; Thread * (unused by stackwalker)
@@ -85,9 +87,11 @@ PROBE_FRAME_SIZE    field 0
         PROLOG_NOP ldp          x4, x5,   [sp, #0x98]
         PROLOG_NOP ldp          x6, x7,   [sp, #0xA8]
 
-        ; Restore the FP/HFA/HVA return registers
+        ; Restore the FP argument registers
         EPILOG_NOP ldp          q0, q1,   [sp, #0xC0]
         EPILOG_NOP ldp          q2, q3,   [sp, #0xE0]
+        EPILOG_NOP ldp          q4, q5,   [sp, #0x100]
+        EPILOG_NOP ldp          q6, q7,   [sp, #0x120]
 
         ;; Restore callee saved registers
         EPILOG_RESTORE_REG_PAIR x19, x20, #0x20

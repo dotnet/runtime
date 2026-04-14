@@ -41,11 +41,14 @@ PUSH_PROBE_FRAME macro threadReg, trashReg, BITMASK
     push_vol_reg    trashReg                    ; save m_RIP
     lea             trashReg, [rsp + 0]         ; trashReg == address of frame
 
-    ;; allocate scratch space (20h home space + 10h for xmm0)
-    alloc_stack     20h + 10h
+    ;; allocate scratch space (20h home space + 40h for xmm0..xmm3)
+    alloc_stack     20h + 40h
 
-    ;; save xmm0 in case it's being used as a return value
-    movdqa          [rsp + 20h], xmm0
+    ;; save xmm argument registers in case they contain live values at the hijack point
+    movdqa          [rsp + 20h + 00h], xmm0
+    movdqa          [rsp + 20h + 10h], xmm1
+    movdqa          [rsp + 20h + 20h], xmm2
+    movdqa          [rsp + 20h + 30h], xmm3
 
     ;; link the frame into the Thread
     mov             [threadReg + OFFSETOF__Thread__m_pDeferredTransitionFrame], trashReg
@@ -57,8 +60,11 @@ endm
 ;; object refs or byrefs).
 ;;
 POP_PROBE_FRAME macro
-    movdqa      xmm0, [rsp + 20h]
-    add         rsp, 20h + 10h + 8  ; deallocate scratch space and discard saved m_RIP
+    movdqa      xmm0, [rsp + 20h + 00h]
+    movdqa      xmm1, [rsp + 20h + 10h]
+    movdqa      xmm2, [rsp + 20h + 20h]
+    movdqa      xmm3, [rsp + 20h + 30h]
+    add         rsp, 20h + 40h + 8  ; deallocate scratch space and discard saved m_RIP
     pop         rbp
     pop         rax     ; discard Thread*
     pop         rax     ; discard BITMASK
