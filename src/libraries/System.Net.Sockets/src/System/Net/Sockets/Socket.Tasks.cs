@@ -97,6 +97,10 @@ namespace System.Net.Sockets
 
             saea.RemoteEndPoint = remoteEP;
 
+            // Clear any buffer from a previous operation (e.g. ReceiveAsync) so that
+            // DoOperationConnectEx doesn't pass stale data to ConnectEx's lpSendBuffer.
+            saea.SetBuffer(default);
+
             return saea.ConnectAsync(this, cancellationToken);
         }
 

@@ -9,6 +9,7 @@
 #include "jithost.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
+#include "ebr.h"
 #include "dn-stdio.h"
 
 #ifdef FEATURE_COMINTEROP
@@ -32,6 +33,8 @@ CLREvent * FinalizerThread::hEventFinalizerDone = NULL;
 CLREvent * FinalizerThread::hEventFinalizerToShutDown = NULL;
 
 HANDLE FinalizerThread::MHandles[kHandleCount];
+
+MethodDesc* g_pGCRunFinalizersMethodDesc = nullptr;
 
 bool FinalizerThread::IsCurrentThreadFinalizer()
 {
@@ -57,8 +60,7 @@ extern "C" void SystemJS_ExecuteFinalizationCallback()
     INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
     {
         GCX_COOP();
-        // TODO-WASM https://github.com/dotnet/runtime/issues/123712
-        // ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
+        ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
     }
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 }
@@ -151,7 +153,8 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
         || Thread::CleanupNeededForFinalizedThread()
         || YieldProcessorNormalization::IsMeasurementScheduled()
         || HasDelayedDynamicMethod()
-        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
+        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads()
+        || g_EbrCollector.CleanUpRequested();
 
 #endif // TARGET_WASM
 }
@@ -200,6 +203,12 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
     {
         GCX_PREEMP();
         CleanupDelayedDynamicMethods();
+    }
+
+    if (g_EbrCollector.CleanUpRequested())
+    {
+        GCX_PREEMP();
+        g_EbrCollector.CleanUpPending();
     }
 }
 
@@ -284,12 +293,13 @@ void FinalizerThread::FinalizeAllObjects()
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     FireEtwGCFinalizersBegin_V1(GetClrInstanceId());
+    if (g_pGCRunFinalizersMethodDesc == nullptr)
+    {
+        g_pGCRunFinalizersMethodDesc = CoreLibBinder::GetMethod(METHOD__GC__RUN_FINALIZERS);
+    }
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__GC__RUN_FINALIZERS);
-    DECLARE_ARGHOLDER_ARRAY(args, 0);
-
-    uint32_t count;
-    CALL_MANAGED_METHOD(count, uint32_t, args);
+    UnmanagedCallersOnlyCaller runFinalizers(METHOD__GC__RUN_FINALIZERS);
+    uint32_t count = runFinalizers.InvokeDirect_Ret<uint32_t>();
 
     FireEtwGCFinalizersEnd_V1(count, GetClrInstanceId());
 }

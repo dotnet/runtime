@@ -11,9 +11,9 @@ internal class StubDispatchFrame : IData<StubDispatchFrame>
     public StubDispatchFrame(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.StubDispatchFrame);
-        MethodDescPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDescPtr)].Offset);
-        RepresentativeMTPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(RepresentativeMTPtr)].Offset);
-        RepresentativeSlot = target.Read<uint>(address + (ulong)type.Fields[nameof(RepresentativeSlot)].Offset);
+        MethodDescPtr = target.ReadPointerField(address, type, nameof(MethodDescPtr));
+        RepresentativeMTPtr = target.ReadPointerField(address, type, nameof(RepresentativeMTPtr));
+        RepresentativeSlot = target.ReadField<uint>(address, type, nameof(RepresentativeSlot));
         Address = address;
     }
 

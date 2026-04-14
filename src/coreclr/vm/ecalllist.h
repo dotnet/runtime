@@ -123,7 +123,6 @@ FCFuncStart(gMetaDataImport)
     FCFuncElement("GetFieldMarshal", MetaDataImport::GetFieldMarshal)
     FCFuncElement("GetPInvokeMap", MetaDataImport::GetPInvokeMap)
     FCFuncElement("IsValidToken", MetaDataImport::IsValidToken)
-    FCFuncElement("GetMarshalAs", MetaDataImport::GetMarshalAs)
 FCFuncEnd()
 
 FCFuncStart(gSignatureNative)
@@ -152,6 +151,12 @@ FCFuncStart(gRuntimeMethodHandle)
     FCFuncElement("GetResolver", RuntimeMethodHandle::GetResolver)
     FCFuncElement("GetLoaderAllocatorInternal", RuntimeMethodHandle::GetLoaderAllocatorInternal)
 FCFuncEnd()
+
+#ifdef FEATURE_INTERPRETER
+FCFuncStart(gAsyncHelpers)
+    FCFuncElement("ResumeInterpreterContinuation", AsyncHelpers_ResumeInterpreterContinuation)
+FCFuncEnd()
+#endif // FEATURE_INTERPRETER
 
 FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("GetUtf8NameInternal", RuntimeFieldHandle::GetUtf8Name)
@@ -386,6 +391,9 @@ FCFuncEnd()
 
 FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
+#ifdef FEATURE_INTERPRETER
+FCClassElement("AsyncHelpers", "System.Runtime.CompilerServices", gAsyncHelpers)
+#endif
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
 FCClassElement("Delegate", "System", gDelegateFuncs)

@@ -98,6 +98,7 @@ namespace System.Text.RegularExpressions
         private static MethodInfo SpanSliceIntIntMethod => field ??= typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int), typeof(int)])!;
         private static MethodInfo SpanStartsWithSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
         private static MethodInfo SpanStartsWithSpanComparisonMethod => field ??= typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison)])!;
+        private static MethodInfo SpanSequenceEqualSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("SequenceEqual", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
         private static MethodInfo StringAsSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("AsSpan", [typeof(string)])!;
         private static MethodInfo StringGetCharsMethod => field ??= typeof(string).GetMethod("get_Chars", [typeof(int)])!;
         private static MethodInfo ArrayResizeMethod => field ??= typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
@@ -735,6 +736,11 @@ namespace System.Text.RegularExpressions
                                     }
                                     Ldloc(pos);
                                     BltFar(returnFalse);
+
+                                    // base.runtextpos = pos;
+                                    Ldthis();
+                                    Ldloc(pos);
+                                    Stfld(RuntextposField);
                                 }
 
                                 MarkLabel(label);
@@ -2112,8 +2118,6 @@ namespace System.Text.RegularExpressions
                 BrfalseFar((node.Options & RegexOptions.ECMAScript) == 0 ? doneLabel : backreferenceEnd);
 
                 using RentedLocalBuilder matchLength = RentInt32Local();
-                using RentedLocalBuilder matchIndex = RentInt32Local();
-                using RentedLocalBuilder i = RentInt32Local();
 
                 // int matchLength = base.MatchLength(capnum);
                 Ldthis();
@@ -2135,80 +2139,48 @@ namespace System.Text.RegularExpressions
                 Ldloc(matchLength);
                 BltFar(doneLabel);
 
-                // int matchIndex = base.MatchIndex(capnum);
-                Ldthis();
-                Ldc(capnum);
-                Call(MatchIndexMethod);
-                Stloc(matchIndex);
-
-                Label condition = DefineLabel();
-                Label body = DefineLabel();
-                Label charactersMatched = DefineLabel();
-                LocalBuilder backreferenceCharacter = _ilg!.DeclareLocal(typeof(char));
-                LocalBuilder currentCharacter = _ilg.DeclareLocal(typeof(char));
-
-                // for (int i = 0; ...)
-                Ldc(0);
-                Stloc(i);
-                Br(condition);
-
-                MarkLabel(body);
-
-                // char backreferenceChar = inputSpan[matchIndex + i];
-                Ldloca(inputSpan);
-                Ldloc(matchIndex);
-                Ldloc(i);
-                Add();
-                Call(SpanGetItemMethod);
-                LdindU2();
-                Stloc(backreferenceCharacter);
-                if (!rtl)
-                {
-                    // char currentChar = slice[i];
-                    Ldloca(slice);
-                    Ldloc(i);
-                }
-                else
-                {
-                    // char currentChar = inputSpan[pos - matchLength + i];
-                    Ldloca(inputSpan);
-                    Ldloc(pos);
-                    Ldloc(matchLength);
-                    Sub();
-                    Ldloc(i);
-                    Add();
-                }
-                Call(SpanGetItemMethod);
-                LdindU2();
-                Stloc(currentCharacter);
-
                 if ((node.Options & RegexOptions.IgnoreCase) != 0)
                 {
-                    LocalBuilder caseEquivalences = DeclareReadOnlySpanChar();
+                    // For case-insensitive, we need to compare character-by-character with case equivalence checks.
+                    using RentedLocalBuilder matchIndex = RentInt32Local();
+                    using RentedLocalBuilder i = RentInt32Local();
 
-                    // if (backreferenceChar != currentChar)
-                    Ldloc(backreferenceCharacter);
-                    Ldloc(currentCharacter);
-                    Ceq();
-                    BrtrueFar(charactersMatched);
+                    // int matchIndex = base.MatchIndex(capnum);
+                    Ldthis();
+                    Ldc(capnum);
+                    Call(MatchIndexMethod);
+                    Stloc(matchIndex);
 
-                    // if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
-                    Ldloc(backreferenceCharacter);
-                    Ldthisfld(CultureField);
-                    Ldthisflda(CaseBehaviorField);
-                    Ldloca(caseEquivalences);
-                    Call(RegexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod);
-                    BrfalseFar(doneLabel);
+                    Label condition = DefineLabel();
+                    Label body = DefineLabel();
+                    Label charactersMatched = DefineLabel();
+                    LocalBuilder backreferenceCharacter = _ilg!.DeclareLocal(typeof(char));
+                    LocalBuilder currentCharacter = _ilg.DeclareLocal(typeof(char));
 
-                    // if (equivalences.IndexOf(slice[i]) < 0) // Or if (equivalences.IndexOf(inputSpan[pos - matchLength + i]) < 0) when rtl
-                    Ldloc(caseEquivalences);
+                    // for (int i = 0; ...)
+                    Ldc(0);
+                    Stloc(i);
+                    Br(condition);
+
+                    MarkLabel(body);
+
+                    // char backreferenceChar = inputSpan[matchIndex + i];
+                    Ldloca(inputSpan);
+                    Ldloc(matchIndex);
+                    Ldloc(i);
+                    Add();
+                    Call(SpanGetItemMethod);
+                    LdindU2();
+                    Stloc(backreferenceCharacter);
                     if (!rtl)
                     {
+                        // char currentChar = slice[i];
                         Ldloca(slice);
                         Ldloc(i);
                     }
                     else
                     {
+                        // char currentChar = inputSpan[pos - matchLength + i];
                         Ldloca(inputSpan);
                         Ldloc(pos);
                         Ldloc(matchLength);
@@ -2218,34 +2190,83 @@ namespace System.Text.RegularExpressions
                     }
                     Call(SpanGetItemMethod);
                     LdindU2();
-                    Call(SpanIndexOfCharMethod);
-                    Ldc(0);
-                    // return false; // input didn't match.
-                    BltFar(doneLabel);
-                }
-                else
-                {
-                    // if (backreferenceCharacter != currentCharacter)
+                    Stloc(currentCharacter);
+
+                    LocalBuilder caseEquivalences = DeclareReadOnlySpanChar();
+
+                    // if (backreferenceChar == currentChar) goto charactersMatched;
                     Ldloc(backreferenceCharacter);
                     Ldloc(currentCharacter);
                     Ceq();
-                    // return false; // input didn't match.
+                    BrtrueFar(charactersMatched);
+
+                    // if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences)) goto doneLabel;
+                    Ldloc(backreferenceCharacter);
+                    Ldthisfld(CultureField);
+                    Ldthisflda(CaseBehaviorField);
+                    Ldloca(caseEquivalences);
+                    Call(RegexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod);
+                    BrfalseFar(doneLabel);
+
+                    // if (equivalences.IndexOf(currentCharacter) < 0) goto doneLabel;
+                    Ldloc(caseEquivalences);
+                    Ldloc(currentCharacter);
+                    Call(SpanIndexOfCharMethod);
+                    Ldc(0);
+                    BltFar(doneLabel);
+
+                    MarkLabel(charactersMatched);
+
+                    // for (...; ...; i++)
+                    Ldloc(i);
+                    Ldc(1);
+                    Add();
+                    Stloc(i);
+
+                    // for (...; i < matchLength; ...)
+                    MarkLabel(condition);
+                    Ldloc(i);
+                    Ldloc(matchLength);
+                    Blt(body);
+                }
+                else
+                {
+                    // For case-sensitive, we can use SequenceEqual for efficient comparison.
+                    // if (!inputSpan.Slice(base.MatchIndex(capnum), matchLength).SequenceEqual(slice.Slice(0, matchLength))) goto doneLabel;
+                    // or for RTL:
+                    // if (!inputSpan.Slice(base.MatchIndex(capnum), matchLength).SequenceEqual(inputSpan.Slice(pos - matchLength, matchLength))) goto doneLabel;
+
+                    // inputSpan.Slice(base.MatchIndex(capnum), matchLength)
+                    Ldloca(inputSpan);
+                    Ldthis();
+                    Ldc(capnum);
+                    Call(MatchIndexMethod);
+                    Ldloc(matchLength);
+                    Call(SpanSliceIntIntMethod);
+
+                    if (!rtl)
+                    {
+                        // slice.Slice(0, matchLength)
+                        Ldloca(slice);
+                        Ldc(0);
+                        Ldloc(matchLength);
+                        Call(SpanSliceIntIntMethod);
+                    }
+                    else
+                    {
+                        // inputSpan.Slice(pos - matchLength, matchLength)
+                        Ldloca(inputSpan);
+                        Ldloc(pos);
+                        Ldloc(matchLength);
+                        Sub();
+                        Ldloc(matchLength);
+                        Call(SpanSliceIntIntMethod);
+                    }
+
+                    // .SequenceEqual(...)
+                    Call(SpanSequenceEqualSpanMethod);
                     BrfalseFar(doneLabel);
                 }
-
-                MarkLabel(charactersMatched);
-
-                // for (...; ...; i++)
-                Ldloc(i);
-                Ldc(1);
-                Add();
-                Stloc(i);
-
-                // for (...; i < matchLength; ...)
-                MarkLabel(condition);
-                Ldloc(i);
-                Ldloc(matchLength);
-                Blt(body);
 
                 // pos += matchLength; // or -= for rtl
                 Ldloc(pos);
@@ -2508,7 +2529,7 @@ namespace System.Text.RegularExpressions
                 EmitNode(yesBranch);
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 Label postYesDoneLabel = doneLabel;
-                if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                 {
                     // resumeAt = 0;
                     Ldc(0);
@@ -2539,7 +2560,7 @@ namespace System.Text.RegularExpressions
                     EmitNode(noBranch);
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (!isAtomic && postNoDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postNoDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 1;
                         Ldc(1);
@@ -2551,7 +2572,7 @@ namespace System.Text.RegularExpressions
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 2;
                         Ldc(2);
@@ -3634,44 +3655,103 @@ namespace System.Text.RegularExpressions
                     subsequent?.FindStartingLiteralNode() is RegexNode literal &&
                     CanEmitIndexOf(literal, out int literalLength))
                 {
-                    // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
-                    // if (endingPos < 0)
-                    // {
-                    //     goto doneLabel;
-                    // }
-                    Ldloca(inputSpan);
-                    Ldloc(startingPos);
-                    if (literalLength > 1)
+                    // If CanReduceLoopBacktrackingToSinglePosition determines only the last consumed character
+                    // can succeed, we can just check it directly instead of repeatedly searching with LastIndexOf.
+                    if (subsequent is not null && RegexNode.CanReduceLoopBacktrackingToSinglePosition(node, subsequent))
                     {
-                        // Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos
-                        Ldloca(inputSpan);
-                        Call(SpanGetLengthMethod);
+                        // endingPos--;
                         Ldloc(endingPos);
-                        Ldc(literalLength - 1);
-                        Add();
-                        Call(MathMinIntIntMethod);
+                        Ldc(1);
+                        Sub();
+                        Stloc(endingPos);
+
+                        // if (!literal.Matches(inputSpan[endingPos])) goto doneLabel;
+                        Ldloca(inputSpan);
+                        Ldloc(endingPos);
+                        Call(SpanGetItemMethod);
+                        LdindU2();
+                        switch (literal.Kind)
+                        {
+                            case RegexNodeKind.One or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy:
+                                Ldc(literal.Ch);
+                                BneFar(doneLabel);
+                                break;
+
+                            case RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy:
+                                Ldc(literal.Ch);
+                                BeqFar(doneLabel);
+                                break;
+
+                            case RegexNodeKind.Multi:
+                                Ldc(literal.Str![0]);
+                                BneFar(doneLabel);
+                                break;
+
+                            default: // Set, Setloop, Setloopatomic, Setlazy
+                                EmitMatchCharacterClass(literal.Str!);
+                                BrfalseFar(doneLabel);
+                                break;
+                        }
+
+                        // pos = endingPos;
+                        Ldloc(endingPos);
+                        Stloc(pos);
+
+                        // We've now checked the only backtrack position that can succeed. Force any
+                        // subsequent backtrack to fail immediately by setting endingPos to 0, which
+                        // guarantees the "startingPos >= endingPos" guard (emitted above) will be true
+                        // on re-entry. Note: if the emitter's backtracking structure changes (e.g. the
+                        // guard condition or how endingPos is used beyond the guard and stack save/restore),
+                        // this assumption would need to be revisited.
+                        // endingPos = 0;
+                        Ldc(0);
+                        Stloc(endingPos);
                     }
                     else
                     {
-                        // endingPos - startingPos
+                        // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
+                        // if (endingPos < 0)
+                        // {
+                        //     goto doneLabel;
+                        // }
+                        Ldloca(inputSpan);
+                        Ldloc(startingPos);
+                        if (literalLength > 1)
+                        {
+                            // Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos
+                            Ldloca(inputSpan);
+                            Call(SpanGetLengthMethod);
+                            Ldloc(endingPos);
+                            Ldc(literalLength - 1);
+                            Add();
+                            Call(MathMinIntIntMethod);
+                        }
+                        else
+                        {
+                            // endingPos - startingPos
+                            Ldloc(endingPos);
+                        }
+                        Ldloc(startingPos);
+                        Sub();
+                        Call(SpanSliceIntIntMethod);
+
+                        EmitIndexOf(literal, useLast: true, negate: false);
+                        Stloc(endingPos);
+
                         Ldloc(endingPos);
+                        Ldc(0);
+                        BltFar(doneLabel);
+
+                        // endingPos += startingPos;
+                        Ldloc(endingPos);
+                        Ldloc(startingPos);
+                        Add();
+                        Stloc(endingPos);
+
+                        // pos = endingPos;
+                        Ldloc(endingPos);
+                        Stloc(pos);
                     }
-                    Ldloc(startingPos);
-                    Sub();
-                    Call(SpanSliceIntIntMethod);
-
-                    EmitIndexOf(literal, useLast: true, negate: false);
-                    Stloc(endingPos);
-
-                    Ldloc(endingPos);
-                    Ldc(0);
-                    BltFar(doneLabel);
-
-                    // endingPos += startingPos;
-                    Ldloc(endingPos);
-                    Ldloc(startingPos);
-                    Add();
-                    Stloc(endingPos);
                 }
                 else
                 {
@@ -3680,11 +3760,11 @@ namespace System.Text.RegularExpressions
                     Ldc(!rtl ? 1 : -1);
                     Sub();
                     Stloc(endingPos);
-                }
 
-                // pos = endingPos;
-                Ldloc(endingPos);
-                Stloc(pos);
+                    // pos = endingPos;
+                    Ldloc(endingPos);
+                    Stloc(pos);
+                }
 
                 if (!rtl)
                 {
@@ -4505,9 +4585,10 @@ namespace System.Text.RegularExpressions
                     return;
                 }
 
-                // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
-                // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
-                const int MaxUnrollSize = 16;
+                // Limit for unrolling vs creating a loop. Benchmarking shows vectorized operations
+                // (e.g. ContainsAnyExcept) beat unrolled scalar checks at counts above ~4-8, so
+                // we unroll up to/including this threshold and use a loop with vectorization beyond it.
+                const int MaxUnrollSize = 7;
 
                 if (iterations <= MaxUnrollSize)
                 {

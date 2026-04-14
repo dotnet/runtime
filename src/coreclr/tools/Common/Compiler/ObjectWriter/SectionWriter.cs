@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
@@ -31,6 +32,8 @@ namespace ILCompiler.ObjectWriter
             public LengthEncodeFormat LengthEncodeFormat;
         }
 
+        public bool HasLengthPrefix => _params.LengthEncodeFormat != LengthEncodeFormat.None;
+
         internal SectionWriter(
             ObjectWriter objectWriter,
             int sectionIndex,
@@ -43,7 +46,7 @@ namespace ILCompiler.ObjectWriter
             _params = ps;
         }
 
-        private readonly void EmitLengthPrefix(ulong length)
+        public readonly void EmitLengthPrefix(ulong length)
         {
             switch (_params.LengthEncodeFormat)
             {
@@ -54,6 +57,17 @@ namespace ILCompiler.ObjectWriter
                     break;
                 default:
                     throw new InvalidOperationException("Length prefix encoding not specified");
+            }
+        }
+
+        public readonly uint LengthPrefixSize(int length)
+        {
+            switch (_params.LengthEncodeFormat)
+            {
+                case LengthEncodeFormat.ULEB128:
+                    return DwarfHelper.SizeOfULEB128((ulong)length);
+                default:
+                    return 0;
             }
         }
 
@@ -174,6 +188,12 @@ namespace ILCompiler.ObjectWriter
             Span<byte> buffer = bufferWriter.GetSpan(size);
             Encoding.UTF8.GetBytes(value, buffer);
             bufferWriter.Advance(size);
+        }
+
+        public readonly void WriteUtf8WithLength(string value)
+        {
+            WriteULEB128((ulong)Encoding.UTF8.GetByteCount(value));
+            WriteUtf8StringNoNull(value);
         }
 
         public readonly void WritePadding(int size) => _sectionData.AppendPadding(size);

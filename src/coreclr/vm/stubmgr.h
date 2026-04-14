@@ -504,46 +504,6 @@ class StubLinkStubManager : public StubManager
 #endif
 } ;
 
-#ifdef FEATURE_JIT
-//
-// Stub manager for jump stubs created by ExecutionManager::jumpStub()
-//
-typedef VPTR(class JumpStubStubManager) PTR_JumpStubStubManager;
-
-class JumpStubStubManager : public StubManager
-{
-    VPTR_VTABLE_CLASS(JumpStubStubManager, StubManager)
-
-  public:
-
-    SPTR_DECL(JumpStubStubManager, g_pManager);
-
-    static void Init();
-
-#ifndef DACCESS_COMPILE
-    JumpStubStubManager() {LIMITED_METHOD_CONTRACT;}
-    ~JumpStubStubManager() {WRAPPER_NO_CONTRACT;}
-
-#endif
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "JumpStubStubManager"; }
-#endif
-
-    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
-
-    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
-
-#ifdef DACCESS_COMPILE
-    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-
-  protected:
-    virtual LPCWSTR GetStubManagerName(PCODE addr)
-        { LIMITED_METHOD_CONTRACT; return W("JumpStub"); }
-#endif
-};
-#endif // FEATURE_JIT
-
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
 // stub manager, or handles the query itself.
@@ -643,8 +603,55 @@ class ILStubManager : public StubManager
 #endif
 };
 
+//
+// This is the stub manager for PInvoke stubs.
+// It handles addresses that map to a PInvokeMethodDesc.
+//
+typedef VPTR(class PInvokeStubManager) PTR_PInvokeStubManager;
+
+class PInvokeStubManager : public StubManager
+{
+    VPTR_VTABLE_CLASS(PInvokeStubManager, StubManager)
+
+  public:
+    static void Init();
+
+#ifndef DACCESS_COMPILE
+    PInvokeStubManager() : StubManager() {WRAPPER_NO_CONTRACT;}
+    ~PInvokeStubManager()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            CAN_TAKE_LOCK;     // StubManager::UnlinkStubManager uses a crst
+        }
+        CONTRACTL_END;
+    }
+#endif
+
+   public:
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "PInvokeStubManager"; }
+#endif
+
+    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
+
+  private:
+
+    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
+
+#ifdef DACCESS_COMPILE
+    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+
+  protected:
+    virtual LPCWSTR GetStubManagerName(PCODE addr)
+        { LIMITED_METHOD_CONTRACT; return W("PInvokeStub"); }
+#endif
+};
+
 // This is used to recognize
-//   GenericCLRToCOMCallStub()
 //   VarargPInvokeStub()
 //   GenericPInvokeCalliHelper()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;
@@ -742,6 +749,58 @@ public:
     }
 };
 #endif // TARGET_X86 && UNIX_X86_ABI
+
+// -----------------------------------------------------------
+// This is used to recognize async thunks
+typedef VPTR(class AsyncThunkStubManager) PTR_AsyncThunkStubManager;
+class AsyncThunkStubManager : public StubManager
+{
+    VPTR_VTABLE_CLASS(AsyncThunkStubManager, StubManager)
+
+  public:
+    static void Init();
+
+#ifndef DACCESS_COMPILE
+    AsyncThunkStubManager() : StubManager() {WRAPPER_NO_CONTRACT;}
+    ~AsyncThunkStubManager()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            CAN_TAKE_LOCK;     // StubManager::UnlinkStubManager uses a crst
+        }
+        CONTRACTL_END;
+    }
+#endif
+
+   public:
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "AsyncThunkStubManager"; }
+#endif
+
+    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
+
+  private:
+
+    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
+
+#ifndef DACCESS_COMPILE
+    virtual BOOL TraceManager(Thread *thread,
+                              TraceDestination *trace,
+                              T_CONTEXT *pContext,
+                              BYTE **pRetAddr);
+#endif
+
+#ifdef DACCESS_COMPILE
+    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+
+  protected:
+    virtual LPCWSTR GetStubManagerName(PCODE addr)
+        { LIMITED_METHOD_CONTRACT; return W("AsyncThunkStub"); }
+#endif
+};
 
 //
 // Helpers for common value locations in stubs to make stub managers more portable

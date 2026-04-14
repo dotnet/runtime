@@ -404,7 +404,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
         // SSA renaming process.
         for (GenTree* const tree : stmt->TreeList())
         {
-            treeLifeUpdater.UpdateLife(tree);
+            treeLifeUpdater.UpdateLife<false>(tree);
 
             if (tree->OperIsSsaDef())
             {
@@ -427,7 +427,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                 }
 
                 // TODO-Review: EH successor/predecessor iteration seems broken.
-                if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
+                if (block->CatchTypeIs(BBCT_FINALLY, BBCT_FAULT))
                 {
                     continue;
                 }

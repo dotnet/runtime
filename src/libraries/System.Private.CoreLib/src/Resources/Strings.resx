@@ -296,7 +296,7 @@
     <value>Decimal constructor requires an array or span of four valid decimal bytes.</value>
   </data>
   <data name="Arg_DirectoryNotFoundException" xml:space="preserve">
-    <value>Attempted to access a path that is not on the disk.</value>
+    <value>Unable to find the specified directory.</value>
   </data>
   <data name="Arg_DivideByZero" xml:space="preserve">
     <value>Attempted to divide by zero.</value>
@@ -403,8 +403,11 @@
   <data name="Arg_GuidArrayCtor" xml:space="preserve">
     <value>Byte array for Guid must be exactly {0} bytes long.</value>
   </data>
-  <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
-    <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types.</value>
+  <data name="Arg_BinaryStyleNotSupported" xml:space="preserve">
+    <value>The number style AllowBinarySpecifier is not supported on floating point data types.</value>
+  </data>
+  <data name="Arg_InvalidHexFloatStyle" xml:space="preserve">
+    <value>With the AllowHexSpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be a subset of HexFloat (AllowLeadingWhite, AllowTrailingWhite, AllowLeadingSign, AllowDecimalPoint, and AllowExponent). AllowExponent is required when AllowHexSpecifier is specified.</value>
   </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
@@ -773,6 +776,9 @@
   </data>
   <data name="Arg_SetMethNotFnd" xml:space="preserve">
     <value>Property set method not found.</value>
+  </data>
+  <data name="Arg_SpanMustHaveElementsForColor" xml:space="preserve">
+    <value>Span must have at least 4 elements for color components.</value>
   </data>
   <data name="Arg_StackOverflowException" xml:space="preserve">
     <value>Operation caused a stack overflow.</value>
@@ -2018,6 +2024,9 @@
   <data name="BadImageFormat_BadILFormat" xml:space="preserve">
     <value>Bad IL format.</value>
   </data>
+  <data name="BadImageFormat_EmptyAssembly" xml:space="preserve">
+    <value>Assembly image is empty. The stream or byte array must contain a valid PE file.</value>
+  </data>
   <data name="BadImageFormat_InvalidType" xml:space="preserve">
     <value>Corrupt .resources file.  The specified type doesn't exist.</value>
   </data>
@@ -2830,6 +2839,12 @@
   </data>
   <data name="IO_FileLoad_FileName" xml:space="preserve">
     <value>Could not load the file '{0}'.</value>
+  </data>
+  <data name="IO_DirectoryName_Name" xml:space="preserve">
+    <value>Directory path: '{0}'</value>
+  </data>
+  <data name="IO_DirectoryNotFound_Path" xml:space="preserve">
+    <value>Could not find directory '{0}'.</value>
   </data>
   <data name="IO_FileName_Name" xml:space="preserve">
     <value>File name: '{0}'</value>
@@ -4440,5 +4455,32 @@
   </data>
   <data name="IO_SharedMemory_DirectoryOwnerPermissionsIncorrect" xml:space="preserve">
     <value>The directory '{0}' does not have the expected owner permissions: {1}.</value>
+  </data>
+  <data name="Argument_MustBeFunctionPointer" xml:space="preserve">
+    <value>Argument must represent a function pointer type.</value>
+  </data>
+  <data name="ManagedFunctionPointer_CallingConventionsNotAllowed">
+    <value>Unmanaged calling conventions cannot be specified for managed function pointers.</value>
+  </data>
+  <data name="FunctionPointer_ParameterInvalid">
+    <value>'{0}' cannot be used as a parameter type for a function pointer.</value>
+  </data>
+  <data name="FunctionPointer_ReturnTypeInvalid">
+    <value>'{0}' cannot be used as the return type of a function pointer.</value>
+  </data>
+  <data name="FunctionPointer_CallingConventionsUnbalanced">
+    <value>Calling conventions present on modified return type must match explicitly specified calling conventions.</value>
+  </data>
+  <data name="FunctionPointer_InvalidCallingConvention">
+    <value>'{0}' is not a valid calling convention type.</value>
+  </data>
+  <data name="NotSupported_FunctionPointerSignature">
+    <value>Function pointer signature can only be encoded by dynamic ILGenerator.</value>
+  </data>
+  <data name="Argument_FunctionPointersInvalid">
+    <value>Function pointer types are not valid.</value>
+  </data>
+  <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
+    <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on the decimal type.</value>
   </data>
 </root>

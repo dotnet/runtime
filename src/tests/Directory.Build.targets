@@ -434,6 +434,9 @@
       <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'">
         <Type>NoMonoAot</Type>
       </MarkerFile>
+      <MarkerFile Include="$(IntermediateOutputPath)\ExpectedExitCode.txt" Condition="'$(ExpectedExitCode)' != '' and ('$(IsMergedTestRunnerAssembly)' == 'true' or '$(BuildAllTestsAsStandalone)' == 'true') and '$(CLRTestKind)' != 'SharedLibrary'">
+        <Type>$(ExpectedExitCode)</Type>
+      </MarkerFile>
       <Content Include="@(MarkerFile)" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
@@ -541,6 +544,12 @@
 
     <IlcTreatWarningsAsErrors>false</IlcTreatWarningsAsErrors>
 
+    <!-- Use the SDK's ILCompilerTargetsPath hook to import ILC targets in the correct order
+         (before ILLink), matching how the shipping SDK imports them. -->
+    <PublishAot>true</PublishAot>
+    <_IlcReferencedAsPackage>false</_IlcReferencedAsPackage>
+    <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
+
     <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
@@ -572,7 +581,6 @@
 
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
 
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
   <Import Project="$(RepoRoot)eng/liveILLink.targets" />
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">

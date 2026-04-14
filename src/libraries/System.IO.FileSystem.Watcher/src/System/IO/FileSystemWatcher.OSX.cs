@@ -304,9 +304,6 @@ namespace System.IO
 
                     _context = ExecutionContext.Capture();
 
-                    // Make sure the OS file buffer(s) are fully flushed so we don't get events from cached I/O
-                    Interop.Sys.Sync();
-
                     Debug.Assert(!_gcHandle.IsAllocated);
                     _gcHandle = GCHandle.Alloc(this);
 

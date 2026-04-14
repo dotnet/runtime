@@ -18,7 +18,7 @@
     )
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
       string('Unstable under JIT stress')
-      int32(0x1E) // AnyJitStress
+      int32(0x11E) // AnyJitOptimizationStress
     }
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
         string('https://github.com/dotnet/runtimelab/issues/155: Tailcalls')

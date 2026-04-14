@@ -86,7 +86,8 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrs.h"
 
 #elif defined(TARGET_WASM)
-        #define INST(id, nm, info, fmt, opcode) nm,
+        #define INST(id, nm, info, fmt, opcode         ) nm,
+        #define INST2(id, nm, info, fmt, prefix, opcode) nm,
         #include "instrs.h"
 
 #else
@@ -486,19 +487,6 @@ void CodeGen::instGen(instruction ins)
 {
 
     GetEmitter()->emitIns(ins);
-
-#ifdef TARGET_XARCH
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    // A workaround necessitated by limitations of emitter
-    // if we are scheduled to insert a nop here, we have to delay it
-    // hopefully we have not missed any other prefix instructions or places
-    // they could be inserted
-    if (ins == INS_lock && GetEmitter()->emitNextNop == 0)
-    {
-        GetEmitter()->emitNextNop = 1;
-    }
-#endif // PSEUDORANDOM_NOP_INSERTION
-#endif
 }
 
 /*****************************************************************************
@@ -895,7 +883,7 @@ void CodeGen::inst_set_SV_var(GenTree* tree)
 {
 #ifdef DEBUG
     assert((tree != nullptr) && (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) || tree->IsLclVarAddr()));
-    assert(tree->AsLclVarCommon()->GetLclNum() < compiler->lvaCount);
+    assert(tree->AsLclVarCommon()->GetLclNum() < m_compiler->lvaCount);
 
     GetEmitter()->emitVarRefOffs = tree->AsLclVar()->gtLclILoffs;
 
@@ -989,7 +977,7 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
 #endif // DEBUG
 
     unsigned varNum = tree->AsLclVarCommon()->GetLclNum();
-    assert(varNum < compiler->lvaCount);
+    assert(varNum < m_compiler->lvaCount);
 #if CPU_LOAD_STORE_ARCH
 #ifdef TARGET_ARM64
     // Workaround until https://github.com/dotnet/runtime/issues/105512 is fixed.
@@ -1155,7 +1143,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                         INT64          scalarValue = hwintrinsicChild->AsIntConCommon()->IntegralValue();
                         UNATIVE_OFFSET cnum        = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
                                                                          genTypeSize(simdBaseType), simdBaseType);
-                        return OperandDesc(compiler->eeFindJitDataOffs(cnum));
+                        return OperandDesc(m_compiler->eeFindJitDataOffs(cnum));
                     }
                     else
                     {
@@ -1218,7 +1206,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                 break;
 
             case GT_LCL_VAR:
-                assert(op->IsRegOptional() || !compiler->lvaGetDesc(op->AsLclVar())->lvIsRegCandidate());
+                assert(op->IsRegOptional() || !m_compiler->lvaGetDesc(op->AsLclVar())->lvIsRegCandidate());
                 varNum = op->AsLclVar()->GetLclNum();
                 offset = 0;
                 break;
@@ -1229,7 +1217,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
             case GT_CNS_INT:
             {
                 assert(op->isContainedIntOrIImmed());
-                return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
+                return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(m_compiler));
             }
 
 #if defined(FEATURE_SIMD)
@@ -1900,8 +1888,8 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
     return
         // If we are running the altjit for AOT, then assume we can use the "BL" instruction.
         // This matches the usual behavior for AOT, since we normally do generate "BL".
-        (!compiler->info.compMatchedVM && compiler->IsAot()) ||
-        (compiler->eeGetRelocTypeHint((void*)addr) == CorInfoReloc::ARM32_THUMB_BRANCH24);
+        (!m_compiler->info.compMatchedVM && m_compiler->IsAot()) ||
+        (m_compiler->eeGetRelocTypeHint((void*)addr) == CorInfoReloc::ARM32_THUMB_BRANCH24);
 }
 
 #endif // TARGET_ARM

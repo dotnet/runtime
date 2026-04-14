@@ -20,29 +20,44 @@
 #error INST must be defined before including this file.
 #endif
 
+#ifndef INST2
+#error INST2 must be defined before including this file.
+#endif
+
 // clang-format off
 
 // control flow
 //
-INST(invalid,     "INVALID",     0, IF_NONE,    BAD_CODE)
-INST(unreachable, "unreachable", 0, IF_OPCODE,  0x00)
-INST(label,       "label",       0, IF_RAW_ULEB128, 0x00)
-INST(local_cnt,   "local.cnt",   0, IF_RAW_ULEB128, 0x00)
-INST(local_decl,  "local",       0, IF_LOCAL_DECL,  0x00)
-INST(nop,         "nop",         0, IF_OPCODE,  0x01)
-INST(block,       "block",       0, IF_BLOCK,   0x02)
-INST(loop,        "loop",        0, IF_BLOCK,   0x03)
-INST(if,          "if",          0, IF_BLOCK,   0x04)
-INST(else,        "else",        0, IF_OPCODE,  0x05)
-INST(end,         "end",         0, IF_OPCODE,  0x0B)
-INST(br,          "br",          0, IF_ULEB128, 0x0C)
-INST(br_if,       "br_if",       0, IF_ULEB128, 0x0D)
-INST(br_table,    "br_table",    0, IF_ULEB128, 0x0E)
-INST(return,      "return",      0, IF_OPCODE,  0x0F)
+INST2(invalid,              "INVALID",              0, IF_NONE,         0xFC, BAD_CODE)
+INST(unreachable,          "unreachable",          0, IF_OPCODE,        0x00)
+INST(label,                "label",                0, IF_RAW_ULEB128,   0x00)
+INST(catch_ref,            "catch_ref",            0, IF_CATCH_DECL,    0x00)
+INST(local_cnt,            "local.cnt",            0, IF_RAW_ULEB128,   0x00)
+INST(local_decl,           "local",                0, IF_LOCAL_DECL,    0x00)
+INST(nop,                  "nop",                  0, IF_OPCODE,        0x01)
+INST(block,                "block",                0, IF_BLOCK,         0x02)
+INST(loop,                 "loop",                 0, IF_BLOCK,         0x03)
+INST(if,                   "if",                   0, IF_BLOCK,         0x04)
+INST(else,                 "else",                 0, IF_OPCODE,        0x05)
+INST(throw_ref,            "throw_ref",            0, IF_OPCODE,        0x0A)
+INST(end,                  "end",                  0, IF_OPCODE,        0x0B)
+INST(br,                   "br",                   0, IF_ULEB128,       0x0C)
+INST(br_if,                "br_if",                0, IF_ULEB128,       0x0D)
+INST(br_table,             "br_table",             0, IF_ULEB128,       0x0E)
+INST(return,               "return",               0, IF_OPCODE,        0x0F)
+INST(call,                 "call",                 0, IF_FUNCIDX,       0x10)
+INST(call_indirect,        "call_indirect",        0, IF_CALL_INDIRECT, 0x11)
+INST(return_call,          "return_call",          0, IF_FUNCIDX,       0x12)
+INST(return_call_indirect, "return_call_indirect", 0, IF_CALL_INDIRECT, 0x13)
+
 INST(drop,        "drop",        0, IF_OPCODE,  0x1A)
+INST(try_table,   "try_table",   0, IF_TRY_TABLE,   0x1F)
 
 INST(local_get,    "local.get",    0, IF_ULEB128, 0x20)
 INST(local_set,    "local.set",    0, IF_ULEB128, 0x21)
+INST(local_tee,    "local.tee",    0, IF_ULEB128, 0x22)
+INST(global_get,   "global.get",   0, IF_ULEB128, 0x23)
+INST(global_set,   "global.set",   0, IF_ULEB128, 0x24)
 INST(i32_load,     "i32.load",     0, IF_MEMARG,  0x28)
 INST(i64_load,     "i64.load",     0, IF_MEMARG,  0x29)
 INST(f32_load,     "f32.load",     0, IF_MEMARG,  0x2A)
@@ -67,10 +82,14 @@ INST(i32_store16, "i32.store16", 0, IF_MEMARG,  0x3B)
 
 // 5.4.7 Numeric Instructions
 // Constants
-INST(i32_const,   "i32.const",   0, IF_SLEB128, 0x41)
-INST(i64_const,   "i64.const",   0, IF_SLEB128, 0x42)
-INST(f32_const,   "f32.const",   0, IF_F32,     0x43)
-INST(f64_const,   "f64.const",   0, IF_F64,     0x44)
+INST(i32_const,         "i32.const",         0, IF_SLEB128, 0x41)
+// Pseudo-instructions for relocations
+INST(i32_const_address, "i32.const_address", 0, IF_MEMADDR, 0x41)
+INST(i32_const_funcptr, "i32.const_funcptr", 0, IF_FUNCPTR, 0x41)
+// Constants, continued
+INST(i64_const,         "i64.const",         0, IF_SLEB128, 0x42)
+INST(f32_const,         "f32.const",         0, IF_F32,     0x43)
+INST(f64_const,         "f64.const",         0, IF_F64,     0x44)
 // Integer comparisons
 INST(i32_eqz,     "i32.eqz",     0, IF_OPCODE,  0x45)
 INST(i32_eq,      "i32.eq",      0, IF_OPCODE,  0x46)
@@ -209,15 +228,19 @@ INST(i64_extend32_s,      "i64.extend32_s",      0, IF_OPCODE,  0xC4)
 // NOTE: per https://github.com/dotnet/runtime/issues/122309,
 // we have decided to include saturating float->int conversions
 // in our base Wasm ISA.
-INST(i32_trunc_sat_f32_s, "i32.trunc_sat_f32_s", 0, IF_OPCODE,  0x00FC)
-INST(i32_trunc_sat_f32_u, "i32.trunc_sat_f32_u", 0, IF_OPCODE,  0x01FC)
-INST(i32_trunc_sat_f64_s, "i32.trunc_sat_f64_s", 0, IF_OPCODE,  0x02FC)
-INST(i32_trunc_sat_f64_u, "i32.trunc_sat_f64_u", 0, IF_OPCODE,  0x03FC)
-INST(i64_trunc_sat_f32_s, "i64.trunc_sat_f32_s", 0, IF_OPCODE,  0x04FC)
-INST(i64_trunc_sat_f32_u, "i64.trunc_sat_f32_u", 0, IF_OPCODE,  0x05FC)
-INST(i64_trunc_sat_f64_s, "i64.trunc_sat_f64_s", 0, IF_OPCODE,  0x06FC)
-INST(i64_trunc_sat_f64_u, "i64.trunc_sat_f64_u", 0, IF_OPCODE,  0x07FC)
+INST2(i32_trunc_sat_f32_s, "i32.trunc_sat_f32_s", 0, IF_OPCODE,  0xFC, 0)
+INST2(i32_trunc_sat_f32_u, "i32.trunc_sat_f32_u", 0, IF_OPCODE,  0xFC, 1)
+INST2(i32_trunc_sat_f64_s, "i32.trunc_sat_f64_s", 0, IF_OPCODE,  0xFC, 2)
+INST2(i32_trunc_sat_f64_u, "i32.trunc_sat_f64_u", 0, IF_OPCODE,  0xFC, 3)
+INST2(i64_trunc_sat_f32_s, "i64.trunc_sat_f32_s", 0, IF_OPCODE,  0xFC, 4)
+INST2(i64_trunc_sat_f32_u, "i64.trunc_sat_f32_u", 0, IF_OPCODE,  0xFC, 5)
+INST2(i64_trunc_sat_f64_s, "i64.trunc_sat_f64_s", 0, IF_OPCODE,  0xFC, 6)
+INST2(i64_trunc_sat_f64_u, "i64.trunc_sat_f64_u", 0, IF_OPCODE,  0xFC, 7)
+
+INST2(memory_copy,         "memory.copy",         0, IF_MEMIDX_MEMIDX, 0xFC, 10)
+INST2(memory_fill,         "memory.fill",         0, IF_ULEB128,       0xFC, 11)
 
 // clang-format on
 
 #undef INST
+#undef INST2

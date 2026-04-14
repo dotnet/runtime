@@ -20,6 +20,9 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_MultiModuleVersionBubble = 0x00000040,  // This R2R module has multiple modules within its version bubble
         READYTORUN_FLAG_UnrelatedR2RCode = 0x00000080,          // This R2R module has generic code in it that would not be naturally encoded into this module
         READYTORUN_FLAG_PlatformNativeImage = 0x00000100,       // The owning composite executable is in the platform native format
+        READYTORUN_FLAG_StrippedILBodies = 0x00000200,         // IL method bodies have been stripped from the image
+        READYTORUN_FLAG_StrippedInliningInfo = 0x00000400,     // Inlining info has been stripped from the image
+        READYTORUN_FLAG_StrippedDebugInfo = 0x00000800,        // Debug info has been stripped from the image
     }
 
     public enum ReadyToRunImportSectionType : byte
@@ -187,6 +190,9 @@ namespace Internal.ReadyToRunConstants
         Check_IL_Body              = 0x35, /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
         Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
 
+        ContinuationLayout = 0x37, /* Layout of an async method continuation type */
+        ResumptionStubEntryPoint = 0x38, /* Entry point of an async method resumption stub */
+
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
         // table of the MSIL metadata of the master context module for the signature or
@@ -230,6 +236,11 @@ namespace Internal.ReadyToRunConstants
         FailFast                    = 0x24,
         ThrowNullRef                = 0x25,
         ThrowDivZero                = 0x26,
+        ThrowExact                  = 0x27,
+        ThrowArgument               = 0x28,
+        ThrowArgumentOutOfRange     = 0x29,
+        ThrowPlatformNotSupported   = 0x2A,
+        ThrowNotImplemented         = 0x2B,
 
         // Write barriers
         WriteBarrier                = 0x30,
@@ -352,6 +363,13 @@ namespace Internal.ReadyToRunConstants
 
         GetCurrentManagedThreadId   = 0x112,
 
+        AllocContinuation              = 0x113,
+        AllocContinuationClass         = 0x114,
+        AllocContinuationMethod        = 0x115,
+
+        InitClass                   = 0x116,
+        InitInstClass               = 0x117,
+
         // **********************************************************************************************
         //
         // These are not actually part of the R2R file format. We have them here because it's convenient.
@@ -360,11 +378,6 @@ namespace Internal.ReadyToRunConstants
 
         // Marker to be used in asserts.
         FirstFakeHelper,
-
-        ThrowArgumentOutOfRange,
-        ThrowArgument,
-        ThrowPlatformNotSupported,
-        ThrowNotImplemented,
 
         DebugBreak,
 

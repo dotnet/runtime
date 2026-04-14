@@ -8,7 +8,7 @@ namespace System.Threading.Tests
 {
     public static class SynchronizationContextTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void WaitTest()
         {
             var tsc = new TestSynchronizationContext();
@@ -40,7 +40,7 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentNullException>(() => TestSynchronizationContext.WaitHelper(null, false, 0));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31977", TestRuntimes.Mono)]
         public static void WaitNotificationTest()
         {

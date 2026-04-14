@@ -343,7 +343,7 @@
     <value>Type '{0}' is not a valid serializable type.</value>
   </data>
   <data name="InvalidReturnTypeOnGetSchemaMethod" xml:space="preserve">
-    <value>Method '{0}.{1}()' returns '{2}'. The return type must be compatible with '{3}'.</value>
+    <value>Method '{0}.{1}()' returns '{2}'. The return type must be compatible with '{3}' or '{4}'.</value>
   </data>
   <data name="InvalidSizeDefinition" xml:space="preserve">
     <value>Invalid Size '{0}'. Must be non-negative integer.</value>

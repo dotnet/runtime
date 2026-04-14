@@ -8,6 +8,7 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <StripSymbols Condition="'$(KeepNativeSymbols)' == 'true'">false</StripSymbols>
     <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
   </PropertyGroup>
 
   <PropertyGroup>

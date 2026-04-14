@@ -405,8 +405,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     CallDescrData callDescrData;
 
     callDescrData.pSrc = pTransitionBlock + sizeof(TransitionBlock);
-    _ASSERTE((nStackBytes % TARGET_POINTER_SIZE) == 0);
-    callDescrData.numStackSlots = nStackBytes / TARGET_POINTER_SIZE;
+    callDescrData.numStackSlots = ALIGN_UP(nStackBytes, TARGET_REGISTER_SIZE) / TARGET_REGISTER_SIZE;
 #ifdef CALLDESCR_ARGREGS
     callDescrData.pArgumentRegisters = (ArgumentRegisters*)(pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters());
 #endif
@@ -423,6 +422,8 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 #ifdef TARGET_WASM
     // WASM-TODO: this is now called from the interpreter, so the arguments layout is OK. reconsider with codegen
     callDescrData.nArgsSize = nStackBytes;
+    callDescrData.hasThis = argit.HasThis();
+    callDescrData.hasRetBuff = argit.HasRetBuffArg();
 #endif // TARGET_WASM
 
     // This is duplicated logic from MethodDesc::GetCallTarget

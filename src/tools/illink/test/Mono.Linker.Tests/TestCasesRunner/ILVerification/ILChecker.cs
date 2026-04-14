@@ -6,10 +6,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using ILVerify;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
-using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner.ILVerification;
 
@@ -49,6 +49,10 @@ public class ILChecker
                 if (outputResults.Length == 0)
                     continue;
             }
+
+            outputResults = FilterIgnoredErrors (linkResult, original, outputResults);
+            if (outputResults.Length == 0)
+                continue;
 
             failureMessages.AppendLine($"IL Verification failed for {file.FileName}:");
             failureMessages.AppendLine("-----------------------------");
@@ -91,6 +95,40 @@ public class ILChecker
         return linkResult.TestCase.FindTypeDefinition(original)
             .CustomAttributes
             .FirstOrDefault(attr => attr.AttributeType.Name == nameof(DisableILVerifyDiffingAttribute)) != null;
+    }
+
+    private static ILVerifierResult[] FilterIgnoredErrors(TrimmedTestCaseResult linkResult, AssemblyDefinition original, ILVerifierResult[] results)
+    {
+        var attrs = linkResult.TestCase.FindTypeDefinition(original).CustomAttributes.Where(attr => attr.AttributeType.Name == nameof(IgnoreILFailureAttribute)).ToArray();
+        if (attrs.Length == 0)
+            return results;
+
+        var errorsToIgnore = new List<string>();
+        foreach (var attr in attrs)
+        {
+            var expectedMessageContains = (string)attr.GetConstructorArgumentValue(0);
+            errorsToIgnore.Add(expectedMessageContains);
+        }
+
+        var filtered = new List<ILVerifierResult>();
+        foreach (var result in results)
+        {
+            if (!ShouldIgnore(result))
+                filtered.Add(result);
+        }
+
+        return filtered.ToArray();
+
+        bool ShouldIgnore(ILVerifierResult result)
+        {
+            foreach (var ignore in errorsToIgnore)
+            {
+                if (result.GetErrorMessage().Contains(ignore))
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     private static void ProcessExpectILFailures(TrimmedTestCaseResult linkResult, AssemblyDefinition original, out bool expectILFailures, out List<string> failureMessages)

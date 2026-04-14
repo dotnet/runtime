@@ -156,7 +156,7 @@ namespace ILCompiler
             }
             else if (_targetArchitecture == TargetArchitecture.Wasm32)
             {
-                return SimdVectorLength.None; // TODO-WASM-CQ: packed SIMD (128 bit vectors).
+                return SimdVectorLength.Vector128Bit;
             }
             else
             {

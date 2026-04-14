@@ -65,7 +65,7 @@
 #include "excep.h"
 #include "comcache.h"
 #include "threads.h"
-#include "comcache.h"
+#include "cdacdata.h"
 
 class Object;
 class ComCallWrapper;
@@ -169,7 +169,7 @@ struct RCW
      {
          MarshalingType_Unknown = 0,      /* The MarshalingType has not been set*/
          MarshalingType_Inhibit = 1,      /* Type implements INoMarshal */
-         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller */
+         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller. [cDAC] [BuiltInCOM]: Contract depends on this value. */
      };
 
     //-------------------------------------------------
@@ -510,6 +510,7 @@ public:
 
         struct
         {
+            // [cDAC] [BuiltInCOM] : Contract depends on the encoding of m_fURTAggregated, m_fURTContained, and m_MarshalingType.
             static_assert((1 << 4) > INTERFACE_ENTRY_CACHE_SIZE, "m_iEntryToRelease needs a bigger data type");
             DWORD       m_iEntryToRelease:4;
 
@@ -518,7 +519,7 @@ public:
             DWORD       m_fAllowEagerSTACleanup:1; // this RCW can be cleaned up eagerly (as opposed to via CleanupUnusedObjectsInCurrentContext)
 
             // Reserve 2 bits for marshaling type
-            DWORD       m_MarshalingType:2;        // Marshaling type of the COM object.
+            DWORD       m_MarshalingType:2;        // Marshaling type of the COM object. [cDAC] [BuiltInCOM]: Contract depends on the bit position of this field within m_dwFlags.
 
             DWORD       m_Detached:1;              // set if the RCW was found dead during GC
         };
@@ -542,6 +543,7 @@ private :
 
     // IUnkEntry needs to access m_UnkEntry field
     friend IUnkEntry;
+    friend struct ::cdac_data<RCW>;
 
 private :
     static RCW* CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT);
@@ -579,6 +581,23 @@ private :
         CtxEntry *pCtxEntry = m_UnkEntry.GetCtxEntry();
         RETURN pCtxEntry;
     }
+};
+
+template<>
+struct cdac_data<RCW>
+{
+    static constexpr size_t NextCleanupBucket = offsetof(RCW, m_pNextCleanupBucket);
+    static constexpr size_t NextRCW = offsetof(RCW, m_pNextRCW);
+    static constexpr size_t Flags = offsetof(RCW, m_Flags);
+    static constexpr size_t CtxCookie = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxCookie);
+    static constexpr size_t CtxEntry = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxEntry);
+    static constexpr size_t InterfaceEntries = offsetof(RCW, m_aInterfaceEntries);
+    static constexpr size_t IdentityPointer = offsetof(RCW, m_pIdentity);
+    static constexpr size_t SyncBlockIndex = offsetof(RCW, m_SyncBlockIndex);
+    static constexpr size_t VTablePtr = offsetof(RCW, m_vtablePtr);
+    static constexpr size_t CreatorThread = offsetof(RCW, m_pCreatorThread);
+    static constexpr size_t RefCount = offsetof(RCW, m_cbRefCount);
+    static constexpr size_t UnknownPointer = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pUnknown);
 };
 
 inline RCW::CreationFlags operator|(RCW::CreationFlags lhs, RCW::CreationFlags rhs)
@@ -738,21 +757,7 @@ FORCEINLINE void NewRCWHolderRelease(RCW* p)
     }
 };
 
-class NewRCWHolder : public Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>
-{
-public:
-    NewRCWHolder(RCW* p = NULL)
-        : Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(RCW* p)
-    {
-        WRAPPER_NO_CONTRACT;
-        Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>::operator=(p);
-    }
-};
+using NewRCWHolder = SpecializedWrapper<RCW, NewRCWHolderRelease>;
 
 #ifndef DACCESS_COMPILE
 class RCWHolder
@@ -1271,6 +1276,7 @@ class RCWCleanupList
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif // DACCESS_COMPILE
+    friend struct ::cdac_data<RCWCleanupList>;
 
 public:
     RCWCleanupList()
@@ -1358,38 +1364,10 @@ private:
     BOOL                m_doCleanupInContexts;
 };
 
-FORCEINLINE void CtxEntryHolderRelease(CtxEntry *p)
+template<>
+struct cdac_data<RCWCleanupList>
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (p != NULL)
-    {
-        p->Release();
-    }
-}
-
-class CtxEntryHolder : public Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>
-{
-public:
-    CtxEntryHolder(CtxEntry *p = NULL)
-        : Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(CtxEntry *p)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>::operator=(p);
-    }
-
+    static constexpr size_t FirstBucket = offsetof(RCWCleanupList, m_pFirstBucket);
 };
 
 #endif // _RUNTIMECALLABLEWRAPPER_H

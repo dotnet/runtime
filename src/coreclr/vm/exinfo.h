@@ -37,28 +37,7 @@ struct RhEHClause
     }
 };
 
-enum class ExKind : uint8_t
-{
-    None = 0,
-    Throw = 1,
-    HardwareFault = 2,
-    KindMask = 3,
-
-    RethrowFlag = 4,
-
-    SupersededFlag = 8,
-
-    InstructionFaultFlag = 0x10
-};
-
 struct PAL_SEHException;
-
-struct LastReportedFuncletInfo
-{
-    PCODE IP;
-    TADDR FP;
-    uint32_t Flags;
-};
 
 struct ExInfo
 {
@@ -71,6 +50,8 @@ struct ExInfo
 
     class StackRange
     {
+        friend struct ::cdac_data<ExInfo>;
+
     public:
         StackRange();
         void Reset();
@@ -372,13 +353,18 @@ private:
     static StackWalkAction RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID pData);
 };
 
-#ifndef TARGET_UNIX
 template<>
 struct cdac_data<ExInfo>
 {
+    static constexpr size_t StackLowBound = offsetof(ExInfo, m_ScannedStackRange)
+        + offsetof(ExInfo::StackRange, m_sfLowBound);
+    static constexpr size_t StackHighBound = offsetof(ExInfo, m_ScannedStackRange)
+        + offsetof(ExInfo::StackRange, m_sfHighBound);
+    static constexpr size_t ExceptionFlagsValue = offsetof(ExInfo, m_ExceptionFlags.m_flags);
+#ifndef TARGET_UNIX
     static constexpr size_t ExceptionWatsonBucketTrackerBuckets = offsetof(ExInfo, m_WatsonBucketTracker)
         + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
-};
 #endif // TARGET_UNIX
+};
 
 #endif // __ExInfo_h__

@@ -82,7 +82,7 @@ namespace System.Net.Tests
         private static readonly byte[] helloWorldBytes = "Hello world"u8.ToArray();
         private static readonly byte[] largeFileBytes = Enumerable.Range(0, 10 * 1024 * 1024).Select((i) => (byte)(i % 256)).ToArray();
 
-        [ConditionalTheory(nameof(LocalServerAvailable))]
+        [ConditionalTheory(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
         [MemberData(nameof(Modes))]
         public void Ftp_CreateAndDelete(FtpExecutionMode mode)
         {
@@ -98,7 +98,7 @@ namespace System.Net.Tests
             Assert.False(FileExists(mode, uri));
         }
 
-        [ConditionalTheory(nameof(LocalServerAvailable))]
+        [ConditionalTheory(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
         [MemberData(nameof(Modes))]
         public void Ftp_LargeFile(FtpExecutionMode mode)
         {
@@ -114,7 +114,7 @@ namespace System.Net.Tests
             Assert.False(FileExists(mode, uri));
         }
 
-        [ConditionalTheory(nameof(LocalServerAvailable))]
+        [ConditionalTheory(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
         [MemberData(nameof(Modes))]
         public void Ftp_AppendFile(FtpExecutionMode mode)
         {
@@ -132,7 +132,7 @@ namespace System.Net.Tests
             Assert.False(FileExists(mode, uri));
         }
 
-        [ConditionalTheory(nameof(LocalServerAvailable))]
+        [ConditionalTheory(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
         [MemberData(nameof(Modes))]
         public void Ftp_RenameFile(FtpExecutionMode mode)
         {
@@ -158,7 +158,7 @@ namespace System.Net.Tests
             Assert.False(FileExists(mode, newUri));
         }
 
-        [ConditionalTheory(nameof(LocalServerAvailable))]
+        [ConditionalTheory(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
         [MemberData(nameof(Modes))]
         public void Ftp_MakeAndRemoveDir_Success(FtpExecutionMode mode)
         {
@@ -173,7 +173,7 @@ namespace System.Net.Tests
             Assert.False(DirExists(mode, dir));
         }
 
-        [ConditionalTheory(nameof(LocalServerAvailable))]
+        [ConditionalTheory(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
         [MemberData(nameof(Modes))]
         public void Ftp_RenameFileSubDir_Success(FtpExecutionMode mode)
         {
@@ -211,7 +211,7 @@ namespace System.Net.Tests
             Assert.Throws<FormatException>(() => WebRequest.Create($"{uri}\r\n{WebRequestMethods.Ftp.AppendFile} {Guid.NewGuid().ToString()}"));
         }
 
-        [ConditionalFact(nameof(LocalServerAvailable))]
+        [ConditionalFact(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
         public void Ftp_Ignore_NewLine_GetRequestStream_And_GetResponse_Throws_FormatException_As_InnerException()
         {
             FtpWebRequest ftpWebRequest = (FtpWebRequest)WebRequest.Create(absoluteUri + Guid.NewGuid().ToString());

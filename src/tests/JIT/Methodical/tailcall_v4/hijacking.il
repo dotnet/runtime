@@ -280,7 +280,11 @@
     }
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
         string('needs triage')
-        int32(0x1E) // AnyJitStress
+      int32(0x11E) // AnyJitOptimizationStress
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+        string('System.Threading.Thread.ThrowIfMultithreadingIsNotSupported: PlatformNotSupportedException')
+        int32(0x400) // TestPlatforms.Browser
     }
     .entrypoint
     // Code size       300 (0x12c)

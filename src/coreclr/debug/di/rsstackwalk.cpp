@@ -38,9 +38,9 @@ void CordbStackWalk::Init()
     m_lastSyncFlushCounter = pProcess->m_flushCounter;
 
     IDacDbiInterface * pDAC = pProcess->GetDAC();
-    pDAC->CreateStackWalk(m_pCordbThread->m_vmThreadToken,
+    IfFailThrow(pDAC->CreateStackWalk(m_pCordbThread->m_vmThreadToken,
                           &m_context,
-                          &m_pSFIHandle);
+                          &m_pSFIHandle));
 
     // see the function header of code:CordbStackWalk::CheckForLegacyHijackCase
     CheckForLegacyHijackCase();
@@ -80,10 +80,10 @@ void CordbStackWalk::CheckForLegacyHijackCase()
                 m_context.ContextFlags = DT_CONTEXT_FULL;
                 pUT->GetThreadContext(&m_context);
                 IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-                pDAC->SetStackWalkCurrentContext(m_pCordbThread->m_vmThreadToken,
+                IfFailThrow(pDAC->SetStackWalkCurrentContext(m_pCordbThread->m_vmThreadToken,
                                                  m_pSFIHandle,
                                                  SET_CONTEXT_FLAG_ACTIVE_FRAME,
-                                                 &m_context);
+                                                 &m_context));
             }
         }
     }
@@ -129,7 +129,7 @@ void CordbStackWalk::DeleteAll()
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
             {
                 // This Delete call shouldn't actually throw. Worst case, the DDImpl leaked memory.
-                GetProcess()->GetDAC()->DeleteStackWalk(m_pSFIHandle);
+                IfFailThrow(GetProcess()->GetDAC()->DeleteStackWalk(m_pSFIHandle));
             }
         }
         EX_CATCH_HRESULT(hr);
@@ -218,9 +218,9 @@ void CordbStackWalk::RefreshIfNeeded()
         DeleteAll();
 
         // create a new stackwalk handle
-        pProcess->GetDAC()->CreateStackWalk(m_pCordbThread->m_vmThreadToken,
+        IfFailThrow(pProcess->GetDAC()->CreateStackWalk(m_pCordbThread->m_vmThreadToken,
                                             &m_context,
-                                            &m_pSFIHandle);
+                                            &m_pSFIHandle));
 
         // advance the stackwalker to where we originally were
         SetContextWorker(m_cachedSetContextFlag, sizeof(DT_CONTEXT), reinterpret_cast<BYTE *>(&ctx));
@@ -305,7 +305,8 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
                 // No easy way out in this case.  We have to call the DDI.
                 IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
-                IDacDbiInterface::FrameType ft = pDAC->GetStackWalkCurrentFrameInfo(m_pSFIHandle, NULL);
+                IDacDbiInterface::FrameType ft;
+                IfFailThrow(pDAC->GetStackWalkCurrentFrameInfo(m_pSFIHandle, NULL, &ft));
                 if (ft == IDacDbiInterface::kInvalid)
                 {
                     ThrowHR(E_FAIL);
@@ -398,10 +399,10 @@ void CordbStackWalk::SetContextWorker(CorDebugSetContextFlag flag, ULONG32 conte
     m_context = tmpCtx;
     m_cachedSetContextFlag = flag;
 
-    pDAC->SetStackWalkCurrentContext(m_pCordbThread->m_vmThreadToken,
+    IfFailThrow(pDAC->SetStackWalkCurrentContext(m_pCordbThread->m_vmThreadToken,
                                      m_pSFIHandle,
                                      flag,
-                                     &m_context);
+                                     &m_context));
 }
 
 //---------------------------------------------------------------------------------------
@@ -422,11 +423,12 @@ BOOL CordbStackWalk::UnwindStackFrame()
     _ASSERTE(pProcess->GetProcessLock()->HasLock());
 
     IDacDbiInterface * pDAC = pProcess->GetDAC();
-    BOOL retVal = pDAC->UnwindStackWalkFrame(m_pSFIHandle);
+    BOOL retVal;
+    IfFailThrow(pDAC->UnwindStackWalkFrame(m_pSFIHandle, &retVal));
 
     // Now that we have unwound, make sure we update the CONTEXT buffer to reflect the current stack frame.
     // This call is safe regardless of whether the unwind is successful or not.
-    pDAC->GetStackWalkCurrentContext(m_pSFIHandle, &m_context);
+    IfFailThrow(pDAC->GetStackWalkCurrentContext(m_pSFIHandle, &m_context));
 
     return retVal;
 } // CordbStackWalk::UnwindStackWalkFrame
@@ -465,7 +467,7 @@ HRESULT CordbStackWalk::Next()
             IDacDbiInterface * pDAC = GetProcess()->GetDAC();
             IDacDbiInterface::FrameType ft = IDacDbiInterface::kInvalid;
 
-            ft = pDAC->GetStackWalkCurrentFrameInfo(this->m_pSFIHandle, NULL);
+            IfFailThrow(pDAC->GetStackWalkCurrentFrameInfo(this->m_pSFIHandle, NULL, &ft));
             if (ft == IDacDbiInterface::kAtEndOfStack)
             {
                 ThrowHR(CORDBG_E_PAST_END_OF_STACK);
@@ -578,7 +580,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     IDacDbiInterface::FrameType ft = IDacDbiInterface::kInvalid;
 
     pDAC = GetProcess()->GetDAC();
-    ft = pDAC->GetStackWalkCurrentFrameInfo(m_pSFIHandle, &frameData);
+    IfFailThrow(pDAC->GetStackWalkCurrentFrameInfo(m_pSFIHandle, &frameData, &ft));
 
     if (ft == IDacDbiInterface::kInvalid)
     {
@@ -622,7 +624,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         m_fIsOneFrameAhead = true;
 #if defined(TARGET_X86)
-        frameData.fp = pDAC->GetFramePointer(m_pSFIHandle);
+        IfFailThrow(pDAC->GetFramePointer(m_pSFIHandle, &frameData.fp));
 #endif // TARGET_X86
 
         // currentFuncData contains general information about the method.
@@ -807,7 +809,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
         m_fIsOneFrameAhead = true;
 #if defined(TARGET_X86)
-        frameData.fp = pDAC->GetFramePointer(m_pSFIHandle);
+        IfFailThrow(pDAC->GetFramePointer(m_pSFIHandle, &frameData.fp));
 #endif // TARGET_X86
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
@@ -901,13 +903,14 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
         NativeCodeFunctionData codeData;
         VMPTR_Module pModule;
         mdMethodDef methodDef;
-        pDac->GetNativeCodeInfoForAddr(
+        IfFailThrow(pDac->GetNativeCodeInfoForAddr(
             diagnosticIP,
             &codeData,
             &pModule,
-            &methodDef);
+            &methodDef));
 
-        IDacDbiInterface::DynamicMethodType dynMethodType = pDac->IsDiagnosticsHiddenOrLCGMethod(codeData.vmNativeCodeMethodDescToken);
+        IDacDbiInterface::DynamicMethodType dynMethodType;
+        IfFailThrow(pDac->IsDiagnosticsHiddenOrLCGMethod(codeData.vmNativeCodeMethodDescToken, &dynMethodType));
         if (dynMethodType == IDacDbiInterface::kDiagnosticHidden)
         {
             // Skipping async frame creation for async thunks. These can not be converted to a CordbAsyncFrame as they lack DebugInfo

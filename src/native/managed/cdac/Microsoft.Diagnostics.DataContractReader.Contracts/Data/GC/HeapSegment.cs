@@ -10,18 +10,18 @@ internal sealed class HeapSegment : IData<HeapSegment>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HeapSegment);
 
-        Allocated = target.ReadPointer(address + (ulong)type.Fields[nameof(Allocated)].Offset);
-        Committed = target.ReadPointer(address + (ulong)type.Fields[nameof(Committed)].Offset);
-        Reserved = target.ReadPointer(address + (ulong)type.Fields[nameof(Reserved)].Offset);
-        Used = target.ReadPointer(address + (ulong)type.Fields[nameof(Used)].Offset);
-        Mem = target.ReadPointer(address + (ulong)type.Fields[nameof(Mem)].Offset);
-        Flags = target.ReadNUInt(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        BackgroundAllocated = target.ReadPointer(address + (ulong)type.Fields[nameof(BackgroundAllocated)].Offset);
+        Allocated = target.ReadPointerField(address, type, nameof(Allocated));
+        Committed = target.ReadPointerField(address, type, nameof(Committed));
+        Reserved = target.ReadPointerField(address, type, nameof(Reserved));
+        Used = target.ReadPointerField(address, type, nameof(Used));
+        Mem = target.ReadPointerField(address, type, nameof(Mem));
+        Flags = target.ReadNUIntField(address, type, nameof(Flags));
+        Next = target.ReadPointerField(address, type, nameof(Next));
+        BackgroundAllocated = target.ReadPointerField(address, type, nameof(BackgroundAllocated));
 
         // Field only exists in MULTIPLE_HEAPS builds
         if (type.Fields.ContainsKey(nameof(Heap)))
-            Heap = target.ReadPointer(address + (ulong)type.Fields[nameof(Heap)].Offset);
+            Heap = target.ReadPointerField(address, type, nameof(Heap));
     }
 
     public TargetPointer Allocated { get; }
