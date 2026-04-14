@@ -1823,60 +1823,60 @@ namespace
         case VT_I1:
         {
             TypeHandle th = CoreLibBinder::GetClass(CLASS__SBYTE);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_UI1:
         {
             TypeHandle th = CoreLibBinder::GetClass(CLASS__BYTE);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_I2:
         {
             TypeHandle th = CoreLibBinder::GetClass(CLASS__INT16);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_UI2:
         {
             TypeHandle th = CoreLibBinder::GetClass(CLASS__UINT16);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_I4:
         case VT_INT:
         {
             TypeHandle th = CoreLibBinder::GetClass(CLASS__INT32);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_UI4:
         case VT_UINT:
         case VT_ERROR:
         {
             TypeHandle th = CoreLibBinder::GetClass(CLASS__UINT32);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_I8:
         {
             TypeHandle th = CoreLibBinder::GetClass(CLASS__INT64);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_UI8:
         {
             TypeHandle th = CoreLibBinder::GetClass(CLASS__UINT64);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_R4:
         {
             TypeHandle th = CoreLibBinder::GetClass(CLASS__SINGLE);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_R8:
         {
             TypeHandle th = CoreLibBinder::GetClass(CLASS__DOUBLE);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_DECIMAL:
         {
             TypeHandle th = CoreLibBinder::GetClass(CLASS__DECIMAL);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_BOOL:
             return CoreLibBinder::GetClass(CLASS__VARIANT_BOOL_MARSHALER);
@@ -1929,7 +1929,14 @@ namespace
         {
             _ASSERTE(pElementMT != NULL);
             TypeHandle thElement(pElementMT);
-            return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+            if (thElement.IsBlittable())
+            {
+                return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+            }
+            else
+            {
+                return TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+            }
         }
 
         default:
