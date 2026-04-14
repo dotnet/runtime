@@ -125,6 +125,10 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pExceptionServicesInternalCallsClass, ::g_pExceptionServicesInternalCallsClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pStackFrameIteratorClass, ::g_pStackFrameIteratorClass)
 
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEnvironmentCallEntryPointMethodDesc, ::g_pEnvironmentCallEntryPointMethodDesc)
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pThreadStartCallbackMethodDesc, ::g_pThreadStartCallbackMethodDesc)
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pGCRunFinalizersMethodDesc, ::g_pGCRunFinalizersMethodDesc)
+
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
 
 DEFINE_DACVAR(INT32, ArrayBase__s_arrayBoundsZero, ArrayBase::s_arrayBoundsZero)
