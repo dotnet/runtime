@@ -38,6 +38,7 @@ namespace System
         private static int s_windowHeight;  // Cached WindowHeight, invalid when s_windowWidth == -1.
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
         private static SafeFileHandle? s_terminalHandle; // Tracks the handle used for writing to the terminal.
+        private static FileStream? s_terminalFileStream; // FileStream wrapping s_terminalHandle for use with Write(FileStream, ...).
 
         /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
         public static TerminalFormatStrings TerminalFormatStringsInstance { get { return s_terminalFormatStringsInstance.Value; } }
@@ -900,6 +901,7 @@ namespace System
                     s_terminalHandle = !Console.IsOutputRedirected ? OpenStandardOutputHandle() :
                                        !Console.IsInputRedirected  ? OpenStandardInputHandle() :
                                        null;
+                    s_terminalFileStream = s_terminalHandle != null ? new FileStream(s_terminalHandle, FileAccess.Write, bufferSize: 0) : null;
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
                     // "application mode".  This will both transition it immediately, as well as allow
@@ -941,12 +943,19 @@ namespace System
 
         internal static void WriteToTerminal(ReadOnlySpan<byte> buffer, SafeFileHandle? handle = null, bool mayChangeCursorPosition = true)
         {
-            handle ??= s_terminalHandle;
-            Debug.Assert(handle is not null);
-
             lock (Console.Out) // synchronize with other writers
             {
-                Write(handle, buffer, mayChangeCursorPosition);
+                if (handle is null)
+                {
+                    Debug.Assert(s_terminalFileStream is not null);
+                    Write(s_terminalFileStream, buffer, mayChangeCursorPosition);
+                }
+                else
+                {
+                    // handle is always a freshly-obtained non-owning handle; safe to wrap in a FileStream and dispose.
+                    using FileStream fs = new FileStream(handle, FileAccess.Write, bufferSize: 0);
+                    Write(fs, buffer, mayChangeCursorPosition);
+                }
             }
         }
 
@@ -960,31 +969,10 @@ namespace System
             }
         }
 
-        /// <summary>Writes data from the buffer into the file descriptor.</summary>
-        /// <param name="fd">The file descriptor.</param>
+        /// <summary>Writes data from the buffer into the file stream.</summary>
+        /// <param name="fs">The file stream.</param>
         /// <param name="buffer">The buffer from which to write data.</param>
         /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
-        private static void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
-        {
-            int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
-
-            try
-            {
-                RandomAccess.Write(fd, buffer, fileOffset: 0);
-            }
-            catch (IOException ex) when (Interop.Sys.ConvertErrorPlatformToPal(ex.HResult) == Interop.Error.EPIPE)
-            {
-                // Broken pipe... likely due to being redirected to a program
-                // that ended, so simply pretend we were successful.
-                return;
-            }
-
-            if (mayChangeCursorPosition)
-            {
-                UpdatedCachedCursorPosition(buffer, cursorVersion);
-            }
-        }
-
         private static void Write(FileStream fs, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
         {
             int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
