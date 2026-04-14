@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
+using Microsoft.Diagnostics.DataContractReader;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
@@ -62,15 +63,6 @@ public sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess? _legacyProcess;
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
-
-    private enum CorTokenType : uint
-    {
-        mdtTypeRef = 0x01000000,
-        mdtTypeDef = 0x02000000,
-        mdtFieldDef = 0x04000000,
-        mdtMethodDef = 0x06000000,
-        typeMask = 0xff000000,
-    }
 
     public SOSDacImpl(Target target, object? legacyObj)
     {
@@ -1155,7 +1147,7 @@ public sealed unsafe partial class SOSDacImpl
             else
             {
                 // otherwise we have not found the token here, but we can encode the underlying type in sigType
-                data->TokenOfType = (uint)CorTokenType.mdtTypeDef;
+                data->TokenOfType = (uint)EcmaMetadataUtils.TokenType.mdtTypeDef;
                 if (data->MTOfType == 0)
                     data->sigType = typeCode;
             }
@@ -1862,9 +1854,6 @@ public sealed unsafe partial class SOSDacImpl
             }
 #endif
             ppHandleEnum.Interface = new SOSHandleEnum(_target, supportedHandleTypes, legacyHandleEnum);
-            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
-            // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
-            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum.Interface);
         }
         catch (System.Exception ex)
         {
@@ -1892,9 +1881,6 @@ public sealed unsafe partial class SOSDacImpl
             IGC gc = _target.Contracts.GC;
             HandleType[] handleTypes = gc.GetHandleTypes(types);
             ppHandleEnum.Interface = new SOSHandleEnum(_target, handleTypes, legacyHandleEnum);
-            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
-            // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
-            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum.Interface);
         }
         catch (System.Exception ex)
         {
@@ -2572,18 +2558,18 @@ public sealed unsafe partial class SOSDacImpl
             TargetPointer module = moduleAddr.ToTargetPointer(_target);
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
             Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
-            switch ((CorTokenType)token & CorTokenType.typeMask)
+            switch ((EcmaMetadataUtils.TokenType)(token & EcmaMetadataUtils.TokenTypeMask))
             {
-                case CorTokenType.mdtFieldDef:
+                case EcmaMetadataUtils.TokenType.mdtFieldDef:
                     *methodDesc = loader.GetModuleLookupMapElement(lookupTables.FieldDefToDesc, token, out var _).ToClrDataAddress(_target);
                     break;
-                case CorTokenType.mdtMethodDef:
+                case EcmaMetadataUtils.TokenType.mdtMethodDef:
                     *methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, token, out var _).ToClrDataAddress(_target);
                     break;
-                case CorTokenType.mdtTypeDef:
+                case EcmaMetadataUtils.TokenType.mdtTypeDef:
                     *methodDesc = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, token, out var _).ToClrDataAddress(_target);
                     break;
-                case CorTokenType.mdtTypeRef:
+                case EcmaMetadataUtils.TokenType.mdtTypeRef:
                     *methodDesc = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, token, out var _).ToClrDataAddress(_target);
                     break;
                 default:
@@ -4260,7 +4246,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ThreadData threadData = contract.GetThreadData(thread.ToTargetPointer(_target));
             data->corThreadId = (int)threadData.Id;
             data->osThreadId = (int)threadData.OSId.Value;
-            data->state = (int)threadData.State;
+            data->state = 0; // Set to 0, nobody uses this
             data->preemptiveGCDisabled = (uint)(threadData.PreemptiveGCDisabled ? 1 : 0);
             data->allocContextPtr = threadData.AllocContextPointer.ToClrDataAddress(_target);
             data->allocContextLimit = threadData.AllocContextLimit.ToClrDataAddress(_target);

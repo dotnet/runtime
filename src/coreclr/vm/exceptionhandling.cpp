@@ -19,6 +19,8 @@
 #include "configuration.h"
 
 extern MethodDesc* g_pEnvironmentCallEntryPointMethodDesc;
+extern MethodDesc* g_pThreadStartCallbackMethodDesc;
+extern MethodDesc* g_pGCRunFinalizersMethodDesc;
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
@@ -1447,15 +1449,12 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         }
 
         GCPROTECT_BEGIN(exInfo.m_exception);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROWHW_EX);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+        UnmanagedCallersOnlyCaller throwHwEx(METHOD__EH__RH_THROWHW_EX);
 
         pThread->IncPreventAbort();
 
         //Ex.RhThrowHwEx(exceptionCode, &exInfo)
-        CALL_MANAGED_METHOD_NORET(args)
+        throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
         DispatchExSecondPass(&exInfo);
 
@@ -1624,16 +1623,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     GCPROTECT_BEGIN(exInfo.m_exception);
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROW_EX);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(throwable);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+    UnmanagedCallersOnlyCaller throwEx(METHOD__EH__RH_THROW_EX);
 
     pThread->IncPreventAbort();
 
     //Ex.RhThrowEx(throwable, &exInfo)
-    CRITICAL_CALLSITE;
-    CALL_MANAGED_METHOD_NORET(args)
+    throwEx.InvokeDirect(&throwable, &exInfo);
 
     DispatchExSecondPass(&exInfo);
 
@@ -1681,16 +1676,12 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
     ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pExceptionContext, ExKind::None);
 
     GCPROTECT_BEGIN(exInfo.m_exception);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+    UnmanagedCallersOnlyCaller rethrow(METHOD__EH__RH_RETHROW);
 
     pThread->IncPreventAbort();
 
     //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
-    CALL_MANAGED_METHOD_NORET(args)
+    rethrow.InvokeDirect(pActiveExInfo, &exInfo);
     DispatchExSecondPass(&exInfo);
 
     GCPROTECT_END();
@@ -3977,15 +3968,16 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             {
                 isPropagatingToExternalNativeCode = true;
 
-#ifdef HOST_WINDOWS
                 MethodDesc* pMethodDesc = codeInfo.GetMethodDesc();
-                if ((pMethodDesc != NULL) && pMethodDesc == g_pEnvironmentCallEntryPointMethodDesc)
+                if ((pMethodDesc != NULL) &&
+                    (pMethodDesc == g_pEnvironmentCallEntryPointMethodDesc ||
+                     pMethodDesc == g_pThreadStartCallbackMethodDesc ||
+                     pMethodDesc == g_pGCRunFinalizersMethodDesc))
                 {
                     // Runtime-invoked UCO entrypoint calls should behave like the
                     // internal call path and not as external-native propagation.
                     isPropagatingToExternalNativeCode = false;
                 }
-#endif // HOST_WINDOWS
             }
         }
         else

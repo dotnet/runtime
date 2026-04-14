@@ -58,11 +58,55 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 #endif // JIT32_GCENCODER
 }
 
+#if HAS_FIXED_REGISTER_SET
+regNumber CodeGenInterface::GetStackPointerReg(unsigned) const
+{
+    return REG_SPBASE;
+}
+regNumber CodeGenInterface::GetFramePointerReg(unsigned) const
+{
+    return REG_FPBASE;
+}
+#else
+void CodeGenInterface::SetStackPointerReg(unsigned funcletIndex, regNumber reg)
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    assert(reg != REG_NA);
+    m_compiler->compFuncInfos[funcletIndex].funStackPointerReg = reg;
+}
+
+void CodeGenInterface::SetFramePointerReg(unsigned funcletIndex, regNumber reg)
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    assert(reg != REG_NA);
+    m_compiler->compFuncInfos[funcletIndex].funFramePointerReg = reg;
+}
+
+regNumber CodeGenInterface::GetStackPointerReg(unsigned funcletIndex) const
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    return m_compiler->compFuncInfos[funcletIndex].funStackPointerReg;
+}
+
+regNumber CodeGenInterface::GetFramePointerReg(unsigned funcletIndex) const
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    return m_compiler->compFuncInfos[funcletIndex].funFramePointerReg;
+}
+#endif // !HAS_FIXED_REGISTER_SET
+
 CodeGenInterface* getCodeGenerator(Compiler* comp)
 {
     return new (comp, CMK_Codegen) CodeGen(comp);
 }
 
+//------------------------------------------------------------------------
+// NodeInternalRegisters::NodeInternalRegisters: construct the
+//    internal registers tracking data
+//
+// Arguments:
+//    comp -- compiler instance
+//
 NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
     : m_table(comp->getAllocator(CMK_LSRA))
 {
@@ -336,9 +380,6 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
     , internalRegisters(theCompiler)
     , m_compiler(theCompiler)
     , treeLifeUpdater(nullptr)
-#ifdef TARGET_WASM
-    , WasmLocalsDecls(theCompiler->getAllocator(CMK_Codegen))
-#endif
 {
 }
 
@@ -1973,6 +2014,18 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     }
 #endif // defined(TARGET_WASM)
 #endif // DEBUG
+
+#if defined(TARGET_WASM)
+    // Also fail at this point for any method with funclets, since the Wasm we produce
+    // for such methods requires post-processing by the host before it can be validated.
+    // TODO-WASM: Remove this once the host can do the processing.
+    //
+    if ((JitConfig.JitWasmFunclets() == 0) && (m_compiler->compFuncCount() > 1))
+    {
+        JITDUMP("Failing R2R codegen because method has funclets.\n");
+        implReadyToRunUnsupported();
+    }
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -5894,26 +5947,12 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
 //
 GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd)
 {
-    // all virtuals should have been expanded into a control expression by this point.
-    assert(!call->IsVirtual() || call->gtControlExpr || call->gtCallAddr);
-
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        assert(call->gtControlExpr == nullptr);
-
-        if (methHnd != nullptr)
-        {
-            *methHnd = nullptr;
-        }
-
-        return call->gtCallAddr;
-    }
-
     if (methHnd != nullptr)
     {
-        *methHnd = call->gtCallMethHnd;
+        *methHnd = (call->gtCallType != CT_INDIRECT) ? call->gtCallMethHnd : NO_METHOD_HANDLE;
     }
 
+    assert((call->gtCallType != CT_INDIRECT) || (call->gtControlExpr != nullptr));
     return call->gtControlExpr;
 }
 
@@ -5983,7 +6022,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     // - memset/memcpy helper calls emitted for GT_STORE_BLK
     if (call->IsHelperCall())
     {
-        switch (m_compiler->eeGetHelperNum(call->gtCallMethHnd))
+        switch (call->GetHelperNum())
         {
             case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             case CORINFO_HELP_VIRTUAL_FUNC_PTR:
