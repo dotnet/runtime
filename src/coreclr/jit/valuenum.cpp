@@ -9280,6 +9280,11 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
         return false;
     }
 
+    if (intrinsicSimdSize != simdSize)
+    {
+        return false;
+    }
+
     if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsicId))
     {
         // When producing a SIMD result, we need for it to

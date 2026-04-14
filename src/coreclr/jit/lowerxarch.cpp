@@ -3505,14 +3505,6 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     GenTree* op2 = node->Op(2);
     GenTree* op3 = node->Op(3);
 
-    // When op1 isn't a mask, we want to directly optimize the case where op2 or op3
-    // is zero as the operation being done is `(op2 & op1) | (op3 & ~op1)` and doing
-    // `x & 0` always produces `0`, so we can drop half the operation.
-    //
-    // However, if op1 is originally a mask, then we want to skip this as we'll convert
-    // to a BlendVariableMask instruction instead, which can then be embedded in most
-    // operations, improving code density and throughput.
-
     if (op1->OperIsConvertMaskToVector())
     {
         // If op1 was originally a mask, then we want to prioritize BlendVariableMask
@@ -3524,6 +3516,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 
         GenTree* maskNode = cvtMaskToVector->Op(1);
         BlockRange().Remove(op1);
+        op1 = maskNode;
 
         // We need to change the base type to match the underlying mask size to ensure
         // the right instruction variant is picked. If the CndSel was for TYP_INT but

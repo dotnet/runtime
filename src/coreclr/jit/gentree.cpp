@@ -31598,6 +31598,11 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
     unsigned       intrinsicSimdSize     = intrinsic->GetSimdSize();
     var_types      intrinsicSimdBaseType = intrinsic->GetSimdBaseType();
 
+    if (intrinsicSimdSize != simdSize)
+    {
+        return false;
+    }
+
     if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsicId))
     {
         // When producing a SIMD result, we need for it to
