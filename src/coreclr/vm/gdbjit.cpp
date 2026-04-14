@@ -530,16 +530,11 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
     }
     t_gdbJitDebugInfoCallbackDepth = 0;
 
-    // Defensive: managed helper may not provide locals; skip converting locals if names are absent.
-    if (methodDebugInfo.locals == nullptr || methodDebugInfo.localsSize == 0)
-    {
-        locals.size = 0;
-    }
-
     symInfoLen = numMap;
     symInfo = new SymbolsInfo[numMap];
 
-    locals.size = methodDebugInfo.localsSize;
+    // Only consume locals if both pointer and size are valid.
+    locals.size = (methodDebugInfo.locals != nullptr && methodDebugInfo.localsSize > 0) ? methodDebugInfo.localsSize : 0;
     locals.localsName = new NewArrayHolder<char>[locals.size];
     locals.localsScope = new LocalsInfo::Scope [locals.size];
 
