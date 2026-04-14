@@ -4340,13 +4340,13 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     //
     rsPushRegs |= RBM_LR; // We must save the return address (in the LR register)
 
+    regSet.rsMaskCalleeSaved = rsPushRegs;
+
     if (m_compiler->opts.IsOSR())
     {
         PatchpointInfo* ppi = m_compiler->info.compPatchpointInfo;
         rsPushRegs &= ~ppi->CalleeSaveRegisters();
     }
-
-    regSet.rsMaskCalleeSaved = rsPushRegs;
 
 #ifdef DEBUG
     if (m_compiler->compCalleeRegsPushed != genCountBits(rsPushRegs))

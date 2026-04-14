@@ -286,10 +286,27 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     if (m_compiler->opts.IsOSR())
     {
         PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
-        const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
-
         regsToRestoreMask = patchpointInfo->CalleeSaveRegisters();
-        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, tier0FrameSize - genCountBits(regsToRestoreMask) * REGSIZE_BYTES, tier0FrameSize);
+
+        int             frameSize = patchpointInfo->TotalFrameSize();
+        int calleeSavesOffset = frameSize - genCountBits(regsToRestoreMask) * REGSIZE_BYTES;
+
+        if (frameSize >= 504)
+        {
+            // We cannot represent ldp x0, x1, [sp, #frameSize] because frameSize is too large.
+            // Do a separate restore up until the callee saved registers first.
+            int firstAdjustment = calleeSavesOffset;
+            if ((calleeSavesOffset % 16) != 0)
+            {
+                firstAdjustment = calleeSavesOffset - 8;
+            }
+
+            genStackPointerAdjustment(firstAdjustment, REG_IP1, nullptr, /* reportUnwindData */ true);
+            calleeSavesOffset -= firstAdjustment;
+            frameSize -= firstAdjustment;
+        }
+
+        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSavesOffset, frameSize);
     }
 }
 
@@ -5580,12 +5597,20 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
     JITDUMP("\n");
 
-    m_compiler->unwindAllocStack((unsigned)patchpointInfo->TotalFrameSize());
+    // We do this stack allocation in two steps: first the space for the callee saves at the top,
+    // so that we know we can always report that unwinding information, and then the rest after.
+    m_compiler->unwindAllocStack(tier0CalleeSaveUsedSize);
 
     assert((tier0CalleeSaves & (RBM_FP | RBM_LR)) == (RBM_FP | RBM_LR));
 
-    int offset = patchpointInfo->TotalFrameSize() - tier0CalleeSaveUsedSize;
-    genSaveCalleeSavedRegistersHelp(tier0CalleeSaves, offset, /* spDelta */ 0, /* unwindOnly */ true);
+    genSaveCalleeSavedRegistersHelp(tier0CalleeSaves, 0, /* spDelta */ 0, /* unwindOnly */ true);
+
+    int remainingStack = patchpointInfo->TotalFrameSize() - tier0CalleeSaveUsedSize;
+    assert(remainingStack >= 0);
+    if (remainingStack > 0)
+    {
+        m_compiler->unwindAllocStack((unsigned)remainingStack);
+    }
 }
 
 #ifdef PROFILING_SUPPORTED
