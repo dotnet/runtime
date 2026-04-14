@@ -309,7 +309,7 @@ namespace System.Net.Security.Tests
 
                 // Client side should receive the alert and fail the handshake, the exact timing depends on the platform
                 // Windows: after the handshake, during data exchange
-                // Linux: during the handshake
+                // Linux: during the handshake, TLS 1.3 sends the alert after the handshake
                 Exception exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
                 {
                     await clientTask;
@@ -327,7 +327,20 @@ namespace System.Net.Security.Tests
 
                 if (PlatformDetection.IsLinux)
                 {
-                    Assert.IsType<AuthenticationException>(exception);
+                    if (protocol == SslProtocols.Tls13)
+                    {
+                        // failure during app data (read)
+                        Assert.IsType<IOException>(exception);
+                    }
+                    else
+                    {
+                        // failure during handshake
+                        Assert.IsType<AuthenticationException>(exception);
+                    }
+
+                    Assert.Contains("SslException", exception.InnerException.GetType().Name);
+                    Assert.NotNull(exception.InnerException.InnerException);
+                    Assert.Contains("alert", exception.InnerException.InnerException.Message);
                 }
             }
         }
