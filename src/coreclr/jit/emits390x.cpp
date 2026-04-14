@@ -9725,7 +9725,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     }
 
     int32_t offset_hw = (int32_t)(distVal / 2);
-    code_t op = emitInsCode(ins, fmt);
+    code_t op = emitInsCode(ins, IF_NONE);
     S390_RIL_a(dst, op, mask, offset_hw);
     return dst;
 }
