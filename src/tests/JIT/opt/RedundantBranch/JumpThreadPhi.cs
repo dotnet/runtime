@@ -10,6 +10,11 @@ public class JumpThreadPhi
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Phi_00(int value)
     {
+        // CHECK: tzcnt
+        // CHECK: cmp      eax, 32
+        // CHECK-NOT: cmove
+        // CHECK-NOT: cmp      eax, -1
+
         int idx = BitOperations.TrailingZeroCount(value);
         idx = (idx != 32) ? idx : -1;
 

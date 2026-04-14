@@ -4203,6 +4203,37 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         }
     }
 
+    // Can we fold "X ==/!= negative-constant" when X is known to be non-negative?
+    if (tree->OperIs(GT_EQ, GT_NE))
+    {
+        GenTree* valueTree = nullptr;
+        GenTree* cnsTree   = nullptr;
+
+        if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) && op2->IsIntegralConst())
+        {
+            valueTree = op1;
+            cnsTree   = op2;
+        }
+        else if (op2->TypeIs(TYP_INT) && op1->TypeIs(TYP_INT) && op1->IsIntegralConst())
+        {
+            valueTree = op2;
+            cnsTree   = op1;
+        }
+
+        if ((valueTree != nullptr) && (cnsTree->AsIntConCommon()->IconValue() < 0))
+        {
+            bool isNonZero, isNeverNegative;
+            optAssertionProp_RangeProperties(assertions, valueTree, stmt, block, &isNonZero, &isNeverNegative);
+
+            if (isNeverNegative)
+            {
+                newTree = tree->OperIs(GT_EQ) ? gtNewFalse() : gtNewTrue();
+                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+                return optAssertionProp_Update(newTree, tree, stmt);
+            }
+        }
+    }
+
     // Check if we have an assertion that exactly matches the relop.
     ValueNum relopVN = optConservativeNormalVN(tree);
     if (!BitVecOps::IsEmpty(apTraits, assertions))
