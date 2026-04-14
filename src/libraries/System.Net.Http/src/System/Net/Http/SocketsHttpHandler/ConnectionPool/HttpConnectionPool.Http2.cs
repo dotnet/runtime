@@ -289,14 +289,14 @@ namespace System.Net.Http
 
         /// <summary>
         /// Marks this pool as having seen a session-based authentication challenge on HTTP/2.
-        /// Future requests that allow downgrade (<see cref="HttpVersionPolicy.RequestVersionOrLower"/>)
+        /// Future requests that can fall back to HTTP/1.1 (see <see cref="CanFallBackToHttp11"/>)
         /// will skip HTTP/2 and go directly to HTTP/1.1.
-        /// Requests that require HTTP/2 (e.g., <see cref="HttpVersionPolicy.RequestVersionExact"/>)
-        /// continue to use HTTP/2 as before.
+        /// Requests that require HTTP/2 (e.g., <see cref="HttpVersionPolicy.RequestVersionExact"/>
+        /// with <see cref="HttpRequestMessage.Version"/> >= 2.0) continue to use HTTP/2 as before.
         /// </summary>
         internal void OnSessionAuthenticationChallengeSeen()
         {
-            _http2SessionAuthSeen = true;
+            Volatile.Write(ref _http2SessionAuthSeen, true);
         }
 
         private async Task HandleHttp11Downgrade(HttpRequestMessage request, Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)

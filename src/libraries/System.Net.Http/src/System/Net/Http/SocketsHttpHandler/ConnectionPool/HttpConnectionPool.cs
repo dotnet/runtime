@@ -441,7 +441,7 @@ namespace System.Net.Http
                         if (_http2Enabled &&
                             (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
                             (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure) && // prefer HTTP/1.1 if connection is not secured and downgrade is possible
-                            !(_http2SessionAuthSeen && request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower)) // skip HTTP/2 for downgradeable requests after session auth
+                            !(Volatile.Read(ref _http2SessionAuthSeen) && CanFallBackToHttp11(request))) // skip HTTP/2 for requests that can use HTTP/1.1 after session auth challenge
                         {
                             if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
                                 http2ConnectionWaiter != null)
@@ -539,9 +539,9 @@ namespace System.Net.Http
                 {
                     // Server sent a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
                     // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
-                    // The pool flag was already set in Http2Connection.SendAsync so future downgradeable
-                    // requests will go directly to HTTP/1.1. Retry this request on HTTP/1.1.
-                    Debug.Assert(request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower);
+                    // The pool flag was already set in Http2Connection.SendAsync so future requests that can use
+                    // HTTP/1.1 will go directly to HTTP/1.1. Retry this request on HTTP/1.1.
+                    Debug.Assert(CanFallBackToHttp11(request));
                     Debug.Assert(_http2SessionAuthSeen);
 
                     request.Version = HttpVersion.Version11;
@@ -870,6 +870,15 @@ namespace System.Net.Http
 
             throw ex;
         }
+
+        /// <summary>
+        /// Determines whether a request that was sent over HTTP/2 can fall back to HTTP/1.1.
+        /// This matches the version negotiation logic: a request can use HTTP/1.1 if its
+        /// <see cref="HttpRequestMessage.Version"/> is less than 2.0 or if its
+        /// <see cref="HttpRequestMessage.VersionPolicy"/> is <see cref="HttpVersionPolicy.RequestVersionOrLower"/>.
+        /// </summary>
+        private static bool CanFallBackToHttp11(HttpRequestMessage request) =>
+            request.Version.Major < 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower;
 
         private bool CheckExpirationOnGet(HttpConnectionBase connection)
         {
