@@ -413,6 +413,8 @@ namespace System.Collections.Immutable.Tests
             builder.RemoveAll(n => n % 2 == 0);
 
             Assert.Equal(new[] { 1, 3, 5, 7 }, builder);
+
+            AssertExtensions.Throws<ArgumentNullException>("match", () => builder.RemoveAll(match: null));
         }
 
         [Fact]

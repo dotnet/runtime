@@ -865,7 +865,6 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     ZeroMemory (threadData, sizeof(DacpThreadData));
     threadData->corThreadId = thread->m_ThreadId;
     threadData->osThreadId = (DWORD)thread->m_OSThreadId;
-    threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
 
     gc_alloc_context* allocContext = thread->GetAllocContext();
@@ -1279,13 +1278,9 @@ HRESULT ClrDataAccess::GetTieredVersions(
                     break;
                 }
             }
-            else if (pMD->IsJitOptimizationDisabled())
-            {
-                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_MinOptJitted;
-            }
             else
             {
-                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
+                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Unknown;
             }
 
             ++count;
@@ -3454,22 +3449,23 @@ ClrDataAccess::TraverseEHInfo(CLRDATA_ADDRESS ip, DUMPEHINFO pFunc, LPVOID token
             else if (IsTypedHandler(&EHClause))
             {
                 deh.clauseType = EHTyped;
-                deh.isCatchAllHandler = (&EHClause.TypeHandle == (void*)(size_t)mdTypeRefNil);
+                if (HasCachedTypeHandle(&EHClause))
+                {
+                    deh.mtCatch = TO_CDADDR(EHClause.TypeHandle);
+                    deh.isCatchAllHandler = TypeHandle::FromPtr(PTR_VOID((TADDR)EHClause.TypeHandle)).IsObjectType();
+                }
+                else
+                {
+                    // the module of the token (whether a ref or def token) is the same as the module of the method containing the EH clause
+                    deh.moduleAddr = HOST_CDADDR(codeInfo.GetMethodDesc()->GetModule());
+                    deh.tokCatch = EHClause.ClassToken;
+                    TypeHandle th = ClassLoader::LookupTypeDefOrRefInModule(codeInfo.GetMethodDesc()->GetModule(), (mdToken)EHClause.ClassToken);
+                    deh.isCatchAllHandler = th.IsObjectType();
+                }
             }
             else
             {
                 deh.clauseType = EHUnknown;
-            }
-
-            if (HasCachedTypeHandle(&EHClause))
-            {
-                deh.mtCatch = TO_CDADDR(&EHClause.TypeHandle);
-            }
-            else if(!IsFaultOrFinally(&EHClause))
-            {
-                // the module of the token (whether a ref or def token) is the same as the module of the method containing the EH clause
-                deh.moduleAddr = HOST_CDADDR(codeInfo.GetMethodDesc()->GetModule());
-                deh.tokCatch = EHClause.ClassToken;
             }
 
             deh.tryStartOffset = EHClause.TryStartPC;

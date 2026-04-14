@@ -46,12 +46,13 @@ namespace System.Formats.Tar
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
         /// <param name="extendedAttributes">An enumeration of string key-value pairs that represents the metadata to include in the Extended Attributes entry that precedes the current entry.</param>
-        /// <remarks>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:
+        /// <remarks><para>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> constructor, only the following entry types are supported:</para>
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
         /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
         /// </list>
-        /// The specified <paramref name="extendedAttributes"/> are additional attributes to be used for the entry.
+        /// <para>The specified <paramref name="extendedAttributes"/> are additional attributes to be used for the entry. If any of the provided extended attributes correspond to standard entry properties (such as <c>path</c>, <c>mtime</c>, <c>uid</c>, <c>gid</c>, <c>uname</c>, <c>gname</c>, <c>linkpath</c>, <c>devmajor</c>, or <c>devminor</c>), those values are applied to the corresponding properties. The <paramref name="entryName"/> parameter always takes precedence over a <c>path</c> extended attribute if both are specified.</para>
+        /// <para>Setting a property after construction will update the corresponding extended attribute.</para>
         /// <para>It may include PAX attributes like:</para>
         /// <list type="bullet">
         /// <item>Access time, under the name <c>atime</c>, as a <see cref="double"/> number.</item>
@@ -68,7 +69,11 @@ namespace System.Formats.Tar
             ArgumentNullException.ThrowIfNull(extendedAttributes);
 
             _header._prefix = string.Empty;
-            _header.AddExtendedAttributes(extendedAttributes);
+            _header.ReplaceNormalAttributesWithExtended(extendedAttributes);
+
+            // The entryName parameter takes precedence over a "path" extended attribute.
+            _header._name = entryName;
+            _header.ExtendedAttributes[TarHeader.PaxEaName] = entryName;
         }
 
         /// <summary>
@@ -90,7 +95,7 @@ namespace System.Formats.Tar
 
             if (other is PaxTarEntry paxOther)
             {
-                _header.AddExtendedAttributes(paxOther.ExtendedAttributes);
+                _header.ReplaceNormalAttributesWithExtended(paxOther.ExtendedAttributes);
             }
             else if (other is GnuTarEntry gnuOther)
             {
@@ -108,7 +113,8 @@ namespace System.Formats.Tar
         /// <summary>
         /// Returns the extended attributes for this entry.
         /// </summary>
-        /// <remarks>The extended attributes are specified when constructing an entry and updated with additional attributes when the entry is written. Use <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> to append custom extended attributes.
+        /// <remarks>The extended attributes are specified when constructing an entry. All provided extended attributes are preserved, including those whose values fit within the standard header fields.
+        /// <para>Setting properties such as <see cref="TarEntry.Name"/>, <see cref="TarEntry.ModificationTime"/>, <see cref="TarEntry.Uid"/>, <see cref="TarEntry.Gid"/>, <see cref="PosixTarEntry.UserName"/>, <see cref="PosixTarEntry.GroupName"/>, <see cref="TarEntry.LinkName"/>, <see cref="PosixTarEntry.DeviceMajor"/>, or <see cref="PosixTarEntry.DeviceMinor"/> will update the corresponding extended attribute to keep properties and extended attributes synchronized.</para>
         /// <para>The following common PAX attributes may be included:</para>
         /// <list type="bullet">
         /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>
@@ -120,7 +126,7 @@ namespace System.Formats.Tar
         /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>.</item>
         /// </list>
         /// </remarks>
-        public IReadOnlyDictionary<string, string> ExtendedAttributes => field ??= _header.ExtendedAttributes.AsReadOnly();
+        public IReadOnlyDictionary<string, string> ExtendedAttributes => field ??= _header.GetPopulatedExtendedAttributes().AsReadOnly();
 
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.RegularFile;

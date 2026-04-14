@@ -14,32 +14,39 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.GCHeap);
 
-        MarkArray = target.ReadPointer(address + (ulong)type.Fields[nameof(MarkArray)].Offset);
-        NextSweepObj = target.ReadPointer(address + (ulong)type.Fields[nameof(NextSweepObj)].Offset);
-        BackgroundMinSavedAddr = target.ReadPointer(address + (ulong)type.Fields[nameof(BackgroundMinSavedAddr)].Offset);
-        BackgroundMaxSavedAddr = target.ReadPointer(address + (ulong)type.Fields[nameof(BackgroundMaxSavedAddr)].Offset);
-        AllocAllocated = target.ReadPointer(address + (ulong)type.Fields[nameof(AllocAllocated)].Offset);
-        EphemeralHeapSegment = target.ReadPointer(address + (ulong)type.Fields[nameof(EphemeralHeapSegment)].Offset);
-        CardTable = target.ReadPointer(address + (ulong)type.Fields[nameof(CardTable)].Offset);
-        FinalizeQueue = target.ReadPointer(address + (ulong)type.Fields[nameof(FinalizeQueue)].Offset);
+        MarkArray = target.ReadPointerField(address, type, nameof(MarkArray));
+        NextSweepObj = target.ReadPointerField(address, type, nameof(NextSweepObj));
+        BackgroundMinSavedAddr = target.ReadPointerField(address, type, nameof(BackgroundMinSavedAddr));
+        BackgroundMaxSavedAddr = target.ReadPointerField(address, type, nameof(BackgroundMaxSavedAddr));
+        AllocAllocated = target.ReadPointerField(address, type, nameof(AllocAllocated));
+        EphemeralHeapSegment = target.ReadPointerField(address, type, nameof(EphemeralHeapSegment));
+        CardTable = target.ReadPointerField(address, type, nameof(CardTable));
+        FinalizeQueue = target.ReadPointerField(address, type, nameof(FinalizeQueue));
         GenerationTable = address + (ulong)type.Fields[nameof(GenerationTable)].Offset;
 
         // Fields only exist segment GC builds
         if (type.Fields.ContainsKey(nameof(SavedSweepEphemeralSeg)))
-            SavedSweepEphemeralSeg = target.ReadPointer(address + (ulong)type.Fields[nameof(SavedSweepEphemeralSeg)].Offset);
+            SavedSweepEphemeralSeg = target.ReadPointerField(address, type, nameof(SavedSweepEphemeralSeg));
         if (type.Fields.ContainsKey(nameof(SavedSweepEphemeralStart)))
-            SavedSweepEphemeralStart = target.ReadPointer(address + (ulong)type.Fields[nameof(SavedSweepEphemeralStart)].Offset);
+            SavedSweepEphemeralStart = target.ReadPointerField(address, type, nameof(SavedSweepEphemeralStart));
 
         OomData = target.ProcessedData.GetOrAdd<OomHistory>(address + (ulong)type.Fields[nameof(OomData)].Offset);
 
-        InternalRootArray = target.ReadPointer(address + (ulong)type.Fields[nameof(InternalRootArray)].Offset);
-        InternalRootArrayIndex = target.ReadNUInt(address + (ulong)type.Fields[nameof(InternalRootArrayIndex)].Offset);
-        HeapAnalyzeSuccess = target.Read<int>(address + (ulong)type.Fields[nameof(HeapAnalyzeSuccess)].Offset) != 0;
+        InternalRootArray = target.ReadPointerField(address, type, nameof(InternalRootArray));
+        InternalRootArrayIndex = target.ReadNUIntField(address, type, nameof(InternalRootArrayIndex));
+        HeapAnalyzeSuccess = target.ReadField<int>(address, type, nameof(HeapAnalyzeSuccess)) != 0;
 
         InterestingData = address + (ulong)type.Fields[nameof(InterestingData)].Offset;
         CompactReasons = address + (ulong)type.Fields[nameof(CompactReasons)].Offset;
         ExpandMechanisms = address + (ulong)type.Fields[nameof(ExpandMechanisms)].Offset;
         InterestingMechanismBits = address + (ulong)type.Fields[nameof(InterestingMechanismBits)].Offset;
+
+        if (type.Fields.ContainsKey(nameof(FreeableSohSegment)))
+            FreeableSohSegment = target.ReadPointerField(address, type, nameof(FreeableSohSegment));
+        if (type.Fields.ContainsKey(nameof(FreeableUohSegment)))
+            FreeableUohSegment = target.ReadPointerField(address, type, nameof(FreeableUohSegment));
+        if (type.Fields.ContainsKey(nameof(FreeRegions)))
+            FreeRegions = address + (ulong)type.Fields[nameof(FreeRegions)].Offset;
     }
 
     public TargetPointer MarkArray { get; }
@@ -65,4 +72,8 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
     public TargetPointer CompactReasons { get; }
     public TargetPointer ExpandMechanisms { get; }
     public TargetPointer InterestingMechanismBits { get; }
+
+    public TargetPointer? FreeableSohSegment { get; }
+    public TargetPointer? FreeableUohSegment { get; }
+    public TargetPointer? FreeRegions { get; }
 }

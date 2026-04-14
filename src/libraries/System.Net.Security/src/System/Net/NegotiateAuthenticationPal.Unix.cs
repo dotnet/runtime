@@ -22,16 +22,9 @@ namespace System.Net
         private static readonly Lazy<bool> _hasSystemNetSecurityNative = new Lazy<bool>(CheckHasSystemNetSecurityNative);
         internal static bool HasSystemNetSecurityNative => _hasSystemNetSecurityNative.Value;
 
-        [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]
-        private static bool UseManagedNtlm { get; } =
-            AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
-            useManagedNtlm :
-            OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
-            (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.OrdinalIgnoreCase));
-
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {
-            if (UseManagedNtlm)
+            if (LocalAppContextSwitches.UseManagedNtlm)
             {
                 switch (clientOptions.Package)
                 {

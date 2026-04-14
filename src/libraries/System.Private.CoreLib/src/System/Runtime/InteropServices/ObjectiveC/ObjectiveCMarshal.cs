@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -57,6 +58,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// The <paramref name="isReferencedCallback"/> should return 0 for not reference or 1 for
         /// referenced. Any other value has undefined behavior.
         /// </remarks>
+        [RequiresUnsafe]
         public static unsafe void Initialize(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,

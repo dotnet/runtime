@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Moq;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -25,6 +26,8 @@ internal class TestPlaceholderTarget : Target
     internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
 
     private readonly ReadFromTargetDelegate _dataReader;
+    private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
     public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null)
     {
@@ -44,6 +47,22 @@ internal class TestPlaceholderTarget : Target
     }
 
     /// <summary>
+    /// Creates a <see cref="TestContractRegistry"/> with the given registration action
+    /// (defaulting to <see cref="CoreCLRContracts.Register"/>), and sets it as the
+    /// contract registry for this target. Returns the registry so callers can call
+    /// <see cref="TestContractRegistry.SetVersion{TContract}"/> and
+    /// <see cref="TestContractRegistry.SetMock{TContract}"/>.
+    /// </summary>
+    internal TestContractRegistry SetupContractRegistry(Action<ContractRegistry>? registrations = null)
+    {
+        var registry = new TestContractRegistry();
+        registry.SetTarget(this);
+        (registrations ?? CoreCLRContracts.Register)(registry);
+        _contractRegistry = registry;
+        return registry;
+    }
+
+    /// <summary>
     /// Fluent builder for <see cref="TestPlaceholderTarget"/>. Accumulates types,
     /// globals, and contract factories from mock descriptors, then materializes the
     /// target and wires contracts in <see cref="Build"/>.
@@ -55,7 +74,9 @@ internal class TestPlaceholderTarget : Target
         private readonly Dictionary<DataType, Target.TypeInfo> _types = new();
         private readonly List<(string Name, ulong Value)> _globals = new();
         private readonly List<(string Name, string Value)> _globalStrings = new();
-        private readonly List<(Type Type, Func<Target, IContract> Factory)> _contractFactories = new();
+        private readonly List<Action<TestContractRegistry>> _contractSetups = new();
+        private Action<ContractRegistry> _registrations = CoreCLRContracts.Register;
+        private ReadFromTargetDelegate? _readerOverride;
 
         public Builder(MockTarget.Architecture arch)
         {
@@ -84,9 +105,33 @@ internal class TestPlaceholderTarget : Target
             return this;
         }
 
-        public Builder AddContract<TContract>(Func<Target, TContract> factory) where TContract : IContract
+        public Builder UseReader(ReadFromTargetDelegate reader)
         {
-            _contractFactories.Add((typeof(TContract), target => factory(target)));
+            _readerOverride = reader;
+            return this;
+        }
+
+        public Builder UseRegistrations(Action<ContractRegistry> registrations)
+        {
+            _registrations = registrations;
+            return this;
+        }
+
+        public Builder AddContract<TContract>(int version) where TContract : IContract
+        {
+            _contractSetups.Add(registry => registry.SetVersion<TContract>(version));
+            return this;
+        }
+
+        public Builder AddMockContract<TContract>(TContract mock) where TContract : IContract
+        {
+            _contractSetups.Add(registry => registry.SetMock(mock));
+            return this;
+        }
+
+        public Builder AddMockContract<TContract>(Mock<TContract> mock) where TContract : class, IContract
+        {
+            _contractSetups.Add(registry => registry.SetMock(mock.Object));
             return this;
         }
 
@@ -94,14 +139,18 @@ internal class TestPlaceholderTarget : Target
         {
             var target = new TestPlaceholderTarget(
                 _arch,
-                _memBuilder.GetMemoryContext().ReadFromTarget,
+                _readerOverride ?? _memBuilder.GetMemoryContext().ReadFromTarget,
                 _types,
                 _globals.ToArray(),
                 _globalStrings.ToArray());
 
             var registry = new TestContractRegistry();
-            foreach (var (type, factory) in _contractFactories)
-                registry.Add(type, new Lazy<IContract>(() => factory(target)));
+            registry.SetTarget(target);
+            _registrations(registry);
+
+            foreach (var setup in _contractSetups)
+                setup(registry);
+
             target.SetContracts(registry);
 
             return target;
@@ -159,7 +208,23 @@ internal class TestPlaceholderTarget : Target
     }
     public override void WriteBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
 
-    public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
+    public override string ReadUtf8String(ulong address, bool strict = false)
+    {
+        // Read bytes until we find the null terminator
+        ulong end = address;
+        while (Read<byte>(end) != 0)
+        {
+            end += sizeof(byte);
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = new byte[length];
+        ReadBuffer(address, span);
+        return strict ? strictUTF8Encoding.GetString(span) : looseUTF8Encoding.GetString(span);
+    }
     public override string ReadUtf16String(ulong address)
     {
         // Read characters until we find the null terminator
@@ -437,19 +502,52 @@ internal class TestPlaceholderTarget : Target
         }
     }
 
-    private sealed class TestContractRegistry : ContractRegistry
+    internal sealed class TestContractRegistry : ContractRegistry
     {
-        private readonly Dictionary<Type, Lazy<IContract>> _contracts = new();
+        private readonly Dictionary<(Type, int), Func<Target, IContract>> _creators = new();
+        private readonly Dictionary<Type, int> _versions = new();
+        private readonly Dictionary<Type, IContract> _mocks = new();
+        private readonly Dictionary<Type, IContract> _resolved = new();
+        private Target _target = null!;
 
-        public void Add(Type type, Lazy<IContract> contract) => _contracts[type] = contract;
+        public void SetTarget(Target target) => _target = target;
+
+        public void SetVersion<TContract>(int version) where TContract : IContract
+            => _versions[typeof(TContract)] = version;
+
+        public void SetMock<TContract>(TContract mock) where TContract : IContract
+            => _mocks[typeof(TContract)] = mock;
+
+        public override void Register<TContract>(int version, Func<Target, TContract> creator)
+            => _creators[(typeof(TContract), version)] = t => creator(t);
 
         public override TContract GetContract<TContract>()
         {
-            if (_contracts.TryGetValue(typeof(TContract), out var lazy))
-                return (TContract)lazy.Value;
+            if (_resolved.TryGetValue(typeof(TContract), out var cached))
+                return (TContract)cached;
 
-            throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered.");
+            IContract contract;
+            if (_mocks.TryGetValue(typeof(TContract), out var mock))
+            {
+                contract = mock;
+            }
+            else if (_versions.TryGetValue(typeof(TContract), out int version))
+            {
+                if (!_creators.TryGetValue((typeof(TContract), version), out var creator))
+                    throw new NotImplementedException($"No implementation registered for contract '{typeof(TContract).Name}' version {version}.");
+
+                contract = creator(_target);
+            }
+            else
+            {
+                throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered. Use SetVersion<T>(version) or SetMock<T>(mock) to configure contracts.");
+            }
+
+            _resolved[typeof(TContract)] = contract;
+            return (TContract)contract;
         }
+
+        public override void Flush() { }
     }
 
 }

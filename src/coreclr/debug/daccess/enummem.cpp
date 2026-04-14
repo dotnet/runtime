@@ -183,6 +183,8 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     //
 #define DEFINE_DACVAR(size_type, id, var) \
     ReportMem(m_dacGlobals.id, sizeof(size_type));
+#define DEFINE_DACVAR_VOLATILE(size_type, id, var) \
+    ReportMem(m_dacGlobals.id, sizeof(size_type));
 
     ULONG64 dacTableAddress;
     HRESULT hr = GetDacTableAddress(m_pTarget, m_globalBase, &dacTableAddress);
@@ -300,6 +302,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pEEDbgInterfaceImpl.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CORDebuggerControlFlags.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CoreLib.EnumMem(); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( (&g_CoreLib)->EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( StubManager::EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pFinalizerThread.EnumMem(); )

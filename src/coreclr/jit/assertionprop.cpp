@@ -1936,7 +1936,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     // Also note The CASTCLASS helpers won't appear in predicates as they throw on failure.
     // So the helper list here is smaller than the one in optAssertionProp_Call.
     //
-    CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+    CorInfoHelpFunc helper = call->GetHelperNum();
     if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
         (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY))
     {
@@ -2110,7 +2110,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                 //
                 // arr[idx] = value; - creates idx is within bounds of arr assertion
                 //
-                CorInfoHelpFunc helperId = eeGetHelperNum(call->gtCallMethHnd);
+                CorInfoHelpFunc helperId = call->GetHelperNum();
                 if ((helperId == CORINFO_HELP_ARRADDR_ST) || (helperId == CORINFO_HELP_LDELEMA_REF))
                 {
                     assert(call->gtArgs.CountUserArgs() == 3);
@@ -2329,6 +2329,73 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Call_Memcmp: Folds NI_System_SpanHelpers_SequenceEqual for immutable data.
+//
+// Arguments:
+//    call - NI_System_SpanHelpers_SequenceEqual call to fold
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
+{
+    JITDUMP("See if we can optimize NI_System_SpanHelpers_SequenceEqual with help of VN...\n");
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual));
+
+    CallArg* arg1   = call->gtArgs.GetUserArgByIndex(0);
+    CallArg* arg2   = call->gtArgs.GetUserArgByIndex(1);
+    CallArg* lenArg = call->gtArgs.GetUserArgByIndex(2);
+
+    ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
+    if (!vnStore->IsVNConstant(lenVN))
+    {
+        // See if arguments are the same - in that case we can optimize to constant true
+        ValueNum arg1VN = optConservativeNormalVN(arg1->GetNode());
+        ValueNum arg2VN = optConservativeNormalVN(arg2->GetNode());
+        if ((arg1VN != ValueNumStore::NoVN) && (arg1VN == arg2VN))
+        {
+            JITDUMP("...both arguments have the same VN -> optimize to constant true.\n");
+            return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+        }
+
+        JITDUMP("...length is not a constant - bail out.\n");
+        return nullptr;
+    }
+
+    const size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
+
+    // SequenceEqual(..., len == 0) => true, and does not dereference pointers
+    if (len == 0)
+    {
+        JITDUMP("...length is 0 -> optimize to constant true.\n");
+        return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+    }
+
+    constexpr size_t maxLen = 65536; // Arbitrary threshold to avoid large buffer allocations
+    if (len > maxLen)
+    {
+        JITDUMP("...length is too big (%u bytes) - bail out.\n", (unsigned)len);
+        return nullptr;
+    }
+
+    uint8_t* buffer1 = nullptr;
+    uint8_t* buffer2 = nullptr;
+    if (GetImmutableDataFromAddress(arg1->GetNode(), (int)len, getAllocator(CMK_AssertionProp), &buffer1) &&
+        GetImmutableDataFromAddress(arg2->GetNode(), (int)len, getAllocator(CMK_AssertionProp), &buffer2))
+    {
+        assert(buffer1 != nullptr && buffer2 != nullptr);
+        // If both memory regions are known at compile time, we can fold to a constant.
+        bool areEqual = (memcmp(buffer1, buffer2, len) == 0);
+        JITDUMP("...both memory regions are known at compile time -> optimize to constant %s.\n",
+                areEqual ? "true" : "false");
+        return gtWrapWithSideEffects(gtNewIconNode(areEqual ? 1 : 0), call, GTF_ALL_EFFECT, true);
+    }
+
+    JITDUMP("...data is not known at compile time - bail out.\n");
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call_Memset: Unrolls NI_System_SpanHelpers_Fill for constant length.
 //
 // Arguments:
@@ -2339,6 +2406,7 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //
 GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
 {
+    JITDUMP("See if we can optimize NI_System_SpanHelpers_Fill with help of VN...\n");
     assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill));
 
     CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
@@ -2425,8 +2493,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
 GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 {
     JITDUMP("See if we can optimize NI_System_SpanHelpers_Memmove with help of VN...\n")
-    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) ||
-           call->IsHelperCall(this, CORINFO_HELP_MEMCPY));
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(CORINFO_HELP_MEMCPY));
 
     CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
     CallArg* srcArg = call->gtArgs.GetUserArgByIndex(1);
@@ -2455,12 +2522,14 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 
     // if GetImmutableDataFromAddress returns true, it means that the src is a read-only constant.
     // Thus, dst and src do not overlap (if they do - it's an UB).
-    uint8_t* buffer = new (this, CMK_AssertionProp) uint8_t[len];
-    if (!GetImmutableDataFromAddress(srcArg->GetNode(), (int)len, buffer))
+    uint8_t* buffer = nullptr;
+    if (!GetImmutableDataFromAddress(srcArg->GetNode(), (int)len, getAllocator(CMK_AssertionProp), &buffer))
     {
         JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
         return nullptr;
     }
+
+    assert(buffer != nullptr);
 
     // if dstArg is not simple, we replace the arg directly with a temp assignment and
     // continue using that temp - it allows us reliably extract all side effects.
@@ -2567,7 +2636,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
             break;
     }
 
-    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(this, CORINFO_HELP_MEMCPY))
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(CORINFO_HELP_MEMCPY))
     {
         return optVNBasedFoldExpr_Call_Memmove(call);
     }
@@ -2575,6 +2644,11 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
     if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill))
     {
         return optVNBasedFoldExpr_Call_Memset(call);
+    }
+
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
+    {
+        return optVNBasedFoldExpr_Call_Memcmp(call);
     }
 
     return nullptr;
@@ -3159,7 +3233,7 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
+        printf("\nConstant Assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
         optPrintAssertion(curAssertion, index);
         gtDispTree(newTree, nullptr, nullptr, true);
     }
@@ -3218,7 +3292,7 @@ bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertion
     }
 
     const AssertionDsc& assertion = optGetAssertion(assertionIndex);
-    JITDUMP("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
+    JITDUMP("\nZEROOBJ Assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
     JITDUMPEXEC(optPrintAssertion(assertion, assertionIndex));
     DISPNODE(tree);
 
@@ -3366,6 +3440,12 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
 
     tree->SetLclNum(copyLclNum);
 
+    // The copied var also needs multi-reg, if set
+    if (lclVarDsc->lvIsMultiRegRet)
+    {
+        copyVarDsc->lvIsMultiRegRet = true;
+    }
+
     // Copy prop and last-use copy elision happens at the same time in morph.
     // This node may potentially not be a last use of the new local.
     //
@@ -3378,7 +3458,7 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
+        printf("\nCopy Assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
         optPrintAssertion(curAssertion, index);
         DISPNODE(tree);
     }
@@ -5051,7 +5131,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
 
     if (!optLocalAssertionProp && call->IsHelperCall())
     {
-        const CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+        const CorInfoHelpFunc helper = call->GetHelperNum();
         if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
             (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY) ||
             (helper == CORINFO_HELP_CHKCASTINTERFACE) || (helper == CORINFO_HELP_CHKCASTARRAY) ||

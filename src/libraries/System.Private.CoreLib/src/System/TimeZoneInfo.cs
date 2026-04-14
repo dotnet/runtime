@@ -71,7 +71,7 @@ namespace System
         //
         private sealed partial class CachedData
         {
-            private volatile TimeZoneInfo? _localTimeZone;
+            private TimeZoneInfo? _localTimeZone;
 
             private TimeZoneInfo CreateLocal()
             {
