@@ -107,15 +107,9 @@ namespace Mono.Linker
             _markStep.MarkAssembly(entry.Origin, info, new MessageOrigin(entry.Origin));
 
             // Mark the target type as instantiated
-            if (entry.TargetType is { } targetType)
-            {
-                // Strip parameterized types (array, pointer, etc.) to use the element type,
-                // since those types cannot be resolved at the definition level by the trimmer.
-                while (targetType is TypeSpecification { ElementType: var elementType } and not GenericInstanceType)
-                    targetType = elementType;
-                if (_context.Resolve(targetType) is TypeDefinition targetTypeDef)
-                    _context.Annotations.MarkInstantiated(targetTypeDef);
-            }
+            if (entry.TargetType is { } targetType
+                && _context.Resolve(UnwrapToResolvableType(targetType)) is TypeDefinition targetTypeDef)
+                _context.Annotations.MarkInstantiated(targetTypeDef);
         }
 
         public void ProcessType(TypeDefinition definition)
@@ -163,11 +157,7 @@ namespace Mono.Linker
         {
             if (attr.Attribute.ConstructorArguments is [_, _, { Value: TypeReference trimTarget }])
             {
-                // Strip parameterized types (array, pointer, etc.) to use the element type as the trim target,
-                // since those types cannot be tracked at the definition level by the trimmer.
-                while (trimTarget is TypeSpecification { ElementType: var elementType } and not GenericInstanceType)
-                    trimTarget = elementType;
-                RecordTypeMapEntry(attr, group, trimTarget, _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
+                RecordTypeMapEntry(attr, group, UnwrapToResolvableType(trimTarget), _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
             }
             else if (attr.Attribute.ConstructorArguments is [_, { Value: TypeReference }])
             {
@@ -183,15 +173,23 @@ namespace Mono.Linker
             if (attr.Attribute.ConstructorArguments is [{ Value: TypeReference sourceType }, _])
             {
                 // This is a TypeMapAssociationAttribute with two constructor type arguments (source and proxy).
-                // Strip parameterized types (array, pointer, etc.) to use the element type as the source type,
-                // since those types cannot be tracked at the definition level by the trimmer.
-                while (sourceType is TypeSpecification { ElementType: var elementType } and not GenericInstanceType)
-                    sourceType = elementType;
-                RecordTypeMapEntry(attr, group, sourceType, _unmarkedProxyTypeMapEntries, _referencedProxyTypeMaps, _pendingProxyTypeMapEntries);
+                RecordTypeMapEntry(attr, group, UnwrapToResolvableType(sourceType), _unmarkedProxyTypeMapEntries, _referencedProxyTypeMaps, _pendingProxyTypeMapEntries);
                 return;
             }
             // Invalid attribute, skip it.
             // Let the runtime handle the failure.
+        }
+
+        /// <summary>
+        /// Strips non-resolvable <see cref="TypeSpecification"/> wrappers (array, pointer, byref, etc.)
+        /// from <paramref name="type"/> until a <see cref="TypeDefinition"/> or <see cref="GenericInstanceType"/>
+        /// is reached. Both of those are resolvable by <see cref="LinkContext.Resolve"/>.
+        /// </summary>
+        static TypeReference UnwrapToResolvableType(TypeReference type)
+        {
+            while (type is TypeSpecification { ElementType: var elementType } and not GenericInstanceType)
+                type = elementType;
+            return type;
         }
 
         private void AddAssemblyTarget(TypeReference typeMapGroup, CustomAttributeWithOrigin attr)
