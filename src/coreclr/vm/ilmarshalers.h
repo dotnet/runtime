@@ -3268,33 +3268,7 @@ protected:
     const BinderMethodID m_idClearManaged;
 };
 
-class ILArrayMarshalerBase : public ILMarshaler
-{
-protected:
-    LocalDesc GetNativeType() override
-    {
-        LIMITED_METHOD_CONTRACT;
-        return LocalDesc(ELEMENT_TYPE_I);
-    }
-
-    LocalDesc GetManagedType() override
-    {
-        LIMITED_METHOD_CONTRACT;
-        return LocalDesc(ELEMENT_TYPE_OBJECT);
-    }
-
-    bool NeedsClearNative() override
-    {
-        LIMITED_METHOD_CONTRACT;
-        return true;
-    }
-
-    // Load the native element count onto the evaluation stack.
-    // Subclasses implement this differently (dynamic size param vs. fixed count).
-    virtual void EmitLoadNativeSize(ILCodeStream* pslILEmit) = 0;
-};
-
-class ILNativeArrayMarshaler : public ILArrayMarshalerBase
+class ILNativeArrayMarshaler : public ILMarshaler
 {
 public:
     enum
@@ -3328,18 +3302,36 @@ public:
 
 protected:
 
+    LocalDesc GetNativeType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_I);
+    }
+
+    LocalDesc GetManagedType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_OBJECT);
+    }
+
+    bool NeedsClearNative() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return true;
+    }
+
     BOOL CheckSizeParamIndexArg(const CREATE_MARSHALER_CARRAY_OPERANDS &mops, CorElementType *pElementType);
 
     // Calculate element count and load it on evaluation stack
     void EmitLoadElementCount(ILCodeStream* pslILEmit);
 
-    void EmitLoadNativeSize(ILCodeStream* pslILEmit) override;
+    void EmitLoadNativeSize(ILCodeStream* pslILEmit);
     void EmitNewSavedSizeArgLocal(ILCodeStream* pslILEmit);
 
     DWORD m_dwSavedSizeArg;
 };
 
-class ILFixedArrayMarshaler : public ILArrayMarshalerBase
+class ILFixedArrayMarshaler : public ILMarshaler
 {
 public:
     enum
@@ -3362,11 +3354,29 @@ public:
 
 protected:
 
+    LocalDesc GetNativeType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_I);
+    }
+
+    LocalDesc GetManagedType() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc(ELEMENT_TYPE_OBJECT);
+    }
+
+    bool NeedsClearNative() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return true;
+    }
+
     void EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit) override;
     void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
-    void EmitLoadNativeSize(ILCodeStream* pslILEmit) override;
+    void EmitLoadNativeSize(ILCodeStream* pslILEmit);
     void EmitClearNativeContents(ILCodeStream* pslILEmit) override;
     void EmitClearNative(ILCodeStream* pslILEmit) override;
 };

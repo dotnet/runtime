@@ -1822,10 +1822,20 @@ namespace System.StubHelpers
             Span<char> chars = new Span<char>(
                 ref Unsafe.As<byte, char>(ref MemoryMarshal.GetArrayDataReference(managedArray)),
                 length);
-            // Use the string(sbyte*) constructor which uses the system default ANSI code page,
-            // then copy the resulting characters into the array.
-            string converted = new((sbyte*)unmanaged, 0, length);
-            converted.CopyTo(chars);
+            fixed (char* pChars = chars)
+            {
+#if TARGET_WINDOWS
+                Interop.Kernel32.MultiByteToWideChar(
+                    Interop.Kernel32.CP_ACP,
+                    Interop.Kernel32.MB_PRECOMPOSED,
+                    unmanaged,
+                    length,
+                    pChars,
+                    length);
+#else
+                Encoding.UTF8.GetChars(unmanaged, length, pChars, length);
+#endif
+            }
         }
 
         public static unsafe void FreeContents(byte* unmanaged, int length)

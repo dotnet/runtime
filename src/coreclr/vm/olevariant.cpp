@@ -1813,7 +1813,7 @@ BASEARRAYREF OleVariant::CreateArrayRefForSafeArray(SAFEARRAY *pSafeArray, VARTY
 namespace
 {
     // Returns the managed IArrayMarshaler<T> MethodTable for a given VARTYPE.
-    // This mirrors the logic in ILArrayMarshalerBase::GetMarshalerMT for SAFEARRAY-compatible types.
+    // This mirrors the logic in GetMarshalerAndElementTypes for SAFEARRAY-compatible types.
     MethodTable* GetMarshalerMTForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous, BOOL bNativeDataValid)
     {
         STANDARD_VM_CONTRACT;

@@ -4184,7 +4184,7 @@ namespace
         }
 
         default:
-            _ASSERTE(!"Unsupported CorNativeType for ILArrayMarshalerBase");
+            _ASSERTE(!"Unsupported CorNativeType for GetMarshalerAndElementTypes");
             COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
             return;
         }
@@ -4296,7 +4296,6 @@ namespace
     case VT_VARIANT:
     {
         *pElementType = TypeHandle(g_pObjectClass);
-        MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
         TypeHandle thDisabled(pDisabledMT);
         *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__VARIANT_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDisabled, 1)).AsMethodTable();
         return;
@@ -4319,7 +4318,7 @@ namespace
     }
 
     default:
-        _ASSERTE(!"Unsupported VT for ILArrayMarshalerBase");
+        _ASSERTE(!"Unsupported VT for GetMarshalerAndElementTypes");
         COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
         return;
     }
