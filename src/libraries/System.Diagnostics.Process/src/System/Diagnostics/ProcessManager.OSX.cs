@@ -21,10 +21,8 @@ namespace System.Diagnostics
             return Interop.libproc.proc_pidpath(processId);
         }
 
-        internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
+        internal static string? GetProcessName(int processId, string _ /* machineName */, bool __ /* isRemoteMachine */, ref ProcessInfo? processInfo)
         {
-            ThrowIfRemoteMachine(machineName);
-
             if (processInfo is not null)
             {
                 return processInfo.ProcessName;
@@ -81,7 +79,7 @@ namespace System.Diagnostics
             Interop.libproc.proc_taskallinfo? info;
             string processName = GetProcessName(pid, out info, getInfo: true) ?? "";
 
-            if (!string.IsNullOrEmpty(processNameFilter) && !string.Equals(processName, processNameFilter, StringComparison.OrdinalIgnoreCase))
+            if (processNameFilter != null && !processNameFilter.Equals(processName, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }

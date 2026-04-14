@@ -11,37 +11,25 @@ namespace System.Diagnostics
     {
         private static NullableBool _procMatchesPidNamespace;
 
-        /// <summary>Gets the IDs of all processes on the current machine.</summary>
-        public static int[] GetProcessIds() => new List<int>(EnumerateProcessIds()).ToArray();
-
-        /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <summary>Gets process infos for each process on the local machine.</summary>
+        /// <param name="builder">The builder to add found process infos to.</param>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <param name="machineName">The target machine.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
+        public static void GetProcessInfos(ref ArrayBuilder<ProcessInfo> builder, string? processNameFilter)
         {
-            Debug.Assert(processNameFilter is null, "Not used on Linux");
-            ThrowIfRemoteMachine(machineName);
-
             // Iterate through all process IDs to load information about each process
             IEnumerable<int> pids = EnumerateProcessIds();
-            ArrayBuilder<ProcessInfo> processes = default;
             foreach (int pid in pids)
             {
-                ProcessInfo? pi = CreateProcessInfo(pid);
+                ProcessInfo? pi = CreateProcessInfo(pid, processNameFilter);
                 if (pi != null)
                 {
-                    processes.Add(pi);
+                    builder.Add(pi);
                 }
             }
-
-            return processes.ToArray();
         }
 
-        internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
+        internal static string? GetProcessName(int processId, string _ /* machineName */, bool __ /* isRemoteMachine */, ref ProcessInfo? processInfo)
         {
-            ThrowIfRemoteMachine(machineName);
-
             if (processInfo is not null)
             {
                 return processInfo.ProcessName;
@@ -91,15 +79,26 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ProcessInfo from the specified process ID.
         /// </summary>
-        internal static ProcessInfo? CreateProcessInfo(int pid)
+        internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
         {
-            if (TryGetProcPid(pid, out Interop.procfs.ProcPid procPid) &&
-                Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat stat))
+            if (!TryGetProcPid(pid, out Interop.procfs.ProcPid procPid) ||
+                !Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat stat))
             {
-                Interop.procfs.TryReadStatusFile(procPid, out Interop.procfs.ParsedStatus status);
-                return CreateProcessInfo(procPid, ref stat, ref status);
+                return null;
             }
-            return null;
+
+            string? processName = null;
+            if (processNameFilter != null)
+            {
+                processName = Process.GetUntruncatedProcessName(procPid, ref stat);
+                if (!processNameFilter.Equals(processName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+            }
+
+            Interop.procfs.TryReadStatusFile(procPid, out Interop.procfs.ParsedStatus status);
+            return CreateProcessInfo(procPid, ref stat, ref status, processName: processName);
         }
 
         /// <summary>

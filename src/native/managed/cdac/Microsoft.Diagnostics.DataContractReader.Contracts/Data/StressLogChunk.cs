@@ -12,12 +12,12 @@ internal sealed class StressLogChunk : IData<StressLogChunk>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.StressLogChunk);
 
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        Prev = target.ReadPointer(address + (ulong)type.Fields[nameof(Prev)].Offset);
+        Next = target.ReadPointerField(address, type, nameof(Next));
+        Prev = target.ReadPointerField(address, type, nameof(Prev));
         Buf = new TargetPointer(address + (ulong)type.Fields[nameof(Buf)].Offset);
         BufSize = target.ReadGlobal<uint>(Constants.Globals.StressLogChunkSize);
-        Sig1 = target.Read<uint>(address + (ulong)type.Fields[nameof(Sig1)].Offset);
-        Sig2 = target.Read<uint>(address + (ulong)type.Fields[nameof(Sig2)].Offset);
+        Sig1 = target.ReadField<uint>(address, type, nameof(Sig1));
+        Sig2 = target.ReadField<uint>(address, type, nameof(Sig2));
     }
 
     public TargetPointer Next { get; init; }
