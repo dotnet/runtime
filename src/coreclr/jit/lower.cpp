@@ -5955,8 +5955,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                     // We have a non-struct return value that needs to be widened, but we can't widen the
                     // indirection safely since that could cause the read to overrun the end of a buffer.
                     // Instead, wrap the indirection in a cast to zero extend it.
-                    GenTreeCast* cast =
-                        m_compiler->gtNewCastNode(nativeReturnType, retVal, true, TypeGet(retVal));
+                    GenTreeCast* cast = m_compiler->gtNewCastNode(nativeReturnType, retVal, true, TypeGet(retVal));
                     assert(cast->IsZeroExtending());
                     BlockRange().InsertBefore(ret, cast);
                     ContainCheckCast(cast);
