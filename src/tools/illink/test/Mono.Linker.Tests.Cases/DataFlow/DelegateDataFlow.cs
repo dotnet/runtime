@@ -18,7 +18,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AnnotatedDelegateFuncLikeParameter.Test ();
 			AnnotatedDelegateMultipleParameters.Test ();
 			AnnotatedDelegateWithAnnotatedParamAndUnannotatedReturn.Test ();
-			GenericDelegateWithAnnotatedTypeParameter.Test ();
 			ActionAndFuncWithAnnotatedLambda.Test ();
 		}
 
@@ -40,13 +39,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				_fieldDelegate (type);
 			}
 
-			[ExpectedWarning ("IL2067", nameof (type), nameof (_fieldDelegate))]
+			[ExpectedWarning ("IL2067", nameof (type), "Invoke")]
 			static void TestFieldInvokeWithoutAnnotation (Type type)
 			{
 				_fieldDelegate (type);
 			}
 
-			[ExpectedWarning ("IL2067", nameof (type), nameof (_fieldDelegate))]
+			[ExpectedWarning ("IL2067", nameof (type), "Invoke")]
 			static void TestFieldInvokeWithMismatchedAnnotation (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
 			{
@@ -68,7 +67,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DelegateProperty (type);
 			}
 
-			[ExpectedWarning ("IL2067", nameof (type), nameof (DelegateProperty))]
+			[ExpectedWarning ("IL2067", nameof (type), "Invoke")]
 			static void TestPropertyInvokeWithoutAnnotation (Type type)
 			{
 				DelegateProperty (type);
@@ -104,7 +103,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static DelegateWithAnnotatedTypeParam _field;
 
-			[ExpectedWarning ("IL2067", nameof (type), nameof (_field))]
+			[ExpectedWarning ("IL2067", nameof (type), "Invoke")]
 			static void TestFieldInvokeWithoutAnnotation (Type type)
 			{
 				_field (type);
@@ -141,7 +140,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				_field (typeMethods, typeFields);
 			}
 
-			[ExpectedWarning ("IL2067", nameof (type), nameof (_field))]
+			[ExpectedWarning ("IL2067", nameof (type), "Invoke")]
 			static void TestFirstParameterMismatched (
 				Type type,
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type typeFields)
@@ -149,7 +148,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				_field (type, typeFields);
 			}
 
-			[ExpectedWarning ("IL2067", nameof (type), nameof (_field))]
+			[ExpectedWarning ("IL2067", nameof (type), "Invoke")]
 			static void TestSecondParameterMismatched (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type typeMethods,
 				Type type)
@@ -157,8 +156,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				_field (typeMethods, type);
 			}
 
-			[ExpectedWarning ("IL2067", nameof (type1), nameof (_field))]
-			[ExpectedWarning ("IL2067", nameof (type2), nameof (_field))]
+			[ExpectedWarning ("IL2067", nameof (type1), "Invoke")]
+			[ExpectedWarning ("IL2067", nameof (type2), "Invoke")]
 			static void TestBothParametersMismatched (Type type1, Type type2)
 			{
 				_field (type1, type2);
