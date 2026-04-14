@@ -128,6 +128,14 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Error Condition="'$(_HasDefaultSysRoot)' != 'true' and '$(_IsiOSLikePlatform)' == 'true' and !Exists('$(SysRoot)')"
       Text="Apple SDK was not found in: '$(SysRoot)'" />
 
+    <!-- Resolve macOS SDK path for Swift library lookup. On macOS 15+, Swift stdlib shims
+         may only exist under the SDK (e.g. <Xcode SDK>/usr/lib/swift) and not in /usr/lib/swift.
+         iOS-like platforms already get this through -isysroot which remaps -L paths. -->
+    <Exec Command="xcrun --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMsBuild="true"
+          Condition="'$(_targetOS)' == 'osx' and '$(_HasDefaultSysRoot)' != 'true'">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_MacOSXSdkPath" />
+    </Exec>
+
     <!--
       Include any managed code libraries first, followed by native shims, followed then by the runtimes.
       This order ensures that all dependencies are met in order:
@@ -252,6 +260,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-pthread" Condition="'$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="@(NativeSystemLibrary->'-l%(Identity)')" />
       <LinkerArg Include="-L/usr/lib/swift" Condition="'$(_IsApplePlatform)' == 'true'" />
+      <LinkerArg Include="-L&quot;$(_MacOSXSdkPath)/usr/lib/swift&quot;" Condition="'$(_targetOS)' == 'osx' and '$(_MacOSXSdkPath)' != ''" />
       <LinkerArg Include="@(StaticICULibs)" Condition="'$(StaticICULinking)' == 'true'" />
       <LinkerArg Include="@(StaticSslLibs)" Condition="'$(StaticOpenSslLinking)' == 'true'" />
       <LinkerArg Include="-static" Condition="'$(StaticExecutable)' == 'true' and '$(PositionIndependentExecutable)' == 'false'" />
