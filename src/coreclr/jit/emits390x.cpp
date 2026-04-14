@@ -3839,6 +3839,8 @@ void emitter::emitIns_R_R(instruction     ins,
     	case INS_cgr:
     	case INS_clr:
     	case INS_clgr:
+	case INS_cebr:
+	case INS_cdbr:
             fmt = IF_DR_2E;
             break;
 #if 0
@@ -10286,6 +10288,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case INS_aebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+	case INS_cebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+	case INS_cdbr:
             op = emitInsCode(ins, fmt);
             S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
             break;

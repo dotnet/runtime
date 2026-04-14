@@ -61,6 +61,8 @@ INST(clgebr,    "clgebr",       0,      0xb3ac)
 INST(clgdbr,    "clgdbr",       0,      0xb3ad)
 INST(ldebr,     "ldebr",        0,      0xb304)
 INST(ledbr,     "ledbr",        0,      0xb344)
+INST(cebr,      "cebr",         0,      0xb309)
+INST(cdbr,      "cdbr",         0,      0xb319)
 
 ////R_I
 INST(llgc,		"llgc",			0,		0xe390)
