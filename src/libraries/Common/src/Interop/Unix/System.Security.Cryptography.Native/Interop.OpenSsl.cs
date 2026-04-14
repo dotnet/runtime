@@ -881,6 +881,7 @@ internal static partial class Interop
         internal static int CertVerifyCallback(IntPtr storeCtx, IntPtr arg)
         {
             SafeSslHandle? sslHandle = null;
+
             try
             {
                 IntPtr ssl = Ssl.X509StoreCtxGetSslPtr(storeCtx);
@@ -892,13 +893,19 @@ internal static partial class Interop
 
                 using SafeX509StoreCtxHandle storeHandle = new(storeCtx, ownsHandle: false);
 
-                // the chain will get properly disposed inside the VerifyRemoteCertificate call
-                X509Chain chain = new X509Chain();
+                using X509Chain chain = new X509Chain();
                 if (options.CertificateChainPolicy is not null)
                 {
                     chain.ChainPolicy = options.CertificateChainPolicy;
                 }
                 X509Certificate2? certificate = null;
+
+                // We need to note the number of certs in ExtraStore that were
+                // provided (by the user), we will add more from the received peer
+                // chain and we want to dispose only these after we perform the
+                // validation.
+                // TODO: this forces allocation of X509Certificate2Collection
+                int preexistingExtraCertsCount = options.CertificateChainPolicy?.ExtraStore?.Count ?? 0;
 
                 using (SafeSharedX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetSharedUntrusted(storeHandle))
                 {
@@ -929,56 +936,80 @@ internal static partial class Interop
                     }
                 }
 
-                Debug.Assert(certificate != null || options.IsServer, "Client-side certificate should not be null here.");
-
-                SslCertificateTrust? trust = options.CertificateContext?.Trust;
-
-                ProtocolToken alertToken = default;
-                if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+                try
                 {
-                    Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);
-                    return 1;
-                }
 
-                sslHandle.CertificateValidationException = SslStream.CreateCertificateValidationException(options, sslPolicyErrors, chainStatus);
+                    Debug.Assert(certificate != null || options.IsServer, "Client-side certificate should not be null here.");
 
-                Interop.Crypto.X509VerifyStatusCodeUniversal verifyError;
-                if (options.CertValidationDelegate != null)
-                {
-                    verifyError = Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_APPLICATION_VERIFICATION;
-                }
-                else
-                {
-                    TlsAlertMessage alert;
-                    if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != SslPolicyErrors.None)
+                    SslCertificateTrust? trust = options.CertificateContext?.Trust;
+
+                    ProtocolToken alertToken = default;
+                    if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
                     {
-                        // the chain is disposed at this point, but the ChainStatus property is still available
-                        alert = SslStream.GetAlertMessageFromChain(chain);
+                        Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);
+                        return 1;
                     }
-                    else if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != SslPolicyErrors.None)
+
+                    sslHandle.CertificateValidationException = SslStream.CreateCertificateValidationException(options, sslPolicyErrors, chainStatus);
+
+                    Interop.Crypto.X509VerifyStatusCodeUniversal verifyError;
+                    if (options.CertValidationDelegate != null)
                     {
-                        alert = TlsAlertMessage.BadCertificate;
+                        verifyError = Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_APPLICATION_VERIFICATION;
                     }
                     else
                     {
-                        alert = TlsAlertMessage.CertificateUnknown;
+                        TlsAlertMessage alert;
+                        if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != SslPolicyErrors.None)
+                        {
+                            // the chain is disposed at this point, but the ChainStatus property is still available
+                            alert = SslStream.GetAlertMessageFromChain(chain);
+                        }
+                        else if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) != SslPolicyErrors.None)
+                        {
+                            alert = TlsAlertMessage.BadCertificate;
+                        }
+                        else
+                        {
+                            alert = TlsAlertMessage.CertificateUnknown;
+                        }
+
+                        // since we can't set the alert directly, we pick one of the error verify statuses
+                        // which will result in the same alert being sent
+                        verifyError = alert switch
+                        {
+                            TlsAlertMessage.BadCertificate => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REJECTED,
+                            TlsAlertMessage.UnknownCA => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT,
+                            TlsAlertMessage.CertificateRevoked => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REVOKED,
+                            TlsAlertMessage.CertificateExpired => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_HAS_EXPIRED,
+                            TlsAlertMessage.UnsupportedCert => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_INVALID_PURPOSE,
+                            _ => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REJECTED,
+                        };
                     }
 
-                    // since we can't set the alert directly, we pick one of the error verify statuses
-                    // which will result in the same alert being sent
-                    verifyError = alert switch
-                    {
-                        TlsAlertMessage.BadCertificate => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REJECTED,
-                        TlsAlertMessage.UnknownCA => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT,
-                        TlsAlertMessage.CertificateRevoked => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REVOKED,
-                        TlsAlertMessage.CertificateExpired => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_HAS_EXPIRED,
-                        TlsAlertMessage.UnsupportedCert => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_INVALID_PURPOSE,
-                        _ => Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_REJECTED,
-                    };
+                    Ssl.X509StoreCtxSetError(storeCtx, (int)verifyError);
+                    return 0;
                 }
+                finally
+                {
+                    // Only cleanup certificates if no user callback was provided.
+                    // When a callback is provided, users might add their own certificates to ExtraStore
+                    // or keep references to certificates from ChainElements.
+                    if (options.CertValidationDelegate == null)
+                    {
+                        // Dispose only the certificates that were added by GetRemoteCertificate
+                        for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
+                        {
+                            chain.ChainPolicy.ExtraStore[i].Dispose();
+                        }
 
-                Ssl.X509StoreCtxSetError(storeCtx, (int)verifyError);
-                return 0;
+                        int elementsCount = chain.ChainElements.Count;
+                        for (int i = 0; i < elementsCount; i++)
+                        {
+                            chain.ChainElements[i].Certificate.Dispose();
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {

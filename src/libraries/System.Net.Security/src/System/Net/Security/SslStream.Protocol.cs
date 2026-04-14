@@ -1009,142 +1009,20 @@ namespace System.Net.Security
         //This method validates a remote certificate.
         internal bool VerifyRemoteCertificate(SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
-            X509Chain? chain = null;
-            X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
-
-            return VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out sslPolicyErrors, out chainStatus);
-        }
-
-        internal bool VerifyRemoteCertificate(X509Certificate2? certificate, X509Chain? chain, SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
-        {
-            sslPolicyErrors = SslPolicyErrors.None;
-            chainStatus = X509ChainStatusFlags.NoError;
-
-            bool success = false;
-
             // We need to note the number of certs in ExtraStore that were
             // provided (by the user), we will add more from the received peer
             // chain and we want to dispose only these after we perform the
             // validation.
             // TODO: this forces allocation of X509Certificate2Collection
             int preexistingExtraCertsCount = _sslAuthenticationOptions.CertificateChainPolicy?.ExtraStore?.Count ?? 0;
-            RemoteCertificateValidationCallback? remoteCertValidationCallback = _sslAuthenticationOptions.CertValidationDelegate;
+
+            X509Chain? chain = null;
 
             try
             {
-                if (_remoteCertificate != null &&
-                    certificate != null &&
-                    certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
-                {
-                    // This is renegotiation or TLS 1.3 and the certificate did not change.
-                    // There is no reason to process callback again as we already established trust.
-                    certificate.Dispose();
-                    return true;
-                }
+                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
 
-                // don't assign to _remoteCertificate yet, this prevents weird exceptions if SslStream is disposed in parallel with X509Chain building
-
-                if (certificate == null)
-                {
-                    if (NetEventSource.Log.IsEnabled() && RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
-                    sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
-                }
-                else
-                {
-                    chain ??= new X509Chain();
-
-                    if (_sslAuthenticationOptions.CertificateChainPolicy != null)
-                    {
-                        chain.ChainPolicy = _sslAuthenticationOptions.CertificateChainPolicy;
-                    }
-                    else
-                    {
-                        chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
-                        chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-
-                        if (_sslAuthenticationOptions.IsServer && !LocalAppContextSwitches.EnableServerAiaDownloads)
-                        {
-                            chain.ChainPolicy.DisableCertificateDownloads = true;
-                        }
-
-                        if (trust != null)
-                        {
-                            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                            if (trust._store != null)
-                            {
-                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
-                            }
-                            if (trust._trustList != null)
-                            {
-                                chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
-                            }
-                        }
-                    }
-
-                    // set ApplicationPolicy unless already provided.
-                    if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
-                    {
-                        // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
-                        chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
-                    }
-
-                    sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
-                        _securityContext!,
-                        chain,
-                        certificate,
-                        _sslAuthenticationOptions.CheckCertName,
-                        _sslAuthenticationOptions.IsServer,
-                        TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost));
-                }
-
-                _remoteCertificate = certificate;
-
-                if (remoteCertValidationCallback != null)
-                {
-                    // Ensure connection info is populated before calling the user callback,
-                    // which may access properties like SslProtocol or CipherAlgorithm.
-                    // During inline cert validation the handshake hasn't completed yet, so
-                    // _connectionInfo may not have been set by ProcessHandshakeSuccess.
-                    if (_connectionInfo.Protocol == 0 && _securityContext is not null)
-                    {
-                        SslStreamPal.QueryContextConnectionInfo(_securityContext, ref _connectionInfo);
-                    }
-
-                    success = remoteCertValidationCallback(this, certificate, chain, sslPolicyErrors);
-                }
-                else
-                {
-                    if (!RemoteCertRequired)
-                    {
-                        sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
-                    }
-
-                    success = sslPolicyErrors == SslPolicyErrors.None;
-                }
-
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    LogCertificateValidation(remoteCertValidationCallback, sslPolicyErrors, success, chain!);
-                    NetEventSource.Info(this, $"Cert validation, remote cert = {_remoteCertificate}");
-                }
-
-                if (!success)
-                {
-#pragma warning disable CS0162 // unreachable code detected (compile time const)
-                    if (SslStreamPal.CanGenerateCustomAlerts && !SslStreamPal.CertValidationInCallback)
-                    {
-                        CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
-                    }
-#pragma warning restore CS0162 // unreachable code detected (compile time const)
-
-                    if (chain != null)
-                    {
-                        foreach (X509ChainStatus status in chain.ChainStatus)
-                        {
-                            chainStatus |= status.Status;
-                        }
-                    }
-                }
+                return VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out sslPolicyErrors, out chainStatus);
             }
             finally
             {
@@ -1156,7 +1034,7 @@ namespace System.Net.Security
                     // Only cleanup certificates if no user callback was provided.
                     // When a callback is provided, users might add their own certificates to ExtraStore
                     // or keep references to certificates from ChainElements.
-                    if (remoteCertValidationCallback == null)
+                    if (_sslAuthenticationOptions.CertValidationDelegate == null)
                     {
                         // Dispose only the certificates that were added by GetRemoteCertificate
                         for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
@@ -1172,6 +1050,130 @@ namespace System.Net.Security
                     }
 
                     chain.Dispose();
+                }
+            }
+        }
+
+        internal bool VerifyRemoteCertificate(X509Certificate2? certificate, X509Chain? chain, SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        {
+            sslPolicyErrors = SslPolicyErrors.None;
+            chainStatus = X509ChainStatusFlags.NoError;
+
+            bool success = false;
+
+            RemoteCertificateValidationCallback? remoteCertValidationCallback = _sslAuthenticationOptions.CertValidationDelegate;
+
+            if (_remoteCertificate != null &&
+                certificate != null &&
+                certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
+            {
+                // This is renegotiation or TLS 1.3 and the certificate did not change.
+                // There is no reason to process callback again as we already established trust.
+                certificate.Dispose();
+                return true;
+            }
+
+            // don't assign to _remoteCertificate yet, this prevents weird exceptions if SslStream is disposed in parallel with X509Chain building
+
+            if (certificate == null)
+            {
+                if (NetEventSource.Log.IsEnabled() && RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
+                sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
+            }
+            else
+            {
+                chain ??= new X509Chain();
+
+                if (_sslAuthenticationOptions.CertificateChainPolicy != null)
+                {
+                    chain.ChainPolicy = _sslAuthenticationOptions.CertificateChainPolicy;
+                }
+                else
+                {
+                    chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+
+                    if (_sslAuthenticationOptions.IsServer && !LocalAppContextSwitches.EnableServerAiaDownloads)
+                    {
+                        chain.ChainPolicy.DisableCertificateDownloads = true;
+                    }
+
+                    if (trust != null)
+                    {
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                        if (trust._store != null)
+                        {
+                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                        }
+                        if (trust._trustList != null)
+                        {
+                            chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                        }
+                    }
+                }
+
+                // set ApplicationPolicy unless already provided.
+                if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
+                {
+                    // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
+                    chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
+                }
+
+                sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
+                    _securityContext!,
+                    chain,
+                    certificate,
+                    _sslAuthenticationOptions.CheckCertName,
+                    _sslAuthenticationOptions.IsServer,
+                    TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost));
+            }
+
+            _remoteCertificate = certificate;
+
+            if (remoteCertValidationCallback != null)
+            {
+                // Ensure connection info is populated before calling the user callback,
+                // which may access properties like SslProtocol or CipherAlgorithm.
+                // During inline cert validation the handshake hasn't completed yet, so
+                // _connectionInfo may not have been set by ProcessHandshakeSuccess.
+                if (_connectionInfo.Protocol == 0 && _securityContext is not null)
+                {
+                    SslStreamPal.QueryContextConnectionInfo(_securityContext, ref _connectionInfo);
+                }
+
+                success = remoteCertValidationCallback(this, certificate, chain, sslPolicyErrors);
+            }
+            else
+            {
+                if (!RemoteCertRequired)
+                {
+                    sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
+                }
+
+                success = sslPolicyErrors == SslPolicyErrors.None;
+            }
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                LogCertificateValidation(remoteCertValidationCallback, sslPolicyErrors, success, chain!);
+                NetEventSource.Info(this, $"Cert validation, remote cert = {_remoteCertificate}");
+            }
+
+            if (!success)
+            {
+#pragma warning disable CS0162 // unreachable code detected (compile time const)
+                if (SslStreamPal.CanGenerateCustomAlerts && !SslStreamPal.CertValidationInCallback)
+                {
+                    CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
+                }
+#pragma warning restore CS0162 // unreachable code detected (compile time const)
+
+                if (chain != null)
+                {
+                    foreach (X509ChainStatus status in chain.ChainStatus)
+                    {
+                        chainStatus |= status.Status;
+                    }
                 }
             }
 
