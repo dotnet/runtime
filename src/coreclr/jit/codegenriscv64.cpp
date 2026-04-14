@@ -463,7 +463,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *
  *  See the description of frame shapes at genFuncletProlog().
  */
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
@@ -541,14 +541,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     int delta_PSP = -TARGET_POINTER_SIZE;
     if ((m_compiler->lvaMonAcquired != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta_PSP -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta_PSP -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
     {
         delta_PSP -= TARGET_POINTER_SIZE;
     }
@@ -836,7 +828,13 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
     GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
 
-BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+//------------------------------------------------------------------------
+// genCallFinally: Generate a call to a finally.
+//
+// Arguments:
+//   block - callfinally block
+//
+void CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
@@ -861,7 +859,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
             instGen(INS_ebreak); // This should never get executed
         }
 
-        return block;
+        return;
     }
     else
     {
@@ -887,8 +885,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
 
         GetEmitter()->emitEnableGC();
-
-        return nextBlock;
     }
 }
 
@@ -2258,7 +2254,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
-    GetEmitter()->emitIns_R_C(INS_addi, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+    GetEmitter()->emitIns_R_C(INS_addi, EA_PTRSIZE, treeNode->GetRegNum(), REG_NA,
                               m_compiler->eeFindJitDataOffs(jmpTabBase));
     genProduceReg(treeNode);
 }
@@ -2271,7 +2267,13 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 //
 void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {
-    GetEmitter()->emitIns_R_C(INS_addi, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+    emitAttr attr = EA_PTRSIZE;
+    if (m_compiler->eeDataWithCodePointersNeedsRelocs())
+    {
+        attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+    }
+
+    GetEmitter()->emitIns_R_C(INS_addi, attr, treeNode->GetRegNum(), REG_NA,
                               genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1));
     genProduceReg(treeNode);
 }
@@ -3365,14 +3367,6 @@ int CodeGenInterface::genSPtoFPdelta() const
     {
         delta -= TARGET_POINTER_SIZE;
     }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta -= TARGET_POINTER_SIZE;
-    }
 
     assert(delta >= 0);
     return delta;
@@ -4176,16 +4170,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
             genConsumeReg(treeNode);
-            break;
-
-        case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
-                          ~fullIntArgRegMask(m_compiler->info.compCallConv)) == 0);
-
-// the runtime side requires the codegen here to be consistent
-#ifdef PSEUDORANDOM_NOP_INSERTION
-            emit->emitDisableRandomNops();
-#endif // PSEUDORANDOM_NOP_INSERTION
             break;
 
         case GT_LABEL:
@@ -5383,7 +5367,6 @@ void CodeGen::genCall(GenTreeCall* call)
 
         if (target != nullptr)
         {
-            // Indirect fast tail calls materialize call target either in gtControlExpr or in gtCallAddr.
             genConsumeReg(target);
         }
 #ifdef FEATURE_READYTORUN
@@ -5428,7 +5411,7 @@ void CodeGen::genCall(GenTreeCall* call)
     regMaskTP killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
-        CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+        CorInfoHelpFunc helpFunc = call->GetHelperNum();
         killMask                 = m_compiler->compHelperCallKillSet(helpFunc);
     }
 
@@ -5628,7 +5611,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
         // indirection cell but we should not try to optimize.
         regNumber callThroughIndirReg = REG_NA;
-        if (!call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        if (!call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
         {
             callThroughIndirReg = getCallIndirectionCellReg(call);
         }
@@ -5948,6 +5931,9 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 #ifdef FEATURE_REMAP_FUNCTION
     if (m_compiler->opts.compDbgEnC)
     {
+        // TODO: lvaMonAcquired, lvaAsyncExecutionContextVar and lvaAsyncSynchronizationContextVar locals are special
+        // that is necessary to allocate in the top of the stack frame and included as part of the EnC frame header
+        // for EnC to work.
         NYI_RISCV64("compDbgEnc in genCreateAndStoreGCInfo-----unimplemented/unused on RISCV64 yet----");
     }
 #endif // FEATURE_REMAP_FUNCTION
@@ -6431,14 +6417,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
 
 #ifdef DEBUG
     if (m_compiler->opts.disAsm)
@@ -6506,14 +6484,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     int totalFrameSize = genTotalFrameSize();
     int localFrameSize = m_compiler->compLclFrameSize;
     if ((m_compiler->lvaMonAcquired != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }

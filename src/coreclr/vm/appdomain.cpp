@@ -722,9 +722,6 @@ void SystemDomain::Attach()
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeStubManager::Init();
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-    JumpStubStubManager::Init();
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
     RangeSectionStubManager::Init();
     ILStubManager::Init();
     PInvokeStubManager::Init();
@@ -732,9 +729,6 @@ void SystemDomain::Attach()
     StubLinkStubManager::Init();
     TailCallStubManager::Init();
     AsyncThunkStubManager::Init();
-#ifdef FEATURE_TIERED_COMPILATION
-    CallCountingStubManager::Init();
-#endif
 
     m_SystemDomainCrst.Init(CrstSystemDomain, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
     m_DelayedUnloadCrst.Init(CrstSystemDomainDelayedUnloadList, CRST_UNSAFE_COOPGC);
@@ -2137,12 +2131,6 @@ FileLoadLock::FileLoadLock(PEFileListLock* pLock, PEAssembly* pPEAssembly)
     pPEAssembly->AddRef();
 }
 
-void FileLoadLock::HolderLeave(FileLoadLock *pThis)
-{
-    LIMITED_METHOD_CONTRACT;
-    pThis->Leave();
-}
-
 
 //
 // Assembly loading:
@@ -2649,7 +2637,7 @@ void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& 
     // This is factored out so we don't call EX_TRY in a loop (EX_TRY can _alloca)
 
     BOOL released = FALSE;
-    FileLoadLock* pLoadLock = lockHolder.GetValue();
+    FileLoadLock* pLoadLock = lockHolder;
     Assembly* pAssembly = pLoadLock->GetAssembly();
 
     EX_TRY
@@ -2690,7 +2678,7 @@ void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& 
         if (pLoadLock->CompleteLoadLevel(workLevel, success) &&
             pLoadLock->GetLoadLevel()==FILE_LOAD_DELIVER_EVENTS)
         {
-            lockHolder.Release();
+            lockHolder.Free();
             released = TRUE;
             pAssembly->DeliverAsyncEvents();
         };
@@ -3606,23 +3594,6 @@ void AppDomain::DetachRCWs()
 
 #endif // FEATURE_COMINTEROP
 
-void AppDomain::ExceptionUnwind(Frame *pFrame)
-{
-    CONTRACTL
-    {
-        DISABLED(GC_TRIGGERS);  // EEResourceException
-        DISABLED(THROWS);   // EEResourceException
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind for %8.8x\n", pFrame));
-    Thread *pThread = GetThread();
-
-    LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: not first transition or abort\n"));
-}
-
-
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -4092,9 +4063,6 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToBindWith
 
     bool fResolvedAssembly = false;
     BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, 0 /*binderID*/, pAssemblyLoadContextToBindWithin, hr};
-
-    // Allocate an AssemblyName managed object
-    _gcRefs.oRefAssemblyName = (ASSEMBLYNAMEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME));
 
     // Initialize the AssemblyName object
     AssemblySpec::InitializeAssemblyNameRef(pAssemblyName, &_gcRefs.oRefAssemblyName);

@@ -196,13 +196,18 @@ const SSL_METHOD* CryptoNative_SslV2_3Method(void)
 {
     // No error queue impact.
     const SSL_METHOD* method = TLS_method();
-    assert(method != NULL);
+
     return method;
 }
 
 SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
 {
     ERR_clear_error();
+
+    if (method == NULL)
+    {
+        return NULL;
+    }
 
     SSL_CTX* ctx = SSL_CTX_new(method);
 
@@ -1052,9 +1057,9 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 }
 
 // This function generates key pair and creates simple certificate.
-static int MakeSelfSignedCertificate(X509* cert, EVP_PKEY* evp)
+// On success, the generated key is stored in *pEvp and the caller takes ownership.
+static int MakeSelfSignedCertificate(X509* cert, EVP_PKEY** pEvp)
 {
-    RSA* rsa = NULL;
     ASN1_TIME* time = ASN1_TIME_new();
     X509_NAME * asnName;
     unsigned char * name = (unsigned char*)"localhost";
@@ -1065,35 +1070,40 @@ static int MakeSelfSignedCertificate(X509* cert, EVP_PKEY* evp)
 
     if (pkey != NULL)
     {
-        rsa = EVP_PKEY_get1_RSA(pkey);
-        EVP_PKEY_free(pkey);
-    }
+        X509_set_pubkey(cert, pkey);
 
-    if (rsa != NULL)
-    {
-        if (EVP_PKEY_set1_RSA(evp, rsa) == 1)
+        asnName = X509_NAME_dup(X509_get_subject_name(cert));
+
+        if (asnName != NULL)
         {
-            rsa = NULL;
+            X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
+            X509_set_subject_name(cert, asnName);
+            X509_NAME_free(asnName);
+
+            asnName =  X509_NAME_dup(X509_get_issuer_name(cert));
+
+            if (asnName != NULL)
+            {
+                X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
+                X509_set_issuer_name(cert, asnName);
+                X509_NAME_free(asnName);
+
+                ASN1_TIME_set(time, 0);
+                X509_set1_notBefore(cert, time);
+                X509_set1_notAfter(cert, time);
+
+                ret = X509_sign(cert, pkey, EVP_sha256());
+            }
         }
 
-        X509_set_pubkey(cert, evp);
-
-        asnName = X509_get_subject_name(cert);
-        X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
-
-        asnName =  X509_get_issuer_name(cert);
-        X509_NAME_add_entry_by_txt(asnName, "CN", MBSTRING_ASC, name, -1, -1, 0);
-
-        ASN1_TIME_set(time, 0);
-        X509_set1_notBefore(cert, time);
-        X509_set1_notAfter(cert, time);
-
-        ret = X509_sign(cert, evp, EVP_sha256());
-    }
-
-    if (rsa != NULL)
-    {
-        RSA_free(rsa);
+        if (ret)
+        {
+            *pEvp = pkey;
+        }
+        else
+        {
+            EVP_PKEY_free(pkey);
+        }
     }
 
     if (time != NULL)
@@ -1199,21 +1209,21 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
     SSL_CTX* clientCtx = CryptoNative_SslCtxCreate(TLS_method());
     SSL_CTX* serverCtx = CryptoNative_SslCtxCreate(TLS_method());
     X509 * cert = X509_new();
-    EVP_PKEY* evp = CryptoNative_EvpPkeyCreate();
+    EVP_PKEY* evp = NULL;
     BIO *bio1 = BIO_new(BIO_s_mem());
     BIO *bio2 = BIO_new(BIO_s_mem());
 
     SSL* client = NULL;
     SSL* server = NULL;
 
-    if (clientCtx != NULL && serverCtx != NULL && cert != NULL && evp != NULL && bio1 != NULL && bio2 != NULL)
+    if (clientCtx != NULL && serverCtx != NULL && cert != NULL && bio1 != NULL && bio2 != NULL)
     {
         CryptoNative_SslCtxSetProtocolOptions(serverCtx, protocol);
         CryptoNative_SslCtxSetProtocolOptions(clientCtx, protocol);
         SSL_CTX_set_verify(clientCtx, SSL_VERIFY_NONE, NULL);
         SSL_CTX_set_verify(serverCtx, SSL_VERIFY_NONE, NULL);
 
-        if (MakeSelfSignedCertificate(cert, evp))
+        if (MakeSelfSignedCertificate(cert, &evp))
         {
             CryptoNative_SslCtxUseCertificate(serverCtx, cert);
             CryptoNative_SslCtxUsePrivateKey(serverCtx, evp);

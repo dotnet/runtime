@@ -391,6 +391,10 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException();
 #endif
             }
+            if (result == CorJitResult.CORJIT_OUTOFMEM)
+            {
+                throw new OutOfMemoryException();
+            }
             if (result != CorJitResult.CORJIT_OK)
             {
 #if SUPPORT_JIT
@@ -699,7 +703,6 @@ namespace Internal.JitInterface
 #if !READYTORUN
             _debugInfo = null;
 #endif
-            _asyncResumptionStub = null;
 
             _debugLocInfos = null;
             _debugVarInfos = null;
@@ -763,6 +766,7 @@ namespace Internal.JitInterface
 
         private object HandleToObject(void* handle)
         {
+            Debug.Assert(handle != null);
 #if DEBUG
             handle = (void*)(~s_handleHighBitSet & (nint)handle);
 #endif
@@ -1385,9 +1389,7 @@ namespace Internal.JitInterface
                 // cases where the virtual function resolution algorithm either does not function, or is not used
                 // correctly.
 #if DEBUG
-                if (info->detail == CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN
-                    // TODO: resolution and devirtualization of async variants https://github.com/dotnet/runtime/issues/124620
-                    && !decl.IsAsyncVariant())
+                if (info->detail == CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN)
                 {
                     Console.Error.WriteLine($"Failed devirtualization with unexpected unknown failure while compiling {MethodBeingCompiled} with decl {decl} targeting type {objType}");
                     Debug.Assert(info->detail != CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN);
@@ -4246,6 +4248,8 @@ namespace Internal.JitInterface
                 CorInfoReloc.WASM_TABLE_INDEX_SLEB => RelocType.WASM_TABLE_INDEX_SLEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_LEB => RelocType.WASM_MEMORY_ADDR_LEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_SLEB => RelocType.WASM_MEMORY_ADDR_SLEB,
+                CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB => RelocType.WASM_MEMORY_ADDR_REL_SLEB,
+                CorInfoReloc.WASM_MEMORY_ADDR_REL_LEB => RelocType.WASM_MEMORY_ADDR_REL_LEB,
                 CorInfoReloc.WASM_TYPE_INDEX_LEB => RelocType.WASM_TYPE_INDEX_LEB,
                 CorInfoReloc.WASM_GLOBAL_INDEX_LEB => RelocType.WASM_GLOBAL_INDEX_LEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),

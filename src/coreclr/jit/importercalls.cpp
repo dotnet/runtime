@@ -443,14 +443,14 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
 
                 // Now make an indirect call through the function pointer
-                call->AsCall()->gtCallAddr = fptr;
+                call->AsCall()->gtControlExpr = fptr;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
                 if (needsFatPointerHandling)
                 {
                     const unsigned fptrLclNum = lvaGrabTemp(true DEBUGARG("fat pointer temp"));
                     impStoreToTemp(fptrLclNum, fptr, CHECK_SPILL_ALL);
-                    call->AsCall()->gtCallAddr = gtNewLclvNode(fptrLclNum, genActualType(fptr->TypeGet()));
+                    call->AsCall()->gtControlExpr = gtNewLclvNode(fptrLclNum, genActualType(fptr->TypeGet()));
                     addFatPointerCandidate(call->AsCall());
                 }
 #ifdef FEATURE_READYTORUN
@@ -1637,7 +1637,7 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
     //    ->
     //  addr->hasValue != 0 ? NOP : ArgumentNullException.ThrowIfNull(null, valueNameTmp)
     //
-    if (opts.OptimizationEnabled() || !value->IsHelperCall(this, CORINFO_HELP_BOX_NULLABLE))
+    if (opts.OptimizationEnabled() || !value->IsHelperCall(CORINFO_HELP_BOX_NULLABLE))
     {
         // We're not boxing - bail out.
         // NOTE: when opts are enabled, we remove the box as is (with better CQ)
@@ -2843,8 +2843,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         GenTree* arrayLengthNode;
 
 #ifdef FEATURE_READYTORUN
-        if (newArrayCall->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1) ||
-            newArrayCall->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_MAYBEFROZEN))
+        if (newArrayCall->AsCall()->IsHelperCall(CORINFO_HELP_READYTORUN_NEWARR_1) ||
+            newArrayCall->AsCall()->IsHelperCall(CORINFO_HELP_NEWARR_1_MAYBEFROZEN))
         {
             // Array length is 1st argument for readytorun helper
             arrayLengthNode = newArrayCall->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
@@ -10747,9 +10747,22 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else
                     {
 #ifdef FEATURE_HW_INTRINSICS
-                        bool isVectorT = strcmp(className, "Vector`1") == 0;
+                        bool isVectorT = false;
+                        bool isVector  = false;
 
-                        if (isVectorT || (strcmp(className, "Vector") == 0))
+                        if (strncmp(className, "Vector", 6) == 0)
+                        {
+                            if (className[6] == '\0')
+                            {
+                                isVector = true;
+                            }
+                            else if (strcmp(className + 6, "`1") == 0)
+                            {
+                                isVectorT = true;
+                            }
+                        }
+
+                        if (isVectorT || isVector)
                         {
                             if (strncmp(methodName, "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector",
                                         60) == 0)
@@ -10765,7 +10778,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             }
 
                             uint32_t size = getVectorTByteLength();
+#ifdef TARGET_ARM64
+                            assert((size == 16) || (size == SIZE_UNKNOWN));
+#else
                             assert((size == 16) || (size == 32) || (size == 64));
+#endif
 
                             const char* lookupClassName = className;
 
@@ -10788,7 +10805,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                     lookupClassName = isVectorT ? "Vector512`1" : "Vector512";
                                     break;
                                 }
-
+#ifdef TARGET_ARM64
+                                case SIZE_UNKNOWN:
+                                {
+                                    // NTD, Vector<T> is implemented directly with SVE in this case.
+                                    break;
+                                }
+#endif
                                 default:
                                 {
                                     unreached();

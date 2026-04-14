@@ -7,6 +7,7 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -119,9 +120,11 @@ namespace System
         public static extern float Tanh(float x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe float ModF(float x, float* intptr);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe void SinCos(float x, float* sin, float* cos);
     }
 }

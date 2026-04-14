@@ -359,22 +359,19 @@ public class PrecodeStubsTests
     private static Target CreateTarget(PrecodeBuilder precodeBuilder)
     {
         var arch = precodeBuilder.Builder.TargetTestHelpers.Arch;
-        TestPlaceholderTarget.ReadFromTargetDelegate reader = precodeBuilder.Builder.GetMemoryContext().ReadFromTarget;
-        // hack for this test put the precode machine descriptor at the same address as the PlatformMetadata
         (string Name, ulong Value)[] globals = [(Constants.Globals.PlatformMetadata, precodeBuilder.MachineDescriptorAddress)];
-        var target = new TestPlaceholderTarget(arch, reader, precodeBuilder.Types, globals);
 
-        IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
         Mock<IPlatformMetadata> platformMetadata = new();
         platformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(precodeBuilder.CodePointerFlags);
         platformMetadata.Setup(p => p.GetPrecodeMachineDescriptor()).Returns(precodeBuilder.MachineDescriptorAddress);
 
-        // Creating the PrecodeStubs contract depends on the PlatformMetadata contract, so we need
-        // to set it up such that it will only be created after the target's targets are set up
-        Mock<ContractRegistry> reg = new();
-        reg.SetupGet(c => c.PlatformMetadata).Returns(platformMetadata.Object);
-        reg.SetupGet(c => c.PrecodeStubs).Returns(() => precodeFactory.CreateContract(target, precodeBuilder.PrecodesVersion));
-        target.SetContracts(reg.Object);
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader(precodeBuilder.Builder.GetMemoryContext().ReadFromTarget)
+            .AddTypes(precodeBuilder.Types)
+            .AddGlobals(globals)
+            .AddMockContract(platformMetadata)
+            .AddContract<IPrecodeStubs>(version: precodeBuilder.PrecodesVersion)
+            .Build();
 
         return target;
     }

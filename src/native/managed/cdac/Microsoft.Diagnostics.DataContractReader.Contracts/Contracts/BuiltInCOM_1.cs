@@ -1,15 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System;
 using System.Collections.Generic;
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 {
     private readonly Target _target;
-
-    private enum CCWFlags
+    // Mirrors enum SimpleComCallWrapperFlags in src/coreclr/vm/comcallablewrapper.h
+    private enum SimpleComCallWrapperFlags : uint
     {
-        IsHandleWeak = 0x4,
+        IsAggregated    = 0x1,
+        IsExtendsCom    = 0x2,
+        IsHandleWeak    = 0x4,
     }
 
     // Mirrors enum Masks in src/coreclr/vm/comcallablewrapper.h
@@ -23,28 +26,30 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     {
         Slot_Basic = 0,
     }
-    // Matches the bit position of m_MarshalingType within RCW::RCWFlags::m_dwFlags.
-    private const int MarshalingTypeShift = 7;
-    private const uint MarshalingTypeMask = 0x3u << MarshalingTypeShift;
-    private const uint MarshalingTypeFreeThreaded = 2u;
+
+    [Flags]
+    private enum ComRefCount : long
+    {
+        RefCountMask = 0x7FFFFFFF,
+        CleanupSentinel = 0x80000000,
+    }
+    // Mirrors RCW::RCWFlags bits in src/coreclr/vm/runtimecallablewrapper.h.
+    [Flags]
+    private enum RCWFlags : uint
+    {
+        URTAggregated          = 0x010u, // bit 4: m_fURTAggregated
+        URTContained           = 0x020u, // bit 5: m_fURTContained
+        MarshalingTypeMask     = 0x180u, // bits 7-8: m_MarshalingType
+        MarshalingTypeFreeThreaded = 0x100u, // MarshalingType_FreeThreaded (2) in bits 7-8
+    }
+
+    // Sentinel value written to IUnkEntry::m_pUnknown when an RCW is disconnected from its COM object.
+    // Mirrors the value 0xBADF00D used in IUnkEntry::IsDisconnected in src/coreclr/vm/comcache.h.
+    private const ulong DisconnectedSentinel = 0xBADF00Du;
 
     internal BuiltInCOM_1(Target target)
     {
         _target = target;
-    }
-
-    public ulong GetRefCount(TargetPointer address)
-    {
-        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
-        Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
-        return simpleWrapper.RefCount & (ulong)_target.ReadGlobal<long>(Constants.Globals.ComRefcountMask);
-    }
-
-    public bool IsHandleWeak(TargetPointer address)
-    {
-        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
-        Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
-        return (simpleWrapper.Flags & (uint)CCWFlags.IsHandleWeak) != 0;
     }
 
     // See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
@@ -64,9 +69,9 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             return TargetPointer.Null;
         }
 
-        TargetPointer tearOffAddRef      = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRef);
-        TargetPointer tearOffSimple      = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimple);
-        TargetPointer tearOffSimpleInner = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimpleInner);
+        TargetPointer tearOffAddRef      = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.TearOffAddRef));
+        TargetPointer tearOffSimple      = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimple));
+        TargetPointer tearOffSimpleInner = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimpleInner));
 
         TargetPointer ccw;
         if (addRefValue == tearOffAddRef)
@@ -98,13 +103,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 
     public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
     {
-        // Navigate to the start of the linked chain, mirroring ComCallWrapper::GetStartWrapper in the runtime.
-        Data.ComCallWrapper firstCheck = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
-        if (firstCheck.Next != TargetPointer.Null)
-        {
-            Data.SimpleComCallWrapper sccwFirst = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(firstCheck.SimpleWrapper);
-            ccw = sccwFirst.MainWrapper;
-        }
+        ccw = GetStartWrapper(ccw);
 
         ulong comMethodTableSize = _target.GetTypeInfo(DataType.ComMethodTable).Size!.Value;
         int pointerSize = _target.PointerSize;
@@ -152,6 +151,49 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             current = wrapper.Next == linkedWrapperTerminator ? TargetPointer.Null : wrapper.Next;
         }
     }
+
+    public TargetPointer GetObjectHandle(TargetPointer ccw)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
+        return wrapper.Handle;
+    }
+
+    // Returns the address of the SimpleComCallWrapper associated with the given ComCallWrapper.
+    private TargetPointer GetSimpleComCallWrapper(TargetPointer ccw)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
+        return wrapper.SimpleWrapper;
+    }
+
+    public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer ccw)
+    {
+        TargetPointer sccw = GetSimpleComCallWrapper(ccw);
+        Data.SimpleComCallWrapper data = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(sccw);
+        return new SimpleComCallWrapperData
+        {
+            RefCount = (uint)(data.RefCount & (long)ComRefCount.RefCountMask),
+            IsNeutered = (data.RefCount & (long)ComRefCount.CleanupSentinel) != 0,
+            IsAggregated = (data.Flags & (uint)SimpleComCallWrapperFlags.IsAggregated) != 0,
+            IsExtendsCOMObject = (data.Flags & (uint)SimpleComCallWrapperFlags.IsExtendsCom) != 0,
+            IsHandleWeak = (data.Flags & (uint)SimpleComCallWrapperFlags.IsHandleWeak) != 0,
+            OuterIUnknown = data.OuterIUnknown,
+        };
+    }
+
+    // Navigates to the start ComCallWrapper in a linked chain.
+    // If ccw is already the start wrapper (or the only wrapper), returns ccw unchanged.
+    // Mirrors ComCallWrapper::GetStartWrapper / IsLinked in the runtime.
+    public TargetPointer GetStartWrapper(TargetPointer ccw)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
+        if (wrapper.Next != TargetPointer.Null)
+        {
+            Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+            ccw = sccw.MainWrapper;
+        }
+        return ccw;
+    }
+
     public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr)
     {
         TargetPointer listAddress;
@@ -173,7 +215,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         while (bucketPtr != TargetPointer.Null)
         {
             Data.RCW bucket = _target.ProcessedData.GetOrAdd<Data.RCW>(bucketPtr);
-            bool isFreeThreaded = (bucket.Flags & MarshalingTypeMask) == MarshalingTypeFreeThreaded << MarshalingTypeShift;
+            bool isFreeThreaded = ((RCWFlags)bucket.Flags & RCWFlags.MarshalingTypeMask) == RCWFlags.MarshalingTypeFreeThreaded;
             TargetPointer ctxCookie = bucket.CtxCookie;
             TargetPointer staThread = GetSTAThread(bucket);
 
@@ -216,5 +258,44 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         Data.RCW rcwData = _target.ProcessedData.GetOrAdd<Data.RCW>(rcw);
 
         return rcwData.CtxCookie;
+    }
+
+    public RCWData GetRCWData(TargetPointer rcw)
+    {
+        Data.RCW rcwData = _target.ProcessedData.GetOrAdd<Data.RCW>(rcw);
+
+        TargetPointer managedObject = TargetPointer.Null;
+        if (rcwData.SyncBlockIndex != 0)
+        {
+            ISyncBlock syncBlock = _target.Contracts.SyncBlock;
+            managedObject = syncBlock.GetSyncBlockObject(rcwData.SyncBlockIndex);
+        }
+
+        return new RCWData(
+            IdentityPointer: rcwData.IdentityPointer,
+            UnknownPointer: rcwData.UnknownPointer,
+            ManagedObject: managedObject,
+            VTablePtr: rcwData.VTablePtr,
+            CreatorThread: rcwData.CreatorThread,
+            CtxCookie: rcwData.CtxCookie,
+            RefCount: rcwData.RefCount,
+            IsAggregated: ((RCWFlags)rcwData.Flags).HasFlag(RCWFlags.URTAggregated),
+            IsContained: ((RCWFlags)rcwData.Flags).HasFlag(RCWFlags.URTContained),
+            IsFreeThreaded: ((RCWFlags)rcwData.Flags & RCWFlags.MarshalingTypeMask) == RCWFlags.MarshalingTypeFreeThreaded,
+            IsDisconnected: IsRCWDisconnected(rcwData));
+    }
+
+    // Mirrors IUnkEntry::IsDisconnected in src/coreclr/vm/comcache.h.
+    private bool IsRCWDisconnected(Data.RCW rcw)
+    {
+        if (rcw.UnknownPointer == DisconnectedSentinel)
+            return true;
+
+        TargetPointer ctxEntryPtr = rcw.CtxEntry & ~(ulong)1;
+        if (ctxEntryPtr == TargetPointer.Null)
+            return false;
+
+        Data.CtxEntry ctxEntry = _target.ProcessedData.GetOrAdd<Data.CtxEntry>(ctxEntryPtr);
+        return rcw.CtxCookie != ctxEntry.CtxCookie;
     }
 }

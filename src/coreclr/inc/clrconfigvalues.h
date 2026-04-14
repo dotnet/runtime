@@ -707,16 +707,18 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha1,              W("EnableArm64Sh
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha256,            W("EnableArm64Sha256"),         1, "Allows Arm64 Sha256+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc,              W("EnableArm64Rcpc"),           1, "Allows Arm64 Rcpc+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc2,             W("EnableArm64Rcpc2"),          1, "Allows Arm64 Rcpc2+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve,               W("EnableArm64Sve"),            1, "Allows Arm64 SVE hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve2,              W("EnableArm64Sve2"),           1, "Allows Arm64 SVE2 hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve,               W("EnableArm64Sve"),            1, "Allows Arm64 SVE+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve2,              W("EnableArm64Sve2"),           1, "Allows Arm64 SVE2+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha3,              W("EnableArm64Sha3"),           1, "Allows Arm64 Sha3+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sm4,               W("EnableArm64Sm4"),            1, "Allows Arm64 Sm4+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64SveAes,            W("EnableArm64SveAes"),         1, "Allows Arm64 SveAes+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64SveSha3,           W("EnableArm64SveSha3"),        1, "Allows Arm64 SveSha3+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64SveSm4,            W("EnableArm64SveSm4"),         1, "Allows Arm64 SveSm4+ hardware intrinsics to be disabled")
 #elif defined(TARGET_RISCV64)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zba,             W("EnableRiscV64Zba"),          1, "Allows RiscV64 Zba hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbb,             W("EnableRiscV64Zbb"),          1, "Allows RiscV64 Zbb hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbs,             W("EnableRiscV64Zbs"),          1, "Allows RiscV64 Zbs hardware intrinsics to be disabled")
 #endif
-
-// Runtime-async
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RuntimeAsync, W("RuntimeAsync"), 1, "Enables runtime async method support")
 
 ///
 /// Uncategorized
@@ -747,6 +749,10 @@ CONFIG_STRING_INFO(INTERNAL_PerfTypesToLog, W("PerfTypesToLog"), "Log facility L
 CONFIG_STRING_INFO(INTERNAL_PrestubGC, W("PrestubGC"), "")
 CONFIG_STRING_INFO(INTERNAL_PrestubHalt, W("PrestubHalt"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_RestrictedGCStressExe, W("RestrictedGCStressExe"), "")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_CdacStressFailFast, W("CdacStressFailFast"), 0, "If nonzero, assert on cDAC/runtime GC ref mismatch during cDAC stress verification.")
+RETAIL_CONFIG_STRING_INFO(INTERNAL_CdacStressLogFile, W("CdacStressLogFile"), "Log file path for cDAC stress verification results.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_CdacStressStep, W("CdacStressStep"), 1, "Verify every Nth cDAC stress point (1=every point, 100=every 100th). Reduces overhead while maintaining code path diversity.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_CdacStress, W("CdacStress"), 0, "Enable cDAC stress verification. Bit flags: 0x1=alloc points, 0x2=GC trigger points, 0x4=instruction points, 0x10=compare GC refs, 0x20=compare stack walk, 0x40=also use legacy DAC, 0x100=unique stacks only.")
 CONFIG_DWORD_INFO(INTERNAL_ReturnSourceTypeForTesting, W("ReturnSourceTypeForTesting"), 0, "Allows returning the (internal only) source type of an IL to Native mapping for debugging purposes")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RSStressLog, W("RSStressLog"), 0, "Allows turning on logging for RS startup")
 CONFIG_DWORD_INFO(INTERNAL_SBDumpOnNewIndex, W("SBDumpOnNewIndex"), 0, "Used for Syncblock debugging. It's been a while since any of those have been used.")

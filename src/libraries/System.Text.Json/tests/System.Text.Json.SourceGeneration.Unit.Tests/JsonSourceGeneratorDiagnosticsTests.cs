@@ -264,7 +264,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 #endif
 
         [Fact]
-        public void WarnOnClassesWithInaccessibleJsonIncludeProperties()
+        public void WarnsOnClassesWithInaccessibleJsonIncludeProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInaccessibleJsonIncludeProperties();
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -543,20 +543,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void TypesWithJsonConstructorAnnotations_WarnAsExpected()
         {
+            // Inaccessible [JsonConstructor] constructors are now supported via UnsafeAccessor or reflection fallback.
+            // No diagnostics should be emitted.
             Compilation compilation = CompilationHelper.CreateCompilationWithJsonConstructorAttributeAnnotations();
-
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
-
-            Location protectedCtorLocation = compilation.GetSymbolsWithName("ClassWithProtectedCtor").First().Locations[0];
-            Location privateCtorLocation = compilation.GetSymbolsWithName("ClassWithPrivateCtor").First().Locations[0];
-
-            var expectedDiagnostics = new DiagnosticData[]
-            {
-                new(DiagnosticSeverity.Warning, protectedCtorLocation, "The constructor on type 'HelloWorld.ClassWithProtectedCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
-                new(DiagnosticSeverity.Warning, privateCtorLocation, "The constructor on type 'HelloWorld.ClassWithPrivateCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
-            };
-
-            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+            CompilationHelper.AssertEqualDiagnosticMessages([], result.Diagnostics);
         }
 
         [Fact]
@@ -758,31 +749,137 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 #endif
 
         [Fact]
+        public void JsonIgnoreConditionAlwaysOnTypeWarns()
+        {
+            Compilation compilation = CompilationHelper.CreateTypeAnnotatedWithJsonIgnoreAlways();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location myClassLocation = compilation.GetSymbolsWithName("MyClass").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, myClassLocation, "The type 'HelloWorld.MyClass' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
         public void Diagnostic_HasPragmaSuppressibleLocation()
         {
-            // SYSLIB1038: JsonInclude attribute on inaccessible member (Warning, configurable).
+            // SYSLIB1039: Polymorphism not supported for fast-path serialization (Warning, configurable).
             string source = """
-                #pragma warning disable SYSLIB1038
+                #pragma warning disable SYSLIB1039
                 using System.Text.Json.Serialization;
 
-                namespace Test
+                namespace HelloWorld
                 {
-                    public class MyClass
+                    [JsonSerializable(typeof(MyBaseClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
+                    internal partial class JsonContext : JsonSerializerContext
                     {
-                        [JsonInclude]
-                        private int PrivateField;
                     }
 
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class JsonContext : JsonSerializerContext { }
+                    [JsonDerivedType(typeof(MyDerivedClass), "derived")]
+                    public class MyBaseClass
+                    {
+                    }
+
+                    public class MyDerivedClass : MyBaseClass
+                    {
+                    }
                 }
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
             var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, compilation);
-            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1038");
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1039");
             Assert.True(diagnostic.IsSuppressed);
+        }
+
+        [Fact]
+        public void GenericConverterArityMismatch_WarnsAsExpected()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithGenericConverterArityMismatch();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location converterAttrLocation = compilation.GetSymbolsWithName("TypeWithArityMismatch").First().GetAttributes()[0].GetLocation();
+            INamedTypeSymbol contextSymbol = (INamedTypeSymbol)compilation.GetSymbolsWithName("JsonContext").First();
+            Location jsonSerializableAttrLocation = contextSymbol.GetAttributes()[0].GetLocation();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, jsonSerializableAttrLocation, "Did not generate serialization metadata for type 'HelloWorld.TypeWithArityMismatch<int>'."),
+                new(DiagnosticSeverity.Warning, converterAttrLocation, "The 'JsonConverterAttribute' type 'HelloWorld.ConverterWithTwoParams<,>' specified on member 'HelloWorld.TypeWithArityMismatch<int>' is not a converter type or does not contain an accessible parameterless constructor."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void GenericConverterTypeMismatch_NoSourceGeneratorWarning_FailsAtRuntime()
+        {
+            // Note: The source generator cannot detect at compile time that the converter
+            // converts the wrong type (DifferentType<T> vs TypeWithConverterMismatch<T>).
+            // The DifferentTypeConverter<int> is a valid JsonConverter with a parameterless constructor,
+            // so the source generator accepts it. The mismatch will cause a runtime error.
+            Compilation compilation = CompilationHelper.CreateTypesWithGenericConverterTypeMismatch();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Should compile without diagnostics - the converter is technically valid
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithConverterMismatch<int>");
+        }
+
+        [Fact]
+        public void NestedGenericConverter_CompileSuccessfully()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithNestedGenericConverter();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Should compile without diagnostics
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithNestedConverter<int, string>");
+        }
+
+        [Fact]
+        public void ConstrainedGenericConverter_WithSatisfiedConstraint_CompileSuccessfully()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithConstrainedGenericConverter();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithSatisfiedConstraint<string>");
+        }
+
+        [Fact]
+        public void DeeplyNestedGenericConverter_CompileSuccessfully()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithDeeplyNestedGenericConverter();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithDeeplyNestedConverter<int, string>");
+        }
+
+        [Fact]
+        public void NonGenericOuterGenericConverter_CompileSuccessfully()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithNonGenericOuterGenericConverter();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithNonGenericOuterConverter<int>");
+        }
+
+        [Fact]
+        public void ManyParamsAsymmetricNestedConverter_CompileSuccessfully()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithManyParamsAsymmetricNestedConverter();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithManyParams<int, string, bool, double, long>");
         }
     }
 }

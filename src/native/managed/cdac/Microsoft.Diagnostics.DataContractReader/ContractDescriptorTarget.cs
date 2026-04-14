@@ -46,13 +46,17 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
     public delegate int WriteToTargetDelegate(ulong address, Span<byte> bufferToWrite);
     public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
+    private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
     /// <summary>
     /// Create a new target instance from a contract descriptor embedded in the target memory.
     /// </summary>
     /// <param name="contractDescriptor">The offset of the contract descriptor in the target memory</param>
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="writeToTarget">A callback to write memory blocks at a given address to the target</param>
     /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="contractRegistrations">Registration actions that populate the contract registry (e.g., <see cref="Contracts.CoreCLRContracts.Register"/>)</param>
     /// <param name="target">The target object.</param>
     /// <returns>If a target instance could be created, <c>true</c>; otherwise, <c>false</c>.</returns>
     public static bool TryCreate(
@@ -60,7 +64,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
-        IEnumerable<IContractFactory<IContract>> additionalFactories,
+        Action<ContractRegistry>[] contractRegistrations,
         [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
         DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext);
@@ -69,7 +73,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             dataTargetDelegates,
             out Descriptor[] descriptors))
         {
-            target = new ContractDescriptorTarget(descriptors, dataTargetDelegates, additionalFactories);
+            target = new ContractDescriptorTarget(descriptors, dataTargetDelegates, contractRegistrations);
             return true;
         }
 
@@ -83,9 +87,11 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="contractDescriptor">The contract descriptor to use for this target</param>
     /// <param name="globalPointerValues">The values for any global pointers specified in the contract descriptor.</param>
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="writeToTarget">A callback to write memory blocks at a given address to the target</param>
     /// <param name="getThreadContext">A callback to fetch a thread's context</param>
     /// <param name="isLittleEndian">Whether the target is little-endian</param>
     /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
+    /// <param name="contractRegistrations">Registration actions that populate the contract registry (e.g., <see cref="Contracts.CoreCLRContracts.Register"/>)</param>
     /// <returns>The target object.</returns>
     public static ContractDescriptorTarget Create(
         ContractDescriptorParser.ContractDescriptor contractDescriptor,
@@ -95,7 +101,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         GetTargetThreadContextDelegate getThreadContext,
         bool isLittleEndian,
         int pointerSize,
-        IEnumerable<IContractFactory<IContract>> additionalFactories)
+        Action<ContractRegistry>[]? contractRegistrations = null)
     {
         return new ContractDescriptorTarget(
             [
@@ -107,12 +113,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 }
             ],
             new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext),
-            additionalFactories);
+            contractRegistrations ?? []);
     }
 
-    private ContractDescriptorTarget(Descriptor[] descriptors, DataTargetDelegates dataTargetDelegates, IEnumerable<IContractFactory<IContract>> additionalFactories)
+    private ContractDescriptorTarget(Descriptor[] descriptors, DataTargetDelegates dataTargetDelegates, Action<ContractRegistry>[] contractRegistrations)
     {
-        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, additionalFactories);
+        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, contractRegistrations);
         ProcessedData = new DataCache(this);
         _config = descriptors[0].Config;
         _dataTargetDelegates = dataTargetDelegates;
@@ -595,8 +601,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// Read a null-terminated UTF-8 string from the target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
+    /// <param name="strict">Whether to throw on invalid UTF-8 sequences. If false, invalid sequences will be replaced with the replacement character.</param>
     /// <returns>String read from the target</returns>
-    public override string ReadUtf8String(ulong address)
+    public override string ReadUtf8String(ulong address, bool strict = false)
     {
         // Read characters until we find the null terminator
         ulong end = address;
@@ -613,7 +620,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             ? stackalloc byte[length]
             : new byte[length];
         ReadBuffer(address, span);
-        return Encoding.UTF8.GetString(span);
+        return strict ? strictUTF8Encoding.GetString(span) : looseUTF8Encoding.GetString(span);
     }
 
     /// <summary>

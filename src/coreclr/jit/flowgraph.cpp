@@ -615,7 +615,7 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return false;
     }
     GenTreeCall* call = tree->AsCall();
-    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
+    if (call->IsHelperCall() && s_helperCallProperties.AlwaysThrow(call->GetHelperNum()))
     {
         assert(call->IsNoReturn());
         noway_assert(call->gtFlags & GTF_EXCEPT);
@@ -859,6 +859,11 @@ void Compiler::fgSetPreferredInitCctor()
 //
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
+#if defined(TARGET_WASM)
+    // Wasm does not support dynamically created helpers
+    return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+#endif
+
 #ifdef FEATURE_READYTORUN
     if (IsAot())
     {
@@ -1044,7 +1049,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         fptrValTree->gtFptrDelegateTarget = true;
         targetMethodHnd                   = fptrValTree->gtFptrMethod;
     }
-    else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
+    else if (oper == GT_CALL && targetMethod->AsCall()->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
         assert(targetMethod->AsCall()->gtArgs.CountArgs() == 3);
         GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
@@ -1104,10 +1109,6 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
         targetMethodHnd = ldftnToken->m_token.hMethod;
     }
-    else
-    {
-        assert(targetMethodHnd == nullptr);
-    }
 
 #ifdef FEATURE_READYTORUN
     if (IsAot())
@@ -1158,7 +1159,10 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
-        else if (oper == GT_FTN_ADDR)
+#ifndef TARGET_WASM // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
+                    // need to use a different set of arguments to construct the right helper call to avoid dynamically
+                    // composing a helper
+        else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
 
@@ -1176,6 +1180,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         {
             JITDUMP("not optimized, R2R virtual case\n");
         }
+#endif
     }
     else
 #endif
@@ -3149,6 +3154,18 @@ PhaseStatus Compiler::fgCreateFunclets()
     // Setup the root FuncInfoDsc and prepare to start associating
     // FuncInfoDsc's with their corresponding EH region
     memset((void*)funcInfo, 0, funcCnt * sizeof(FuncInfoDsc));
+#if !HAS_FIXED_REGISTER_SET || defined(TARGET_WASM)
+    for (unsigned i = 0; i < funcCnt; i++)
+    {
+#if !HAS_FIXED_REGISTER_SET
+        funcInfo[i].funStackPointerReg = REG_NA;
+        funcInfo[i].funFramePointerReg = REG_NA;
+#endif
+#ifdef TARGET_WASM
+        funcInfo[i].funWasmLocalDecls = nullptr;
+#endif
+    }
+#endif
     assert(funcInfo[0].funKind == FUNC_ROOT);
     funcIdx = 1;
 
@@ -3591,10 +3608,22 @@ void Compiler::fgCreateThrowHelperBlock(AddCodeDsc* add)
     // Create the target basic block in the region indicated by the acd info
     //
     assert(add->acdKind != SCK_NONE);
-    bool const        putInFilter = (add->acdKeyDsg == AcdKeyDesignator::KD_FLT);
-    BasicBlock* const newBlk      = fgNewBBinRegion(jumpKinds[add->acdKind], add->acdTryIndex, add->acdHndIndex,
-                                                    /* nearBlk */ nullptr, putInFilter,
-                                                    /* runRarely */ true, /* insertAtEnd */ true);
+    bool const putInFilter = (add->acdKeyDsg == AcdKeyDesignator::KD_FLT);
+
+    unsigned tryIndex = add->acdTryIndex;
+    unsigned hndIndex = add->acdHndIndex;
+
+#if defined(TARGET_WASM)
+    // For wasm we put throw helpers in the main method region, or in a non-try
+    // region of a handler.
+    //
+    assert(add->acdKeyDsg != AcdKeyDesignator::KD_TRY);
+    tryIndex = 0;
+#endif
+
+    BasicBlock* const newBlk = fgNewBBinRegion(jumpKinds[add->acdKind], tryIndex, hndIndex,
+                                               /* nearBlk */ nullptr, putInFilter,
+                                               /* runRarely */ true, /* insertAtEnd */ true);
 
     newBlk->SetFlags(BBF_THROW_HELPER);
 
@@ -7531,3 +7560,424 @@ void BlockReachabilitySets::Dump()
     }
 }
 #endif
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegions::FlowGraphTryRegions: Constructor for FlowGraphTryRegions.
+//
+// Arguments:
+//
+//    dfsTree    -- DFS tree for the flow graph
+//    numRegions -- Number of try regions in the method
+//
+FlowGraphTryRegions::FlowGraphTryRegions(Compiler* comp, FlowGraphDfsTree* dfsTree, unsigned numRegions)
+    : m_compiler(comp)
+    , m_dfsTree(dfsTree)
+    , m_tryRegions(numRegions, nullptr, comp->getAllocator(CMK_BasicBlock))
+    , m_numRegions(0)
+    , m_numTryCatchRegions(0)
+    , m_tryRegionsIncludeHandlerBlocks(false)
+    , m_hasMultipleEntryTryRegions(false)
+    , m_traits((dfsTree == nullptr) ? comp->fgBBNumMax + 1 : dfsTree->GetPostOrderCount(), comp)
+{
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::GetTryRegionByHeader: Find the (innermost) try region
+//   that begins at block, if any
+//
+// Arguments:
+//    block -- block in question
+//
+// Returns:
+//    Innermost try region that starts at block, or nullptr.
+//
+FlowGraphTryRegion* FlowGraphTryRegions::GetTryRegionByHeader(BasicBlock* block)
+{
+    if (!block->hasTryIndex())
+    {
+        return nullptr;
+    }
+
+    const EHblkDsc* dsc = GetCompiler()->ehGetBlockTryDsc(block);
+
+    if (block != dsc->ebdTryBeg)
+    {
+        return nullptr;
+    }
+
+    return m_tryRegions[dsc->ebdID];
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::FlowGraphTryRegion: Constructor for FlowGraphTryRegion.
+//
+// Arguments:
+//   ehDsc -- EH descriptor for the try region
+//   regions -- parent collection of try regions
+//
+FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions)
+    : m_regions(regions)
+    , m_parent(nullptr)
+    , m_ehDsc(ehDsc)
+    , m_blocks(BitVecOps::UninitVal())
+    , m_entryEdges(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
+    , m_requiresRuntimeResumption(false)
+    , m_hasSideEntry(false)
+{
+    BitVecTraits* const traits = regions->GetBlockBitVecTraits();
+    m_blocks                   = BitVecOps::MakeEmpty(traits);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegions::Build: Build the flow graph try regions.
+//
+// Arguments:
+//    comp                 -- Compiler instance
+//    dfsTree              -- DFS tree for the flow graph (optional, can be nullptr)
+//    includeHandlerBlocks -- include blocks in handlers inside the try
+//
+// Returns:
+//    Collection object describing all the try regions
+//
+FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree* dfsTree, bool includeHandlerBlocks)
+{
+    // We use EHID here for stable indexing. So there may be some empty slots in the
+    // collection if we've deleted some EH regions.
+    //
+    unsigned const       numTryRegions = comp->compEHID;
+    FlowGraphTryRegions* regions       = new (comp, CMK_BasicBlock) FlowGraphTryRegions(comp, dfsTree, numTryRegions);
+    assert(numTryRegions >= comp->compHndBBtabCount);
+
+    regions->m_tryRegionsIncludeHandlerBlocks = includeHandlerBlocks;
+
+    for (EHblkDsc* ehDsc : EHClauses(comp))
+    {
+        FlowGraphTryRegion* region          = new (comp, CMK_BasicBlock) FlowGraphTryRegion(ehDsc, regions);
+        regions->m_tryRegions[ehDsc->ebdID] = region;
+        regions->m_numRegions++;
+        if (ehDsc->HasCatchHandler())
+        {
+            regions->m_numTryCatchRegions++;
+        }
+    }
+
+    if (regions->m_tryRegions.empty())
+    {
+        return regions; // No EH regions, nothing else to do.
+    }
+
+    // Add parent links
+    //
+    for (EHblkDsc* ehDsc : EHClauses(comp))
+    {
+        FlowGraphTryRegion* region = regions->m_tryRegions[ehDsc->ebdID];
+
+        unsigned const parentTryIndex = ehDsc->ebdEnclosingTryIndex;
+        if (parentTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            EHblkDsc* parentTryDsc = &comp->compHndBBtab[parentTryIndex];
+            region->m_parent       = regions->m_tryRegions[parentTryDsc->ebdID];
+        }
+    }
+
+    BitVecTraits* const traits = regions->GetBlockBitVecTraits();
+
+    for (BasicBlock* block : comp->Blocks())
+    {
+        if (!block->hasTryIndex())
+        {
+            continue;
+        }
+
+        unsigned  tryIndex = block->getTryIndex();
+        EHblkDsc* dsc      = &comp->compHndBBtab[tryIndex];
+
+        if (includeHandlerBlocks || BasicBlock::sameHndRegion(block, dsc->ebdTryBeg))
+        {
+            FlowGraphTryRegion* region = regions->m_tryRegions[dsc->ebdID];
+            assert(region != nullptr);
+
+            // A block may be in more than one region, so walk up the ancestor chain
+            // adding the postorder number to each.
+            //
+            while (region != nullptr)
+            {
+                BitVecOps::AddElemD(traits, region->m_blocks, regions->GetBlockIndex(block));
+
+                // Enumerate block's pred edges to find the try entry edges.
+                //
+                for (FlowEdge* const edge : block->PredEdges())
+                {
+                    BasicBlock* const predBlock = edge->getSourceBlock();
+
+                    // Disregard catchret edges, these are modelled by
+                    // catch resumptions now.
+                    //
+                    if (predBlock->KindIs(BBJ_EHCATCHRET))
+                    {
+                        continue;
+                    }
+
+                    // Disregard edges from within the try region
+                    //
+                    if (comp->bbInTryRegions(tryIndex, predBlock))
+                    {
+                        continue;
+                    }
+
+                    // "Normal" entry edges.
+                    //
+                    if (block == dsc->ebdTryBeg)
+                    {
+                        region->AddEntryEdge(edge);
+                        continue;
+                    }
+
+                    // Async resumption and catch resumption entry edges
+                    //
+                    if (predBlock->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
+                    {
+                        JITDUMP("Found %s resumption edge from " FMT_BB " to " FMT_BB "\n",
+                                predBlock->HasFlag(BBF_ASYNC_RESUMPTION) ? "async" : "catch", predBlock->bbNum,
+                                block->bbNum);
+
+                        region->AddEntryEdge(edge);
+                        region->SetHasSideEntry();
+                        regions->SetHasMultipleEntryTryRegions();
+                        continue;
+                    }
+
+                    JITDUMP("Unexpected try region entry edge from " FMT_BB " to " FMT_BB "\n", predBlock->bbNum,
+                            block->bbNum);
+                    assert(!"Unexpected try region entry edge");
+                }
+
+                region = region->m_parent;
+
+                if (region != nullptr)
+                {
+                    tryIndex = comp->ehGetIndex(region->m_ehDsc);
+                }
+            }
+        }
+        else
+        {
+            // This is a handler block inside a try.
+            // For flow purposes we may consider it to be outside the try.
+        }
+
+        // If this block is a BBJ_EHCATCHRET, mark the "dispatching try" region
+        // as requiring runtime resumption.
+        //
+        if (block->KindIs(BBJ_EHCATCHRET))
+        {
+            assert(block->hasHndIndex());
+            unsigned const            ehRegionIndex        = block->getHndIndex();
+            BasicBlock* const         dispatchingTryBlock  = comp->ehGetDsc(ehRegionIndex)->ebdTryBeg;
+            FlowGraphTryRegion* const dispatchingTryRegion = regions->GetTryRegionByHeader(dispatchingTryBlock);
+
+            dispatchingTryRegion->SetRequiresRuntimeResumption();
+        }
+    }
+
+    return regions;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegions::AddMultipleEntryRegionEdges: Add temporary
+//    edges for multiple entry try regions.
+//
+// Arguments:
+//    edges -- collection of temporary edges to augment
+//
+void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
+{
+    for (FlowGraphTryRegion* region : m_tryRegions)
+    {
+        if (region != nullptr && region->HasCatchHandler() && region->HasSideEntry())
+        {
+            BasicBlock* const headerBlock = region->GetHeaderBlock();
+
+            for (FlowEdge* edge : region->EntryEdges())
+            {
+                BasicBlock* const destBlock = edge->getDestinationBlock();
+
+                // Skip the normal entry edges.
+                //
+                if (destBlock == headerBlock)
+                {
+                    continue;
+                }
+
+                // We need an edge from dest to try header.
+                FlowEdge* const destheaderEdge = m_compiler->fgAddRefPred(headerBlock, destBlock);
+                edges.Push(destheaderEdge);
+
+                // And an edge from method entry to dest.
+                FlowEdge* const entryDestEdge = m_compiler->fgAddRefPred(destBlock, m_compiler->fgFirstBB);
+                edges.Push(entryDestEdge);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegions::RemoveMultipleEntryRegionEdges: Remove temporary
+//    edges added for multiple entry try regions.
+//
+// Arguments:
+//    edges -- collection of edges to remove
+//
+void FlowGraphTryRegions::RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
+{
+    for (FlowEdge* const edge : edges.BottomUpOrder())
+    {
+        m_compiler->fgRemoveRefPred(edge);
+    }
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::NumBlocks: Return the number of blocks in the try region.
+//
+// Returns:
+//    Number of blocks in the region at the time of FlowGraphTryRegions::Build
+//    Includes blocks in enclosed try regions. Includes blocks in enclosed
+//    handler regions, if FlowGraphTryRegions::Build was called with includeHandlerBlocks == true.
+//
+unsigned FlowGraphTryRegion::NumBlocks() const
+{
+    BitVecTraits* const traits = m_regions->GetBlockBitVecTraits();
+    return BitVecOps::Count(traits, m_blocks);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::EnclosingRegion: Return the enclosing non-mutual-protect
+//    region, or nullptr.
+//
+// Returns:
+//    Enclosing non-mutual-protect region, or nullptr if there is none.
+//    Note any enclosing region will have a distinct header block.
+//
+FlowGraphTryRegion* FlowGraphTryRegion::EnclosingRegion() const
+{
+    FlowGraphTryRegion* ancestor = m_parent;
+    while (ancestor != nullptr && IsMutualProtectWith(ancestor))
+    {
+        ancestor = ancestor->m_parent;
+    }
+    return ancestor;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::CanEnumerateInReversePostOrder: check if the
+//   try region can be enumerated in reverse post order
+//
+// Returns:
+//    True if so.
+//
+bool FlowGraphTryRegion::CanEnumerateInReversePostOrder() const
+{
+    return m_regions->GetDfsTree() != nullptr;
+}
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::Dump: Dump description of a try region.
+//
+// Arguments:
+//    region -- region to dump
+//
+void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
+{
+    FlowGraphTryRegions* const regions   = region->m_regions;
+    Compiler* const            comp      = regions->GetCompiler();
+    unsigned const             regionNum = comp->ehGetIndex(region->m_ehDsc);
+    printf("EH#%02u: %u blocks", regionNum, region->NumBlocks());
+
+    if (!regions->TryRegionsIncludeHandlerBlocks())
+    {
+        printf(" [excluding handler blocks]");
+    }
+
+    if (region->m_parent != nullptr)
+    {
+        unsigned const parentRegionNum = comp->ehGetIndex(region->m_parent->m_ehDsc);
+        printf(" [ in EH#%02u]:", parentRegionNum);
+    }
+    else
+    {
+        printf(" [outermost]:");
+    }
+
+    if (region->CanEnumerateInReversePostOrder())
+    {
+        printf(" [rpo]:");
+
+        region->VisitTryRegionBlocksReversePostOrder([](BasicBlock* block) {
+            printf(" " FMT_BB, block->bbNum);
+            return BasicBlockVisit::Continue;
+        });
+    }
+    else
+    {
+        printf(" [bbNum]:");
+
+        BitVecOps::Iter iterator(regions->GetBlockBitVecTraits(), region->m_blocks);
+        unsigned int    index;
+        while (iterator.NextElem(&index))
+        {
+            printf(" " FMT_BB, index);
+        }
+    }
+
+    printf(" [entries]: ");
+    for (FlowEdge* const edge : region->EntryEdges())
+    {
+        BasicBlock* const predBlock = edge->getSourceBlock();
+        BasicBlock* const succBlock = edge->getDestinationBlock();
+        printf(" " FMT_BB "->" FMT_BB, predBlock->bbNum, succBlock->bbNum);
+        if (predBlock->HasFlag(BBF_ASYNC_RESUMPTION))
+        {
+            printf("[async]");
+        }
+        if (predBlock->HasFlag(BBF_CATCH_RESUMPTION))
+        {
+            printf("[catch]");
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::Dump: Dump description of all try regions.
+//
+// Arguments:
+//    regions -- region collection to dump
+//
+void FlowGraphTryRegions::Dump(FlowGraphTryRegions* regions)
+{
+    if (regions->NumTryRegions() == 0)
+    {
+        printf("No try regions in this method\n");
+    }
+    else
+    {
+        printf("%u try regions:\n", regions->NumTryRegions());
+
+        // TODO: show nesting? We currently only have parent links
+        //
+        for (FlowGraphTryRegion* region : regions->m_tryRegions)
+        {
+            // Collection is indexed by EH ID, so may have gaps if we've deleted EH regions.
+            // Skip those.
+            //
+            if (region != nullptr)
+            {
+                region->Dump(region);
+                printf("\n");
+            }
+        }
+    }
+}
+
+#endif // DEBUG

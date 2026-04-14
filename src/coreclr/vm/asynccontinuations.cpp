@@ -26,6 +26,7 @@ AsyncContinuationsManager::AsyncContinuationsManager(LoaderAllocator* allocator)
 
 void AsyncContinuationsManager::NotifyUnloadingClasses()
 {
+#ifdef PROFILING_SUPPORTED
     if (!CORProfilerTrackClasses())
     {
         return;
@@ -39,6 +40,7 @@ void AsyncContinuationsManager::NotifyUnloadingClasses()
         ClassLoader::NotifyUnload(pMT, true);
         ClassLoader::NotifyUnload(pMT, false);
     }
+#endif // PROFILING_SUPPORTED
 }
 
 static EEClass* volatile g_singletonContinuationEEClass;

@@ -59,31 +59,26 @@ namespace System.Runtime.CompilerServices
     // Keep in sync with CORINFO_CONTINUATION_FLAGS
     internal enum ContinuationFlags
     {
-        // Note: the following 'Has' members determine the members present at
-        // the beginning of the continuation's data chunk. Each field is
-        // pointer sized when present, apart from the result that has variable
-        // size.
+        ContinueOnThreadPool = 1 << 0,
+        ContinueOnCapturedSynchronizationContext = 1 << 1,
+        ContinueOnCapturedTaskScheduler = 1 << 2,
 
-        // Whether or not the continuation starts with an OSR IL offset.
-        HasOsrILOffset = 1,
-        // If this bit is set the continuation resumes inside a try block and
-        // thus if an exception is being propagated, needs to be resumed.
-        HasException = 2,
-        // If this bit is set the continuation has space for a continuation
-        // context.
-        HasContinuationContext = 4,
-        // If this bit is set the continuation has space to store a result
-        // returned by the callee.
-        HasResult = 8,
-        // If this bit is set the continuation should continue on the thread
-        // pool.
-        ContinueOnThreadPool = 16,
-        // If this bit is set the continuation context is a
-        // SynchronizationContext that we should continue on.
-        ContinueOnCapturedSynchronizationContext = 32,
-        // If this bit is set the continuation context is a TaskScheduler that
-        // we should continue on.
-        ContinueOnCapturedTaskScheduler = 64,
+        // The flags encode where in the continuation various members are stored.
+        // If the encoded index is 0, it means no such member is present.
+        // Otherwise the exact offset of the member is computed as
+        //   DataOffset + (index - 1) * PointerSize
+        //
+        ExceptionIndexFirstBit = 3,
+        ExceptionIndexNumBits = 2,
+
+        ContinuationContextIndexFirstBit = 5,
+        ContinuationContextIndexNumBits = 2,
+
+        // For JIT, the continuation stores space for every possible type of
+        // async callee's result. We need to represent the offset to each of
+        // these, so we allocate the rest of the bits for this.
+        ResultIndexFirstBit = 7,
+        ResultIndexNumBits = 25,
     }
 
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
@@ -118,30 +113,40 @@ namespace System.Runtime.CompilerServices
 
         private const int DataOffset = PointerSize /* Next */ + PointerSize /* Resume */ + 8 /* Flags + State */;
 
+        // See note in ContinuationFlags above for the computation of these offsets.
+
         public unsafe object GetContinuationContext()
         {
-            Debug.Assert((Flags & ContinuationFlags.HasContinuationContext) != 0);
-            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)ContinuationFlags.HasContinuationContext - 1));
+            const uint mask = (1u << (int)ContinuationFlags.ContinuationContextIndexNumBits) - 1;
+            uint index = ((uint)Flags >> (int)ContinuationFlags.ContinuationContextIndexFirstBit) & mask;
+            Debug.Assert(index != 0);
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, DataOffset + contIndex * PointerSize));
+            return Unsafe.As<byte, object>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize));
+        }
+
+        public bool HasException()
+        {
+            const uint mask = (1u << (int)ContinuationFlags.ExceptionIndexNumBits) - 1;
+            return ((uint)Flags & (mask << (int)ContinuationFlags.ExceptionIndexFirstBit)) != 0;
         }
 
         public void SetException(Exception ex)
         {
-            Debug.Assert((Flags & ContinuationFlags.HasException) != 0);
-            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)ContinuationFlags.HasException - 1));
+            const uint mask = (1u << (int)ContinuationFlags.ExceptionIndexNumBits) - 1;
+            uint index = ((uint)Flags >> (int)ContinuationFlags.ExceptionIndexFirstBit) & mask;
+            Debug.Assert(index != 0);
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, DataOffset + contIndex * PointerSize)) = ex;
+            Unsafe.As<byte, Exception>(ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize)) = ex;
         }
 
         public ref byte GetResultStorageOrNull()
         {
-            if ((Flags & ContinuationFlags.HasResult) == 0)
+            const uint mask = (1u << (int)ContinuationFlags.ResultIndexNumBits) - 1;
+            uint index = ((uint)Flags >> (int)ContinuationFlags.ResultIndexFirstBit) & mask;
+            if (index == 0)
                 return ref Unsafe.NullRef<byte>();
-
-            uint contIndex = (uint)BitOperations.PopCount((uint)Flags & ((uint)ContinuationFlags.HasResult - 1));
             ref byte data = ref RuntimeHelpers.GetRawData(this);
-            return ref Unsafe.Add(ref data, DataOffset + contIndex * PointerSize);
+            return ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize);
         }
     }
 
@@ -234,12 +239,15 @@ namespace System.Runtime.CompilerServices
 
 #if !NATIVEAOT
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_AddContinuationToExInternal")]
+        [RequiresUnsafe]
         private static unsafe partial void AddContinuationToExInternal(void* diagnosticIP, ObjectHandleOnStack ex);
 
+        [RequiresUnsafe]
         internal static unsafe void AddContinuationToExInternal(void* diagnosticIP, Exception e)
             => AddContinuationToExInternal(diagnosticIP, ObjectHandleOnStack.Create(ref e));
 #endif
 
+        [RequiresUnsafe]
         private static unsafe Continuation AllocContinuation(Continuation prevContinuation, MethodTable* contMT)
         {
 #if NATIVEAOT
@@ -252,6 +260,7 @@ namespace System.Runtime.CompilerServices
         }
 
 #if !NATIVEAOT
+        [RequiresUnsafe]
         private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodDesc* method)
         {
             LoaderAllocator loaderAllocator = RuntimeMethodHandle.GetLoaderAllocator(new RuntimeMethodHandleInternal((IntPtr)method));
@@ -261,6 +270,7 @@ namespace System.Runtime.CompilerServices
             return newContinuation;
         }
 
+        [RequiresUnsafe]
         private static unsafe Continuation AllocContinuationClass(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodTable* methodTable)
         {
             IntPtr loaderAllocatorHandle = methodTable->GetLoaderAllocatorHandle();
@@ -627,7 +637,7 @@ namespace System.Runtime.CompilerServices
                         System.Exception.AppendExceptionStackFrame(ex, ip, 0);
 #endif
                     }
-                    if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
+                    if (continuation == null || continuation.HasException())
                         return continuation;
                     if (Task.s_asyncDebuggingEnabled)
                     {

@@ -918,8 +918,8 @@ def compare_results(args):
             messageXml.appendChild(root.createTextNode(message))
             failureXml.appendChild(messageXml)
 
-        for assembly_name in omitted_from_diff_dir:
-            base_result = diff_results_by_name[assembly_name]
+        for assembly_name in sorted(omitted_from_diff_dir):
+            base_result = base_results_by_name[assembly_name]
             message = 'Expected {0} got nothing'.format(json.dumps(base_result, cls=CrossGenResultEncoder, indent=2))
             testresult = root.createElement('test')
             testresult.setAttribute('name', 'CrossgenCompile_{2}_Target_{0}_{1}_vs__Omitted'.format(args.target_arch_os, base_result.compiler_arch_os, assembly_name))

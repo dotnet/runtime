@@ -1734,7 +1734,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // All architectures pass the cookie in a register.
         InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
         // put destination into R10/EAX
-        arg = comp->gtClone(call->gtCallAddr, true);
+        arg = comp->gtClone(call->gtControlExpr, true);
         // On x64 the pinvoke target is passed in r10 which is the same
         // register as the gs cookie check may use. That would be a problem if
         // this was a tailcall, but we do not tailcall functions with
@@ -1744,6 +1744,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         // finally change this call to a helper call
         call->gtCallType    = CT_HELPER;
+        call->gtControlExpr = nullptr;
         call->gtCallMethHnd = comp->eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
     }
 #if defined(FEATURE_READYTORUN)
@@ -1780,9 +1781,14 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // Push the stub address onto the list of arguments.
         NewCallArg indirCellAddrArg =
             NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell);
+#ifdef TARGET_WASM
+        // On wasm we need to ensure we put the indirection cell address last in LIR, after the SP and formal args.
+        PushBack(comp, indirCellAddrArg);
+#else
         InsertAfterThisOrFirst(comp, indirCellAddrArg);
+#endif // TARGET_WASM
     }
-#endif
+#endif // defined(FEATURE_READYTORUN)
 
 #if defined(TARGET_WASM)
     // On WASM, we need to add an initial argument for the stack pointer for managed calls.
@@ -2110,15 +2116,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         call->gtArgs.ArgsComplete(this, call);
     }
 
-    // Process the function address, if indirect call
-
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        call->gtCallAddr = fgMorphTree(call->gtCallAddr);
-        // Const CSE may create a store node here
-        flagsSummary |= call->gtCallAddr->gtFlags;
-    }
-
 #if FEATURE_FIXED_OUT_ARGS && defined(UNIX_AMD64_ABI)
     if (!call->IsFastTailCall())
     {
@@ -2423,11 +2420,8 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
         {
             if (seg.IsPassedInRegister())
             {
-                var_types regType = seg.GetRegisterType();
-                // If passed in a float reg then keep that type; otherwise let
-                // createSlotAccess get the type from the layout.
-                var_types slotType = varTypeUsesFloatReg(regType) ? regType : TYP_UNDEF;
-                GenTree*  access   = createSlotAccess(seg.Offset, slotType);
+                var_types regType = seg.GetRegisterType(layout);
+                GenTree*  access  = createSlotAccess(seg.Offset, regType);
 
                 newArg->AsFieldList()->AddField(this, access, seg.Offset, access->TypeGet());
             }
@@ -5284,27 +5278,14 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         {
             if (call->gtCallType == CT_INDIRECT)
             {
-                noway_assert(call->gtCallAddr != nullptr);
-                target = call->gtCallAddr;
+                noway_assert(call->gtControlExpr != nullptr);
+                target = call->gtControlExpr;
             }
             else
             {
                 CORINFO_CONST_LOOKUP addrInfo;
                 info.compCompHnd->getFunctionEntryPoint(call->gtCallMethHnd, &addrInfo);
-
-                CORINFO_GENERIC_HANDLE handle       = nullptr;
-                void*                  pIndirection = nullptr;
-                assert(addrInfo.accessType != IAT_PPVALUE && addrInfo.accessType != IAT_RELPVALUE);
-
-                if (addrInfo.accessType == IAT_VALUE)
-                {
-                    handle = addrInfo.handle;
-                }
-                else if (addrInfo.accessType == IAT_PVALUE)
-                {
-                    pIndirection = addrInfo.addr;
-                }
-                target = gtNewIconEmbHndNode(handle, pIndirection, GTF_ICON_FTN_ADDR, call->gtCallMethHnd);
+                target = gtNewIconEmbHndNode(&addrInfo, GTF_ICON_FTN_ADDR, call->gtCallMethHnd);
             }
         }
         else
@@ -5327,6 +5308,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
 
     // This is now a direct call to the store args stub and not a tailcall.
     call->gtCallType    = CT_USER_FUNC;
+    call->gtControlExpr = nullptr;
     call->gtCallMethHnd = help.hStoreArgs;
     call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
     call->gtCallMoreFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
@@ -5869,7 +5851,7 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
     GenTree* stubAddrArg;
     if (call->gtCallType == CT_INDIRECT)
     {
-        stubAddrArg = gtClone(call->gtCallAddr, true);
+        stubAddrArg = gtClone(call->gtControlExpr, true);
     }
     else
     {
@@ -6301,9 +6283,9 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     }
 
     if (((call->gtCallMoreFlags & (GTF_CALL_M_SPECIAL_INTRINSIC | GTF_CALL_M_LDVIRTFTN_INTERFACE)) == 0) &&
-        (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR)
+        (call->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR)
 #ifdef FEATURE_READYTORUN
-         || call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
+         || call->IsHelperCall(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
 #endif
              ) &&
         (call == fgMorphStmt->GetRootNode()))
@@ -6447,17 +6429,17 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         {
             call->gtControlExpr = fgExpandVirtualVtableCallTarget(call);
         }
-        // We always have to morph or re-morph the control expr
-        //
-        call->gtControlExpr = fgMorphTree(call->gtControlExpr);
+    }
 
-        // Propagate any side effect flags into the call
-        call->gtFlags |= call->gtControlExpr->gtFlags & GTF_ALL_EFFECT;
+    if (call->gtControlExpr != nullptr)
+    {
+        call->gtControlExpr = fgMorphTree(call->gtControlExpr);
+        call->AddAllEffectsFlags(call->gtControlExpr);
     }
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
-    if (opts.OptimizationEnabled() && call->IsHelperCall(this, CORINFO_HELP_ARRADDR_ST))
+    if (opts.OptimizationEnabled() && call->IsHelperCall(CORINFO_HELP_ARRADDR_ST))
     {
         assert(call->gtArgs.CountUserArgs() == 3);
 
@@ -8757,6 +8739,38 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 
     GenTree*             op1 = cmp->gtGetOp1();
     GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
+
+    // Fold: (-(x)) == 0  ->  x == 0  (avoid neg on compare-to-zero)
+    if (op1->OperIs(GT_NEG) && !op1->gtOverflowEx())
+    {
+        GenTree* negOp = op1->AsUnOp()->gtGetOp1();
+
+        if (op2->IsIntegralConst(0))
+        {
+            bool shouldFold = true;
+
+#ifdef TARGET_ARM64
+            // On ARM64 negs with a shift can be more compact than shift; cmp #0.
+            // Avoid folding when the negated operand is a simple shift so we keep the single
+            // instruction form.
+            if (negOp->OperIsShift())
+            {
+                GenTree* shiftAmount = negOp->AsOp()->gtGetOp2();
+                if (shiftAmount->IsCnsIntOrI())
+                {
+                    shouldFold = false;
+                }
+            }
+#endif
+
+            if (shouldFold)
+            {
+                cmp->gtOp1 = negOp;
+                DEBUG_DESTROY_NODE(op1);
+                op1 = negOp;
+            }
+        }
+    }
 
     // Check for "(expr +/- icon1) ==/!= (non-zero-icon2)".
     if (op2->IsCnsIntOrI() && (op2->IconValue() != 0))

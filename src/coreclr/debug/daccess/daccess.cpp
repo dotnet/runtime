@@ -1126,7 +1126,7 @@ SplitName::CdStartField(_In_opt_ PCWSTR fullName,
             status = E_INVALIDARG;
             goto Fail;
         }
-         
+
         if (typeToken == mdTypeDefNil)
         {
             if (!split->FindType(mod->GetMDImport()))
@@ -1483,96 +1483,32 @@ DacInstanceManager::~DacInstanceManager(void)
     Flush(false);
 }
 
-#if defined(DAC_HASHTABLE)
-DAC_INSTANCE*
-DacInstanceManager::Add(DAC_INSTANCE* inst)
-{
-    // Assert that we don't add NULL instances. This allows us to assert that found instances
-    // are not NULL in DacInstanceManager::Find
-    _ASSERTE(inst != NULL);
-
-    DWORD nHash = DAC_INSTANCE_HASH(inst->addr);
-    HashInstanceKeyBlock* block = m_hash[nHash];
-
-    if (!block || block->firstElement == 0)
-    {
-
-        HashInstanceKeyBlock* newBlock;
-        if (block)
-        {
-            newBlock = (HashInstanceKeyBlock*) new (nothrow) BYTE[HASH_INSTANCE_BLOCK_ALLOC_SIZE];
-        }
-        else
-        {
-            // We allocate one big memory chunk that has a block for every index of the hash table to
-            // improve data locality and reduce the number of allocs. In most cases, a hash bucket will
-            // use only one block, so improving data locality across blocks (i.e. keeping the buckets of the
-            // hash table together) should help.
-            newBlock = (HashInstanceKeyBlock*)
-                ClrVirtualAlloc(NULL, HASH_INSTANCE_BLOCK_ALLOC_SIZE*ARRAY_SIZE(m_hash), MEM_COMMIT, PAGE_READWRITE);
-        }
-        if (!newBlock)
-        {
-            return NULL;
-        }
-        if (block)
-        {
-            // We add the newest block to the start of the list assuming that most accesses are for
-            // recently added elements.
-            newBlock->next = block;
-            m_hash[nHash] = newBlock; // The previously allocated block
-            newBlock->firstElement = HASH_INSTANCE_BLOCK_NUM_ELEMENTS;
-            block = newBlock;
-        }
-        else
-        {
-            for (DWORD j = 0; j < ARRAY_SIZE(m_hash); j++)
-            {
-                m_hash[j] = newBlock;
-                newBlock->next = NULL; // The previously allocated block
-                newBlock->firstElement = HASH_INSTANCE_BLOCK_NUM_ELEMENTS;
-                newBlock = (HashInstanceKeyBlock*) (((BYTE*) newBlock) + HASH_INSTANCE_BLOCK_ALLOC_SIZE);
-            }
-            block = m_hash[nHash];
-        }
-    }
-    _ASSERTE(block->firstElement > 0);
-    block->firstElement--;
-    block->instanceKeys[block->firstElement].addr = inst->addr;
-    block->instanceKeys[block->firstElement].instance = inst;
-
-    inst->next = NULL;
-    return inst;
-}
-#else //DAC_HASHTABLE
 DAC_INSTANCE*
 DacInstanceManager::Add(DAC_INSTANCE* inst)
 {
     _ASSERTE(inst != NULL);
-#ifdef _DEBUG
-    bool isInserted = (m_hash.find(inst->addr) == m_hash.end());
-#endif //_DEBUG
-    DAC_INSTANCE *(&target) = m_hash[inst->addr];
-    _ASSERTE(!isInserted || target == NULL);
-    if( target != NULL )
+    const KeyValuePair<TADDR, DAC_INSTANCE*>* pEntry = m_hash.LookupPtr(inst->addr);
+    if (pEntry != NULL)
     {
+        DAC_INSTANCE* existing = pEntry->Value();
+
         //This is necessary to preserve the semantics of Supersede, however, it
         //is more or less dead code.
-        inst->next = target;
-        target = inst;
+        inst->next = existing;
 
         //verify descending order
-        _ASSERTE(inst->size >= target->size);
+        _ASSERTE(inst->size >= existing->size);
+
+        m_hash.ReplacePtr(pEntry, KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst));
     }
     else
     {
-        target = inst;
+        inst->next = NULL;
+        m_hash.Add(KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst));
     }
 
     return inst;
 }
-
-#endif // #if defined(DAC_HASHTABLE)
 
 
 DAC_INSTANCE*
@@ -1747,78 +1683,17 @@ DacInstanceManager::ReturnAlloc(DAC_INSTANCE* inst)
 }
 
 
-#if defined(DAC_HASHTABLE)
 DAC_INSTANCE*
 DacInstanceManager::Find(TADDR addr)
 {
-
-#if defined(DAC_MEASURE_PERF)
-    uint64_t nStart, nEnd;
-    g_nFindCalls++;
-    nStart = GetCycleCount();
-#endif // #if defined(DAC_MEASURE_PERF)
-
-    HashInstanceKeyBlock* block = m_hash[DAC_INSTANCE_HASH(addr)];
-
-#if defined(DAC_MEASURE_PERF)
-    nEnd = GetCycleCount();
-    g_nFindHashTotalTime += nEnd - nStart;
-#endif // #if defined(DAC_MEASURE_PERF)
-
-    while (block)
+    const KeyValuePair<TADDR, DAC_INSTANCE*>* pEntry = m_hash.LookupPtr(addr);
+    if (pEntry != NULL)
     {
-        DWORD nIndex = block->firstElement;
-        for (; nIndex < HASH_INSTANCE_BLOCK_NUM_ELEMENTS; nIndex++)
-        {
-            if (block->instanceKeys[nIndex].addr == addr)
-            {
- #if defined(DAC_MEASURE_PERF)
-                nEnd = GetCycleCount();
-                g_nFindHits++;
-                g_nFindTotalTime += nEnd - nStart;
-                if (g_nStackWalk) g_nFindStackTotalTime += nEnd - nStart;
-#endif // #if defined(DAC_MEASURE_PERF)
-
-                DAC_INSTANCE* inst = block->instanceKeys[nIndex].instance;
-
-                // inst should not be NULL even if the address was superseded. We search
-                // the entries in the reverse order they were added. So we should have
-                // found the superseding entry before this one. (Of course, if a NULL instance
-                // has been added, this assert is meaningless. DacInstanceManager::Add
-                // asserts that NULL instances aren't added.)
-
-                _ASSERTE(inst != NULL);
-
-                return inst;
-            }
-        }
-        block = block->next;
+        return pEntry->Value();
     }
-
-#if defined(DAC_MEASURE_PERF)
-    nEnd = GetCycleCount();
-    g_nFindFails++;
-    g_nFindTotalTime += nEnd - nStart;
-    if (g_nStackWalk) g_nFindStackTotalTime += nEnd - nStart;
-#endif // #if defined(DAC_MEASURE_PERF)
 
     return NULL;
 }
-#else //DAC_HASHTABLE
-DAC_INSTANCE*
-DacInstanceManager::Find(TADDR addr)
-{
-    DacInstanceHashIterator iter = m_hash.find(addr);
-    if( iter == m_hash.end() )
-    {
-        return NULL;
-    }
-    else
-    {
-        return iter->second;
-    }
-}
-#endif // if defined(DAC_HASHTABLE)
 
 HRESULT
 DacInstanceManager::Write(DAC_INSTANCE* inst, bool throwEx)
@@ -1843,7 +1718,6 @@ DacInstanceManager::Write(DAC_INSTANCE* inst, bool throwEx)
     return status;
 }
 
-#if defined(DAC_HASHTABLE)
 void
 DacInstanceManager::Supersede(DAC_INSTANCE* inst)
 {
@@ -1857,47 +1731,11 @@ DacInstanceManager::Supersede(DAC_INSTANCE* inst)
     // later cleanup.
     //
 
-    HashInstanceKeyBlock* block = m_hash[DAC_INSTANCE_HASH(inst->addr)];
-    while (block)
-    {
-        DWORD nIndex = block->firstElement;
-        for (; nIndex < HASH_INSTANCE_BLOCK_NUM_ELEMENTS; nIndex++)
-        {
-            if (block->instanceKeys[nIndex].instance == inst)
-            {
-                block->instanceKeys[nIndex].instance = NULL;
-                break;
-            }
-        }
-        if (nIndex < HASH_INSTANCE_BLOCK_NUM_ELEMENTS)
-        {
-            break;
-        }
-        block = block->next;
-    }
-
-    AddSuperseded(inst);
-}
-#else //DAC_HASHTABLE
-void
-DacInstanceManager::Supersede(DAC_INSTANCE* inst)
-{
-    _ASSERTE(inst != NULL);
-
-    //
-    // This instance has been superseded by a larger
-    // one and so must be removed from the hash.  However,
-    // code may be holding the instance pointer so it
-    // can't just be deleted.  Put it on a list for
-    // later cleanup.
-    //
-
-    DacInstanceHashIterator iter = m_hash.find(inst->addr);
-    if( iter == m_hash.end() )
+    const KeyValuePair<TADDR, DAC_INSTANCE*>* pEntry = m_hash.LookupPtr(inst->addr);
+    if (pEntry == NULL)
         return;
 
-    DAC_INSTANCE** bucket = &(iter->second);
-    DAC_INSTANCE* cur = *bucket;
+    DAC_INSTANCE* cur = pEntry->Value();
     DAC_INSTANCE* prev = NULL;
     //walk through the chain looking for this particular instance
     while (cur)
@@ -1906,7 +1744,15 @@ DacInstanceManager::Supersede(DAC_INSTANCE* inst)
         {
             if (!prev)
             {
-                *bucket = inst->next;
+                // Removing the head of the chain.
+                if (inst->next != NULL)
+                {
+                    m_hash.ReplacePtr(pEntry, KeyValuePair<TADDR, DAC_INSTANCE*>(inst->addr, inst->next));
+                }
+                else
+                {
+                    m_hash.Remove(inst->addr);
+                }
             }
             else
             {
@@ -1921,7 +1767,6 @@ DacInstanceManager::Supersede(DAC_INSTANCE* inst)
 
     AddSuperseded(inst);
 }
-#endif // if defined(DAC_HASHTABLE)
 
 // This is the default Flush() called when the DAC cache is invalidated,
 // e.g. when we continue the debuggee process.  In this case, we want to
@@ -1967,77 +1812,25 @@ void DacInstanceManager::Flush(bool fSaveBlock)
         }
     }
 
-#if defined(DAC_HASHTABLE)
-    for (int i = STRING_LENGTH(m_hash); i >= 0; i--)
-    {
-        HashInstanceKeyBlock* block = m_hash[i];
-        HashInstanceKeyBlock* next;
-        while (block)
-        {
-            next = block->next;
-            if (next)
-            {
-                delete [] block;
-            }
-            else if (i == 0)
-            {
-                ClrVirtualFree(block, 0, MEM_RELEASE);
-            }
-            block = next;
-        }
-    }
-#else //DAC_HASHTABLE
-    m_hash.clear();
-#endif //DAC_HASHTABLE
+    m_hash.RemoveAll();
 
     InitEmpty();
 }
 
-#if defined(DAC_HASHTABLE)
 void
 DacInstanceManager::ClearEnumMemMarker(void)
 {
-    ULONG i;
     DAC_INSTANCE* inst;
 
-    for (i = 0; i < ARRAY_SIZE(m_hash); i++)
-    {
-        HashInstanceKeyBlock* block = m_hash[i];
-        while (block)
-        {
-            DWORD j;
-            for (j = block->firstElement; j < HASH_INSTANCE_BLOCK_NUM_ELEMENTS; j++)
-            {
-                inst = block->instanceKeys[j].instance;
-                if (inst != NULL)
-                {
-                    inst->enumMem = 0;
-                }
-            }
-            block = block->next;
-        }
-    }
-    for (inst = m_superseded; inst; inst = inst->next)
-    {
-        inst->enumMem = 0;
-    }
-}
-#else //DAC_HASHTABLE
-void
-DacInstanceManager::ClearEnumMemMarker(void)
-{
-    ULONG i;
-    DAC_INSTANCE* inst;
-
-    DacInstanceHashIterator end = m_hash.end();
+    DacInstanceHashIterator end = m_hash.End();
     /* REVISIT_TODO Fri 10/20/2006
      * This might have an issue, since it might miss chained entries off of
      * ->next.  However, ->next is going away, and for all intents and
      *  purposes, this never happens.
 */
-    for( DacInstanceHashIterator cur = m_hash.begin(); cur != end; ++cur )
+    for (DacInstanceHashIterator cur = m_hash.Begin(); cur != end; ++cur)
     {
-        cur->second->enumMem = 0;
+        cur->Value()->enumMem = 0;
     }
 
     for (inst = m_superseded; inst; inst = inst->next)
@@ -2045,85 +1838,8 @@ DacInstanceManager::ClearEnumMemMarker(void)
         inst->enumMem = 0;
     }
 }
-#endif // if defined(DAC_HASHTABLE)
 
 
-#if defined(DAC_HASHTABLE)
-//
-//
-// Iterating through all of the hash entry and report the memory
-// instance to minidump
-//
-// This function returns the total number of bytes that it reported.
-//
-//
-UINT
-DacInstanceManager::DumpAllInstances(
-    ICLRDataEnumMemoryRegionsCallback *pCallBack)       // memory report call back
-{
-    ULONG           i;
-    DAC_INSTANCE*   inst;
-    UINT            cbTotal = 0;
-
-#if defined(DAC_MEASURE_PERF)
-   FILE* fp = fopen("c:\\dumpLog.txt", "a");
-   int total = 0;
-#endif // #if defined(DAC_MEASURE_PERF)
-
-    for (i = 0; i < ARRAY_SIZE(m_hash); i++)
-    {
-
-#if defined(DAC_MEASURE_PERF)
-      int numInBucket = 0;
-#endif // #if defined(DAC_MEASURE_PERF)
-
-        HashInstanceKeyBlock* block = m_hash[i];
-        while (block)
-        {
-            DWORD j;
-            for (j = block->firstElement; j < HASH_INSTANCE_BLOCK_NUM_ELEMENTS; j++)
-            {
-                inst = block->instanceKeys[j].instance;
-
-                // Only report those we intended to.
-                // So far, only metadata is excluded!
-                //
-                if (inst && inst->noReport == 0)
-                {
-                    cbTotal += inst->size;
-                    HRESULT hr = pCallBack->EnumMemoryRegion(TO_CDADDR(inst->addr), inst->size);
-                    if (hr == COR_E_OPERATIONCANCELED)
-                    {
-                        ThrowHR(hr);
-                    }
-                }
-
-#if defined(DAC_MEASURE_PERF)
-                if (inst)
-                {
-                    numInBucket++;
-                }
-#endif // #if defined(DAC_MEASURE_PERF)
-            }
-            block = block->next;
-        }
-
- #if defined(DAC_MEASURE_PERF)
-      fprintf(fp, "%4d: %4d%s", i, numInBucket, (i+1)%5?  ";  " : "\n");
-        total += numInBucket;
-#endif // #if defined(DAC_MEASURE_PERF)
-
-    }
-
-#if defined(DAC_MEASURE_PERF)
-    fprintf(fp, "\n\nTotal entries: %d\n\n", total);
-    fclose(fp);
-#endif // #if defined(DAC_MEASURE_PERF)
-
-    return cbTotal;
-
-}
-#else //DAC_HASHTABLE
 //
 //
 // Iterating through all of the hash entry and report the memory
@@ -2149,10 +1865,10 @@ DacInstanceManager::DumpAllInstances(
    int numInBucket = 0;
 #endif // #if defined(DAC_MEASURE_PERF)
 
-   DacInstanceHashIterator end = m_hash.end();
-   for (DacInstanceHashIterator cur = m_hash.begin(); end != cur; ++cur)
+   DacInstanceHashIterator end = m_hash.End();
+   for (DacInstanceHashIterator cur = m_hash.Begin(); end != cur; ++cur)
    {
-       inst = cur->second;
+       inst = cur->Value();
 
        // Only report those we intended to.
        // So far, only metadata is excluded!
@@ -2180,7 +1896,6 @@ DacInstanceManager::DumpAllInstances(
     return cbTotal;
 
 }
-#endif // if defined(DAC_HASHTABLE)
 
 DAC_INSTANCE_BLOCK*
 DacInstanceManager::FindInstanceBlock(DAC_INSTANCE* inst)
@@ -3285,6 +3000,9 @@ ClrDataAccess::Flush(void)
     // Free MD import objects.
     //
     m_mdImports.Flush();
+
+    // Free cached patch entries for thread unwinding
+    m_patchCache.Flush();
 
     // Free instance memory.
     m_instances.Flush();
@@ -5577,50 +5295,14 @@ ClrDataAccess::GetFullMethodName(
 }
 
 PCSTR
-ClrDataAccess::GetJitHelperName(
-    IN TADDR address,
-    IN bool dynamicHelpersOnly /*=false*/
-    )
+ClrDataAccess::GetJitHelperName(IN TADDR address)
 {
-    const static PCSTR s_rgHelperNames[] = {
-#define JITHELPER(code,fn,sig) #code,
-#include <jithelpers.h>
-    };
-    static_assert(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
-
-#ifdef TARGET_UNIX
-    if (!dynamicHelpersOnly)
-#else
-    if (!dynamicHelpersOnly && g_runtimeLoadedBaseAddress <= address &&
-            address < g_runtimeLoadedBaseAddress + g_runtimeVirtualSize)
-#endif // TARGET_UNIX
+    PCODE pCode = PINSTRToPCODE(address);
+    for (unsigned i = 0; i < g_auxiliarySymbolCount; i++)
     {
-        // Read the whole table from the target in one shot for better performance
-        VMHELPDEF * pTable = static_cast<VMHELPDEF *>(
-            PTR_READ(dac_cast<TADDR>(&hlpFuncTable), CORINFO_HELP_COUNT * sizeof(VMHELPDEF)));
-
-        for (int i = 0; i < CORINFO_HELP_COUNT; i++)
+        if (pCode == hlpAuxiliarySymbolTable[i].pfnAuxiliarySymbol)
         {
-            if (address == pTable[i].pfnHelper)
-                return s_rgHelperNames[i];
-        }
-    }
-
-    // Check if its a dynamically generated JIT helper
-    const static CorInfoHelpFunc s_rgDynamicHCallIds[] = {
-#define DYNAMICJITHELPER(code, fn, binderId) code,
-#define JITHELPER(code, fn, binderId)
-#include <jithelpers.h>
-    };
-
-    // Read the whole table from the target in one shot for better performance
-    VMHELPDEF * pDynamicTable = static_cast<VMHELPDEF *>(
-        PTR_READ(dac_cast<TADDR>(&hlpDynamicFuncTable), DYNAMIC_CORINFO_HELP_COUNT * sizeof(VMHELPDEF)));
-    for (unsigned d = 0; d < DYNAMIC_CORINFO_HELP_COUNT; d++)
-    {
-        if (address == pDynamicTable[d].pfnHelper)
-        {
-            return s_rgHelperNames[s_rgDynamicHCallIds[d]];
+            return hlpAuxiliarySymbolTable[i].name;
         }
     }
 
@@ -5810,29 +5492,6 @@ ClrDataAccess::RawGetMethodName(
                 EX_END_CATCH
             }
         }
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
-        else
-        if (pStubManager == JumpStubStubManager::g_pManager)
-        {
-            PCODE pTarget = decodeBackToBackJump(TO_TADDR(address));
-
-            HRESULT hr = GetRuntimeNameByAddress(pTarget, flags, bufLen, symbolLen, symbolBuf, NULL);
-            if (SUCCEEDED(hr))
-            {
-                return hr;
-            }
-
-            PCSTR pHelperName = GetJitHelperName(pTarget);
-            if (pHelperName != NULL)
-            {
-                hr = ConvertUtf8(pHelperName, bufLen, symbolLen, symbolBuf);
-                if (FAILED(hr))
-                    return S_FALSE;
-
-                return hr;
-            }
-        }
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
@@ -5847,7 +5506,7 @@ ClrDataAccess::RawGetMethodName(
 
     // Do not waste time looking up name for static helper. Debugger can get the actual name from .pdb.
     PCSTR pHelperName;
-    pHelperName = GetJitHelperName(TO_TADDR(address), true /* dynamicHelpersOnly */);
+    pHelperName = GetJitHelperName(TO_TADDR(address));
     if (pHelperName != NULL)
     {
         if (displacement)
@@ -6969,7 +6628,7 @@ CLRDataCreateInstance(REFIID iid,
 #endif
 
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
-    NonVMComHolder<IUnknown> cdacInterface = nullptr;
+    ReleaseHolder<IUnknown> cdacInterface = nullptr;
 #ifdef CAN_USE_CDAC
     CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
     if (enable.IsSet())
@@ -6985,7 +6644,7 @@ CLRDataCreateInstance(REFIID iid,
                 HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
                 _ASSERTE(SUCCEEDED(qiRes));
                 CDAC& cdac = pClrDataAccess->m_cdac;
-                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pMutableTarget, thisImpl);
+                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.

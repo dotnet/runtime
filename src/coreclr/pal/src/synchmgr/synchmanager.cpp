@@ -1160,7 +1160,7 @@ namespace CorUnix
             reinterpret_cast<CPalSynchronizationManager*>(pArg);
         CPalThread * pthrWorker = InternalGetCurrentThread();
 
-        SetThreadDescription(PAL_GetCurrentThread(), W(".NET SynchManager"));
+        SetThreadDescription(PAL_GetCurrentThread(), W(".NET Sync Mgr"));
 
         while (!fWorkerIsDone)
         {
