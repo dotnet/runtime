@@ -8,6 +8,8 @@
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <IncludeIndexRangeTypes>true</IncludeIndexRangeTypes>
     <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
