@@ -300,7 +300,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                         "Thread::SuspendThread[%p]:  EIP=%p. nCnt=%d. result=%d.\n"
                         "\t\t\t\t\t\t\t\t\t     forbidSuspend=%d. coop=%d. state=%x.\n",
                         this, GetIP(&ctx), nCnt, dwSuspendCount,
-                        (LONG)this->m_dwForbidSuspendThread, (ULONG)this->m_fPreemptiveGCDisabled, this->GetSnapshotState());
+                        (LONG)this->m_dwForbidSuspendThread, (ULONG)this->m_fPreemptiveGCDisabled, this->GetState());
 
                     // Enable a preemptive assert in diagnostic mode: before we
                     // resume the target thread to get its current state in the debugger

@@ -713,7 +713,7 @@ void WasmRegAlloc::CollectReference(GenTree* node)
     PerFuncletData* const data = m_perFuncletData[m_currentFunclet];
     VirtualRegReferences* refs = data->m_virtualRegRefs;
 
-    // We may make multiple consecutive collection calls for the same node.
+    // We may make multiple collection calls for the same node.
     // We only want to collect it once.
     //
     if (data->m_lastVirtualRegRefsCount > 0)
@@ -777,6 +777,8 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
     regNumber reg = AllocateTemporaryRegister(node->TypeGet());
     assert((node->GetRegNum() == REG_NA) && "Trying to double-assign a temporary register");
     node->SetRegNum(reg);
+
+    CollectReference(node);
 }
 
 //------------------------------------------------------------------------
@@ -799,7 +801,6 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 
     regNumber reg = ReleaseTemporaryRegister(genActualType(operand));
     assert((reg == operand->GetRegNum()) && "Temporary reg being consumed out of order");
-    CollectReference(operand);
 
     operand->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
     JITDUMP("Consumed a temporary reg for [%06u]: %s\n", Compiler::dspTreeID(operand), reason);
@@ -819,6 +820,8 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 //
 regNumber WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
 {
+    JITDUMP("Requesting internal %s register for [%06u]\n", varTypeName(type), Compiler::dspTreeID(node));
+
     regNumber reg = AllocateTemporaryRegister(type);
     m_codeGen->internalRegisters.Add(node, reg);
     CollectReference(node);
