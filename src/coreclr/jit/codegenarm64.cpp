@@ -5136,8 +5136,12 @@ int CodeGenInterface::genSPtoFPdelta() const
     {
         // The saved frame pointer is at the top of the frame, just beneath the saved varargs register space and the
         // saved LR.
-        delta = genTotalFrameSize() - (m_compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
-                2 /* FP, LR */ * REGSIZE_BYTES;
+        delta = genTotalFrameSize() - (m_compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0);
+
+        if (!m_compiler->opts.IsOSR())
+        {
+            delta = delta - 2 /* FP, LR */ * REGSIZE_BYTES;
+        }
     }
     else
     {
