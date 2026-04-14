@@ -99,9 +99,6 @@ namespace System.IO
 
                     if (IsEndOfFile(errorCode, handle, fileOffset))
                     {
-                        // We clear the overlapped status bit for this special case (failure
-                        // to do so looks like we are freeing a pending overlapped later).
-                        overlapped->InternalLow = IntPtr.Zero;
                         return 0;
                     }
 
