@@ -20,6 +20,7 @@ namespace HFATest
 #pragma warning restore 0414
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54906", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -663,13 +663,6 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-        case GT_ARR_ELEM:
-            // These must have been lowered
-            noway_assert(!"We should never see a GT_ARR_ELEM in lowering");
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-
         case GT_LEA:
         {
             GenTreeAddrMode* lea = tree->AsAddrMode();
@@ -885,18 +878,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
+    // set reg requirements on call target represented as control sequence.
     GenTree*         ctrlExpr           = call->gtControlExpr;
     SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        // either gtControlExpr != null or gtCallAddr != null.
-        // Both cannot be non-null at the same time.
-        assert(ctrlExpr == nullptr);
-        assert(call->gtCallAddr != nullptr);
-        ctrlExpr = call->gtCallAddr;
-    }
-
-    // set reg requirements on call target represented as control sequence.
     if (ctrlExpr != nullptr)
     {
         // we should never see a gtControlExpr whose type is void.

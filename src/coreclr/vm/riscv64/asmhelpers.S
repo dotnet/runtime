@@ -409,6 +409,7 @@ NESTED_END TheUMEntryPrestub, _TEXT
 
 GenerateRedirectedStubWithFrame RedirectForThreadAbort, ThrowControlForThread
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
 //
@@ -496,6 +497,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
     EPILOG_BRANCH_REG  t4
 NESTED_END ResolveWorkerAsmStub, _TEXT
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_HIJACK
 // ------------------------------------------------------------------
@@ -515,10 +517,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // save any integral return value(s)
     sd  a0, 120(sp)
     sd  a1, 128(sp)
+    // save async continuation return value
+    sd  a2, 136(sp)
 
     // save any FP/HFA return value(s)
-    fsd  f0, 136(sp)
-    fsd  f1, 144(sp)
+    fsd  f0, 144(sp)
+    fsd  f1, 152(sp)
 
     addi  a0, sp, 0
     call  C_FUNC(OnHijackWorker)
@@ -528,10 +532,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore any integral return value(s)
     ld  a0, 120(sp)
     ld  a1, 128(sp)
+    // restore async continuation return value
+    ld  a2, 136(sp)
 
     // restore any FP/HFA return value(s)
-    fld  f0, 136(sp)
-    fld  f1, 144(sp)
+    fld  f0, 144(sp)
+    fld  f1, 152(sp)
 
     EPILOG_RESTORE_REG_PAIR   s1, s2, 16
     EPILOG_RESTORE_REG_PAIR   s3, s4, 32
@@ -638,31 +644,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
     EPILOG_RETURN
 NESTED_END CallEHFilterFunclet, _TEXT
-
-#ifdef FEATURE_COMINTEROP
-// Function used by COM interop to get floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-// On entry//
-//   a0          : size of the FP result (4 or 8 bytes)
-//   a1          : pointer to 64-bit buffer to receive result
-//
-// On exit:
-//   buffer pointed to by a1 on entry contains the float or double argument as appropriate
-//
-LEAF_ENTRY getFPReturn, _TEXT
-    fsd  f0, 0(a1)
-LEAF_END getFPReturn, _TEXT
-
-// ------------------------------------------------------------------
-// Function used by COM interop to set floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-LEAF_ENTRY setFPReturn, _TEXT
-    fmv.d.x f0, a1
-LEAF_END setFPReturn, _TEXT
-
-#endif // FEATURE_COMINTEROP
 
 // ------------------------------------------------------------------
 // void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
@@ -1306,6 +1287,30 @@ NESTED_END CallJittedMethodRetDouble, _TEXT
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    fsw fa0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetFloat, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
     sd a2, 16(fp)
@@ -1350,6 +1355,31 @@ NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRet2Double, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    fsw fa0, 0(a2)
+    fsw fa1, 4(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet2Float, _TEXT
 
 // a0 - routines array
 // a1 - interpreter stack args location
@@ -1403,7 +1433,7 @@ NESTED_END CallJittedMethodRetIntFloat, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
-    PROLOG_WITH_TRANSITION_BLOCK
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // IR bytecode address
     mv t6, METHODDESC_REGISTER
@@ -2577,5 +2607,57 @@ LEAF_ENTRY Store_FA7
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
 LEAF_END Store_FA7
+
+// ------------------------------------------------------------------
+// Create a real TransitionBlock and call CallInterpreterFuncletWorker
+// to execute an interpreter funclet (catch/finally/filter handler).
+//
+// extern "C" DWORD_PTR CallInterpreterFunclet(
+//     OBJECTREF throwable,        // a0
+//     void* pHandler,             // a1
+//     REGDISPLAY *pRD,            // a2
+//     ExInfo *pExInfo,            // a3
+//     bool isFilter               // a4
+// );
+// ------------------------------------------------------------------
+NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
+
+    // Pass TransitionBlock* as last (6th) argument
+    // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+    // Original args: a0=throwable, a1=pHandler, a2=pRD, a3=pExInfo, a4=isFilter
+    // a0-a4 remain unchanged
+
+    addi    a5, sp, __PWTB_TransitionBlock     // TransitionBlock* as 6th param (a5)
+
+    call    C_FUNC(CallInterpreterFuncletWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END CallInterpreterFunclet, _TEXT
+
+// ------------------------------------------------------------------
+// Resume an interpreter continuation after an async await.
+// The worker function will restore callee-saved registers from the
+// TransitionBlock.
+//
+// FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage);
+//
+// ------------------------------------------------------------------
+NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
+
+    // Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
+    // a0, a1 remain unchanged
+
+    addi    a2, sp, __PWTB_TransitionBlock     // TransitionBlock* as 3rd param (a2)
+
+    call    C_FUNC(AsyncHelpers_ResumeInterpreterContinuationWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END AsyncHelpers_ResumeInterpreterContinuation, _TEXT
 
 #endif // FEATURE_INTERPRETER

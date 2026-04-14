@@ -494,13 +494,6 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(tree->AsBoundsChk()->GetArrayLength());
             break;
 
-        case GT_ARR_ELEM:
-            // These must have been lowered
-            noway_assert(!"We should never see a GT_ARR_ELEM in lowering");
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-
         case GT_LEA:
         {
             GenTreeAddrMode* lea    = tree->AsAddrMode();
@@ -692,7 +685,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RECORD_ASYNC_RESUME:
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
-        case GT_PINVOKE_PROLOG:
         case GT_JCC:
         case GT_SETCC:
         case GT_MEMORYBARRIER:

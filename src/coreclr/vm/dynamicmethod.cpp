@@ -366,6 +366,7 @@ HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)
     m_pFreeList = NULL;
     m_pAllocator = NULL;
     m_pNextHeapToRelease = NULL;
+    m_heapType = CodeHeapType::HostCodeHeap;
 }
 
 HostCodeHeap::~HostCodeHeap()
@@ -1126,19 +1127,24 @@ void LCGMethodResolver::GetJitContext(SecurityControlFlags * securityControlFlag
 
     GCX_COOP();
 
-    MethodDescCallSite getJitContext(METHOD__RESOLVER__GET_JIT_CONTEXT, m_managedResolver);
-
-    OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-    _ASSERTE(resolver); // gc root must be up the stack
-
-    ARG_SLOT args[] =
+    struct
     {
-        ObjToArgSlot(resolver),
-        PtrToArgSlot(securityControlFlags),
-    };
+        OBJECTREF Resolver;
+        OBJECTREF ResultType;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.ResultType = NULL;
+    _ASSERTE(gc.Resolver); // gc root must be up the stack
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)getJitContext.Call_RetOBJECTREF(args);
+    GCPROTECT_BEGIN(gc);
+
+    UnmanagedCallersOnlyCaller getJitContext(METHOD__RESOLVER__GET_JIT_CONTEXT);
+    getJitContext.InvokeThrowing(&gc.Resolver, (int32_t*)securityControlFlags, &gc.ResultType);
+
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)gc.ResultType;
     *typeOwner = refType != NULL ? refType->GetType() : TypeHandle();
+
+    GCPROTECT_END();
 
 }
 
@@ -1170,24 +1176,25 @@ BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, 
         GCX_COOP();
 
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: Getting CodeInfo on resolver 0x%p...\n", this));
-        // get the code - Byte[] Resolver.GetCodeInfo(ref ushort stackSize, ref int EHCount)
-        MethodDescCallSite getCodeInfo(METHOD__RESOLVER__GET_CODE_INFO, m_managedResolver);
 
-        OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-        VALIDATEOBJECTREF(resolver); // gc root must be up the stack
+        struct
+        {
+            OBJECTREF Resolver;
+            U1ARRAYREF DataArray;
+        } gc;
+        gc.Resolver = ObjectFromHandle(m_managedResolver);
+        gc.DataArray = NULL;
+
+        GCPROTECT_BEGIN(gc);
 
         int32_t stackSize = 0, initLocals = 0, EHSize = 0;
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(resolver),
-            PtrToArgSlot(&stackSize),
-            PtrToArgSlot(&initLocals),
-            PtrToArgSlot(&EHSize),
-        };
-        U1ARRAYREF dataArray = (U1ARRAYREF) getCodeInfo.Call_RetOBJECTREF(args);
-        DWORD codeSize = dataArray->GetNumComponents();
+
+        UnmanagedCallersOnlyCaller getCodeInfo(METHOD__RESOLVER__GET_CODE_INFO);
+        getCodeInfo.InvokeThrowing(&gc.Resolver, &stackSize, &initLocals, &EHSize, &gc.DataArray);
+
+        DWORD codeSize = gc.DataArray->GetNumComponents();
         NewArrayHolder<BYTE> code(new BYTE[codeSize]);
-        memcpy(code, dataArray->GetDataPtr(), codeSize);
+        memcpy(code, gc.DataArray->GetDataPtr(), codeSize);
         m_CodeSize = codeSize;
         _ASSERTE(FitsIn<unsigned short>(stackSize));
         m_StackSize = static_cast<unsigned short>(stackSize);
@@ -1197,6 +1204,8 @@ BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, 
         m_Code = (BYTE*)code;
         code.SuppressRelease();
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: CodeInfo {0x%p} on resolver %p\n", m_Code, this));
+
+        GCPROTECT_END();
     }
 
     *pCodeSize = m_CodeSize;
@@ -1223,23 +1232,28 @@ LCGMethodResolver::GetLocalSig()
 
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: Getting LocalSig on resolver 0x%p...\n", this));
 
-        MethodDescCallSite getLocalsSignature(METHOD__RESOLVER__GET_LOCALS_SIGNATURE, m_managedResolver);
-
-        OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-        VALIDATEOBJECTREF(resolver); // gc root must be up the stack
-
-        ARG_SLOT args[] =
+        struct
         {
-            ObjToArgSlot(resolver)
-        };
-        U1ARRAYREF dataArray = (U1ARRAYREF) getLocalsSignature.Call_RetOBJECTREF(args);
-        DWORD localSigSize = dataArray->GetNumComponents();
+            OBJECTREF Resolver;
+            U1ARRAYREF DataArray;
+        } gc;
+        gc.Resolver = ObjectFromHandle(m_managedResolver);
+        gc.DataArray = NULL;
+
+        GCPROTECT_BEGIN(gc);
+
+        UnmanagedCallersOnlyCaller getLocalsSignature(METHOD__RESOLVER__GET_LOCALS_SIGNATURE);
+        getLocalsSignature.InvokeThrowing(&gc.Resolver, &gc.DataArray);
+
+        DWORD localSigSize = gc.DataArray->GetNumComponents();
         NewArrayHolder<COR_SIGNATURE> localSig(new COR_SIGNATURE[localSigSize]);
-        memcpy((void *)localSig, dataArray->GetDataPtr(), localSigSize);
+        memcpy((void *)localSig, gc.DataArray->GetDataPtr(), localSigSize);
 
         m_LocalSig = SigPointer((PCCOR_SIGNATURE)localSig, localSigSize);
         localSig.SuppressRelease();
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: LocalSig {0x%p} on resolver %p\n", m_LocalSig.GetPtr(), this));
+
+        GCPROTECT_END();
     }
 
     return m_LocalSig;
@@ -1247,14 +1261,14 @@ LCGMethodResolver::GetLocalSig()
 
 //---------------------------------------------------------------------------------------
 //
-OBJECTHANDLE
+STRINGREF*
 LCGMethodResolver::ConstructStringLiteral(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
 
     GCX_COOP();
 
-    OBJECTHANDLE string = NULL;
+    STRINGREF* string = NULL;
     STRINGREF strRef = GetStringLiteral(metaTok);
 
     GCPROTECT_BEGIN(strRef);
@@ -1264,7 +1278,7 @@ LCGMethodResolver::ConstructStringLiteral(mdToken metaTok)
         // Instead of storing the string literal in the appdomain specific string literal map,
         // we store it in the dynamic method specific string liternal list
         // This way we can release it when the dynamic method is collected.
-        string = (OBJECTHANDLE)GetOrInternString(&strRef);
+        string = GetOrInternString(&strRef);
     }
 
     GCPROTECT_END();
@@ -1296,16 +1310,22 @@ LCGMethodResolver::GetStringLiteral(
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    MethodDescCallSite getStringLiteral(METHOD__RESOLVER__GET_STRING_LITERAL, m_managedResolver);
+    struct
+    {
+        OBJECTREF Resolver;
+        OBJECTREF Result;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.Result = NULL;
 
-    OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-    VALIDATEOBJECTREF(resolver); // gc root must be up the stack
+    GCPROTECT_BEGIN(gc);
 
-    ARG_SLOT args[] = {
-        ObjToArgSlot(resolver),
-        metaTok,
-    };
-    return getStringLiteral.Call_RetSTRINGREF(args);
+    UnmanagedCallersOnlyCaller getStringLiteral(METHOD__RESOLVER__GET_STRING_LITERAL);
+    getStringLiteral.InvokeThrowing(&gc.Resolver, (int)metaTok, &gc.Result);
+
+    GCPROTECT_END();
+
+    return (STRINGREF)gc.Result;
 }
 
 // This method will get the interned string by calling GetInternedString on the
@@ -1374,20 +1394,25 @@ void LCGMethodResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken
 
     GCX_COOP();
 
-    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__RESOLVE_TOKEN, ObjectFromHandle(m_managedResolver));
-
-    DECLARE_ARGHOLDER_ARRAY(args, 5);
+    struct
+    {
+        OBJECTREF Resolver;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
 
     TypeHandle handle;
-    MethodDesc* pMD = NULL;
-    FieldDesc* pFD = NULL;
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(token);
-    args[ARGNUM_2] = &handle;
-    args[ARGNUM_3] = &pMD;
-    args[ARGNUM_4] = &pFD;
+    MethodDesc* pMD;
+    FieldDesc* pFD;
 
-    CALL_MANAGED_METHOD_NORET(args);
+    GCPROTECT_BEGIN(gc);
+
+    UnmanagedCallersOnlyCaller resolveToken(METHOD__RESOLVER__RESOLVE_TOKEN);
+    TADDR typeHandleValue = 0;
+    resolveToken.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), &typeHandleValue, &pMD, &pFD);
+
+    handle = TypeHandle::FromTAddr(typeHandleValue);
+
+    GCPROTECT_END();
 
     _ASSERTE(pMD == NULL || pFD == NULL);
 
@@ -1419,24 +1444,33 @@ LCGMethodResolver::ResolveSignature(
 
     GCX_COOP();
 
-    U1ARRAYREF dataArray = NULL;
+    struct
+    {
+        OBJECTREF Resolver;
+        U1ARRAYREF DataArray;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.DataArray = NULL;
 
-    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__RESOLVE_SIGNATURE, ObjectFromHandle(m_managedResolver));
+    DWORD cbSig = 0;
+    PCCOR_SIGNATURE pSig = NULL;
 
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
+    GCPROTECT_BEGIN(gc);
 
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(token);
-    args[ARGNUM_2] = DWORD_TO_ARGHOLDER(0);
+    UnmanagedCallersOnlyCaller resolveSignature(METHOD__RESOLVER__RESOLVE_SIGNATURE);
+    resolveSignature.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), 0, &gc.DataArray);
 
-    CALL_MANAGED_METHOD_RETREF(dataArray, U1ARRAYREF, args);
-
-    if (dataArray == NULL)
+    if (gc.DataArray == NULL)
+    {
         COMPlusThrow(kInvalidProgramException);
+    }
 
-    DWORD cbSig = dataArray->GetNumComponents();
-    PCCOR_SIGNATURE pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
-    memcpy((void *)pSig, dataArray->GetDataPtr(), cbSig);
+    cbSig = gc.DataArray->GetNumComponents();
+    pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
+    memcpy((void *)pSig, gc.DataArray->GetDataPtr(), cbSig);
+
+    GCPROTECT_END();
+
     return SigPointer(pSig, cbSig);
 } // LCGMethodResolver::ResolveSignature
 
@@ -1450,24 +1484,33 @@ LCGMethodResolver::ResolveSignatureForVarArg(
 
     GCX_COOP();
 
-    U1ARRAYREF dataArray = NULL;
+    struct
+    {
+        OBJECTREF Resolver;
+        U1ARRAYREF DataArray;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.DataArray = NULL;
 
-    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__RESOLVE_SIGNATURE, ObjectFromHandle(m_managedResolver));
+    DWORD cbSig = 0;
+    PCCOR_SIGNATURE pSig = NULL;
 
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
+    GCPROTECT_BEGIN(gc);
 
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(token);
-    args[ARGNUM_2] = DWORD_TO_ARGHOLDER(1);
+    UnmanagedCallersOnlyCaller resolveSignature(METHOD__RESOLVER__RESOLVE_SIGNATURE);
+    resolveSignature.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), 1, &gc.DataArray);
 
-    CALL_MANAGED_METHOD_RETREF(dataArray, U1ARRAYREF, args);
-
-    if (dataArray == NULL)
+    if (gc.DataArray == NULL)
+    {
         COMPlusThrow(kInvalidProgramException);
+    }
 
-    DWORD cbSig = dataArray->GetNumComponents();
-    PCCOR_SIGNATURE pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
-    memcpy((void *)pSig, dataArray->GetDataPtr(), cbSig);
+    cbSig = gc.DataArray->GetNumComponents();
+    pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
+    memcpy((void *)pSig, gc.DataArray->GetDataPtr(), cbSig);
+
+    GCPROTECT_END();
+
     return SigPointer(pSig, cbSig);
 } // LCGMethodResolver::ResolveSignatureForVarArg
 
@@ -1479,49 +1522,38 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
 
     GCX_COOP();
 
-    // attempt to get the raw EHInfo first
+    struct
     {
-        U1ARRAYREF dataArray;
+        OBJECTREF Resolver;
+        U1ARRAYREF DataArray;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.DataArray = NULL;
 
-        PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__GET_RAW_EH_INFO, ObjectFromHandle(m_managedResolver));
+    GCPROTECT_BEGIN(gc);
 
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
+    UnmanagedCallersOnlyCaller getEhInfo(METHOD__RESOLVER__GET_EH_INFO);
+    getEhInfo.InvokeThrowing(&gc.Resolver, EHnumber, &gc.DataArray, clause);
 
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
+    if (gc.DataArray != NULL)
+    {
+        // If we have raw EH info, we need to parse the clause manually.
+        COR_ILMETHOD_SECT_EH* pEH = (COR_ILMETHOD_SECT_EH*)gc.DataArray->GetDataPtr();
 
-        CALL_MANAGED_METHOD_RETREF(dataArray, U1ARRAYREF, args);
+        COR_ILMETHOD_SECT_EH_CLAUSE_FAT ehClause;
+        const COR_ILMETHOD_SECT_EH_CLAUSE_FAT* ehInfo;
+        ehInfo = (COR_ILMETHOD_SECT_EH_CLAUSE_FAT*)pEH->EHClause(EHnumber, &ehClause);
 
-        if (dataArray != NULL)
-        {
-            COR_ILMETHOD_SECT_EH* pEH = (COR_ILMETHOD_SECT_EH*)dataArray->GetDataPtr();
-
-            COR_ILMETHOD_SECT_EH_CLAUSE_FAT ehClause;
-            const COR_ILMETHOD_SECT_EH_CLAUSE_FAT* ehInfo;
-            ehInfo = (COR_ILMETHOD_SECT_EH_CLAUSE_FAT*)pEH->EHClause(EHnumber, &ehClause);
-
-            clause->Flags = (CORINFO_EH_CLAUSE_FLAGS)ehInfo->GetFlags();
-            clause->TryOffset = ehInfo->GetTryOffset();
-            clause->TryLength = ehInfo->GetTryLength();
-            clause->HandlerOffset = ehInfo->GetHandlerOffset();
-            clause->HandlerLength = ehInfo->GetHandlerLength();
-            clause->ClassToken = ehInfo->GetClassToken();
-            clause->FilterOffset = ehInfo->GetFilterOffset();
-            return;
-        }
+        clause->Flags = (CORINFO_EH_CLAUSE_FLAGS)ehInfo->GetFlags();
+        clause->TryOffset = ehInfo->GetTryOffset();
+        clause->TryLength = ehInfo->GetTryLength();
+        clause->HandlerOffset = ehInfo->GetHandlerOffset();
+        clause->HandlerLength = ehInfo->GetHandlerLength();
+        clause->ClassToken = ehInfo->GetClassToken();
+        clause->FilterOffset = ehInfo->GetFilterOffset();
     }
 
-    // failed, get the info off the ilgenerator
-    {
-        PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__GET_EH_INFO, ObjectFromHandle(m_managedResolver));
-
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-        args[ARGNUM_1] = DWORD_TO_ARGHOLDER(EHnumber);
-        args[ARGNUM_2] = PTR_TO_ARGHOLDER(clause);
-
-        CALL_MANAGED_METHOD_NORET(args);
-    }
+    GCPROTECT_END();
 }
 
 #endif // !DACCESS_COMPILE
@@ -1531,6 +1563,10 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
 OBJECTREF LCGMethodResolver::GetManagedResolver()
 {
     LIMITED_METHOD_CONTRACT;
+#ifdef DACCESS_COMPILE
+    if (m_managedResolver == (OBJECTHANDLE)NULL)
+        return NULL;
+#endif // DACCESS_COMPILE
     return ObjectFromHandle(m_managedResolver);
 }
 

@@ -47,6 +47,7 @@ internal struct MethodTableFlags_1
         Collectible = 0x00200000, // GC depends on this bit.
 
         ContainsGCPointers = 0x01000000,
+        ContainsGenericVariables = 0x20000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                         // otherwise the lower bits are used for WFLAGS_LOW
     }
@@ -101,6 +102,7 @@ internal struct MethodTableFlags_1
     public bool IsCollectible => GetFlag(WFLAGS_HIGH.Collectible) != 0;
     public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
     public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
+    public bool ContainsGenericVariables => GetFlag(WFLAGS_HIGH.ContainsGenericVariables) != 0;
 
     internal static EEClassOrCanonMTBits GetEEClassOrCanonMTBits(TargetPointer eeClassOrCanonMTPtr)
     {

@@ -561,12 +561,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount += BuildOperandUses(tree->AsBoundsChk()->GetArrayLength());
             break;
 
-        case GT_ARR_ELEM:
-            // These must have been lowered
-            noway_assert(!"We should never see a GT_ARR_ELEM after Lowering.");
-            srcCount = 0;
-            break;
-
         case GT_LEA:
             // The LEA usually passes its operands through to the GT_IND, in which case it will
             // be contained, but we may be instantiating an address, in which case we set them here.
@@ -1215,18 +1209,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
-    GenTree* ctrlExpr = call->gtControlExpr;
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        ctrlExpr = call->gtCallAddr;
-    }
-
     RegisterType registerType = regType(call);
 
     // Set destination candidates for return value of the call.
 
 #ifdef TARGET_X86
-    if (call->IsHelperCall(m_compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+    if (call->IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
     {
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
@@ -1288,6 +1276,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     srcCount += BuildCallArgUses(call);
 
     // set reg requirements on call target represented as control sequence.
+    GenTree* ctrlExpr = call->gtControlExpr;
     if (ctrlExpr != nullptr)
     {
         SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
@@ -2479,7 +2468,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(numArgs == 2 || numArgs == 3);
                 srcCount += BuildOperandUses(op1, SRBM_EDX);
                 SingleTypeRegSet apxAwareRegCandidates =
-                    ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    ForceLowGprForApxIfNeeded(op2, availableIntRegs & ~SRBM_EDX, canHWIntrinsicUseApxRegs);
                 srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
                 if (numArgs == 3)
                 {

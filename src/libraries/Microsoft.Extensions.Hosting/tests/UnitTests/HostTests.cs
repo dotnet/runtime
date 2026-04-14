@@ -284,7 +284,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(environment, hostEnv.EnvironmentName);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/48696")]
         public async Task CreateDefaultBuilder_ConfigJsonDoesNotReload()
         {
@@ -427,6 +427,20 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             var hostOptions = host.Services.GetRequiredService<IOptions<HostOptions>>();
             Assert.Equal(notDefaultTimeoutSeconds, hostOptions.Value.ShutdownTimeout.TotalSeconds);
+        }
+
+        [Fact]
+        public async Task Host_Restart_ThrowsException()
+        {
+            using var host = new HostBuilder().Build();
+
+            await host.StartAsync();
+            await host.StopAsync();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            {
+                await host.StartAsync();
+            });
         }
 
         internal class ServiceA { }

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -228,6 +229,39 @@ namespace CoreXml.Test.XLinq
                 {
                     document.Save(stream);
                     element.Save(stream);
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> IsAsync_LoadOptions_XmlString_Data
+        {
+            get
+            {
+                foreach (bool isAsync in new[] { true, false })
+                {
+                    foreach (LoadOptions loadOptions in Enum.GetValues(typeof(LoadOptions)))
+                    {
+                        yield return new object[] { isAsync, loadOptions, "<root>Test</root>" };
+                        yield return new object[] { isAsync, loadOptions, "<?xml version=\"1.0\" encoding=\"utf-8\"?><root>Test</root>" };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(IsAsync_LoadOptions_XmlString_Data))]
+        public async Task XDocument_LoadAsync_CallsAsyncOnly_LoadSync_CallsSyncOnly(bool isAsync, LoadOptions loadOptions, string xmlString)
+        {
+            using MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlString));
+            using (CheckSyncAsyncStream stream = new CheckSyncAsyncStream(isAsync, memoryStream))
+            {
+                if (isAsync)
+                {
+                    await XDocument.LoadAsync(stream, loadOptions, CancellationToken.None);
+                }
+                else
+                {
+                    XDocument.Load(stream, loadOptions);
                 }
             }
         }

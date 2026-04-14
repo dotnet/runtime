@@ -3,12 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Linker.Tests.Extensions;
-using NUnit.Framework;
 #if NET
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
@@ -388,72 +387,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         protected virtual NPath CompileCSharpAssemblyWithCsc(CompilerOptions options)
         {
-#if NET
             return CompileCSharpAssemblyWithRoslyn(options);
-#else
-            return CompileCSharpAssemblyWithExternalCompiler(LocateCscExecutable(), options, "/shared ");
-#endif
-        }
-
-        protected virtual NPath CompileCSharpAssemblyWithMcs(CompilerOptions options)
-        {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                CompileCSharpAssemblyWithExternalCompiler(LocateMcsExecutable(), options, string.Empty);
-
-            return CompileCSharpAssemblyWithDefaultCompiler(options);
-        }
-
-        protected static NPath CompileCSharpAssemblyWithExternalCompiler(string executable, CompilerOptions options, string compilerSpecificArguments)
-        {
-            var capturedOutput = new List<string>();
-            var process = new Process();
-            process.StartInfo.FileName = executable;
-            process.StartInfo.Arguments = OptionsToCompilerCommandLineArguments(options, compilerSpecificArguments);
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.OutputDataReceived += (sender, args) => capturedOutput.Add(args.Data);
-            process.Start();
-            process.BeginOutputReadLine();
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
-                Assert.Fail($"Failed to compile assembly with csc: {options.OutputPath}\n{capturedOutput.Aggregate((buff, s) => buff + Environment.NewLine + s)}");
-
-            return options.OutputPath;
-        }
-
-        static string LocateMcsExecutable()
-        {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                Assert.Ignore("We don't have a universal way of locating mcs on Windows");
-
-            return "mcs";
-        }
-
-        protected static string OptionsToCompilerCommandLineArguments(CompilerOptions options, string compilerSpecificArguments)
-        {
-            var builder = new StringBuilder();
-            if (!string.IsNullOrEmpty(compilerSpecificArguments))
-                builder.Append(compilerSpecificArguments);
-            builder.Append($"/out:{options.OutputPath}");
-            var target = options.OutputPath.ExtensionWithDot == ".exe" ? "exe" : "library";
-            builder.Append($" /target:{target}");
-            if (options.Defines != null && options.Defines.Length > 0)
-                builder.Append(options.Defines.Aggregate(string.Empty, (buff, arg) => $"{buff} /define:{arg}"));
-
-            builder.Append(options.References.Aggregate(string.Empty, (buff, arg) => $"{buff} /r:{arg}"));
-
-            if (options.Resources != null && options.Resources.Length > 0)
-                builder.Append(options.Resources.Aggregate(string.Empty, (buff, arg) => $"{buff} /res:{arg}"));
-
-            if (options.AdditionalArguments != null && options.AdditionalArguments.Length > 0)
-                builder.Append(options.AdditionalArguments.Aggregate(string.Empty, (buff, arg) => $"{buff} {arg}"));
-
-            builder.Append(options.SourceFiles.Aggregate(string.Empty, (buff, arg) => $"{buff} {arg}"));
-
-            return builder.ToString();
         }
 
         protected NPath CompileCSharpAssembly(CompilerOptions options)
@@ -463,9 +397,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             if (options.CompilerToUse == "csc")
                 return CompileCSharpAssemblyWithCsc(options);
-
-            if (options.CompilerToUse == "mcs")
-                return CompileCSharpAssemblyWithMcs(options);
 
             throw new ArgumentException($"Invalid compiler value `{options.CompilerToUse}`");
         }

@@ -148,10 +148,24 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     case ZipArchiveMode.Read:
                         break;
                     case ZipArchiveMode.Create:
+                        await WriteFileAsync().ConfigureAwait(false);
+                        break;
                     case ZipArchiveMode.Update:
                     default:
-                        Debug.Assert(_mode == ZipArchiveMode.Update || _mode == ZipArchiveMode.Create);
-                        await WriteFileAsync().ConfigureAwait(false);
+                        Debug.Assert(_mode == ZipArchiveMode.Update);
+                        // Only write if the archive has been modified
+                        if (IsModified)
+                        {
+                            await WriteFileAsync().ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // Even if we didn't write, unload any entry buffers that may have been loaded
+                            foreach (ZipArchiveEntry entry in _entries)
+                            {
+                                await entry.UnloadStreamsAsync().ConfigureAwait(false);
+                            }
+                        }
                         break;
                 }
             }
@@ -351,6 +365,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
             completeRewriteStartingOffset = startingOffset;
 
             entriesToWrite = new(_entries.Count);
+
             foreach (ZipArchiveEntry entry in _entries)
             {
                 if (!entry.OriginallyInArchive)
@@ -359,7 +374,6 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                 }
                 else
                 {
-
                     WriteFileCalculateOffsets(entry, ref startingOffset, ref nextFileOffset);
 
                     // We want to re-write entries which are after the starting offset of the first entry which has pending data to write.

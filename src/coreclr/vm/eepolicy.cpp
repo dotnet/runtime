@@ -23,6 +23,8 @@
 #include "eventtrace.h"
 #undef ExitProcess
 
+extern MethodDesc* g_pEnvironmentCallEntryPointMethodDesc;
+
 void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
 {
     STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d sca = %d\n", exitCode, sca);
@@ -176,6 +178,15 @@ class CallStackLogger
             }
         }
 
+        MethodDesc* pMD = pCF->GetFunction();
+
+        // Skip Environment.CallEntryPoint so it doesn't appear in vanilla
+        // unhandled exception experiences.
+        if (pMD != nullptr && pMD == g_pEnvironmentCallEntryPointMethodDesc)
+        {
+            return SWA_CONTINUE;
+        }
+
         MethodDesc** itemPtr = m_frames.Append();
         if (itemPtr == nullptr)
         {
@@ -183,7 +194,7 @@ class CallStackLogger
             return SWA_ABORT;
         }
 
-        *itemPtr = pCF->GetFunction();
+        *itemPtr = pMD;
 
         return SWA_CONTINUE;
     }
@@ -285,6 +296,12 @@ public:
                 // A repeated sequence of frames was identified
                 break;
             }
+        }
+
+        // Skip special formatting if it would make the output more verbose (add more lines)
+        if (largestCommonRepeat * largestCommonLength < 4)
+        {
+            largestCommonLength = 0;
         }
 
         for (int i = 0; i < largestCommonStartOffset; i++)
@@ -709,7 +726,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
         DisplayStackOverflowException();
 
-        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET Stack overflow trace logger"));
+        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET SO Tracer"));
         if (stackDumpThreadHandle != INVALID_HANDLE_VALUE)
         {
             // Wait for the stack trace logging completion
@@ -896,3 +913,20 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
     UNREACHABLE();
     return -1;
 }
+
+#ifdef HOST_ANDROID
+// Logs the managed callstack when a signal is received.
+void EEPolicy::LogManagedCallstackForSignal(LPCWSTR signalName)
+{
+    WRAPPER_NO_CONTRACT;
+
+    InlineSString<256> message;
+    message.Append(W("Got a "));
+    message.Append(signalName);
+    message.Append(W(" while executing native code. This usually indicates\n")
+                   W("a fatal error in the runtime or one of the native libraries\n")
+                   W("used by your application."));
+
+    LogInfoForFatalError(0, message.GetUnicode(), nullptr, nullptr, nullptr);
+}
+#endif // HOST_ANDROID

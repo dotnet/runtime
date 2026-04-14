@@ -1209,6 +1209,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         m_compiler->gtSetStmtInfo(m_testInfo1.testStmt);
         m_compiler->fgSetStmtSeq(m_testInfo1.testStmt);
+        m_compiler->gtUpdateStmtSideEffects(m_testInfo1.testStmt);
     }
 
     /* Modify the target of the conditional jump and update bbRefs and bbPreds */
@@ -1766,12 +1767,25 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
         return modified;
     }
 
-    // Is block a BBJ_RETURN(1/0) ? (single statement)
+    // Is block a BBJ_RETURN(1/0) ?
     auto isReturnBool = [](const BasicBlock* block, bool value) {
-        if (block->KindIs(BBJ_RETURN) && block->hasSingleStmt() && (block->lastStmt() != nullptr))
+        if (block->KindIs(BBJ_RETURN) && (block->lastStmt() != nullptr))
         {
             GenTree* node = block->lastStmt()->GetRootNode();
-            return node->OperIs(GT_RETURN) && node->gtGetOp1()->IsIntegralConst(value ? 1 : 0);
+            if (!(node->OperIs(GT_RETURN) && node->gtGetOp1()->IsIntegralConst(value ? 1 : 0)))
+            {
+                return false;
+            }
+            // Allow preceding statements if they have no globally visible side effects
+            // (e.g., dead local stores left over from inlining).
+            for (Statement* const stmt : block->Statements())
+            {
+                if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(stmt->GetRootNode()->gtFlags))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         return false;
     };

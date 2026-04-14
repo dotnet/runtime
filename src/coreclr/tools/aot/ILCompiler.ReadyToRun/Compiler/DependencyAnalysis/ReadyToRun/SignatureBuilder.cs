@@ -303,6 +303,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         EmitElementType(CorElementType.ELEMENT_TYPE_CANON_ZAPSIG);
                     }
+                    else if (typeDesc is AsyncContinuationType act)
+                    {
+                        // We should never try to encode a continuation on this path
+                        throw new InvalidOperationException();
+                    }
                     else
                     {
                         ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
@@ -610,7 +615,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     throw new InternalCompilerErrorException("Attempt to use token from a module not within the version bubble");
                 }
-                
+
                 EmitUInt((uint)factory.ManifestMetadataTable.ModuleToIndex(targetModule));
                 return new SignatureContext(targetModule, outerContext.Resolver);
             }

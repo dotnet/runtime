@@ -115,6 +115,16 @@ public:
 //
 class WasmInterval
 {
+public:
+
+    // interval kind
+    enum class Kind
+    {
+        Block,
+        Loop,
+        Try
+    };
+
 private:
 
     // m_chain refers to the conflict set member with the lowest m_start.
@@ -130,17 +140,17 @@ private:
     // Largest end index of any chained interval
     unsigned m_chainEnd;
 
-    // true if this is a loop interval (extents cannot change)
-    bool m_isLoop;
+    // kind of interval
+    Kind m_kind;
 
 public:
 
-    WasmInterval(unsigned start, unsigned end, bool isLoop)
+    WasmInterval(unsigned start, unsigned end, Kind kind)
         : m_chain(nullptr)
         , m_start(start)
         , m_end(end)
         , m_chainEnd(end)
-        , m_isLoop(isLoop)
+        , m_kind(kind)
     {
         m_chain = this;
     }
@@ -180,9 +190,19 @@ public:
         return m_chain;
     }
 
+    bool IsBlock() const
+    {
+        return m_kind == Kind::Block;
+    }
+
     bool IsLoop() const
     {
-        return m_isLoop;
+        return m_kind == Kind::Loop;
+    }
+
+    bool IsTry() const
+    {
+        return m_kind == Kind::Try;
     }
 
     void SetChain(WasmInterval* c)
@@ -194,21 +214,39 @@ public:
     static WasmInterval* NewBlock(Compiler* comp, BasicBlock* start, BasicBlock* end)
     {
         WasmInterval* result =
-            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ false);
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, Kind::Block);
         return result;
     }
 
     static WasmInterval* NewLoop(Compiler* comp, BasicBlock* start, BasicBlock* end)
     {
         WasmInterval* result =
-            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ true);
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, Kind::Loop);
         return result;
     }
 
+    static WasmInterval* NewTry(Compiler* comp, BasicBlock* start, BasicBlock* end)
+    {
+        WasmInterval* result =
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, Kind::Try);
+        return result;
+    }
 #ifdef DEBUG
     void Dump(bool chainExtent = false)
     {
-        printf("[%03u,%03u]%s", m_start, chainExtent ? m_chainEnd : m_end, m_isLoop && !chainExtent ? " L" : "");
+        printf("[%03u,%03u]", m_start, chainExtent ? m_chainEnd : m_end);
+
+        if (!chainExtent)
+        {
+            if (m_kind == Kind::Loop)
+            {
+                printf("L");
+            }
+            else if (m_kind == Kind::Try)
+            {
+                printf("T");
+            }
+        }
 
         if (m_chain != this)
         {
@@ -218,6 +256,21 @@ public:
         else
         {
             printf("\n");
+        }
+    }
+
+    const char* KindString() const
+    {
+        switch (m_kind)
+        {
+            case Kind::Block:
+                return "Block";
+            case Kind::Loop:
+                return "Loop";
+            case Kind::Try:
+                return "Try";
+            default:
+                return "??";
         }
     }
 #endif
@@ -283,7 +336,7 @@ public:
                                 VisitEdge      visitEdge,
                                 BitVec&        subgraph);
 
-    FlowGraphDfsTree* WasmDfs(bool& hasBlocksOnlyReachableByEH);
+    FlowGraphDfsTree* WasmDfs(bool& hasBlocksOnlyReachableViaEH);
 
     void WasmFindSccs(ArrayStack<Scc*>& sccs);
 
@@ -365,8 +418,8 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
 
     switch (block->GetKind())
     {
-        // Funclet returns have no successors
-        //
+            // Funclet returns have no successors
+            //
         case BBJ_EHFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
@@ -374,7 +427,7 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFAULTRET:
-            return BasicBlockVisit::Continue;
+            break;
 
         case BBJ_CALLFINALLY:
             if (block->isBBCallFinallyPair())
@@ -382,11 +435,12 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
                 RETURN_ON_ABORT(func(block->Next()));
             }
 
-            return BasicBlockVisit::Continue;
+            break;
 
         case BBJ_CALLFINALLYRET:
         case BBJ_ALWAYS:
-            return func(block->GetTarget());
+            RETURN_ON_ABORT(func(block->GetTarget()));
+            break;
 
         case BBJ_COND:
             if (block->TrueEdgeIs(block->GetFalseEdge()))
@@ -408,7 +462,7 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
                 RETURN_ON_ABORT(func(block->GetTrueTarget()));
             }
 
-            return BasicBlockVisit::Continue;
+            break;
 
         case BBJ_SWITCH:
         {
@@ -420,12 +474,67 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
                 RETURN_ON_ABORT(func(desc->GetSucc(i)->getDestinationBlock()));
             }
 
-            return BasicBlockVisit::Continue;
+            break;
         }
 
         default:
             unreached();
     }
+
+    // If the compiler has a multi-entry try region object, add edges from any
+    // catch resumption or async resumption target to the header of each enclosing
+    // try/catch.
+    //
+    // This makes multi-entry try/catch regions look like multi-entry loops and the SCC
+    // algorithm will transform them into single-entry try/catch regions.
+    //
+    // Note we disregard try/finally/fault here as those do not need to be expressed
+    // as single-entry regions for Wasm codegen. And we consider all mutual-protect
+    // try/catch as a single region.
+    //
+    FlowGraphTryRegions* const tryRegions = comp->fgTryRegions;
+
+    if ((tryRegions == nullptr) || !tryRegions->HasMultipleEntryTryRegions())
+    {
+        return BasicBlockVisit::Continue;
+    }
+
+    EHblkDsc* const dsc = comp->ehGetBlockTryDsc(block);
+
+    if (dsc == nullptr)
+    {
+        return BasicBlockVisit::Continue;
+    }
+
+    FlowGraphTryRegion* region = tryRegions->GetTryRegionByHeader(dsc->ebdTryBeg);
+
+    // TODO: possibly flag blocks that are targets of resumption switches so
+    // we can quickly screen out blocks that are not try region side entries.
+    //
+    while (region != nullptr)
+    {
+        if (region->HasCatchHandler())
+        {
+            if (!region->HasSideEntry())
+            {
+                break;
+            }
+
+            BasicBlock* const header = region->GetHeaderBlock();
+            for (FlowEdge* const edge : region->EntryEdges())
+            {
+                if ((block != header) && (block == edge->getDestinationBlock()))
+                {
+                    assert(edge->getSourceBlock()->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION));
+                    RETURN_ON_ABORT(func(header));
+                    break;
+                }
+            }
+        }
+        region = region->EnclosingRegion();
+    }
+
+    return BasicBlockVisit::Continue;
 }
 
 #undef RETURN_ON_ABORT

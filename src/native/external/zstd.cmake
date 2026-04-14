@@ -1,13 +1,5 @@
 # IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects
 
-include(FetchContent)
-
-FetchContent_Declare(
-    zstd
-    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/zstd/build/cmake
-    EXCLUDE_FROM_ALL
-)
-
 set(ZSTD_BUILD_PROGRAMS OFF)
 set(ZSTD_BUILD_TESTS OFF)
 set(ZSTD_BUILD_CONTRIB OFF)
@@ -41,7 +33,14 @@ endif()
 
 set(__CURRENT_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
-FetchContent_MakeAvailable(zstd)
+
+# Use EXCLUDE_FROM_ALL to prevent zstd's own install() rules from being
+# included in the build's install step. Without this, building clr.runtime
+# from a clean build fails because the install step tries to install
+# zstd_static.lib which was not built as part of the runtime target.
+# This can be replaced by using EXCLUDE_FROM_ALL in FetchContent_Declare on CMAKE 3.28+
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/zstd/build/cmake" "${CMAKE_BINARY_DIR}/_deps/zstd-build" EXCLUDE_FROM_ALL)
+
 set(BUILD_SHARED_LIBS ${__CURRENT_BUILD_SHARED_LIBS})
 
 if (ANDROID)
@@ -53,3 +52,6 @@ endif()
 
 # disable warnings that occur in the zstd library
 target_compile_options(libzstd_static PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-implicit-fallthrough>)
+
+# Avoid errors caused by non-ASCII characters
+target_compile_options(libzstd_static PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/source-charset:utf-8>)

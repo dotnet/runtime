@@ -44,7 +44,8 @@ typedef enum
     PosixSignalSIGWINCH = -7,
     PosixSignalSIGTTIN = -8,
     PosixSignalSIGTTOU = -9,
-    PosixSignalSIGTSTP = -10
+    PosixSignalSIGTSTP = -10,
+    PosixSignalSIGKILL = -11
 } PosixSignal;
 
 typedef int32_t (*PosixSignalHandler)(int32_t signalCode, PosixSignal signal);
@@ -61,6 +62,11 @@ PALEXPORT void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandl
  * When the signal is out of range, the function returns zero.
  */
 PALEXPORT int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal);
+
+/**
+ * Returns the platform-native signal number for SIGSTOP.
+ */
+PALEXPORT int32_t SystemNative_GetPlatformSIGSTOP(void);
 
 /**
  * Enables calling the PosixSignalHandler for the specified signal.

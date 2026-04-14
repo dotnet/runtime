@@ -2310,10 +2310,9 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     // Now use the fact that we keep ARR_ADDRs in the IR when we have
     // array/string accesses.
     GenTreeArrAddr* arrAddr = nullptr;
-    for (int i = 0; i < cursors->Height(); i++)
+    for (CursorInfo& cursor : cursors->BottomUpOrder())
     {
-        CursorInfo& cursor = cursors->BottomRef(i);
-        GenTree*    cur    = cursor.Tree;
+        GenTree* cur = cursor.Tree;
         while ((cur != nullptr) && !cur->OperIs(GT_ARR_ADDR))
         {
             cur = cur->gtGetParent(nullptr);
@@ -2361,9 +2360,8 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     // than the array/string's length.
     ValueNum arrLengthVN = m_compiler->vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, addRecStartBase.GetLiberal());
 
-    for (int i = 0; i < m_backEdgeBounds.Height(); i++)
+    for (Scev* const bound : m_backEdgeBounds.BottomUpOrder())
     {
-        Scev* bound = m_backEdgeBounds.Bottom(i);
         if (!bound->TypeIs(TYP_INT))
         {
             // Currently cannot handle bounds that aren't 32 bit.
@@ -2483,11 +2481,10 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
     DISPSTMT(stepStmt);
 
     // Replace uses.
-    for (int i = 0; i < cursors->Height(); i++)
+    for (CursorInfo& cursor : cursors->BottomUpOrder())
     {
-        CursorInfo& cursor = cursors->BottomRef(i);
-        GenTree*    newUse = m_compiler->gtNewLclVarNode(newPrimaryIV, iv->Type);
-        newUse             = RephraseIV(cursor.IV, iv, newUse);
+        GenTree* newUse = m_compiler->gtNewLclVarNode(newPrimaryIV, iv->Type);
+        newUse          = RephraseIV(cursor.IV, iv, newUse);
 
         JITDUMP("    Replacing use [%06u] with [%06u]. Before:\n", Compiler::dspTreeID(cursor.Tree),
                 Compiler::dspTreeID(newUse));
@@ -2525,10 +2522,9 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
     if (m_intermediateIVStores.Height() > 0)
     {
         JITDUMP("    Deleting stores of intermediate IVs\n");
-        for (int i = 0; i < m_intermediateIVStores.Height(); i++)
+        for (CursorInfo& cursor : m_intermediateIVStores.BottomUpOrder())
         {
-            CursorInfo&          cursor = m_intermediateIVStores.BottomRef(i);
-            GenTreeLclVarCommon* store  = cursor.Tree->AsLclVarCommon();
+            GenTreeLclVarCommon* store = cursor.Tree->AsLclVarCommon();
             JITDUMP("      Replacing [%06u] with a zero constant\n", Compiler::dspTreeID(store->Data()));
             // We cannot remove these stores entirely as that will break
             // downstream phases looking for SSA defs.. instead just replace
@@ -2635,9 +2631,8 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
 {
     BitVecTraits poTraits = m_loop->GetDfsTree()->PostOrderTraits();
     BitVec       blocksWithUses(BitVecOps::MakeEmpty(&poTraits));
-    for (int i = 0; i < cursors->Height(); i++)
+    for (CursorInfo& cursor : cursors->BottomUpOrder())
     {
-        CursorInfo& cursor = cursors->BottomRef(i);
         BitVecOps::AddElemD(&poTraits, blocksWithUses, cursor.Block->bbPostorderNum);
     }
 
@@ -2655,9 +2650,8 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
         }
 
         Statement* latestStmt = nullptr;
-        for (int i = 0; i < cursors->Height(); i++)
+        for (CursorInfo& cursor : cursors->BottomUpOrder())
         {
-            CursorInfo& cursor = cursors->BottomRef(i);
             if (cursor.Block != backEdgeDominator)
             {
                 continue;
@@ -2705,10 +2699,8 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
 bool StrengthReductionContext::InsertionPointPostDominatesUses(BasicBlock*             insertionPoint,
                                                                ArrayStack<CursorInfo>* cursors)
 {
-    for (int i = 0; i < cursors->Height(); i++)
+    for (CursorInfo& cursor : cursors->BottomUpOrder())
     {
-        CursorInfo& cursor = cursors->BottomRef(i);
-
         if (insertionPoint == cursor.Block)
         {
             if (insertionPoint->HasTerminator() && (cursor.Stmt == insertionPoint->lastStmt()))

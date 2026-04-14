@@ -722,17 +722,13 @@ void SystemDomain::Attach()
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeStubManager::Init();
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-#ifdef FEATURE_JIT
-    JumpStubStubManager::Init();
-#endif // FEATURE_JIT
     RangeSectionStubManager::Init();
     ILStubManager::Init();
+    PInvokeStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
     TailCallStubManager::Init();
-#ifdef FEATURE_TIERED_COMPILATION
-    CallCountingStubManager::Init();
-#endif
+    AsyncThunkStubManager::Init();
 
     m_SystemDomainCrst.Init(CrstSystemDomain, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
     m_DelayedUnloadCrst.Init(CrstSystemDomainDelayedUnloadList, CRST_UNSAFE_COOPGC);
@@ -1123,7 +1119,7 @@ void SystemDomain::LoadBaseSystemClasses()
         // all base system classes are loaded.  Profilers are not allowed to call any type-loading
         // APIs until g_profControlBlock.fBaseSystemClassesLoaded is TRUE.  It is important that
         // all base system classes need to be loaded before profilers can trigger the type loading.
-        g_profControlBlock.fBaseSystemClassesLoaded = TRUE;
+        g_profControlBlock.fBaseSystemClassesLoaded = true;
     #endif // PROFILING_SUPPORTED
 
     #if defined(_DEBUG)
@@ -2135,12 +2131,6 @@ FileLoadLock::FileLoadLock(PEFileListLock* pLock, PEAssembly* pPEAssembly)
     pPEAssembly->AddRef();
 }
 
-void FileLoadLock::HolderLeave(FileLoadLock *pThis)
-{
-    LIMITED_METHOD_CONTRACT;
-    pThis->Leave();
-}
-
 
 //
 // Assembly loading:
@@ -2535,15 +2525,15 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     }
     CONTRACT_END;
 
-    Assembly *pAssembly = pLock->GetAssembly();
-
     // Make sure we release the lock on exit
     FileLoadLockRefHolder lockRef(pLock);
 
     // Do a quick out check for the already loaded case.
     if (pLock->GetLoadLevel() >= targetLevel)
     {
+        Assembly* pAssembly = pLock->GetAssembly();
         _ASSERTE(pAssembly != nullptr);
+
         pAssembly->ThrowIfError(targetLevel);
 
         RETURN pAssembly;
@@ -2614,7 +2604,7 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
              fileLoadLevelName[pLock->GetLoadLevel()]));
     }
 
-    pAssembly = pLock->GetAssembly();
+    Assembly* pAssembly = pLock->GetAssembly();
     _ASSERTE(pAssembly != nullptr); // We should always be loading to at least FILE_LOAD_ALLOCATE, so the assembly should be created
 
     // There may have been an error stored on the domain file by another thread, or from a previous load
@@ -2647,7 +2637,7 @@ void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& 
     // This is factored out so we don't call EX_TRY in a loop (EX_TRY can _alloca)
 
     BOOL released = FALSE;
-    FileLoadLock* pLoadLock = lockHolder.GetValue();
+    FileLoadLock* pLoadLock = lockHolder;
     Assembly* pAssembly = pLoadLock->GetAssembly();
 
     EX_TRY
@@ -2688,7 +2678,7 @@ void AppDomain::TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& 
         if (pLoadLock->CompleteLoadLevel(workLevel, success) &&
             pLoadLock->GetLoadLevel()==FILE_LOAD_DELIVER_EVENTS)
         {
-            lockHolder.Release();
+            lockHolder.Free();
             released = TRUE;
             pAssembly->DeliverAsyncEvents();
         };
@@ -3394,12 +3384,8 @@ void AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
 
     EX_TRY
     {
-        MethodDescCallSite raiseEvent(METHOD__APPCONTEXT__ON_UNHANDLED_EXCEPTION);
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(*pThrowable)
-        };
-        raiseEvent.Call(args);
+        UnmanagedCallersOnlyCaller raiseEvent(METHOD__APPCONTEXT__ON_UNHANDLED_EXCEPTION);
+        raiseEvent.InvokeThrowing(pThrowable);
     }
     EX_CATCH
     {
@@ -3421,8 +3407,8 @@ void AppDomain::RaiseExitProcessEvent()
 
     _ASSERTE (GetThread()->PreemptiveGCDisabled());
 
-    MethodDescCallSite onProcessExit(METHOD__APPCONTEXT__ON_PROCESS_EXIT);
-    onProcessExit.Call(NULL);
+    UnmanagedCallersOnlyCaller onProcessExit(METHOD__APPCONTEXT__ON_PROCESS_EXIT);
+    onProcessExit.InvokeThrowing();
 }
 
 DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
@@ -3607,23 +3593,6 @@ void AppDomain::DetachRCWs()
 }
 
 #endif // FEATURE_COMINTEROP
-
-void AppDomain::ExceptionUnwind(Frame *pFrame)
-{
-    CONTRACTL
-    {
-        DISABLED(GC_TRIGGERS);  // EEResourceException
-        DISABLED(THROWS);   // EEResourceException
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind for %8.8x\n", pFrame));
-    Thread *pThread = GetThread();
-
-    LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: not first transition or abort\n"));
-}
-
 
 #endif // !DACCESS_COMPILE
 
@@ -4094,9 +4063,6 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToBindWith
 
     bool fResolvedAssembly = false;
     BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, 0 /*binderID*/, pAssemblyLoadContextToBindWithin, hr};
-
-    // Allocate an AssemblyName managed object
-    _gcRefs.oRefAssemblyName = (ASSEMBLYNAMEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME));
 
     // Initialize the AssemblyName object
     AssemblySpec::InitializeAssemblyNameRef(pAssemblyName, &_gcRefs.oRefAssemblyName);

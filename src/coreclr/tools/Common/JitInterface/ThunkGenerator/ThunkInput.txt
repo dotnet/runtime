@@ -122,6 +122,8 @@ CorInfoIsAccessAllowedResult
 CorInfoMethodRuntimeFlags
 CorInfoTailCall
 CorInfoType
+CorInfoWasmType
+CorInfoWasmType*
 CorInfoHFAElemType
 CorInfoTypeWithMod
 CorInfoCallConvExtension
@@ -154,6 +156,7 @@ CORINFO_CLASS_HANDLE*,CORINFO_CLASS_STRUCT_**
 CORINFO_ARG_LIST_HANDLE,CORINFO_ARG_LIST_STRUCT_*
 CORINFO_VARARGS_HANDLE,IntPtr
 CORINFO_CONTEXT_HANDLE,CORINFO_CONTEXT_STRUCT*
+CORINFO_WASM_TYPE_SYMBOL_HANDLE,CORINFO_WASM_TYPE_SYMBOL_STRUCT_*
 SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*,SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*
 
 ICorDebugInfo::OffsetMapping*,OffsetMapping*
@@ -189,6 +192,7 @@ FUNCTIONS
     bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info);
     CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
     CORINFO_METHOD_HANDLE getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg);
+    CORINFO_METHOD_HANDLE getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk);
     CORINFO_CLASS_HANDLE getDefaultComparerClass(CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE elemType);
@@ -241,7 +245,7 @@ FUNCTIONS
     bool isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
     bool getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* value);
     CORINFO_CLASS_HANDLE getObjectType(CORINFO_OBJECT_HANDLE objPtr)
-    bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, REF_CORINFO_CONST_LOOKUP pLookup)
+    bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, REF_CORINFO_CONST_LOOKUP pLookup)
     void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP *pLookup)
     CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context)
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
@@ -298,6 +302,7 @@ FUNCTIONS
     bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE  structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
     void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
     void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
+    CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
     void getHelperFtn (CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE *pMethod);
@@ -346,4 +351,5 @@ FUNCTIONS
     CorInfoReloc getRelocTypeHint(void* target)
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
     CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;

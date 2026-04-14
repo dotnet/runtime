@@ -203,6 +203,23 @@ DWORD SectionCharacteristicsToPageProtection(UINT characteristics)
 }
 #endif // TARGET_UNIX
 
+void PEImageLayout::InitDecoders(void* data, COUNT_T size)
+{
+#ifdef FEATURE_WEBCIL
+    if (WebcilDecoder::DetectWebcilFormat(data, size))
+    {
+        m_format = FORMAT_WEBCIL;
+        m_webcilDecoder.Init(data, size);
+        m_peDecoder.Init(data, size); // Initialize base/size/flags for cDAC
+    }
+    else
+#endif
+    {
+        m_format = FORMAT_PE;
+        m_peDecoder.Init(data, size);
+    }
+}
+
 // IMAGE_REL_BASED_PTR is architecture specific reloc of virtual address
 #ifdef TARGET_64BIT
 #define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_DIR64
@@ -216,6 +233,8 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(IsPEFormat() || IsWebcilFormat());
+
     SetRelocated();
 
     //
@@ -225,9 +244,19 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
     SSIZE_T delta = (SIZE_T) GetBase() - (SIZE_T) GetPreferredBase();
 
-    // Nothing to do - image is loaded at preferred base
-    if (delta == 0)
+#ifdef FEATURE_WEBCIL
+    SSIZE_T tableBaseDelta = m_tableBaseOffset;
+#endif // FEATURE_WEBCIL
+
+    // Nothing to do - image is loaded at preferred base and no table base offset
+    if (delta == 0
+#ifdef FEATURE_WEBCIL
+        && tableBaseDelta == 0
+#endif // FEATURE_WEBCIL
+        )
+    {
         return;
+    }
 
     LOG((LF_LOADER, LL_INFO100, "PEImage: Applying base relocations (preferred: %x, actual: %x)\n",
         GetPreferredBase(), GetBase()));
@@ -265,8 +294,9 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
         BYTE * pageAddress = (BYTE *)GetBase() + rva;
 
-        // Check whether the page is outside the unprotected region
-        if ((SIZE_T)(pageAddress - pWriteableRegion) >= cbWriteableRegion)
+        // Check whether the page is outside the unprotected region.
+        // Webcil data is already writable, so skip memory protection management.
+        if (IsPEFormat() && (SIZE_T)(pageAddress - pWriteableRegion) >= cbWriteableRegion)
         {
             // Restore the protection
             if (dwOldProtection != 0)
@@ -343,6 +373,16 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 break;
 #endif
 
+#ifdef FEATURE_WEBCIL
+            case IMAGE_REL_BASED_WASM32_TABLE:
+                *(uint32_t *)address += (uint32_t)tableBaseDelta;
+                break;
+
+            case IMAGE_REL_BASED_WASM64_TABLE:
+                *(uint64_t *)address += (uint64_t)tableBaseDelta;
+                break;
+#endif // FEATURE_WEBCIL
+
             case IMAGE_REL_BASED_ABSOLUTE:
                 //no adjustment
                 break;
@@ -352,22 +392,25 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             }
         }
 
-        BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
-            PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
-
-        if (bExecRegion && pEndAddressToFlush != NULL)
+        if (IsPEFormat())
         {
-            // If the current page is not next to the pending region to flush, flush the current pending region and start a new one
-            if (pageAddress >= pFlushRegion + cbFlushRegion + cbPageSize || pageAddress < pFlushRegion)
-            {
-                if (pFlushRegion != NULL)
-                {
-                    ClrFlushInstructionCache(pFlushRegion, cbFlushRegion);
-                }
-                pFlushRegion = pageAddress;
-            }
+            BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
+                PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
 
-            cbFlushRegion = pEndAddressToFlush - pFlushRegion;
+            if (bExecRegion && pEndAddressToFlush != NULL)
+            {
+                // If the current page is not next to the pending region to flush, flush the current pending region and start a new one
+                if (pageAddress >= pFlushRegion + cbFlushRegion + cbPageSize || pageAddress < pFlushRegion)
+                {
+                    if (pFlushRegion != NULL)
+                    {
+                        ClrFlushInstructionCache(pFlushRegion, cbFlushRegion);
+                    }
+                    pFlushRegion = pageAddress;
+                }
+
+                cbFlushRegion = pEndAddressToFlush - pFlushRegion;
+            }
         }
 
         dirPos += fixupsSize;
@@ -390,9 +433,9 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             ThrowLastError();
 #endif // __APPLE__ && HOST_ARM64
     }
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
     PAL_LOADMarkSectionAsNotNeeded((void*)dir);
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !TARGET_WASM
 
     if (pFlushRegion != NULL)
     {
@@ -485,7 +528,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
         loadedImage = source->LoadImageByCopyingParts(this->m_imageParts);
     }
 
-    IfFailThrow(Init(loadedImage));
+    IfFailThrow(m_peDecoder.Init(loadedImage));
 
     if (AllowR2RForImage(m_pOwner) && IsNativeMachineFormat())
     {
@@ -557,7 +600,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         return;
     }
 
-    IfFailThrow(Init(m_Module, true));
+    IfFailThrow(m_peDecoder.Init(m_Module, true));
 
 #ifdef LOGGING
     SString ownerPath{ pOwner->GetPath() };
@@ -582,12 +625,12 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         ownerPath.GetUTF8(), hFile, (void*)m_LoadedFile));
 #endif // LOGGING
 
-    IfFailThrow(Init((void*)m_LoadedFile));
+    IfFailThrow(m_peDecoder.Init((void*)m_LoadedFile));
 
     if (!HasCorHeader())
     {
         *loadFailure = COR_E_BADIMAGEFORMAT;
-        Reset();
+        m_peDecoder.Reset();
         return;
     }
 
@@ -597,7 +640,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         if (!IsNativeMachineFormat())
         {
             *loadFailure = COR_E_BADIMAGEFORMAT;
-            Reset();
+            m_peDecoder.Reset();
             return;
         }
 
@@ -612,7 +655,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HMODULE hModule)
 {
     m_pOwner = pOwner;
-    PEDecoder::Init((void*)hModule, /* relocated */ true);
+    m_peDecoder.Init((void*)hModule, /* relocated */ true);
 }
 #endif // !TARGET_UNIX
 
@@ -655,7 +698,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         // Image was provided as flat data via external assembly probing.
         // We do not manage the data - just initialize with it directly.
         _ASSERTE(dataSize != 0);
-        Init(data, (COUNT_T)dataSize);
+        InitDecoders(data, (COUNT_T)dataSize);
         return;
     }
 
@@ -763,7 +806,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         }
     }
 
-    Init(addr, (COUNT_T)size);
+    InitDecoders(addr, (COUNT_T)size);
 }
 
 FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size)
@@ -781,7 +824,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
 
     if (size == 0)
     {
-        Init((void*)array, size);
+        m_peDecoder.Init((void*)array, size);
     }
     else
     {
@@ -811,7 +854,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
             ThrowLastError();
 
         memcpy(m_FileView, array, size);
-        Init((void*)m_FileView, size);
+        InitDecoders((void*)m_FileView, size);
     }
 }
 
@@ -834,7 +877,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
     DWORD allocationType = MEM_RESERVE | MEM_COMMIT;
-#if defined(HOST_UNIX) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+#if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
     // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
     // This is required on MacOS and otherwise will allow us to place native R2R code close to the
     // coreclr library and thus improve performance by avoiding jump stubs in managed code.
@@ -1262,11 +1305,11 @@ NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
 
 
 #if TARGET_UNIX
-    PEDecoder::Init(loadedImage, /* relocated */ false);
+    m_peDecoder.Init(loadedImage, /* relocated */ false);
     // Unix specifies write sharing at map time (i.e. MAP_PRIVATE implies writecopy).
     ApplyBaseRelocations(/* relocationMustWriteCopy*/ false);
 #else // TARGET_UNIX
-    PEDecoder::Init(loadedImage, /* relocated */ true);
+    m_peDecoder.Init(loadedImage, /* relocated */ true);
 #endif // TARGET_UNIX
 }
 #endif // !DACESS_COMPILE
@@ -1278,6 +1321,13 @@ PEImageLayout::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p PEAssembly\n", dac_cast<TADDR>(this)));
-    PEDecoder::EnumMemoryRegions(flags,false);
+#ifdef FEATURE_WEBCIL
+    if (IsWebcilFormat())
+    {
+        m_webcilDecoder.EnumMemoryRegions(flags, false);
+        return;
+    }
+#endif
+    m_peDecoder.EnumMemoryRegions(flags,false);
 }
 #endif //DACCESS_COMPILE

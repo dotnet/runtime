@@ -21,6 +21,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationType">The implementation type of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddKeyedTransient(
             this IServiceCollection services,
@@ -45,6 +50,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddKeyedTransient(
             this IServiceCollection services,
@@ -69,6 +79,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddKeyedTransient<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
             this IServiceCollection services,
@@ -89,6 +104,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The type of the service to register and the implementation to use.</param>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddKeyedTransient(
             this IServiceCollection services,
@@ -109,6 +129,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddKeyedTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(
             this IServiceCollection services,
@@ -130,6 +155,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddKeyedTransient<TService>(
             this IServiceCollection services,
@@ -155,6 +185,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddKeyedTransient<TService, TImplementation>(
             this IServiceCollection services,
@@ -179,6 +214,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationType">The implementation type of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddKeyedScoped(
             this IServiceCollection services,
@@ -203,6 +243,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddKeyedScoped(
             this IServiceCollection services,
@@ -227,6 +272,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddKeyedScoped<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
             this IServiceCollection services,
@@ -247,6 +297,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The type of the service to register and the implementation to use.</param>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddKeyedScoped(
             this IServiceCollection services,
@@ -267,6 +322,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddKeyedScoped<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(
             this IServiceCollection services,
@@ -288,6 +348,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddKeyedScoped<TService>(
             this IServiceCollection services,
@@ -313,6 +378,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddKeyedScoped<TService, TImplementation>(
             this IServiceCollection services,
@@ -337,6 +407,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationType">The implementation type of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddKeyedSingleton(
             this IServiceCollection services,
@@ -361,6 +436,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddKeyedSingleton(
             this IServiceCollection services,
@@ -385,6 +465,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddKeyedSingleton<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
             this IServiceCollection services,
@@ -405,6 +490,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The type of the service to register and the implementation to use.</param>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddKeyedSingleton(
             this IServiceCollection services,
@@ -425,6 +515,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the service to.</param>
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddKeyedSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(
             this IServiceCollection services,
@@ -446,6 +541,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddKeyedSingleton<TService>(
             this IServiceCollection services,
@@ -471,6 +571,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationFactory">The factory that creates the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddKeyedSingleton<TService, TImplementation>(
             this IServiceCollection services,
@@ -495,6 +600,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationInstance">The instance of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddKeyedSingleton(
             this IServiceCollection services,
@@ -520,6 +630,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceKey">The <see cref="ServiceDescriptor.ServiceKey"/> of the service.</param>
         /// <param name="implementationInstance">The instance of the service.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <remarks>
+        /// This method always adds a new registration to the <see cref="IServiceCollection"/>, even if a service of the same type and key has already been registered.
+        /// When multiple registrations exist for the same type and key, <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedService{T}(IServiceProvider, object)"/> returns the last registered service.
+        /// Use <see cref="ServiceProviderKeyedServiceExtensions.GetKeyedServices{T}(IServiceProvider, object)"/> to retrieve all registered services.
+        /// </remarks>
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddKeyedSingleton<TService>(
             this IServiceCollection services,

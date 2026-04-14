@@ -47,14 +47,12 @@ class AsyncContinuationsManager
     CrstExplicitInit m_layoutsLock;
     ContinuationLayoutHashTable m_layouts;
 
-    MethodTable* CreateNewContinuationMethodTable(unsigned dataSize, const bool* objRefs, MethodDesc* asyncMethod, AllocMemTracker* pamTracker);
-
     static MethodTable* CreateNewContinuationMethodTable(unsigned dataSize, const bool* objRefs, EEClass* eeClass, LoaderAllocator* allocator, Module* loaderModule, AllocMemTracker* pamTracker);
     static PTR_EEClass GetOrCreateSingletonSubContinuationEEClass();
     static PTR_EEClass CreateSingletonSubContinuationEEClass();
 public:
     AsyncContinuationsManager(LoaderAllocator* allocator);
-    MethodTable* LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, MethodDesc* asyncMethod);
+    MethodTable* LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, Module* loaderModule);
     void NotifyUnloadingClasses();
 
     template<typename AppendString, typename AppendNum>
