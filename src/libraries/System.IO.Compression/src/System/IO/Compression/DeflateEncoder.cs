@@ -162,13 +162,24 @@ namespace System.IO.Compression
             // to support input sizes beyond uint.MaxValue. The native function accepts z_uintmax_t,
             // but the managed P/Invoke signature uses uint, limiting it to ~4 GB.
             // For raw deflate (no zlib header/trailer), this slightly overestimates, which is safe.
-
-            return inputLength
-                + (inputLength == 0 ? 1 : 0)
-                + (inputLength < 9 ? 1 : 0)
-                + ((inputLength + 7) >> 3)
+            //
+            // Compute the bound using ulong arithmetic so the intermediate additions cannot overflow
+            // for any non-negative long input. If the resulting bound cannot be represented as a long,
+            // reject the input rather than returning a wrapped value.
+            ulong sourceLength = (ulong)inputLength;
+            ulong maxCompressedLength = sourceLength
+                + (sourceLength == 0 ? 1u : 0u)
+                + (sourceLength < 9 ? 1u : 0u)
+                + ((sourceLength + 7) >> 3)
                 + 3   // DEFLATE_BLOCK_OVERHEAD: (3 + 15 + 6) >> 3
                 + 6;  // ZLIB_WRAPLEN: zlib header (2 bytes) + Adler32 trailer (4 bytes)
+
+            if (maxCompressedLength > long.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inputLength));
+            }
+
+            return (long)maxCompressedLength;
         }
 
         /// <summary>
