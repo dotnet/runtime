@@ -4304,7 +4304,15 @@ namespace
     case VT_RECORD:
     {
         *pElementType = thElement;
-        *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+
+        if (thElement.IsBlittable())
+        {
+            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+        }
+        else
+        {
+            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+        }
         return;
     }
 
