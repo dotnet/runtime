@@ -530,6 +530,12 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
     }
     t_gdbJitDebugInfoCallbackDepth = 0;
 
+    // Defensive: managed helper may not provide locals; skip converting locals if names are absent.
+    if (methodDebugInfo.locals == nullptr || methodDebugInfo.localsSize == 0)
+    {
+        locals.size = 0;
+    }
+
     symInfoLen = numMap;
     symInfo = new SymbolsInfo[numMap];
 
@@ -539,6 +545,14 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
 
     for (int i = 0; i < locals.size; i++)
     {
+        if (methodDebugInfo.locals[i].name == nullptr)
+        {
+            locals.localsName[i] = nullptr;
+            locals.localsScope[i].ilStartOffset = 0;
+            locals.localsScope[i].ilEndOffset = 0;
+            continue;
+        }
+
         size_t sizeRequired = WideCharToMultiByte(CP_UTF8, 0, methodDebugInfo.locals[i].name, -1, NULL, 0, NULL, NULL);
         locals.localsName[i] = new char[sizeRequired];
 
