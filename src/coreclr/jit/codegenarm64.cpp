@@ -60,7 +60,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     const int calleeSaveSpOffset = m_compiler->compFrameInfo.calleeSaveSpOffset;
     const int calleeSaveSpDelta  = m_compiler->compFrameInfo.calleeSaveSpDelta;
     const int offsetSpToSavedFp  = m_compiler->compFrameInfo.offsetSpToSavedFp;
-    bool restoreFplr = (rsRestoreRegs & RBM_FP) != 0;
+    bool      restoreFplr        = (rsRestoreRegs & RBM_FP) != 0;
 
     switch (frameType)
     {
@@ -140,7 +140,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                     //      add sp,sp,#remainingFrameSz
 
                     JITDUMP("    alignmentAdjustment2=%d\n", alignmentAdjustment2);
-                    genEpilogRestoreRegPair(REG_FP, REG_LR, alignmentAdjustment2, spAdjustment2, false, REG_IP1, nullptr);
+                    genEpilogRestoreRegPair(REG_FP, REG_LR, alignmentAdjustment2, spAdjustment2, false, REG_IP1,
+                                            nullptr);
                 }
                 else
                 {
@@ -168,8 +169,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
                     JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
-                    genEpilogRestoreRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, remainingFrameSz, false,
-                                            REG_IP1, nullptr);
+                    genEpilogRestoreRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, remainingFrameSz,
+                                            false, REG_IP1, nullptr);
                 }
                 else
                 {
@@ -286,9 +287,9 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     if (m_compiler->opts.IsOSR())
     {
         PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
-        regsToRestoreMask = patchpointInfo->CalleeSaveRegisters();
+        regsToRestoreMask                    = patchpointInfo->CalleeSaveRegisters();
 
-        int             frameSize = patchpointInfo->TotalFrameSize();
+        int frameSize         = patchpointInfo->TotalFrameSize();
         int calleeSavesOffset = frameSize - genCountBits(regsToRestoreMask) * REGSIZE_BYTES;
 
         if (frameSize >= 504)
@@ -590,7 +591,8 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
 // Return Value:
 //    None.
 
-void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool unwindOnly)
+void CodeGen::genPrologSaveReg(
+    regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool unwindOnly)
 {
     assert(spOffset >= 0);
     assert(spDelta <= 0);
@@ -901,7 +903,8 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
             // We can use a STP instruction.
             if (genReverseAndPairCalleeSavedRegisters)
             {
-                genPrologSaveRegPair(regPair.reg2, regPair.reg1, spOffset, spDelta, false, REG_IP0, nullptr, unwindOnly);
+                genPrologSaveRegPair(regPair.reg2, regPair.reg1, spOffset, spDelta, false, REG_IP0, nullptr,
+                                     unwindOnly);
             }
             else
             {
@@ -959,7 +962,10 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 //    The save set can contain LR in which case LR is saved along with the other callee-saved registers.
 //    But currently Jit doesn't use frames without frame pointer on arm64.
 //
-void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta, bool unwindOnly)
+void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
+                                              int       lowestCalleeSavedOffset,
+                                              int       spDelta,
+                                              bool      unwindOnly)
 {
     assert(spDelta <= 0);
     assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
@@ -5588,10 +5594,10 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     // Figure out which set of int callee saves was already saved by Tier0.
     // Emit appropriate unwind.
     //
-    PatchpointInfo* const patchpointInfo             = m_compiler->info.compPatchpointInfo;
-    regMaskTP const tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
+    PatchpointInfo* const patchpointInfo   = m_compiler->info.compPatchpointInfo;
+    regMaskTP const       tier0CalleeSaves = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
     assert((tier0CalleeSaves & RBM_ALLFLOAT) == RBM_NONE);
-    int const             tier0CalleeSaveUsedSize = genCountBits(tier0CalleeSaves) * REGSIZE_BYTES;
+    int const tier0CalleeSaveUsedSize = genCountBits(tier0CalleeSaves) * REGSIZE_BYTES;
 
     JITDUMP("--OSR--- tier0 has already saved ");
     JITDUMPEXEC(dspRegMask(tier0CalleeSaves));

@@ -363,7 +363,6 @@ protected:
     void genClearStackVec3ArgUpperBits();
 #endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
-
     void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 #if defined(TARGET_ARM64)
     bool genInstrWithConstant(instruction ins,
@@ -385,7 +384,8 @@ protected:
                               bool*     pTmpRegIsZero,
                               bool      unwindOnly = false);
 
-    void genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool unwindOnly);
+    void genPrologSaveReg(
+        regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool unwindOnly);
 
     void genEpilogRestoreRegPair(regNumber reg1,
                                  regNumber reg2,
@@ -428,7 +428,10 @@ protected:
     void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset, bool unwindOnly = false);
     void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
 
-    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta, bool unwindOnly = false);
+    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
+                                         int       lowestCalleeSavedOffset,
+                                         int       spDelta,
+                                         bool      unwindOnly = false);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

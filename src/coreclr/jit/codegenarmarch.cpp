@@ -4483,8 +4483,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     // The amount to subtract from SP before starting to store the callee-saved registers. It might be folded into the
     // first save instruction as a "predecrement" amount, if possible.
-    int calleeSaveSpDelta = 0;
-    bool saveFplr = (maskSaveRegsInt & RBM_FP) != 0;
+    int  calleeSaveSpDelta = 0;
+    bool saveFplr          = (maskSaveRegsInt & RBM_FP) != 0;
 
     if (isFramePointerUsed())
     {
@@ -4801,7 +4801,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
             if (saveFplr)
             {
-                genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegZeroed);
+                genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg,
+                                     pInitRegZeroed);
             }
             else
             {
@@ -4834,8 +4835,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         {
             if (saveFplr)
             {
-                genPrologSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false, initReg,
-                                     pInitRegZeroed);
+                genPrologSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false,
+                                     initReg, pInitRegZeroed);
             }
             else
             {
