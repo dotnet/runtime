@@ -92,6 +92,26 @@
         <target state="translated">使用 JsonSerializableAttribute 批注的类型必须是派生自 JsonSerializerContext 的类。</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonSerializableTypeHasJsonTypeInfoMemberMessageFormat">
+        <source>The type '{0}' already contains a member named 'JsonTypeInfo'. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to specify a different name for the generated property.</source>
+        <target state="new">The type '{0}' already contains a member named 'JsonTypeInfo'. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to specify a different name for the generated property.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonSerializableTypeHasJsonTypeInfoMemberTitle">
+        <source>Type already contains a member named 'JsonTypeInfo'.</source>
+        <target state="new">Type already contains a member named 'JsonTypeInfo'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonSerializableTypeMustBePartialMessageFormat">
+        <source>The type '{0}' has been annotated with the parameterless JsonSerializableAttribute but is not declared as partial. The type and all containing types must be made partial to kick off source generation.</source>
+        <target state="new">The type '{0}' has been annotated with the parameterless JsonSerializableAttribute but is not declared as partial. The type and all containing types must be made partial to kick off source generation.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonSerializableTypeMustBePartialTitle">
+        <source>Types annotated with the parameterless JsonSerializableAttribute must be partial.</source>
+        <target state="new">Types annotated with the parameterless JsonSerializableAttribute must be partial.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
         <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
         <target state="translated">成员“{0}”已使用本机 AOT 中不支持的 "JsonStringEnumConverter" 进行批注。请改为考虑使用泛型 "JsonStringEnumConverter&lt;TEnum&gt;"。</target>

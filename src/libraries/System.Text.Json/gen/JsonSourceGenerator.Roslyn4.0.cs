@@ -31,6 +31,7 @@ namespace System.Text.Json.SourceGeneration
             IncrementalValueProvider<KnownTypeSymbols> knownTypeSymbols = context.CompilationProvider
                 .Select((compilation, _) => new KnownTypeSymbols(compilation));
 
+            // Pipeline 1: Existing context-based source generation
             IncrementalValuesProvider<(ContextGenerationSpec?, ImmutableArray<Diagnostic>)> contextGenerationSpecs = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
@@ -88,6 +89,47 @@ namespace System.Text.Json.SourceGeneration
                 contextGenerationSpecs.Select(static (t, _) => t.Item2);
 
             context.RegisterSourceOutput(diagnostics, EmitDiagnostics);
+
+            // Pipeline 2: POCO-based source generation (parameterless [JsonSerializable] on data types)
+            IncrementalValuesProvider<(PocoTypeGenerationSpec?, ImmutableArray<Diagnostic>)> pocoGenerationSpecs = context.SyntaxProvider
+                .ForAttributeWithMetadataName(
+#if !ROSLYN4_4_OR_GREATER
+                    context,
+#endif
+                    Parser.JsonSerializableAttributeFullName,
+                    (node, _) => node is TypeDeclarationSyntax,
+                    (context, _) => (TypeDeclaration: (TypeDeclarationSyntax)context.TargetNode, context.SemanticModel))
+                .Combine(knownTypeSymbols)
+                .Select(static (tuple, cancellationToken) =>
+                {
+#pragma warning disable RS1035
+                    CultureInfo originalCulture = CultureInfo.CurrentCulture;
+                    CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+                    try
+                    {
+#pragma warning restore RS1035
+                        Parser parser = new(tuple.Right);
+                        PocoTypeGenerationSpec? pocoSpec = parser.ParsePocoTypeGenerationSpec(tuple.Left.TypeDeclaration, tuple.Left.SemanticModel, cancellationToken);
+                        ImmutableArray<Diagnostic> pocoDiagnostics = parser.Diagnostics.ToImmutableArray();
+                        return (pocoSpec, pocoDiagnostics);
+#pragma warning disable RS1035
+                    }
+                    finally
+                    {
+                        CultureInfo.CurrentCulture = originalCulture;
+                    }
+#pragma warning restore RS1035
+                });
+
+            IncrementalValuesProvider<PocoTypeGenerationSpec?> pocoSpecs =
+                pocoGenerationSpecs.Select(static (t, _) => t.Item1);
+
+            context.RegisterSourceOutput(pocoSpecs, EmitPocoSource);
+
+            IncrementalValuesProvider<ImmutableArray<Diagnostic>> pocoDiagnostics =
+                pocoGenerationSpecs.Select(static (t, _) => t.Item2);
+
+            context.RegisterSourceOutput(pocoDiagnostics, EmitDiagnostics);
         }
 
         private void EmitSource(SourceProductionContext sourceProductionContext, ContextGenerationSpec? contextGenerationSpec)
@@ -123,6 +165,28 @@ namespace System.Text.Json.SourceGeneration
             {
                 context.ReportDiagnostic(diagnostic);
             }
+        }
+
+        private static void EmitPocoSource(SourceProductionContext sourceProductionContext, PocoTypeGenerationSpec? pocoSpec)
+        {
+            if (pocoSpec is null)
+            {
+                return;
+            }
+
+#pragma warning disable RS1035
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+            try
+            {
+                Emitter emitter = new(sourceProductionContext);
+                emitter.EmitPocoType(pocoSpec);
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = originalCulture;
+            }
+#pragma warning restore RS1035
         }
 
         /// <summary>

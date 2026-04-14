@@ -52,45 +52,68 @@ namespace System.Text.Json.SourceGeneration
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
             try
             {
-                if (executionContext.SyntaxContextReceiver is not SyntaxContextReceiver receiver || receiver.ContextClassDeclarations == null)
+                if (executionContext.SyntaxContextReceiver is not SyntaxContextReceiver receiver)
                 {
                     // nothing to do yet
                     return;
                 }
 
-                // Stage 1. Parse the identified JsonSerializerContext classes and store the model types.
                 KnownTypeSymbols knownSymbols = new(executionContext.Compilation);
-                Parser parser = new(knownSymbols);
 
-                List<ContextGenerationSpec>? contextGenerationSpecs = null;
-                foreach ((ClassDeclarationSyntax? contextClassDeclaration, SemanticModel semanticModel) in receiver.ContextClassDeclarations)
+                // Stage 1a. Parse the identified JsonSerializerContext classes and store the model types.
+                if (receiver.ContextClassDeclarations != null)
                 {
-                    ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(contextClassDeclaration, semanticModel, executionContext.CancellationToken);
-                    if (contextGenerationSpec is null)
+                    Parser parser = new(knownSymbols);
+
+                    List<ContextGenerationSpec>? contextGenerationSpecs = null;
+                    foreach ((ClassDeclarationSyntax? contextClassDeclaration, SemanticModel semanticModel) in receiver.ContextClassDeclarations)
                     {
-                        continue;
+                        ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(contextClassDeclaration, semanticModel, executionContext.CancellationToken);
+                        if (contextGenerationSpec is null)
+                        {
+                            continue;
+                        }
+
+                        (contextGenerationSpecs ??= new()).Add(contextGenerationSpec);
                     }
 
-                    (contextGenerationSpecs ??= new()).Add(contextGenerationSpec);
+                    // Report any diagnostics gathered by the parser.
+                    foreach (Diagnostic diagnostic in parser.Diagnostics)
+                    {
+                        executionContext.ReportDiagnostic(diagnostic);
+                    }
+
+                    if (contextGenerationSpecs is not null)
+                    {
+                        // Emit source code from the spec models.
+                        OnSourceEmitting?.Invoke(contextGenerationSpecs.ToImmutableArray());
+                        Emitter emitter = new(executionContext);
+                        foreach (ContextGenerationSpec contextGenerationSpec in contextGenerationSpecs)
+                        {
+                            emitter.Emit(contextGenerationSpec);
+                        }
+                    }
                 }
 
-                // Stage 2. Report any diagnostics gathered by the parser.
-                foreach (Diagnostic diagnostic in parser.Diagnostics)
+                // Stage 1b. Parse POCO types annotated with parameterless [JsonSerializable].
+                if (receiver.PocoTypeDeclarations != null)
                 {
-                    executionContext.ReportDiagnostic(diagnostic);
-                }
+                    Parser parser = new(knownSymbols);
 
-                if (contextGenerationSpecs is null)
-                {
-                    return;
-                }
+                    foreach ((TypeDeclarationSyntax typeDeclaration, SemanticModel semanticModel) in receiver.PocoTypeDeclarations)
+                    {
+                        PocoTypeGenerationSpec? pocoSpec = parser.ParsePocoTypeGenerationSpec(typeDeclaration, semanticModel, executionContext.CancellationToken);
+                        if (pocoSpec is not null)
+                        {
+                            Emitter emitter = new(executionContext);
+                            emitter.EmitPocoType(pocoSpec);
+                        }
+                    }
 
-                // Stage 3. Emit source code from the spec models.
-                OnSourceEmitting?.Invoke(contextGenerationSpecs.ToImmutableArray());
-                Emitter emitter = new(executionContext);
-                foreach (ContextGenerationSpec contextGenerationSpec in contextGenerationSpecs)
-                {
-                    emitter.Emit(contextGenerationSpec);
+                    foreach (Diagnostic diagnostic in parser.Diagnostics)
+                    {
+                        executionContext.ReportDiagnostic(diagnostic);
+                    }
                 }
             }
             finally
@@ -109,48 +132,71 @@ namespace System.Text.Json.SourceGeneration
             }
 
             public List<(ClassDeclarationSyntax, SemanticModel)>? ContextClassDeclarations { get; private set; }
+            public List<(TypeDeclarationSyntax, SemanticModel)>? PocoTypeDeclarations { get; private set; }
 
             public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
             {
-                if (IsSyntaxTargetForGeneration(context.Node))
+                if (context.Node is TypeDeclarationSyntax { AttributeLists.Count: > 0 } typeDeclaration)
                 {
-                    ClassDeclarationSyntax? classSyntax = GetSemanticTargetForGeneration(context, _cancellationToken);
-                    if (classSyntax != null)
+                    if (typeDeclaration is ClassDeclarationSyntax { BaseList.Types.Count: > 0 } classDeclaration)
                     {
-                        (ContextClassDeclarations ??= new()).Add((classSyntax, context.SemanticModel));
+                        // Could be a JsonSerializerContext-derived class
+                        if (HasJsonSerializableAttribute(context, classDeclaration))
+                        {
+                            (ContextClassDeclarations ??= new()).Add((classDeclaration, context.SemanticModel));
+                        }
+                    }
+
+                    // Also check for parameterless [JsonSerializable] on any type (POCO pattern)
+                    if (HasParameterlessJsonSerializableAttribute(context, typeDeclaration))
+                    {
+                        (PocoTypeDeclarations ??= new()).Add((typeDeclaration, context.SemanticModel));
                     }
                 }
             }
 
-            private static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists.Count: > 0, BaseList.Types.Count: > 0 };
-
-            private static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context, CancellationToken cancellationToken)
+            private static bool HasJsonSerializableAttribute(GeneratorSyntaxContext context, ClassDeclarationSyntax classDeclaration)
             {
-                var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
-
-                foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
+                foreach (AttributeListSyntax attributeListSyntax in classDeclaration.AttributeLists)
                 {
                     foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        IMethodSymbol? attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax, cancellationToken).Symbol as IMethodSymbol;
-                        if (attributeSymbol == null)
+                        if (context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol is IMethodSymbol attributeSymbol)
                         {
-                            continue;
-                        }
-
-                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
-                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
-
-                        if (fullName == Parser.JsonSerializableAttributeFullName)
-                        {
-                            return classDeclarationSyntax;
+                            string fullName = attributeSymbol.ContainingType.ToDisplayString();
+                            if (fullName == Parser.JsonSerializableAttributeFullName)
+                            {
+                                return true;
+                            }
                         }
                     }
                 }
 
-                return null;
+                return false;
+            }
+
+            private static bool HasParameterlessJsonSerializableAttribute(GeneratorSyntaxContext context, TypeDeclarationSyntax typeDeclaration)
+            {
+                foreach (AttributeListSyntax attributeListSyntax in typeDeclaration.AttributeLists)
+                {
+                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
+                    {
+                        // Parameterless: no argument list, or empty argument list
+                        if (attributeSyntax.ArgumentList is null or { Arguments.Count: 0 })
+                        {
+                            if (context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol is IMethodSymbol attributeSymbol)
+                            {
+                                string fullName = attributeSymbol.ContainingType.ToDisplayString();
+                                if (fullName == Parser.JsonSerializableAttributeFullName)
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return false;
             }
         }
 

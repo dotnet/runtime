@@ -1152,10 +1152,11 @@ namespace System.Text.Json.Serialization
     {
         public JsonRequiredAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
     public sealed partial class JsonSerializableAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonSerializableAttribute(System.Type type) { }
+        public JsonSerializableAttribute() { }
         public System.Text.Json.Serialization.JsonSourceGenerationMode GenerationMode { get { throw null; } set { } }
         public string? TypeInfoPropertyName { get { throw null; } set { } }
     }

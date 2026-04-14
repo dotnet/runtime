@@ -106,7 +106,14 @@ namespace System.Text.Json.SourceGeneration
 
                 if (!_knownSymbols.JsonSerializerContextType.IsAssignableFrom(contextTypeSymbol))
                 {
-                    ReportDiagnostic(DiagnosticDescriptors.JsonSerializableAttributeOnNonContextType, _contextClassLocation, contextTypeSymbol.ToDisplayString());
+                    // Only emit SYSLIB1224 if the type has [JsonSerializable(typeof(T))] attributes
+                    // (i.e., the old-style usage on a non-context type). Parameterless [JsonSerializable]
+                    // on a non-context type is handled by the POCO pipeline.
+                    if (!HasOnlyParameterlessJsonSerializableAttributes(contextTypeSymbol))
+                    {
+                        ReportDiagnostic(DiagnosticDescriptors.JsonSerializableAttributeOnNonContextType, _contextClassLocation, contextTypeSymbol.ToDisplayString());
+                    }
+
                     return null;
                 }
 
@@ -184,7 +191,137 @@ namespace System.Text.Json.SourceGeneration
                 return contextGenSpec;
             }
 
-            private static bool TryGetNestedTypeDeclarations(ClassDeclarationSyntax contextClassSyntax, SemanticModel semanticModel, CancellationToken cancellationToken, [NotNullWhen(true)] out List<string>? typeDeclarations)
+            /// <summary>
+            /// Checks whether all [JsonSerializable] attributes on the type are parameterless (POCO-style).
+            /// </summary>
+            private bool HasOnlyParameterlessJsonSerializableAttributes(INamedTypeSymbol typeSymbol)
+            {
+                Debug.Assert(_knownSymbols.JsonSerializableAttributeType != null);
+
+                foreach (AttributeData attributeData in typeSymbol.GetAttributes())
+                {
+                    if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.JsonSerializableAttributeType))
+                    {
+                        if (attributeData.ConstructorArguments.Length > 0)
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            /// <summary>
+            /// Parses a type declaration annotated with the parameterless [JsonSerializable] attribute.
+            /// </summary>
+            public PocoTypeGenerationSpec? ParsePocoTypeGenerationSpec(TypeDeclarationSyntax typeDeclaration, SemanticModel semanticModel, CancellationToken cancellationToken)
+            {
+                if (!_compilationContainsCoreJsonTypes)
+                {
+                    return null;
+                }
+
+                Debug.Assert(_knownSymbols.JsonSerializableAttributeType != null);
+
+                INamedTypeSymbol? typeSymbol = semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken);
+                if (typeSymbol is null)
+                {
+                    return null;
+                }
+
+                Location? location = typeSymbol.GetLocation();
+
+                // Skip if this type derives from JsonSerializerContext — that's handled by the existing pipeline
+                if (_knownSymbols.JsonSerializerContextType != null &&
+                    _knownSymbols.JsonSerializerContextType.IsAssignableFrom(typeSymbol))
+                {
+                    return null;
+                }
+
+                // Find the parameterless [JsonSerializable] attribute
+                AttributeData? parameterlessAttribute = null;
+                foreach (AttributeData attributeData in typeSymbol.GetAttributes())
+                {
+                    if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.JsonSerializableAttributeType) &&
+                        attributeData.ConstructorArguments.Length == 0)
+                    {
+                        parameterlessAttribute = attributeData;
+                        break;
+                    }
+                }
+
+                if (parameterlessAttribute is null)
+                {
+                    return null;
+                }
+
+                // Validate language version
+                LanguageVersion? langVersion = _knownSymbols.Compilation.GetLanguageVersion();
+                if (langVersion is null or < MinimumSupportedLanguageVersion)
+                {
+                    Diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.JsonUnsupportedLanguageVersion,
+                        location, langVersion?.ToDisplayString(), MinimumSupportedLanguageVersion.ToDisplayString()));
+                    return null;
+                }
+
+                // Validate that the type and all containing types are partial
+                if (!TryGetNestedTypeDeclarations(typeDeclaration, semanticModel, cancellationToken, out List<string>? typeDeclarations))
+                {
+                    Diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.JsonSerializableTypeMustBePartial,
+                        location, typeSymbol.ToDisplayString()));
+                    return null;
+                }
+
+                // Parse named arguments from the attribute
+                string? typeInfoPropertyName = null;
+                JsonSourceGenerationMode? generationMode = null;
+
+                foreach (KeyValuePair<string, TypedConstant> namedArg in parameterlessAttribute.NamedArguments)
+                {
+                    switch (namedArg.Key)
+                    {
+                        case nameof(JsonSerializableAttribute.TypeInfoPropertyName):
+                            typeInfoPropertyName = (string)namedArg.Value.Value!;
+                            break;
+                        case nameof(JsonSerializableAttribute.GenerationMode):
+                            generationMode = (JsonSourceGenerationMode)namedArg.Value.Value!;
+                            break;
+                    }
+                }
+
+                // Default property name is "JsonTypeInfo"
+                string propertyName = typeInfoPropertyName ?? "JsonTypeInfo";
+
+                // Check for member name collision
+                foreach (ISymbol member in typeSymbol.GetMembers(propertyName))
+                {
+                    // Only report collision if the member is not compiler-generated (i.e., not from our previous generation)
+                    if (!member.IsImplicitlyDeclared)
+                    {
+                        Diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.JsonSerializableTypeHasJsonTypeInfoMember,
+                            location, typeSymbol.ToDisplayString()));
+                        return null;
+                    }
+                }
+
+                string typeName = typeSymbol.Name;
+                string generatedContextName = $"__JsonContext_{typeName}";
+
+                return new PocoTypeGenerationSpec
+                {
+                    TypeRef = new(typeSymbol),
+                    TypeName = typeName,
+                    TypeInfoPropertyName = propertyName,
+                    Namespace = typeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
+                    TypeDeclarations = typeDeclarations.ToImmutableEquatableArray(),
+                    GeneratedContextName = generatedContextName,
+                    GenerationMode = generationMode,
+                    IsValueType = typeSymbol.IsValueType,
+                };
+            }
+
+            private static bool TryGetNestedTypeDeclarations(TypeDeclarationSyntax contextClassSyntax, SemanticModel semanticModel, CancellationToken cancellationToken, [NotNullWhen(true)] out List<string>? typeDeclarations)
             {
                 typeDeclarations = null;
 
@@ -523,6 +660,12 @@ namespace System.Text.Json.SourceGeneration
 
             private TypeToGenerate? ParseJsonSerializableAttribute(AttributeData attributeData)
             {
+                // Skip parameterless [JsonSerializable] attributes (POCO-style) — they're handled by the POCO pipeline.
+                if (attributeData.ConstructorArguments.Length == 0)
+                {
+                    return null;
+                }
+
                 Debug.Assert(attributeData.ConstructorArguments.Length == 1);
                 var typeSymbol = (ITypeSymbol?)attributeData.ConstructorArguments[0].Value;
                 if (typeSymbol is null)
