@@ -2714,7 +2714,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             // If either of the value operands is const zero and the mask is either all
             // zeros or all ones per-element, we can optimize down to AND or AND_NOT.
-            if (op3->IsVectorPerElementMask(simdBaseType, simdSize) && (op1->IsVectorZero() || op2->IsVectorZero()))
+            if (op3->IsVectorPerElementMask(TYP_BYTE, simdSize) && (op1->IsVectorZero() || op2->IsVectorZero()))
             {
                 var_types simdType = node->TypeGet();
                 GenTree*  binOp    = nullptr;
@@ -3522,7 +3522,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
         // the right instruction variant is picked. If the CndSel was for TYP_INT but
         // the mask was for TYP_DOUBLE then we'd generate vpblendmd when we really want
         // vpblendmq. Changing the size is fine since CndSel itself is bitwise and the
-        // the mask is just representing entire elements at a given size.
+        // mask is just representing entire elements at a given size.
 
         simdBaseType = cvtMaskToVector->GetSimdBaseType();
 
@@ -3543,7 +3543,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     }
     else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
     {
-        // TernaryLogic is always single cycle with a lot of ports availalbe and while
+        // TernaryLogic is always single cycle with a lot of ports available and while
         // BlendVariable is often also a single cycle it can frequently be 2-3 instead.
         //
         // Additionally, for TYP_SIMD64 this avoids needing to convert from vector to mask
@@ -3568,8 +3568,6 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 
         // Next, determine if the target architecture supports BlendVariable
         NamedIntrinsic blendVariableId = NI_Illegal;
-
-        bool isFloating = false;
 
         if (varTypeIsFloating(simdBaseType) && !op1->IsVectorPerElementMask(simdBaseType, simdSize))
         {
