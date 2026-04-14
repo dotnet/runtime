@@ -83,7 +83,6 @@ internal sealed class MockReJITBuilder
     private ulong AddProfControlBlock(bool rejitOnAttachEnabled)
     {
         MockMemorySpace.HeapFragment fragment = _rejitAllocator.Allocate((ulong)ProfControlBlockLayout.Size, "ProfControlBlock");
-        Builder.AddHeapFragment(fragment);
         MockProfControlBlock profControlBlock = ProfControlBlockLayout.Create(fragment);
         profControlBlock.GlobalEventMask = 0;
         profControlBlock.RejitOnAttachEnabled = rejitOnAttachEnabled ? (byte)1 : (byte)0;
