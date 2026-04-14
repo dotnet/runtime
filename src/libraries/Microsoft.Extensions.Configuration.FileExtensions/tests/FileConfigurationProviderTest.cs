@@ -113,7 +113,8 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             Assert.Contains(physicalPath, exception.Message);
         }
 
-        [Fact]
+        // FileSystemWatcher is unreliable under load on .Net Framework, making this test flaky
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
         public async Task ResolveFileProvider_WithMissingParentDirectory_WatchTokenFiresWhenFileCreated()
         {
             // Verify the fix for https://github.com/dotnet/runtime/issues/116713:
