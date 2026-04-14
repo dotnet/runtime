@@ -76,37 +76,42 @@ walker that:
 2. Delegates standard ECMA-335 type codes to the existing `GcSignatureTypeProvider`
 3. Handles `ELEMENT_TYPE_CMOD_INTERNAL` (0x22) similarly if encountered
 
-## Issue 2: Stack walker code offset difference (instruction-level stress only)
+## Issue 2: CheckForSkippedFrames causes false IsActiveFrame=false (instruction-level stress only)
 
-**Affected**: Methods during EventSource initialization
+**Affected**: Topmost managed frame at specific instruction offsets
 **Frequency**: ~4 per 25K verifications (0.02%)
-**Root cause**: IDENTIFIED — cDAC and DAC unwinders compute different frame IPs
+**Root cause**: IDENTIFIED — `CheckForSkippedFrames` boundary condition
 
-**Where it happens**: The cDAC's stack unwinder in `StackWalk_1.Next()` produces
-a different return address for deep frames compared to the native `StackFrameIterator`.
-This causes `EnumGcRefsForManagedFrame` to be called with a different code offset,
-selecting a different safe point whose liveness bitmap has different register state.
+**Where it happens**: `StackWalk_1.WalkStackReferences()` in
+`src/native/managed/cdac/.../Contracts/StackWalk/StackWalk_1.cs` (lines 173-174)
+and `CreateStackWalk()` (lines 141-143).
 
-**Confirmed via parallel GcInfo tracing**: Both the native and cDAC `GcInfoDecoder`
-read the SAME GcInfo blob and produce IDENTICAL liveness bits for the same
-(offset, safePointIndex) pair. The slot table decoding, bit positions, and live
-state bitmaps all match exactly. The divergence is upstream — in the code offset
-passed to `EnumerateLiveSlots`.
+**Root cause**: When the initial managed frame's caller SP is at the exact boundary
+of an explicit Frame's address, `CheckForSkippedFrames` returns `true` at some
+instruction offsets (IP) but `false` at adjacent offsets (IP-4). When it returns
+`true`, the state is set to `SW_SKIPPED_FRAME` and the first yielded frame has
+`IsActiveFrame=false` (because `IsActiveFrame = IsFirst && SW_FRAMELESS` and the
+state is SW_SKIPPED_FRAME). This causes `reportScratchSlots=false`, and scratch
+register GC refs (RAX, R8) are not reported.
 
-**Evidence**: For `GetTypeCore` (codeLen=0x1C4, numSP=23):
-- Both decoders: `numTracked=5, numUntracked=0, liveStateBitOffset=262`
-- Both decoders produce identical results at offsets 0x45, 0x55, 0x97, 0x191
-- The native walker visits additional offsets (0xae, 0xe0, 0x113) the cDAC never sees
-- At these additional offsets, different safe points produce different liveness
+**Evidence (IsActiveFrame trace)**:
+- PASS at IP=0x7FFB44F824F9: `IsActive=True flags=ActiveStackFrame` → 41 refs
+- FAIL at IP=0x7FFB44F824FD: `IsActive=False flags=0` → 40 refs (1 scratch reg missing)
 
-**Missing registers**: RAX (Reg=0) and R8 (Reg=8) — both scratch registers.
-The difference in which offset the walker uses leads to a different safe point
-where these registers are live (native) vs dead (cDAC).
+The missing ref is always a scratch register (RAX=0 or R8=8) that would be reported
+if `ActiveStackFrame` were set. The GcInfoDecoder bitmap is correct and identical
+between native and cDAC — the issue is purely in the `IsActiveFrame` flag.
 
-**Follow-up**: Investigate why the cDAC's `IPlatformAgnosticContext.Unwind()` produces
-a different return address for deep frames in this specific call chain. This likely
-involves a difference in how `RtlVirtualUnwind` or the cDAC's unwind path handles
-the frame at the QCall transition boundary.
+**GcInfoDecoder**: VERIFIED CORRECT. Parallel tracing confirmed:
+- `numTracked=5, numUntracked=0, liveStateBitOffset=262` — identical
+- Per-slot liveness bits match exactly for every (offset, safePointIndex) pair
+- Slot table decoding and bit positions are identical
+
+**Follow-up fix**: The `CheckForSkippedFrames` comparison at initialization needs
+to match the native `ProcessCurrentFrame` behavior more precisely, particularly
+for the case where the explicit Frame address is at the exact boundary of the
+caller SP. The native walker may use `<=` vs `<` or may adjust the comparison
+to account for the Frame being pushed during the GC stress mechanism itself.
 
 ## EH ThrowHelper (FIXED)
 

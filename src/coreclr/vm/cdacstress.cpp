@@ -1150,28 +1150,31 @@ static bool ComparePerFrame(StackRef* refsA, int countA, const char* labelA,
                 {
                     char methodName[256];
                     ResolveMethodName(groupsA[idxA].Source, groupsA[idxA].SourceType, methodName, sizeof(methodName));
-                    fprintf(s_logFile, "    [FRAME_DIFF] Source=0x%llx (%s): %s=%d %s=%d\n",
-                        (unsigned long long)groupsA[idxA].Source, methodName, labelA, cA, labelB, cB);
 
+                    // Log SP from first ref in each group for unwinder comparison
+                    auto spA = refsA[groupsA[idxA].StartIdx].StackPointer;
+                    auto spB = refsB[groupsB[idxB].StartIdx].StackPointer;
+                    fprintf(s_logFile, "    [FRAME_DIFF] Source=0x%llx (%s): %s=%d %s=%d SP_%s=0x%llx SP_%s=0x%llx%s\n",
+                        (unsigned long long)groupsA[idxA].Source, methodName, labelA, cA, labelB, cB,
+                        labelA, (unsigned long long)spA, labelB, (unsigned long long)spB,
+                        spA != spB ? " <-- SP MISMATCH" : "");
+
+                    // Dump ALL refs from both sides for detailed comparison
                     for (int i = 0; i < cA; i++)
                     {
-                        if (!aUsed[i])
-                        {
-                            auto& r = refsA[groupsA[idxA].StartIdx + i];
-                            fprintf(s_logFile, "      [%s_ONLY] Addr=0x%llx Obj=0x%llx Flags=0x%x Reg=%d Off=%d SP=0x%llx\n",
-                                labelA, (unsigned long long)r.Address, (unsigned long long)r.Object, r.Flags,
-                                r.Register, r.Offset, (unsigned long long)r.StackPointer);
-                        }
+                        auto& r = refsA[groupsA[idxA].StartIdx + i];
+                        fprintf(s_logFile, "      [%s_%s] Addr=0x%llx Obj=0x%llx Flags=0x%x Reg=%d Off=%d\n",
+                            labelA, aUsed[i] ? "MATCHED" : "ONLY",
+                            (unsigned long long)r.Address, (unsigned long long)r.Object, r.Flags,
+                            r.Register, r.Offset);
                     }
                     for (int j = 0; j < cB; j++)
                     {
-                        if (!bUsed[j])
-                        {
-                            auto& r = refsB[groupsB[idxB].StartIdx + j];
-                            fprintf(s_logFile, "      [%s_ONLY] Addr=0x%llx Obj=0x%llx Flags=0x%x Reg=%d Off=%d SP=0x%llx\n",
-                                labelB, (unsigned long long)r.Address, (unsigned long long)r.Object, r.Flags,
-                                r.Register, r.Offset, (unsigned long long)r.StackPointer);
-                        }
+                        auto& r = refsB[groupsB[idxB].StartIdx + j];
+                        fprintf(s_logFile, "      [%s_%s] Addr=0x%llx Obj=0x%llx Flags=0x%x Reg=%d Off=%d\n",
+                            labelB, bUsed[j] ? "MATCHED" : "ONLY",
+                            (unsigned long long)r.Address, (unsigned long long)r.Object, r.Flags,
+                            r.Register, r.Offset);
                     }
                 }
             }
