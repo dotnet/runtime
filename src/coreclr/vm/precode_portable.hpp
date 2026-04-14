@@ -89,19 +89,31 @@ public:
         return (_flags & kPrefersInterpreterEntryPoint) != 0;
     }
 
+private:
+    void SetFlagsInterlocked(int32_t flags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr(reinterpret_cast<LONG volatile*>(&_flags), static_cast<LONG>(flags));
+    }
+    void ClearFlagsInterlocked(int32_t flags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedAnd(reinterpret_cast<LONG volatile*>(&_flags), static_cast<LONG>(~flags));
+    }
+public:
     void SetPrefersInterpreterEntryPoint()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsValid());
-        _flags = (_flags | kPrefersInterpreterEntryPoint); // TODO, use interlock operation here
+        SetFlagsInterlocked(kPrefersInterpreterEntryPoint);
     }
-
     void ClearPrefersInterpreterEntryPoint()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsValid());
-        _flags = (_flags & ~kPrefersInterpreterEntryPoint); // TODO, use interlock operation here
+        ClearFlagsInterlocked(kPrefersInterpreterEntryPoint);
     }
+
     friend struct ::cdac_data<PortableEntryPoint>;
 };
 template<>

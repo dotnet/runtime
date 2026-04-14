@@ -2119,7 +2119,7 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             {
                 _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
                 ManagedMethodParam param = { pMethod, args, retBuff, (PCODE)targetIp, nullptr /* WASM-TODO, handle RuntimeAsync */};
-                return InvokeManagedMethod(&param);
+                InvokeManagedMethod(&param);
             }
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -2138,6 +2138,9 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
         EX_END_CATCH
 
         pPFrame->Pop(CURRENT_THREAD);
+
+        if (targetIp == NULL)
+            return; // We found R2R code during the Prestub, so there's no interpreter code to execute, and the R2R code has already been invoked, so we're done.
     }
 
     _ASSERTE((PCODE)targetIp == (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint));
