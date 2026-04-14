@@ -723,7 +723,6 @@ configuration:
         - mentionUsers:
             mentionees:
             - agocke
-            - jeffschwMSFT
             - elinor-fung
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
