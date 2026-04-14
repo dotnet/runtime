@@ -1274,6 +1274,7 @@ namespace System.StubHelpers
             }
             catch
             {
+                StubHelpers.DestroyCleanupList(ref cleanupWorkList);
                 Marshal.FreeCoTaskMem(pNativeHome);
                 throw;
             }
