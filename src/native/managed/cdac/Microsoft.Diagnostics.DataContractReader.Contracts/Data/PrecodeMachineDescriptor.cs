@@ -13,9 +13,9 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
         Target.TypeInfo type = target.GetTypeInfo(DataType.PrecodeMachineDescriptor);
         if (type.Fields.ContainsKey(nameof(OffsetOfPrecodeType)))
         {
-            OffsetOfPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(OffsetOfPrecodeType)].Offset);
-            ReadWidthOfPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(ReadWidthOfPrecodeType)].Offset);
-            ShiftOfPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(ShiftOfPrecodeType)].Offset);
+            OffsetOfPrecodeType = target.ReadField<byte>(address, type, nameof(OffsetOfPrecodeType));
+            ReadWidthOfPrecodeType = target.ReadField<byte>(address, type, nameof(ReadWidthOfPrecodeType));
+            ShiftOfPrecodeType = target.ReadField<byte>(address, type, nameof(ShiftOfPrecodeType));
         }
         else
         {
@@ -23,12 +23,12 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
             ReadWidthOfPrecodeType = null;
             ShiftOfPrecodeType = null;
         }
-        InvalidPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(InvalidPrecodeType)].Offset);
-        StubPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(StubPrecodeType)].Offset);
+        InvalidPrecodeType = target.ReadField<byte>(address, type, nameof(InvalidPrecodeType));
+        StubPrecodeType = target.ReadField<byte>(address, type, nameof(StubPrecodeType));
 
         if (type.Fields.ContainsKey(nameof(FixupStubPrecodeSize)))
         {
-            FixupStubPrecodeSize = target.Read<byte>(address + (ulong)type.Fields[nameof(FixupStubPrecodeSize)].Offset);
+            FixupStubPrecodeSize = target.ReadField<byte>(address, type, nameof(FixupStubPrecodeSize));
             FixupBytes = new byte[FixupStubPrecodeSize.Value];
             target.ReadBuffer(address + (ulong)type.Fields[nameof(FixupBytes)].Offset, FixupBytes);
             FixupIgnoredBytes = new byte[FixupStubPrecodeSize.Value];
@@ -43,7 +43,7 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
 
         if (type.Fields.ContainsKey(nameof(StubPrecodeSize)))
         {
-            StubPrecodeSize = target.Read<byte>(address + (ulong)type.Fields[nameof(FixupStubPrecodeSize)].Offset);
+            StubPrecodeSize = target.ReadField<byte>(address, type, nameof(FixupStubPrecodeSize));
             StubBytes = new byte[StubPrecodeSize.Value];
             target.ReadBuffer(address + (ulong)type.Fields[nameof(StubBytes)].Offset, StubBytes);
             StubIgnoredBytes = new byte[StubPrecodeSize.Value];
@@ -63,7 +63,7 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
         UMEntryPrecodeType = MaybeGetPrecodeType(target, address, nameof(UMEntryPrecodeType));
         DynamicHelperPrecodeType = MaybeGetPrecodeType(target, address, nameof(DynamicHelperPrecodeType));
 
-        StubCodePageSize = target.Read<uint>(address + (ulong)type.Fields[nameof(StubCodePageSize)].Offset);
+        StubCodePageSize = target.ReadField<uint>(address, type, nameof(StubCodePageSize));
 
         static byte? MaybeGetPrecodeType(Target target, TargetPointer address, string fieldName)
         {

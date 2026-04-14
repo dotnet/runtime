@@ -10,8 +10,8 @@ internal sealed class CtxEntry : IData<CtxEntry>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.CtxEntry);
 
-        STAThread = target.ReadPointer(address + (ulong)type.Fields[nameof(STAThread)].Offset);
-        CtxCookie = target.ReadPointer(address + (ulong)type.Fields[nameof(CtxCookie)].Offset);
+        STAThread = target.ReadPointerField(address, type, nameof(STAThread));
+        CtxCookie = target.ReadPointerField(address, type, nameof(CtxCookie));
     }
 
     public TargetPointer STAThread { get; init; }

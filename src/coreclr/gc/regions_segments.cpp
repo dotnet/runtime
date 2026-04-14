@@ -219,7 +219,7 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
             highest_numa_node = max (highest_numa_node, heap_numa_node);
         }
 
-        assert (highest_numa_node < MAX_SUPPORTED_CPUS);
+        assert (highest_numa_node < MAX_SUPPORTED_HEAPS);
 
         numa_node_count = highest_numa_node + 1;
         memory_details.numa_reserved_block_count = numa_node_count * (1 + separated_poh_p);
@@ -1855,8 +1855,8 @@ void gc_heap::distribute_free_regions()
     size_t total_num_free_regions[count_distributed_free_region_kinds] = { 0, 0 };
     size_t total_budget_in_region_units[count_distributed_free_region_kinds] = { 0, 0 };
 
-    size_t heap_budget_in_region_units[count_distributed_free_region_kinds][MAX_SUPPORTED_CPUS] = {};
-    size_t min_heap_budget_in_region_units[count_distributed_free_region_kinds][MAX_SUPPORTED_CPUS] = {};
+    size_t heap_budget_in_region_units[count_distributed_free_region_kinds][MAX_SUPPORTED_HEAPS] = {};
+    size_t min_heap_budget_in_region_units[count_distributed_free_region_kinds][MAX_SUPPORTED_HEAPS] = {};
     region_free_list aged_regions[count_free_region_kinds];
     region_free_list surplus_regions[count_distributed_free_region_kinds];
 
@@ -2152,8 +2152,8 @@ void gc_heap::move_regions_to_decommit(region_free_list regions[count_free_regio
 }
 
 size_t gc_heap::compute_basic_region_budgets(
-    size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS],
-    size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS],
+    size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS],
+    size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS],
     size_t total_basic_free_regions)
 {
     const size_t region_size = global_region_allocator.get_region_alignment();

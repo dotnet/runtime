@@ -3896,7 +3896,7 @@ inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* is
     bool                    gc     = false;
     bool                    result = false;
     StaticHelperReturnValue retVal = {};
-    switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
+    switch (tree->AsCall()->GetHelperNum())
     {
         case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
         case CORINFO_HELP_GET_GCSTATIC_BASE:
@@ -3937,7 +3937,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         return false;
     }
 
-    CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
+    CorInfoHelpFunc helper = tree->AsCall()->GetHelperNum();
 
     bool result1 =
         // More helpers being added to IsSharedStaticHelper (that have similar behaviors but are not true
@@ -4427,14 +4427,13 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
-        case GT_EMITNOP:
-        case GT_PINVOKE_PROLOG:
-        case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
+        case GT_WASM_THROW_REF:
+        case GT_WASM_JEXCEPT:
             return VisitResult::Continue;
 
             // Unary operators with an optional operand
@@ -4537,11 +4536,6 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             for (CallArg& arg : call->gtArgs.LateArgs())
             {
                 RETURN_IF_ABORT(visitor(&arg.LateNodeRef()));
-            }
-
-            if (call->gtCallType == CT_INDIRECT)
-            {
-                RETURN_IF_ABORT(visitor(&call->gtCallAddr));
             }
             if (call->gtControlExpr != nullptr)
             {
@@ -5280,12 +5274,140 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
     return BasicBlockVisit::Continue;
 }
 
+//------------------------------------------------------------------------
+// fgVisitBlocksInTryAwareLoopAwareRPO: Visit the blocks in 'dfsTree' in reverse post-order,
+// but ensure try regions (for try/catch) and loop bodies are visited before their successors.
+// Where these conflict, give priority to try regions.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Parameters:
+//   dfsTree    - The DFS tree of the flow graph
+//   tryRegions - A collection of the try regions in the flow graph
+//   loops      - A collection of the loops in the flow graph
+//   func       - Callback functor that operates on a BasicBlock*
+//
+// Returns:
+//   A postorder traversal with compact loop bodies.
+//
+template <typename TFunc>
+void Compiler::fgVisitBlocksInTryAwareLoopAwareRPO(FlowGraphDfsTree*      dfsTree,
+                                                   FlowGraphTryRegions*   tryRegions,
+                                                   FlowGraphNaturalLoops* loops,
+                                                   TFunc                  func)
+{
+    assert(dfsTree != nullptr);
+    assert(loops != nullptr);
+    assert(tryRegions != nullptr);
+
+    // We will start by visiting blocks in reverse post-order.
+    // If we encounter the header of a loop, we will visit the loop's remaining blocks next
+    // to keep the loop body compact in the visitation order.
+    // We have to do this recursively to handle nested loops.
+    // Since the presence of loops implies we will try to visit some blocks more than once,
+    // we need to track visited blocks.
+    struct TryAwareLoopAwareVisitor
+    {
+        BitVecTraits           traits;
+        BitVec                 visitedBlocks;
+        FlowGraphTryRegions*   tryRegions;
+        FlowGraphNaturalLoops* loops;
+        TFunc                  func;
+
+        TryAwareLoopAwareVisitor(FlowGraphDfsTree*      dfsTree,
+                                 FlowGraphTryRegions*   tryRegions,
+                                 FlowGraphNaturalLoops* loops,
+                                 TFunc                  func)
+            : traits(dfsTree->PostOrderTraits())
+            , visitedBlocks(BitVecOps::MakeEmpty(&traits))
+            , tryRegions(tryRegions)
+            , loops(loops)
+            , func(func)
+        {
+        }
+
+        void VisitBlock(BasicBlock* block)
+        {
+            if (BitVecOps::TryAddElemD(&traits, visitedBlocks, block->bbPostorderNum))
+            {
+                func(block);
+
+                FlowGraphTryRegion* const tryRegion = tryRegions->GetTryRegionByHeader(block);
+                if ((tryRegion != nullptr) && tryRegion->HasCatchHandler())
+                {
+                    tryRegion->VisitTryRegionBlocksReversePostOrder([&](BasicBlock* block) {
+                        VisitBlock(block);
+                        return BasicBlockVisit::Continue;
+                    });
+                }
+
+                FlowGraphNaturalLoop* const loop = loops->GetLoopByHeader(block);
+                if (loop != nullptr)
+                {
+                    loop->VisitLoopBlocksReversePostOrder([&](BasicBlock* block) {
+                        VisitBlock(block);
+                        return BasicBlockVisit::Continue;
+                    });
+                }
+            }
+        }
+    };
+
+    if (tryRegions->NumTryCatchRegions() == 0)
+    {
+        fgVisitBlocksInLoopAwareRPO(dfsTree, loops, func);
+        return;
+    }
+
+    // Add no-loop special case here?
+    //
+    TryAwareLoopAwareVisitor visitor(dfsTree, tryRegions, loops, func);
+    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    {
+        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+        visitor.VisitBlock(block);
+    }
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphTryRegion::VisitTryRegionBlocksReversePostOrder: Visit all of the
+// try region's blocks in reverse post order.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+// Notes:
+//   FlowGraphTryRegion does not currently use a "compressed BV" like loops do.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphTryRegion::VisitTryRegionBlocksReversePostOrder(TFunc func)
+{
+    assert(CanEnumerateInReversePostOrder());
+    FlowGraphDfsTree* const dfsTree = m_regions->GetDfsTree();
+    BitVecTraits*           traits  = m_regions->GetBlockBitVecTraits();
+    bool                    result  = BitVecOps::VisitBitsReverse(traits, m_blocks, [=](unsigned index) {
+        assert(index < dfsTree->GetPostOrderCount());
+        return func(dfsTree->GetPostOrder(index)) == BasicBlockVisit::Continue;
+    });
+
+    return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
+}
+
 //-----------------------------------------------------------
 // gtComplexityExceeds: Check if a tree exceeds a specified complexity limit.
 //
 // Type parameters:
 //   TFunc - Callback functor type
-
+//
 // Arguments:
 //    tree              - The tree to check
 //    limit             - complexity limit

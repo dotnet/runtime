@@ -58,11 +58,55 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 #endif // JIT32_GCENCODER
 }
 
+#if HAS_FIXED_REGISTER_SET
+regNumber CodeGenInterface::GetStackPointerReg(unsigned) const
+{
+    return REG_SPBASE;
+}
+regNumber CodeGenInterface::GetFramePointerReg(unsigned) const
+{
+    return REG_FPBASE;
+}
+#else
+void CodeGenInterface::SetStackPointerReg(unsigned funcletIndex, regNumber reg)
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    assert(reg != REG_NA);
+    m_compiler->compFuncInfos[funcletIndex].funStackPointerReg = reg;
+}
+
+void CodeGenInterface::SetFramePointerReg(unsigned funcletIndex, regNumber reg)
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    assert(reg != REG_NA);
+    m_compiler->compFuncInfos[funcletIndex].funFramePointerReg = reg;
+}
+
+regNumber CodeGenInterface::GetStackPointerReg(unsigned funcletIndex) const
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    return m_compiler->compFuncInfos[funcletIndex].funStackPointerReg;
+}
+
+regNumber CodeGenInterface::GetFramePointerReg(unsigned funcletIndex) const
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    return m_compiler->compFuncInfos[funcletIndex].funFramePointerReg;
+}
+#endif // !HAS_FIXED_REGISTER_SET
+
 CodeGenInterface* getCodeGenerator(Compiler* comp)
 {
     return new (comp, CMK_Codegen) CodeGen(comp);
 }
 
+//------------------------------------------------------------------------
+// NodeInternalRegisters::NodeInternalRegisters: construct the
+//    internal registers tracking data
+//
+// Arguments:
+//    comp -- compiler instance
+//
 NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
     : m_table(comp->getAllocator(CMK_LSRA))
 {
@@ -336,9 +380,6 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
     , internalRegisters(theCompiler)
     , m_compiler(theCompiler)
     , treeLifeUpdater(nullptr)
-#ifdef TARGET_WASM
-    , WasmLocalsDecls(theCompiler->getAllocator(CMK_Codegen))
-#endif
 {
 }
 
@@ -1912,16 +1953,9 @@ void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
     m_compiler->funSetCurrentFunc(m_compiler->funGetFuncIdx(block));
 
     // Check the current funclet index for correctness
-    if (m_compiler->funCurrentFunc()->funKind == FUNC_FILTER)
-    {
-        assert(m_compiler->ehGetDsc(m_compiler->funCurrentFunc()->funEHIndex)->ebdFilter == block);
-    }
-    else
-    {
-        // We shouldn't see FUNC_ROOT
-        assert(m_compiler->funCurrentFunc()->funKind == FUNC_HANDLER);
-        assert(m_compiler->ehGetDsc(m_compiler->funCurrentFunc()->funEHIndex)->ebdHndBeg == block);
-    }
+    FuncInfoDsc* const currentFunc = m_compiler->funCurrentFunc();
+    assert(currentFunc->funKind != FUNC_ROOT);
+    assert(currentFunc->GetStartBlock(m_compiler) == block);
 }
 
 //----------------------------------------------------------------------
@@ -1960,6 +1994,36 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
         {
             m_compiler->compGetHelperFtn((CorInfoHelpFunc)i);
         }
+    }
+
+#if defined(TARGET_WASM)
+    // Allow the JIT to fail R2R at this point, so we can skip over methods
+    // that compile without assert but then have Wasm validation errors
+    //
+    static ConfigMethodRange JitR2RUnsupportedRange;
+    JitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange());
+    assert(!JitR2RUnsupportedRange.Error());
+    const unsigned hash    = m_compiler->impInlineRoot()->info.compMethodHash();
+    const bool     inRange = !JitR2RUnsupportedRange.IsEmpty() && JitR2RUnsupportedRange.Contains(hash);
+
+    if (inRange)
+    {
+        JITDUMP("Failing R2R codegen because of JitR2RUnsupportedRange. Hash is 0x%08x, range is ", hash);
+        JITDUMPEXEC(JitR2RUnsupportedRange.Dump());
+        implReadyToRunUnsupported();
+    }
+#endif // defined(TARGET_WASM)
+#endif // DEBUG
+
+#if defined(TARGET_WASM)
+    // Also fail at this point for any method with funclets, since the Wasm we produce
+    // for such methods requires post-processing by the host before it can be validated.
+    // TODO-WASM: Remove this once the host can do the processing.
+    //
+    if ((JitConfig.JitWasmFunclets() == 0) && (m_compiler->compFuncCount() > 1))
+    {
+        JITDUMP("Failing R2R codegen because method has funclets.\n");
+        implReadyToRunUnsupported();
     }
 #endif
 }
@@ -5883,26 +5947,12 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
 //
 GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd)
 {
-    // all virtuals should have been expanded into a control expression by this point.
-    assert(!call->IsVirtual() || call->gtControlExpr || call->gtCallAddr);
-
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        assert(call->gtControlExpr == nullptr);
-
-        if (methHnd != nullptr)
-        {
-            *methHnd = nullptr;
-        }
-
-        return call->gtCallAddr;
-    }
-
     if (methHnd != nullptr)
     {
-        *methHnd = call->gtCallMethHnd;
+        *methHnd = (call->gtCallType != CT_INDIRECT) ? call->gtCallMethHnd : NO_METHOD_HANDLE;
     }
 
+    assert((call->gtCallType != CT_INDIRECT) || (call->gtControlExpr != nullptr));
     return call->gtControlExpr;
 }
 
@@ -5972,7 +6022,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     // - memset/memcpy helper calls emitted for GT_STORE_BLK
     if (call->IsHelperCall())
     {
-        switch (m_compiler->eeGetHelperNum(call->gtCallMethHnd))
+        switch (call->GetHelperNum())
         {
             case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             case CORINFO_HELP_VIRTUAL_FUNC_PTR:
