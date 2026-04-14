@@ -5350,6 +5350,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
                         (assertion.GetOp1().GetVN() == vnCurLen) && (assertion.GetOp2().GetIntConstant() == 0))
                     {
                         lenLo = 1;
+                        break;
                     }
                 }
             }
