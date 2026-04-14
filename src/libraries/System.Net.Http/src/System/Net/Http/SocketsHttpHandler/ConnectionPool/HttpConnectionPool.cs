@@ -877,7 +877,7 @@ namespace System.Net.Http
         /// <see cref="HttpRequestMessage.Version"/> is less than 2.0 or if its
         /// <see cref="HttpRequestMessage.VersionPolicy"/> is <see cref="HttpVersionPolicy.RequestVersionOrLower"/>.
         /// </summary>
-        private static bool CanFallBackToHttp11(HttpRequestMessage request) =>
+        internal static bool CanFallBackToHttp11(HttpRequestMessage request) =>
             request.Version.Major < 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower;
 
         private bool CheckExpirationOnGet(HttpConnectionBase connection)

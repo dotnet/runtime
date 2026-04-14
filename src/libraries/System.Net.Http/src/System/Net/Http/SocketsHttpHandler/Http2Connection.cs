@@ -2076,9 +2076,9 @@ namespace System.Net.Http
 
                     // We can only safely retry if there's no request content, as we cannot guarantee
                     // that we can rewind arbitrary content streams.
-                    // Additionally, we only retry if the version negotiation allows the request to use HTTP/1.1.
+                    // Additionally, we only retry if the version negotiation allows the request to fall back to HTTP/1.1.
                     if (request.Content is null &&
-                        (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower || request.Version.Major < 2) &&
+                        HttpConnectionPool.CanFallBackToHttp11(request) &&
                         !request.IsAuthDisabled())
                     {
                         if (NetEventSource.Log.IsEnabled())
