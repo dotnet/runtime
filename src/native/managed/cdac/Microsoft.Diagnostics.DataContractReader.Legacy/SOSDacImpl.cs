@@ -1854,9 +1854,6 @@ public sealed unsafe partial class SOSDacImpl
             }
 #endif
             ppHandleEnum.Interface = new SOSHandleEnum(_target, supportedHandleTypes, legacyHandleEnum);
-            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
-            // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
-            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum.Interface);
         }
         catch (System.Exception ex)
         {
@@ -1884,9 +1881,6 @@ public sealed unsafe partial class SOSDacImpl
             IGC gc = _target.Contracts.GC;
             HandleType[] handleTypes = gc.GetHandleTypes(types);
             ppHandleEnum.Interface = new SOSHandleEnum(_target, handleTypes, legacyHandleEnum);
-            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
-            // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
-            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum.Interface);
         }
         catch (System.Exception ex)
         {

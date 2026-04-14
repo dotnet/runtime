@@ -443,14 +443,19 @@ ClrDataAccess::GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum *
     else
     {
         DacMethodTableSlotEnumerator *methodTableSlotEnumerator = new (nothrow) DacMethodTableSlotEnumerator();
-        *enumerator = methodTableSlotEnumerator;
-        if (*enumerator == NULL)
+        if (methodTableSlotEnumerator == NULL)
         {
             hr = E_OUTOFMEMORY;
         }
         else
         {
             hr = methodTableSlotEnumerator->Init(mTable);
+
+            if (SUCCEEDED(hr))
+                hr = methodTableSlotEnumerator->QueryInterface(__uuidof(ISOSMethodEnum), (void**)enumerator);
+
+            if (FAILED(hr))
+                delete methodTableSlotEnumerator;
         }
     }
 
@@ -3965,7 +3970,10 @@ ClrDataAccess::Request(IN ULONG32 reqCode,
             }
             else
             {
-                *(ULONG32*)outBuffer = 9;
+                // Revision 10: Fixed DefaultCOMImpl::Release() to use pre-decrement (--mRef).
+                // Consumers that previously compensated for the broken ref counting (e.g., ClrMD)
+                // should check this revision to avoid double-freeing.
+                *(ULONG32*)outBuffer = 10;
                 status = S_OK;
             }
             break;

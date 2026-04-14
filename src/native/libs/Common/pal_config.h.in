@@ -14,6 +14,7 @@
 #cmakedefine01 HAVE_UTSNAME_DOMAINNAME
 #cmakedefine01 HAVE_STAT64
 #cmakedefine01 HAVE_FORK
+#cmakedefine01 HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
 #cmakedefine01 HAVE_VFORK
 #cmakedefine01 HAVE_CLOSE_RANGE
 #cmakedefine01 HAVE_FDWALK

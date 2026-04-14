@@ -1335,6 +1335,7 @@ struct JumpThreadInfo
         , traits(comp->m_dfsTree->PostOrderTraits())
         , m_truePreds(BitVecOps::MakeEmpty(&traits))
         , m_ambiguousPreds(BitVecOps::MakeEmpty(&traits))
+        , m_phiUses(comp->getAllocator(CMK_RedundantBranch))
         , m_numPreds(0)
         , m_numAmbiguousPreds(0)
         , m_numTruePreds(0)
@@ -1359,6 +1360,20 @@ struct JumpThreadInfo
     // Pred blocks that can't be threaded or for which the predicate
     // value can't be determined
     BitVec m_ambiguousPreds;
+    // Uses of block-local phi defs that must be updated if threading bypasses the block.
+    struct PhiUse
+    {
+        PhiUse(BasicBlock* block, GenTreeLclVarCommon* use)
+            : m_block(block)
+            , m_use(use)
+        {
+        }
+
+        BasicBlock*          m_block;
+        GenTreeLclVarCommon* m_use;
+        unsigned             m_replacementSsaNum = SsaConfig::RESERVED_SSA_NUM;
+    };
+    ArrayStack<PhiUse> m_phiUses;
     // Total number of predecessors
     int m_numPreds;
     // Number of predecessors that can't be threaded or for which the predicate
@@ -1375,6 +1390,288 @@ struct JumpThreadInfo
 };
 
 //------------------------------------------------------------------------
+// JumpThreadPhiUseVisitor: tree visitor that records uses of a specific SSA
+//   def in a block while preserving the containing block for each use.
+//
+class JumpThreadPhiUseVisitor final : public GenTreeVisitor<JumpThreadPhiUseVisitor>
+{
+public:
+    enum
+    {
+        DoPreOrder    = true,
+        DoLclVarsOnly = true
+    };
+
+    JumpThreadPhiUseVisitor(Compiler*                           compiler,
+                            unsigned                            lclNum,
+                            unsigned                            ssaNum,
+                            BasicBlock*                         block,
+                            ArrayStack<JumpThreadInfo::PhiUse>* uses)
+        : GenTreeVisitor(compiler)
+        , m_lclNum(lclNum)
+        , m_ssaNum(ssaNum)
+        , m_block(block)
+        , m_uses(uses)
+    {
+    }
+
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* const node = *use;
+
+        if (node->OperIsLocalRead())
+        {
+            GenTreeLclVarCommon* const lclUse = node->AsLclVarCommon();
+            if ((lclUse->GetLclNum() == m_lclNum) && (lclUse->GetSsaNum() == m_ssaNum))
+            {
+                m_uses->Emplace(m_block, lclUse);
+            }
+        }
+
+        return Compiler::WALK_CONTINUE;
+    }
+
+private:
+    unsigned                            m_lclNum;
+    unsigned                            m_ssaNum;
+    BasicBlock* const                   m_block;
+    ArrayStack<JumpThreadInfo::PhiUse>* m_uses;
+};
+
+//------------------------------------------------------------------------
+// optGetThreadedSsaNumForSuccessor: determine the replacement SSA number
+//   for uses in a successor once all non-ambiguous preds are threaded.
+//
+// Arguments:
+//   jti               - threading classification for the block
+//   phiDef            - phi definition in the threaded block
+//   successor         - successor being considered for rewriting
+//   hasThreadedPreds  - [OUT] true if one or more preds will be redirected here
+//   replacementSsaNum - [OUT] the common reaching SSA number for those preds
+//
+// Returns:
+//   True if all redirected preds reaching successor agree on one SSA number.
+//
+static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
+                                             GenTreeLclVar*  phiDef,
+                                             BasicBlock*     successor,
+                                             bool*           hasThreadedPreds,
+                                             unsigned*       replacementSsaNum)
+{
+    assert(successor != nullptr);
+
+    *hasThreadedPreds  = false;
+    *replacementSsaNum = SsaConfig::RESERVED_SSA_NUM;
+
+    bool              foundReplacement = false;
+    unsigned          replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
+    GenTreePhi* const phi              = phiDef->Data()->AsPhi();
+
+    for (GenTreePhi::Use& use : phi->Uses())
+    {
+        GenTreePhiArg* const phiArgNode = use.GetNode()->AsPhiArg();
+        BasicBlock* const    predBlock  = phiArgNode->gtPredBB;
+        bool const           isTruePred = BitVecOps::IsMember(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum);
+        bool const isAmbiguousPred = BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
+
+        if (isAmbiguousPred)
+        {
+            continue;
+        }
+
+        BasicBlock* const predTarget = isTruePred ? jti.m_trueTarget : jti.m_falseTarget;
+        if (predTarget != successor)
+        {
+            continue;
+        }
+
+        *hasThreadedPreds = true;
+
+        if (!foundReplacement)
+        {
+            replacementSsa   = phiArgNode->GetSsaNum();
+            foundReplacement = true;
+        }
+        else if (replacementSsa != phiArgNode->GetSsaNum())
+        {
+            return false;
+        }
+    }
+
+    *replacementSsaNum = replacementSsa;
+    return foundReplacement;
+}
+
+//------------------------------------------------------------------------
+// optFindPhiUsesInBlockAndSuccessors: look for all uses of a PHI SSA def in
+//   the candidate block and its immediate successors.
+//
+// Arguments:
+//   block  - jump-threading block that contains the PHI
+//   phiDef - PHI definition to inspect
+//   jti    - threading information for the block
+//
+// Returns:
+//   True if every recorded SSA use for the PHI def is found.
+//
+bool Compiler::optFindPhiUsesInBlockAndSuccessors(BasicBlock* block, GenTreeLclVar* phiDef, JumpThreadInfo& jti)
+{
+    unsigned const lclNum = phiDef->GetLclNum();
+    unsigned const ssaNum = phiDef->GetSsaNum();
+
+    LclSsaVarDsc* const ssaVarDsc    = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
+    int const           expectedUses = ssaVarDsc->GetNumUses();
+    if (expectedUses == USHRT_MAX)
+    {
+        return false;
+    }
+
+    int const initialUseCount = jti.m_phiUses.Height();
+
+    JumpThreadPhiUseVisitor blockVisitor(this, lclNum, ssaNum, block, &jti.m_phiUses);
+    for (Statement* const blockStmt : block->Statements())
+    {
+        blockVisitor.WalkTree(blockStmt->GetRootNodePointer(), nullptr);
+    }
+
+    for (BasicBlock* const successor : block->Succs())
+    {
+        if (successor == block)
+        {
+            continue;
+        }
+
+        JumpThreadPhiUseVisitor succVisitor(this, lclNum, ssaNum, successor, &jti.m_phiUses);
+        for (Statement* const succStmt : successor->Statements())
+        {
+            succVisitor.WalkTree(succStmt->GetRootNodePointer(), nullptr);
+        }
+    }
+
+    int const foundUses = jti.m_phiUses.Height() - initialUseCount;
+
+    return foundUses == expectedUses;
+}
+
+//------------------------------------------------------------------------
+// optCanRewritePhiUses: determine if PHIs with global uses can be handled
+//   safely for jump threading by rewriting successor uses.
+//
+// Arguments:
+//   jti  - threading information for the block
+//
+// Returns:
+//   True if all PHI uses are accounted for and any successor uses can be
+//   rewritten to a unique reaching SSA def.
+//
+// Notes:
+//   We bail out in cases where a successor has a PHI or would need to have
+//   a PHI for any of the locals that have PHIs in block.
+//
+bool Compiler::optCanRewritePhiUses(JumpThreadInfo& jti)
+{
+    BasicBlock* const block = jti.m_block;
+
+    // If any pred remains ambiguous, the block can still reach its successors
+    // after threading and we would need successor phis instead of simple rewrites.
+    //
+    if (jti.m_numAmbiguousPreds != 0)
+    {
+        return false;
+    }
+
+    // Likewise if any successor is already a join, it may have or may need to
+    // have a PHI.
+    //
+    for (BasicBlock* const successor : block->Succs())
+    {
+        if (successor->GetUniquePred(this) != block)
+        {
+            return false;
+        }
+    }
+
+    // Now check if we can find all of the uses of the PHIs in block,
+    // either in block or in its successors.
+    //
+    for (Statement* const stmt : block->Statements())
+    {
+        if (!stmt->IsPhiDefnStmt())
+        {
+            break;
+        }
+
+        GenTreeLclVar* const phiDef = stmt->GetRootNode()->AsLclVar();
+        unsigned const       lclNum = phiDef->GetLclNum();
+        unsigned const       ssaNum = phiDef->GetSsaNum();
+
+        LclSsaVarDsc* const ssaVarDsc = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
+        if (!ssaVarDsc->HasGlobalUse())
+        {
+            continue;
+        }
+
+        if (!optFindPhiUsesInBlockAndSuccessors(block, phiDef, jti))
+        {
+            return false;
+        }
+
+        for (BasicBlock* const successor : block->Succs())
+        {
+            bool hasSuccUse = false;
+            for (JumpThreadInfo::PhiUse& phiUse : jti.m_phiUses.BottomUpOrder())
+            {
+                if ((phiUse.m_use->GetLclNum() != lclNum) || (phiUse.m_use->GetSsaNum() != ssaNum))
+                {
+                    continue;
+                }
+
+                if (phiUse.m_block == successor)
+                {
+                    hasSuccUse = true;
+                    break;
+                }
+            }
+
+            if (!hasSuccUse)
+            {
+                continue;
+            }
+
+            // Verify that all preds that will be redirected to successor agree on the same SSA number
+            // so no phi is needed in successor, just a rewrite of the uses to the common SSA number.
+            //
+            bool     hasThreadedPreds = false;
+            unsigned replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
+            if (!optGetThreadedSsaNumForSuccessor(jti, phiDef, successor, &hasThreadedPreds, &replacementSsa))
+            {
+                return false;
+            }
+
+            if (!hasThreadedPreds)
+            {
+                continue;
+            }
+
+            for (JumpThreadInfo::PhiUse& phiUse : jti.m_phiUses.BottomUpOrder())
+            {
+                if ((phiUse.m_use->GetLclNum() != lclNum) || (phiUse.m_use->GetSsaNum() != ssaNum))
+                {
+                    continue;
+                }
+
+                if (phiUse.m_block == successor)
+                {
+                    phiUse.m_replacementSsaNum = replacementSsa;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // optJumpThreadCheck: see if block is suitable for jump threading.
 //
 // Arguments:
@@ -1382,15 +1679,15 @@ struct JumpThreadInfo
 //   domBlock - dom block used in inferencing (if any)
 //
 // Returns:
-//   True if the block is suitable for jump threading.
+//   Viability of jump threading: either CannotThread, CanThread, or NeedsPhiUseResolution.
 //
-bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock)
+Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock)
 {
     // If the block is the first block of try-region, then skip jump threading
     if (bbIsTryBeg(block))
     {
         JITDUMP(FMT_BB " is first block of try-region; no threading\n", block->bbNum);
-        return false;
+        return JumpThreadCheckResult::CannotThread;
     }
 
     // Verify that dom block dominates all of block's predecessors.
@@ -1406,7 +1703,7 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
             {
                 JITDUMP("Dom " FMT_BB " is stale (does not dominate pred " FMT_BB "); no threading\n", domBlock->bbNum,
                         predBlock->bbNum);
-                return false;
+                return JumpThreadCheckResult::CannotThread;
             }
         }
     }
@@ -1417,23 +1714,26 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
     // For non-PHI RBO, we neglect PHI stores. This can leave SSA in
     // an incorrect state but so far it has not yet caused problems.
     //
-    // For PHI-based RBO we need to be more cautious and insist that
-    // any PHI is locally consumed, so that if we bypass the block we
-    // don't need to make SSA updates.
+    // For PHI-based RBO we need to be more cautious. We can now tolerate
+    // some non-local PHI uses, but only when all uses are found in the
+    // block or its immediate successors so the needed SSA/VN updates can be
+    // made.
     //
     // TODO: handle blocks with side effects. For those predecessors that are
     // favorable (ones that don't reach block via a critical edge), consider
     // duplicating block's IR into the predecessor. This is the jump threading
     // analog of the optimization we encourage via fgOptimizeUncondBranchToSimpleCond.
     //
-    Statement* const lastStmt = block->lastStmt();
-    bool const       isPhiRBO = (domBlock == nullptr);
+    Statement* const lastStmt         = block->lastStmt();
+    bool const       isPhiRBO         = (domBlock == nullptr);
+    bool             hasGlobalPhiUses = false;
 
     for (Statement* const stmt : block->Statements())
     {
         GenTree* const tree = stmt->GetRootNode();
 
-        // If we are doing PHI-based RBO then all local PHIs must be locally consumed.
+        // If we are doing PHI-based RBO then each local PHI must either be
+        // locally consumed or have only tracked uses that we can safely rewrite.
         //
         if (stmt->IsPhiDefnStmt())
         {
@@ -1452,7 +1752,7 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
                 {
                     JITDUMP(FMT_BB " has phi for promoted field V%02u.%u; no phi-based threading\n", block->bbNum,
                             lclNum, ssaNum);
-                    return false;
+                    return JumpThreadCheckResult::CannotThread;
                 }
 
                 LclSsaVarDsc* const ssaVarDsc = varDsc->GetPerSsaData(ssaNum);
@@ -1462,9 +1762,9 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
                 //
                 if (ssaVarDsc->HasGlobalUse())
                 {
-                    JITDUMP(FMT_BB " has global phi for V%02u.%u; no phi-based threading\n", block->bbNum, lclNum,
-                            ssaNum);
-                    return false;
+                    JITDUMP(FMT_BB " has global phi for V%02u.%u; deferring jump threading pending use analysis\n",
+                            block->bbNum, lclNum, ssaNum);
+                    hasGlobalPhiUses = true;
                 }
             }
 
@@ -1502,11 +1802,11 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
             }
 
             JITDUMP(FMT_BB " has side effects; no threading\n", block->bbNum);
-            return false;
+            return JumpThreadCheckResult::CannotThread;
         }
     }
 
-    return true;
+    return hasGlobalPhiUses ? JumpThreadCheckResult::NeedsPhiUseResolution : JumpThreadCheckResult::CanThread;
 }
 
 //------------------------------------------------------------------------
@@ -1591,9 +1891,15 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
     JITDUMP("Both successors of %sdom " FMT_BB " reach " FMT_BB " -- attempting jump threading\n", isIDom ? "i" : "",
             domBlock->bbNum, block->bbNum);
 
-    const bool check = optJumpThreadCheck(block, domBlock);
-    if (!check)
+    const JumpThreadCheckResult check = optJumpThreadCheck(block, domBlock);
+    if (check == JumpThreadCheckResult::CannotThread)
     {
+        return false;
+    }
+
+    if (check == JumpThreadCheckResult::NeedsPhiUseResolution)
+    {
+        JITDUMP(FMT_BB " has global phi uses; no jump threading\n", block->bbNum);
         return false;
     }
 
@@ -1719,8 +2025,8 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
 {
     // First see if block is eligible for threading.
     //
-    const bool check = optJumpThreadCheck(block, /* domBlock*/ nullptr);
-    if (!check)
+    const JumpThreadCheckResult check = optJumpThreadCheck(block, /* domBlock*/ nullptr);
+    if (check == JumpThreadCheckResult::CannotThread)
     {
         return false;
     }
@@ -1948,6 +2254,12 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
         }
     }
 
+    if ((check == JumpThreadCheckResult::NeedsPhiUseResolution) && !optCanRewritePhiUses(jti))
+    {
+        JITDUMP(FMT_BB " has global phi uses we cannot safely account for; no phi-based threading\n", block->bbNum);
+        return false;
+    }
+
     // Do the optimization.
     //
     return optJumpThreadCore(jti);
@@ -1981,6 +2293,48 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     // We should be good to go
     //
     JITDUMP("Optimizing via jump threading\n");
+
+    for (JumpThreadInfo::PhiUse& phiUse : jti.m_phiUses.BottomUpOrder())
+    {
+        if (phiUse.m_replacementSsaNum == SsaConfig::RESERVED_SSA_NUM)
+        {
+            continue;
+        }
+
+        GenTreeLclVarCommon* const use       = phiUse.m_use;
+        unsigned const             oldSsaNum = use->GetSsaNum();
+
+        if (oldSsaNum == phiUse.m_replacementSsaNum)
+        {
+            continue;
+        }
+
+        JITDUMP("Updating [%06u] in " FMT_BB " from u:%u to u:%u\n", dspTreeID(use), phiUse.m_block->bbNum, oldSsaNum,
+                phiUse.m_replacementSsaNum);
+
+        LclSsaVarDsc* const replacementSsaDef = lvaGetDesc(use->GetLclNum())->GetPerSsaData(phiUse.m_replacementSsaNum);
+
+        use->SetSsaNum(phiUse.m_replacementSsaNum);
+
+        // Keep the use's value number in sync with the rewritten SSA def.
+        if (use->gtVNPair != replacementSsaDef->m_vnPair)
+        {
+            use->SetVNs(replacementSsaDef->m_vnPair);
+            GenTree* node   = use;
+            GenTree* parent = node->gtGetParent(nullptr);
+
+            while ((parent != nullptr) && parent->OperIs(GT_COMMA) && (parent->AsOp()->gtOp2 == node))
+            {
+                JITDUMP(" Updating COMMA parent VN [%06u]\n", dspTreeID(parent));
+                ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(parent->AsOp()->gtOp1->gtVNPair);
+                parent->SetVNs(vnStore->VNPWithExc(parent->AsOp()->gtOp2->gtVNPair, op1Xvnp));
+                node   = parent;
+                parent = node->gtGetParent(nullptr);
+            }
+        }
+
+        replacementSsaDef->AddUse(phiUse.m_block);
+    }
 
     bool setNoCseIn = false;
 

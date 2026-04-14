@@ -162,6 +162,11 @@ check_symbol_exists(
     HAVE_FORK)
 
 check_symbol_exists(
+    posix_spawn_file_actions_addchdir_np
+    spawn.h
+    HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP)
+
+check_symbol_exists(
     lseek64
     unistd.h
     HAVE_LSEEK64)
