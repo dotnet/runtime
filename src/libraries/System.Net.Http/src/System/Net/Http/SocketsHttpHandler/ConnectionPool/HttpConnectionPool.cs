@@ -441,7 +441,7 @@ namespace System.Net.Http
                         if (_http2Enabled &&
                             (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
                             (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure) && // prefer HTTP/1.1 if connection is not secured and downgrade is possible
-                            !(Volatile.Read(ref _http2SessionAuthSeen) && CanFallBackToHttp11(request))) // skip HTTP/2 for requests that can use HTTP/1.1 after session auth challenge
+                            !(_http2SessionAuthSeen && CanFallBackToHttp11(request))) // skip HTTP/2 for requests that can use HTTP/1.1 after session auth challenge
                         {
                             if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
                                 http2ConnectionWaiter != null)

@@ -296,7 +296,7 @@ namespace System.Net.Http
         /// </summary>
         internal void OnSessionAuthenticationChallengeSeen()
         {
-            Volatile.Write(ref _http2SessionAuthSeen, true);
+            _http2SessionAuthSeen = true;
         }
 
         private async Task HandleHttp11Downgrade(HttpRequestMessage request, Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)
