@@ -36,7 +36,8 @@
         "eng/pipelines/installer/helix-queues-setup.yml",
         "eng/pipelines/libraries/helix-queues-setup.yml"
       ],
-      "pinDigests": true
+      "pinDigests": true,
+      "commitMessageTopic": "container image dependencies"
     }
   ]
 }

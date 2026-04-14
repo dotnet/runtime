@@ -40,9 +40,9 @@ public class DacDbiThreadDumpTests : DumpTestBase
         while (current != TargetPointer.Null)
         {
             ThreadData data = threadContract.GetThreadData(current);
-            bool isDead = (data.State & ThreadState.Dead) != 0;
-            bool isUnstarted = (data.State & ThreadState.Unstarted) != 0;
-            if (!isDead && !isUnstarted)
+            bool isStopped = (data.State & Contracts.ThreadState.Stopped) != 0;
+            bool isUnstarted = (data.State & Contracts.ThreadState.Unstarted) != 0;
+            if (!isStopped && !isUnstarted)
             {
                 expectedCount++;
             }
@@ -71,7 +71,7 @@ public class DacDbiThreadDumpTests : DumpTestBase
             Assert.Equal(System.HResults.S_OK, hr);
 
             ThreadData data = threadContract.GetThreadData(current);
-            bool contractSaysDead = (data.State & ThreadState.Dead) != 0;
+            bool contractSaysDead = (data.State & Contracts.ThreadState.Stopped) != 0;
             Assert.Equal(contractSaysDead, isDead == Interop.BOOL.TRUE);
 
             current = data.NextThread;

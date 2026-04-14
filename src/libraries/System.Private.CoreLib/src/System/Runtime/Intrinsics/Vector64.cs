@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System.Runtime.Intrinsics
 {
@@ -866,7 +867,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Count<T>(Vector64<T> vector, T value) => BitOperations.PopCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+        public static int Count<T>(Vector64<T> vector, T value) => CountMatches(Equals(vector, Create(value)));
 
         /// <summary>Determines the number of elements in a vector that have all their bits set.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1888,11 +1889,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(Vector64<T> vector, T value)
-        {
-            int result = BitOperations.TrailingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
-            return (result != 32) ? result : -1;
-        }
+        public static int IndexOf<T>(Vector64<T> vector, T value) => IndexOfFirstMatch(Equals(vector, Create(value)));
 
         /// <summary>Determines the index of the first element in a vector that has all bits set.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2132,7 +2129,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(Vector64<T> vector, T value) => 31 - BitOperations.LeadingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+        public static int LastIndexOf<T>(Vector64<T> vector, T value) => IndexOfLastMatch(Equals(vector, Create(value)));
 
         /// <summary>Determines the index of the last element in a vector that has all bits set.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -4401,11 +4398,99 @@ namespace System.Runtime.Intrinsics
         public static Vector64<T> Xor<T>(Vector64<T> left, Vector64<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        internal static uint AdvSimdExtractBitMask<T>(Vector64<T> vector)
+        {
+            if (!AdvSimd.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            // This expects vector to have each element be one of Zero or AllBitsSet
+            // and will not produce correct results otherwise.
+            //
+            // Given this, we can treat it as ushort and do a logical-right-shift by 4 to
+            // compact the mask into half the space, giving us the following possibilities for
+            // each pair of bytes:
+            // * 0x00_00 - 0x00
+            // * 0x00_FF - 0x0F
+            // * 0xFF_00 - 0xF0
+            // * 0xFF_FF - 0xFF
+            //
+            // This allows us to extract the full metadata as a 32-bit scalar which can then
+            // be consumed by bit-counting APIs, such as PopCount, LeadingZeroCount, or TrailingZeroCount,
+            // and then adjusted by AdvSimdFixupBitCount to get the actual count of elements
+            // that were masked.
+
+            return AdvSimd.ShiftRightLogicalNarrowingLower(vector.ToVector128().AsUInt16(), 4).AsUInt32().ToScalar();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        internal static int AdvSimdFixupBitCount<T>(int bitCount)
+        {
+            if (!AdvSimd.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            // This API is meant to be consumed alongside AdvSimdExtractBitMask and will
+            // not produce correct results for arbitrary inputs. It adjusts the bit count
+            // assuming that sequences of 1 or 0 were in groups of 4 bits per byte.
+
+            unsafe
+            {
+                return bitCount >>> (2 + int.Log2(sizeof(T)));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int CountMatches<T>(Vector64<T> vector)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimdFixupBitCount<T>(BitOperations.PopCount(AdvSimdExtractBitMask(vector)));
+            }
+            else
+            {
+                return BitOperations.PopCount(vector.ExtractMostSignificantBits());
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static T GetElementUnsafe<T>(in this Vector64<T> vector, int index)
         {
             Debug.Assert((index >= 0) && (index < Vector64<T>.Count));
             ref T address = ref Unsafe.As<Vector64<T>, T>(ref Unsafe.AsRef(in vector));
             return Unsafe.Add(ref address, index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfFirstMatch<T>(Vector64<T> vector)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                int result = AdvSimdFixupBitCount<T>(BitOperations.TrailingZeroCount(AdvSimdExtractBitMask(vector)));
+                return (result != Vector64<T>.Count) ? result : -1;
+            }
+            else
+            {
+                int result = BitOperations.TrailingZeroCount(vector.ExtractMostSignificantBits());
+                return (result != 32) ? result : -1;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfLastMatch<T>(Vector64<T> vector)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                return (Vector64<T>.Count - 1) - AdvSimdFixupBitCount<T>(BitOperations.LeadingZeroCount(AdvSimdExtractBitMask(vector)));
+            }
+            else
+            {
+                return 31 - BitOperations.LeadingZeroCount(vector.ExtractMostSignificantBits());
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

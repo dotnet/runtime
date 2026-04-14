@@ -5861,9 +5861,6 @@ void CodeGen::genCall(GenTreeCall* call)
 {
     genAlignStackBeforeCall(call);
 
-    // all virtuals should have been expanded into a control expression
-    assert(!call->IsVirtual() || call->gtControlExpr || call->gtCallAddr);
-
     genCallPlaceRegArgs(call);
 
 #if defined(TARGET_X86)
@@ -5982,7 +5979,7 @@ void CodeGen::genCall(GenTreeCall* call)
     regMaskTP killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
-        CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+        CorInfoHelpFunc helpFunc = call->GetHelperNum();
         killMask                 = m_compiler->compHelperCallKillSet(helpFunc);
     }
 
@@ -6039,7 +6036,7 @@ void CodeGen::genCall(GenTreeCall* call)
             else
             {
 #ifdef TARGET_X86
-                if (call->IsHelperCall(m_compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+                if (call->IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
                 {
                     // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
                     // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
@@ -6218,9 +6215,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             if (target->isContainedIndir())
         {
             // When CFG is enabled we should not be emitting any non-register indirect calls.
-            assert(!m_compiler->opts.IsCFGEnabled() ||
-                   call->IsHelperCall(m_compiler, CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
-                   call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL));
+            assert(!m_compiler->opts.IsCFGEnabled() || call->IsHelperCall(CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
+                   call->IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL));
 
             if (target->AsIndir()->HasBase() && target->AsIndir()->Base()->isContainedIntOrIImmed())
             {
@@ -6279,7 +6275,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             }
             else
             {
-                GenTree* tlsGetAddr = (GenTree*)call->gtCallMethHnd;
+                GenTree* tlsGetAddr = call->gtControlExpr;
 
                 // NativeAOT code needs special code sequence prefix of call so the
                 // linker will do the fixup and emit accurate TLS access information.
@@ -10865,7 +10861,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Note that we don't do anything with unwind codes, because AMD64 only cares about unwind codes for the prolog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
@@ -10992,7 +10988,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Generates code for an EH funclet epilog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)

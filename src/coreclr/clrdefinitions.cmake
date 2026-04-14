@@ -184,7 +184,10 @@ if (FEATURE_TIERED_COMPILATION)
   add_compile_definitions(FEATURE_TIERED_COMPILATION)
 endif(FEATURE_TIERED_COMPILATION)
 
-add_compile_definitions(FEATURE_PGO)
+if (FEATURE_PGO)
+  add_compile_definitions(FEATURE_PGO)
+endif(FEATURE_PGO)
+
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
   # Enable the AMD64 Unix struct passing JIT-EE interface for all AMD64 platforms, to enable altjit.
   add_definitions(-DUNIX_AMD64_ABI_ITF)
