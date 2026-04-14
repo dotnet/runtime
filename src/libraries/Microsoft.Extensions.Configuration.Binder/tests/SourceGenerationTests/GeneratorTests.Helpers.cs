@@ -175,6 +175,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             Assert.True(resultEqualsBaseline, errorMessage);
 
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+
             return result;
         }
 

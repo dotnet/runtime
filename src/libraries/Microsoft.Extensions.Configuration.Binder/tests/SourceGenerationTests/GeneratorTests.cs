@@ -572,7 +572,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
             Assert.NotNull(result.GeneratedSource);
 
-            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.InputCompilation);
+            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.OutputCompilation);
 
             Assert.Contains(diagnostics, d => d.Id == "IL2026" && d.IsSuppressed);
             Assert.Contains(diagnostics, d => d.Id == "IL3050" && d.IsSuppressed);
@@ -609,7 +609,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
             Assert.NotNull(result.GeneratedSource);
 
-            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.InputCompilation);
+            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.OutputCompilation);
 
             Assert.Contains(diagnostics, d => d.Id == "IL2026" && d.IsSuppressed);
             Assert.Contains(diagnostics, d => d.Id == "IL3050" && d.IsSuppressed);
@@ -632,8 +632,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             HashSet<int> interceptedLines = GetInterceptedLines(result.GenerationSpec);
             Assert.NotEmpty(interceptedLines);
 
-            // Run the ILLink analyzer + suppressor on the input compilation (pre-interceptor).
-            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.InputCompilation);
+            // Run the ILLink analyzer + suppressor on the output compilation (which includes generated InterceptsLocation attributes).
+            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.OutputCompilation);
 
             // Every suppressed IL2026/IL3050 diagnostic should be on an intercepted line.
             foreach (Diagnostic d in diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && d.IsSuppressed))
