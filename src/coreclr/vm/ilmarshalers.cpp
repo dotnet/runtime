@@ -4561,12 +4561,18 @@ void ILFixedArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
     CREATE_MARSHALER_CARRAY_OPERANDS mops;
     m_pargs->m_pMarshalInfo->GetMops(&mops);
 
+    ILCodeLabel* pSkipLabel = pslILEmit->NewCodeLabel();
+    EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitBRFALSE(pSkipLabel);
+
     MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED);
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
     pslILEmit->EmitLDC(mops.additive);
     pslILEmit->EmitCALL(pslILEmit->GetToken(pMD), 3, 0);
+
+    pslILEmit->EmitLabel(pSkipLabel);
 }
 
 void ILFixedArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)

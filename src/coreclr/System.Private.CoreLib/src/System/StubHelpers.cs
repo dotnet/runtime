@@ -1788,8 +1788,29 @@ namespace System.StubHelpers
                 ref Unsafe.As<byte, char>(ref MemoryMarshal.GetArrayDataReference(managedArray)),
                 length);
             string str = new(chars);
-            int bufferLength = checked((length + 1) * Marshal.SystemMaxDBCSCharSize);
-            Marshal.StringToAnsiString(str, unmanaged, bufferLength, TBestFit.Enabled, TThrowOnUnmappable.Enabled);
+            // Use a temporary buffer for the full conversion (including null terminator that
+            // StringToAnsiString appends) to avoid writing past the native buffer for fixed
+            // arrays where the native buffer is exactly 'length' bytes.
+            int tempBufferLength = checked((length + 1) * Marshal.SystemMaxDBCSCharSize);
+            byte* heapBuffer = null;
+            Span<byte> tempSpan = tempBufferLength <= 256
+                ? stackalloc byte[tempBufferLength]
+                : new Span<byte>(heapBuffer = (byte*)NativeMemory.Alloc((nuint)tempBufferLength), tempBufferLength);
+            try
+            {
+                fixed (byte* tempBuffer = tempSpan)
+                {
+                    int convertedBytes = Marshal.StringToAnsiString(str, tempBuffer, tempBufferLength, TBestFit.Enabled, TThrowOnUnmappable.Enabled);
+                    // Copy at most 'length' bytes (one byte per element for ANSI char arrays).
+                    int bytesToCopy = Math.Min(convertedBytes, length);
+                    SpanHelpers.Memmove(ref *unmanaged, ref *tempBuffer, (nuint)bytesToCopy);
+                }
+            }
+            finally
+            {
+                if (heapBuffer != null)
+                    NativeMemory.Free(heapBuffer);
+            }
         }
 
         public static unsafe void ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)

@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices
                 (int)AsAnyMarshaler.AsAnyFlags.IsAnsi |
                 (int)AsAnyMarshaler.AsAnyFlags.IsBestFit;
 
-            AsAnyMarshaler marshaler = default;
+            AsAnyMarshaler marshaler = new(ptr, Flags);
 
             IntPtr pNativeHome = IntPtr.Zero;
 
@@ -176,7 +176,7 @@ namespace System.Runtime.InteropServices
                 (int)AsAnyMarshaler.AsAnyFlags.IsAnsi |
                 (int)AsAnyMarshaler.AsAnyFlags.IsBestFit;
 
-            AsAnyMarshaler marshaler = default;
+            AsAnyMarshaler marshaler = new(ptr, Flags);
 
             IntPtr pNativeHome = IntPtr.Zero;
 
