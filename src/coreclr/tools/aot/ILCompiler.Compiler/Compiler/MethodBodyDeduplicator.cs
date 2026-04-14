@@ -53,7 +53,7 @@ namespace ILCompiler
                 var key = new MethodInternKey(body, factory);
                 if (methodHash.TryGetValue(key, out MethodInternKey found))
                 {
-                    symbolRemapping.Add(body, found.Method);
+                    symbolRemapping.TryAdd(body, found.Method);
                 }
                 else
                 {
