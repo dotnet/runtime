@@ -58,6 +58,10 @@
     <PackageReference Include="xunit.v3.core" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" ExcludeAssets="build" />
 
     <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <!-- Pin System.Memory to avoid NU1605 downgrade: xunit.v3.assert transitively pulls
+         System.Collections.Immutable which requires System.Memory >= $(SystemMemoryVersion),
+         but xunit.v3.assert itself depends on a lower System.Memory version. -->
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <!--
       Deploy xunit.v3.assert as a runtime-only dependency for .NETCoreApp test projects.
