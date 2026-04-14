@@ -83,6 +83,16 @@ public class ElidedBoundsChecks
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte FirstElementAfterEmptyCheck(ReadOnlySpan<byte> span)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        if (span.IsEmpty)
+            return 0;
+        return span[0];
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -117,6 +127,12 @@ public class ElidedBoundsChecks
             return 0;
 
         if (IndexPlusConstLessThanLen("hello".AsSpan()) != false)
+            return 0;
+
+        if (FirstElementAfterEmptyCheck(new byte[] { 42 }) != 42)
+            return 0;
+
+        if (FirstElementAfterEmptyCheck(Array.Empty<byte>()) != 0)
             return 0;
 
         return 100;

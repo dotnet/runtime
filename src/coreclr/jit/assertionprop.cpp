@@ -5337,7 +5337,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             int lenLo = lenRng.LowerLimit().GetConstant();
 
             // GT_BOUNDS_CHECK node has an implicit contract - the length node must always be non-negative.
-            // So we additionally tighten the lower bound of lenLo to be ">= 1" in case if we also have a 
+            // So we additionally tighten the lower bound of lenLo to be ">= 1" in case if we also have a
             // "length != 0" assertion for it.
             if (lenLo <= 0)
             {
