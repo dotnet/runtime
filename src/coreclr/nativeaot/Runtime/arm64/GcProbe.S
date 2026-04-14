@@ -101,7 +101,7 @@
 //
 // Register state on exit:
 //  x9: thread pointer
-//  x0-x7 preserved, x10 trashed
+//  x0-x7, q0-q7 preserved, x10 trashed
 //
 .macro FixupHijackedCallstack
 

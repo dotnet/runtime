@@ -99,7 +99,7 @@
 //
 // Register state on exit:
 //  R11: thread pointer
-//  RAX, RCX, RDX, RSI, RDI, R8, R9 preserved, R10 trashed
+//  RAX, RCX, RDX, RSI, RDI, R8, R9, xmm0-xmm7 preserved, R10 trashed
 //
 .macro FixupHijackedCallstack
         // preserve volatile argument registers across INLINE_GETTHREAD
