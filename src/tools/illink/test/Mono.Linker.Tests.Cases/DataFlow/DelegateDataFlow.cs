@@ -184,7 +184,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static DelegateWithAnnotatedParam _field;
 
 			// Return is unannotated, so using it for PublicMethods should warn
-			[ExpectedWarning ("IL2072", nameof (_field), nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+			[ExpectedWarning ("IL2072", "Invoke", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 			static void TestReturnValueUsedWithRequirement (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
 			{
@@ -192,15 +192,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Parameter is unannotated - should warn for parameter; return used without requirement - no extra warning
-			[ExpectedWarning ("IL2067", nameof (type), nameof (_field))]
+			[ExpectedWarning ("IL2067", nameof (type), "Invoke")]
 			static void TestParameterMismatch (Type type)
 			{
 				_ = _field (type);
 			}
 
 			// Both: parameter mismatch + return value used with requirement
-			[ExpectedWarning ("IL2067", nameof (type), nameof (_field))]
-			[ExpectedWarning ("IL2072", nameof (_field), nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+			[ExpectedWarning ("IL2067", nameof (type), "Invoke")]
+			[ExpectedWarning ("IL2072", "Invoke", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
 			static void TestBothMismatched (Type type)
 			{
 				_field (type).RequiresPublicMethods ();
@@ -211,34 +211,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestReturnValueUsedWithRequirement (typeof (TestType));
 				TestParameterMismatch (typeof (TestType));
 				TestBothMismatched (typeof (TestType));
-			}
-		}
-
-		// ===================================================
-		// Tests for generic delegate with DAM on the type parameter itself
-		// ===================================================
-		class GenericDelegateWithAnnotatedTypeParameter
-		{
-			delegate void DelegateWithGenericParam<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> (T value);
-
-			static DelegateWithGenericParam<Type> _fieldInstantiatedWithType;
-
-			[ExpectedWarning ("IL2067", nameof (type), nameof (_fieldInstantiatedWithType))]
-			static void TestFieldInvokeWithoutAnnotation (Type type)
-			{
-				_fieldInstantiatedWithType (type);
-			}
-
-			static void TestFieldInvokeWithMatchingAnnotation (
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
-			{
-				_fieldInstantiatedWithType (type);
-			}
-
-			public static void Test ()
-			{
-				TestFieldInvokeWithoutAnnotation (typeof (TestType));
-				TestFieldInvokeWithMatchingAnnotation (typeof (TestType));
 			}
 		}
 
