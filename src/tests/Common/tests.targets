@@ -222,10 +222,10 @@
 
     <ItemGroup>
       <_StaleIlCg2DoneFile Include="@(_IlCg2DoneFiles)"
-          Condition="$([System.IO.File]::GetLastWriteTime('%(Identity)').Ticks) &lt; $(_Crossgen2InCoreRootTime)" />
+          Condition="'@(_IlCg2DoneFiles)' != '' and ($([System.IO.File]::GetLastWriteTime('%(Identity)').Ticks) &lt; $(_Crossgen2InCoreRootTime))" />
     </ItemGroup>
 
-    <Warning Text="STALE IL-CG2: One or more IL-CG2 R2R caches may be stale (crossgen2 is newer than cached compilations)."
+    <Warning Text="STALE IL-CG2: The following files are older than crossgen2 ($(_Crossgen2DstPath)) and indicate stale R2R caches:@(_StaleIlCg2DoneFile->'$([System.Environment]::NewLine)%(Identity)')"
              Condition="'@(_StaleIlCg2DoneFile)' != ''" />
   </Target>
 
