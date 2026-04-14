@@ -2640,7 +2640,14 @@ PROCAbortInitialize()
     bool enableCrashReportOnly = enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, reportOnlyEnabled) && reportOnlyEnabled == 1;
 
 #ifdef HOST_ANDROID
+    const char* defaultReportDirectory = getenv("HOME");
+    if (defaultReportDirectory == nullptr || defaultReportDirectory[0] == '\0')
+    {
+        defaultReportDirectory = getenv("TMPDIR");
+    }
+
     g_inProcCrashReportEnabled = enableMiniDump || enableCrashReport || enableCrashReportOnly;
+    InProcCrashReportInitialize(g_inProcCrashReportEnabled ? 1 : 0, dumpName, defaultReportDirectory);
 #endif
 
     if (enableMiniDump)

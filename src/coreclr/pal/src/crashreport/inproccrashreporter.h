@@ -3,12 +3,15 @@
 
 // In-proc crash report generation.
 //
-// Emits a minimal createdump-shaped JSON payload to logcat / stderr.
+// Emits a minimal createdump-shaped JSON payload to logcat / stderr and an
+// optional *.crashreport.json file on disk.
 
 #pragma once
 
 #include <signal.h>
 #include <stdint.h>
+
+void InProcCrashReportInitialize(int writeToFile, const char* dumpPath, const char* defaultDirectory);
 
 // Generate an in-proc crash report. Called from PROCCreateCrashDumpIfEnabled.
 // All arguments come from the signal handler and are signal-safe to read.

@@ -10,6 +10,8 @@
 #include "moduleenumerator.h"
 #include "pal/thread.hpp"
 
+#include <fcntl.h>
+#include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <ucontext.h>
@@ -29,6 +31,9 @@ static volatile InProcCrashReportIsManagedThreadCallback g_isManagedThreadCallba
 static volatile InProcCrashReportWalkStackCallback g_walkStackCallback = NULL;
 static volatile InProcCrashReportGetExceptionCallback g_getExceptionCallback = NULL;
 static volatile InProcCrashReportEnumerateThreadsCallback g_enumerateThreadsCallback = NULL;
+static volatile int g_writeReportToFile = 0;
+static char g_reportPath[256];
+static char g_defaultReportDirectory[256];
 
 struct MultiThreadJsonContext
 {
@@ -130,6 +135,44 @@ void
 WriteToLog(
     const char* msg,
     int len);
+
+static
+int
+WriteAllToFile(
+    int fd,
+    const char* buffer,
+    int len);
+
+static
+void
+AppendChar(
+    char* buffer,
+    int bufferSize,
+    int* pos,
+    char value);
+
+static
+void
+AppendString(
+    char* buffer,
+    int bufferSize,
+    int* pos,
+    const char* value);
+
+static
+void
+AppendUnsignedDecimal(
+    char* buffer,
+    int bufferSize,
+    int* pos,
+    uint64_t value);
+
+static
+void
+TerminateBuffer(
+    char* buffer,
+    int bufferSize,
+    int* pos);
 
 static
 const char*
@@ -272,6 +315,80 @@ InProcCrashReportGenerate(
     CrashJsonCloseObject(&s_jsonWriter);
 
     WriteToLog(CrashJsonGetBuffer(&s_jsonWriter), CrashJsonGetLength(&s_jsonWriter));
+
+    if (g_writeReportToFile != 0)
+    {
+        char reportPath[256];
+        int pathLen = 0;
+        reportPath[0] = '\0';
+
+        if (g_reportPath[0] != '\0')
+        {
+            AppendString(reportPath, sizeof(reportPath), &pathLen, g_reportPath);
+            AppendString(reportPath, sizeof(reportPath), &pathLen, ".crashreport.json");
+        }
+        else
+        {
+            const char* directory = g_defaultReportDirectory[0] != '\0' ? g_defaultReportDirectory : "/tmp";
+
+            AppendString(reportPath, sizeof(reportPath), &pathLen, directory);
+            if (pathLen > 0 && reportPath[pathLen - 1] != '/')
+            {
+                AppendChar(reportPath, sizeof(reportPath), &pathLen, '/');
+            }
+            AppendString(reportPath, sizeof(reportPath), &pathLen, "dotnet_crash_");
+            AppendUnsignedDecimal(reportPath, sizeof(reportPath), &pathLen, static_cast<uint64_t>(getpid()));
+            AppendString(reportPath, sizeof(reportPath), &pathLen, ".crashreport.json");
+        }
+
+        TerminateBuffer(reportPath, sizeof(reportPath), &pathLen);
+
+        int fd = open(reportPath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd != -1)
+        {
+            int writeSucceeded = WriteAllToFile(fd, CrashJsonGetBuffer(&s_jsonWriter), CrashJsonGetLength(&s_jsonWriter)) &&
+                WriteAllToFile(fd, "\n", 1);
+
+            if (close(fd) != 0 || !writeSucceeded)
+            {
+                unlink(reportPath);
+            }
+        }
+    }
+}
+
+void
+InProcCrashReportInitialize(
+    int writeToFile,
+    const char* dumpPath,
+    const char* defaultDirectory)
+{
+    g_reportPath[0] = '\0';
+    if (dumpPath != NULL)
+    {
+        int index = 0;
+        while (dumpPath[index] != '\0' && index < static_cast<int>(sizeof(g_reportPath)) - 1)
+        {
+            g_reportPath[index] = dumpPath[index];
+            index++;
+        }
+        g_reportPath[index] = '\0';
+    }
+
+    g_defaultReportDirectory[0] = '\0';
+    if (defaultDirectory != NULL)
+    {
+        int index = 0;
+        while (defaultDirectory[index] != '\0' && index < static_cast<int>(sizeof(g_defaultReportDirectory)) - 1)
+        {
+            g_defaultReportDirectory[index] = defaultDirectory[index];
+            index++;
+        }
+        g_defaultReportDirectory[index] = '\0';
+    }
+
+    __sync_synchronize();
+    g_writeReportToFile = writeToFile;
 }
 
 void
@@ -350,6 +467,109 @@ WriteToLog(
 #else
     write(STDERR_FILENO, msg, len);
 #endif
+}
+
+int
+WriteAllToFile(
+    int fd,
+    const char* buffer,
+    int len)
+{
+    int totalWritten = 0;
+    while (totalWritten < len)
+    {
+        ssize_t written = write(fd, buffer + totalWritten, len - totalWritten);
+        if (written > 0)
+        {
+            totalWritten += static_cast<int>(written);
+            continue;
+        }
+
+        if (written == -1 && errno == EINTR)
+        {
+            continue;
+        }
+
+        return 0;
+    }
+
+    return 1;
+}
+
+void
+AppendChar(
+    char* buffer,
+    int bufferSize,
+    int* pos,
+    char value)
+{
+    if (*pos < bufferSize - 1)
+    {
+        buffer[*pos] = value;
+        (*pos)++;
+    }
+}
+
+void
+AppendString(
+    char* buffer,
+    int bufferSize,
+    int* pos,
+    const char* value)
+{
+    if (value == NULL)
+    {
+        return;
+    }
+
+    while (*value != '\0' && *pos < bufferSize - 1)
+    {
+        buffer[*pos] = *value;
+        (*pos)++;
+        value++;
+    }
+}
+
+void
+AppendUnsignedDecimal(
+    char* buffer,
+    int bufferSize,
+    int* pos,
+    uint64_t value)
+{
+    char reverse[32];
+    int reversePos = 0;
+
+    if (value == 0)
+    {
+        AppendChar(buffer, bufferSize, pos, '0');
+        return;
+    }
+
+    while (value != 0 && reversePos < static_cast<int>(sizeof(reverse)))
+    {
+        reverse[reversePos++] = static_cast<char>('0' + (value % 10));
+        value /= 10;
+    }
+
+    while (reversePos > 0)
+    {
+        AppendChar(buffer, bufferSize, pos, reverse[--reversePos]);
+    }
+}
+
+void
+TerminateBuffer(
+    char* buffer,
+    int bufferSize,
+    int* pos)
+{
+    if (*pos >= bufferSize)
+    {
+        *pos = bufferSize - 1;
+    }
+
+    buffer[*pos] = '\0';
 }
 
 void
