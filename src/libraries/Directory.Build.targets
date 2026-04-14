@@ -208,7 +208,7 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\StringPolyfills.cs" Link="System\StringPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Buffers\SearchValuesPolyfills.cs" Link="System\Buffers\SearchValuesPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\AsciiPolyfills.cs" Link="System\Text\AsciiPolyfills.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\EncodingPolyfills.cs" Link="System\Text\EncodingPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Polyfills\EncodingPolyfills.cs" Link="Common\Polyfills\EncodingPolyfills.cs" />
   </ItemGroup>
 
   <!-- If a tfm doesn't target .NETCoreApp but uses the platform support attributes, then we include the

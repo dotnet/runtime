@@ -59,12 +59,42 @@ namespace Microsoft.Win32.SafeHandles
         // On Unix, we don't use process descriptors yet, so we can't get PID.
         private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
 
+        private bool SignalCore(PosixSignal signal)
+        {
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            int signalNumber = Interop.Sys.GetPlatformSignalNumber(signal);
+            if (signalNumber == 0)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            int killResult = Interop.Sys.Kill(ProcessId, signalNumber);
+            if (killResult != 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                // Return false if the process has already exited (or never existed).
+                if (errorInfo.Error == Interop.Error.ESRCH)
+                {
+                    return false;
+                }
+
+                throw new Win32Exception(errorInfo.RawErrno); // same exception as on Windows
+            }
+
+            return true;
+        }
+
         private delegate SafeProcessHandle StartWithShellExecuteDelegate(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
         private static StartWithShellExecuteDelegate? s_startWithShellExecute;
 
-        private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandlesSnapshot = null)
         {
-            SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
+            SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandlesSnapshot, out ProcessWaitState.Holder? waitStateHolder);
 
             // For standalone SafeProcessHandle.Start, we dispose the wait state holder immediately.
             // The DangerousAddRef on the SafeWaitHandle (Unix) keeps the handle alive.
@@ -73,14 +103,10 @@ namespace Microsoft.Win32.SafeHandles
             return startedProcess;
         }
 
-        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
+        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
+            SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder)
         {
             waitStateHolder = null;
-
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
-            {
-                throw new PlatformNotSupportedException();
-            }
 
             ProcessUtils.EnsureInitialized();
 
@@ -104,14 +130,7 @@ namespace Microsoft.Win32.SafeHandles
                 (userId, groupId, groups) = ProcessUtils.GetUserAndGroupIds(startInfo);
             }
 
-            // .NET applications don't echo characters unless there is a Console.Read operation.
-            // Unix applications expect the terminal to be in an echoing state by default.
-            // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
-            // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
-            // Handle can be null only for UseShellExecute or platforms that don't support Console.Open* methods like Android.
-            bool usesTerminal = (stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
-                || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
-                || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle));
+            bool usesTerminal = UsesTerminal(stdinHandle, stdoutHandle, stderrHandle);
 
             filename = ProcessUtils.ResolvePath(startInfo.FileName);
             argv = ProcessUtils.ParseArgv(startInfo);
@@ -124,10 +143,12 @@ namespace Microsoft.Win32.SafeHandles
                 startInfo, filename, argv, env, cwd,
                 setCredentials, userId, groupId, groups,
                 stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
+                inheritedHandles,
                 out waitStateHolder);
         }
 
-        private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
+        private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
+            SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
         {
             IDictionary<string, string?> env = startInfo.Environment;
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
@@ -141,9 +162,7 @@ namespace Microsoft.Win32.SafeHandles
                 (userId, groupId, groups) = ProcessUtils.GetUserAndGroupIds(startInfo);
             }
 
-            bool usesTerminal = (stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
-                || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
-                || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle));
+            bool usesTerminal = UsesTerminal(stdinHandle, stdoutHandle, stderrHandle);
 
             string verb = startInfo.Verb;
             if (verb != string.Empty &&
@@ -166,6 +185,7 @@ namespace Microsoft.Win32.SafeHandles
                     startInfo, filename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
+                    null,
                     out waitStateHolder,
                     throwOnNoExec: false); // return invalid handle instead of throwing on ENOEXEC
 
@@ -186,17 +206,25 @@ namespace Microsoft.Win32.SafeHandles
                 startInfo, filename, openFileArgv, env, cwd,
                 setCredentials, userId, groupId, groups,
                 stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
+                null,
                 out waitStateHolder);
 
             return result;
         }
+
+        // .NET applications don't echo characters unless there is a Console.Read operation.
+        // Unix applications expect the terminal to be in an echoing state by default.
+        // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
+        // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
+        private static bool UsesTerminal(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+            => ProcessUtils.IsTerminal(stdinHandle) || ProcessUtils.IsTerminal(stdoutHandle) || ProcessUtils.IsTerminal(stderrHandle);
 
         private static SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
             IDictionary<string, string?> env, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
             SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
-            bool usesTerminal, out ProcessWaitState.Holder? waitStateHolder, bool throwOnNoExec = true)
+            bool usesTerminal, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder, bool throwOnNoExec = true)
         {
             waitStateHolder = null;
 
@@ -226,7 +254,8 @@ namespace Microsoft.Win32.SafeHandles
                 errno = Interop.Sys.ForkAndExecProcess(
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
-                    out childPid, stdinHandle, stdoutHandle, stderrHandle);
+                    out childPid, stdinHandle, stdoutHandle, stderrHandle,
+                    startInfo.StartDetached, inheritedHandles);
 
                 if (errno == 0)
                 {

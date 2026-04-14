@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class UserException1 : Exception {
 	int ExceptionId;
@@ -58,7 +59,7 @@ public class RethrowException {
 	}
 		
 	
-	[Fact]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
 	public static int TestEntryPoint() {
 	  String s = "Done";
 	    System.IO.TextWriter t = Console.Out;

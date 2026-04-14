@@ -21,13 +21,13 @@ internal sealed class EEExceptionClause : IData<EEExceptionClause>, IExceptionCl
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.EEExceptionClause);
 
-        Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        TryStartPC = target.Read<uint>(address + (ulong)type.Fields[nameof(TryStartPC)].Offset);
-        TryEndPC = target.Read<uint>(address + (ulong)type.Fields[nameof(TryEndPC)].Offset);
-        HandlerStartPC = target.Read<uint>(address + (ulong)type.Fields[nameof(HandlerStartPC)].Offset);
-        HandlerEndPC = target.Read<uint>(address + (ulong)type.Fields[nameof(HandlerEndPC)].Offset);
-        TypeHandle = target.ReadNUInt(address + (ulong)type.Fields[nameof(TypeHandle)].Offset);
-        ClassToken = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeHandle)].Offset);
+        Flags = target.ReadField<uint>(address, type, nameof(Flags));
+        TryStartPC = target.ReadField<uint>(address, type, nameof(TryStartPC));
+        TryEndPC = target.ReadField<uint>(address, type, nameof(TryEndPC));
+        HandlerStartPC = target.ReadField<uint>(address, type, nameof(HandlerStartPC));
+        HandlerEndPC = target.ReadField<uint>(address, type, nameof(HandlerEndPC));
+        TypeHandle = target.ReadNUIntField(address, type, nameof(TypeHandle));
+        ClassToken = (uint)TypeHandle.Value;
         FilterOffset = ClassToken;
     }
 
@@ -48,12 +48,12 @@ internal sealed class R2RExceptionClause : IData<R2RExceptionClause>, IException
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.R2RExceptionClause);
 
-        Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        TryStartPC = target.Read<uint>(address + (ulong)type.Fields[nameof(TryStartPC)].Offset);
-        TryEndPC = target.Read<uint>(address + (ulong)type.Fields[nameof(TryEndPC)].Offset);
-        HandlerStartPC = target.Read<uint>(address + (ulong)type.Fields[nameof(HandlerStartPC)].Offset);
-        HandlerEndPC = target.Read<uint>(address + (ulong)type.Fields[nameof(HandlerEndPC)].Offset);
-        ClassToken = target.Read<uint>(address + (ulong)type.Fields[nameof(ClassToken)].Offset);
+        Flags = target.ReadField<uint>(address, type, nameof(Flags));
+        TryStartPC = target.ReadField<uint>(address, type, nameof(TryStartPC));
+        TryEndPC = target.ReadField<uint>(address, type, nameof(TryEndPC));
+        HandlerStartPC = target.ReadField<uint>(address, type, nameof(HandlerStartPC));
+        HandlerEndPC = target.ReadField<uint>(address, type, nameof(HandlerEndPC));
+        ClassToken = target.ReadField<uint>(address, type, nameof(ClassToken));
         FilterOffset = ClassToken;
     }
 

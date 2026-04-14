@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -25,11 +24,14 @@ public class GCMemoryRegionTests
         (string Name, string Value)[] globalStrings,
         TestPlaceholderTarget.ReadFromTargetDelegate readFromTarget)
     {
-        var target = new TestPlaceholderTarget(arch, readFromTarget, types, globals, globalStrings);
-        var gcContract = ((IContractFactory<IGC>)new GCFactory()).CreateContract(target, 1);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.GC == gcContract));
-        return gcContract;
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader(readFromTarget)
+            .AddTypes(types)
+            .AddGlobals(globals)
+            .AddGlobalStrings(globalStrings)
+            .AddContract<IGC>(version: 1)
+            .Build();
+        return target.Contracts.GC;
     }
 
     private static (string Name, ulong Value)[] BuildGlobals(
