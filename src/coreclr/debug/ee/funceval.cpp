@@ -2598,107 +2598,6 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
     }
 }
 
-
-/*
- * UnpackFuncEvalResult
- *
- * This routine takes the resulting object of a func-eval, and does any copying, boxing, unboxing, necessary.
- *
- * Parameters:
- *    pDE - pointer to the DebuggerEval object being processed.
- *    newObj - Pre-allocated object for NEW_OBJ func-evals.
- *    retObject - Pre-allocated object to be filled in with the info in pRetBuff.
- *    RetValueType - The return type of the function called.
- *    pRetBuff - The raw bytes returned by the func-eval call when there is a return buffer parameter.
- *
- *
- * Returns:
- *    None.
- *
- */
-void UnpackFuncEvalResult(DebuggerEval *pDE,
-                          OBJECTREF newObj,
-                          OBJECTREF retObject,
-                          TypeHandle RetValueType,
-                          void *pRetBuff
-                          )
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-
-    // Ah, but if this was a new object op, then the result is really
-    // the object we allocated above...
-    if (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT)
-    {
-        // We purposely do not morph nullables to be boxed Ts here because debugger EE's otherwise
-        // have no way of creating true nullables that they need for their own purposes.
-        pDE->m_result[0] = ObjToArgSlot(newObj);
-        pDE->m_retValueBoxing = Debugger::AllBoxed;
-    }
-    else if (!RetValueType.IsNull())
-    {
-        LOG((LF_CORDB, LL_EVERYTHING, "FuncEval call is saving a boxed VC return value.\n"));
-
-        //
-        // We pre-created it above
-        //
-        _ASSERTE(retObject != NULL);
-
-        // This is one of those places we use true boxed nullables
-        _ASSERTE(!Nullable::IsNullableType(RetValueType)||
-                 retObject->GetMethodTable() == RetValueType.GetMethodTable());
-
-        if (pRetBuff != NULL)
-        {
-            // box the object
-            CopyValueClass(retObject->GetData(),
-                           pRetBuff,
-                           RetValueType.GetMethodTable());
-        }
-        else
-        {
-            // box the primitive returned, retObject is a true nullable for nullabes, It will be Normalized later
-            CopyValueClass(retObject->GetData(),
-                           pDE->m_result,
-                           RetValueType.GetMethodTable());
-        }
-
-        pDE->m_result[0] = ObjToArgSlot(retObject);
-        pDE->m_retValueBoxing = Debugger::AllBoxed;
-    }
-    else
-    {
-        //
-        // Other FuncEvals return primitives as unboxed.
-        //
-        pDE->m_retValueBoxing = Debugger::OnlyPrimitivesUnboxed;
-    }
-
-    LOG((LF_CORDB, LL_INFO10000, "FuncEval call has saved the return value.\n"));
-    // No exception, so it worked as far as we're concerned.
-    pDE->m_successful = true;
-
-    // If the result is an object, then place the object
-    // reference into a strong handle and place the handle into the
-    // pDE to protect the result from a collection.
-    CorElementType retClassET = pDE->m_resultType.GetSignatureCorElementType();
-
-    if ((pDE->m_retValueBoxing == Debugger::AllBoxed) ||
-        !RetValueType.IsNull() ||
-        IsElementTypeSpecial(retClassET))
-    {
-        LOG((LF_CORDB, LL_EVERYTHING, "Creating strong handle for boxed DoNormalFuncEval result.\n"));
-        OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result[0]));
-        pDE->m_result[0] = (INT64)(LONG_PTR)oh;
-        pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
-    }
-}
-
 /*
  * UnpackFuncEvalArguments
  *
@@ -3251,7 +3150,7 @@ static void DoNormalFuncEval( DebuggerEval *pDE,
     LOG((LF_CORDB, LL_INFO10000, "FuncEval call has saved the return value.\n"));
     pDE->m_successful = true;
 
-    // Create a strong handle for object results (matches UnpackFuncEvalResult logic).
+    // Create a strong handle for object results.
     {
         CorElementType retClassETForHandle = pDE->m_resultType.GetSignatureCorElementType();
         if ((pDE->m_retValueBoxing == Debugger::AllBoxed) ||
