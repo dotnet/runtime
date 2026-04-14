@@ -59,23 +59,23 @@
 .macro POP_PROBE_FRAME
     movdqa      xmm1, [rsp + 0]
     movdqa      xmm0, [rsp + 0x10]
-    add         rsp, 0x20 + 8  // skip xmm0, xmm1 and discard RIP
-    pop         rbp
-    pop         rax     // discard Thread*
-    pop         rax     // discard BITMASK
-    pop         rbx
-    pop         rsi
-    pop         rdi
-    pop         r12
-    pop         r13
-    pop         r14
-    pop         r15
-    pop         rax     // discard caller RSP
-    pop         rax
-    pop         rcx
-    pop         rdx
-    pop         r8
-    pop         r9
+    free_stack  0x20 + 8               // skip xmm0, xmm1 and discard RIP
+    pop_nonvol_reg rbp
+    pop_register rax                   // discard Thread*
+    pop_register rax                   // discard BITMASK
+    pop_nonvol_reg rbx
+    pop_register rsi
+    pop_register rdi
+    pop_nonvol_reg r12
+    pop_nonvol_reg r13
+    pop_nonvol_reg r14
+    pop_nonvol_reg r15
+    pop_register rax                   // discard caller RSP
+    pop_register rax
+    pop_register rcx
+    pop_register rdx
+    pop_register r8
+    pop_register r9
 .endm
 
 //
