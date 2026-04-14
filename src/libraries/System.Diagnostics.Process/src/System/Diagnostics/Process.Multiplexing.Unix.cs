@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -11,7 +10,8 @@ namespace System.Diagnostics
     public partial class Process
     {
         /// <summary>
-        /// Reads from both standard output and standard error pipes using Unix poll-based multiplexing.
+        /// Reads from both standard output and standard error pipes using Unix poll-based multiplexing
+        /// with non-blocking reads.
         /// </summary>
         private static void ReadPipes(
             SafeFileHandle outputHandle,
@@ -24,6 +24,11 @@ namespace System.Diagnostics
         {
             int outputFd = outputHandle.DangerousGetHandle().ToInt32();
             int errorFd = errorHandle.DangerousGetHandle().ToInt32();
+
+            if (Interop.Sys.Fcntl.DangerousSetIsNonBlocking((IntPtr)outputFd, 1) != 0 || Interop.Sys.Fcntl.DangerousSetIsNonBlocking((IntPtr)errorFd, 1) != 0)
+            {
+                throw new Win32Exception();
+            }
 
             Span<Interop.PollEvent> pollFds = stackalloc Interop.PollEvent[2];
 
@@ -101,7 +106,7 @@ namespace System.Diagnostics
                     ref int currentBytesRead = ref (isError ? ref errorBytesRead : ref outputBytesRead);
                     ref bool currentDone = ref (isError ? ref errorDone : ref outputDone);
 
-                    int bytesRead = RandomAccess.Read(currentHandle, currentBuffer.AsSpan(currentBytesRead), fileOffset: 0);
+                    int bytesRead = ReadNonBlocking(currentHandle, currentBuffer, currentBytesRead);
                     if (bytesRead > 0)
                     {
                         currentBytesRead += bytesRead;
@@ -111,11 +116,37 @@ namespace System.Diagnostics
                             RentLargerBuffer(ref currentBuffer, currentBytesRead);
                         }
                     }
-                    else
+                    else if (bytesRead == 0)
                     {
+                        // EOF: pipe write end was closed.
                         currentDone = true;
                     }
+                    // bytesRead < 0 means EAGAIN — nothing available yet, let poll retry.
                 }
+            }
+        }
+
+        /// <summary>
+        /// Performs a non-blocking read from the given handle into the buffer starting at the specified offset.
+        /// Returns the number of bytes read, 0 for EOF, or -1 for EAGAIN (nothing available yet).
+        /// </summary>
+        private static unsafe int ReadNonBlocking(SafeFileHandle handle, byte[] buffer, int offset)
+        {
+            fixed (byte* pBuffer = buffer)
+            {
+                int bytesRead = Interop.Sys.Read(handle, pBuffer + offset, buffer.Length - offset);
+                if (bytesRead < 0)
+                {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    if (errorInfo.Error == Interop.Error.EAGAIN)
+                    {
+                        return -1;
+                    }
+
+                    throw new Win32Exception(errorInfo.RawErrno);
+                }
+
+                return bytesRead;
             }
         }
     }
