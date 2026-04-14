@@ -107,8 +107,7 @@ namespace System.IO.Enumeration
             try
             {
                 // NtQueryDirectoryFile needs its buffer to be 64bit aligned to work
-                // successfully with FileFullDirectoryInformation on ARM32. AlignedAlloc
-                // guarantees the required alignment, new byte[] does not.
+                // successfully with FileFullDirectoryInformation.
                 _buffer = NativeMemory.AlignedAlloc((nuint)_bufferLength, sizeof(ulong));
             }
             catch
