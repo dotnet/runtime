@@ -686,7 +686,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct FuncEvalInvokeContract
+        private unsafe struct FuncEvalInvokeArgs
         {
             public nint MethodHandle;
             public nint OwnerType;
@@ -697,20 +697,20 @@ namespace System.Runtime.CompilerServices
 
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static unsafe void InvokeFuncEval(FuncEvalInvokeContract* pContract, object* pResult, Exception* pException)
+        private static unsafe void InvokeFuncEval(FuncEvalInvokeArgs* pInvokeArgs, object* pResult, Exception* pException)
         {
             try
             {
-                RuntimeMethodHandleInternal handle = new RuntimeMethodHandleInternal(pContract->MethodHandle);
-                RuntimeType? ownerType = pContract->OwnerType != 0
-                    ? RuntimeTypeHandle.GetRuntimeTypeFromHandle(pContract->OwnerType)
+                RuntimeMethodHandleInternal handle = new RuntimeMethodHandleInternal(pInvokeArgs->MethodHandle);
+                RuntimeType? ownerType = pInvokeArgs->OwnerType != 0
+                    ? RuntimeTypeHandle.GetRuntimeTypeFromHandle(pInvokeArgs->OwnerType)
                     : null;
                 MethodBase method = RuntimeType.GetMethodBase(ownerType, handle)!;
 
-                object? thisObj = *pContract->ThisObj;
-                object?[]? args = *pContract->Args;
+                object? thisObj = *pInvokeArgs->ThisObj;
+                object?[]? args = *pInvokeArgs->Args;
 
-                if (pContract->IsNewObj != 0)
+                if (pInvokeArgs->IsNewObj != 0)
                 {
                     // Call constructor on the pre-allocated instance.
                     // ConstructorInfo.Invoke(object, ...) invokes on an existing instance and returns null.
@@ -723,10 +723,6 @@ namespace System.Runtime.CompilerServices
                     if (result is not null)
                         *pResult = result;
                 }
-
-                // Write back any modified byref args into the args array so native can read them.
-                if (args is not null)
-                    *pContract->Args = args;
             }
             catch (Exception ex)
             {
