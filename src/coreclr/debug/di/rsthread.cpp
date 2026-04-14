@@ -7649,8 +7649,7 @@ void CordbJITILFrame::LoadGenericArgs()
     UINT32 cGenericClassTypeParams = 0;
     DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
 
-    IfFailThrow(pDAC->GetMethodDescParams(GetCurrentAppDomain()->GetADToken(),
-                              m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
+    IfFailThrow(pDAC->GetMethodDescParams(m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
                               m_frameParamsToken,
                               &cGenericClassTypeParams,
                               &rgGenericTypeParams));
@@ -11534,8 +11533,7 @@ void CordbAsyncFrame::LoadGenericArgs()
         genericTypeParam = resolvedToken;
     }
 
-    IfFailThrow(pDAC->GetMethodDescParams(m_pAppDomain->GetADToken(),
-                              m_vmMethodDesc,
+    IfFailThrow(pDAC->GetMethodDescParams(m_vmMethodDesc,
                               genericTypeParam,
                               &cGenericClassTypeParams,
                               &rgGenericTypeParams));

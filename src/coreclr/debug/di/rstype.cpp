@@ -1163,11 +1163,9 @@ HRESULT CordbType::TypeDataToType(CordbAppDomain *pAppDomain, DebuggerIPCE_Basic
 
                     {
                         RSLockHolder lockHolder(pProcess->GetProcessLock());
-                        IfFailThrow(pProcess->GetDAC()->TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,  // could be generics
-                                                                                             // which are never boxed
-                                                                         pAppDomain->GetADToken(),
-                                                                         data->vmTypeHandle,
-                                                                         &typeInfo));
+                        IfFailThrow(pProcess->GetDAC()->TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,  // could be generics which are never boxed
+                                                                                    data->vmTypeHandle,
+                                                                                    &typeInfo));
                     }
 
                     IfFailThrow(CordbType::TypeDataToType(pAppDomain,&typeInfo, pRes));
@@ -1372,7 +1370,7 @@ HRESULT CordbType::InstantiateFromTypeHandle(CordbAppDomain * pAppDomain,
         TypeParamsList params;
         {
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            IfFailThrow(pProcess->GetDAC()->GetTypeHandleParams(pAppDomain->GetADToken(), vmTypeHandle, &params));
+            IfFailThrow(pProcess->GetDAC()->GetTypeHandleParams(vmTypeHandle, &params));
         }
 
         // convert the parameter type information to a list of CordbTypeInstances (one for each parameter)
@@ -1614,8 +1612,7 @@ HRESULT CordbType::InitStringOrObjectClass(BOOL fForceInit)
 
         {
             RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-            IfFailThrow(pProcess->GetDAC()->GetSimpleType(m_appdomain->GetADToken(),
-                                              m_elementType,
+            IfFailThrow(pProcess->GetDAC()->GetSimpleType(m_elementType,
                                               &metadataToken,
                                               &vmModule));
         }
@@ -2337,8 +2334,7 @@ HRESULT CordbType::GetTypeID(COR_TYPEID *pId)
                 VMPTR_Module vmModule = VMPTR_Module::NullPtr();
 
                 // get module and token of the simple type
-                IfFailThrow(GetProcess()->GetDAC()->GetSimpleType(GetAppDomain()->GetADToken(),
-                                                      et,
+                IfFailThrow(GetProcess()->GetDAC()->GetSimpleType(et,
                                                       &mdToken,
                                                       &vmModule));
 

@@ -2363,7 +2363,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 _ASSERTE(cdbAppDomain != NULL);
 
                 DebuggerIPCE_ObjectData objData;
-                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, cdbAppDomain->GetADToken(), &objData));
+                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, &objData));
 
                 NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, (ULONG)objData.objSize), &objData));
                 hr = pNewObjectValue->Init();
@@ -2460,7 +2460,7 @@ HRESULT CordbProcess::GetTypeForTypeID(COR_TYPEID id, ICorDebugType **ppType)
     EX_TRY
     {
         DebuggerIPCE_ExpandedTypeData data;
-        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, VMPTR_AppDomain::NullPtr(), id, &data));
+        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, id, &data));
 
         CordbType *type = 0;
         hr = CordbType::TypeDataToType(GetAppDomain(), &data, &type);
@@ -2637,20 +2637,18 @@ COM_METHOD CordbProcess::GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDe
 
 HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, CordbAppDomain **pAppDomain)
 {
-    VMPTR_AppDomain appDomain;
-    VMPTR_Module mod;
+    VMPTR_AppDomain appDomain = VMPTR_AppDomain::NullPtr();
 
     HRESULT hr = E_FAIL;
-    BOOL _appDomainResult;
-    IfFailThrow(GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &_appDomainResult));
-    if (_appDomainResult)
+    IfFailThrow(GetDAC()->GetCurrentAppDomain(&appDomain));
+    if (!appDomain.IsNull())
     {
         CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetAppDomain() : LookupOrCreateAppDomain(appDomain);
 
         _ASSERTE(cdbAppDomain);
 
         DebuggerIPCE_ExpandedTypeData data;
-        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, appDomain, addr, &data));
+        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfo(AllBoxed, addr, &data));
 
         CordbType *type = 0;
         hr = CordbType::TypeDataToType(cdbAppDomain, &data, &type);
@@ -15329,10 +15327,8 @@ HRESULT CordbProcess::GetReferenceValueFromGCHandle(
         {
             ThrowHR(CORDBG_E_BAD_REFERENCE_VALUE);
         }
-        ULONG appDomainId;
-        IfFailThrow(pDAC->GetAppDomainIdFromVmObjectHandle(vmObjHandle, &appDomainId));
         VMPTR_AppDomain vmAppDomain;
-        IfFailThrow(pDAC->GetAppDomainFromId(appDomainId, &vmAppDomain));
+        IfFailThrow(pDAC->GetCurrentAppDomain(&vmAppDomain));
 
         RSLockHolder lockHolder(GetProcessLock());
         CordbAppDomain * pAppDomain = LookupOrCreateAppDomain(vmAppDomain);

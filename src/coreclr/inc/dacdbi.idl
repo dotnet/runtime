@@ -203,7 +203,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT IsLeftSideInitialized([out] BOOL * pResult);
 
     // App Domains
-    HRESULT GetAppDomainFromId([in] ULONG appdomainId, [out] VMPTR_AppDomain * pRetVal);
     HRESULT GetAppDomainId([in] VMPTR_AppDomain vmAppDomain, [out] ULONG * pRetVal);
     HRESULT GetAppDomainObject([in] VMPTR_AppDomain vmAppDomain, [out] VMPTR_OBJECTHANDLE * pRetVal);
     HRESULT GetAppDomainFullName([in] VMPTR_AppDomain vmAppDomain, [in] IDacDbiStringHolder pStrName);
@@ -311,21 +310,20 @@ interface IDacDbiInterface : IUnknown
     // Type
     HRESULT IsValueType([in] VMPTR_TypeHandle th, [out] BOOL * pResult);
     HRESULT HasTypeParams([in] VMPTR_TypeHandle th, [out] BOOL * pResult);
-    HRESULT GetClassInfo([in] VMPTR_AppDomain vmAppDomain, [in] VMPTR_TypeHandle thExact, [out] struct ClassInfo * pData);
+    HRESULT GetClassInfo([in] VMPTR_TypeHandle thExact, [out] struct ClassInfo * pData);
     HRESULT GetInstantiationFieldInfo(
         [in] VMPTR_Assembly vmAssembly,
         [in] VMPTR_TypeHandle vmThExact,
         [in] VMPTR_TypeHandle vmThApprox,
         [out] DacDbiArrayList_FieldData * pFieldList,
         [out] SIZE_T * pObjectSize);
-    HRESULT TypeHandleToExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] VMPTR_AppDomain vmAppDomain, [in] VMPTR_TypeHandle vmTypeHandle, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
-    HRESULT GetObjectExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] VMPTR_AppDomain vmAppDomain, [in] CORDB_ADDRESS addr, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
-    HRESULT GetObjectExpandedTypeInfoFromID([in] AreValueTypesBoxed boxed, [in] VMPTR_AppDomain vmAppDomain, [in] COR_TYPEID id, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT TypeHandleToExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] VMPTR_TypeHandle vmTypeHandle, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT GetObjectExpandedTypeInfo([in] AreValueTypesBoxed boxed, [in] CORDB_ADDRESS addr, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
+    HRESULT GetObjectExpandedTypeInfoFromID([in] AreValueTypesBoxed boxed, [in] COR_TYPEID id, [out] struct DebuggerIPCE_ExpandedTypeData * pTypeInfo);
     HRESULT GetTypeHandle([in] VMPTR_Module vmModule, [in] mdTypeDef metadataToken, [out] VMPTR_TypeHandle * pRetVal);
     HRESULT GetApproxTypeHandle([in] TypeInfoList * pTypeData, [out] VMPTR_TypeHandle * pRetVal);
     HRESULT GetExactTypeHandle([in] struct DebuggerIPCE_ExpandedTypeData * pTypeData, [in] ArgInfoList * pArgInfo, [out] VMPTR_TypeHandle * pVmTypeHandle);
     HRESULT GetMethodDescParams(
-        [in] VMPTR_AppDomain vmAppDomain,
         [in] VMPTR_MethodDesc vmMethodDesc,
         [in] GENERICS_TYPE_TOKEN genericsToken,
         [out] UINT32 * pcGenericClassTypeParams,
@@ -333,11 +331,10 @@ interface IDacDbiInterface : IUnknown
 
     // Field
     HRESULT GetThreadStaticAddress([in] VMPTR_FieldDesc vmField, [in] VMPTR_Thread vmRuntimeThread, [out] CORDB_ADDRESS * pRetVal);
-    HRESULT GetCollectibleTypeStaticAddress([in] VMPTR_FieldDesc vmField, [in] VMPTR_AppDomain vmAppDomain, [out] CORDB_ADDRESS * pRetVal);
+    HRESULT GetCollectibleTypeStaticAddress([in] VMPTR_FieldDesc vmField, [out] CORDB_ADDRESS * pRetVal);
     HRESULT GetEnCHangingFieldInfo([in] const struct EnCHangingFieldInfo * pEnCFieldInfo, [out] struct FieldData * pFieldData, [out] BOOL * pfStatic);
-    HRESULT GetTypeHandleParams([in] VMPTR_AppDomain vmAppDomain, [in] VMPTR_TypeHandle vmTypeHandle, [out] TypeParamsList * pParams);
+    HRESULT GetTypeHandleParams([in] VMPTR_TypeHandle vmTypeHandle, [out] TypeParamsList * pParams);
     HRESULT GetSimpleType(
-        [in] VMPTR_AppDomain vmAppDomain,
         [in] CorElementType simpleType,
         [out] mdTypeDef * pMetadataToken,
         [out] VMPTR_Module * pVmModule);
@@ -352,10 +349,10 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetCachedWinRTTypes([in] VMPTR_AppDomain vmAppDomain, [out] DacDbiArrayList_GUID * piids, [out] DacDbiArrayList_ExpandedTypeData * pTypes);
 
     // Object Data
-    HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [in] VMPTR_AppDomain vmAppDomain, [out] struct DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [out] struct DebuggerIPCE_ObjectData * pObjectData);
     HRESULT GetStringData([in] CORDB_ADDRESS objectAddress, [out] struct DebuggerIPCE_ObjectData * pObjectData);
     HRESULT GetArrayData([in] CORDB_ADDRESS objectAddress, [out] struct DebuggerIPCE_ObjectData * pObjectData);
-    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [in] CorElementType type, [in] VMPTR_AppDomain vmAppDomain, [out] struct DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [in] CorElementType type, [out] struct DebuggerIPCE_ObjectData * pObjectData);
 
     // Data Consistency (TEST_DATA_CONSISTENCY only)
     HRESULT TestCrst([in] VMPTR_Crst vmCrst);
@@ -377,7 +374,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetVmObjectHandle([in] CORDB_ADDRESS handleAddress, [out] VMPTR_OBJECTHANDLE * pRetVal);
     HRESULT IsVmObjectHandleValid([in] VMPTR_OBJECTHANDLE vmHandle, [out] BOOL * pResult);
     HRESULT IsWinRTModule([in] VMPTR_Module vmModule, [out] BOOL * pIsWinRT);
-    HRESULT GetAppDomainIdFromVmObjectHandle([in] VMPTR_OBJECTHANDLE vmHandle, [out] ULONG * pRetVal);
     HRESULT GetHandleAddressFromVmHandle([in] VMPTR_OBJECTHANDLE vmHandle, [out] CORDB_ADDRESS * pRetVal);
 
     // Object Contents and Monitor
@@ -406,11 +402,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT WalkHeap([in] HeapWalkHandle handle, [in] ULONG count, [out] COR_HEAPOBJECT * objects, [out] ULONG * pFetched);
     HRESULT GetHeapSegments([out] DacDbiArrayList_COR_SEGMENT * pSegments);
     HRESULT IsValidObject([in] CORDB_ADDRESS obj, [out] BOOL * pResult);
-    HRESULT GetAppDomainForObject(
-        [in] CORDB_ADDRESS obj,
-        [out] VMPTR_AppDomain * pApp,
-        [out] VMPTR_Module * pModule,
-        [out] BOOL * pResult);
 
     // Reference Walking
     HRESULT CreateRefWalk([out] RefWalkHandle * pHandle, [in] BOOL walkStacks, [in] BOOL walkFQ, [in] UINT32 handleWalkMask);

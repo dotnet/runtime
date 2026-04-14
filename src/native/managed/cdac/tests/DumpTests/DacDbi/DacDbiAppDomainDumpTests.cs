@@ -50,31 +50,6 @@ public class DacDbiAppDomainDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetAppDomainFromId_ReturnsAppDomain(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        ulong appDomain;
-        int hr = dbi.GetAppDomainFromId(1, &appDomain);
-        Assert.Equal(System.HResults.S_OK, hr);
-        Assert.NotEqual(0UL, appDomain);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetAppDomainFromId_FailsForInvalidId(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        ulong appDomain;
-        int hr = dbi.GetAppDomainFromId(99, &appDomain);
-        Assert.True(hr < 0, "Expected failure HRESULT for invalid AppDomain ID");
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
     public unsafe void GetCurrentAppDomain_ReturnsNonNull(TestConfiguration config)
     {
         InitializeDumpTest(config);
@@ -84,24 +59,6 @@ public class DacDbiAppDomainDumpTests : DumpTestBase
         int hr = dbi.GetCurrentAppDomain(&appDomain);
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.NotEqual(0UL, appDomain);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void GetCurrentAppDomain_MatchesGetAppDomainFromId(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        ulong currentAD;
-        int hr1 = dbi.GetCurrentAppDomain(&currentAD);
-        Assert.Equal(System.HResults.S_OK, hr1);
-
-        ulong fromId;
-        int hr2 = dbi.GetAppDomainFromId(1, &fromId);
-        Assert.Equal(System.HResults.S_OK, hr2);
-
-        Assert.Equal(currentAD, fromId);
     }
 
     [ConditionalTheory]

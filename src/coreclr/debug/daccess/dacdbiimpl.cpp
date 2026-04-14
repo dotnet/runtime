@@ -686,42 +686,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAddressType(CORDB_ADDRESS addr
 }
 
 
-// Get a VM appdomain pointer that matches the appdomain ID
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAppDomainFromId(ULONG appdomainId, OUT VMPTR_AppDomain * pRetVal)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        VMPTR_AppDomain vmAppDomain;
-
-        // @dbgtodo   dac support - We would like to wean ourselves off the IXClrData interfaces.
-        IXCLRDataProcess *   pDAC = this;
-        ReleaseHolder<IXCLRDataAppDomain> pDacAppDomain;
-
-        HRESULT hrStatus = pDAC->GetAppDomainByUniqueID(appdomainId, &pDacAppDomain);
-        IfFailThrow(hrStatus);
-
-        IXCLRDataAppDomain * pIAppDomain = pDacAppDomain;
-        AppDomain * pAppDomain = (static_cast<ClrDataAppDomain *> (pIAppDomain))->GetAppDomain();
-        SIMPLIFYING_ASSUMPTION(pAppDomain != NULL);
-        if (pAppDomain == NULL)
-        {
-            ThrowHR(E_FAIL); // corrupted left-side?
-        }
-
-        TADDR addrAppDomain = PTR_HOST_TO_TADDR(pAppDomain);
-        vmAppDomain.SetDacTargetPtr(addrAppDomain);
-
-        *pRetVal = vmAppDomain;
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-
 // Get the AppDomain ID for an AppDomain.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAppDomainId(VMPTR_AppDomain vmAppDomain, OUT ULONG * pRetVal)
 {
@@ -1575,7 +1539,6 @@ void DacDbiInterfaceImpl::InitClassData(TypeHandle  thApprox,
 // Gets the base table addresses for both GC and non-GC statics
 // Arguments:
 //     input:  thExact            - exact type handle for the class
-//             pAppDomain         - AppDomain in which the class is loaded
 //     output: ppGCStaticsBase    - base pointer for GC statics
 //             ppNonGCStaticsBase - base pointer for non GC statics
 // Notes:
@@ -1584,7 +1547,6 @@ void DacDbiInterfaceImpl::InitClassData(TypeHandle  thApprox,
 // the static bases will be null (since statics are per-instantiation).
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetStaticsBases(TypeHandle thExact,
-                                         AppDomain * pAppDomain,
                                          PTR_BYTE *  ppGCStaticsBase,
                                          PTR_BYTE *  ppNonGCStaticsBase)
  {
@@ -1697,7 +1659,6 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
 // Arguments:
 //     input:  thExact         - used to determine whether we need to get statics base tables
 //             thApprox        - used to get the field desc iterator
-//             pAppDomain      - used to get statics base tables
 //     output:
 //             pFieldList      - contains fields to be initialized
 // Note: the caller must ensure that *ppFields is NULL (i.e., any previously allocated memory
@@ -1705,7 +1666,6 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::CollectFields(TypeHandle                   thExact,
                                         TypeHandle                   thApprox,
-                                        AppDomain *                  pAppDomain,
                                         DacDbiArrayList<FieldData> * pFieldList)
 {
     PTR_BYTE pGCStaticsBase = NULL;
@@ -1713,7 +1673,7 @@ void DacDbiInterfaceImpl::CollectFields(TypeHandle                   thExact,
     if (!thExact.IsNull() && !thExact.GetMethodTable()->Collectible())
     {
         // get base tables for static fields
-        GetStaticsBases(thExact, pAppDomain, &pGCStaticsBase, &pNonGCStaticsBase);
+        GetStaticsBases(thExact, &pGCStaticsBase, &pNonGCStaticsBase);
     }
 
     unsigned int fieldCount = 0;
@@ -1775,15 +1735,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::HasTypeParams(VMPTR_TypeHandle th
 }
 
 // DacDbi API: Get type information for a class
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetClassInfo(VMPTR_AppDomain vmAppDomain, VMPTR_TypeHandle thExact, ClassInfo * pData)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetClassInfo(VMPTR_TypeHandle thExact, ClassInfo * pData)
 {
     DD_ENTER_MAY_THROW;
 
     HRESULT hr = S_OK;
     EX_TRY
     {
-
-        AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
 
         TypeHandle  typeHandleExact;
         TypeHandle  thApprox;
@@ -1793,8 +1751,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetClassInfo(VMPTR_AppDomain vmAp
         // initialize field count, generic args count, size and value class flag
         InitClassData(thApprox, false, pData);
 
-        if (pAppDomain != NULL)
-            CollectFields(typeHandleExact, thApprox, pAppDomain, &(pData->m_fieldList));
+        CollectFields(typeHandleExact, thApprox, &(pData->m_fieldList));
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -1818,7 +1775,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetInstantiationFieldInfo(VMPTR_A
 
         pFieldList->Alloc(GetTotalFieldCount(thApprox));
 
-        CollectFields(thExact, thApprox, AppDomain::GetCurrentDomain(), pFieldList);
+        CollectFields(thExact, thApprox, pFieldList);
 
     }
     EX_CATCH_HRESULT(hr);
@@ -2437,19 +2394,16 @@ TypeHandle DacDbiInterfaceImpl::FindLoadedElementType(CorElementType elementType
 //
 // Arguments:
 //     input:  typeHandle - type handle for the array type
-//             pAppDomain - AppDomain into which the type is loaded
 //     output: pTypeInfo  - information for the array rank and element type
 //
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetArrayTypeInfo(TypeHandle                      typeHandle,
-                                           DebuggerIPCE_ExpandedTypeData * pTypeInfo,
-                                           AppDomain *                     pAppDomain)
+                                           DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
     _ASSERTE(typeHandle.IsArray());
     pTypeInfo->ArrayTypeData.arrayRank = typeHandle.GetRank();
     TypeHandleToBasicTypeInfo(typeHandle.GetArrayElementTypeHandle(),
-                              &(pTypeInfo->ArrayTypeData.arrayTypeArg),
-                              pAppDomain);
+                              &(pTypeInfo->ArrayTypeData.arrayTypeArg));
 } // DacDbiInterfaceImpl::GetArrayTypeInfo
 
 //-----------------------------------------------------------------------------
@@ -2461,25 +2415,22 @@ void DacDbiInterfaceImpl::GetArrayTypeInfo(TypeHandle                      typeH
 //     input:  boxed      - indicates what, if anything, is boxed (see code:AreValueTypesBoxed for
 //                          more specific information)
 //             typeHandle - type handle for the address type
-//             pAppDomain - AppDomain into which the type is loaded
 //     output: pTypeInfo  - information for the referent type
 //
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetPtrTypeInfo(AreValueTypesBoxed              boxed,
                                          TypeHandle                      typeHandle,
-                                         DebuggerIPCE_ExpandedTypeData * pTypeInfo,
-                                         AppDomain *                     pAppDomain)
+                                         DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
     if (boxed == AllBoxed)
     {
-        GetClassTypeInfo(typeHandle, pTypeInfo, pAppDomain);
+        GetClassTypeInfo(typeHandle, pTypeInfo);
     }
     else
     {
         _ASSERTE(typeHandle.IsTypeDesc());
         TypeHandleToBasicTypeInfo(typeHandle.AsTypeDesc()->GetTypeParam(),
-                                  &(pTypeInfo->UnaryTypeData.unaryTypeArg),
-                                  pAppDomain);
+                                  &(pTypeInfo->UnaryTypeData.unaryTypeArg));
     }
 } // DacDbiInterfaceImpl::GetPtrTypeInfo
 
@@ -2492,18 +2443,16 @@ void DacDbiInterfaceImpl::GetPtrTypeInfo(AreValueTypesBoxed              boxed,
 //     input:  boxed      - indicates what, if anything, is boxed (see code:AreValueTypesBoxed for
 //                          more specific information)
 //             typeHandle - type handle for the address type
-//             pAppDomain - AppDomain into which the type is loaded
 //     output: pTypeInfo  - information for the referent type
 //
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetFnPtrTypeInfo(AreValueTypesBoxed              boxed,
                                            TypeHandle                      typeHandle,
-                                           DebuggerIPCE_ExpandedTypeData * pTypeInfo,
-                                           AppDomain *                     pAppDomain)
+                                           DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
     if (boxed == AllBoxed)
     {
-        GetClassTypeInfo(typeHandle, pTypeInfo, pAppDomain);
+        GetClassTypeInfo(typeHandle, pTypeInfo);
     }
     else
     {
@@ -2519,13 +2468,11 @@ void DacDbiInterfaceImpl::GetFnPtrTypeInfo(AreValueTypesBoxed              boxed
 //
 // Arguments
 //     input:  typeHandle - type handle for the address type
-//             pAppDomain - AppDomain into which the type is loaded
 //     output: pTypeInfo  - information for the referent type
 //
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeHandle,
-                                           DebuggerIPCE_ExpandedTypeData * pTypeInfo,
-                                           AppDomain *                     pAppDomain)
+                                           DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
     typeHandle = typeHandle.UpCastTypeIfNeeded();
     Module * pModule = typeHandle.GetModule();
@@ -2542,14 +2489,7 @@ void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeH
     pTypeInfo->ClassTypeData.metadataToken = typeHandle.GetCl();
 
     _ASSERTE(pModule);
-    if (pAppDomain)
-    {
-        pTypeInfo->ClassTypeData.vmAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetAssembly()));
-    }
-    else
-    {
-        pTypeInfo->ClassTypeData.vmAssembly = VMPTR_Assembly::NullPtr();
-    }
+    pTypeInfo->ClassTypeData.vmAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetAssembly()));
 } // DacDbiInterfaceImpl::GetClassTypeInfo
 
 //-----------------------------------------------------------------------------
@@ -2589,13 +2529,11 @@ CorElementType DacDbiInterfaceImpl::GetElementType (TypeHandle typeHandle)
 //
 // Arguments:
 //     input:  typeHandle - type handle for the address type
-//             pAppDomain - AppDomain into which the type is loaded
 //     output: pTypeInfo  - information for the referent type
 //
 //-----------------------------------------------------------------------------
 void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                   typeHandle,
-                                                    DebuggerIPCE_BasicTypeData * pTypeInfo,
-                                                    AppDomain *                  pAppDomain)
+                                                    DebuggerIPCE_BasicTypeData * pTypeInfo)
 {
     pTypeInfo->elementType = GetElementType(typeHandle);
 
@@ -2628,15 +2566,7 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
 
             pTypeInfo->metadataToken = typeHandle.GetCl();
             _ASSERTE(pModule);
-
-            if (pAppDomain)
-            {
-                pTypeInfo->vmAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetAssembly()));
-            }
-            else
-            {
-                pTypeInfo->vmAssembly = VMPTR_Assembly::NullPtr();
-            }
+            pTypeInfo->vmAssembly.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetAssembly()));
             break;
         }
 
@@ -2650,7 +2580,7 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
 } // DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, VMPTR_AppDomain vmAppDomain, COR_TYPEID id, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
     DD_ENTER_MAY_THROW;
 
@@ -2658,13 +2588,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfoFromID(A
     EX_TRY
     {
 
-        TypeHandleToExpandedTypeInfoImpl(boxed, vmAppDomain, TypeHandle::FromPtr(TO_TADDR(id.token1)), pTypeInfo);
+        TypeHandleToExpandedTypeInfoImpl(boxed, TypeHandle::FromPtr(TO_TADDR(id.token1)), pTypeInfo);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_AppDomain vmAppDomain, CORDB_ADDRESS addr, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
     DD_ENTER_MAY_THROW;
 
@@ -2673,14 +2603,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObjectExpandedTypeInfo(AreValu
     {
 
         PTR_Object obj(TO_TADDR(addr));
-        TypeHandleToExpandedTypeInfoImpl(boxed, vmAppDomain, obj->GetGCSafeTypeHandle(), pTypeInfo);
+        TypeHandleToExpandedTypeInfoImpl(boxed, obj->GetGCSafeTypeHandle(), pTypeInfo);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
 }
 
 // DacDbi API: use a type handle to get the information needed to create the corresponding RS CordbType instance
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_AppDomain vmAppDomain, VMPTR_TypeHandle vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
     DD_ENTER_MAY_THROW;
 
@@ -2690,7 +2620,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreV
 
 
         TypeHandle typeHandle = TypeHandle::FromPtr(vmTypeHandle.GetDacPtr());
-        TypeHandleToExpandedTypeInfoImpl(boxed, vmAppDomain, typeHandle, pTypeInfo);
+        TypeHandleToExpandedTypeInfoImpl(boxed, typeHandle, pTypeInfo);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -2698,23 +2628,21 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfo(AreV
 
 
 void DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
-                                                       VMPTR_AppDomain                 vmAppDomain,
-                                                       TypeHandle                      typeHandle,
-                                                       DebuggerIPCE_ExpandedTypeData * pTypeInfo)
+                                                        TypeHandle                      typeHandle,
+                                                        DebuggerIPCE_ExpandedTypeData * pTypeInfo)
 {
-    AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
     pTypeInfo->elementType = GetElementType(typeHandle);
 
     switch (pTypeInfo->elementType)
     {
         case ELEMENT_TYPE_ARRAY:
         case ELEMENT_TYPE_SZARRAY:
-            GetArrayTypeInfo(typeHandle, pTypeInfo, pAppDomain);
+            GetArrayTypeInfo(typeHandle, pTypeInfo);
             break;
 
         case ELEMENT_TYPE_PTR:
         case ELEMENT_TYPE_BYREF:
-            GetPtrTypeInfo(boxed, typeHandle, pTypeInfo, pAppDomain);
+            GetPtrTypeInfo(boxed, typeHandle, pTypeInfo);
             break;
 
         case ELEMENT_TYPE_VALUETYPE:
@@ -2722,21 +2650,21 @@ void DacDbiInterfaceImpl::TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed   
             {
                 pTypeInfo->elementType = ELEMENT_TYPE_CLASS;
             }
-            GetClassTypeInfo(typeHandle, pTypeInfo, pAppDomain);
-           break;
+            GetClassTypeInfo(typeHandle, pTypeInfo);
+            break;
 
         case ELEMENT_TYPE_CLASS:
-            GetClassTypeInfo(typeHandle, pTypeInfo, pAppDomain);
+            GetClassTypeInfo(typeHandle, pTypeInfo);
             break;
 
         case ELEMENT_TYPE_FNPTR:
-                GetFnPtrTypeInfo(boxed, typeHandle, pTypeInfo, pAppDomain);
-                break;
+            GetFnPtrTypeInfo(boxed, typeHandle, pTypeInfo);
+            break;
         default:
             if (boxed == AllBoxed)
             {
                 pTypeInfo->elementType = ELEMENT_TYPE_CLASS;
-                GetClassTypeInfo(typeHandle, pTypeInfo, pAppDomain);
+                GetClassTypeInfo(typeHandle, pTypeInfo);
             }
             // else the element type is sufficient
             break;
@@ -2836,7 +2764,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetExactTypeHandle(DebuggerIPCE_E
 
 // Retrieve the generic type params for a given MethodDesc.  This function is specifically
 // for stackwalking because it requires the generic type token on the stack.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_AppDomain vmAppDomain, VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, OUT TypeParamsList * pGenericTypeParams)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, OUT TypeParamsList * pGenericTypeParams)
 {
     DD_ENTER_MAY_THROW;
 
@@ -2844,7 +2772,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_AppDoma
     EX_TRY
     {
 
-        if (vmAppDomain.IsNull() || vmMethodDesc.IsNull())
+        if (vmMethodDesc.IsNull())
         {
             ThrowHR(E_INVALIDARG);
         }
@@ -2918,7 +2846,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_AppDoma
                 VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
                 vmTypeHandle.SetDacTargetPtr(thCurrent.AsTAddr());
                 IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                                         vmAppDomain,
                                                          vmTypeHandle,
                                                          &((*pGenericTypeParams)[i])));
             }
@@ -2929,7 +2856,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_AppDoma
                 TypeHandle thCanon = TypeHandle(g_pCanonMethodTableClass);
                 vmTHCanon.SetDacTargetPtr(thCanon.AsTAddr());
                 IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                                         vmAppDomain,
                                                          vmTHCanon,
                                                          &((*pGenericTypeParams)[i])));
             }
@@ -3281,7 +3207,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadStaticAddress(VMPTR_Fiel
 }
 
     // Get the target field address of a collectible types static.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress(VMPTR_FieldDesc vmField, VMPTR_AppDomain vmAppDomain, OUT CORDB_ADDRESS * pRetVal)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress(VMPTR_FieldDesc vmField, OUT CORDB_ADDRESS * pRetVal)
 {
     DD_ENTER_MAY_THROW;
 
@@ -3289,9 +3215,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress(V
     EX_TRY
     {
 
-        AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
         PTR_FieldDesc pFieldDesc = vmField.GetDacPtr();
-        _ASSERTE(pAppDomain != NULL);
 
         //
         // Verify this field is of the right type
@@ -3337,7 +3261,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress(V
 //   for "Dict<String,List<int>>", and sends it back to the right side.
 // - pParams is allocated and initialized by this function
 // - This should not fail except for OOM
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_AppDomain vmAppDomain, VMPTR_TypeHandle vmTypeHandle, OUT TypeParamsList * pParams)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, OUT TypeParamsList * pParams)
 {
     DD_ENTER_MAY_THROW
 
@@ -3361,7 +3285,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_AppDoma
             thInst.SetDacTargetPtr(typeHandle.GetInstantiation()[i].AsTAddr());
 
             IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                                     vmAppDomain,
                                                      thInst,
                                                      &((*pParams)[i])));
         }
@@ -3376,16 +3299,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_AppDoma
 // DacDbi API: GetSimpleType
 // gets the metadata token and assembly corresponding to a simple type
 //-----------------------------------------------------------------------------
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSimpleType(VMPTR_AppDomain vmAppDomain, CorElementType simpleType, OUT mdTypeDef * pMetadataToken, OUT VMPTR_Module * pVmModule)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSimpleType(CorElementType simpleType, OUT mdTypeDef * pMetadataToken, OUT VMPTR_Module * pVmModule)
 {
     DD_ENTER_MAY_THROW;
 
     HRESULT hr = S_OK;
     EX_TRY
     {
-
-        AppDomain *pAppDomain = vmAppDomain.GetDacPtr();
-
         // if we fail to get either a valid type handle or module, we will want to send back
         // a NULL assembly too, so we'll to preinitialize this here.
         _ASSERTE(pVmModule != NULL);
@@ -6266,21 +6186,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsWinRTModule(VMPTR_Module vmModu
     return hr;
 }
 
-// Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAppDomainIdFromVmObjectHandle(VMPTR_OBJECTHANDLE vmHandle, OUT ULONG * pRetVal)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        *pRetVal = DefaultADID;
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 // Get the target address from a VMPTR_OBJECTHANDLE, i.e., the handle address
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetHandleAddressFromVmHandle(VMPTR_OBJECTHANDLE vmHandle, OUT CORDB_ADDRESS * pRetVal)
 {
@@ -6405,11 +6310,9 @@ bool DacDbiInterfaceImpl::CheckRef(PTR_Object objPtr)
 // information.
 // Arguments:
 //     input:  objPtr      - address of object of interest
-//             vmAppDomain - AppDomain for the type f the object
 //     output: pObjectData - object information
 // Note: It is assumed that pObjectData is non-null.
 void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
-                                         VMPTR_AppDomain           vmAppDomain,
                                          DebuggerIPCE_ObjectData * pObjectData)
 {
     _ASSERTE(pObjectData != NULL);
@@ -6421,7 +6324,7 @@ void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
     pObjectData->objSize = objPtr->GetSize();
     pObjectData->objOffsetToVars = dac_cast<TADDR>((objPtr)->GetData()) - dac_cast<TADDR>(objPtr);
 
-    IfFailThrow(TypeHandleToExpandedTypeInfo(AllBoxed, vmAppDomain, vmTypeHandle, &(pObjectData->objTypeData)));
+    IfFailThrow(TypeHandleToExpandedTypeInfo(AllBoxed, vmTypeHandle, &(pObjectData->objTypeData)));
 
     // If this is a string object, set the type to ELEMENT_TYPE_STRING.
     if (objPtr->GetGCSafeMethodTable() == g_pStringClass)
@@ -6478,7 +6381,7 @@ void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
 // }
 
 // Initializes the objRef and typedByRefType fields of pObjectData (type info for the referent).
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, VMPTR_AppDomain vmAppDomain, DebuggerIPCE_ObjectData * pObjectData)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, DebuggerIPCE_ObjectData * pObjectData)
 {
      DD_ENTER_MAY_THROW;
 
@@ -6496,8 +6399,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypedByRefInfo(CORDB_ADDRESS p
         // The type of the referent is in the type field of the TypedByRef. We need to initialize the object
         // data type information.
         TypeHandleToBasicTypeInfo(refAddr->type,
-                                  &(pObjectData->typedByrefInfo.typedByrefType),
-                                  vmAppDomain.GetDacPtr());
+                                  &(pObjectData->typedByrefInfo.typedByrefType));
 
         // The reference to the object is in the data field of the TypedByRef.
         CORDB_ADDRESS tempRef = dac_cast<TADDR>(refAddr->data);
@@ -6607,7 +6509,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetArrayData(CORDB_ADDRESS object
 
 // DAC/DBI API: Get information about an object for which we have a reference, including the object size and
 // type information.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, VMPTR_AppDomain vmAppDomain, DebuggerIPCE_ObjectData * pObjectData)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, DebuggerIPCE_ObjectData * pObjectData)
 {
     DD_ENTER_MAY_THROW;
 
@@ -6621,7 +6523,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetBasicObjectInfo(CORDB_ADDRESS 
         {
             // initialize object type, size, offset information. Note: We may have a different element type
             // after this. For example, we may start with E_T_CLASS but return with something more specific.
-            InitObjectData (objPtr, vmAppDomain, pObjectData);
+            InitObjectData(objPtr, pObjectData);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -7498,34 +7400,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS obj, 
         }
 
         *pResult = isValid;
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp, OUT VMPTR_Module * pModule, OUT BOOL * pResult)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        if (obj == 0 || obj == (CORDB_ADDRESS)-1)
-        {
-            *pResult = FALSE;
-        }
-        else
-        {
-            PTR_Object pObj(TO_TADDR(obj));
-            MethodTable *mt = pObj->GetMethodTable();
-            PTR_Module module = mt->GetModule();
-
-            pApp->SetDacTargetPtr(PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain()));
-            pModule->SetDacTargetPtr(PTR_HOST_TO_TADDR(module));
-
-            *pResult = TRUE;
-        }
     }
     EX_CATCH_HRESULT(hr);
     return hr;

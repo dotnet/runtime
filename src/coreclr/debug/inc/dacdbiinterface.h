@@ -251,26 +251,6 @@ public:
 
 
     //
-    // Get an LS Appdomain via an AppDomain unique ID.
-    // Fails if the AD is not found or if the ID is invalid.
-    //
-    // Arguments:
-    //  appdomainId      - "unique appdomain ID". Must be a valid Id.
-    //  pRetVal - [out] VMPTR_AppDomain for the corresponding AppDomain ID.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //   This query is based off the lifespan of the AppDomain from the VM's perspective.
-    //   The AppDomainId is most likely obtained from an AppDomain-Created debug events.
-    //   An AppDomainId is unique for the lifetime of the VM.
-    //   This is the inverse function of GetAppDomainId().
-    //
-    virtual HRESULT STDMETHODCALLTYPE GetAppDomainFromId(ULONG appdomainId, OUT VMPTR_AppDomain * pRetVal) = 0;
-
-
-    //
     // Get the AppDomain ID for an AppDomain.
     //
     // Arguments:
@@ -1631,13 +1611,12 @@ public:
     // Get type information for a class
     //
     // Arguments:
-    //     input:  vmAppDomain   - appdomain where we will fetch field data for the type
-    //             thExact       - exact type handle for type
+    //     input:  thExact       - exact type handle for type
     //     output:
     //             pData         - structure containing information about the class and its
     //                             fields
 
-    virtual HRESULT STDMETHODCALLTYPE GetClassInfo(VMPTR_AppDomain vmAppDomain, VMPTR_TypeHandle thExact, ClassInfo * pData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetClassInfo(VMPTR_TypeHandle thExact, ClassInfo * pData) = 0;
 
     // get field information and object size for an instantiated generic
     //
@@ -1657,16 +1636,15 @@ public:
     // Arguments:
     //     input:  boxed        - indicates what, if anything, is boxed. See code:AreValueTypesBoxed for more
     //                            specific information
-    //             vmAppDomain  - module containing metadata for the type
     //             vmTypeHandle - type handle for the type
     //     output: pTypeInfo    - holds information needed to build the corresponding CordbType
     //
-    virtual HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_AppDomain vmAppDomain, VMPTR_TypeHandle vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
+    virtual HRESULT STDMETHODCALLTYPE TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_TypeHandle vmTypeHandle, DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, VMPTR_AppDomain vmAppDomain, CORDB_ADDRESS addr, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfo(AreValueTypesBoxed boxed, CORDB_ADDRESS addr, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
 
 
-    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, VMPTR_AppDomain vmAppDomain, COR_TYPEID id, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetObjectExpandedTypeInfoFromID(AreValueTypesBoxed boxed, COR_TYPEID id, OUT DebuggerIPCE_ExpandedTypeData * pTypeInfo) = 0;
 
 
     // Get type handle for a TypeDef token, if one exists. For generics this returns the open type.
@@ -1722,7 +1700,6 @@ public:
     // for stackwalking because it requires the generic type token on the stack.
     //
     // Arguments:
-    //    vmAppDomain   - the appdomain of the MethodDesc
     //    vmMethodDesc  - the method in question
     //    genericsToken - the generic type token in the stack frame owned by the method
     //    pcGenericClassTypeParams - [out]
@@ -1738,7 +1715,7 @@ public:
     //    The caller is responsible for releasing it.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE GetMethodDescParams(VMPTR_AppDomain vmAppDomain, VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, OUT TypeParamsList * pGenericTypeParams) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetMethodDescParams(VMPTR_MethodDesc vmMethodDesc, GENERICS_TYPE_TOKEN genericsToken, OUT UINT32 * pcGenericClassTypeParams, OUT TypeParamsList * pGenericTypeParams) = 0;
 
     // Get the target field address of a thread local static.
     // Arguments:
@@ -1759,8 +1736,6 @@ public:
     // Get the target field address of a collectible types static.
     // Arguments:
     //     input: vmField         - pointer to the field descriptor for the static field
-    //            vmAppDomain     - AppDomain to which the static field belongs. This must
-    //                              NOT be NULL
     //     pRetVal - [out] The target address of the field if the field is allocated. NULL if the field storage is not yet allocated.
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
@@ -1771,7 +1746,7 @@ public:
     //  Field storage is not constant once allocated so this value can not be cached
     //  across a Continue
 
-    virtual HRESULT STDMETHODCALLTYPE GetCollectibleTypeStaticAddress(VMPTR_FieldDesc vmField, VMPTR_AppDomain vmAppDomain, OUT CORDB_ADDRESS * pRetVal) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetCollectibleTypeStaticAddress(VMPTR_FieldDesc vmField, OUT CORDB_ADDRESS * pRetVal) = 0;
 
     // Get information about a field added with Edit And Continue.
     // Arguments:
@@ -1791,8 +1766,7 @@ public:
     // type parameters, e.g. "String" and "List<int>" from the type handle
     // for "Dict<String,List<int>>", and sends it back to the right side.
     // Arguments:
-    //    input:  vmAppDomain  - app domain to which the type belongs
-    //            vmTypeHandle - type handle for the type
+    //    input:  vmTypeHandle - type handle for the type
     //    output: pParams      - list of instances of DebuggerIPCE_ExpandedTypeData,
     //                           one for each type parameter. These will be used on the
     //                           RS to build up an instantiation which will allow
@@ -1801,13 +1775,12 @@ public:
     //                           heap in this function.
     // This will not fail except for OOM
 
-    virtual HRESULT STDMETHODCALLTYPE GetTypeHandleParams(VMPTR_AppDomain vmAppDomain, VMPTR_TypeHandle vmTypeHandle, OUT TypeParamsList * pParams) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetTypeHandleParams(VMPTR_TypeHandle vmTypeHandle, OUT TypeParamsList * pParams) = 0;
 
     // GetSimpleType
     // gets the metadata token and assembly corresponding to a simple type
     // Arguments:
-    //     input:  vmAppDomain - Appdomain in which simpleType resides
-    //             simpleType  - CorElementType value corresponding to a simple type
+    //     input:  simpleType  - CorElementType value corresponding to a simple type
     //     output: pMetadataToken - the metadata token corresponding to simpleType,
     //                              in the scope of vmAssembly.
     //             vmAssembly   - the Assembly for simpleType
@@ -1818,7 +1791,7 @@ public:
     //    If the type has been loaded, vmAssembly will be non-null unless the target is somehow corrupted.
     //    In that case, we will return CORDBG_E_TARGET_INCONSISTENT.
 
-    virtual HRESULT STDMETHODCALLTYPE GetSimpleType(VMPTR_AppDomain vmAppDomain, CorElementType simpleType, OUT mdTypeDef * pMetadataToken, OUT VMPTR_Module * pVmModule) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetSimpleType(CorElementType simpleType, OUT mdTypeDef * pMetadataToken, OUT VMPTR_Module * pVmModule) = 0;
 
     // For the specified object, check whether the object derives from System.Exception.
     virtual HRESULT STDMETHODCALLTYPE IsExceptionObject(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
@@ -1857,10 +1830,9 @@ public:
     // pObjectData (type info for the referent).
     // Arguments:
     //     input:  pTypedByRef - pointer to a TypedByRef struct
-    //             vmAppDomain - AppDomain for the type of the object referenced
     //     output: pObjectData - information about the object referenced by pTypedByRef
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, VMPTR_AppDomain vmAppDomain, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, DebuggerIPCE_ObjectData * pObjectData) = 0;
 
     // Get the string length and offset to string base for a string object
     // Arguments:
@@ -1890,10 +1862,9 @@ public:
     //     input:  objectAddress - address of the object for which we want information
     //             type          - the basic type of the object (we may find more specific type
     //                             information for the object)
-    //             vmAppDomain   - the appdomain to which the object belong
     //     output: pObjectData   - fills in the size and type information fields
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, VMPTR_AppDomain vmAppDomain, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, DebuggerIPCE_ObjectData * pObjectData) = 0;
 
     // --------------------------------------------------------------------------------------------
 #ifdef TEST_DATA_CONSISTENCY
@@ -2054,17 +2025,6 @@ public:
 
     // Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
     //
-    // Arguments:
-    //     handle: the GC handle which refers to the object of interest
-    //     pRetVal - [out] The app domain id of the object of interest.
-    //
-    // Return value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // This may return a failure HRESULT if the object handle is corrupt (it doesn't refer to a managed object)
-    virtual HRESULT STDMETHODCALLTYPE GetAppDomainIdFromVmObjectHandle(VMPTR_OBJECTHANDLE vmHandle, OUT ULONG * pRetVal) = 0;
-
-
     // Get the target address from a VMPTR_OBJECTHANDLE, i.e., the handle address
     // Arguments:
     //     vmHandle - (input) the VMPTR_OBJECTHANDLE from which we need the target address
@@ -2186,8 +2146,6 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> * pSegments) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE IsValidObject(CORDB_ADDRESS obj, OUT BOOL * pResult) = 0;
-
-    virtual HRESULT STDMETHODCALLTYPE GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp, OUT VMPTR_Module * pModule, OUT BOOL * pResult) = 0;
 
 
     //   Reference Walking.

@@ -1525,7 +1525,7 @@ void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess,
     // make sure we don't end up with old garbage values in case the reference is bad
     PreInitObjectData(pInfo, objectAddress, type);
 
-    IfFailThrow(pInterface->GetBasicObjectInfo(objTargetAddr, type, vmAppdomain, pInfo));
+    IfFailThrow(pInterface->GetBasicObjectInfo(objTargetAddr, type, pInfo));
 
     if (!pInfo->objRefBad)
     {
@@ -1568,7 +1568,7 @@ void CordbReferenceValue::GetTypedByRefData(CordbProcess *            pProcess,
     // TypedByref objects, it is actually the address of the TypedByRef struct which  contains the
     // type and the object address.
 
-    IfFailThrow(pProcess->GetDAC()->GetTypedByRefInfo(pTypedByRef, vmAppDomain, pInfo));
+    IfFailThrow(pProcess->GetDAC()->GetTypedByRefInfo(pTypedByRef, pInfo));
 } // CordbReferenceValue::GetTypedByRefData
 
 //  get the address of the object referenced

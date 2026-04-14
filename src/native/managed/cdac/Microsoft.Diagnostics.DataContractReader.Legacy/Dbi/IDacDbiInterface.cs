@@ -157,9 +157,6 @@ public unsafe partial interface IDacDbiInterface
     int IsLeftSideInitialized(Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetAppDomainFromId(uint appdomainId, ulong* pRetVal);
-
-    [PreserveSig]
     int GetAppDomainId(ulong vmAppDomain, uint* pRetVal);
 
     [PreserveSig]
@@ -364,19 +361,19 @@ public unsafe partial interface IDacDbiInterface
     int HasTypeParams(ulong vmTypeHandle, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetClassInfo(ulong vmAppDomain, ulong thExact, nint pData);
+    int GetClassInfo(ulong thExact, nint pData);
 
     [PreserveSig]
     int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize);
 
     [PreserveSig]
-    int TypeHandleToExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong vmTypeHandle, nint pData);
+    int TypeHandleToExpandedTypeInfo(int boxed, ulong vmTypeHandle, nint pData);
 
     [PreserveSig]
-    int GetObjectExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong addr, nint pTypeInfo);
+    int GetObjectExpandedTypeInfo(int boxed, ulong addr, nint pTypeInfo);
 
     [PreserveSig]
-    int GetObjectExpandedTypeInfoFromID(int boxed, ulong vmAppDomain, COR_TYPEID id, nint pTypeInfo);
+    int GetObjectExpandedTypeInfoFromID(int boxed, COR_TYPEID id, nint pTypeInfo);
 
     [PreserveSig]
     int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal);
@@ -388,22 +385,22 @@ public unsafe partial interface IDacDbiInterface
     int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* pVmTypeHandle);
 
     [PreserveSig]
-    int GetMethodDescParams(ulong vmAppDomain, ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams);
+    int GetMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams);
 
     [PreserveSig]
     int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal);
 
     [PreserveSig]
-    int GetCollectibleTypeStaticAddress(ulong vmField, ulong vmAppDomain, ulong* pRetVal);
+    int GetCollectibleTypeStaticAddress(ulong vmField, ulong* pRetVal);
 
     [PreserveSig]
     int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, Interop.BOOL* pfStatic);
 
     [PreserveSig]
-    int GetTypeHandleParams(ulong vmAppDomain, ulong vmTypeHandle, nint pParams);
+    int GetTypeHandleParams(ulong vmTypeHandle, nint pParams);
 
     [PreserveSig]
-    int GetSimpleType(ulong vmAppDomain, int simpleType, uint* pMetadataToken, ulong* pVmModule);
+    int GetSimpleType(int simpleType, uint* pMetadataToken, ulong* pVmModule);
 
     [PreserveSig]
     int IsExceptionObject(ulong vmObject, Interop.BOOL* pResult);
@@ -427,7 +424,7 @@ public unsafe partial interface IDacDbiInterface
     int GetCachedWinRTTypes(ulong vmAppDomain, nint piids, nint pTypes);
 
     [PreserveSig]
-    int GetTypedByRefInfo(ulong pTypedByRef, ulong vmAppDomain, nint pObjectData);
+    int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData);
 
     [PreserveSig]
     int GetStringData(ulong objectAddress, nint pObjectData);
@@ -436,7 +433,7 @@ public unsafe partial interface IDacDbiInterface
     int GetArrayData(ulong objectAddress, nint pObjectData);
 
     [PreserveSig]
-    int GetBasicObjectInfo(ulong objectAddress, int type, ulong vmAppDomain, nint pObjectData);
+    int GetBasicObjectInfo(ulong objectAddress, int type, nint pObjectData);
 
     [PreserveSig]
     int TestCrst(ulong vmCrst);
@@ -470,9 +467,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int IsWinRTModule(ulong vmModule, Interop.BOOL* isWinRT);
-
-    [PreserveSig]
-    int GetAppDomainIdFromVmObjectHandle(ulong vmHandle, uint* pRetVal);
 
     [PreserveSig]
     int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
@@ -512,9 +506,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int IsValidObject(ulong obj, Interop.BOOL* pResult);
-
-    [PreserveSig]
-    int GetAppDomainForObject(ulong obj, ulong* pApp, ulong* pModule, Interop.BOOL* pResult);
 
     [PreserveSig]
     int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, Interop.BOOL walkFQ, uint handleWalkMask);
