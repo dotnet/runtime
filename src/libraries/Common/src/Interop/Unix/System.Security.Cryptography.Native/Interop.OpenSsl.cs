@@ -433,7 +433,7 @@ internal static partial class Interop
 
                 if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
-                    if (!sslAuthenticationOptions.IsServer)
+                    if (sslAuthenticationOptions.IsClient)
                     {
                         if (Interop.Ssl.SslSetAlpnProtos(sslHandle, sslAuthenticationOptions.ApplicationProtocols) != 0)
                         {
@@ -896,10 +896,7 @@ internal static partial class Interop
                 X509Chain chain = new X509Chain();
                 if (options.CertificateChainPolicy is not null)
                 {
-                    // Clone to avoid mutating the options-level policy with intermediates
-                    // from this handshake, which would cause unbounded ExtraStore growth
-                    // across renegotiations.
-                    chain.ChainPolicy = options.CertificateChainPolicy.Clone();
+                    chain.ChainPolicy = options.CertificateChainPolicy;
                 }
                 X509Certificate2? certificate = null;
 
