@@ -148,13 +148,13 @@ namespace NetClient
                 try
                 {
                     action();
+                    result = TestPassed;
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine($"Test Failure: {e}");
                     result = TestFailed;
                 }
-                result = TestPassed;
             });
 
             staThread.SetApartmentState(ApartmentState.STA);

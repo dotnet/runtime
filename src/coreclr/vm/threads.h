@@ -523,7 +523,7 @@ public:
         // unused                 = 0x00000100,
         TS_Background             = 0x00000200,    // Thread is a background thread. [cDAC] [Thread]: Contract depends on this value.
         TS_Unstarted              = 0x00000400,    // Thread has never been started. [cDAC] [Thread]: Contract depends on this value.
-        TS_Dead                   = 0x00000800,    // Thread is dead. [cDAC] [Thread]: Contract depends on this value.
+        TS_Dead                   = 0x00000800,    // .NET runtime has finished shutting down this thread, and it is about to be terminated by the OS.
 
         TS_WeOwn                  = 0x00001000,    // Exposed object initiated this thread
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -534,7 +534,7 @@ public:
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
         // Some bits that only have meaning for reporting the state to clients.
-        TS_ReportDead             = 0x00010000,    // in WaitForOtherThreads()
+        TS_Stopped                = 0x00010000,    // Thread has started to shut down and should not run managed code. Equivalent to ThreadState.Stopped. [cDAC] [Thread]: Contract depends on this value.
         TS_FullyInitialized       = 0x00020000,    // Thread is fully initialized and we are ready to broadcast its existence to external clients
 
         // unused                 = 0x00040000,
@@ -835,8 +835,11 @@ public:
         return (m_State & TS_WeOwn);
     }
 
-    // For reporting purposes, grab a consistent snapshot of the thread's state
-    ThreadState GetSnapshotState();
+    ThreadState GetState()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_State;
+    }
 
     // For delayed destruction of threads
     DWORD           IsDetached()
