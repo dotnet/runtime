@@ -254,8 +254,8 @@ namespace System
             }
         }
 
-        /// <summary>Writes data from the buffer into the file descriptor.</summary>
-        /// <param name="fd">The file descriptor.</param>
+        /// <summary>Writes data from the buffer into the file stream.</summary>
+        /// <param name="fs">The file stream.</param>
         /// <param name="buffer">The buffer from which to write data.</param>
         private static void Write(FileStream fs, ReadOnlySpan<byte> buffer)
         {

@@ -12,9 +12,6 @@ namespace System
         /// <summary>Provides a stream to use for Unix console input or output.</summary>
         private sealed class UnixConsoleStream : ConsoleStream
         {
-            /// <summary>The file descriptor for the opened file.</summary>
-            private readonly SafeFileHandle _handle;
-
             private readonly FileStream _fileStream;
 
             private readonly bool _useReadLine;
@@ -28,7 +25,6 @@ namespace System
             {
                 Debug.Assert(handle != null, "Expected non-null console handle");
                 Debug.Assert(!handle.IsInvalid, "Expected valid console handle");
-                _handle = handle;
                 _useReadLine = useReadLine;
                 _fileStream = new FileStream(handle, access, bufferSize: 0);
             }
@@ -38,7 +34,6 @@ namespace System
                 if (disposing)
                 {
                     _fileStream.Dispose();
-                    _handle.Dispose();
                 }
                 base.Dispose(disposing);
             }
@@ -52,15 +47,6 @@ namespace System
 
             public override void Write(ReadOnlySpan<byte> buffer) =>
                 ConsolePal.WriteFromConsoleStream(_fileStream, buffer);
-
-            public override void Flush()
-            {
-                if (_handle.IsClosed)
-                {
-                    throw Error.GetFileNotOpen();
-                }
-                base.Flush();
-            }
         }
     }
 }

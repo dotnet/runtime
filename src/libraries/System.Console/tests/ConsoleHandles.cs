@@ -88,7 +88,6 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
         public void CanCopyStandardInputToStandardOutput()
         {
             const string inputContent = "Hello from seekable stdin!";
@@ -117,7 +116,6 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
         public void UnixConsoleStream_SeekableStdoutRedirection_WritesAllContent()
         {
             const string outputContent = "Hello seekable stdout!";
@@ -134,6 +132,7 @@ namespace System.Tests
                     outputContent,
                     new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { StandardOutputHandle = stdoutHandle } });
 
+                stdoutHandle.Dispose();
                 Assert.True(handle.Process.WaitForExit(30_000), "Process did not exit in time.");
 
                 string output = File.ReadAllText(testFilePath, Encoding.UTF8);
