@@ -82,7 +82,14 @@ namespace System.IO.Compression
             // 6 bytes of zlib overhead (2-byte header + 4-byte Adler32 trailer).
             // GZip format uses 18 bytes of overhead (10-byte header + 8-byte CRC32/size trailer),
             // which is 12 bytes more than the zlib overhead already included in compressBound().
-            return DeflateEncoder.GetMaxCompressedLength(inputLength) + 12;
+            long maxCompressedLength = DeflateEncoder.GetMaxCompressedLength(inputLength);
+
+            if (maxCompressedLength > long.MaxValue - 12)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inputLength));
+            }
+
+            return maxCompressedLength + 12;
         }
 
         /// <summary>
