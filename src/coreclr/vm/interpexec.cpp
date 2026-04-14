@@ -625,26 +625,63 @@ void DBG_PrintInterpreterStack()
 #endif // _DEBUG
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-#define PORTABLE_ENTRYPOINT_PARAM , 0
 #ifdef TARGET_WASM
-// Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-// NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-// DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-#define PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG() uintptr_t preparedPortableEntrypointArg = emscripten_stack_get_current() - 4; \
-    do { *(int*)preparedPortableEntrypointArg = TERMINATE_R2R_STACK_WALK; } while(0)
+typedef void* (*HELPER_FTN_P_P)(int*, void*, int32_t);
+typedef void* (*HELPER_FTN_BOX_UNBOX)(int*, MethodTable*, void*, int32_t);
+typedef Object* (*HELPER_FTN_NEWARR)(int*, MethodTable*, intptr_t, int32_t);
+typedef void* (*HELPER_FTN_P_PP)(int*, void*, void*, int32_t);
+typedef void (*HELPER_FTN_V_PPP)(int*, void*, void*, void*, int32_t);
+typedef void* (*HELPER_FTN_P_PPIP)(int*, void*, void*, int32_t, void*, int32_t);
+typedef void (*HELPER_FTN_V_PP)(int*, void*, void*, int32_t);
 
-#define PORTABLE_ENTRYPOINT_STACK_ARG  preparedPortableEntrypointArg,
+// These helpers are all noinline, so that when the R2R compiler overwrites values relative to framePointer lower
+// down in the stack, no meaningful state from the C++ code here will be overwritten.
+// This scheme won't work if we actually have a helper function which returns a structure.
+// If we need to deal with that, it can be done with inline assembly, but for now we don't have any such helpers
+// and inline assembly helpers will be more difficult to maintain and debug, so we can cross that bridge if/when we come to it.
+__attribute__((noinline)) void* Call_HELPER_FTN_P_P(HELPER_FTN_P_P helper, void* arg1)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, arg1, 0);
+}
 
-typedef void* (*HELPER_FTN_P_P)(uintptr_t, void*, int32_t);
-typedef void* (*HELPER_FTN_BOX_UNBOX)(uintptr_t, MethodTable*, void*, int32_t);
-typedef Object* (*HELPER_FTN_NEWARR)(uintptr_t, MethodTable*, intptr_t, int32_t);
-typedef void* (*HELPER_FTN_P_PP)(uintptr_t, void*, void*, int32_t);
-typedef void (*HELPER_FTN_V_PPP)(uintptr_t, void*, void*, void*, int32_t);
-typedef void* (*HELPER_FTN_P_PPIP)(uintptr_t, void*, void*, int32_t, void*, int32_t);
-typedef void (*HELPER_FTN_V_PP)(uintptr_t, void*, void*, int32_t);
+__attribute__((noinline)) void* Call_HELPER_FTN_BOX_UNBOX(HELPER_FTN_BOX_UNBOX helper, MethodTable* pMT, void* arg1)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, pMT, arg1, 0);
+}
+
+__attribute__((noinline)) Object* Call_HELPER_FTN_NEWARR(HELPER_FTN_NEWARR helper, MethodTable* pMT, intptr_t arg1)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, pMT, arg1, 0);
+}
+
+__attribute__((noinline)) void* Call_HELPER_FTN_P_PP(HELPER_FTN_P_PP helper, void* arg1, void* arg2)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, arg1, arg2, 0);
+}
+
+__attribute__((noinline)) void Call_HELPER_FTN_V_PPP(HELPER_FTN_V_PPP helper, void* arg1, void* arg2, void* arg3)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    helper(&framePointer, arg1, arg2, arg3, 0);
+}
+
+__attribute__((noinline)) void* Call_HELPER_FTN_P_PPIP(HELPER_FTN_P_PPIP helper, void* arg1, void* arg2, int32_t arg3, void* arg4)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    return helper(&framePointer, arg1, arg2, arg3, arg4, 0);
+}
+
+__attribute__((noinline)) void Call_HELPER_FTN_V_PP(HELPER_FTN_V_PP helper, void* arg1, void* arg2)
+{
+    alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
+    helper(&framePointer, arg1, arg2, 0);
+}
+
 #else // TARGET_WASM
-#define PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG() do {} while (0)
-#define PORTABLE_ENTRYPOINT_STACK_ARG
 typedef void* (*HELPER_FTN_P_P)(void*, int32_t);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*, int32_t);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t, int32_t);
@@ -652,11 +689,17 @@ typedef void* (*HELPER_FTN_P_PP)(void*, void*, int32_t);
 typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*, int32_t);
 typedef void* (*HELPER_FTN_P_PPIP)(void*, void*, int32_t, void*, int32_t);
 typedef void (*HELPER_FTN_V_PP)(void*, void*, int32_t);
+
+#define Call_HELPER_FTN_P_P(helper, arg1) helper(arg1, 0)
+#define Call_HELPER_FTN_BOX_UNBOX(helper, pMT, arg1) helper(pMT, arg1, 0)
+#define Call_HELPER_FTN_NEWARR(helper, pMT, arg1) helper(pMT, arg1, 0)
+#define Call_HELPER_FTN_P_PP(helper, arg1, arg2) helper(arg1, arg2, 0)
+#define Call_HELPER_FTN_V_PPP(helper, arg1, arg2, arg3) helper(arg1, arg2, arg3, 0)
+#define Call_HELPER_FTN_P_PPIP(helper, arg1, arg2, arg3, arg4) helper(arg1, arg2, arg3, arg4, 0)
+#define Call_HELPER_FTN_V_PP(helper, arg1, arg2) helper(arg1, arg2, 0)
+
 #endif // TARGET_WASM
 #else // FEATURE_PORTABLE_ENTRYPOINTS
-#define PORTABLE_ENTRYPOINT_STACK_ARG
-#define PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG() do {} while (0)
-#define PORTABLE_ENTRYPOINT_PARAM
 typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
@@ -664,6 +707,15 @@ typedef void* (*HELPER_FTN_P_PP)(void*, void*);
 typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*);
 typedef void* (*HELPER_FTN_P_PPIP)(void*, void*, int32_t, void*);
 typedef void (*HELPER_FTN_V_PP)(void*, void*);
+
+#define Call_HELPER_FTN_P_P(helper, arg1) helper(arg1)
+#define Call_HELPER_FTN_BOX_UNBOX(helper, pMT, arg1) helper(pMT, arg1)
+#define Call_HELPER_FTN_NEWARR(helper, pMT, arg1) helper(pMT, arg1)
+#define Call_HELPER_FTN_P_PP(helper, arg1, arg2) helper(arg1, arg2)
+#define Call_HELPER_FTN_V_PPP(helper, arg1, arg2, arg3) helper(arg1, arg2, arg3)
+#define Call_HELPER_FTN_P_PPIP(helper, arg1, arg2, arg3, arg4) helper(arg1, arg2, arg3, arg4)
+#define Call_HELPER_FTN_V_PP(helper, arg1, arg2) helper(arg1, arg2)
+
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 InterpThreadContext::InterpThreadContext()
@@ -2669,11 +2721,7 @@ SWITCH_OPCODE:
                     _ASSERTE(helperFtn != NULL);
 
 
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg PORTABLE_ENTRYPOINT_PARAM);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
                     break;
                 }
@@ -2698,11 +2746,7 @@ SWITCH_OPCODE:
 
                     _ASSERTE(helperFtn != NULL);
 
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg PORTABLE_ENTRYPOINT_PARAM);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
                     break;
                 }
@@ -2729,11 +2773,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
@@ -2760,11 +2800,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
@@ -2790,11 +2826,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg PORTABLE_ENTRYPOINT_PARAM);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 5;
                     break;
                 }
@@ -2822,11 +2854,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 6;
                     break;
                 }
@@ -2854,11 +2882,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 6;
                     break;
                 }
@@ -2884,11 +2908,7 @@ SWITCH_OPCODE:
                         goto CALL_INTERP_METHOD;
                     }
 
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    LOCAL_VAR(ip[1], void*) = helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
+                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     break;
                 }
@@ -2918,11 +2938,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2, helperArg3 PORTABLE_ENTRYPOINT_PARAM);
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 6;
                     break;
                 }
@@ -2951,11 +2967,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2, helperArg3 PORTABLE_ENTRYPOINT_PARAM);
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
                     break;
                 }
@@ -2982,11 +2994,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
+                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
                     break;
                 }
@@ -3011,11 +3019,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2 PORTABLE_ENTRYPOINT_PARAM);
+                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
                     break;
                 }
@@ -3043,11 +3047,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG helperArg1, helperArg2, helperArg3 PORTABLE_ENTRYPOINT_PARAM);
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
                     break;
                 }
@@ -3585,11 +3585,7 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    LOCAL_VAR(dreg, void*) = helper(PORTABLE_ENTRYPOINT_STACK_ARG pMT, src PORTABLE_ENTRYPOINT_PARAM);
+                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMT, src);
 
                     ip += 5;
                     break;
@@ -3632,11 +3628,7 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    LOCAL_VAR(dreg, void*) = helper(PORTABLE_ENTRYPOINT_STACK_ARG pMTBoxedObj, src PORTABLE_ENTRYPOINT_PARAM);
+                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMTBoxedObj, src);
 
                     ip += 6;
                     break;
@@ -3660,11 +3652,7 @@ CALL_INTERP_METHOD:
                     MethodTable* arrayClsHnd = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    Object* arr = helper(PORTABLE_ENTRYPOINT_STACK_ARG arrayClsHnd, (intptr_t)length PORTABLE_ENTRYPOINT_PARAM);
+                    Object* arr = Call_HELPER_FTN_NEWARR(helper, arrayClsHnd, (intptr_t)length);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 5;
@@ -3679,11 +3667,7 @@ CALL_INTERP_METHOD:
 
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
-                    // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                    // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                    // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                    PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                    Object* arr = helper(PORTABLE_ENTRYPOINT_STACK_ARG arrayClsHnd, (intptr_t)length PORTABLE_ENTRYPOINT_PARAM);
+                    Object* arr = Call_HELPER_FTN_NEWARR(helper, arrayClsHnd, (intptr_t)length);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 6;
@@ -4322,21 +4306,13 @@ do                                                                      \
                         uintptr_t context = LOCAL_VAR(ip[2], uintptr_t);
                         ip += ipAdjust;
                         Object* chainedContinuationObj = OBJECTREFToObject(chainedContinuation);
-                        // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                        // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                        // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                        PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                        *pDest = ObjectToOBJECTREF((Object*)helperFtnGeneric(PORTABLE_ENTRYPOINT_STACK_ARG chainedContinuationObj, pContinuationType, pAsyncSuspendData->keepAliveOffset, (void*)context PORTABLE_ENTRYPOINT_PARAM));
+                        *pDest = ObjectToOBJECTREF((Object*)Call_HELPER_FTN_P_PPIP(helperFtnGeneric, chainedContinuationObj, pContinuationType, pAsyncSuspendData->keepAliveOffset, (void*)context));
                     }
                     else
                     {
                         ip += ipAdjust;
                         Object* chainedContinuationObj = OBJECTREFToObject(chainedContinuation);
-                        // Prepare the stack argument for portable entrypoints. On WASM, we need to reserve space for the arg on the stack and set it to a recognizable value so that the portable entrypoint can find it.
-                        // NOTE! This relies on the fact that the current stack pointer is above any of the interpreter frames, so that the portable entrypoint can find it by scanning down the stack until it finds the recognizable value.
-                        // DO NOT CALL ANY FUNCTIONS AFTER THIS MACRO OTHER THAN THE HELPER CALL
-                        PREPARE_PORTABLE_ENTRYPOINT_STACK_ARG();
-                        *pDest = ObjectToOBJECTREF((Object*)helperFtn(PORTABLE_ENTRYPOINT_STACK_ARG chainedContinuationObj, pContinuationType PORTABLE_ENTRYPOINT_PARAM));
+                        *pDest = ObjectToOBJECTREF((Object*)Call_HELPER_FTN_P_PP(helperFtn, chainedContinuationObj, pContinuationType));
                     }
                     break;
                 }
