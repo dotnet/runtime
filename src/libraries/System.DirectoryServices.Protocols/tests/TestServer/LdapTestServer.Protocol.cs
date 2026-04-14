@@ -117,16 +117,17 @@ namespace System.DirectoryServices.Protocols.Tests.TestServer
             using (client)
             {
                 Stream stream = client.GetStream();
-
-                if (_useLdaps && _certificate is not null)
-                {
-                    SslStream sslStream = new SslStream(stream, leaveInnerStreamOpen: false);
-                    await sslStream.AuthenticateAsServerAsync(_certificate);
-                    stream = sslStream;
-                }
+                SslStream sslStream = null;
 
                 try
                 {
+                    if (_useLdaps && _certificate is not null)
+                    {
+                        sslStream = new SslStream(stream, leaveInnerStreamOpen: false);
+                        await sslStream.AuthenticateAsServerAsync(_certificate);
+                        stream = sslStream;
+                    }
+
                     while (!_cts.IsCancellationRequested)
                     {
                         byte[] message = await ReadLdapMessageAsync(stream);
@@ -150,15 +151,26 @@ namespace System.DirectoryServices.Protocols.Tests.TestServer
 
                         if (upgradeToTls && _certificate is not null)
                         {
-                            SslStream sslStream = new SslStream(stream, leaveInnerStreamOpen: true);
+                            sslStream = new SslStream(stream, leaveInnerStreamOpen: true);
                             await sslStream.AuthenticateAsServerAsync(_certificate);
                             stream = sslStream;
                         }
                     }
                 }
-                catch (IOException) { }
-                catch (OperationCanceledException) { }
-                catch (ObjectDisposedException) { }
+                catch
+                {
+                }
+                finally
+                {
+                    if (sslStream is not null)
+                    {
+#if NET
+                        await sslStream.DisposeAsync();
+#else
+                        sslStream.Dispose();
+#endif
+                    }
+                }
             }
         }
 
@@ -189,6 +201,13 @@ namespace System.DirectoryServices.Protocols.Tests.TestServer
             else
             {
                 int numLenBytes = firstLenByte & 0x7F;
+
+                if (numLenBytes == 0)
+                {
+                    // RFC 4511 Section 5.1: "Only the definite form of length encoding is used."
+                    return null;
+                }
+
                 extraLenBytes = new byte[numLenBytes];
                 await ReadExactlyAsync(stream, extraLenBytes, 0, numLenBytes);
 
@@ -535,7 +554,16 @@ namespace System.DirectoryServices.Protocols.Tests.TestServer
 
             ReadOnlyMemory<byte> filterBytes = searchReader.ReadEncodedValue();
 
-            List<Entry> results = Search(baseDn, scope, derefPolicy, entry => EvaluateFilter(filterBytes, entry));
+            List<Entry> results;
+
+            try
+            {
+                results = Search(baseDn, scope, derefPolicy, entry => EvaluateFilter(filterBytes, entry));
+            }
+            catch (NotSupportedException)
+            {
+                return new[] { WriteLdapResultMessage(messageId, LdapOperation.SearchResultDone, LdapResultCode.UnwillingToPerform) };
+            }
 
             if (results is null)
             {
@@ -578,9 +606,7 @@ namespace System.DirectoryServices.Protocols.Tests.TestServer
 
                             if (sortKeyReader.HasData && sortKeyReader.PeekTag() == reverseTag)
                             {
-                                AsnReader boolReader = new AsnReader(sortKeyReader.ReadEncodedValue(), AsnEncodingRules.BER);
-                                byte[] boolBytes = boolReader.ReadOctetString(reverseTag);
-                                sortReverse = boolBytes.Length > 0 && boolBytes[0] != 0;
+                                sortReverse = sortKeyReader.ReadBoolean(reverseTag);
                             }
                         }
                     }
@@ -599,7 +625,8 @@ namespace System.DirectoryServices.Protocols.Tests.TestServer
                 });
             }
 
-            // Paging
+            // Paging: uses a simple byte-offset cookie, which assumes the dataset is stable
+            // across paged requests. The test suite does not test paged search concurrent with modification.
             int pageSize = 0;
             int pageOffset = 0;
             bool hasPagingControl = false;
@@ -813,7 +840,7 @@ namespace System.DirectoryServices.Protocols.Tests.TestServer
                 return entry.HasAttribute(attrDesc);
             }
 
-            return false;
+            throw new NotSupportedException($"Unsupported LDAP filter tag: {tag}.");
         }
 
         private static byte[] WriteLdapResultMessage(

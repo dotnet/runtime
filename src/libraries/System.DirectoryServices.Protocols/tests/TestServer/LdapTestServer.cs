@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -15,6 +16,7 @@ namespace System.DirectoryServices.Protocols.Tests.TestServer
     {
         private readonly TcpListener _listener;
         private readonly CancellationTokenSource _cts = new();
+        private readonly ConcurrentBag<Task> _activeTasks = new();
         private readonly object _lock = new();
         private readonly Dictionary<string, Entry> _entries = new(StringComparer.OrdinalIgnoreCase);
 
@@ -31,12 +33,18 @@ namespace System.DirectoryServices.Protocols.Tests.TestServer
         internal LdapTestServer()
         {
             _listener = new TcpListener(IPAddress.Loopback, 0);
+
+            _entries[BaseDn] = new Entry(BaseDn, new Dictionary<string, List<byte[]>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["objectClass"] = new List<byte[]> { Encoding.UTF8.GetBytes("top"), Encoding.UTF8.GetBytes("domain") },
+                ["dc"] = new List<byte[]> { Encoding.UTF8.GetBytes("test") },
+            });
         }
 
         internal int Start()
         {
             _listener.Start();
-            _ = AcceptLoopAsync();
+            _activeTasks.Add(AcceptLoopAsync());
 
             return Port;
         }
@@ -58,6 +66,17 @@ namespace System.DirectoryServices.Protocols.Tests.TestServer
         {
             _cts.Cancel();
             _listener.Stop();
+
+            try
+            {
+                Task.WhenAll(_activeTasks).Wait(TimeSpan.FromSeconds(5));
+            }
+            catch (AggregateException)
+            {
+                // Observe exceptions from tasks torn down during shutdown.
+                // Presumably they will have caused test failures already, so we can ignore them here.
+            }
+
             _cts.Dispose();
         }
 
@@ -68,11 +87,12 @@ namespace System.DirectoryServices.Protocols.Tests.TestServer
                 while (!_cts.IsCancellationRequested)
                 {
                     TcpClient client = await _listener.AcceptTcpClientAsync();
-                    _ = HandleConnectionAsync(client);
+                    _activeTasks.Add(HandleConnectionAsync(client));
                 }
             }
             catch (OperationCanceledException) { }
             catch (ObjectDisposedException) { }
+            catch (SocketException) { }
         }
 
         private bool TryAddEntry(string dn, Dictionary<string, List<byte[]>> attributes)
