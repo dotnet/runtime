@@ -106,7 +106,7 @@ private:
 // Returns the instantiated MethodDesc for a StubHelpers array marshalling method
 // (e.g. ConvertArrayContentsToUnmanaged/ConvertArrayContentsToManaged) for a given
 // SAFEARRAY VARTYPE and element MethodTable.
-MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous);
+MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous, BOOL bNativeDataValid = FALSE);
 
 extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT* pOle);
 

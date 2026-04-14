@@ -4296,7 +4296,9 @@ namespace
     case VT_VARIANT:
     {
         *pElementType = TypeHandle(g_pObjectClass);
-        *ppMarshalerMT = CoreLibBinder::GetClass(CLASS__VARIANT_ARRAY_ELEMENT_MARSHALER);
+        MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
+        TypeHandle thDisabled(pDisabledMT);
+        *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__VARIANT_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDisabled, 1)).AsMethodTable();
         return;
     }
 #endif // FEATURE_COMINTEROP
@@ -4657,9 +4659,10 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     // Resolve the instantiated content conversion methods at stub generation time
     // and emit ldftn to pass their entry points to CreateMarshaler.
+    BOOL bNativeDataValid = !!(fStatic & MngdSafeArrayMarshaler::SCSF_NativeDataValid);
     MethodDesc* pConvertToNativeMD = GetInstantiatedSafeArrayMethod(
         METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED,
-        mops.elementType, mops.methodTable, FALSE);
+        mops.elementType, mops.methodTable, FALSE, bNativeDataValid);
     pslILEmit->EmitLDFTN(pslILEmit->GetToken(pConvertToNativeMD));
 
     MethodDesc* pConvertToManagedMD = GetInstantiatedSafeArrayMethod(

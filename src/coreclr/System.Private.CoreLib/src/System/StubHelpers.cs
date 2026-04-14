@@ -2075,11 +2075,20 @@ namespace System.StubHelpers
         static unsafe nuint IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
-    internal sealed class VariantArrayElementMarshaler : IArrayElementMarshaler<object?, VariantArrayElementMarshaler>
+    internal sealed class VariantArrayElementMarshaler<TNativeDataValid> : IArrayElementMarshaler<object?, VariantArrayElementMarshaler<TNativeDataValid>>
+        where TNativeDataValid : IMarshalerOption
     {
         public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
         {
-            ObjectMarshaler.ClearNative((IntPtr)unmanaged);
+            if (!TNativeDataValid.Enabled)
+            {
+                // Native buffer is uninitialized — zero it so ConvertToNative
+                // doesn't see garbage VT_BYREF bits.
+                *(ComVariant*)unmanaged = default;
+            }
+            // When TNativeDataValid is enabled, the existing VARIANT may have
+            // VT_BYREF set. ConvertToNative checks vt & VT_BYREF and calls
+            // MarshalOleRefVariantForObject to write through the byref pointer.
             ObjectMarshaler.ConvertToNative(managed!, (IntPtr)unmanaged);
         }
 
@@ -2093,7 +2102,7 @@ namespace System.StubHelpers
             ObjectMarshaler.ClearNative((IntPtr)unmanaged);
         }
 
-        static unsafe nuint IArrayElementMarshaler<object?, VariantArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(ComVariant);
+        static unsafe nuint IArrayElementMarshaler<object?, VariantArrayElementMarshaler<TNativeDataValid>>.UnmanagedSize => (nuint)sizeof(ComVariant);
     }
 #endif // FEATURE_COMINTEROP
 

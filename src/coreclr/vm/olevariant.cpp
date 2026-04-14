@@ -1814,7 +1814,7 @@ namespace
 {
     // Returns the managed IArrayMarshaler<T> MethodTable for a given VARTYPE.
     // This mirrors the logic in ILArrayMarshalerBase::GetMarshalerMT for SAFEARRAY-compatible types.
-    MethodTable* GetMarshalerMTForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous)
+    MethodTable* GetMarshalerMTForSafeArrayVarType(VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous, BOOL bNativeDataValid)
     {
         STANDARD_VM_CONTRACT;
 
@@ -1923,7 +1923,13 @@ namespace
         }
 
         case VT_VARIANT:
-            return CoreLibBinder::GetClass(CLASS__VARIANT_ARRAY_ELEMENT_MARSHALER);
+        {
+            MethodTable* pOptionMT = bNativeDataValid
+                ? CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_ENABLED)
+                : CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
+            TypeHandle thOption(pOptionMT);
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__VARIANT_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thOption, 1)).AsMethodTable();
+        }
 
         case VT_RECORD:
         {
@@ -1989,14 +1995,14 @@ namespace
     }
 }
 
-MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous)
+MethodDesc* GetInstantiatedSafeArrayMethod(BinderMethodID methodId, VARTYPE vt, MethodTable* pElementMT, BOOL bHeterogeneous, BOOL bNativeDataValid)
 {
     STANDARD_VM_CONTRACT;
 
     MethodDesc* pGenericMD = CoreLibBinder::GetMethod(methodId);
 
     TypeHandle thElementType = GetElementTypeForSafeArrayVarType(vt, pElementMT);
-    TypeHandle thMarshalerType(GetMarshalerMTForSafeArrayVarType(vt, pElementMT, bHeterogeneous));
+    TypeHandle thMarshalerType(GetMarshalerMTForSafeArrayVarType(vt, pElementMT, bHeterogeneous, bNativeDataValid));
 
     TypeHandle thArgs[2] = { thElementType, thMarshalerType };
 
