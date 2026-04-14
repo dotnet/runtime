@@ -185,6 +185,12 @@ InProcCrashReportGenerate(
     siginfo_t* siginfo,
     void* context)
 {
+    static volatile int s_generating = 0;
+    if (__sync_val_compare_and_swap(&s_generating, 0, 1) != 0)
+    {
+        return;
+    }
+
     (void)siginfo;
 
     char exTypeBuf[256];
