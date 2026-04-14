@@ -178,11 +178,9 @@ class CallStackLogger
 
         MethodDesc* pMD = pCF->GetFunction();
 
-        // Skip runtime-invoked UCO entrypoint methods so they don't appear in
+        // Skip Environment.CallEntryPoint so it doesn't appear in
         // unhandled exception experiences.
-        if (pMD != nullptr && (pMD == g_pEnvironmentCallEntryPointMethodDesc ||
-                               pMD == g_pThreadStartCallbackMethodDesc ||
-                               pMD == g_pGCRunFinalizersMethodDesc))
+        if (pMD != nullptr && pMD == g_pEnvironmentCallEntryPointMethodDesc)
         {
             return SWA_CONTINUE;
         }
