@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <PackageReference Include="xunit.v3.extensibility.core.aot" Version="4.0.0-pre.33" ExcludeAssets="build" />
+    <PackageReference Include="xunit.v3.extensibility.core.aot" Version="$(XUnitV3Version)" ExcludeAssets="build" />
   </ItemGroup>
 
 </Project>

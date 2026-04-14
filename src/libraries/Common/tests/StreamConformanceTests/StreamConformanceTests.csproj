@@ -19,8 +19,8 @@
     <PackageReference Include="xunit.v3.extensibility.core" Version="$(XUnitV3Version)" ExcludeAssets="build" />
   </ItemGroup>
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <PackageReference Include="xunit.v3.extensibility.core.aot" Version="4.0.0-pre.33" ExcludeAssets="build" />
-    <PackageReference Include="xunit.v3.assert.aot" Version="4.0.0-pre.33" />
+    <PackageReference Include="xunit.v3.extensibility.core.aot" Version="$(XUnitV3Version)" ExcludeAssets="build" />
+    <PackageReference Include="xunit.v3.assert.aot" Version="$(XUnitV3Version)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />
