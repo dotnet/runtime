@@ -1286,9 +1286,12 @@ namespace System.StubHelpers
             }
             else
             {
-                int nativeBytes = checked(managedArray.Length * (int)TSelf.UnmanagedSize);
-                byte* pNative = (byte*)Marshal.AllocCoTaskMem(nativeBytes);
-                NativeMemory.Clear(pNative, (nuint)nativeBytes);
+                const nuint MaxSizeForInterop = 0x7ffffff0u;
+                nuint nativeBytes = (nuint)(uint)managedArray.Length * TSelf.UnmanagedSize;
+                if (nativeBytes > MaxSizeForInterop)
+                    throw new ArgumentException(SR.Argument_StructArrayTooLarge);
+                byte* pNative = (byte*)Marshal.AllocCoTaskMem((int)nativeBytes);
+                NativeMemory.Clear(pNative, nativeBytes);
                 return pNative;
             }
         }
@@ -1346,9 +1349,12 @@ namespace System.StubHelpers
             if (managedArray is null)
                 return null;
 
-            int nativeBytes = checked(managedArray.Length * sizeof(T));
-            byte* pNative = (byte*)Marshal.AllocCoTaskMem(nativeBytes);
-            NativeMemory.Clear(pNative, (nuint)nativeBytes);
+            const nuint MaxSizeForInterop = 0x7ffffff0u;
+            nuint nativeBytes = (nuint)(uint)managedArray.Length * (nuint)sizeof(T);
+            if (nativeBytes > MaxSizeForInterop)
+                throw new ArgumentException(SR.Argument_StructArrayTooLarge);
+            byte* pNative = (byte*)Marshal.AllocCoTaskMem((int)nativeBytes);
+            NativeMemory.Clear(pNative, nativeBytes);
 
             return pNative;
         }
@@ -1848,8 +1854,8 @@ namespace System.StubHelpers
                 return null;
             }
 
-            // Each char can map to at most SystemMaxDBCSCharSize bytes during conversion.
-            int allocSize = checked(managedArray.Length * Marshal.SystemMaxDBCSCharSize);
+            // Native layout for ANSI char arrays uses 1 byte per element.
+            int allocSize = managedArray.Length;
             byte* pNative = (byte*)Marshal.AllocCoTaskMem(allocSize);
             NativeMemory.Clear(pNative, (nuint)allocSize);
             return pNative;
