@@ -5339,7 +5339,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             // GT_BOUNDS_CHECK node has an implicit contract - the length node must always be non-negative.
             // So we additionally tighten the lower bound of lenLo to be ">= 1" when we also have a
             // "length != 0" assertion for it.
-            if (lenLo <= 0)
+            if ((idxLo == 0) && (idxHi == 0) && (lenLo <= 0))
             {
                 BitVecOps::Iter iter(apTraits, assertions);
                 unsigned        bvIndex = 0;
