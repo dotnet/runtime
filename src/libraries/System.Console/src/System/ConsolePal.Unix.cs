@@ -950,13 +950,13 @@ namespace System
             }
         }
 
-        internal static unsafe void WriteFromConsoleStream(SafeFileHandle fd, ReadOnlySpan<byte> buffer)
+        internal static void WriteFromConsoleStream(FileStream fs, ReadOnlySpan<byte> buffer)
         {
             EnsureConsoleInitialized();
 
             lock (Console.Out) // synchronize with other writers
             {
-                Write(fd, buffer);
+                Write(fs, buffer);
             }
         }
 
@@ -971,6 +971,27 @@ namespace System
             try
             {
                 RandomAccess.Write(fd, buffer, fileOffset: 0);
+            }
+            catch (IOException ex) when (Interop.Sys.ConvertErrorPlatformToPal(ex.HResult) == Interop.Error.EPIPE)
+            {
+                // Broken pipe... likely due to being redirected to a program
+                // that ended, so simply pretend we were successful.
+                return;
+            }
+
+            if (mayChangeCursorPosition)
+            {
+                UpdatedCachedCursorPosition(buffer, cursorVersion);
+            }
+        }
+
+        private static void Write(FileStream fs, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
+        {
+            int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
+
+            try
+            {
+                fs.Write(buffer);
             }
             catch (IOException ex) when (Interop.Sys.ConvertErrorPlatformToPal(ex.HResult) == Interop.Error.EPIPE)
             {

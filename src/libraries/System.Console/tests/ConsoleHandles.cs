@@ -88,81 +88,60 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixConsoleStream_SeekableStdinRedirection_ReadsAllContent()
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
+        public void CanCopyStandardInputToStandardOutput()
         {
-            // Regression test: UnixConsoleStream was using RandomAccess.Read with fileOffset=0,
-            // which caused it to always read from the beginning of seekable files (like regular files),
-            // resulting in an infinite loop when copying seekable stdin to stdout.
             const string inputContent = "Hello from seekable stdin!";
             string testFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            File.WriteAllText(testFilePath, inputContent, Encoding.UTF8);
+
             try
             {
-                File.WriteAllText(testFilePath, inputContent, Encoding.UTF8);
-
-                Process process = null;
-                using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(
+                using SafeFileHandle stdinHandle = File.OpenHandle(testFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using RemoteInvokeHandle handle = RemoteExecutor.Invoke(
                     static () =>
                     {
                         Console.OpenStandardInput().CopyTo(Console.OpenStandardOutput());
                         return RemoteExecutor.SuccessExitCode;
                     },
-                    new RemoteInvokeOptions { Start = false, StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
-                {
-                    process = handle.Process;
-                    handle.Process = null;
-                }
+                    new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true, StandardInputHandle = stdinHandle } });
 
-                using SafeFileHandle stdinHandle = File.OpenHandle(testFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                process.StartInfo.StandardInputHandle = stdinHandle;
-                process.Start();
-
-                string output = process.StandardOutput.ReadToEnd();
-                Assert.True(process.WaitForExit(30_000), "Process did not exit in time — possible infinite loop when reading seekable stdin.");
+                string output = handle.Process.StandardOutput.ReadToEnd();
+                Assert.True(handle.Process.WaitForExit(30_000), "Process did not exit in time — possible infinite loop when reading seekable stdin.");
                 Assert.Equal(inputContent, output);
             }
             finally
             {
-                try { File.Delete(testFilePath); } catch { }
+                File.Delete(testFilePath);
             }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
         public void UnixConsoleStream_SeekableStdoutRedirection_WritesAllContent()
         {
-            // Regression test: UnixConsoleStream was using RandomAccess.Write with fileOffset=0,
-            // which caused it to always write to the beginning of seekable files (like regular files),
-            // overwriting previously written data and producing incorrect output.
             const string outputContent = "Hello seekable stdout!";
             string testFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
-                Process process = null;
-                using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(
+                using SafeFileHandle stdoutHandle = File.OpenHandle(testFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+                using RemoteInvokeHandle handle = RemoteExecutor.Invoke(
                     static (data) =>
                     {
                         Console.OpenStandardOutput().Write(Encoding.UTF8.GetBytes(data));
                         return RemoteExecutor.SuccessExitCode;
                     },
                     outputContent,
-                    new RemoteInvokeOptions { Start = false }))
-                {
-                    process = handle.Process;
-                    handle.Process = null;
-                }
+                    new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { StandardOutputHandle = stdoutHandle } });
 
-                using SafeFileHandle stdoutHandle = File.OpenHandle(testFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-                process.StartInfo.StandardOutputHandle = stdoutHandle;
-                process.Start();
-                Assert.True(process.WaitForExit(30_000), "Process did not exit in time.");
+                Assert.True(handle.Process.WaitForExit(30_000), "Process did not exit in time.");
 
                 string output = File.ReadAllText(testFilePath, Encoding.UTF8);
                 Assert.Equal(outputContent, output);
             }
             finally
             {
-                try { File.Delete(testFilePath); } catch { }
+                File.Delete(testFilePath);
             }
         }
 

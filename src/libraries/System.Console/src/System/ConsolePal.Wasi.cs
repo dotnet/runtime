@@ -244,24 +244,24 @@ namespace System
         {
         }
 
-        internal static unsafe void WriteFromConsoleStream(SafeFileHandle fd, ReadOnlySpan<byte> buffer)
+        internal static unsafe void WriteFromConsoleStream(FileStream fs, ReadOnlySpan<byte> buffer)
         {
             EnsureConsoleInitialized();
 
             lock (Console.Out) // synchronize with other writers
             {
-                Write(fd, buffer);
+                Write(fs, buffer);
             }
         }
 
         /// <summary>Writes data from the buffer into the file descriptor.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer from which to write data.</param>
-        private static void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer)
+        private static void Write(FileStream fs, ReadOnlySpan<byte> buffer)
         {
             try
             {
-                RandomAccess.Write(fd, buffer, fileOffset: 0);
+                fs.Write(buffer);
             }
             catch (IOException ex) when (Interop.Sys.ConvertErrorPlatformToPal(ex.HResult) == Interop.Error.EPIPE)
             {
