@@ -307,6 +307,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                         continue;
                     }
 
+                    // Runtime-invoked UCO entrypoint method (Environment.CallEntryPoint)
+                    if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
+                    {
+                        continue;
+                    }
+
                     fIsAtEndOfStack = FALSE;
                 }
                 else
@@ -420,6 +426,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                         if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
                         {
                             ftResult = kManagedExceptionHandlingCodeFrame;
+                        }
+                        // Runtime-invoked UCO entrypoint method (Environment.CallEntryPoint)
+                        else if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
+                        {
+                            ftResult = kRuntimeEntryPointFrame;
                         }
                         else
                         {
