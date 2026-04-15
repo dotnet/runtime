@@ -36,7 +36,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <clrconfignocache.h>
 
 #ifdef HOST_ANDROID
-#include "crashreport/inproccrashreporter.h"
+#include "debug/crashreport/inproccrashreporter.h"
 #endif
 
 #include <errno.h>
@@ -2823,7 +2823,7 @@ Parameters:
 --*/
 #ifdef HOST_ANDROID
 #include <minipal/log.h>
-#include "crashreport/inproccrashreporter.h"
+#include "debug/crashreport/inproccrashreporter.h"
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {

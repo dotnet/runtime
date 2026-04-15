@@ -4,6 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
+include_directories(${CLR_DIR})
 include_directories(${CLR_SRC_NATIVE_DIR})
 include_directories(${RUNTIME_DIR})
 

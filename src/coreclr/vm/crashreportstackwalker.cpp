@@ -12,7 +12,7 @@
 
 #ifdef HOST_ANDROID
 
-#include "../pal/src/crashreport/inproccrashreporter.h"
+#include "debug/crashreport/inproccrashreporter.h"
 
 struct WalkContext
 {

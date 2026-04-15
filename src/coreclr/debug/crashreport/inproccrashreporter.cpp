@@ -8,7 +8,6 @@
 #include "inproccrashreporter.h"
 #include "crashjsonwriter.h"
 #include "moduleenumerator.h"
-#include "pal/thread.hpp"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -19,6 +18,8 @@
 #ifdef __ANDROID__
 #include <android/log.h>
 #endif
+
+#include <minipal/thread.h>
 
 // Include the .NET version string instead of linking because it is "static".
 #include "_version.c"
@@ -234,7 +235,7 @@ InProcCrashReportGenerate(
     if (g_enumerateThreadsCallback != NULL)
     {
         MultiThreadJsonContext threadContext = { &s_jsonWriter, context, 0, 0, hasException, exTypeBuf, exHresult };
-        uint64_t crashingTid = static_cast<uint64_t>(THREADSilentGetCurrentThreadId());
+        uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
 
         g_enumerateThreadsCallback(crashingTid, JsonThreadCallback, JsonThreadFrameCallback, &threadContext);
 
@@ -275,7 +276,7 @@ InProcCrashReportGenerate(
     }
     else
     {
-        uint64_t crashingTid = static_cast<uint64_t>(THREADSilentGetCurrentThreadId());
+        uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
 
         CrashJsonOpenObject(&s_jsonWriter, NULL);
         CrashJsonWriteString(&s_jsonWriter, "is_managed",

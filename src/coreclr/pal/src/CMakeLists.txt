@@ -37,6 +37,7 @@ endif(CORECLR_SET_RPATH)
 # Include directories
 
 include_directories(include)
+include_directories(${CLR_DIR})
 
 # Compile options
 
@@ -206,14 +207,6 @@ set(SOURCES
   thread/threadsusp.cpp
 )
 
-if(CLR_CMAKE_TARGET_ANDROID)
-  list(APPEND SOURCES
-    crashreport/crashjsonwriter.cpp
-    crashreport/inproccrashreporter.cpp
-    crashreport/moduleenumerator.cpp
-  )
-endif()
-
 set_source_files_properties(
     com/guid.cpp
     PROPERTIES
@@ -233,6 +226,7 @@ add_library(coreclrpal_objects
 
 add_library(coreclrpal STATIC
   $<TARGET_OBJECTS:coreclrpal_objects>
+  $<$<BOOL:${CLR_CMAKE_TARGET_ANDROID}>:$<TARGET_OBJECTS:inproccrashreport>>
   ${LIBUNWIND_OBJECTS}
 )
 
