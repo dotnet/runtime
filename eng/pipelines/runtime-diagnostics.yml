@@ -267,7 +267,7 @@ extends:
             shouldContinueOnError: true
             jobParameters:
               nameSuffix: CdacDumpTest
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
               timeoutInMinutes: 180
               postBuildSteps:
               - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml
@@ -286,6 +286,16 @@ extends:
                 displayName: 'Publish Dump Artifacts'
                 condition: and(always(), ne(variables['Agent.JobStatus'], 'Succeeded'))
                 continueOnError: true
+              # cDAC Stress Tests — run GC stress verification on the same Checked build
+              - template: /eng/pipelines/cdac/prepare-cdac-stress-helix-steps.yml
+              - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
+                parameters:
+                  displayName: 'Send cDAC Stress Tests to Helix'
+                  sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/StressTests/cdac-stress-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacStressHelixQueue)" /p:TestHostPayload=$(StressTestHostRootDir) /p:StressTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac-stress /bl:$(Build.SourcesDirectory)/artifacts/log/SendStressToHelix.binlog
+                  environment:
+                    _Creator: dotnet-bot
+                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+                    NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
               - pwsh: |
                   if ("$(Agent.JobStatus)" -ne "Succeeded") {
                     Write-Error "One or more cDAC dump test failures were detected. Failing the job."

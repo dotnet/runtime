@@ -179,9 +179,26 @@ public abstract class CdacStressTestBase
 
     private static string GetDebuggeePath(string debuggeeName)
     {
-        string repoRoot = FindRepoRoot();
+        // On Helix, debuggees are in the work item payload's debuggees/ directory.
+        // The test assembly is in <payload>/tests/, so AppContext.BaseDirectory is there.
+        // The debuggees are siblings at <payload>/debuggees/<name>/.
+        string? helixPayload = Environment.GetEnvironmentVariable("HELIX_WORKITEM_PAYLOAD");
+        if (!string.IsNullOrEmpty(helixPayload))
+        {
+            string helixDebuggeesDir = Path.Combine(helixPayload, "debuggees", debuggeeName);
+            if (Directory.Exists(helixDebuggeesDir))
+            {
+                foreach (string dir in Directory.GetDirectories(helixDebuggeesDir, "*", SearchOption.AllDirectories))
+                {
+                    string dll = Path.Combine(dir, $"{debuggeeName}.dll");
+                    if (File.Exists(dll))
+                        return dll;
+                }
+            }
+        }
 
-        // Debuggees are built to artifacts/bin/StressTests/<name>/Release/<tfm>/
+        // Local development: debuggees are built to artifacts/bin/StressTests/<name>/
+        string repoRoot = FindRepoRoot();
         string binDir = Path.Combine(repoRoot, "artifacts", "bin", "StressTests", debuggeeName);
 
         if (!Directory.Exists(binDir))

@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+
+  <!--
+    cdac-stress-helix.proj — Sends cDAC GC stress verification tests to Helix.
+
+    This project runs the stress test xunit assembly on Helix hardware,
+    using the testhost as CORE_ROOT for corerun execution.
+
+    The testhost (locally-built runtime with Checked CoreCLR + cDAC) is sent
+    as a HelixCorrelationPayload. Debuggees and the test assembly are sent
+    as the work item payload.
+
+    Properties (set by pipeline or command line):
+      HelixTargetQueues      — Helix queue(s) to run on
+      TestHostPayload        — Path to testhost shared framework directory (contains corerun)
+      StressTestsPayload     — Path to payload directory (contains tests/ and debuggees/)
+      TargetOS               — Target OS (windows, linux, osx)
+      TargetArchitecture     — Target architecture (x64, arm64)
+  -->
+
+  <PropertyGroup>
+    <Language>msbuild</Language>
+    <EnableAzurePipelinesReporter>true</EnableAzurePipelinesReporter>
+    <EnableXUnitReporter>true</EnableXUnitReporter>
+    <FailOnTestFailure>true</FailOnTestFailure>
+    <Creator>$(_Creator)</Creator>
+    <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
+    <HelixBuild>$(BUILD_BUILDNUMBER)</HelixBuild>
+    <HelixType>test/cdac/stresstests/</HelixType>
+    <HelixSource Condition="'$(HelixSource)' == ''">pr/dotnet/runtime/cdac-stress-tests</HelixSource>
+    <WorkItemTimeout>00:30:00</WorkItemTimeout>
+  </PropertyGroup>
+
+  <!-- Send the testhost as a correlation payload (shared across work items, extracted once per machine) -->
+  <ItemGroup>
+    <HelixCorrelationPayload Include="$(TestHostPayload)">
+      <PayloadDirectory>%(Identity)</PayloadDirectory>
+    </HelixCorrelationPayload>
+  </ItemGroup>
+
+  <!-- Pre-commands: set CORE_ROOT to the testhost shared framework directory -->
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <HelixPreCommand Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+    <HelixPreCommand Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
+    <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/corerun" />
+    <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/dotnet" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+  </PropertyGroup>
+
+  <!--
+    Single work item: run the stress test xunit assembly using dotnet exec.
+    The test harness discovers CORE_ROOT and debuggees automatically.
+  -->
+  <Target Name="_CreateHelixWorkItems" BeforeTargets="CoreTest">
+    <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+      <_StressTestCommand>%25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec --runtimeconfig %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.StressTests.runtimeconfig.json --depsfile %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.StressTests.deps.json %25HELIX_WORKITEM_PAYLOAD%25\tests\xunit.console.dll %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.StressTests.dll -xml testResults.xml -nologo</_StressTestCommand>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetOS)' != 'windows'">
+      <_StressTestCommand>$HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.StressTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.StressTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/xunit.console.dll $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.StressTests.dll -xml testResults.xml -nologo</_StressTestCommand>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <HelixWorkItem Include="CdacStressTests">
+        <PayloadDirectory>$(StressTestsPayload)</PayloadDirectory>
+        <Command>$(_StressTestCommand)</Command>
+        <Timeout>$(WorkItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -1261,6 +1261,7 @@ void CdacStress::VerifyAtAllocPoint()
     // so the walk starts from the caller, not from inside this function.
     CONTEXT ctx;
     RtlCaptureContext(&ctx);
+#ifndef TARGET_UNIX
     {
         ULONG64 imageBase = 0;
         PRUNTIME_FUNCTION pFunctionEntry = RtlLookupFunctionEntry(GetIP(&ctx), &imageBase, nullptr);
@@ -1272,6 +1273,9 @@ void CdacStress::VerifyAtAllocPoint()
                 pFunctionEntry, &ctx, &handlerData, &establisherFrame, nullptr);
         }
     }
+#else
+    PAL_VirtualUnwind(&ctx);
+#endif
 
     VerifyAtStressPoint(pThread, &ctx);
 }
