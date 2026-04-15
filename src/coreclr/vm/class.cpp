@@ -561,9 +561,10 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
 #endif // _DEBUG
 
     // Runtime-async methods (IsMiAsync) that return Task/ValueTask need two MethodDescs:
-    // the task-returning variant and the async call variant. Return-type classification
-    // is only needed for these methods to determine whether to create async variants.
-    bool isAsyncTaskReturning = false;
+    // the task-returning thunk and the async variant that owns the IL. The async variant
+    // is created lazily by FindOrCreateAssociatedMethodDesc when first needed
+    // (see "EnC async variants" in genmeth.cpp).
+    AsyncMethodFlags primaryAsyncFlags = AsyncMethodFlags::None;
 
     if (IsMiAsync(dwImplFlags))
     {
@@ -584,27 +585,17 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
                 SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
         }
 
-        isAsyncTaskReturning = IsTaskReturning(returnKind);
-    }
+        if (!IsTaskReturning(returnKind))
+        {
+            // IsMiAsync but not task-returning (e.g. infrastructure Await helpers).
+            // Not supported for EnC.
+            LOG((LF_ENC, LL_INFO100,
+                "EEClass::AddMethod rejecting non-task-returning async method (methodDef: 0x%08x)\n",
+                methodDef));
+            return CORDBG_E_ENC_EDIT_NOT_SUPPORTED;
+        }
 
-    // For runtime-async task-returning methods, the primary MethodDesc is a thunk.
-    // The async variant is created lazily by FindOrCreateAssociatedMethodDesc when
-    // first needed (see "EnC async variants" in genmeth.cpp).
-    AsyncMethodFlags primaryAsyncFlags = AsyncMethodFlags::None;
-
-    if (isAsyncTaskReturning)
-    {
         primaryAsyncFlags = AsyncMethodFlags::ReturnsTaskOrValueTask | AsyncMethodFlags::Thunk;
-    }
-    else if (IsMiAsync(dwImplFlags))
-    {
-        // IsMiAsync but not task-returning: infrastructure async method (e.g. Await helpers).
-        // There is no known scenario that benefits from adding these via EnC, so reject
-        // unconditionally rather than allowing them even on the system module.
-        LOG((LF_ENC, LL_INFO100,
-            "EEClass::AddMethod rejecting infrastructure async method (methodDef: 0x%08x)\n",
-            methodDef));
-        return CORDBG_E_ENC_EDIT_NOT_SUPPORTED;
     }
 
     // Create the primary MethodDesc (task-returning thunk for async, or the only MethodDesc for non-async).
