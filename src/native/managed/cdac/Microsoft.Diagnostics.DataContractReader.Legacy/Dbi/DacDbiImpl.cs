@@ -613,8 +613,33 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int EnumerateInternalFrames(ulong vmThread, nint fpCallback, nint pUserData)
         => _legacy is not null ? _legacy.EnumerateInternalFrames(vmThread, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
+    // [cDAC] IsMatchingParentFrame - replaces native DacDbiInterfaceImpl::IsMatchingParentFrame
+    // The native implementation converts both FramePointer args to StackFrame values and calls
+    // ExInfo::IsUnwoundToTargetParentFrame(sfToCheck, sfParent), which is simply sfParent == sfToCheck.
     public int IsMatchingParentFrame(ulong fpToCheck, ulong fpParent, Interop.BOOL* pResult)
-        => _legacy is not null ? _legacy.IsMatchingParentFrame(fpToCheck, fpParent, pResult) : HResults.E_NOTIMPL;
+    {
+        *pResult = Interop.BOOL.FALSE;
+        int hr = HResults.S_OK;
+        try
+        {
+            *pResult = fpToCheck == fpParent ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal;
+            int hrLocal = _legacy.IsMatchingParentFrame(fpToCheck, fpParent, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetStackParameterSize(ulong controlPC, uint* pRetVal)
         => _legacy is not null ? _legacy.GetStackParameterSize(controlPC, pRetVal) : HResults.E_NOTIMPL;

@@ -636,6 +636,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
     return hr;
 }
 
+// [cDAC] IsMatchingParentFrame is implemented in the cDAC (DacDbiImpl.cs).
 // Given the FramePointer of the parent frame and the FramePointer of the current frame,
 // check if the current frame is the parent frame.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePointer fpParent, OUT BOOL * pResult)
