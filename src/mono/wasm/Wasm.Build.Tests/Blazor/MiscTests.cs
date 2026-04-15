@@ -164,6 +164,8 @@ public class MiscTests : BlazorWasmTestBase
             var client2Files = Directory.GetFiles(client2Framework);
             Assert.Contains(client1Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
             Assert.Contains(client2Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
+            Assert.Contains(client1Files, f => Path.GetFileName(f).Contains("dotnet.native") && f.EndsWith(".wasm"));
+            Assert.Contains(client2Files, f => Path.GetFileName(f).Contains("dotnet.native") && f.EndsWith(".wasm"));
         }
     }
 }
