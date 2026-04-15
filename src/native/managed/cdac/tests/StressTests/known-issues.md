@@ -76,42 +76,13 @@ walker that:
 2. Delegates standard ECMA-335 type codes to the existing `GcSignatureTypeProvider`
 3. Handles `ELEMENT_TYPE_CMOD_INTERNAL` (0x22) similarly if encountered
 
-## Issue 2: CheckForSkippedFrames causes false IsActiveFrame=false (instruction-level stress only)
+## IsFirst not preserved for skipped frames (FIXED)
 
-**Affected**: Topmost managed frame at specific instruction offsets
-**Frequency**: ~4 per 25K verifications (0.02%)
-**Root cause**: IDENTIFIED — `CheckForSkippedFrames` boundary condition
-
-**Where it happens**: `StackWalk_1.WalkStackReferences()` in
-`src/native/managed/cdac/.../Contracts/StackWalk/StackWalk_1.cs` (lines 173-174)
-and `CreateStackWalk()` (lines 141-143).
-
-**Root cause**: When the initial managed frame's caller SP is at the exact boundary
-of an explicit Frame's address, `CheckForSkippedFrames` returns `true` at some
-instruction offsets (IP) but `false` at adjacent offsets (IP-4). When it returns
-`true`, the state is set to `SW_SKIPPED_FRAME` and the first yielded frame has
-`IsActiveFrame=false` (because `IsActiveFrame = IsFirst && SW_FRAMELESS` and the
-state is SW_SKIPPED_FRAME). This causes `reportScratchSlots=false`, and scratch
-register GC refs (RAX, R8) are not reported.
-
-**Evidence (IsActiveFrame trace)**:
-- PASS at IP=0x7FFB44F824F9: `IsActive=True flags=ActiveStackFrame` → 41 refs
-- FAIL at IP=0x7FFB44F824FD: `IsActive=False flags=0` → 40 refs (1 scratch reg missing)
-
-The missing ref is always a scratch register (RAX=0 or R8=8) that would be reported
-if `ActiveStackFrame` were set. The GcInfoDecoder bitmap is correct and identical
-between native and cDAC — the issue is purely in the `IsActiveFrame` flag.
-
-**GcInfoDecoder**: VERIFIED CORRECT. Parallel tracing confirmed:
-- `numTracked=5, numUntracked=0, liveStateBitOffset=262` — identical
-- Per-slot liveness bits match exactly for every (offset, safePointIndex) pair
-- Slot table decoding and bit positions are identical
-
-**Follow-up fix**: The `CheckForSkippedFrames` comparison at initialization needs
-to match the native `ProcessCurrentFrame` behavior more precisely, particularly
-for the case where the explicit Frame address is at the exact boundary of the
-caller SP. The native walker may use `<=` vs `<` or may adjust the comparison
-to account for the Frame being pushed during the GC stress mechanism itself.
+Previously ~4 per 25K failures at instruction-level stress. The cDAC's
+`AdvanceIsFirst` was updating `IsFirst` for `SW_SKIPPED_FRAME` based on the
+Frame's resumable attribute, but the native walker does NOT modify `isFirst`
+in the `SFITER_SKIPPED_FRAME_FUNCTION` path (stackwalk.cpp:2086-2128). Fixed
+by making `AdvanceIsFirst` skip the `IsFirst` update for `SW_SKIPPED_FRAME`.
 
 ## EH ThrowHelper (FIXED)
 
@@ -127,9 +98,9 @@ At allocation-level stress (`DOTNET_CdacStress=0x51`, the default):
 ## Instruction-level stress results
 
 At instruction-level stress (`DOTNET_GCStress=0x4 + DOTNET_CdacStress=0x54`):
-- Comprehensive: 25,461 pass / 7 fail (99.97%)
-  - 4 FRAME_DIFF (GcInfo register mismatch at QCall boundaries)
-  - 3 FRAME_DAC_ONLY (missing explicit Frame in cDAC walk)
+- Comprehensive: 25,512 pass / 3 fail (99.988%)
+  - 0 FRAME_DIFF (fixed via IsFirst skipped-frame preservation)
+  - 3 FRAME_DAC_ONLY (ELEMENT_TYPE_INTERNAL in PromoteCallerStack — follow-up)
 
 ## Future work
 
