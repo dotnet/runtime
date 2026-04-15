@@ -491,6 +491,8 @@ namespace System
                 {
                     return number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
                 }
+
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
             }
 
             significand += TValue.One;
