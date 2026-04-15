@@ -1721,7 +1721,7 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
             SetSSP(pFrameContext, ssp - 8);
         }
 #endif // TARGET_WINDOWS
-#endif  // TARGET_ARM64
+#endif  // TARGET_AMD64
 
         SetSP(pFrameContext, currentSP);
         SetFP(pFrameContext, currentFP);
