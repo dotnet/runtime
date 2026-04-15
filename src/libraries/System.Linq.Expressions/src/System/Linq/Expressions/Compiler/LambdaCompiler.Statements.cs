@@ -100,7 +100,7 @@ namespace System.Linq.Expressions.Compiler
                     // User-created blocks will never hit this case; only our
                     // internally reduced nodes will.
                     //
-                    scope = new CompilerScope(node, false) { NeedsClosure = _scope.NeedsClosure };
+                    scope = new CompilerScope(node, false) { NeedsClosure = true };
                 }
 
                 _scope = scope.Enter(this, _scope);
