@@ -68,7 +68,7 @@ namespace System.IO.Compression
         protected override long GetMaxCompressedLength(long inputSize) =>
             DeflateEncoder.GetMaxCompressedLength(inputSize);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [InlineData(0u)]
         [InlineData(1u)]
         [InlineData(8u)]
