@@ -326,8 +326,10 @@ bool MayUsePrecompiledILStub()
     if (g_pConfig->InteropValidatePinnedObjects())
         return false;
 
+#ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackTransitions())
         return false;
+#endif // PROFILING_SUPPORTED
 
     if (g_pConfig->InteropLogArguments())
         return false;
@@ -2037,7 +2039,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_ARM)
         pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-    #elif defined(TARGET_RISCV64)
+    #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_WASM)
         // We do not yet have an ABI for WebAssembly native code to handle here.
@@ -2211,7 +2213,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 #ifdef FEATURE_COMINTEROP
     /**************************   INTEROP   *************************/
     /*-----------------------------------------------------------------
-    // Some method descriptors are COMPLUS-to-COM call descriptors
+    // Some method descriptors are CLR-to-COM call descriptors
     // they are not your every day method descriptors, for example
     // they don't have an IL or code.
     */
@@ -2307,15 +2309,34 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         if (pCode == (PCODE)NULL)
         {
             pCode = GetStubForInteropMethod(this);
-        }
 
+#ifdef FEATURE_INTERPRETER
+            // Store the IL stub interpreter data on the P/Invoke MethodDesc so the
+            // interpreter can run the IL stub as a child frame with a single native
+            // transition. On WASM this is done for all P/Invokes; on ARM64 Apple it
+            // is needed specifically for Swift to avoid a stale SwiftError (x21).
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        // Store the IL Stub interpreter data on the actual
-        // P/Invoke MethodDesc.
-        void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
-        _ASSERTE(ilStubInterpData != NULL);
-        SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+            void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
+            _ASSERTE(ilStubInterpData != NULL);
+            SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+            {
+                CorInfoCallConvExtension callConv;
+                PInvoke::GetCallingConvention_IgnoreErrors(this, &callConv, nullptr);
+                if (callConv == CorInfoCallConvExtension::Swift)
+                {
+                    TADDR ilStubInterpCode = GetInterpreterCodeFromInterpreterPrecodeIfPresent(pCode);
+                    if (ilStubInterpCode != (TADDR)pCode)
+                    {
+                        SetInterpreterCode(dac_cast<InterpByteCodeStart*>(ilStubInterpCode));
+                    }
+                }
+            }
+#endif // TARGET_APPLE && TARGET_ARM64
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_INTERPRETER
+        }
     }
     else if (IsFCall())
     {

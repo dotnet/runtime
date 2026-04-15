@@ -140,19 +140,6 @@ ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + siz
 
 //=========================================
 
-
-
-#ifdef FEATURE_COMINTEROP
-
-#define SIZEOF__ComMethodFrame 0x70
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame == sizeof(ComMethodFrame));
-
-#define UnmanagedToManagedFrame__m_pvDatum 0x10
-ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedToManagedFrame, m_pvDatum));
-
-#endif // FEATURE_COMINTEROP
-
-
 #define REDIRECTSTUB_SP_OFFSET_CONTEXT 0
 
 #define CONTEXT_Pc 0x108
@@ -169,10 +156,12 @@ ASMCONSTANTS_C_ASSERT(FaultingExceptionFrame__m_fFilterExecuted == offsetof(Faul
 ASMCONSTANTS_C_ASSERT(SIZEOF__FixupPrecode == sizeof(FixupPrecode));
 ASMCONSTANTS_C_ASSERT(MethodDesc_ALIGNMENT_SHIFT == MethodDesc::ALIGNMENT_SHIFT);
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 #define ResolveCacheElem__target      0x10
 #define ResolveCacheElem__pNext       0x18
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext == offsetof(ResolveCacheElem, pNext));
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
@@ -242,7 +231,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLoc
 #endif
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
 
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xB20
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x30
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
 
 #define OFFSETOF__InterpThreadContext__pStackPointer 0x10

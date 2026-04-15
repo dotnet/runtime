@@ -12,24 +12,24 @@ internal sealed class LoaderAllocator : IData<LoaderAllocator>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.LoaderAllocator);
 
-        ReferenceCount = target.Read<uint>(address + (ulong)type.Fields[nameof(ReferenceCount)].Offset);
-        HighFrequencyHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(HighFrequencyHeap)].Offset);
-        LowFrequencyHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(LowFrequencyHeap)].Offset);
-        StaticsHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(StaticsHeap)].Offset);
-        StubHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(StubHeap)].Offset);
-        ExecutableHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(ExecutableHeap)].Offset);
+        ReferenceCount = target.ReadField<uint>(address, type, nameof(ReferenceCount));
+        HighFrequencyHeap = target.ReadPointerField(address, type, nameof(HighFrequencyHeap));
+        LowFrequencyHeap = target.ReadPointerField(address, type, nameof(LowFrequencyHeap));
+        StaticsHeap = target.ReadPointerField(address, type, nameof(StaticsHeap));
+        StubHeap = target.ReadPointerField(address, type, nameof(StubHeap));
+        ExecutableHeap = target.ReadPointerField(address, type, nameof(ExecutableHeap));
 
         if (type.Fields.ContainsKey(nameof(FixupPrecodeHeap)))
-            FixupPrecodeHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(FixupPrecodeHeap)].Offset);
+            FixupPrecodeHeap = target.ReadPointerField(address, type, nameof(FixupPrecodeHeap));
         if (type.Fields.ContainsKey(nameof(NewStubPrecodeHeap)))
-            NewStubPrecodeHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(NewStubPrecodeHeap)].Offset);
+            NewStubPrecodeHeap = target.ReadPointerField(address, type, nameof(NewStubPrecodeHeap));
         if (type.Fields.ContainsKey(nameof(DynamicHelpersStubHeap)))
-            DynamicHelpersStubHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(DynamicHelpersStubHeap)].Offset);
+            DynamicHelpersStubHeap = target.ReadPointerField(address, type, nameof(DynamicHelpersStubHeap));
 
-        VirtualCallStubManager = target.ReadPointer(address + (ulong)type.Fields[nameof(VirtualCallStubManager)].Offset);
+        VirtualCallStubManager = target.ReadPointerField(address, type, nameof(VirtualCallStubManager));
 
         ObjectHandle = target.ProcessedData.GetOrAdd<ObjectHandle>(
-            target.ReadPointer(address + (ulong)type.Fields[nameof(ObjectHandle)].Offset));
+            target.ReadPointerField(address, type, nameof(ObjectHandle)));
     }
 
     public uint ReferenceCount { get; init; }

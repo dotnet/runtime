@@ -101,4 +101,63 @@ public class MiscTests : BlazorWasmTestBase
 
         Assert.Contains(((AssetsData)bootJson.resources).lazyAssembly, f => f.name.StartsWith(razorClassLibraryName));
     }
+
+    [Theory]
+    [InlineData(Configuration.Debug, false)]
+    [InlineData(Configuration.Release, false)]
+    [InlineData(Configuration.Debug, true)]
+    [InlineData(Configuration.Release, true)]
+    public void MultiClientHostedBuildAndPublish(Configuration config, bool publish)
+    {
+        // Test that two Blazor WASM client projects can be built/published by a single server
+        // project without duplicate static web asset Identity collisions. This validates the
+        // Framework SourceType materialization path that gives each client unique per-project
+        // Identity for shared runtime pack files.
+        string id = publish ? "multi_pub" : "multi_hosted";
+        CopyTestAsset(config, aot: false, TestAsset.BlazorMultiClientHosted, id);
+
+        string serverDir = _projectDir;
+        string rootDir = Path.GetDirectoryName(serverDir)!;
+        string client1Dir = Path.Combine(rootDir, "Client1");
+        string client2Dir = Path.Combine(rootDir, "Client2");
+
+        string command = publish ? "publish" : "build";
+        string logPath = Path.Combine(_logPath, $"{id}-{config}-{command}.binlog");
+        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(serverDir);
+        _ = cmd
+            .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+            .ExecuteWithCapturedOutput(command, $"-p:Configuration={config}", $"-bl:{logPath}")
+            .EnsureSuccessful();
+
+        if (publish)
+        {
+            string publishDir = Path.Combine(serverDir, "bin", config.ToString(), DefaultTargetFrameworkForBlazor, "publish");
+            string client1Framework = Path.Combine(publishDir, "wwwroot", "client1", "_framework");
+            string client2Framework = Path.Combine(publishDir, "wwwroot", "client2", "_framework");
+
+            Assert.True(Directory.Exists(client1Framework), $"Client1 publish framework dir missing: {client1Framework}");
+            Assert.True(Directory.Exists(client2Framework), $"Client2 publish framework dir missing: {client2Framework}");
+
+            var client1Files = Directory.GetFiles(client1Framework);
+            var client2Files = Directory.GetFiles(client2Framework);
+            Assert.Contains(client1Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
+            Assert.Contains(client2Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
+            Assert.Contains(client1Files, f => Path.GetFileName(f).Contains("dotnet.native") && f.EndsWith(".wasm"));
+            Assert.Contains(client2Files, f => Path.GetFileName(f).Contains("dotnet.native") && f.EndsWith(".wasm"));
+        }
+        else
+        {
+            string client1Framework = Path.Combine(client1Dir, "bin", config.ToString(), DefaultTargetFrameworkForBlazor, "wwwroot", "_framework");
+            string client2Framework = Path.Combine(client2Dir, "bin", config.ToString(), DefaultTargetFrameworkForBlazor, "wwwroot", "_framework");
+
+            Assert.True(Directory.Exists(client1Framework), $"Client1 framework dir missing: {client1Framework}");
+            Assert.True(Directory.Exists(client2Framework), $"Client2 framework dir missing: {client2Framework}");
+
+            var client1Files = Directory.GetFiles(client1Framework);
+            var client2Files = Directory.GetFiles(client2Framework);
+            Assert.Contains(client1Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
+            Assert.Contains(client2Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
+        }
+    }
 }

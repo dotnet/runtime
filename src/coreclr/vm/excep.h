@@ -170,12 +170,6 @@ void CrashDumpAndTerminateProcess(UINT exitCode);
 
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
 
-// Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
-// in the native code.
-struct CallOutFilterParam { BOOL OneShot; };
-LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv);
-
-
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
                                            BOOL useLastThrownObject = FALSE,
@@ -592,8 +586,6 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread,
 //==========================================================================
 // Handy helper functions
 //==========================================================================
-LONG FilterAccessViolation(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
-
 bool IsInterceptableException(Thread *pThread);
 
 #ifdef DEBUGGING_SUPPORTED
@@ -646,11 +638,6 @@ inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 }
 
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);
-
-// See implementation for detailed comments in excep.cpp
-LONG AppDomainTransitionExceptionFilter(
-    EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
-    PVOID               pParam);
 
 // See implementation for detailed comments in excep.cpp
 LONG ReflectionInvocationExceptionFilter(

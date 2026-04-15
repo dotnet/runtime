@@ -325,6 +325,7 @@ namespace System.Diagnostics.Tracing
         /// the values must match the number and types of the fields described by the
         /// eventTypes parameter.
         /// </param>
+        [RequiresUnsafe]
         private unsafe void WriteMultiMerge(
             string? eventName,
             ref EventSourceOptions options,
@@ -385,6 +386,7 @@ namespace System.Diagnostics.Tracing
         /// the values must match the number and types of the fields described by the
         /// eventTypes parameter.
         /// </param>
+        [RequiresUnsafe]
         private unsafe void WriteMultiMergeInner(
             string? eventName,
             ref EventSourceOptions options,
@@ -504,6 +506,7 @@ namespace System.Diagnostics.Tracing
         /// The number and types of the values must match the number and types of the
         /// fields described by the eventTypes parameter.
         /// </param>
+        [RequiresUnsafe]
         internal unsafe void WriteMultiMerge(
             string? eventName,
             ref EventSourceOptions options,
@@ -574,6 +577,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        [RequiresUnsafe]
         private unsafe void WriteImpl(
             string? eventName,
             ref EventSourceOptions options,
@@ -695,6 +699,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        [RequiresUnsafe]
         private unsafe void WriteToAllListeners(string? eventName, ref EventDescriptor eventDescriptor, EventTags tags, Guid* pActivityId, Guid* pChildActivityId, EventPayload? payload)
         {
             // Self described events do not have an id attached. We mark it internally with -1.
@@ -717,6 +722,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [NonEvent]
+        [RequiresUnsafe]
         private static unsafe void WriteCleanup(GCHandle* pPins, int cPins)
         {
             DataCollector.ThreadInstance.Disable();

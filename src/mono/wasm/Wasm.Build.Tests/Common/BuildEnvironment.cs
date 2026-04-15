@@ -113,7 +113,7 @@ namespace Wasm.Build.Tests
                             $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
             }
 
-            UseWebcil = EnvironmentVariables.UseWebcil && EnvironmentVariables.RuntimeFlavor != "CoreCLR"; // TODO-WASM: CoreCLR support for Webcil https://github.com/dotnet/runtime/issues/120248
+            UseWebcil = EnvironmentVariables.UseWebcil;
             IsMonoRuntime = EnvironmentVariables.RuntimeFlavor == "Mono";
             IsCoreClrRuntime = EnvironmentVariables.RuntimeFlavor == "CoreCLR";
 

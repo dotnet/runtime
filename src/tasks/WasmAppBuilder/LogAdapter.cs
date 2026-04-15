@@ -8,7 +8,7 @@ using Microsoft.Build.Framework;
 
 #nullable enable
 
-namespace WasmAppBuilder;
+namespace Microsoft.WebAssembly.Build.Tasks;
 
 public sealed class LogAdapter
 {

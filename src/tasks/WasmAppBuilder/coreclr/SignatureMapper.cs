@@ -6,7 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using WasmAppBuilder;
+
+namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 internal static class SignatureMapper
 {
@@ -63,7 +64,7 @@ internal static class SignatureMapper
         }
         else if (t.IsPointer)
             c = 'i';
-        else if (t.IsFunctionPointer)
+        else if (PInvokeTableGenerator.IsFunctionPointer(t))
             c = 'i';
         else if (t.IsValueType)
         {

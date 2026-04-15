@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -17,6 +18,7 @@ namespace System.Text
         /// </summary>
         /// <returns>A Latin-1 char is defined as 0x0000 - 0x00FF, inclusive.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe nuint GetIndexOfFirstNonLatin1Char(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // If SSE2 is supported, use those specific intrinsics instead of the generic vectorized
@@ -29,6 +31,7 @@ namespace System.Text
                 : GetIndexOfFirstNonLatin1Char_Default(pBuffer, bufferLength);
         }
 
+        [RequiresUnsafe]
         private static unsafe nuint GetIndexOfFirstNonLatin1Char_Default(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // Squirrel away the original buffer reference.This method works by determining the exact
@@ -164,6 +167,7 @@ namespace System.Text
         }
 
         [CompExactlyDependsOn(typeof(Sse2))]
+        [RequiresUnsafe]
         private static unsafe nuint GetIndexOfFirstNonLatin1Char_Sse2(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // This method contains logic optimized for both SSE2 and SSE41. Much of the logic in this method
@@ -533,6 +537,7 @@ namespace System.Text
         /// or once <paramref name="elementCount"/> elements have been converted. Returns the total number
         /// of elements that were able to be converted.
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe nuint NarrowUtf16ToLatin1(char* pUtf16Buffer, byte* pLatin1Buffer, nuint elementCount)
         {
             nuint currentOffset = 0;
@@ -762,6 +767,7 @@ namespace System.Text
         }
 
         [CompExactlyDependsOn(typeof(Sse2))]
+        [RequiresUnsafe]
         private static unsafe nuint NarrowUtf16ToLatin1_Sse2(char* pUtf16Buffer, byte* pLatin1Buffer, nuint elementCount)
         {
             // This method contains logic optimized for both SSE2 and SSE41. Much of the logic in this method
@@ -943,6 +949,7 @@ namespace System.Text
         /// buffer <paramref name="pUtf16Buffer"/>, widening data while copying. <paramref name="elementCount"/>
         /// specifies the element count of both the source and destination buffers.
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void WidenLatin1ToUtf16(byte* pLatin1Buffer, char* pUtf16Buffer, nuint elementCount)
         {
             // If SSE2 is supported, use those specific intrinsics instead of the generic vectorized
@@ -961,6 +968,7 @@ namespace System.Text
         }
 
         [CompExactlyDependsOn(typeof(Sse2))]
+        [RequiresUnsafe]
         private static unsafe void WidenLatin1ToUtf16_Sse2(byte* pLatin1Buffer, char* pUtf16Buffer, nuint elementCount)
         {
             // JIT turns the below into constants
@@ -1066,6 +1074,7 @@ namespace System.Text
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe void WidenLatin1ToUtf16_Fallback(byte* pLatin1Buffer, char* pUtf16Buffer, nuint elementCount)
         {
             Debug.Assert(!Sse2.IsSupported);

@@ -9,14 +9,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct DistributionPointNameAsn
-    {
-        internal System.Security.Cryptography.Asn1.GeneralNameAsn[]? FullName;
-        internal ReadOnlyMemory<byte>? NameRelativeToCRLIssuer;
-
 #if DEBUG
-        static DistributionPointNameAsn()
+    file static class ValidateDistributionPointNameAsn
+    {
+        static ValidateDistributionPointNameAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -31,6 +27,25 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "FullName");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 1), "NameRelativeToCRLIssuer");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct DistributionPointNameAsn
+    {
+        internal System.Security.Cryptography.Asn1.GeneralNameAsn[]? FullName;
+        internal ReadOnlyMemory<byte>? NameRelativeToCRLIssuer;
+
+#if DEBUG
+        static DistributionPointNameAsn()
+        {
+            ValidateDistributionPointNameAsn.Validate();
         }
 #endif
 

@@ -5,6 +5,7 @@
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
     <!-- we are not triggering EnableDiagnostics in Debug automatically, because it would trigger re-link, making dev-loop slow -->
     <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">false</EnableDiagnostics>
+    <WasmAppRuntimeFlavor>Mono</WasmAppRuntimeFlavor>
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
@@ -52,7 +53,7 @@
   <!-- When trimming non-exe projects, root the whole intermediate assembly. -->
   <Target Name="_RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" BeforeTargets="_RunILLink" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' And '$(OutputType)' == 'Library'">
     <ItemGroup>
-      <TrimmerRootAssembly Condition="'%(Identity)' == '@(IntermediateAssembly)'">
+      <TrimmerRootAssembly Condition="'%(Identity)' == '$(AssemblyName)'">
         <RootMode>all</RootMode>
       </TrimmerRootAssembly>
     </ItemGroup>

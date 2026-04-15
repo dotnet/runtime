@@ -510,6 +510,7 @@ public:
 
         struct
         {
+            // [cDAC] [BuiltInCOM] : Contract depends on the encoding of m_fURTAggregated, m_fURTContained, and m_MarshalingType.
             static_assert((1 << 4) > INTERFACE_ENTRY_CACHE_SIZE, "m_iEntryToRelease needs a bigger data type");
             DWORD       m_iEntryToRelease:4;
 
@@ -591,6 +592,12 @@ struct cdac_data<RCW>
     static constexpr size_t CtxCookie = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxCookie);
     static constexpr size_t CtxEntry = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxEntry);
     static constexpr size_t InterfaceEntries = offsetof(RCW, m_aInterfaceEntries);
+    static constexpr size_t IdentityPointer = offsetof(RCW, m_pIdentity);
+    static constexpr size_t SyncBlockIndex = offsetof(RCW, m_SyncBlockIndex);
+    static constexpr size_t VTablePtr = offsetof(RCW, m_vtablePtr);
+    static constexpr size_t CreatorThread = offsetof(RCW, m_pCreatorThread);
+    static constexpr size_t RefCount = offsetof(RCW, m_cbRefCount);
+    static constexpr size_t UnknownPointer = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pUnknown);
 };
 
 inline RCW::CreationFlags operator|(RCW::CreationFlags lhs, RCW::CreationFlags rhs)
@@ -750,21 +757,7 @@ FORCEINLINE void NewRCWHolderRelease(RCW* p)
     }
 };
 
-class NewRCWHolder : public Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>
-{
-public:
-    NewRCWHolder(RCW* p = NULL)
-        : Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(RCW* p)
-    {
-        WRAPPER_NO_CONTRACT;
-        Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>::operator=(p);
-    }
-};
+using NewRCWHolder = SpecializedWrapper<RCW, NewRCWHolderRelease>;
 
 #ifndef DACCESS_COMPILE
 class RCWHolder
@@ -1375,40 +1368,6 @@ template<>
 struct cdac_data<RCWCleanupList>
 {
     static constexpr size_t FirstBucket = offsetof(RCWCleanupList, m_pFirstBucket);
-};
-
-FORCEINLINE void CtxEntryHolderRelease(CtxEntry *p)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (p != NULL)
-    {
-        p->Release();
-    }
-}
-
-class CtxEntryHolder : public Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>
-{
-public:
-    CtxEntryHolder(CtxEntry *p = NULL)
-        : Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(CtxEntry *p)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>::operator=(p);
-    }
-
 };
 
 #endif // _RUNTIMECALLABLEWRAPPER_H

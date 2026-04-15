@@ -497,11 +497,14 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         m_pInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
     }
 
+#ifdef PROFILING_SUPPORTED_DATA
     // These will be initialized in NotifyProfilerLoadFinished, set them to
     // a safe initial value now.
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
+#endif // PROFILING_SUPPORTED_DATA
+
 #ifdef PROFILING_SUPPORTED
     // set profiler related JIT flags
     if (CORProfilerDisableInlining())
@@ -620,7 +623,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
     ModuleHolder pModuleSafe(pModule);
     pModuleSafe->DoInit(pamTracker, NULL);
 
-    RETURN pModuleSafe.Extract();
+    RETURN pModuleSafe.Detach();
 }
 
 void Module::ApplyMetaData()
@@ -3065,7 +3068,7 @@ using GetTokenForVTableEntry_t = mdToken(STDMETHODCALLTYPE*)(HMODULE module, BYT
 static HMODULE GetIJWHostForModule(Module* module)
 {
 #if !defined(TARGET_UNIX)
-    PEDecoder* pe = module->GetPEAssembly()->GetLoadedLayout();
+    PEImageLayout* pe = module->GetPEAssembly()->GetLoadedLayout();
 
     BYTE* baseAddress = (BYTE*)module->GetPEAssembly()->GetIJWBase();
 
@@ -3414,9 +3417,10 @@ void Module::FixupVTables()
 
                     UMEntryThunkData *pUMEntryThunkData = UMEntryThunkData::CreateUMEntryThunk();
 
-                    UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
+                    DelegateUMThunkMarshInfo *pUMThunkMarshInfo = (DelegateUMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(DelegateUMThunkMarshInfo), CODE_SIZE_ALIGN));
 
-                    pUMThunkMarshInfo->LoadTimeInit(pMD);
+                    new (pUMThunkMarshInfo) DelegateUMThunkMarshInfo(pMD);
+
                     pUMEntryThunkData->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
 
                     SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunkData->GetCode());
@@ -3820,7 +3824,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
     pModule->DoInit(pamTracker, szName);
     pModule->SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules();
 
-    RETURN pModule.Extract();
+    RETURN pModule.Detach();
 }
 
 
