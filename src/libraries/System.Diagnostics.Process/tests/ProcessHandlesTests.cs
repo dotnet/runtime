@@ -303,6 +303,18 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void StartDetached_ThrowsOnUseShellExecute()
+        {
+            ProcessStartInfo psi = new("dummy")
+            {
+                UseShellExecute = true,
+                StartDetached = true
+            };
+
+            Assert.Throws<InvalidOperationException>(() => SafeProcessHandle.Start(psi));
+        }
+
+        [Fact]
         public void StandardHandles_DefaultIsNull()
         {
             ProcessStartInfo startInfo = new("cmd");
@@ -539,6 +551,68 @@ namespace System.Diagnostics.Tests
             };
 
             Assert.Throws<ArgumentException>(() => Process.Start(startInfo));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NonInheritedFileHandle_IsNotAvailableInChildProcess(bool inheritHandle)
+        {
+            string path = Path.GetTempFileName();
+            try
+            {
+                // Open with FileShare.None so independent opens that honor .NET/OS sharing semantics are prevented.
+                using SafeFileHandle fileHandle = File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None, FileOptions.None);
+
+                // Verify the handle is valid in the parent process.
+                Assert.False(fileHandle.IsInvalid);
+                Assert.Equal(FileHandleType.RegularFile, fileHandle.Type);
+                nint rawHandle = fileHandle.DangerousGetHandle();
+
+                // When we start a process and limit handle inheritance, it's hard to reliably check that
+                // a given file handle/descriptor was not inherited, because the OS can simply re-use the
+                // exact same number for a different pipe/file/device. The idea here is to get something
+                // that can help us identify the given file handle and just compare the ID that the parent
+                // and child processes have obtained.
+                string id = GetSafeFileHandleId(fileHandle);
+
+                RemoteInvokeOptions options = new() { CheckExitCode = true };
+                // When inheritHandle is true, explicitly add the handle to the allow-list so it gets inherited.
+                // When inheritHandle is false, use an empty allow-list so no handles are inherited.
+                options.StartInfo.InheritedHandles = inheritHandle ? [fileHandle] : [];
+
+                using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                    static (string handleStr, string fileId, string inheritHandleStr) =>
+                    {
+                        bool shouldBeInherited = bool.Parse(inheritHandleStr);
+                        nint rawHandle = nint.Parse(handleStr);
+                        using SafeFileHandle handle = new SafeFileHandle(rawHandle, ownsHandle: false);
+
+                        // Check whether it points to our file (the Operating System could reuse same value for a different file).
+                        string? childId = null;
+
+                        try
+                        {
+                            childId = GetSafeFileHandleId(handle);
+                        }
+                        catch (Win32Exception) when (!shouldBeInherited)
+                        {
+                            // Handle is not a valid file handle in this process.
+                            return RemoteExecutor.SuccessExitCode;
+                        }
+
+                        Assert.Equal(shouldBeInherited, childId == fileId);
+                        return RemoteExecutor.SuccessExitCode;
+                    },
+                    rawHandle.ToString(),
+                    id,
+                    inheritHandle.ToString(),
+                    options);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
         }
     }
 }

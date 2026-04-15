@@ -25,7 +25,7 @@ with the authoritative [`docs/area-owners.md`](../../../../docs/area-owners.md).
 | `System.Threading.Tasks.Dataflow` | `area-System.Threading.Tasks.Dataflow` |
 | `System.Reflection`, MethodInfo, TypeInfo | `area-System.Reflection` |
 | `System.Reflection.Emit`, IL generation | `area-System.Reflection.Emit` |
-| `System.Runtime.InteropServices`, P/Invoke, marshalling | `area-System.Runtime.InteropServices` |
+| `System.Runtime.InteropServices`, P/Invoke, marshalling | `area-Interop-coreclr` |
 | `System.Security.Cryptography`, encryption, hashing, X509 | `area-System.Security` |
 | `System.Diagnostics`, Process, EventSource, DiagnosticSource | `area-System.Diagnostics` |
 | `System.Diagnostics.Tracing`, EventPipe, ETW | `area-System.Diagnostics.Tracing` |
@@ -53,12 +53,11 @@ with the authoritative [`docs/area-owners.md`](../../../../docs/area-owners.md).
 | GC, garbage collection, memory pressure | `area-GC-coreclr` or `area-GC-mono` |
 | JIT, code generation, inlining, tiered compilation | `area-CodeGen-coreclr` |
 | NativeAOT, ahead-of-time compilation | `area-NativeAOT-coreclr` |
-| Crossgen2, R2R, ReadyToRun | `area-crossgen2-coreclr` |
-| Assembly loading, AssemblyLoadContext | `area-AssemblyLoader-coreclr` |
+| Crossgen2, R2R, ReadyToRun, R2RDump | `area-ReadyToRun` |
+| Assembly loading, AssemblyLoadContext, host, hostfxr, hostpolicy, HostModel | `area-assemblyloading` |
 | Interop, COM, P/Invoke, marshalling (runtime) | `area-Interop-coreclr` |
-| Host, `dotnet` executable, hostfxr, hostpolicy | `area-Host` |
 | Single-file deployment | `area-Single-File` |
-| Exception handling (runtime-level) | `area-ExceptionHandling-coreclr` |
+| Exception handling (runtime-level), PAL, platform abstraction layer | `area-vm-coreclr` |
 | Debugger, debugging support | `area-Diagnostics-coreclr` |
 | `System.ComponentModel`, component model base types | `area-System.ComponentModel` |
 | `System.ComponentModel.DataAnnotations`, validation attributes | `area-System.ComponentModel.DataAnnotations` |

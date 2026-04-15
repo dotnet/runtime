@@ -209,6 +209,8 @@ protected:
     void genInitializeRegisterState();
 
     void genCodeForBBlist();
+    void genCodeForFunclet(FuncInfoDsc* funcInfo);
+    void genCodeForBlock(BasicBlock* block);
 
 #if defined(TARGET_WASM)
     ArrayStack<WasmInterval*>* wasmControlFlowStack = nullptr;
@@ -221,8 +223,8 @@ protected:
     unsigned                   GetFramePointerRegIndex() const;
 #endif
 
-    void        genEmitStartBlock(BasicBlock* block);
-    BasicBlock* genEmitEndBlock(BasicBlock* block);
+    void genEmitStartBlock(BasicBlock* block);
+    void genEmitEndBlock(BasicBlock* block);
 
 public:
     void genSpillVar(GenTree* tree);
@@ -606,7 +608,7 @@ protected:
     void genReserveFuncletProlog(BasicBlock* block);
     void genReserveFuncletEpilog(BasicBlock* block);
     void genFuncletProlog(BasicBlock* block);
-    void genFuncletEpilog();
+    void genFuncletEpilog(BasicBlock* block);
     void genCaptureFuncletPrologEpilogInfo();
 
     void genUpdateCurrentFunclet(BasicBlock* block);
@@ -1260,7 +1262,7 @@ protected:
     void        genCallPlaceRegArgs(GenTreeCall* call);
     void        genJmpPlaceArgs(GenTree* jmp);
     void        genJmpPlaceVarArgs();
-    BasicBlock* genCallFinally(BasicBlock* block);
+    void        genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genCodeForJumpCompare(GenTreeOpCC* tree);
 #endif
