@@ -1721,13 +1721,10 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
             SetSSP(pFrameContext, ssp - 8);
         }
 #endif // TARGET_WINDOWS
-
-        pFrameContext->Rbp = currentFP;
-#elif defined(TARGET_ARM64) // TARGET_AMD64
-        pFrameContext->Fp = currentFP;
 #endif  // TARGET_ARM64
 
         SetSP(pFrameContext, currentSP);
+        SetFP(pFrameContext, currentFP);
 
         // Note we can get here w/o triggering, if there is an existing OSR method and
         // we hit the patchpoint.
