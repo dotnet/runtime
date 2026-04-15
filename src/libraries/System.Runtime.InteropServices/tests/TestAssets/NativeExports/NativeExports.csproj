@@ -14,6 +14,8 @@
     <UseLocalAppHostPack>true</UseLocalAppHostPack>
     <!-- Don't use the local apphost pack on Windows as matching linker configurations is difficult. -->
     <UseLocalAppHostPack Condition="'$(TargetOS)' == 'windows'">false</UseLocalAppHostPack>
+    <!-- NativeAOT test builds don't include host.native, so pull nethost from the NuGet pack instead. -->
+    <UseLocalAppHostPack Condition="'$(TestNativeAot)' == 'true'">false</UseLocalAppHostPack>
     <_TargetsAppleOS Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or
       '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or
       '$(TargetOS)' == 'tvossimulator'">true</_TargetsAppleOS>
