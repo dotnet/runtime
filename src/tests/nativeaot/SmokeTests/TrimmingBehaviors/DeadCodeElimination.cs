@@ -16,6 +16,14 @@ using System.Runtime.InteropServices;
 [assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.GenUsedForProxy<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyFromGenUsed))]
 [assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.GenUnused<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyFromGenUnused))]
 
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("A", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target1), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget1[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("B", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target2), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget2[,]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("C", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target3), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget3*[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("D", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target4), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget4[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("E", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target5), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget5[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("F", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target6), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget6[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("G", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target7), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget7[]))]
+
 class DeadCodeElimination
 {
     public static int Run()
@@ -46,6 +54,7 @@ class DeadCodeElimination
         TestTypeHandlesInGenericDictionaries.Run();
         TestMetadataMethodTables.Run();
         TestInteropMapTrimming.Run();
+        TestInteropMapArrayTrimming.Run();
 
         return 100;
     }
@@ -1367,6 +1376,85 @@ class DeadCodeElimination
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TypeCheckUnknown<T>() where T : class => GetUnknown() is GenUsedForExternal<T>;
+    }
+
+    internal class TestInteropMapArrayTrimming
+    {
+        internal class Universe;
+
+        public struct TrimTarget1;
+        public struct TrimTarget2;
+        public struct TrimTarget3;
+        public struct TrimTarget4;
+        public struct TrimTarget5;
+        public struct TrimTarget6;
+        public struct TrimTarget7;
+        public class Target1;
+        public class Target2;
+        public class Target3;
+        public class Target4;
+        public class Target5;
+        public class Target6;
+        public class Target7;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetUnknown() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Consume(object o) { }
+
+        public static unsafe object[] MakeArrays()
+        {
+            return [
+                new TrimTarget1[1],
+                new TrimTarget2[1, 1],
+                new TrimTarget3*[1],
+                // Skipping TrimTarget4
+                // Skipping TrimTarget5
+                new TrimTarget6[1]
+            ];
+        }
+
+        public static void Run()
+        {
+            // Root the arrays so ILC sees TrimTarget1, TrimTarget2, TrimTarget3, TrimTarget6
+            Consume(MakeArrays());
+
+            // Root TrimTarget7[] via an is-cast so ILC marks the array type (and thus TrimTarget7)
+            if (GetUnknown() is TrimTarget7[])
+            {
+                Console.WriteLine("Unexpected!");
+            }
+
+            var map = TypeMapping.GetOrCreateExternalTypeMapping<Universe>();
+
+            // A, B, C, F, G: trim target element type is reachable — entries must be present
+            if (!map.TryGetValue("A", out Type typeA) || typeA.Name != nameof(Target1))
+                throw new Exception("Expected entry A");
+            ThrowIfUsableMethodTable(typeA);
+
+            if (!map.TryGetValue("B", out Type typeB) || typeB.Name != nameof(Target2))
+                throw new Exception("Expected entry B");
+            ThrowIfUsableMethodTable(typeB);
+
+            if (!map.TryGetValue("C", out Type typeC) || typeC.Name != nameof(Target3))
+                throw new Exception("Expected entry C");
+            ThrowIfUsableMethodTable(typeC);
+
+            if (!map.TryGetValue("F", out Type typeF) || typeF.Name != nameof(Target6))
+                throw new Exception("Expected entry F");
+            ThrowIfUsableMethodTable(typeF);
+
+            if (!map.TryGetValue("G", out Type typeG) || typeG.Name != nameof(Target7))
+                throw new Exception("Expected entry G");
+            ThrowIfUsableMethodTable(typeG);
+
+            // D, E: element type is unreachable — entries must be absent
+            if (map.ContainsKey("D"))
+                throw new Exception("Unexpected entry D");
+            if (map.ContainsKey("E"))
+                throw new Exception("Unexpected entry E");
+        }
     }
 
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
