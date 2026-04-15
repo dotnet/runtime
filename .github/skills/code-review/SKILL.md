@@ -35,7 +35,7 @@ Before analyzing anything, collect as much relevant **code** context as you can.
    - Note whether new public API was detected. If it was, you **MUST** load and execute the API approval verification procedure during Step 3. Read the file `.github/skills/code-review/api-approval-check.md` (relative to the repository root) and follow its instructions. Do not skip this step — it is blocking.
   
 ### Step 1: Discover Area-Specific Agents
-- Study the agents available in  `.github/agents` folder that are capable of reviewing specific areas of the codebase. Their yaml frontmatter description tells when they apply.
+- Study **review** agents available in  `.github/agents` folder that are capable of reviewing specific areas of the codebase. Their yaml frontmatter description tells when they apply.
 - When performing the review, invoke sub-agents to perform those area-specific reviews as subtasks during all subsequent steps, integrating those results.
 - Depending on the PR, more subagents might be launched. Launch them in parallel. Always continue regular review described here as well - the subagents are addons, not replacements.
 
