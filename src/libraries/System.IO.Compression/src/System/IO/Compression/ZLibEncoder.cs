@@ -146,7 +146,13 @@ namespace System.IO.Compression
             using var encoder = new ZLibEncoder(quality, windowLog);
             OperationStatus status = encoder.Compress(source, destination, out int consumed, out bytesWritten, isFinalBlock: true);
 
-            return status == OperationStatus.Done && consumed == source.Length;
+            bool success = status == OperationStatus.Done && consumed == source.Length;
+            if (!success)
+            {
+                bytesWritten = 0;
+            }
+
+            return success;
         }
     }
 }

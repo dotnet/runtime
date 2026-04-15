@@ -62,7 +62,13 @@ namespace System.IO.Compression
             using var decoder = new ZLibDecoder();
             OperationStatus status = decoder.Decompress(source, destination, out int consumed, out bytesWritten);
 
-            return status == OperationStatus.Done && consumed == source.Length;
+            bool success = status == OperationStatus.Done && consumed == source.Length;
+            if (!success)
+            {
+                bytesWritten = 0;
+            }
+
+            return success;
         }
     }
 }
