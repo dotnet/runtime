@@ -659,6 +659,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             InterceptorInfo info = spec.InterceptorInfo;
 
             AddLocations(info.ConfigBinder);
+            AddLocations(info.OptionsBuilderExt);
+            AddLocations(info.ServiceCollectionExt);
             AddTypedLocations(info.ConfigBinder_Bind_instance);
             AddTypedLocations(info.ConfigBinder_Bind_instance_BinderOptions);
             AddTypedLocations(info.ConfigBinder_Bind_key_instance);

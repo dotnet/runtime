@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -88,7 +89,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     // The generator may skip interception for unsupported types (https://github.com/dotnet/runtime/issues/96643).
                     interceptedLocationKeys ??= CollectInterceptedLocationKeys(context.Compilation);
 
-                    string? locationKey = GetInvocationLocationKey(invocation, semanticModel);
+                    string? locationKey = GetInvocationLocationKey(invocation, semanticModel, context.CancellationToken);
                     if (locationKey is null || !interceptedLocationKeys.Contains(locationKey))
                     {
                         continue;
@@ -112,7 +113,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (SyntaxTree tree in compilation.SyntaxTrees)
                 {
-                    if (!tree.FilePath.EndsWith("BindingExtensions.g.cs"))
+                    if (!tree.FilePath.EndsWith("BindingExtensions.g.cs", System.StringComparison.Ordinal))
                     {
                         continue;
                     }
@@ -167,7 +168,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static string MakeV1Key(string data) => data;
 
-            private static string? GetInvocationLocationKey(InvocationExpressionSyntax invocation, SemanticModel semanticModel)
+            private static string? GetInvocationLocationKey(InvocationExpressionSyntax invocation, SemanticModel semanticModel, CancellationToken cancellationToken)
             {
                 if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
                 {
@@ -178,7 +179,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     SyntaxTree syntaxTree = memberAccess.SyntaxTree;
                     TextSpan nameSpan = memberAccess.Name.Span;
-                    FileLinePositionSpan lineSpan = syntaxTree.GetLineSpan(nameSpan);
+                    FileLinePositionSpan lineSpan = syntaxTree.GetLineSpan(nameSpan, cancellationToken);
 
                     string filePath;
                     SourceReferenceResolver? resolver = semanticModel.Compilation.Options.SourceReferenceResolver;
@@ -188,7 +189,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    object? interceptableLocation = GetInterceptableLocationFunc?.Invoke(semanticModel, invocation, default);
+                    object? interceptableLocation = GetInterceptableLocationFunc?.Invoke(semanticModel, invocation, cancellationToken);
                     if (interceptableLocation is null)
                     {
                         return null;
