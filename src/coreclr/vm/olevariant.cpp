@@ -1837,30 +1837,43 @@ namespace
         }
         case VT_UI2:
         {
+            if (pElementMT == CoreLibBinder::GetClass(CLASS__CHAR))
+            {
+                TypeHandle th = CoreLibBinder::GetClass(CLASS__CHAR);
+                return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
+            }
             TypeHandle th = CoreLibBinder::GetClass(CLASS__UINT16);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_I4:
         case VT_INT:
         {
-            TypeHandle th = CoreLibBinder::GetClass(CLASS__INT32);
+            TypeHandle th = (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
+                ? CoreLibBinder::GetClass(CLASS__INTPTR)
+                : CoreLibBinder::GetClass(CLASS__INT32);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_UI4:
         case VT_UINT:
         case VT_ERROR:
         {
-            TypeHandle th = CoreLibBinder::GetClass(CLASS__UINT32);
+            TypeHandle th = (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
+                ? CoreLibBinder::GetClass(CLASS__UINTPTR)
+                : CoreLibBinder::GetClass(CLASS__UINT32);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_I8:
         {
-            TypeHandle th = CoreLibBinder::GetClass(CLASS__INT64);
+            TypeHandle th = (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
+                ? CoreLibBinder::GetClass(CLASS__INTPTR)
+                : CoreLibBinder::GetClass(CLASS__INT64);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_UI8:
         {
-            TypeHandle th = CoreLibBinder::GetClass(CLASS__UINT64);
+            TypeHandle th = (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
+                ? CoreLibBinder::GetClass(CLASS__UINTPTR)
+                : CoreLibBinder::GetClass(CLASS__UINT64);
             return TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&th, 1)).AsMethodTable();
         }
         case VT_R4:
@@ -1983,14 +1996,29 @@ namespace
         case VT_I1:         return TypeHandle(CoreLibBinder::GetClass(CLASS__SBYTE));
         case VT_UI1:        return TypeHandle(CoreLibBinder::GetClass(CLASS__BYTE));
         case VT_I2:         return TypeHandle(CoreLibBinder::GetClass(CLASS__INT16));
-        case VT_UI2:        return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT16));
+        case VT_UI2:
+            if (pElementMT == CoreLibBinder::GetClass(CLASS__CHAR))
+                return TypeHandle(CoreLibBinder::GetClass(CLASS__CHAR));
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT16));
         case VT_I4:
-        case VT_INT:        return TypeHandle(CoreLibBinder::GetClass(CLASS__INT32));
+        case VT_INT:
+            if (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
+                return TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR));
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__INT32));
         case VT_UI4:
         case VT_UINT:
-        case VT_ERROR:      return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT32));
-        case VT_I8:         return TypeHandle(CoreLibBinder::GetClass(CLASS__INT64));
-        case VT_UI8:        return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT64));
+        case VT_ERROR:
+            if (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
+                return TypeHandle(CoreLibBinder::GetClass(CLASS__UINTPTR));
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT32));
+        case VT_I8:
+            if (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
+                return TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR));
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__INT64));
+        case VT_UI8:
+            if (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
+                return TypeHandle(CoreLibBinder::GetClass(CLASS__UINTPTR));
+            return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT64));
         case VT_R4:         return TypeHandle(CoreLibBinder::GetClass(CLASS__SINGLE));
         case VT_R8:         return TypeHandle(CoreLibBinder::GetClass(CLASS__DOUBLE));
         case VT_DECIMAL:    return TypeHandle(CoreLibBinder::GetClass(CLASS__DECIMAL));

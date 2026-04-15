@@ -1247,7 +1247,6 @@ namespace System.StubHelpers
     {
         static unsafe void IArrayMarshaler<T, TSelf>.ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
         {
-            Debug.Assert(managedArray is not null);
             Span<T> elements = new(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray)), managedArray.Length);
             for (int i = 0; i < length; i++)
             {
@@ -1258,7 +1257,6 @@ namespace System.StubHelpers
 
         static unsafe void IArrayMarshaler<T, TSelf>.ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
         {
-            Debug.Assert(managedArray is not null);
             Span<T> elements = new(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray)), managedArray.Length);
             for (int i = 0; i < length; i++)
             {
@@ -1326,13 +1324,11 @@ namespace System.StubHelpers
     {
         static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
         {
-            Debug.Assert(managedArray is not null);
             SpanHelpers.Memmove(ref *unmanaged, ref MemoryMarshal.GetArrayDataReference(managedArray), (nuint)length * (nuint)sizeof(T));
         }
 
         static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
         {
-            Debug.Assert(managedArray is not null);
             SpanHelpers.Memmove(ref MemoryMarshal.GetArrayDataReference(managedArray), ref *unmanaged, (nuint)length * (nuint)sizeof(T));
         }
 
@@ -1786,8 +1782,6 @@ namespace System.StubHelpers
     {
         public static unsafe void ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
         {
-            Debug.Assert(managedArray is not null);
-            Debug.Assert(managedArray.GetType().GetElementType() == typeof(char));
             char* pChars = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(managedArray));
 #if TARGET_WINDOWS
             uint flags = TBestFit.Enabled ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
@@ -1818,8 +1812,6 @@ namespace System.StubHelpers
 
         public static unsafe void ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
         {
-            Debug.Assert(managedArray is not null);
-            Debug.Assert(managedArray.GetType().GetElementType() == typeof(char));
             char* pChars = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(managedArray));
 #if TARGET_WINDOWS
             int result = Interop.Kernel32.MultiByteToWideChar(
@@ -2475,14 +2467,26 @@ namespace System.StubHelpers
         }
 
         public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(Array managed, byte* pNative, int numElements)
-        where TMarshaler : IArrayMarshaler<T, TMarshaler>
+            where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
+            // Assert that the array is actually an array of compatible type.
+            // This assert should only fire if a caller manually used Unsafe.As to cast an object of incompatible type
+            // before passing to a P/Invoke or COM stub.
+            // Any other instances where it fires should be a bug in the interop stack.
+            Debug.Assert(managed is not null);
+            Debug.Assert(managed.GetType().GetElementType()!.MakeArrayType().IsAssignableTo(typeof(T[])), $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
             TMarshaler.ConvertContentsToUnmanaged(managed, pNative, numElements);
         }
 
         public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(Array managed, byte* pNative, int numElements)
             where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
+            // Assert that the array is actually an array of compatible type.
+            // This assert should only fire if a caller manually used Unsafe.As to cast an object of incompatible type
+            // before passing to a P/Invoke or COM stub.
+            // Any other instances where it fires should be a bug in the interop stack.
+            Debug.Assert(managed is not null);
+            Debug.Assert(managed.GetType().GetElementType()!.MakeArrayType().IsAssignableTo(typeof(T[])), $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
             TMarshaler.ConvertContentsToManaged(managed, pNative, numElements);
         }
 
