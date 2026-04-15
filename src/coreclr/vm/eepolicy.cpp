@@ -23,6 +23,8 @@
 #include "eventtrace.h"
 #undef ExitProcess
 
+extern MethodDesc* g_pEnvironmentCallEntryPointMethodDesc;
+
 void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
 {
     STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d sca = %d\n", exitCode, sca);
@@ -178,11 +180,9 @@ class CallStackLogger
 
         MethodDesc* pMD = pCF->GetFunction();
 
-        // Skip runtime-invoked UCO entrypoint methods so they don't appear in
+        // Skip Environment.CallEntryPoint so it doesn't appear in vanilla
         // unhandled exception experiences.
-        if (pMD != nullptr && (pMD == g_pEnvironmentCallEntryPointMethodDesc ||
-                               pMD == g_pThreadStartCallbackMethodDesc ||
-                               pMD == g_pGCRunFinalizersMethodDesc))
+        if (pMD != nullptr && pMD == g_pEnvironmentCallEntryPointMethodDesc)
         {
             return SWA_CONTINUE;
         }

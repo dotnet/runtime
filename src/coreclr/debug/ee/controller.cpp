@@ -6775,14 +6775,6 @@ bool DebuggerStepper::IsInterestingFrame(FrameInfo * pFrame)
         {
             return false;
         }
-
-        // Ignore runtime-invoked UCO entrypoint methods
-        if (pFrame->md == g_pEnvironmentCallEntryPointMethodDesc ||
-            pFrame->md == g_pThreadStartCallbackMethodDesc ||
-            pFrame->md == g_pGCRunFinalizersMethodDesc)
-        {
-            return false;
-        }
     }
 
     return true;
