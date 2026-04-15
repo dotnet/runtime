@@ -1396,14 +1396,9 @@ class DeadCodeElimination
         public class Target5;
         public class Target6;
         public class Target7;
+        public class Atom;
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static object GetUnknown() => null;
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static void Consume(object o) { }
-
-        public static unsafe object[] MakeArrays()
+        public static unsafe object[] MakeGenerics<T>()
         {
             return [
                 new TrimTarget1[1],
@@ -1415,16 +1410,20 @@ class DeadCodeElimination
             ];
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetAtom() => typeof(Atom);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetUnknown() => null;
+
         public static void Run()
         {
-            // Root the arrays so ILC sees TrimTarget1, TrimTarget2, TrimTarget3, TrimTarget6
-            Consume(MakeArrays());
-
-            // Root TrimTarget7[] via an is-cast so ILC marks the array type (and thus TrimTarget7)
             if (GetUnknown() is TrimTarget7[])
             {
-                Console.WriteLine("Unexpected!");
+                Console.WriteLine("Unexpected");
             }
+
+            typeof(TestInteropMapArrayTrimming).GetMethod(nameof(MakeGenerics)).MakeGenericMethod([GetAtom()]).Invoke(null, []);
 
             var map = TypeMapping.GetOrCreateExternalTypeMapping<Universe>();
 
