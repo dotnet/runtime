@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices.Tests.Common;
 using Xunit;
 
@@ -109,22 +110,21 @@ namespace System.Runtime.InteropServices.Tests
         [MemberData(nameof(GetNativeVariantForObject_NonRoundtrippingPrimitives_TestData))]
         public void GetNativeVariantForObject_ValidObject_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue, object expectedRoundtripValue)
         {
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
+            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
             try
             {
                 Marshal.GetNativeVariantForObject(primitive, pNative);
 
-                Variant result = Marshal.PtrToStructure<Variant>(pNative);
-                Assert.Equal(expectedVarType, (VarEnum)result.vt);
+                ComVariant result = Marshal.PtrToStructure<ComVariant>(pNative);
+                Assert.Equal(expectedVarType, result.VarType);
                 if (expectedValue != (IntPtr)(-1))
                 {
-                    Assert.Equal(expectedValue, result.bstrVal);
+                    Assert.Equal(expectedValue, result.GetRawDataRef<IntPtr>());
                 }
                 else
                 {
-                    Assert.NotEqual((IntPtr)(-1), result.bstrVal);
-                    Assert.NotEqual(IntPtr.Zero, result.bstrVal);
+                    Assert.NotEqual((IntPtr)(-1), result.GetRawDataRef<IntPtr>());
+                    Assert.NotEqual(IntPtr.Zero, result.GetRawDataRef<IntPtr>());
                 }
 
                 // Make sure it roundtrips.
@@ -141,24 +141,23 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData("99")]
         public void GetNativeVariantForObject_String_Success(string obj)
         {
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
+            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
             try
             {
                 Marshal.GetNativeVariantForObject(obj, pNative);
 
-                Variant result = Marshal.PtrToStructure<Variant>(pNative);
+                ComVariant result = Marshal.PtrToStructure<ComVariant>(pNative);
                 try
                 {
-                    Assert.Equal(VarEnum.VT_BSTR, (VarEnum)result.vt);
-                    Assert.Equal(obj, Marshal.PtrToStringBSTR(result.bstrVal));
+                    Assert.Equal(VarEnum.VT_BSTR, result.VarType);
+                    Assert.Equal(obj, Marshal.PtrToStringBSTR(result.GetRawDataRef<IntPtr>()));
 
                     object o = Marshal.GetObjectForNativeVariant(pNative);
                     Assert.Equal(obj, o);
                 }
                 finally
                 {
-                    Marshal.FreeBSTR(result.bstrVal);
+                    Marshal.FreeBSTR(result.GetRawDataRef<IntPtr>());
                 }
             }
             finally
@@ -171,8 +170,7 @@ namespace System.Runtime.InteropServices.Tests
         public unsafe void GetNativeVariantForObject_Guid_Success()
         {
             var guid = new Guid("0DD3E51B-3162-4D13-B906-030F402C5BA2");
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
+            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
             try
             {
                 if (PlatformDetection.IsWindowsNanoServer)
@@ -183,12 +181,12 @@ namespace System.Runtime.InteropServices.Tests
                 {
                     Marshal.GetNativeVariantForObject(guid, pNative);
 
-                    Variant result = Marshal.PtrToStructure<Variant>(pNative);
-                    Assert.Equal(VarEnum.VT_RECORD, (VarEnum)result.vt);
-                    Assert.NotEqual(nint.Zero, result.pRecInfo); // We should have an IRecordInfo instance.
+                    ComVariant result = Marshal.PtrToStructure<ComVariant>(pNative);
+                    Assert.Equal(VarEnum.VT_RECORD, result.VarType);
+                    Assert.NotEqual(nint.Zero, result.GetRawDataRef<Record>()._recordInfo); // We should have an IRecordInfo instance.
 
                     var expectedBytes = new ReadOnlySpan<byte>(guid.ToByteArray());
-                    var actualBytes = new ReadOnlySpan<byte>((void*)result.bstrVal, expectedBytes.Length);
+                    var actualBytes = new ReadOnlySpan<byte>((void*)result.GetRawDataRef<Record>()._record, expectedBytes.Length);
                     Assert.Equal(expectedBytes, actualBytes);
 
                     object o = Marshal.GetObjectForNativeVariant(pNative);
@@ -205,15 +203,14 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(3.14)]
         public unsafe void GetNativeVariantForObject_Double_Success(double obj)
         {
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
+            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
             try
             {
                 Marshal.GetNativeVariantForObject(obj, pNative);
 
-                Variant result = Marshal.PtrToStructure<Variant>(pNative);
-                Assert.Equal(VarEnum.VT_R8, (VarEnum)result.vt);
-                Assert.Equal(*((ulong*)&obj), *((ulong*)&result.bstrVal));
+                ComVariant result = Marshal.PtrToStructure<ComVariant>(pNative);
+                Assert.Equal(VarEnum.VT_R8, result.VarType);
+                Assert.Equal(*((ulong*)&obj), result.GetRawDataRef<ulong>());
 
                 object o = Marshal.GetObjectForNativeVariant(pNative);
                 Assert.Equal(obj, o);
@@ -228,15 +225,14 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(3.14f)]
         public unsafe void GetNativeVariantForObject_Float_Success(float obj)
         {
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
+            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
             try
             {
                 Marshal.GetNativeVariantForObject(obj, pNative);
 
-                Variant result = Marshal.PtrToStructure<Variant>(pNative);
-                Assert.Equal(VarEnum.VT_R4, (VarEnum)result.vt);
-                Assert.Equal(*((uint*)&obj), *((uint*)&result.bstrVal));
+                ComVariant result = Marshal.PtrToStructure<ComVariant>(pNative);
+                Assert.Equal(VarEnum.VT_R4, result.VarType);
+                Assert.Equal(*((uint*)&obj), result.GetRawDataRef<uint>());
 
                 object o = Marshal.GetObjectForNativeVariant(pNative);
                 Assert.Equal(obj, o);
@@ -279,8 +275,7 @@ namespace System.Runtime.InteropServices.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetNativeVariant_InvalidArray_ThrowsSafeArrayTypeMismatchException()
         {
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
+            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
             try
             {
                 Assert.Throws<SafeArrayTypeMismatchException>(() => Marshal.GetNativeVariantForObject(new int[][] { }, pNative));
@@ -302,8 +297,7 @@ namespace System.Runtime.InteropServices.Tests
         [MemberData(nameof(GetNativeVariant_VariantWrapper_TestData))]
         public void GetNativeVariant_VariantWrapper_ThrowsArgumentException(object obj)
         {
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
+            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
             try
             {
                 AssertExtensions.Throws<ArgumentException>(null, () => Marshal.GetNativeVariantForObject(obj, pNative));
@@ -328,8 +322,7 @@ namespace System.Runtime.InteropServices.Tests
         [MemberData(nameof(GetNativeVariant_HandleObject_TestData))]
         public void GetNativeVariant_HandleObject_ThrowsArgumentException(object obj)
         {
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
+            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
             try
             {
                 AssertExtensions.Throws<ArgumentException>(null, () => Marshal.GetNativeVariantForObject(obj, pNative));
@@ -346,8 +339,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             // While GetNativeVariantForObject supports taking chars, GetObjectForNativeVariant will
             // never return a char. The internal type is ushort, as mentioned above.
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
+            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
             try
             {
                 Marshal.GetNativeVariantForObject<char>('a', pNative);
@@ -371,6 +363,13 @@ namespace System.Runtime.InteropServices.Tests
         public enum UInt16Enum : ushort { Value1, Value2 }
         public enum UInt32Enum : uint { Value1, Value2 }
         public enum UInt64Enum : ulong { Value1, Value2 }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct Record
+        {
+            public nint _record;
+            public nint _recordInfo;
+        }
 
         public class FakeSafeHandle : SafeHandle
         {
