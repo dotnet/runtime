@@ -2786,7 +2786,7 @@ HRESULT CordbObjectValue::GetCachedInterfaceTypes(
     {
         _ASSERTE(bIInspectableOnly == TRUE || bIInspectableOnly == FALSE);
         *ppInterfacesEnum = NULL;
-        CordbTypeEnum* pTypeEnum = CordbTypeEnum::Build(m_appdomain, GetProcess()->GetContinueNeuterList(), 0, nullptr);
+        CordbTypeEnum* pTypeEnum = CordbTypeEnum::Build(m_appdomain, GetProcess()->GetContinueNeuterList(), 0, (CordbType**)nullptr);
         if ( pTypeEnum == NULL )
         {
             IfFailThrow(E_OUTOFMEMORY);
