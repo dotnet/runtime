@@ -1243,7 +1243,6 @@ DEFINE_CLASS(VARIANT_BOOL_MARSHALER, StubHelpers,            VariantBoolMarshale
 DEFINE_CLASS(BOOL_MARSHALER,        StubHelpers,            BoolMarshaler`1)
 DEFINE_CLASS(LPWSTR_MARSHALER,      StubHelpers,            LPWSTRMarshaler)
 DEFINE_CLASS(ANSICHAR_ARRAY_ELEMENT_MARSHALER, StubHelpers,  AnsiCharArrayMarshaler`2)
-DEFINE_CLASS(UNICODECHAR_ARRAY_ELEMENT_MARSHALER, StubHelpers, UnicodeCharArrayElementMarshaler)
 DEFINE_CLASS(LPSTR_ARRAY_ELEMENT_MARSHALER,    StubHelpers,  LPSTRArrayElementMarshaler`2)
 DEFINE_CLASS(BSTR_ARRAY_ELEMENT_MARSHALER,     StubHelpers,  BSTRArrayElementMarshaler)
 #ifdef FEATURE_COMINTEROP

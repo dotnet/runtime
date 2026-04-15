@@ -1182,7 +1182,7 @@ namespace System.StubHelpers
                     TypeCode.Double => new ArrayImplementation<double, BlittableArrayMarshaler<double>>(isOut),
                     TypeCode.Object when elementType == typeof(nint) => new ArrayImplementation<nint, BlittableArrayMarshaler<nint>>(isOut),
                     TypeCode.Object when elementType == typeof(nuint) => new ArrayImplementation<nuint, BlittableArrayMarshaler<nuint>>(isOut),
-                    TypeCode.Char when !IsAnsi(dwFlags) => new ArrayImplementation<char, UnicodeCharArrayElementMarshaler>(isOut),
+                    TypeCode.Char when !IsAnsi(dwFlags) => new ArrayImplementation<char, BlittableArrayMarshaler<char>>(isOut),
                     TypeCode.Char when IsAnsi(dwFlags) => CreateAnsiCharArrayImplementation(isOut, dwFlags),
                     TypeCode.Boolean => new ArrayImplementation<bool, BoolMarshaler<int>>(isOut),
                     _ => throw new ArgumentException(SR.Arg_PInvokeBadObject)
@@ -1858,25 +1858,6 @@ namespace System.StubHelpers
 
             return new char[length];
         }
-    }
-
-    internal sealed class UnicodeCharArrayElementMarshaler : IArrayElementMarshaler<char, UnicodeCharArrayElementMarshaler>
-    {
-        public static unsafe void ConvertToUnmanaged(ref char managed, byte* unmanaged)
-        {
-            *(char*)unmanaged = managed;
-        }
-
-        public static unsafe void ConvertToManaged(ref char managed, byte* unmanaged)
-        {
-            managed = *(char*)unmanaged;
-        }
-
-        public static unsafe void Free(byte* unmanaged)
-        {
-        }
-
-        static nuint IArrayElementMarshaler<char, UnicodeCharArrayElementMarshaler>.UnmanagedSize => sizeof(char);
     }
 
     internal sealed class LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable> : IArrayElementMarshaler<string?, LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>

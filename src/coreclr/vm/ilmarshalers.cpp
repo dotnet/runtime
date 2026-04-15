@@ -4215,18 +4215,8 @@ namespace
 
     case VT_UI2:
     {
-        // System.Char arrays use a dedicated marshaler; other VT_UI2 types (UInt16)
-        // use BlittableArrayMarshaler for bulk copy.
-        if (thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__CHAR)))
-        {
-            *pElementType = thElement;
-            *ppMarshalerMT = CoreLibBinder::GetClass(CLASS__UNICODECHAR_ARRAY_ELEMENT_MARSHALER);
-        }
-        else
-        {
-            *pElementType = thElement;
-            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
-        }
+        *pElementType = thElement;
+        *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__BLITTABLE_ARRAY_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
         return;
     }
 
