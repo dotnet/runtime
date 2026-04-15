@@ -16,13 +16,13 @@ using System.Runtime.InteropServices;
 [assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.GenUsedForProxy<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyFromGenUsed))]
 [assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.GenUnused<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyFromGenUnused))]
 
-[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("A", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target1), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget1[]))]
-[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("B", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target2), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget2[,]))]
-[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("C", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target3), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget3*[]))]
-[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("D", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target4), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget4[]))]
-[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("E", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target5), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget5[]))]
-[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("F", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target6), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget6[]))]
-[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming.Universe>("G", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target7), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget7[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("A", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target1), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget1<DeadCodeElimination.TestInteropMapArrayTrimming.Atom>[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("B", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target2), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget2<DeadCodeElimination.TestInteropMapArrayTrimming.Atom>[,]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("C", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target3), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget3<DeadCodeElimination.TestInteropMapArrayTrimming.Atom>*[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("D", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target4), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget4<DeadCodeElimination.TestInteropMapArrayTrimming.Atom>[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("E", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target5), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget5[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("F", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target6), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget6[]))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapArrayTrimming>("G", typeof(DeadCodeElimination.TestInteropMapArrayTrimming.Target7), typeof(DeadCodeElimination.TestInteropMapArrayTrimming.TrimTarget7[]))]
 
 class DeadCodeElimination
 {
@@ -1380,12 +1380,10 @@ class DeadCodeElimination
 
     internal class TestInteropMapArrayTrimming
     {
-        internal class Universe;
-
-        public struct TrimTarget1   ;
-        public struct TrimTarget2   ;
-        public struct TrimTarget3   ;
-        public struct TrimTarget4   ;
+        public struct TrimTarget1<T>;
+        public struct TrimTarget2<T>;
+        public struct TrimTarget3<T>;
+        public struct TrimTarget4<T>;
         public struct TrimTarget5;
         public struct TrimTarget6;
         public struct TrimTarget7;
@@ -1401,9 +1399,9 @@ class DeadCodeElimination
         public static unsafe object[] MakeGenerics<T>()
         {
             return [
-                new TrimTarget1   [1],
-                new TrimTarget2   [1,1],
-                new TrimTarget3   *[1],
+                new TrimTarget1<T>[1],
+                new TrimTarget2<T>[1,1],
+                new TrimTarget3<T>*[1],
                 // Skipping TrimTarget4
                 // Skipping TrimTarget5
                 new TrimTarget6[1]
@@ -1425,7 +1423,7 @@ class DeadCodeElimination
 
             typeof(TestInteropMapArrayTrimming).GetMethod(nameof(MakeGenerics)).MakeGenericMethod([GetAtom()]).Invoke(null, []);
 
-            var map = TypeMapping.GetOrCreateExternalTypeMapping<Universe>();
+            var map = TypeMapping.GetOrCreateExternalTypeMapping<TestInteropMapArrayTrimming>();
 
             // A, B, C, F, G: trim target element type is reachable — entries must be present
             if (!map.TryGetValue("A", out Type typeA) || typeA.Name != nameof(Target1))
