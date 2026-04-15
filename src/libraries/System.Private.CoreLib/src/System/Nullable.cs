@@ -104,7 +104,9 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(nullableType);
 
-            return nullableType.GetNullableUnderlyingType();
+            if (nullableType.IsGenericType && !nullableType.IsGenericTypeDefinition)
+                return nullableType.GetNullableUnderlyingType();
+            return null;
         }
 
         /// <summary>

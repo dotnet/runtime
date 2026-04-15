@@ -124,15 +124,14 @@ namespace System
 
         public override Type? GetNullableUnderlyingType()
         {
-            if (IsGenericType && !IsGenericTypeDefinition)
+            if (IsGenericType)
             {
-                Type genericType = GetGenericTypeDefinition();
-                if (ReferenceEquals(genericType, typeof(Nullable<>)))
-                {
+                MethodTable* pEEType = _pUnderlyingEEType;
+                if (pEEType != null && pEEType->NullableType != null)
+                    return GetTypeFromMethodTable(pEEType->NullableType);
+                if (typeof(Nullable<>) == GetGenericTypeDefinition())
                     return GetGenericArguments()[0];
-                }
             }
-
             return null;
         }
 

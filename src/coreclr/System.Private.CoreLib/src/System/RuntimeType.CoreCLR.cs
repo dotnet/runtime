@@ -3591,6 +3591,24 @@ namespace System
         #endregion
 
         #region Generics
+
+        public override unsafe Type? GetNullableUnderlyingType()
+        {
+            if (IsGenericType)
+            {
+                TypeHandle th = GetNativeTypeHandle();
+                if (!th.IsTypeDesc && th.AsMethodTable()->IsNullable)
+                {
+                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)th.AsMethodTable()->InstantiationArg0());
+                    GC.KeepAlive(this);
+                    return result;
+                }
+                if (typeof(Nullable<>) == GetGenericTypeDefinition())
+                    return GetGenericArguments()[0];
+            }
+            return null;
+        }
+
         internal RuntimeType[] GetGenericArgumentsInternal()
         {
             return GetRootElementType().TypeHandle.GetInstantiationInternal();

@@ -1396,6 +1396,20 @@ namespace System
 
         #region Generics
 
+        public override Type? GetNullableUnderlyingType()
+        {
+            if (IsGenericType)
+            {
+                Type genericType = GetGenericTypeDefinition();
+                if (ReferenceEquals(genericType, typeof(Nullable<>)))
+                {
+                    return GetGenericArguments()[0];
+                }
+            }
+
+            return null;
+        }
+
         internal RuntimeType[] GetGenericArgumentsInternal()
         {
             RuntimeType[]? res = null;
