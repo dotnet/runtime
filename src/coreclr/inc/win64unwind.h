@@ -88,13 +88,19 @@ typedef union _UNWIND_CODE {
 #define UNW_FLAG_UHANDLER 0x2
 #define UNW_FLAG_CHAININFO 0x4
 
-#ifdef TARGET_X86
+#if defined(TARGET_X86)
 
 typedef struct _UNWIND_INFO {
     ULONG FunctionLength;
 } UNWIND_INFO, *PUNWIND_INFO;
 
-#else // TARGET_X86
+#elif defined(TARGET_WASM)
+
+typedef struct _UNWIND_INFO {
+    ULONG FrameSize;
+} UNWIND_INFO, * PUNWIND_INFO;
+
+#else
 
 typedef struct _UNWIND_INFO {
     UCHAR Version : 3;

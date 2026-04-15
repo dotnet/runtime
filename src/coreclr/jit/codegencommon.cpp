@@ -2418,11 +2418,6 @@ void CodeGen::genEmitMachineCode()
 //
 void CodeGen::genEmitUnwindDebugGCandEH()
 {
-#ifdef TARGET_WASM
-    // TODO-WASM: Fix this phase causing an assertion failure even for methods with no GC locals or EH clauses
-    return;
-#endif
-
     /* Now that the code is issued, we can finalize and emit the unwind data */
 
     m_compiler->unwindEmit(*codePtr, coldCodePtr);
@@ -2529,11 +2524,9 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 }
 
 #ifndef TARGET_WASM
-/*****************************************************************************
- *
- *  Report EH clauses to the VM
- */
-
+//----------------------------------------------------------------------
+// genReportEH: create and report EH info to the VM
+//
 void CodeGen::genReportEH()
 {
     if (m_compiler->compHndBBtabCount == 0)
@@ -2560,12 +2553,6 @@ void CodeGen::genReportEH()
     // Tell the VM how many EH clauses to expect.
     m_compiler->eeSetEHcount(m_compiler->compHndBBtabCount);
     m_compiler->Metrics.EHClauseCount = (int)m_compiler->compHndBBtabCount;
-
-    struct EHClauseInfo
-    {
-        CORINFO_EH_CLAUSE clause;
-        EHblkDsc*         HBtab;
-    };
 
     EHClauseInfo* clauses = new (m_compiler, CMK_Codegen) EHClauseInfo[m_compiler->compHndBBtabCount];
 
@@ -2605,6 +2592,19 @@ void CodeGen::genReportEH()
         clauses[XTnum++]     = {clause, HBtab};
     }
 
+    genReportEHClauses(clauses);
+}
+
+#endif // !defined(TARGET_WASM)
+
+//----------------------------------------------------------------------
+// genReportEH: create and report EH info to the VM
+//
+// Arguments:
+//    clauses -- eh clause data to report
+//
+void CodeGen::genReportEHClauses(EHClauseInfo* clauses)
+{
     // The JIT's ordering of EH clauses does not guarantee that clauses covering the same try region are contiguous.
     // We need this property to hold true so the CORINFO_EH_CLAUSE_SAMETRY flag is accurate.
     jitstd::sort(clauses, clauses + m_compiler->compHndBBtabCount,
@@ -2623,6 +2623,8 @@ void CodeGen::genReportEH()
 
         return leftTryIndex < rightTryIndex;
     });
+
+    unsigned XTnum;
 
     // Now, report EH clauses to the VM in order of increasing try region index.
     for (XTnum = 0; XTnum < m_compiler->compHndBBtabCount; XTnum++)
@@ -2652,6 +2654,8 @@ void CodeGen::genReportEH()
 
     assert(XTnum == m_compiler->compHndBBtabCount);
 }
+
+#ifndef TARGET_WASM
 
 //----------------------------------------------------------------------
 // genUseOptimizedWriteBarriers: Determine if an optimized write barrier
