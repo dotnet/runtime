@@ -86,17 +86,11 @@ namespace System.IO.Enumeration
 
         private void Init()
         {
-            // We'll only suppress the media insertion prompt on the topmost directory as that is the
-            // most likely scenario and we don't want to take the perf hit for large enumerations.
-            // (We weren't consistent with how we handled this historically.)
-            using (DisableMediaInsertionPrompt.Create())
-            {
-                // We need to initialize the directory handle up front to ensure
-                // we immediately throw IO exceptions for missing directory/etc.
-                _directoryHandle = CreateDirectoryHandle(_rootDirectory);
-                if (_directoryHandle == IntPtr.Zero)
-                    _lastEntryFound = true;
-            }
+            // We need to initialize the directory handle up front to ensure
+            // we immediately throw IO exceptions for missing directory/etc.
+            _directoryHandle = CreateDirectoryHandle(_rootDirectory);
+            if (_directoryHandle == IntPtr.Zero)
+                _lastEntryFound = true;
 
             _currentPath = _rootDirectory;
 
@@ -108,6 +102,8 @@ namespace System.IO.Enumeration
             {
                 // NtQueryDirectoryFile needs its buffer to be 64bit aligned to work
                 // successfully with FileFullDirectoryInformation.
+                // From https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_full_dir_information:
+                // "This structure must be aligned on a LONGLONG (8-byte) boundary."
                 _buffer = NativeMemory.AlignedAlloc((nuint)_bufferLength, sizeof(ulong));
             }
             catch
