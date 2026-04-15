@@ -254,6 +254,15 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                 AssertFileNotExists(Path.Combine(objDir, "wasm", "for-build"), file, "wasm/for-build");
         }
 
+        if (buildOptions.RuntimeType == RuntimeVariant.MultiThreaded)
+        {
+            const string multiThreadedWorkerFile = "dotnet.native.worker.mjs";
+            AssertFileExists(nativeDir, multiThreadedWorkerFile);
+            AssertFileNotExists(objDir, multiThreadedWorkerFile, "obj root");
+            if (!isNativeRebuild)
+                AssertFileNotExists(Path.Combine(objDir, "wasm", "for-build"), multiThreadedWorkerFile, "wasm/for-build");
+        }
+
         // --- Assembly files: webcil-converted in webcil/ or materialized DLLs in fx/_framework/ ---
         if (BuildTestBase.UseWebcil)
         {
