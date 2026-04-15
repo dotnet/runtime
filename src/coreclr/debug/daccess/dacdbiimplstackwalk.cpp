@@ -298,6 +298,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                 else if (pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
                 {
                     MethodDesc *pMD = pIter->m_crawl.GetFunction();
+                    MethodTable *pMT = pMD->GetMethodTable();
 
                     // Skip the exception handling managed code, the debugger clients are not supposed to see them
                     // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
