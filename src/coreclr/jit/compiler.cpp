@@ -597,7 +597,11 @@ bool Compiler::isNativeHalfStructType(CORINFO_CLASS_HANDLE clsHnd)
         return false;
     }
 
-    return compOpportunisticallyDependsOn(InstructionSet_AVX10v1);
+    // We do an exact check since this impacts ABI and we want
+    // to throw out any R2R functions that mismatch here, this
+    // is similar to how we have to handle Vector<T>
+
+    return compExactlyDependsOn(InstructionSet_AVX10v1);
 #else
     return false;
 #endif

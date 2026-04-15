@@ -2222,6 +2222,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 
     if (srcSize == 2)
     {
+        assert(srcType == TYP_HALF);
         return INS_vmovsh;
     }
     else if (srcSize == 4)
@@ -2587,6 +2588,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 
     if (dstSize == 2)
     {
+        assert(dstType == TYP_HALF);
         return INS_vmovsh;
     }
     else if (dstSize == 4)

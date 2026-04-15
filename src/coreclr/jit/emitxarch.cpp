@@ -21467,8 +21467,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_vcvtsd2sh:
         {
-            result.insLatency    = PERFSCORE_THROUGHPUT_ILLEGAL;
-            result.insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
+            result.insLatency    = PERFSCORE_LATENCY_7C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
         }
 
