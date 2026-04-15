@@ -1541,6 +1541,10 @@ private:
         var_types         m_typ;
         ChunkExtraAttribs m_attribs;
 
+        // Precomputed element size for func-app chunks (sizeof(VNFunc) + sizeof(ValueNum) * arity).
+        // Zero for non-func chunks.
+        unsigned m_funcAppElemSize;
+
         // Initialize a chunk, starting at "*baseVN", for the given "typ", and "attribs", using "alloc" for allocations.
         // (Increments "*baseVN" by ChunkSize.)
         Chunk(CompAllocator alloc, ValueNum* baseVN, var_types typ, ChunkExtraAttribs attribs);
@@ -1557,9 +1561,8 @@ private:
         {
             assert((m_attribs >= CEA_Func0) && (m_attribs <= CEA_Func4));
             assert(numArgs == (unsigned)(m_attribs - CEA_Func0));
-            static_assert(sizeof(VNDefFuncAppFlexible) == sizeof(VNFunc));
-            return reinterpret_cast<VNDefFuncAppFlexible*>(
-                (char*)m_defs + offsetWithinChunk * (sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * numArgs));
+            assert(m_funcAppElemSize == sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * numArgs);
+            return reinterpret_cast<VNDefFuncAppFlexible*>((char*)m_defs + offsetWithinChunk * m_funcAppElemSize);
         }
 
         template <int N>
