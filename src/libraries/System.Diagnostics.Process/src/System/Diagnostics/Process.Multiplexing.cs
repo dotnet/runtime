@@ -201,7 +201,7 @@ namespace System.Diagnostics
             }
             catch
             {
-                // It's possible that one of the tasks have failed and other has succeeded.
+                // It's possible that one of the tasks has failed and the other has succeeded.
                 // In such case, we need to return the array to the pool.
                 if (outputTask.IsCompletedSuccessfully)
                 {
@@ -222,7 +222,7 @@ namespace System.Diagnostics
                 throw;
             }
 
-            // If we got here, Task.WhenAll has suceeded and both results are available.
+            // If we got here, Task.WhenAll has succeeded and both results are available.
             return (outputTask.Result, errorTask.Result);
         }
 
