@@ -251,15 +251,9 @@ namespace System.Diagnostics
                 {
                     finished = await Task.WhenAny(outputRead, errorRead).ConfigureAwait(false);
                 }
-                else if (outputRead is not null)
-                {
-                    finished = outputRead;
-                    await finished.ConfigureAwait(false);
-                }
                 else
                 {
-                    finished = errorRead!;
-                    await finished.ConfigureAwait(false);
+                    finished = (outputRead ?? errorRead)!;
                 }
 
                 bool isError = finished == errorRead;
