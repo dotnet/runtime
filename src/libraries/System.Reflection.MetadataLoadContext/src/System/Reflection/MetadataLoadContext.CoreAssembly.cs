@@ -11,10 +11,8 @@ namespace System.Reflection
     {
         private static readonly string[] s_CoreNames = { "mscorlib", "System.Runtime", "netstandard" };
 
-        // Cache loaded coreAssembly and core types.
         internal RoAssembly LoadCoreAssembly(string? coreAssemblyName)
         {
-            Debug.Assert(_coreAssembly == null);
             RoAssembly? coreAssembly;
             Exception? e;
             if (coreAssemblyName == null)

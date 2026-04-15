@@ -220,13 +220,6 @@ namespace System.Reflection
         /// such as DllImportAttribute. However, it can serve if you have no interest in those attributes. The CustomAttributes api
         /// will skip those attributes if the core assembly does not include the necessary types.
         ///
-        /// The CoreAssembly is not loaded until necessary. These APIs do not trigger the search for the core assembly:
-        ///    MetadataLoadContext.LoadFromStream(), LoadFromAssemblyPath(), LoadFromByteArray()
-        ///    Assembly.GetName(), Assembly.FullName, Assembly.GetReferencedAssemblies()
-        ///    Assembly.GetTypes(), Assembly.DefinedTypes, Assembly.GetExportedTypes(), Assembly.GetForwardedTypes()
-        ///    Assembly.GetType(string, bool, bool)
-        ///    Type.Name, Type.FullName, Type.AssemblyQualifiedName
-        ///
         /// If a core assembly cannot be found or if the core assembly is missing types, this will affect the behavior of the MetadataLoadContext as follows:
         ///
         /// - Apis that need to parse signatures or typespecs and return the results as Types will throw. For example,
