@@ -176,6 +176,9 @@
 
 #include "stringarraylist.h"
 #include "stubhelpers.h"
+#ifdef TARGET_WASM
+#include "wasm/helpers.hpp"
+#endif
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -673,6 +676,10 @@ void EEStartupHelper()
 
         OnStackReplacementManager::StaticInitialize();
         MethodTable::InitMethodDataCache();
+
+#ifdef TARGET_WASM
+        InitializeWasmThunkCaches();
+#endif // TARGET_WASM
 
 #ifdef TARGET_UNIX
         ExecutableAllocator::InitPreferredRange();

@@ -2862,23 +2862,7 @@ void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
         PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)pamTrackerPrecode->Track(
             GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) }));
 
-        // WASM-TODO! This only handling the R2R to interpreter case for well known signatures.
-        // Eventually we will need to handle arbitrary signatures by looking in the loaded list of R2R modules
-        // as well as recording when we couldn't find something, in case another R2R module might be loaded
-        // later which has an R2R to interpreter stub for that given signature.
-        void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
-
-        if (pPortableEntryPointToInterpreter != nullptr)
-        {
-            portableEntryPoint->Init(pPortableEntryPointToInterpreter, this);
-        }
-        else
-        {
-            portableEntryPoint->Init(this);
-        }
-        // If we find actual code, we will remove this flag, but we want to prefer the interpreter entry point
-        // until then to allow helpers to work for methods that haven't tried to get an entry point yet.
-        portableEntryPoint->SetPrefersInterpreterEntryPoint();
+        SetPortableEntrypointInitialStateForMethod(portableEntryPoint);
         entryPoint = (PCODE)portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -2933,13 +2917,48 @@ PCODE MethodDesc::GetPortableEntryPointIfExists()
     return GetTemporaryEntryPointIfExists();
 }
 
+void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *portableEntry)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    // WASM-TODO! This only handling the R2R to interpreter case for well known signatures.
+    // Eventually we will need to handle arbitrary signatures by looking in the loaded list of R2R modules
+    // as well as recording when we couldn't find something, in case another R2R module might be loaded
+    // later which has an R2R to interpreter stub for that given signature.
+    void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
+
+    if (pPortableEntryPointToInterpreter != nullptr)
+    {
+        portableEntry->Init(pPortableEntryPointToInterpreter, this);
+    }
+    else
+    {
+        portableEntry->Init(this);
+    }
+    // If we find actual code, we will remove this flag, but we want to prefer the interpreter entry point
+    // until then to allow helpers to work for methods that haven't tried to get an entry point yet.
+    portableEntry->SetPrefersInterpreterEntryPoint();
+}
+
 void MethodDesc::ResetPortableEntryPoint()
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
     PCODE portableEntry = GetPortableEntryPointIfExists();
     if (portableEntry != (PCODE)NULL)
     {
         PortableEntryPoint* pep = PortableEntryPoint::ToPortableEntryPoint(portableEntry);
-        pep->Init(this);  // Re-initializes: clears _pActualCode, _pInterpreterData, _flags
+        SetPortableEntrypointInitialStateForMethod(pep);
     }
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS

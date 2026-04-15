@@ -880,7 +880,13 @@ namespace
 
     bool GetSignatureKey(MetaSig& sig, char* keyBuffer, uint32_t maxSize)
     {
-        STANDARD_VM_CONTRACT;
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
 
         uint32_t pos = 0;
 
@@ -936,24 +942,8 @@ namespace
 
     void* LookupThunk(const char* key)
     {
-        StringToWasmSigThunkHash* table = VolatileLoad(&thunkCache);
-        if (table == nullptr)
-        {
-            StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-            newTable->Reallocate(g_wasmThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
-            for (size_t i = 0; i < g_wasmThunksCount; i++)
-            {
-                newTable->Add(g_wasmThunks[i].key, g_wasmThunks[i].value);
-            }
-
-            if (InterlockedCompareExchangeT(&thunkCache, newTable, nullptr) != nullptr)
-            {
-                // Another thread won the race, discard ours
-                delete newTable;
-            }
-            table = thunkCache;
-        }
-
+        StringToWasmSigThunkHash* table = thunkCache;
+        _ASSERTE(table != nullptr && "Wasm thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
         void* thunk;
         bool success = table->Lookup(key, &thunk);
         return success ? thunk : nullptr;
@@ -961,24 +951,8 @@ namespace
 
     void* LookupPortableEntryPointThunk(const char* key)
     {
-        StringToWasmSigThunkHash* table = VolatileLoad(&portableEntrypointThunkCache);
-        if (table == nullptr)
-        {
-            StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-            newTable->Reallocate(g_wasmPortableEntryPointThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
-            for (size_t i = 0; i < g_wasmPortableEntryPointThunksCount; i++)
-            {
-                newTable->Add(g_wasmPortableEntryPointThunks[i].key, g_wasmPortableEntryPointThunks[i].value);
-            }
-
-            if (InterlockedCompareExchangeT(&portableEntrypointThunkCache, newTable, nullptr) != nullptr)
-            {
-                // Another thread won the race, discard ours
-                delete newTable;
-            }
-            table = portableEntrypointThunkCache;
-        }
-
+        StringToWasmSigThunkHash* table = portableEntrypointThunkCache;
+        _ASSERTE(table != nullptr && "Wasm portable entrypoint thunk cache not initialized. Call InitializeWasmThunkCaches() at EEStartup.");
         void* thunk;
         bool success = table->Lookup(key, &thunk);
         return success ? thunk : nullptr;
@@ -1018,7 +992,14 @@ namespace
 
     void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
     {
-        STANDARD_VM_CONTRACT;
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
         _ASSERTE(sizeof(int32_t) == sizeof(void*));
 
         BYTE callConv = sig.GetCallingConvention();
@@ -1038,7 +1019,19 @@ namespace
         void* thunk = LookupPortableEntryPointThunk(keyBuffer);
 #ifdef _DEBUG
         if (thunk == NULL)
-            printf("WASM R2R to interpreter call missing for key: %s\n", keyBuffer);
+        {
+            // WASM-TODO: The R2R compiler will be generating these for all necessary signatures, but the implementation
+            // will need to be clever here. Notably, R2R files can be dynamically loaded after the initial load, so we can't
+            // just drop a NULL here if the R2R to interpreter thunk isn't found. Instead, we'll need to keep a list of
+            // MethodDescs associated with a given signature and as we load R2R files, find the relevant thunks and update the
+            // PortableEntryPoint fields on them to be the right R2R to intepreter thunk. This list needs to be stored on the
+            // LoaderAllocator of the associated MethodDesc for proper lifetime management.
+
+            // For debugging purposes, engineers working on R2R for WASM may wish to enable this printf to see which signatures
+            // are missing R2R to interpreter thunks. Once the R2R to interpreter thunk generation and dynamic updating is implemented,
+            // this should be removed or gated behind a more specific debug flag since it will be noisy.
+            //printf("WASM R2R to interpreter call missing for key: %s\n", keyBuffer);
+        }
 #endif
         return thunk;
     }
@@ -1139,6 +1132,37 @@ namespace
     }
 }
 
+// Called at EEStartup to initialize thunk tables
+void InitializeWasmThunkCaches()
+{
+    if (thunkCache == nullptr)
+    {
+        StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
+        newTable->Reallocate(g_wasmThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
+        for (size_t i = 0; i < g_wasmThunksCount; i++)
+        {
+            newTable->Add(g_wasmThunks[i].key, g_wasmThunks[i].value);
+        }
+        if (InterlockedCompareExchangeT(&thunkCache, newTable, nullptr) != nullptr)
+        {
+            delete newTable;
+        }
+    }
+    if (portableEntrypointThunkCache == nullptr)
+    {
+        StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
+        newTable->Reallocate(g_wasmPortableEntryPointThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
+        for (size_t i = 0; i < g_wasmPortableEntryPointThunksCount; i++)
+        {
+            newTable->Add(g_wasmPortableEntryPointThunks[i].key, g_wasmPortableEntryPointThunks[i].value);
+        }
+        if (InterlockedCompareExchangeT(&portableEntrypointThunkCache, newTable, nullptr) != nullptr)
+        {
+            delete newTable;
+        }
+    }
+}
+
 void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
@@ -1154,11 +1178,30 @@ void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 
 void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (pMD->ContainsGenericVariables())
     {
         return NULL;
+    }
+
+    if (pMD->HasStoredSig())
+    {
+        PTR_StoredSigMethodDesc pSMD = dac_cast<PTR_StoredSigMethodDesc>(pMD);
+        if (pSMD->HasStoredMethodSig() || pSMD->GetClassification()==mcDynamic)
+        {
+            DWORD sig;
+            if (pSMD->GetStoredMethodSig(&sig) == NULL)
+            {
+                return NULL;
+            }
+        }
     }
 
     MetaSig sig(pMD);

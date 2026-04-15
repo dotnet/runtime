@@ -222,7 +222,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(psig));
         PRECONDITION(sigSize > 0);
@@ -260,6 +260,11 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
 
     // Note: Reset has THROWS contract since it may allocate jump stub. It will never throw here
     // since it will always reuse the existing jump stub.
+#ifdef TARGET_WASM
+    // This will allow the Reset here to completely clear the MethodDesc state. Notably
+    // MethodDesc::Reset will read the stored signature, which may have invalid pointers in it.
+    pNewMD->SetStoredMethodSig(0, 0);
+#endif
     pNewMD->Reset();
 
     LOG((LF_BCL, LL_INFO1000, "Level3 - DynamicMethod obtained {0x%p} (used %d)\n", pNewMD, m_Used));
@@ -272,6 +277,10 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
                     | DynamicMethodDesc::FlagStatic
                     | DynamicMethodDesc::FlagIsLCGMethod);
 
+#ifdef TARGET_WASM
+    // On Wasm, we need to fill in the NativeEntry based on the stored signature
+    pNewMD->ResetPortableEntryPoint();
+#endif
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = name;
     pNewMD->m_pszDebugClassName  = (LPUTF8)"dynamicclass";
