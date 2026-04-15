@@ -13228,7 +13228,6 @@ namespace System.Reflection
         public override bool IsFunctionPointer { get { throw null; } }
         public override bool IsGenericMethodParameter { get { throw null; } }
         public override bool IsGenericTypeParameter { get { throw null; } }
-        public override System.Type? GetNullableUnderlyingType() { throw null; }
         public override bool IsSZArray { get { throw null; } }
         public override bool IsTypeDefinition { get { throw null; } }
         public override bool IsUnmanagedFunctionPointer { get { throw null; } }
@@ -13279,6 +13278,7 @@ namespace System.Reflection
         public override System.Type? GetNestedType(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public override System.Type[] GetNestedTypes(System.Reflection.BindingFlags bindingAttr) { throw null; }
+        public override System.Type? GetNullableUnderlyingType() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public override System.Reflection.PropertyInfo[] GetProperties(System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]

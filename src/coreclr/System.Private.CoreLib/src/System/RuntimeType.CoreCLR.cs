@@ -3597,11 +3597,15 @@ namespace System
             if (IsGenericType)
             {
                 TypeHandle th = GetNativeTypeHandle();
-                if (!th.IsTypeDesc && th.AsMethodTable()->IsNullable)
+                if (!th.IsTypeDesc)
                 {
-                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)th.AsMethodTable()->InstantiationArg0());
-                    GC.KeepAlive(this);
-                    return result;
+                    MethodTable* pMT = th.AsMethodTable();
+                    if (pMT->IsNullable)
+                    {
+                        RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->InstantiationArg0());
+                        GC.KeepAlive(this);
+                        return result;
+                    }
                 }
                 if (typeof(Nullable<>) == GetGenericTypeDefinition())
                     return GetGenericArguments()[0];
