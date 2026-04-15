@@ -1424,10 +1424,14 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     pDE->m_successful = true;
 
     // Create strong handle to prevent GC collection of object results.
+    // For AllBoxed (struct/NEW_OBJECT), m_result holds a boxed OBJECTREF.
+    // For IsElementTypeSpecial (string/class/array), m_result holds an OBJECTREF.
+    // For primitives (bool, int, float), m_result holds the raw unboxed value —
+    // do NOT create a strong handle or we corrupt the raw value.
     {
         CorElementType retClassET = pDE->m_resultType.GetSignatureCorElementType();
         if ((pDE->m_retValueBoxing == Debugger::AllBoxed) ||
-            pDE->m_resultType.IsValueType() ||
+            retClassET == ELEMENT_TYPE_VALUETYPE ||
             IsElementTypeSpecial(retClassET))
         {
             LOG((LF_CORDB, LL_EVERYTHING, "Creating strong handle for boxed DoNormalFuncEval result.\n"));
