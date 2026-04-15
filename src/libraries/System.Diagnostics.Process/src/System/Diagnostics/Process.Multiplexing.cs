@@ -53,13 +53,8 @@ namespace System.Diagnostics
                 Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();
                 Encoding errorEncoding = _startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding();
 
-                string standardOutput = outputBytesRead > 0
-                    ? outputEncoding.GetString(outputBuffer, 0, outputBytesRead)
-                    : string.Empty;
-
-                string standardError = errorBytesRead > 0
-                    ? errorEncoding.GetString(errorBuffer, 0, errorBytesRead)
-                    : string.Empty;
+                string standardOutput = outputEncoding.GetString(outputBuffer.AsSpan(0, outputBytesRead));
+                string standardError = errorEncoding.GetString(errorBuffer.AsSpan(0, errorBytesRead));
 
                 return (standardOutput, standardError);
             }
@@ -104,13 +99,8 @@ namespace System.Diagnostics
             {
                 ReadPipesToBuffers(timeout, ref outputBuffer, ref outputBytesRead, ref errorBuffer, ref errorBytesRead);
 
-                byte[] outputResult = outputBytesRead > 0
-                    ? outputBuffer.AsSpan(0, outputBytesRead).ToArray()
-                    : Array.Empty<byte>();
-
-                byte[] errorResult = errorBytesRead > 0
-                    ? errorBuffer.AsSpan(0, errorBytesRead).ToArray()
-                    : Array.Empty<byte>();
+                byte[] outputResult = outputBuffer.AsSpan(0, outputBytesRead).ToArray();
+                byte[] errorResult = errorBuffer.AsSpan(0, errorBytesRead).ToArray();
 
                 return (outputResult, errorResult);
             }
@@ -146,32 +136,26 @@ namespace System.Diagnostics
         {
             ValidateReadAllState();
 
-            byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
-            byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            (ArraySegment<byte> output, ArraySegment<byte> error) = await ReadPipesToBuffersAsync(
+                _standardOutput!.BaseStream, _standardError!.BaseStream, cancellationToken).ConfigureAwait(false);
+
+            Debug.Assert(output.Array is not null && error.Array is not null);
 
             try
             {
-                (outputBuffer, int outputBytesRead, errorBuffer, int errorBytesRead) = await ReadPipesToBuffersAsync(
-                    _standardOutput!.BaseStream, _standardError!.BaseStream,
-                    outputBuffer, errorBuffer, cancellationToken).ConfigureAwait(false);
 
                 Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();
                 Encoding errorEncoding = _startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding();
 
-                string standardOutput = outputBytesRead > 0
-                    ? outputEncoding.GetString(outputBuffer, 0, outputBytesRead)
-                    : string.Empty;
-
-                string standardError = errorBytesRead > 0
-                    ? errorEncoding.GetString(errorBuffer, 0, errorBytesRead)
-                    : string.Empty;
+                string standardOutput = outputEncoding.GetString(output.AsSpan());
+                string standardError = errorEncoding.GetString(error.AsSpan());
 
                 return (standardOutput, standardError);
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(outputBuffer);
-                ArrayPool<byte>.Shared.Return(errorBuffer);
+                ArrayPool<byte>.Shared.Return(output.Array);
+                ArrayPool<byte>.Shared.Return(error.Array);
             }
         }
 
@@ -200,29 +184,19 @@ namespace System.Diagnostics
         {
             ValidateReadAllState();
 
-            byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
-            byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            (ArraySegment<byte> output, ArraySegment<byte> error) = await ReadPipesToBuffersAsync(
+                _standardOutput!.BaseStream, _standardError!.BaseStream, cancellationToken).ConfigureAwait(false);
+
+            Debug.Assert(output.Array is not null && error.Array is not null);
 
             try
             {
-                (outputBuffer, int outputBytesRead, errorBuffer, int errorBytesRead) = await ReadPipesToBuffersAsync(
-                    _standardOutput!.BaseStream, _standardError!.BaseStream,
-                    outputBuffer, errorBuffer, cancellationToken).ConfigureAwait(false);
-
-                byte[] outputResult = outputBytesRead > 0
-                    ? outputBuffer.AsSpan(0, outputBytesRead).ToArray()
-                    : Array.Empty<byte>();
-
-                byte[] errorResult = errorBytesRead > 0
-                    ? errorBuffer.AsSpan(0, errorBytesRead).ToArray()
-                    : Array.Empty<byte>();
-
-                return (outputResult, errorResult);
+                return (output.AsSpan().ToArray(), error.AsSpan().ToArray());
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(outputBuffer);
-                ArrayPool<byte>.Shared.Return(errorBuffer);
+                ArrayPool<byte>.Shared.Return(output.Array);
+                ArrayPool<byte>.Shared.Return(error.Array);
             }
         }
 
@@ -231,70 +205,79 @@ namespace System.Diagnostics
         /// using <see cref="Task.WhenAny(Task, Task)"/> for multiplexing.
         /// Returns the (possibly resized) buffers along with the byte counts, since async methods cannot use ref parameters.
         /// </summary>
-        private static async Task<(byte[] OutputBuffer, int OutputBytesRead, byte[] ErrorBuffer, int ErrorBytesRead)> ReadPipesToBuffersAsync(
-            Stream outputStream,
-            Stream errorStream,
-            byte[] outputBuffer,
-            byte[] errorBuffer,
-            CancellationToken cancellationToken)
+        private static async Task<(ArraySegment<byte> output, ArraySegment<byte> error)> ReadPipesToBuffersAsync(
+            Stream outputStream, Stream errorStream, CancellationToken cancellationToken)
         {
             int outputBytesRead = 0;
             int errorBytesRead = 0;
 
-            Task<int>? outputRead = outputStream.ReadAsync(outputBuffer, outputBytesRead, outputBuffer.Length - outputBytesRead, cancellationToken);
-            Task<int>? errorRead = errorStream.ReadAsync(errorBuffer, errorBytesRead, errorBuffer.Length - errorBytesRead, cancellationToken);
+            byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
 
-            while (outputRead is not null || errorRead is not null)
+            try
             {
-                Task<int> finished;
-                if (outputRead is not null && errorRead is not null)
-                {
-                    finished = await Task.WhenAny(outputRead, errorRead).ConfigureAwait(false);
-                }
-                else
-                {
-                    finished = (outputRead ?? errorRead)!;
-                }
+                Task<int>? outputRead = outputStream.ReadAsync(outputBuffer, outputBytesRead, outputBuffer.Length - outputBytesRead, cancellationToken);
+                Task<int>? errorRead = errorStream.ReadAsync(errorBuffer, errorBytesRead, errorBuffer.Length - errorBytesRead, cancellationToken);
 
-                bool isError = finished == errorRead;
-                int bytesRead = await finished.ConfigureAwait(false);
-
-                if (bytesRead > 0)
+                while (outputRead is not null || errorRead is not null)
                 {
-                    if (isError)
+                    Task<int> finished;
+                    if (outputRead is not null && errorRead is not null)
                     {
-                        errorBytesRead += bytesRead;
-                        if (errorBytesRead == errorBuffer.Length)
-                        {
-                            RentLargerBuffer(ref errorBuffer, errorBytesRead);
-                        }
-                        errorRead = errorStream.ReadAsync(errorBuffer, errorBytesRead, errorBuffer.Length - errorBytesRead, cancellationToken);
+                        finished = await Task.WhenAny(outputRead, errorRead).ConfigureAwait(false);
                     }
                     else
                     {
-                        outputBytesRead += bytesRead;
-                        if (outputBytesRead == outputBuffer.Length)
-                        {
-                            RentLargerBuffer(ref outputBuffer, outputBytesRead);
-                        }
-                        outputRead = outputStream.ReadAsync(outputBuffer, outputBytesRead, outputBuffer.Length - outputBytesRead, cancellationToken);
+                        finished = (outputRead ?? errorRead)!;
                     }
-                }
-                else
-                {
-                    // EOF: pipe write end was closed.
-                    if (isError)
+
+                    bool isError = finished == errorRead;
+                    int bytesRead = await finished.ConfigureAwait(false);
+
+                    if (bytesRead > 0)
                     {
-                        errorRead = null;
+                        if (isError)
+                        {
+                            errorBytesRead += bytesRead;
+                            if (errorBytesRead == errorBuffer.Length)
+                            {
+                                RentLargerBuffer(ref errorBuffer, errorBytesRead);
+                            }
+                            errorRead = errorStream.ReadAsync(errorBuffer, errorBytesRead, errorBuffer.Length - errorBytesRead, cancellationToken);
+                        }
+                        else
+                        {
+                            outputBytesRead += bytesRead;
+                            if (outputBytesRead == outputBuffer.Length)
+                            {
+                                RentLargerBuffer(ref outputBuffer, outputBytesRead);
+                            }
+                            outputRead = outputStream.ReadAsync(outputBuffer, outputBytesRead, outputBuffer.Length - outputBytesRead, cancellationToken);
+                        }
                     }
                     else
                     {
-                        outputRead = null;
+                        // EOF: pipe write end was closed.
+                        if (isError)
+                        {
+                            errorRead = null;
+                        }
+                        else
+                        {
+                            outputRead = null;
+                        }
                     }
                 }
+
+                return (new ArraySegment<byte>(outputBuffer, 0, outputBytesRead), new ArraySegment<byte>(errorBuffer, 0, errorBytesRead));
             }
+            catch
+            {
+                ArrayPool<byte>.Shared.Return(outputBuffer);
+                ArrayPool<byte>.Shared.Return(errorBuffer);
 
-            return (outputBuffer, outputBytesRead, errorBuffer, errorBytesRead);
+                throw;
+            }
         }
 
         /// <summary>
@@ -342,16 +325,16 @@ namespace System.Diagnostics
                 ? ToTimeoutMilliseconds(timeout.Value)
                 : Timeout.Infinite;
 
-            SafeFileHandle outputHandle = GetSafeFileHandleFromStreamReader(_standardOutput!, out SafeHandle outputOwner);
-            SafeFileHandle errorHandle = GetSafeFileHandleFromStreamReader(_standardError!, out SafeHandle errorOwner);
+            var outputHandle = GetSafeFileHandleFromStreamReader(_standardOutput!);
+            var errorHandle = GetSafeFileHandleFromStreamReader(_standardError!);
 
             bool outputRefAdded = false;
             bool errorRefAdded = false;
 
             try
             {
-                outputOwner.DangerousAddRef(ref outputRefAdded);
-                errorOwner.DangerousAddRef(ref errorRefAdded);
+                outputHandle.DangerousAddRef(ref outputRefAdded);
+                errorHandle.DangerousAddRef(ref errorRefAdded);
 
                 ReadPipes(outputHandle, errorHandle, timeoutMs,
                     ref outputBuffer, ref outputBytesRead,
@@ -361,38 +344,14 @@ namespace System.Diagnostics
             {
                 if (outputRefAdded)
                 {
-                    outputOwner.DangerousRelease();
+                    outputHandle.DangerousRelease();
                 }
 
                 if (errorRefAdded)
                 {
-                    errorOwner.DangerousRelease();
+                    errorHandle.DangerousRelease();
                 }
             }
-        }
-
-        /// <summary>
-        /// Obtains the <see cref="SafeFileHandle"/> from the underlying stream of a <see cref="StreamReader"/>.
-        /// On Unix, the stream is an <see cref="System.IO.Pipes.AnonymousPipeClientStream"/> and the handle is obtained via the pipe handle.
-        /// On Windows, the stream is a <see cref="FileStream"/> opened for async IO.
-        /// </summary>
-        private static SafeFileHandle GetSafeFileHandleFromStreamReader(StreamReader reader, out SafeHandle owner)
-        {
-            Stream baseStream = reader.BaseStream;
-
-            if (baseStream is FileStream fileStream)
-            {
-                owner = fileStream.SafeFileHandle;
-                return fileStream.SafeFileHandle;
-            }
-
-            if (baseStream is System.IO.Pipes.AnonymousPipeClientStream pipeStream)
-            {
-                owner = pipeStream.SafePipeHandle;
-                return new SafeFileHandle(pipeStream.SafePipeHandle.DangerousGetHandle(), ownsHandle: false);
-            }
-
-            throw new UnreachableException();
         }
 
         /// <summary>
