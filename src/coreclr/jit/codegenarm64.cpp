@@ -552,8 +552,7 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
 // Return Value:
 //    None.
 
-void CodeGen::genPrologSaveReg(
-    regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
+void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
 {
     assert(spOffset >= 0);
     assert(spDelta <= 0);
