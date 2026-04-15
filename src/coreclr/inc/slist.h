@@ -20,8 +20,7 @@
 // ---------------------------------------------------------------------------
 // DefaultSListTraits
 //
-// T must have a field DPTR(T) m_pNext. Grant access by adding:
-//   friend struct DefaultSListTraits<T>;
+// T must have a pointer-sized m_pNext field.
 // ---------------------------------------------------------------------------
 template <typename T>
 struct DefaultSListTraits
@@ -55,9 +54,8 @@ struct DefaultSListTraitsWithTail : public DefaultSListTraits<T>
 // ---------------------------------------------------------------------------
 // SList
 //
-// Intrusive singly linked list. Elements must expose a DPTR(T) m_pNext field
-// accessible to the Traits class. Use DefaultSListTraitsWithTail<T> as the
-// Traits parameter for O(1) tail insertion.
+// Intrusive singly linked list. Elements must have a pointer-sized m_pNext
+// field. Use DefaultSListTraitsWithTail<T> for O(1) tail insertion.
 // ---------------------------------------------------------------------------
 template <typename T, typename Traits = DefaultSListTraits<T> >
 class SList : public Traits
@@ -131,7 +129,7 @@ public:
 
     void InsertTail(PTR_T pItem)
     {
-        static_assert(Traits::HasTail, "PushTail requires Traits::HasTail to be true");
+        static_assert(Traits::HasTail, "InsertTail requires Traits::HasTail to be true");
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pItem != NULL);
         *Traits::GetNextPtr(pItem) = NULL;
@@ -187,6 +185,15 @@ public:
         return RemoveFirst(pItem);
     }
 
+    // Inserts pNewItem immediately after pAfter in the list.
+    static void InsertAfter(PTR_T pAfter, PTR_T pNewItem)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pAfter != NULL && pNewItem != NULL);
+        *Traits::GetNextPtr(pNewItem) = *Traits::GetNextPtr(pAfter);
+        *Traits::GetNextPtr(pAfter) = pNewItem;
+    }
+
 #endif // !DACCESS_COMPILE
 
     class Iterator
@@ -201,7 +208,7 @@ public:
         { }
 
         Iterator & operator++()
-        { m_cur = GetNext(m_cur); return *this; }
+        { m_cur = dac_cast<PTR_T>(GetNext(m_cur)); return *this; }
 
         Iterator operator++(int)
         { Iterator t(m_cur); ++(*this); return t; }
@@ -239,7 +246,8 @@ protected:
 template <typename ElemT>
 struct SListElem
 {
-    SListElem<ElemT>* m_pNext;
+    typedef DPTR(SListElem) PTR_SListElem;
+    PTR_SListElem m_pNext;
     ElemT m_Value;
 
     operator ElemT const &() const
