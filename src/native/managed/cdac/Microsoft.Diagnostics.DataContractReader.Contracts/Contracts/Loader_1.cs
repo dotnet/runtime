@@ -69,9 +69,8 @@ internal readonly struct Loader_1 : ILoader
         Data.AppDomain domain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(appDomain);
         ArrayListBase arrayList = _target.ProcessedData.GetOrAdd<ArrayListBase>(domain.AssemblyList);
 
-        foreach (TargetPointer domainAssembly in arrayList.Elements)
+        foreach (TargetPointer pAssembly in arrayList.Elements)
         {
-            TargetPointer pAssembly = _target.ReadPointer(domainAssembly);
             Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(pAssembly);
 
             // following logic is based on AppDomain::AssemblyIterator::Next_Unlocked in appdomain.cpp
