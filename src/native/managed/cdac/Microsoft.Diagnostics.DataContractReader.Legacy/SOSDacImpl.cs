@@ -104,6 +104,15 @@ public sealed unsafe partial class SOSDacImpl
 
             _legacyEnumMemory = legacyObj as ICLRDataEnumMemoryRegions;
         }
+
+        // ICLRDataEnumMemoryRegions is always delegated to the legacy DAC because
+        // the cDAC does not implement memory enumeration for dump creation.
+        // Even when CDAC_NO_FALLBACK is set, we must allow this to work so that
+        // dumps contain the CLR auxiliary memory needed for later analysis.
+        if (_legacyEnumMemory is null && prevent_release is not null)
+        {
+            _legacyEnumMemory = prevent_release as ICLRDataEnumMemoryRegions;
+        }
     }
 
     #region ISOSDacInterface
