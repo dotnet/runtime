@@ -2784,7 +2784,6 @@ HRESULT CordbObjectValue::GetCachedInterfaceTypes(
 
     EX_TRY
     {
-        _ASSERTE(bIInspectableOnly == TRUE || bIInspectableOnly == FALSE);
         *ppInterfacesEnum = NULL;
         CordbTypeEnum* pTypeEnum = CordbTypeEnum::Build(m_appdomain, GetProcess()->GetContinueNeuterList(), 0, (CordbType**)nullptr);
         if ( pTypeEnum == NULL )
