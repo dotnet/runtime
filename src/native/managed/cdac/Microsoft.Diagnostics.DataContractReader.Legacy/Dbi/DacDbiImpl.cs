@@ -660,8 +660,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.TypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
-            CorElementType corType = rts.GetSignatureCorElementType(th);
-            *pResult = corType == CorElementType.ValueType ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            *pResult = rts.IsValueType(th) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
