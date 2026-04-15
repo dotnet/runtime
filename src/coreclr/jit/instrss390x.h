@@ -61,6 +61,8 @@ INST(clgebr,    "clgebr",       0,      0xb3ac)
 INST(clgdbr,    "clgdbr",       0,      0xb3ad)
 INST(ldebr,     "ldebr",        0,      0xb304)
 INST(ledbr,     "ledbr",        0,      0xb344)
+INST(cebr,      "cebr",         0,      0xb309)
+INST(cdbr,      "cdbr",         0,      0xb319)
 
 ////R_I
 INST(llgc,		"llgc",			0,		0xe390)
@@ -138,6 +140,9 @@ INST(lgr,		"lgr",			0,		0xb904)
 
 //// Compare (RR format - 2 bytes, sets condition code)
 INST(cr,            "cr",             0,    0x19)
+INST(cgr,       "cgr",          0,      0xB920)
+INST(clr,       "clr",          0,      0x15)
+INST(clgr,      "clgr",         0,      0xB921)
 
 //// Conditional Branch (all use BRCL opcode 0xC04, RIL format, 6 bytes)
 INST(j,             "brcl",           0,    0xC04)
