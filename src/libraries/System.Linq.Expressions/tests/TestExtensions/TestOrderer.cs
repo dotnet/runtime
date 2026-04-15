@@ -28,11 +28,14 @@ namespace System.Linq.Expressions.Tests
             foreach (TTestCase testCase in testCases)
             {
                 int order = 0;
-                MethodInfo? method = testCase.TestMethod.Method;
-                if (method != null)
+                string? className = testCase.TestMethod?.TestClass?.TestClassName;
+                string? methodName = testCase.TestMethod?.MethodName;
+                if (className is not null && methodName is not null)
                 {
-                    TestOrderAttribute? orderAttribute = method.GetCustomAttribute<TestOrderAttribute>();
-                    if (orderAttribute != null)
+                    Type? type = Type.GetType(className);
+                    MethodInfo? method = type?.GetMethod(methodName);
+                    TestOrderAttribute? orderAttribute = method?.GetCustomAttribute<TestOrderAttribute>();
+                    if (orderAttribute is not null)
                     {
                         order = orderAttribute.Order;
                     }
