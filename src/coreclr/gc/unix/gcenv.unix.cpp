@@ -570,24 +570,16 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 #else // !TARGET_WASM
     int st = EINVAL;
 
-#if defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
-
-    int madviseFlags = 0;
-
 #ifdef MADV_DONTDUMP
     // Do not include reset memory in coredump.
-    madviseFlags |= MADV_DONTDUMP;
+    st = madvise(address, size, MADV_DONTDUMP);
 #endif
 
 #ifdef HAVE_MADV_FREE
     // Tell the kernel that the application doesn't need the pages in the range.
     // Freeing the pages can be delayed until a memory pressure occurs.
-    madviseFlags |= MADV_FREE;
+    st = madvise(address, size, MADV_FREE);
 #endif
-
-    st = madvise(address, size, madviseFlags);
-
-#endif // defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
 
 #if defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
     // DONTNEED is the nearest posix equivalent of FREE.
