@@ -1239,5 +1239,33 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
+
+        [Theory]
+        [InlineData("int")]
+        [InlineData("double")]
+        [InlineData("object")]
+        [InlineData("string")]
+        [InlineData("nuint")]
+        public void UsingAliasWithPredefinedType_DoesNotCrash(string predefinedType)
+        {
+            string source = $$"""
+                    using A = {{predefinedType}};
+
+                    using System.Text.Json.Serialization;
+
+                    [JsonSerializable(typeof(MyType))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class MyType
+                    {
+                        public int Value { get; set; }
+                    }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(LanguageVersion.Preview));
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
     }
 }

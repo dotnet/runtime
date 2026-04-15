@@ -95,11 +95,14 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 
                 // We only care about aliases from one name to another name.  e.g. `using X = A.B.C;`  That's because
                 // the caller is only interested in finding a fully-qualified-metadata-name to an attribute.
-                if (usingDirective.Name is null)
+                // With C# 12+, aliases can target predefined/built-in types (e.g. `using A = int;`),
+                // in which case Name will be null. Skip those.
+                var name = usingDirective.Name;
+                if (name?.GetUnqualifiedName() is not SimpleNameSyntax simpleName)
                     continue;
 
                 var aliasName = usingDirective.Alias.Name.Identifier.ValueText;
-                var symbolName = usingDirective.Name.GetUnqualifiedName().Identifier.ValueText;
+                var symbolName = simpleName.Identifier.ValueText;
                 aliases.Append((aliasName, symbolName));
             }
         }
