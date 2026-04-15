@@ -9,10 +9,6 @@
 
 #include <stdint.h>
 
-// Look up the executable mapping that contains the specified address.
-// Returns 1 if a matching module is found, 0 otherwise.
-int CrashModulesTryLookupModuleForAddress(uint64_t address, uint64_t* baseAddress, char* filename, int filenameLen);
-
 // Returns the basename of the current process image. Prefers /proc/self/cmdline
 // and falls back to the first executable mapping in /proc/self/maps.
 int CrashModulesTryGetProcessName(char* filename, int filenameLen);

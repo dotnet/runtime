@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Crash report module lookup helpers.
+// Crash report process-name lookup helper.
 // Parses /proc/self/cmdline and /proc/self/maps using only open/read/close.
 // No stdio, no sscanf, no heap allocation.
 
@@ -25,15 +25,6 @@ struct ProcessNameCtx
     int found;
 };
 
-struct LookupAddressCtx
-{
-    uint64_t address;
-    uint64_t baseAddress;
-    char* filename;
-    int filenameLen;
-    int found;
-};
-
 static
 const char*
 ParseHex(
@@ -44,13 +35,6 @@ static
 const char*
 GetFilename(
     const char* path);
-
-static
-uint64_t
-ComputeImageBase(
-    uint64_t startAddr,
-    uint64_t endAddr,
-    uint64_t fileOffset);
 
 void
 CopyFilename(
@@ -137,22 +121,6 @@ GetFilename(
             last = p + 1;
     }
     return last;
-}
-
-uint64_t
-ComputeImageBase(
-    uint64_t startAddr,
-    uint64_t endAddr,
-    uint64_t fileOffset)
-{
-    (void)endAddr;
-
-    if (fileOffset > startAddr)
-    {
-        return startAddr;
-    }
-
-    return startAddr - fileOffset;
 }
 
 void
@@ -305,52 +273,6 @@ EnumerateModules(
     }
 
     close(fd);
-}
-
-void
-ModuleLookupByAddress(
-    uint64_t startAddr,
-    uint64_t endAddr,
-    uint64_t fileOffset,
-    const char* filename,
-    void* ctx)
-{
-    LookupAddressCtx* lookup = reinterpret_cast<LookupAddressCtx*>(ctx);
-    if (lookup->found || lookup->address < startAddr || lookup->address >= endAddr)
-    {
-        return;
-    }
-
-    lookup->baseAddress = ComputeImageBase(startAddr, endAddr, fileOffset);
-    lookup->found = 1;
-
-    if (lookup->filename != NULL && lookup->filenameLen > 0)
-    {
-        CopyFilename(lookup->filename, lookup->filenameLen, filename);
-    }
-}
-
-int
-CrashModulesTryLookupModuleForAddress(
-    uint64_t address,
-    uint64_t* baseAddress,
-    char* filename,
-    int filenameLen)
-{
-    LookupAddressCtx ctx = { address, 0, filename, filenameLen, 0 };
-    if (filename != NULL && filenameLen > 0)
-    {
-        filename[0] = '\0';
-    }
-
-    EnumerateModules(ModuleLookupByAddress, &ctx, 0);
-
-    if (ctx.found && baseAddress != NULL)
-    {
-        *baseAddress = ctx.baseAddress;
-    }
-
-    return ctx.found;
 }
 
 void
