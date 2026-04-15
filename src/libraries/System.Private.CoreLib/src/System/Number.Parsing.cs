@@ -155,7 +155,6 @@ namespace System
         static abstract int ConvertToExponent(TValue value);
         static abstract TValue Power10(int exponent);
         static abstract (TValue Quotient, TValue Remainder) DivRemPow10(TValue value, int exponent);
-        Number.DecodedDecimalIeee754<TValue> Unpack();
         static abstract TSelf Construct(TValue value);
         static abstract int CountDigits(TValue significand);
         static abstract int NumberBitsEncoding { get; }
@@ -168,6 +167,8 @@ namespace System
         static abstract TValue GwPlus4SignificandMask { get; } //G(w+4)
         static abstract TValue MostSignificantBitOfSignificandMask { get; }
         static abstract bool IsNaN(TValue decimalBits);
+        static abstract bool IsFinite(TValue decimalBits);
+        static abstract bool IsNegative(TValue decimalBits);
         static abstract TValue EncodeExponentToG0ThroughGwPlus1(uint biasedExponent);
         static abstract TValue EncodeExponentToG2ThroughGwPlus3(uint biasedExponent);
     }

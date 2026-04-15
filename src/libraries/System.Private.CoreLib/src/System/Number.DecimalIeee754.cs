@@ -38,6 +38,16 @@ namespace System
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
+            if (significand == TValue.Zero)
+            {
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.Zero, exponent);
+            }
+
+            if (exponent > TDecimal.MaxExponent)
+            {
+                return signed ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
             if (exponent > TDecimal.MaxAdjustedExponent)
             {
                 return HandleExponentOverflow(signed, significand, exponent);
@@ -50,11 +60,34 @@ namespace System
 
             return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
 
+            static TValue HandleExponentOverflow(bool signed, TValue significand, int exponent)
+            {
+                Debug.Assert(exponent > TDecimal.MaxAdjustedExponent);
+
+                int numberDigits = TDecimal.CountDigits(significand);
+
+                int numberZeroDigits = exponent - TDecimal.MaxAdjustedExponent;
+
+                if (numberDigits + numberZeroDigits > TDecimal.Precision)
+                {
+                    return signed ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+                }
+                else
+                {
+                    exponent -= numberZeroDigits;
+                    significand *= TDecimal.Power10(numberZeroDigits);
+                }
+
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
+            }
+
             // This method adjusts the significand and exponent to ensure they fall within valid bounds.
             // It handles underflow of the exponent by trimming digits,
             // and applies rounding when the number of digits exceeds the allowed precision.
             static TValue Round(bool signed, TValue significand, int exponent)
             {
+                Debug.Assert(significand > TDecimal.MaxSignificand || exponent < TDecimal.MinAdjustedExponent);
+
                 int numberDigits = TDecimal.CountDigits(significand);
                 int numberDigitsRemove = 0;
 
@@ -64,7 +97,7 @@ namespace System
 
                     if (numberDigitsRemove >= numberDigits)
                     {
-                        return TDecimal.Zero;
+                        return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, TValue.Zero, TDecimal.MinAdjustedExponent);
                     }
                 }
 
@@ -78,23 +111,7 @@ namespace System
                     }
                 }
 
-                return numberDigitsRemove > 0
-                    ? RemoveDigitsAndRoundHalfToEven(signed, significand, exponent, numberDigitsRemove)
-                    : DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
-            }
-
-            static TValue HandleExponentOverflow(bool signed, TValue significand, int exponent)
-            {
-                int numberDigits = TDecimal.CountDigits(significand);
-
-                int numberZeroDigits = exponent - TDecimal.MaxAdjustedExponent;
-
-                if (numberDigits + numberZeroDigits > TDecimal.Precision)
-                {
-                    return signed ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
-                }
-
-                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
+                return RemoveDigitsAndRoundHalfToEven(signed, significand, exponent, numberDigitsRemove);
             }
 
             static TValue RemoveDigitsAndRoundHalfToEven(bool signed, TValue significand, int exponent, int numberDigitsRemove)
@@ -114,6 +131,7 @@ namespace System
                 if (remainder > half || (remainder == half && TValue.IsOddInteger(significand)))
                 {
                     significand += TValue.One;
+
                     if (significand > TDecimal.MaxSignificand)
                     {
                         return Round(signed, significand, exponent);
@@ -168,6 +186,18 @@ namespace System
             return new DecodedDecimalIeee754<TValue>(signed, biasedExponent - TDecimal.ExponentBias, significand);
         }
 
+        /// <summary>
+        /// Compares two decimal IEEE 754 encoded values using .NET comparison semantics.
+        /// This method intentionally deviates from strict IEEE 754 rules to align with
+        /// .NET requirements for value comparison:
+        /// - NaN values are considered equal to each other (NaN.Equals(NaN) == true).
+        /// - NaN values are ordered consistently relative to non-NaN values to ensure
+        ///   deterministic sorting behavior.
+        /// - The comparison is consistent with Equals and GetHashCode, fulfilling the
+        ///   contract required for use in collections (e.g., Dictionary, SortedSet).
+        /// For finite values, the comparison is based on numeric value, normalizing
+        /// different exponent/significand representations when necessary (e.g., 10e2 == 1e3).
+        /// </summary>
         internal static int CompareDecimalIeee754<TDecimal, TValue>(TValue currentDecimalBits, TValue otherDecimalBits)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
@@ -224,6 +254,11 @@ namespace System
             // without considering sign.
             static int InternalUnsignedCompare(DecodedDecimalIeee754<TValue> current, DecodedDecimalIeee754<TValue> other)
             {
+                if (current.Significand == TValue.Zero && other.Significand == TValue.Zero)
+                {
+                    return 0;
+                }
+
                 if (current.UnbiasedExponent == other.UnbiasedExponent && current.Significand == other.Significand)
                 {
                     return 0;
@@ -276,73 +311,38 @@ namespace System
             Debug.Assert(number.Digits[0] != '0');
             Debug.Assert(number.DigitsCount != 0);
 
+            if (number.DigitsCount > TDecimal.Precision)
+            {
+                return DecimalIeee754Rounding<TDecimal, TValue>(ref number, TDecimal.Precision);
+            }
+
             int positiveExponent = (Math.Max(0, number.Scale));
             int integerDigitsPresent = Math.Min(positiveExponent, number.DigitsCount);
             int fractionalDigitsPresent = number.DigitsCount - integerDigitsPresent;
             int exponent = number.Scale - integerDigitsPresent - fractionalDigitsPresent;
 
-            if (exponent > TDecimal.MaxAdjustedExponent)
+            if (exponent < TDecimal.MinAdjustedExponent)
             {
-                return HandleExponentOverflow(ref number, exponent);
-            }
-
-            if (number.DigitsCount > TDecimal.Precision && exponent < TDecimal.MinAdjustedExponent)
-            {
-                return Round(ref number, exponent);
+                int numberDigitsRemove = (TDecimal.MinAdjustedExponent - exponent);
+                if (numberDigitsRemove < number.DigitsCount)
+                {
+                    int numberDigitsRemain = number.DigitsCount - numberDigitsRemove;
+                    return DecimalIeee754Rounding<TDecimal, TValue>(ref number, numberDigitsRemain);
+                }
+                else
+                {
+                    return number.IsNegative ? TDecimal.NegativeZero : TDecimal.Zero;
+                }
             }
 
             TValue significand = TDecimal.NumberToSignificand(ref number, number.DigitsCount);
 
             return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
-
-            static TValue HandleExponentOverflow(ref NumberBuffer number, int exponent)
-            {
-                int numberZeroDigits = exponent - TDecimal.MaxAdjustedExponent;
-
-                if (number.DigitsCount + numberZeroDigits > TDecimal.Precision)
-                {
-                    return number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
-                }
-
-                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, TDecimal.NumberToSignificand(ref number, number.DigitsCount), exponent);
-            }
-
-            // Rounds the given number to fit within the representable
-            // range and precision of the target decimal IEEE 754 format.
-            static TValue Round(ref NumberBuffer number, int exponent)
-            {
-                int numberDigits = number.DigitsCount;
-                int numberDigitsRemove = 0;
-
-                if (exponent < TDecimal.MinAdjustedExponent)
-                {
-                    numberDigitsRemove = TDecimal.MinAdjustedExponent - exponent;
-
-                    if (numberDigitsRemove >= numberDigits)
-                    {
-                        return TDecimal.Zero;
-                    }
-                }
-
-                if (numberDigits - numberDigitsRemove > TDecimal.Precision)
-                {
-                    numberDigitsRemove += numberDigits - TDecimal.Precision;
-
-                    if (exponent + numberDigitsRemove >= TDecimal.MaxAdjustedExponent)
-                    {
-                        return number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
-                    }
-                }
-
-                return numberDigitsRemove > 0
-                    ? DecimalIeee754Rounding<TDecimal, TValue>(ref number, numberDigits - numberDigitsRemove)
-                    : DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, TDecimal.NumberToSignificand(ref number, numberDigits), exponent);
-            }
         }
 
         /// <summary>
-        /// Encodes the given IEEE 754 decimal components into their finite number binary IEEE 754
-        /// decimal interchange format (BID), producing the final <typeparamref name="TValue"/> bit pattern.
+        /// Encodes the given IEEE 754 decimal components into their Binary Integer Decimal (BID),
+        /// producing the final <typeparamref name="TValue"/> bit pattern.
         /// </summary>
         /// <param name="signed">
         /// The sign of the value. <c>true</c> indicates a negative number; otherwise, <c>false</c>.
@@ -368,22 +368,14 @@ namespace System
         {
             Debug.Assert(significand <= TDecimal.MaxSignificand);
 
-            if (TValue.IsZero(significand))
+            if (TValue.IsZero(significand) && exponent < TDecimal.MinAdjustedExponent)
             {
-                if (exponent > TDecimal.MaxExponent)
-                {
-                    exponent = TDecimal.MaxExponent;
-                }
-                else if (exponent < TDecimal.MinExponent)
-                {
-                    exponent = TDecimal.MinExponent;
-                }
+                exponent = TDecimal.MinAdjustedExponent;
             }
 
             uint biasedExponent = (uint)(exponent + TDecimal.ExponentBias);
 
             TValue value = TValue.Zero;
-            //TValue exponentVal = TValue.CreateTruncating(exponent);
             bool msbSignificand = (significand & TDecimal.MostSignificantBitOfSignificandMask) != TValue.Zero;
 
             if (signed)
@@ -430,6 +422,8 @@ namespace System
 
             TValue significand = TDecimal.NumberToSignificand(ref number, digits);
 
+            Debug.Assert(significand <= TDecimal.MaxSignificand);
+
             int positiveExponent = (Math.Max(0, number.Scale));
             int integerDigitsPresent = Math.Min(positiveExponent, number.DigitsCount);
             int fractionalDigitsPresent = number.DigitsCount - integerDigitsPresent;
@@ -468,23 +462,23 @@ namespace System
                 }
             }
 
-            if (increaseOne)
+            if (!increaseOne)
             {
-                if (significand == TDecimal.MaxSignificand)
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
+            }
+
+            if (significand == TDecimal.MaxSignificand)
+            {
+                significand = TDecimal.Power10(TDecimal.Precision - 1);
+                exponent += 1;
+
+                if (exponent > TDecimal.MaxAdjustedExponent)
                 {
-                    significand = TDecimal.Power10(TDecimal.Precision - 1);
-                    exponent += 1;
-                }
-                else
-                {
-                    significand += TValue.One;
+                    return number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
                 }
             }
 
-            if (exponent > TDecimal.MaxAdjustedExponent)
-            {
-                return number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
-            }
+            significand += TValue.One;
 
             return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
         }

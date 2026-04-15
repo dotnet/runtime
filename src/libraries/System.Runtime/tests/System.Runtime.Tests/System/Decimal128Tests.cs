@@ -102,6 +102,23 @@ namespace System.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(Parse_Preserve_TrailingZero_TestData))]
+        public static void Parse_Preserve_TrailingZero(string value, string expected)
+        {
+            Assert.Equal(expected, Decimal128.Parse(value).ToString());
+        }
+
+        public static IEnumerable<object[]> Parse_Preserve_TrailingZero_TestData()
+        {
+            yield return new object[] { "0.00", "0.00" };
+            yield return new object[] { "0." + new string('0', 6143), "0." + new string('0', 6143) };
+            yield return new object[] { "0." + new string('0', 10000), "0." + new string('0', 6143) };
+            yield return new object[] { "0e-2", "0.00" };
+            yield return new object[] { "0e-6143", "0." + new string('0', 6143) };
+            yield return new object[] { "0e-10000", "0." + new string('0', 6143) };
+        }
+
         public static IEnumerable<object[]> Parse_Invalid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Number;

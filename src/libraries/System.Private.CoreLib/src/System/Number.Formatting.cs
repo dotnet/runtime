@@ -331,18 +331,54 @@ namespace System
             ref MemoryMarshal.GetReference(useChars ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
 #endif
 
-        public static unsafe string FormatDecimalIeee754<TDecimal, TValue>(TDecimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        public static string FormatDecimalIeee754<TDecimal, TValue>(TValue value, string? format, NumberFormatInfo info)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
+            var vlb = new ValueListBuilder<char>(stackalloc char[CharStackBufferSize]);
+            string result = FormatDecimalIeee754<TDecimal, TValue, char>(ref vlb, value, format, info) ?? vlb.AsSpan().ToString();
+            vlb.Dispose();
+            return result;
+        }
+
+        private static string? FormatDecimalIeee754<TDecimal, TValue, TChar>(ref ValueListBuilder<TChar> vlb, TValue value, ReadOnlySpan<char> format, NumberFormatInfo info)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            if (!TDecimal.IsFinite(value))
+            {
+                if (TDecimal.IsNaN(value))
+                {
+                    if (typeof(TChar) == typeof(char))
+                    {
+                        return info.NaNSymbol;
+                    }
+                    else
+                    {
+                        vlb.Append(info.NaNSymbolTChar<TChar>());
+                        return null;
+                    }
+                }
+
+                if (typeof(TChar) == typeof(char))
+                {
+                    return TDecimal.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
+                }
+                else
+                {
+                    vlb.Append(TDecimal.IsNegative(value) ? info.NegativeInfinitySymbolTChar<TChar>() : info.PositiveInfinitySymbolTChar<TChar>());
+                    return null;
+                }
+            }
             char fmt = ParseFormatSpecifier(format, out int digits);
             byte[] buffer = ArrayPool<byte>.Shared.Rent(TDecimal.BufferLength);
 
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, buffer);
 
             DecimalIeee754ToNumber<TDecimal, TValue>(value, ref number);
-            char* stackPtr = stackalloc char[CharStackBufferSize];
-            var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
 
             if (fmt != 0)
             {
@@ -416,15 +452,16 @@ namespace System
             return success;
         }
 
-        internal static void DecimalIeee754ToNumber<TDecimal, TValue>(TDecimal value, ref NumberBuffer number)
+        internal static void DecimalIeee754ToNumber<TDecimal, TValue>(TValue value, ref NumberBuffer number)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            DecodedDecimalIeee754<TValue> unpackDecimal = value.Unpack();
+            DecodedDecimalIeee754<TValue> unpackDecimal = Number.UnpackDecimalIeee754<TDecimal, TValue>(value);
             number.IsNegative = unpackDecimal.Signed;
 
-            if (unpackDecimal.Significand == TValue.Zero)
+            if (TValue.IsZero(unpackDecimal.Significand))
             {
+                number.Scale = unpackDecimal.UnbiasedExponent < 0 ? unpackDecimal.UnbiasedExponent : 0;
                 return;
             }
 

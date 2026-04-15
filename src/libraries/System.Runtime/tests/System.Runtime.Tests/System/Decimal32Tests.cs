@@ -31,7 +31,7 @@ namespace System.Tests
             yield return new object[] { (567.89).ToString(), defaultStyle, null, new Decimal32(56789, -2) };
             yield return new object[] { (-567.89).ToString(), defaultStyle, null, new Decimal32(-56789, -2) };
             yield return new object[] { "0.6666666500000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(6666666, -7) };
-            
+
             yield return new object[] { "0." + new string('0', 101) + "1", defaultStyle, invariantFormat, new Decimal32(0, 0) };
             yield return new object[] { "-0." + new string('0', 101) + "1", defaultStyle, invariantFormat, new Decimal32(0, 0) };
             yield return new object[] { "0." + new string('0', 100) + "1", defaultStyle, invariantFormat, new Decimal32(1, -101) };
@@ -100,6 +100,23 @@ namespace System.Tests
                 Assert.Equal(expected, Decimal32.Parse(value, style));
                 Assert.Equal(expected, Decimal32.Parse(value, style, NumberFormatInfo.CurrentInfo));
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Preserve_TrailingZero_TestData))]
+        public static void Parse_Preserve_TrailingZero(string value, string expected)
+        {
+            Assert.Equal(expected, Decimal32.Parse(value).ToString());
+        }
+
+        public static IEnumerable<object[]> Parse_Preserve_TrailingZero_TestData()
+        {
+            yield return new object[] { "0.00", "0.00" };
+            yield return new object[] { "0." + new string('0', 101), "0." + new string('0', 101) };
+            yield return new object[] { "0." + new string('0', 1000), "0." + new string('0', 101) };
+            yield return new object[] { "0e-2", "0.00" };
+            yield return new object[] { "0e-101", "0." + new string('0', 101) };
+            yield return new object[] { "0e-1000", "0." + new string('0', 101) };
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
