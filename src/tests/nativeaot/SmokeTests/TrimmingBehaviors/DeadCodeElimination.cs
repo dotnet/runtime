@@ -1382,10 +1382,10 @@ class DeadCodeElimination
     {
         internal class Universe;
 
-        public struct TrimTarget1;
-        public struct TrimTarget2;
-        public struct TrimTarget3;
-        public struct TrimTarget4;
+        public struct TrimTarget1   ;
+        public struct TrimTarget2   ;
+        public struct TrimTarget3   ;
+        public struct TrimTarget4   ;
         public struct TrimTarget5;
         public struct TrimTarget6;
         public struct TrimTarget7;
@@ -1401,13 +1401,13 @@ class DeadCodeElimination
         public static unsafe object[] MakeGenerics<T>()
         {
             return [
-                new TrimTarget1[1],
-                new TrimTarget2[1, 1],
-                new TrimTarget3*[1],
+                new TrimTarget1   [1],
+                new TrimTarget2   [1,1],
+                new TrimTarget3   *[1],
                 // Skipping TrimTarget4
                 // Skipping TrimTarget5
                 new TrimTarget6[1]
-            ];
+                ];
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
