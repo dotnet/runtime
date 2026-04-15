@@ -202,7 +202,7 @@ internal sealed class MockLoaderBuilder
 
     internal MockEEConfig AddEEConfig(uint modifiableAssemblies)
     {
-        MockEEConfig config = EEConfigLayout.Create(AllocateAndAdd((ulong)EEConfigLayout.Size, "EEConfig"));
+        MockEEConfig config = EEConfigLayout.Create(_allocator.Allocate((ulong)EEConfigLayout.Size, "EEConfig"));
         config.ModifiableAssemblies = modifiableAssemblies;
         return config;
     }
