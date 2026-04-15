@@ -1723,7 +1723,9 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
 #endif // TARGET_WINDOWS
 
         pFrameContext->Rbp = currentFP;
-#endif // TARGET_AMD64
+#elif defined(TARGET_ARM64) // TARGET_AMD64
+        pFrameContext->Fp = currentFP;
+#endif  // TARGET_ARM64
 
         SetSP(pFrameContext, currentSP);
 
