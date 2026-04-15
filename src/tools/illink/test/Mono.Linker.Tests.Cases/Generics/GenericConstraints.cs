@@ -5,11 +5,12 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 namespace Mono.Linker.Tests.Cases.Generics
 {
     [ExpectedNoWarnings]
-    public class NewConstraintOnClass
+    public class GenericConstraints
     {
         public static void Main()
         {
             NewConstraint.Test();
+            NewConstraintOnMethod.Test();
             StructConstraint.Test();
             UnmanagedConstraint.Test();
         }
@@ -17,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.Generics
         [Kept]
         class NewConstraint
         {
+            [Kept]
             class TestClass
             {
                 static readonly int field = 1;
@@ -48,6 +50,43 @@ namespace Mono.Linker.Tests.Cases.Generics
             public static void Test()
             {
                 var a = new WithConstraint<TestClass>();
+            }
+        }
+
+        [Kept]
+        class NewConstraintOnMethod
+        {
+            [Kept]
+            class TestClass
+            {
+                static readonly int field = 1;
+
+                [Kept]
+                public TestClass()
+                {
+                }
+
+                public TestClass(int a)
+                {
+                }
+
+                public void Foo()
+                {
+                }
+            }
+
+            [Kept]
+            static void WithConstraint<
+                [KeptGenericParamAttributes(GenericParameterAttributes.DefaultConstructorConstraint)]
+            T
+            >() where T : new()
+            {
+            }
+
+            [Kept]
+            public static void Test()
+            {
+                WithConstraint<TestClass>();
             }
         }
 

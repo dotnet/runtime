@@ -278,7 +278,6 @@ public class MethodTableTests
                 MockMemorySpace.HeapFragment tinyEEClass = rtsBuilder.TypeSystemAllocator.Allocate(
                     (ulong)pointerSize, "Tiny EEClass (MethodTable field only)");
                 helpers.WritePointer(tinyEEClass.Data, methodTablePtr);
-                rtsBuilder.Builder.AddHeapFragment(tinyEEClass);
                 methodTable.EEClassOrCanonMT = tinyEEClass.Address;
             });
 
@@ -357,7 +356,6 @@ public class MethodTableTests
             helpers.Write(dest.Slice(mtTypeInfo.Fields[nameof(Data.MethodTable.MTFlags2)].Offset), (uint)0);
             helpers.WritePointer(dest.Slice(eeClassOrCanonMTOffset), eeClassPtr);
 
-            rtsBuilder.Builder.AddHeapFragment(tinyMT);
             tinyMethodTableAddr = tinyMT.Address;
 
             // Point the EEClass back at the tiny MethodTable to pass validation

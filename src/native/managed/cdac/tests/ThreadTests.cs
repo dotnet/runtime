@@ -226,7 +226,6 @@ public unsafe class ThreadTests
                 MockMemorySpace.BumpAllocator allocator = threadBuilder.Builder.CreateAllocator(0x1_0000, 0x2_0000);
                 MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
                 helpers.WritePointer(handleFragment.Data, expectedObject);
-                threadBuilder.Builder.AddHeapFragment(handleFragment);
                 exceptionInfo!.ThrownObjectHandle = handleFragment.Address;
             });
 
@@ -271,7 +270,6 @@ public unsafe class ThreadTests
                 MockMemorySpace.BumpAllocator allocator = threadBuilder.Builder.CreateAllocator(0x1_0000, 0x2_0000);
                 MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
                 helpers.WritePointer(handleFragment.Data, TargetPointer.Null);
-                threadBuilder.Builder.AddHeapFragment(handleFragment);
                 exceptionInfo!.ThrownObjectHandle = handleFragment.Address;
             });
 
