@@ -509,11 +509,22 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
+    X509* cert = SSL_get1_peer_certificate(ssl);
+    CryptoNative_SslUpdateOcspStaple(ssl, cert);
+
+    // No error queue impact.
+    return cert;
+}
+
+void CryptoNative_SslUpdateOcspStaple(SSL* ssl, X509* cert)
+{
+    if (ssl == NULL || cert == NULL)
+        return;
+
     const uint8_t* data = NULL;
     long len = SSL_get_tlsext_status_ocsp_resp(ssl, &data);
-    X509* cert = SSL_get1_peer_certificate(ssl);
 
-    if (len > 0 && cert != NULL && !X509_get_ex_data(cert, g_x509_ocsp_index))
+    if (len > 0 && !X509_get_ex_data(cert, g_x509_ocsp_index))
     {
         OCSP_RESPONSE* ocspResp = d2i_OCSP_RESPONSE(NULL, &data, len);
 
@@ -526,9 +537,6 @@ X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
             X509_set_ex_data(cert, g_x509_ocsp_index, ocspResp);
         }
     }
-
-    // No error queue impact.
-    return cert;
 }
 
 X509* CryptoNative_SslGetCertificate(SSL* ssl)

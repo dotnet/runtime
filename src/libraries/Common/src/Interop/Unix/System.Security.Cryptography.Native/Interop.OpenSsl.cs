@@ -910,6 +910,7 @@ internal static partial class Interop
                                 {
                                     // First cert in the stack is the leaf cert.
                                     certificate = chainCert;
+                                    Interop.Ssl.SslUpdateOcspStaple(sslHandle, certificate.Handle);
                                 }
                                 else
                                 {

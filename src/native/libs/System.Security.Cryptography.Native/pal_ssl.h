@@ -340,6 +340,12 @@ Returns the certificate presented by the peer.
 PALEXPORT X509* CryptoNative_SslGetPeerCertificate(SSL* ssl);
 
 /*
+Attaches the OCSP staple response from the SSL session to the given X509
+certificate via ex_data, if one is available and not already set.
+*/
+PALEXPORT void CryptoNative_SslUpdateOcspStaple(SSL* ssl, X509* cert);
+
+/*
 Shims the SSL_get_certificate method.
 
 Returns the certificate representing local peer.
