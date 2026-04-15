@@ -15,6 +15,8 @@ Applies to all `System.Net.*` libraries, `System.Private.Uri`, and shared networ
 
 When **reviewing** a PR or code change that touches System.Net code, **invoke the `@system-net-review` agent as a sub-task**. The agent carries the full structured checklist with severity-weighted routing and per-folder hotspot coverage. This skill provides the decision frameworks and coding patterns; the agent provides the line-by-line review checklist.
 
+When invoking from an existing reviewer agent,  tell the `@system-net-review` to only **collect** feedback items and return them, do not post them to GH. The parent reviewer is responsible for collection, deduplication, and posting.
+
 > **Do not duplicate the agent's CHECK items here.** Use this skill for authoring guidance and the agent for review verdicts.
 
 ---
