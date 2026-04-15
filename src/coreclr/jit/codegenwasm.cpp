@@ -143,6 +143,15 @@ void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZer
 }
 
 //------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   No-op for asm without OSR support.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
+}
+
+//------------------------------------------------------------------------
 // genHomeRegisterParams: place register arguments into their RA-assigned locations.
 //
 // We can't actually do this task here because the prolog will overflow. Instead, we

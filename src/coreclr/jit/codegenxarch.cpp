@@ -10006,6 +10006,17 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
         osrAdditionalIntCalleeSaves &= ~regBit;
     }
 }
+#else
+
+//------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   No-op for x86 without OSR support.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
+}
+
 #endif // TARGET_AMD64
 
 //------------------------------------------------------------------------

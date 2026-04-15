@@ -1859,6 +1859,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 //
 void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
+    unreached();
 }
 
 //------------------------------------------------------------------------
