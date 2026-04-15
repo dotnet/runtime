@@ -1398,13 +1398,11 @@ namespace System
 
         public override Type? GetNullableUnderlyingType()
         {
-            if (IsGenericType)
+            if (IsConstructedGenericType)
             {
                 Type genericType = GetGenericTypeDefinition();
                 if (ReferenceEquals(genericType, typeof(Nullable<>)))
-                {
                     return GetGenericArguments()[0];
-                }
             }
 
             return null;

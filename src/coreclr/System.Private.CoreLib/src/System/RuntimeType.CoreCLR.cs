@@ -3594,7 +3594,7 @@ namespace System
 
         public override unsafe Type? GetNullableUnderlyingType()
         {
-            if (IsGenericType)
+            if (IsConstructedGenericType)
             {
                 TypeHandle th = GetNativeTypeHandle();
                 if (!th.IsTypeDesc)

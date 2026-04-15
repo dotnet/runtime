@@ -124,7 +124,7 @@ namespace System
 
         public override Type? GetNullableUnderlyingType()
         {
-            if (IsGenericType)
+            if (IsConstructedGenericType)
             {
                 MethodTable* pEEType = _pUnderlyingEEType;
                 if (pEEType != null && pEEType->NullableType != null)

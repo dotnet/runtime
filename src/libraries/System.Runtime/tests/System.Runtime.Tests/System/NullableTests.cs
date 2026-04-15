@@ -93,6 +93,7 @@ namespace System.Tests
         [InlineData(typeof(int?), typeof(int))]
         [InlineData(typeof(int), null)]
         [InlineData(typeof(G<int>), null)]
+        [InlineData(typeof(Nullable<>), null)]
         public static void GetNullableUnderlyingType_RuntimeType(Type type, Type? expected)
         {
             Assert.Equal(expected, type.GetNullableUnderlyingType());
