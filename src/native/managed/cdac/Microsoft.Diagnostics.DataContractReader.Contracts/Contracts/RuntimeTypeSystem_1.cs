@@ -1395,6 +1395,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
+    private bool IsILStub(MethodDesc md)
+    {
+        if (md.Classification != MethodClassification.Dynamic)
+        {
+            return false;
+        }
+
+        return AsDynamicMethodDesc(md).IsILStub;
+    }
+
     private bool IsWrapperStub(MethodDesc md)
     {
         return md.IsUnboxingStub || IsInstantiatingStub(md);
@@ -1729,16 +1739,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         return IsILStub(methodDesc) || IsWrapperStub(methodDesc);
-    }
-
-    private bool IsILStub(MethodDesc md)
-    {
-        if (md.Classification != MethodClassification.Dynamic)
-        {
-            return false;
-        }
-
-        return AsDynamicMethodDesc(md).IsILStub;
     }
 
     private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries
