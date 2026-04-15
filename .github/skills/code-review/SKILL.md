@@ -32,7 +32,7 @@ Before analyzing anything, collect as much relevant **code** context as you can.
 7. **Detect new public API surface**: Check whether the PR introduces new public API surface. Look for:
    - Changes to `ref/` assembly source files (the strongest signal — these define the public API contract)
    - New `public` members (methods, properties, types, enum values) in `src/` files
-   - Note whether new public API was detected. If it was, you **MUST** load and execute the API approval verification procedure during Step 2. Read the file `.github/skills/code-review/api-approval-check.md` (relative to the repository root) and follow its instructions. Do not skip this step — it is blocking.
+   - Note whether new public API was detected. If it was, you **MUST** load and execute the API approval verification procedure during Step 3. Read the file `.github/skills/code-review/api-approval-check.md` (relative to the repository root) and follow its instructions. Do not skip this step — it is blocking.
   
 ### Step 1: Discover Area-Specific Agents
 - Study the agents available in  `.github/agents` folder that are capable of reviewing specific areas of the codebase. Their yaml frontmatter description tells when they apply.
