@@ -2646,8 +2646,10 @@ PROCAbortInitialize()
         defaultReportDirectory = getenv("TMPDIR");
     }
 
-    g_inProcCrashReportEnabled = enableMiniDump || enableCrashReport || enableCrashReportOnly;
-    InProcCrashReportInitialize(g_inProcCrashReportEnabled ? 1 : 0, dumpName, defaultReportDirectory);
+    const bool crashReportEnabled = enableCrashReport || enableCrashReportOnly;
+    const bool writeCrashReportToFile = dumpName != nullptr && dumpName[0] != '\0';
+    g_inProcCrashReportEnabled = crashReportEnabled;
+    InProcCrashReportInitialize(writeCrashReportToFile ? 1 : 0, dumpName, defaultReportDirectory);
 #endif
 
     if (enableMiniDump)
@@ -2823,7 +2825,6 @@ Parameters:
 --*/
 #ifdef HOST_ANDROID
 #include <minipal/log.h>
-#include "debug/crashreport/inproccrashreporter.h"
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {

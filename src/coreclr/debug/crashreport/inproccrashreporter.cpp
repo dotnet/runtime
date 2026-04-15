@@ -14,15 +14,15 @@
 #include <unistd.h>
 #include <string.h>
 #include <ucontext.h>
-
-#ifdef __ANDROID__
-#include <android/log.h>
-#endif
-
+#include <minipal/log.h>
 #include <minipal/thread.h>
 
 // Include the .NET version string instead of linking because it is "static".
+#if __has_include("_version.c")
 #include "_version.c"
+#else
+static char sccsid[] = "@(#)Version N/A";
+#endif
 
 static CrashJsonWriter s_jsonWriter;
 // These callbacks are published during runtime startup and then only read from
@@ -431,7 +431,6 @@ WriteToLog(
     const char* msg,
     int len)
 {
-#ifdef __ANDROID__
     if (msg == NULL)
     {
         return;
@@ -446,6 +445,7 @@ WriteToLog(
         }
     }
 
+#ifdef __ANDROID__
     // Emit long payloads in chunks so the JSON is not truncated by Android's
     // per-entry log size limit.
     int offset = 0;
@@ -464,15 +464,11 @@ WriteToLog(
         }
 
         buffer[chunk] = '\0';
-        // TODO-Async: Prefer Android's async_safe/log.h entrypoints here if they
-        // become available through the supported NDK surface. __android_log_write
-        // keeps the crash report visible in logcat, but it doesn't document an
-        // async-signal-safe contract.
-        __android_log_write(ANDROID_LOG_ERROR, "DOTNET", buffer);
+        minipal_log_write_error(buffer);
         offset += chunk;
     }
 #else
-    write(STDERR_FILENO, msg, len);
+    (void)WriteAllToFile(STDERR_FILENO, msg, len);
 #endif
 }
 

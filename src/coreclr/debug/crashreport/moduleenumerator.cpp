@@ -11,18 +11,6 @@
 #include <fcntl.h>
 #include <string.h>
 
-#ifdef __linux__
-#include <elf.h>
-
-#if UINTPTR_MAX > UINT32_MAX
-typedef Elf64_Ehdr ElfNative_Ehdr;
-typedef Elf64_Phdr ElfNative_Phdr;
-#else
-typedef Elf32_Ehdr ElfNative_Ehdr;
-typedef Elf32_Phdr ElfNative_Phdr;
-#endif
-#endif
-
 typedef void (*ModuleCallback)(
     uint64_t startAddr,
     uint64_t endAddr,
@@ -157,54 +145,14 @@ ComputeImageBase(
     uint64_t endAddr,
     uint64_t fileOffset)
 {
-#ifndef __linux__
     (void)endAddr;
-    (void)fileOffset;
-    return startAddr;
-#else
+
     if (fileOffset > startAddr)
     {
         return startAddr;
     }
 
-    uint64_t mappedFileBase = startAddr - fileOffset;
-    if (mappedFileBase > endAddr || sizeof(ElfNative_Ehdr) > endAddr - mappedFileBase)
-    {
-        return startAddr;
-    }
-
-    const ElfNative_Ehdr* ehdr = reinterpret_cast<const ElfNative_Ehdr*>(static_cast<uintptr_t>(mappedFileBase));
-    if (ehdr->e_ident[EI_MAG0] != ELFMAG0 ||
-        ehdr->e_ident[EI_MAG1] != ELFMAG1 ||
-        ehdr->e_ident[EI_MAG2] != ELFMAG2 ||
-        ehdr->e_ident[EI_MAG3] != ELFMAG3)
-    {
-        return mappedFileBase;
-    }
-
-    if (ehdr->e_phentsize != sizeof(ElfNative_Phdr))
-    {
-        return mappedFileBase;
-    }
-
-    uint64_t availableBytes = endAddr - mappedFileBase;
-    uint64_t phdrBytes = static_cast<uint64_t>(ehdr->e_phnum) * sizeof(ElfNative_Phdr);
-    if (ehdr->e_phoff > availableBytes || phdrBytes > availableBytes - ehdr->e_phoff)
-    {
-        return mappedFileBase;
-    }
-
-    const ElfNative_Phdr* phdrs = reinterpret_cast<const ElfNative_Phdr*>(static_cast<uintptr_t>(mappedFileBase + ehdr->e_phoff));
-    for (int i = 0; i < ehdr->e_phnum; i++)
-    {
-        if (phdrs[i].p_type == PT_LOAD && phdrs[i].p_offset == 0)
-        {
-            return mappedFileBase - phdrs[i].p_vaddr;
-        }
-    }
-
-    return mappedFileBase;
-#endif
+    return startAddr - fileOffset;
 }
 
 void

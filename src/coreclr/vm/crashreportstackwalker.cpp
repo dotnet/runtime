@@ -179,59 +179,72 @@ CrashReportGetExceptionForThread(
         *hresult = 0;
     }
 
-    OBJECTREF throwable = pThread->GetThrowable();
-    if (throwable == NULL)
+    if (!pThread->PreemptiveGCDisabled())
     {
         return 0;
     }
 
-    MethodTable* pMT = throwable->GetMethodTable();
-    if (pMT != NULL)
+    int result = 0;
+
+    GCX_COOP();
+
+    OBJECTREF throwable = pThread->GetThrowable();
+    GCPROTECT_BEGIN(throwable);
+
+    if (throwable != NULL)
     {
-        mdTypeDef cl = pMT->GetCl();
-        Module* pModule = pMT->GetModule();
-        if (pModule != NULL)
+        MethodTable* pMT = throwable->GetMethodTable();
+        if (pMT != NULL)
         {
-            IMDInternalImport* pImport = pModule->GetMDImport();
-            if (pImport != NULL && cl != mdTypeDefNil)
+            mdTypeDef cl = pMT->GetCl();
+            Module* pModule = pMT->GetModule();
+            if (pModule != NULL)
             {
-                LPCUTF8 className = NULL;
-                LPCUTF8 namespaceName = NULL;
-                pImport->GetNameOfTypeDef(cl, &className, &namespaceName);
-
-                int index = 0;
-                if (namespaceName != NULL)
+                IMDInternalImport* pImport = pModule->GetMDImport();
+                if (pImport != NULL && cl != mdTypeDefNil)
                 {
-                    while (*namespaceName != '\0' && index < exceptionTypeBufSize - 1)
+                    LPCUTF8 className = NULL;
+                    LPCUTF8 namespaceName = NULL;
+                    pImport->GetNameOfTypeDef(cl, &className, &namespaceName);
+
+                    int index = 0;
+                    if (namespaceName != NULL)
                     {
-                        exceptionTypeBuf[index++] = *namespaceName++;
+                        while (*namespaceName != '\0' && index < exceptionTypeBufSize - 1)
+                        {
+                            exceptionTypeBuf[index++] = *namespaceName++;
+                        }
                     }
+
+                    if (className != NULL)
+                    {
+                        if (index > 0 && index < exceptionTypeBufSize - 1)
+                        {
+                            exceptionTypeBuf[index++] = '.';
+                        }
+
+                        while (*className != '\0' && index < exceptionTypeBufSize - 1)
+                        {
+                            exceptionTypeBuf[index++] = *className++;
+                        }
+                    }
+
+                    exceptionTypeBuf[index] = '\0';
                 }
-
-                if (className != NULL)
-                {
-                    if (index > 0 && index < exceptionTypeBufSize - 1)
-                    {
-                        exceptionTypeBuf[index++] = '.';
-                    }
-
-                    while (*className != '\0' && index < exceptionTypeBufSize - 1)
-                    {
-                        exceptionTypeBuf[index++] = *className++;
-                    }
-                }
-
-                exceptionTypeBuf[index] = '\0';
             }
         }
+
+        if (hresult != NULL)
+        {
+            *hresult = static_cast<uint32_t>(((EXCEPTIONREF)throwable)->GetHResult());
+        }
+
+        result = 1;
     }
 
-    if (hresult != NULL)
-    {
-        *hresult = static_cast<uint32_t>(((EXCEPTIONREF)throwable)->GetHResult());
-    }
+    GCPROTECT_END();
 
-    return 1;
+    return result;
 }
 
 static
@@ -267,8 +280,6 @@ CrashReportEnumerateThreads(
 {
     // This minimal lift intentionally reuses the existing ThreadStore traversal
     // and StackWalkFrames as a best-effort source for managed thread state.
-    // The later strict-safety slices replace this with the signal-safe thread
-    // registry and pre-published frame snapshots.
     Thread* pCrashThread = GetThreadAsyncSafe();
     bool crashThreadHandled = false;
 
