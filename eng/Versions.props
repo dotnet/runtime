@@ -180,12 +180,12 @@
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- WiX 5+ dependencies for MSI generation -->
-    <MicrosoftWixVersion>5.0.2-dotnet.2811440</MicrosoftWixVersion>
-    <MicrosoftWixToolsetUIWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetUIWixextVersion>
-    <MicrosoftWixToolsetDependencyWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetDependencyWixextVersion>
-    <MicrosoftWixToolsetUtilWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetUtilWixextVersion>
-    <MicrosoftWixToolsetBalWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetBalWixextVersion>
-    <MicrosoftWixToolsetHeatVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetHeatVersion>
+    <MicrosoftWixVersion>6.0.3-dotnet.4</MicrosoftWixVersion>
+    <MicrosoftWixToolsetUIWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetUIWixextVersion>
+    <MicrosoftWixToolsetDependencyWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetDependencyWixextVersion>
+    <MicrosoftWixToolsetUtilWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetUtilWixextVersion>
+    <MicrosoftWixToolsetBalWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetBalWixextVersion>
+    <MicrosoftWixToolsetHeatVersion>6.0.3-dotnet.4</MicrosoftWixToolsetHeatVersion>
   </PropertyGroup>
 
 </Project>
