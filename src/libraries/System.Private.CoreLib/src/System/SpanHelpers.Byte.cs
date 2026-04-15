@@ -450,6 +450,7 @@ namespace System
 
         // IndexOfNullByte processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
         // This behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
+        [RequiresUnsafe]
         internal static unsafe int IndexOfNullByte(byte* searchSpace)
         {
             const int Length = int.MaxValue;

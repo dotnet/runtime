@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             switch (_thunkKind)
             {
-                case Kind.Eager:
+                case ImportThunkKind.Eager:
                     // mov r12, [helper]
                     instructionEncoder.EmitMOV(Register.R12, _helperCell);
                     // ldr.w r12, [r12]
@@ -28,9 +28,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     instructionEncoder.EmitJMP(Register.R12);
                     break;
 
-                case Kind.DelayLoadHelper:
-                case Kind.VirtualStubDispatch:
-                case Kind.DelayLoadHelperWithExistingIndirectionCell:
+                case ImportThunkKind.DelayLoadHelper:
+                case ImportThunkKind.VirtualStubDispatch:
+                case ImportThunkKind.DelayLoadHelperWithExistingIndirectionCell:
                     // r4 contains indirection cell
                     // push r4
                     instructionEncoder.EmitPUSH(Register.R4);
@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     instructionEncoder.EmitJMP(Register.R4);
                     break;
 
-                case Kind.Lazy:
+                case ImportThunkKind.Lazy:
                     // mov r1, [module]
                     instructionEncoder.EmitMOV(Register.R1, factory.ModuleImport);
                     // ldr r1, [r1]

@@ -213,14 +213,6 @@ void DbgTransportSession::Shutdown()
 
 #ifndef RIGHT_SIDE_COMPILE
 
-// Cleans up the named pipe connection so no tmp files are left behind. Does only
-// the minimum and must be safe to call at any time. Called during PAL ExitProcess,
-// TerminateProcess and for unhandled native exceptions and asserts.
-void DbgTransportSession::AbortConnection()
-{
-    m_channel->CloseConnection();
-}
-
 // API used only by the LS to drive the transport into a state where it won't accept connections. This is used
 // when no proxy is detected at startup but it's too late to shutdown all of the debugging system easily. It's
 // mainly paranoia to increase the protection of your system when the proxy isn't started.

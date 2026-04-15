@@ -30,7 +30,7 @@ IF /I "%PROCESSOR_ARCHITECTURE%" == "ARM64" (
     IF /I "%~1" == "arm64" ( set vcEnvironment=amd64_arm64 )
 )
 
-CALL "%vsBase%\vc\Auxiliary\Build\vcvarsall.bat" %vcEnvironment% > NUL
+CALL "%vsBase%\vc\Auxiliary\Build\vcvarsall.bat" %vcEnvironment% > NUL 2> NUL
 
 FOR /F "delims=" %%W IN ('where link') DO (
     FOR %%A IN ("%%W") DO ECHO %%~dpA#

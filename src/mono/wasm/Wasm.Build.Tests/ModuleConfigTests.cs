@@ -78,34 +78,6 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsMonoRuntime))]
-    [InlineData(Configuration.Release, true)]
-    [InlineData(Configuration.Release, false)]
-    public async Task OverrideBootConfigName(Configuration config, bool isPublish)
-    {
-        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"OverrideBootConfigName_{isPublish}");
-
-        if (isPublish)
-            PublishProject(info, config, new PublishOptions(BootConfigFileName: "boot.json", UseCache: false));
-        else
-            BuildProject(info, config, new BuildOptions(BootConfigFileName: "boot.json", UseCache: false));
-
-        var runOptions = new BrowserRunOptions(
-            Configuration: config,
-            TestScenario: "OverrideBootConfigName"
-        );
-        var result = await (isPublish
-            ? RunForPublishWithWebServer(runOptions)
-            : RunForBuildWithDotnetRun(runOptions)
-        );
-
-        Assert.Collection(
-            result.TestOutput,
-            m => Assert.Equal("ConfigSrc: boot.json", m),
-            m => Assert.Equal("Managed code has run", m)
-        );
-    }
-
     [Fact, TestCategory("bundler-friendly")]
     public async Task AssetIntegrity()
     {

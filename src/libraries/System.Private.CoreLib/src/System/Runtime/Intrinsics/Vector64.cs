@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System.Runtime.Intrinsics
 {
@@ -777,6 +779,47 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
+        /// <summary>Computes the arc sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc sine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc sine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Asin(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinDouble<Vector64<double>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Asin<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the arc sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc sine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc sine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Asin(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.AsinSingle<Vector64<float>, Vector64<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AsinSingle<Vector64<float>, Vector64<int>, Vector64<double>, Vector64<long>>(vector);
+                }
+            }
+            else
+            {
+                return Asin<float>(vector);
+            }
+        }
+
         /// <summary>Computes the cos of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its Cos computed.</param>
         /// <returns>A vector whose elements are the cos of the elements in <paramref name="vector" />.</returns>
@@ -824,7 +867,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Count<T>(Vector64<T> vector, T value) => BitOperations.PopCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+        public static int Count<T>(Vector64<T> vector, T value) => CountMatches(Equals(vector, Create(value)));
 
         /// <summary>Determines the number of elements in a vector that have all their bits set.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1846,11 +1889,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(Vector64<T> vector, T value)
-        {
-            int result = BitOperations.TrailingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
-            return (result != 32) ? result : -1;
-        }
+        public static int IndexOf<T>(Vector64<T> vector, T value) => IndexOfFirstMatch(Equals(vector, Create(value)));
 
         /// <summary>Determines the index of the first element in a vector that has all bits set.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2090,7 +2129,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(Vector64<T> vector, T value) => 31 - BitOperations.LeadingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+        public static int LastIndexOf<T>(Vector64<T> vector, T value) => IndexOfLastMatch(Equals(vector, Create(value)));
 
         /// <summary>Determines the index of the last element in a vector that has all bits set.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2300,6 +2339,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector64<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
@@ -2310,6 +2350,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe Vector64<T> LoadAligned<T>(T* source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
@@ -2330,6 +2371,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector64<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
@@ -3654,6 +3696,20 @@ namespace System.Runtime.Intrinsics
 #endif
         }
 
+        internal static Vector64<T> Asin<T>(Vector64<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Asin(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
         internal static Vector64<T> Sin<T>(Vector64<T> vector)
             where T : ITrigonometricFunctions<T>
         {
@@ -3789,6 +3845,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void Store<T>(this Vector64<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
@@ -3799,6 +3856,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe void StoreAligned<T>(this Vector64<T> source, T* destination)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
@@ -3819,6 +3877,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal<T>(this Vector64<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>
@@ -4339,11 +4398,99 @@ namespace System.Runtime.Intrinsics
         public static Vector64<T> Xor<T>(Vector64<T> left, Vector64<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        internal static uint AdvSimdExtractBitMask<T>(Vector64<T> vector)
+        {
+            if (!AdvSimd.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            // This expects vector to have each element be one of Zero or AllBitsSet
+            // and will not produce correct results otherwise.
+            //
+            // Given this, we can treat it as ushort and do a logical-right-shift by 4 to
+            // compact the mask into half the space, giving us the following possibilities for
+            // each pair of bytes:
+            // * 0x00_00 - 0x00
+            // * 0x00_FF - 0x0F
+            // * 0xFF_00 - 0xF0
+            // * 0xFF_FF - 0xFF
+            //
+            // This allows us to extract the full metadata as a 32-bit scalar which can then
+            // be consumed by bit-counting APIs, such as PopCount, LeadingZeroCount, or TrailingZeroCount,
+            // and then adjusted by AdvSimdFixupBitCount to get the actual count of elements
+            // that were masked.
+
+            return AdvSimd.ShiftRightLogicalNarrowingLower(vector.ToVector128().AsUInt16(), 4).AsUInt32().ToScalar();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        internal static int AdvSimdFixupBitCount<T>(int bitCount)
+        {
+            if (!AdvSimd.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            // This API is meant to be consumed alongside AdvSimdExtractBitMask and will
+            // not produce correct results for arbitrary inputs. It adjusts the bit count
+            // assuming that sequences of 1 or 0 were in groups of 4 bits per byte.
+
+            unsafe
+            {
+                return bitCount >>> (2 + int.Log2(sizeof(T)));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int CountMatches<T>(Vector64<T> vector)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimdFixupBitCount<T>(BitOperations.PopCount(AdvSimdExtractBitMask(vector)));
+            }
+            else
+            {
+                return BitOperations.PopCount(vector.ExtractMostSignificantBits());
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static T GetElementUnsafe<T>(in this Vector64<T> vector, int index)
         {
             Debug.Assert((index >= 0) && (index < Vector64<T>.Count));
             ref T address = ref Unsafe.As<Vector64<T>, T>(ref Unsafe.AsRef(in vector));
             return Unsafe.Add(ref address, index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfFirstMatch<T>(Vector64<T> vector)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                int result = AdvSimdFixupBitCount<T>(BitOperations.TrailingZeroCount(AdvSimdExtractBitMask(vector)));
+                return (result != Vector64<T>.Count) ? result : -1;
+            }
+            else
+            {
+                int result = BitOperations.TrailingZeroCount(vector.ExtractMostSignificantBits());
+                return (result != 32) ? result : -1;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfLastMatch<T>(Vector64<T> vector)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                return (Vector64<T>.Count - 1) - AdvSimdFixupBitCount<T>(BitOperations.LeadingZeroCount(AdvSimdExtractBitMask(vector)));
+            }
+            else
+            {
+                return 31 - BitOperations.LeadingZeroCount(vector.ExtractMostSignificantBits());
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

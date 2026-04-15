@@ -7,6 +7,7 @@ namespace b72218;
 
 using System;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 public class My
@@ -19,7 +20,7 @@ public class My
     }
 
     [OuterLoop]
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
 

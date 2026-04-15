@@ -98,20 +98,11 @@ namespace System.Reflection.Context.Tests
             // May be null if resource doesn't exist
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void GetModule_ReturnsModule()
         {
-            string moduleName = _customAssembly.ManifestModule.Name;
-            if (PlatformDetection.HasAssemblyFiles)
-            {
-                Module module = _customAssembly.GetModule(moduleName);
-                Assert.NotNull(module);
-            }
-            else
-            {
-                // On native AOT, Module.Name returns "<Unknown>" and GetModule with that name returns null
-                Assert.Equal("<Unknown>", moduleName);
-            }
+            Module module = _customAssembly.GetModule(_customAssembly.ManifestModule.Name);
+            Assert.NotNull(module);
         }
 
         [Fact]

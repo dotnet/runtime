@@ -239,6 +239,10 @@ HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
     if (alloc == NULL)
         return E_OUTOFMEMORY;
 
+#ifdef FEATURE_CODE_VERSIONING
+    alloc->OptimizationTier = NativeCodeVersion::OptimizationTierUnknown;
+#endif
+
     // Try to set the field. Suppress clean-up if we win the race.
     if (InterlockedCompareExchangeT(&m_codeData, (MethodDescCodeData*)alloc, NULL) == NULL)
         amTracker.SuppressRelease();
@@ -259,6 +263,16 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
         return S_FALSE;
 
     return S_OK;
+}
+
+void MethodDesc::SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier)
+{
+    STANDARD_VM_CONTRACT;
+
+    IfFailThrow(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    VolatileStoreWithoutBarrier(&m_codeData->OptimizationTier, tier);
 }
 #endif // FEATURE_CODE_VERSIONING
 
@@ -296,6 +310,15 @@ PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
     if (codeData == NULL)
         return NULL;
     return VolatileLoadWithoutBarrier(&codeData->VersioningState);
+}
+
+NativeCodeVersion::OptimizationTier MethodDesc::GetMethodDescOptimizationTier()
+{
+    WRAPPER_NO_CONTRACT;
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NativeCodeVersion::OptimizationTierUnknown;
+    return VolatileLoadWithoutBarrier(&codeData->OptimizationTier);
 }
 #endif // FEATURE_CODE_VERSIONING
 
@@ -2367,15 +2390,8 @@ bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
     return false;
 }
 
-MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
+MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, ULONG* elementTypeLength, bool *isValueTask)
 {
-    // Without runtime async, every declared method is classified as a NormalMethod.
-    // Thus code that handles runtime async scenarios becomes unreachable.
-    if (!g_pConfig->RuntimeAsync())
-    {
-        return MethodReturnKind::NormalMethod;
-    }
-
     PCCOR_SIGNATURE initialSig = sig.GetPtr();
     uint32_t data;
     IfFailThrow(sig.GetCallingConvInfo(&data));
@@ -2417,7 +2433,12 @@ MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG
             if ((strcmp(name, *isValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
             {
                 if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+                {
+                    PCCOR_SIGNATURE elementStart = sig.GetPtr();
+                    sig.SkipExactlyOne();
+                    *elementTypeLength = (ULONG)(sig.GetPtr() - elementStart);
                     return MethodReturnKind::GenericTaskReturningMethod;
+                }
             }
         }
     }
@@ -3165,7 +3186,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot_Locked(
     backpatchTracker->AddSlotAndPatch_Locked(this, slotLoaderAllocator, slot, slotType, currentEntryPoint);
 }
 
-bool MethodDesc::TryBackpatchEntryPointSlots(
+FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
     PCODE entryPoint,
     bool isPrestubEntryPoint,
     bool onlyFromPrestubEntryPoint)
@@ -3695,7 +3716,9 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
     {
         // Stubs generated for being called from native code are equivalent to
         // managed methods marked with UnmanagedCallersOnly.
-        return AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubReversePInvoke;
+        DynamicMethodDesc::ILStubType stubType = AsDynamicMethodDesc()->GetILStubType();
+        return stubType == DynamicMethodDesc::StubReversePInvoke
+            || stubType == DynamicMethodDesc::StubCOMToCLRInterop;
     }
 
     HRESULT hr = GetCustomAttribute(

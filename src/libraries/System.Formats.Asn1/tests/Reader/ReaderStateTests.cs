@@ -6,14 +6,41 @@ using Xunit;
 
 namespace System.Formats.Asn1.Tests.Reader
 {
-    public static class ReaderStateTests
+    public sealed class ReaderStateAsnReaderTests : ReaderStateBase
     {
-        [Fact]
-        public static void HasDataAndThrowIfNotEmpty()
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
         {
-            AsnReader reader = new AsnReader(new byte[] { 0x01, 0x01, 0x00 }, AsnEncodingRules.BER);
+            return AsnReaderWrapper.CreateClassReader(data, ruleSet, options);
+        }
+    }
+
+    public sealed class ReaderStateValueAsnReaderTests : ReaderStateBase
+    {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateValueReader(data, ruleSet, options);
+        }
+    }
+
+    public abstract class ReaderStateBase
+    {
+        internal abstract AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default);
+
+        [Fact]
+        public void HasDataAndThrowIfNotEmpty()
+        {
+            AsnReaderWrapper reader = CreateWrapper(new byte[] { 0x01, 0x01, 0x00 }, AsnEncodingRules.BER);
             Assert.True(reader.HasData);
-            Assert.Throws<AsnContentException>(() => reader.ThrowIfNotEmpty());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ThrowIfNotEmpty());
 
             // Consume the current value and move on.
             reader.ReadEncodedValue();
@@ -24,16 +51,16 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Fact]
-        public static void HasDataAndThrowIfNotEmpty_StartsEmpty()
+        public void HasDataAndThrowIfNotEmpty_StartsEmpty()
         {
-            AsnReader reader = new AsnReader(ReadOnlyMemory<byte>.Empty, AsnEncodingRules.BER);
+            AsnReaderWrapper reader = CreateWrapper(ReadOnlyMemory<byte>.Empty, AsnEncodingRules.BER);
             Assert.False(reader.HasData);
             // Assert.NoThrow
             reader.ThrowIfNotEmpty();
         }
 
         [Fact]
-        public static void Clone_CopiesCurrentState()
+        public void Clone_CopiesCurrentState()
         {
             // Sequence {
             //   SetOf {
@@ -51,23 +78,23 @@ namespace System.Formats.Asn1.Tests.Reader
                 SkipSetSortOrderVerification = true,
             };
 
-            AsnReader sequence = new AsnReader(asn, AsnEncodingRules.DER, options);
-            AsnReader reader = sequence.ReadSequence();
+            AsnReaderWrapper sequence = CreateWrapper(asn, AsnEncodingRules.DER, options);
+            AsnReaderWrapper reader = sequence.ReadSequence();
             sequence.ThrowIfNotEmpty();
 
-            AsnReader clone = reader.Clone();
+            AsnReaderWrapper clone = reader.Clone();
             Assert.Equal(reader.RuleSet, clone.RuleSet);
 
-            AssertReader(reader);
+            AssertReader(ref reader);
             Assert.False(reader.HasData, "reader.HasData");
             Assert.True(clone.HasData, "clone.HasData");
 
-            AssertReader(clone);
+            AssertReader(ref clone);
             Assert.False(clone.HasData, "clone.HasData");
 
-            static void AssertReader(AsnReader reader)
+            static void AssertReader(ref AsnReaderWrapper reader)
             {
-                AsnReader setOf = reader.ReadSetOf();
+                AsnReaderWrapper setOf = reader.ReadSetOf();
                 reader.ThrowIfNotEmpty();
 
                 DateTimeOffset dateTime = setOf.ReadUtcTime();
@@ -78,24 +105,24 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Fact]
-        public static void Clone_Empty()
+        public void Clone_Empty()
         {
-            AsnReader reader = new AsnReader(ReadOnlyMemory<byte>.Empty, AsnEncodingRules.DER);
-            AsnReader clone = reader.Clone();
+            AsnReaderWrapper reader = CreateWrapper(ReadOnlyMemory<byte>.Empty, AsnEncodingRules.DER);
+            AsnReaderWrapper clone = reader.Clone();
             Assert.False(reader.HasData, "reader.HasData");
             Assert.False(clone.HasData, "clone.HasData");
         }
 
         [Fact]
-        public static void Clone_SameUnderlyingData()
+        public void Clone_SameUnderlyingData()
         {
             ReadOnlyMemory<byte> data = "04050102030405".HexToByteArray();
-            AsnReader reader = new AsnReader(data, AsnEncodingRules.DER);
-            AsnReader clone = reader.Clone();
+            AsnReaderWrapper reader = CreateWrapper(data, AsnEncodingRules.DER);
+            AsnReaderWrapper clone = reader.Clone();
 
-            Assert.True(reader.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> readerData));
-            Assert.True(clone.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> cloneData));
-            Assert.True(readerData.Span == cloneData.Span, "readerData == cloneData");
+            Assert.True(reader.TryReadPrimitiveOctetString(out ReadOnlySpan<byte> readerData));
+            Assert.True(clone.TryReadPrimitiveOctetString(out ReadOnlySpan<byte> cloneData));
+            Assert.True(readerData == cloneData, "readerData == cloneData");
         }
     }
 }

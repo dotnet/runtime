@@ -116,10 +116,11 @@ enum CrstType
     CrstUMEntryThunkFreeListLock = 98,
     CrstUniqueStack = 99,
     CrstUnresolvedClassLock = 100,
-    CrstUnwindInfoTableLock = 101,
-    CrstVSDIndirectionCellLock = 102,
-    CrstWrapperTemplate = 103,
-    kNumberOfCrstTypes = 104
+    CrstUnwindInfoTablePendingLock = 101,
+    CrstUnwindInfoTablePublishLock = 102,
+    CrstVSDIndirectionCellLock = 103,
+    CrstWrapperTemplate = 104,
+    kNumberOfCrstTypes = 105
 };
 
 #endif // __CRST_TYPES_INCLUDED
@@ -172,7 +173,7 @@ int g_rgCrstLevelMap[] =
     1,          // CrstHandleTable
     7,          // CrstIJWFixupData
     0,          // CrstIJWHash
-    14,         // CrstILStubGen
+    18,         // CrstILStubGen
     0,          // CrstInlineTrackingMap
     18,         // CrstInstMethodHashTable
     0,          // CrstInterfaceDispatchGlobalLists
@@ -231,9 +232,10 @@ int g_rgCrstLevelMap[] =
     2,          // CrstUMEntryThunkFreeListLock
     3,          // CrstUniqueStack
     6,          // CrstUnresolvedClassLock
-    2,          // CrstUnwindInfoTableLock
+    2,          // CrstUnwindInfoTablePendingLock
+    3,          // CrstUnwindInfoTablePublishLock
     3,          // CrstVSDIndirectionCellLock
-    2,          // CrstWrapperTemplate
+    3,          // CrstWrapperTemplate
 };
 
 // An array mapping CrstType to a stringized name.
@@ -340,7 +342,8 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstUMEntryThunkFreeListLock",
     "CrstUniqueStack",
     "CrstUnresolvedClassLock",
-    "CrstUnwindInfoTableLock",
+    "CrstUnwindInfoTablePendingLock",
+    "CrstUnwindInfoTablePublishLock",
     "CrstVSDIndirectionCellLock",
     "CrstWrapperTemplate",
 };

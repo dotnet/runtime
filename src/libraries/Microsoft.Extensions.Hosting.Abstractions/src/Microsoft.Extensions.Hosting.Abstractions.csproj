@@ -31,4 +31,10 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel\src\System.ComponentModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+  </ItemGroup>
+
+
 </Project>
