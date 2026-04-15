@@ -118,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(!instructionEncoder.Is64Bit); // We currently only support 32-bit, and the thunk logic is currently tied to that assumption
 
             // WASM-TODO! This is NOT an efficient way to implement this thunk. Currently it writes all the arguments to the stack, not just the ones which need to be saved for GC purposes.
-            // At some point we'll want to only write the arguments which need GC tracking, and skip the save/restore for other arguments. This will require changes to code
+            // At some point we'll want to only write the arguments which need GC tracking, and skip the save/restore for other arguments. This might require changes to code
             // which is currently architecture neutral on the VM side, so we should wait to do this until we have a better picture of how the VM and compiler sides will interact for this thunk.
 
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
@@ -154,10 +154,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // i32.sub
             expressions.Add(I32.Sub);
             // local.tee 0
-            expressions.Add(Local.Tee(0));
-
-            // global.set {stack pointer global}  // This is a callout from managed to native, we need to set the global stack pointer so that C++ code will work
-            expressions.Add(Global.Set(0));
+            expressions.Add(Local.Set(0));
 
             //
             // ; Stash all the locals away
@@ -227,6 +224,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Const(sizeOfStoredLocals));
             // i32.add
             expressions.Add(I32.Add);
+
             //
             // ; Setup normal args
             // for (int i = 0; i < N; i++)
