@@ -4267,8 +4267,13 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // Retry by obtaining operand ranges individually. This accounts for cases where the
             // relopVN's operands differ from the physical op1 and op2 due to optimization passes.
             VNFuncApp relopFuncApp;
-            if (vnStore->GetVNFunc(relopVN, &relopFuncApp) &&
-                ((relopFuncApp.m_args[0] != op1VN) || (relopFuncApp.m_args[1] != op2VN)))
+            if (vnStore->IsVNRelop(relopVN, &relopFuncApp) &&
+                (((relopFuncApp.m_args[0] == op1VN) && (relopFuncApp.m_args[1] == op2VN)) ||
+                 ((relopFuncApp.m_args[0] == op2VN) && (relopFuncApp.m_args[1] == op1VN))))
+            {
+                // VNs match - we'll find nothing new by looking at individual operand ranges.
+            }
+            else
             {
                 Range op1Range = RangeCheck::GetRangeFromAssertions(this, op1VN, assertions);
                 Range op2Range = RangeCheck::GetRangeFromAssertions(this, op2VN, assertions);
