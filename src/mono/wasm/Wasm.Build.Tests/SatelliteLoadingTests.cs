@@ -110,15 +110,30 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "SatelliteLoadingTestsFromPackageReference");
         BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: "-p:TestSatelliteAssembliesFromPackage=true"));
 
-        string binFrameworkDir = GetBinFrameworkDir(config, forPublish: false);
+        // With CopyToOutputDirectory=Never, satellite assemblies are no longer in
+        // bin/_framework/. When webcil is enabled they're in obj/{config}/{tfm}/webcil/{locale}/;
+        // when disabled they're materialized in obj/{config}/{tfm}/fx/{name}/_framework/{locale}/.
+        string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework);
+        string satelliteBaseDir;
+        if (UseWebcil)
+        {
+            satelliteBaseDir = Path.Combine(objDir, "webcil");
+        }
+        else
+        {
+            string fxBaseDir = Path.Combine(objDir, "fx");
+            string[] fxSubDirs = Directory.GetDirectories(fxBaseDir);
+            Assert.True(fxSubDirs.Length == 1,
+                $"Expected exactly one subdirectory under {fxBaseDir}, found: {string.Join(", ", fxSubDirs.Select(Path.GetFileName))}");
+            satelliteBaseDir = Path.Combine(fxSubDirs[0], "_framework");
+        }
 
         // Microsoft.CodeAnalysis.CSharp has satellite assemblies for multiple locales
-        // Verify that at least some of them are present in the AppBundle
         string[] expectedLocales = ["cs", "de", "es", "fr", "it", "ja", "ko", "pl", "pt-BR", "ru", "tr", "zh-Hans", "zh-Hant"];
         foreach (string locale in expectedLocales)
         {
-            string satelliteDir = Path.Combine(binFrameworkDir, locale);
-            Assert.True(Directory.Exists(satelliteDir), $"Expected satellite directory '{locale}' to exist in {binFrameworkDir}");
+            string satelliteDir = Path.Combine(satelliteBaseDir, locale);
+            Assert.True(Directory.Exists(satelliteDir), $"Expected satellite directory '{locale}' to exist in {satelliteBaseDir}");
 
             string[] satelliteFiles = Directory.GetFiles(satelliteDir, "Microsoft.CodeAnalysis.CSharp.resources*");
             Assert.True(satelliteFiles.Length > 0, $"Expected Microsoft.CodeAnalysis.CSharp.resources.dll in {satelliteDir}");

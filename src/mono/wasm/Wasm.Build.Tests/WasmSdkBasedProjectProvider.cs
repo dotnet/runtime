@@ -255,11 +255,19 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                 AssertFileNotExists(Path.Combine(objDir, "wasm", "for-build"), file, "wasm/for-build");
         }
 
-        // --- Webcil-converted assemblies in webcil/ ---
-        Assert.True(Directory.Exists(webcilDir), $"Expected webcil directory: {webcilDir}");
-        string spcFile = "System.Private.CoreLib" + (BuildTestBase.UseWebcil ? ".wasm" : ".dll");
-        AssertFileExists(webcilDir, spcFile);
-        AssertFileNotExists(fxFrameworkDir, spcFile, "fx/_framework");
+        // --- Assembly files: webcil-converted in webcil/ or materialized DLLs in fx/_framework/ ---
+        if (BuildTestBase.UseWebcil)
+        {
+            Assert.True(Directory.Exists(webcilDir), $"Expected webcil directory: {webcilDir}");
+            AssertFileExists(webcilDir, "System.Private.CoreLib.wasm");
+            AssertFileNotExists(fxFrameworkDir, "System.Private.CoreLib.wasm", "fx/_framework");
+        }
+        else
+        {
+            // When webcil is disabled, assembly DLLs are framework pass-through candidates
+            // and get materialized alongside other framework files in fx/_framework/.
+            AssertFileExists(fxFrameworkDir, "System.Private.CoreLib.dll");
+        }
 
         // --- Boot config: parse from obj/dotnet.js to validate boot JSON is well-formed ---
         string bootConfigPath = GetBootConfigPath(objDir, "dotnet.js");
