@@ -1210,8 +1210,7 @@ static OBJECTREF ReadAndBoxArgValue(DebuggerEval *pDE,
  *
  * Performs a func-eval by building a managed object[] and invoking via
  * MethodBase.Invoke through a managed [UnmanagedCallersOnly] trampoline.
- * This replaces the old CDW (CallDescrWorker) path, eliminating arch-specific
- * calling convention details since reflection invoke is arch-neutral.
+ * Arch-neutral since reflection invoke handles calling conventions.
  *
  * Parameters:
  *    pDE - pointer to the DebuggerEval object being processed.
@@ -1376,11 +1375,19 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     {
         CorElementType retET = pDE->m_resultType.GetSignatureCorElementType();
 
-        if (retET == ELEMENT_TYPE_VALUETYPE || IsElementTypeSpecial(retET))
+        if (retET == ELEMENT_TYPE_VALUETYPE)
         {
-            // True value types (structs) and reference types — return as boxed object.
+            // Value type (struct) return — store boxed object.
             pDE->m_result[0] = ObjToArgSlot(ucoGc.resultObj);
             pDE->m_retValueBoxing = Debugger::AllBoxed;
+        }
+        else if (IsElementTypeSpecial(retET))
+        {
+            // Reference type return (string, class, array, etc.) — store the
+            // OBJECTREF as a "primitive" value.  A strong handle is still created
+            // below to prevent GC collection.
+            pDE->m_result[0] = ObjToArgSlot(ucoGc.resultObj);
+            pDE->m_retValueBoxing = Debugger::OnlyPrimitivesUnboxed;
         }
         else
         {
@@ -1402,7 +1409,10 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
 
     // Create strong handle to prevent GC collection of object results.
     {
-        if (pDE->m_retValueBoxing == Debugger::AllBoxed)
+        CorElementType retClassET = pDE->m_resultType.GetSignatureCorElementType();
+        if ((pDE->m_retValueBoxing == Debugger::AllBoxed) ||
+            pDE->m_resultType.IsValueType() ||
+            IsElementTypeSpecial(retClassET))
         {
             LOG((LF_CORDB, LL_EVERYTHING, "Creating strong handle for boxed DoNormalFuncEval result.\n"));
             OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result[0]));
