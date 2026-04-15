@@ -369,27 +369,15 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     if (!pMethod->HasClassOrMethodInstantiation())
     {
         // Not a method impacted by generics, so this is the MethodDesc to use.
+        // For runtime-async methods, ResetCodeEntryPointForEnC detects the thunk
+        // and cascades the reset to the async variant (see method.cpp).
         pMethod->ResetCodeEntryPointForEnC();
-
-        // For runtime-async methods, ResetCodeEntryPointForEnC cascades from the
-        // thunk to the IL-owning variant automatically. Only do an explicit reset
-        // of the paired variant when pMethod is the IL-owning variant (not the thunk),
-        // since in that case the cascade doesn't reach the thunk.
-        if (!pMethod->IsAsyncThunkMethod() && pMethod->HasAsyncOtherVariant())
-        {
-            MethodDesc* pAsyncOther = pMethod->GetAsyncOtherVariantNoCreate();
-            if (pAsyncOther != NULL)
-            {
-                pAsyncOther->ResetCodeEntryPointForEnC();
-            }
-        }
     }
     else
     {
         // Generics are involved so we need to search for all related MethodDescs.
-        // Note: ResetCodeEntryPointForEnC() handles async variants automatically —
-        // when called on a thunk MethodDesc, it detects IsAsyncThunkMethod() and
-        // cascades the reset to the async variant (see method.cpp).
+        // For runtime-async methods, ResetCodeEntryPointForEnC detects the thunk
+        // and cascades the reset to the async variant (see method.cpp).
         Module* module = pMethod->GetLoaderModule();
         mdMethodDef tkMethod = pMethod->GetMemberDef();
 
