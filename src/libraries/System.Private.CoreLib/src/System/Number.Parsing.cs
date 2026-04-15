@@ -168,6 +168,7 @@ namespace System
         static abstract TValue MostSignificantBitOfSignificandMask { get; }
         static abstract bool IsNaN(TValue decimalBits);
         static abstract bool IsFinite(TValue decimalBits);
+        static abstract bool IsInfinity(TValue decimalBits);
         static abstract bool IsNegative(TValue decimalBits);
         static abstract TValue EncodeExponentToG0ThroughGwPlus1(uint biasedExponent);
         static abstract TValue EncodeExponentToG2ThroughGwPlus3(uint biasedExponent);

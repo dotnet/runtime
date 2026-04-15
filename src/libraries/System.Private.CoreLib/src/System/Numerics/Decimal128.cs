@@ -378,6 +378,11 @@ namespace System.Numerics
             return comb != NaNMaskUpper && comb != InfinityMaskUpper;
         }
 
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsInfinity(UInt128 decimalBits)
+        {
+            return (decimalBits.Upper & NaNMaskUpper) == InfinityMaskUpper;
+        }
+
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.EncodeExponentToG0ThroughGwPlus1(uint biasedExponent)
         {
             return ((UInt128)biasedExponent) << 113;

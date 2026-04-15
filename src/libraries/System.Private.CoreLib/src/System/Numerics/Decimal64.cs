@@ -341,6 +341,11 @@ namespace System.Numerics
             return comb != NaNMask && comb != InfinityMask;
         }
 
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.IsInfinity(ulong decimalBits)
+        {
+            return (decimalBits & NaNMask) == InfinityMask;
+        }
+
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.EncodeExponentToG0ThroughGwPlus1(uint biasedExponent)
         {
             return ((ulong)biasedExponent) << 53;

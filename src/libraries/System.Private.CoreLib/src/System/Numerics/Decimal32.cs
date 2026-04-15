@@ -338,6 +338,11 @@ namespace System.Numerics
             return comb != NaNMask && comb != InfinityMask;
         }
 
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsInfinity(uint decimalBits)
+        {
+            return (decimalBits & NaNMask) == InfinityMask;
+        }
+
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.EncodeExponentToG0ThroughGwPlus1(uint biasedExponent)
         {
             return biasedExponent << 23;

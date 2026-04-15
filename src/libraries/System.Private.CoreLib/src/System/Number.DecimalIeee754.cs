@@ -222,28 +222,29 @@ namespace System
                 }
             }
 
-            bool isCurrentNegative = (currentDecimalBits & TDecimal.SignMask) != TValue.Zero;
-            bool isOtherNegative = (otherDecimalBits & TDecimal.SignMask) != TValue.Zero;
-            DecodedDecimalIeee754<TValue> current;
-            DecodedDecimalIeee754<TValue> other;
+            if (TDecimal.IsInfinity(currentDecimalBits) || TDecimal.IsInfinity(otherDecimalBits))
+            {
+                return InternalInfinityCompare(currentDecimalBits, otherDecimalBits);
+            }
 
-            if (isCurrentNegative)
+            DecodedDecimalIeee754<TValue> current = UnpackDecimalIeee754<TDecimal, TValue>(currentDecimalBits);
+            DecodedDecimalIeee754<TValue> other = UnpackDecimalIeee754<TDecimal, TValue>(otherDecimalBits);
+
+            if (current.Significand == TValue.Zero && other.Significand == TValue.Zero)
             {
-                if (!isOtherNegative)
+                return 0;
+            }
+
+            if (current.Signed)
+            {
+                if (!other.Signed)
                 {
-                    return currentDecimalBits == TDecimal.NegativeZero && otherDecimalBits == TDecimal.Zero ? 0 : -1;
+                    return -1;
                 }
-                current = UnpackDecimalIeee754<TDecimal, TValue>(otherDecimalBits);
-                other = UnpackDecimalIeee754<TDecimal, TValue>(currentDecimalBits);
             }
-            else if (isOtherNegative)
+            else if (other.Signed)
             {
-                return currentDecimalBits == TDecimal.Zero && otherDecimalBits == TDecimal.NegativeZero ? 0 : 1;
-            }
-            else
-            {
-                current = UnpackDecimalIeee754<TDecimal, TValue>(currentDecimalBits);
-                other = UnpackDecimalIeee754<TDecimal, TValue>(otherDecimalBits);
+                return 1;
             }
 
             return InternalUnsignedCompare(current, other);
@@ -296,6 +297,20 @@ namespace System
                 }
 
                 return 1;
+            }
+
+            static int InternalInfinityCompare(TValue current, TValue other)
+            {
+                if (current == TDecimal.PositiveInfinity)
+                {
+                    return other == TDecimal.PositiveInfinity ? 0 : 1;
+                }
+                else if (current == TDecimal.NegativeInfinity)
+                {
+                    return other == TDecimal.NegativeInfinity ? 0 : -1;
+                }
+
+                return other == TDecimal.PositiveInfinity ? -1 : 1;
             }
         }
 
