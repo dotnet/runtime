@@ -4342,12 +4342,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     regSet.rsMaskCalleeSaved = rsPushRegs;
 
-    if (m_compiler->opts.IsOSR())
-    {
-        PatchpointInfo* ppi = m_compiler->info.compPatchpointInfo;
-        rsPushRegs &= (~ppi->CalleeSaveRegisters()) | RBM_FPBASE | RBM_LR;
-    }
-
 #ifdef DEBUG
     if (m_compiler->compCalleeRegsPushed != genCountBits(rsPushRegs))
     {
@@ -4483,14 +4477,14 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     // The amount to subtract from SP before starting to store the callee-saved registers. It might be folded into the
     // first save instruction as a "predecrement" amount, if possible.
-    int  calleeSaveSpDelta = 0;
+    int calleeSaveSpDelta = 0;
 
     if (isFramePointerUsed())
     {
-        // Either we need to save both FP and LR or none of them. The latter
-        // happens only for OSR functions that inherit FP/LR from the tier0
-        // frame.
-        assert(((maskSaveRegsInt & RBM_FP) != 0) == ((maskSaveRegsInt & RBM_LR) != 0));
+        // We need to save both FP and LR.
+
+        assert((maskSaveRegsInt & RBM_FP) != 0);
+        assert((maskSaveRegsInt & RBM_LR) != 0);
 
         // If we need to generate a GS cookie, we need to make sure the saved frame pointer and return address
         // (FP and LR) are protected from buffer overrun by the GS cookie. If FP/LR are at the lowest addresses,
@@ -4779,8 +4773,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
             JITDUMP("    spAdjustment2=%d\n", spAdjustment2);
 
-            genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg,
-                                 pInitRegZeroed);
+            genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegZeroed);
 
             offset += spAdjustment2;
 
@@ -4806,8 +4799,8 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
         }
         else
         {
-            genPrologSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false,
-                                 initReg, pInitRegZeroed);
+            genPrologSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false, initReg,
+                                 pInitRegZeroed);
 
             offset += remainingFrameSz;
 
@@ -4826,7 +4819,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
         offsetSpToSavedFp = calleeSaveSpDelta - (m_compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
                             2 * REGSIZE_BYTES; // -2 for FP, LR
-                            
         JITDUMP("    offsetSpToSavedFp=%d\n", offsetSpToSavedFp);
         genEstablishFramePointer(offsetSpToSavedFp, /* reportUnwindData */ true);
 
