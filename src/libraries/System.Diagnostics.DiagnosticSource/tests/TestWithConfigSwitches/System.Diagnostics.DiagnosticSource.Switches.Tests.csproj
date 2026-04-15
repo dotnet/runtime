@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>System.Diagnostics.Tests</RootNamespace>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
