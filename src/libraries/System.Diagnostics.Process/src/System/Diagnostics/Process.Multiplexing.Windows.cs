@@ -11,7 +11,7 @@ namespace System.Diagnostics
 {
     public partial class Process
     {
-        private static SafeFileHandle GetSafeFileHandleFromStreamReader(StreamReader reader) => ((FileStream)reader.BaseStream).SafeFileHandle;
+        private static SafeFileHandle GetSafeHandleFromStreamReader(StreamReader reader) => ((FileStream)reader.BaseStream).SafeFileHandle;
 
         /// <summary>
         /// Reads from both standard output and standard error pipes using Windows overlapped IO

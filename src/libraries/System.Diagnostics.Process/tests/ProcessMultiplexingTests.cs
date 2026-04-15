@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -265,38 +266,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReadAllAsync_ThrowsOperationCanceledOnCancellation(bool bytes)
-        {
-            Process process = CreateProcess(RemotelyInvokable.ReadLine);
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.RedirectStandardInput = true;
-            process.Start();
-
-            try
-            {
-                using CancellationTokenSource cts = new(TimeSpan.FromMilliseconds(100));
-
-                if (bytes)
-                {
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => process.ReadAllBytesAsync(cts.Token));
-                }
-                else
-                {
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => process.ReadAllTextAsync(cts.Token));
-                }
-            }
-            finally
-            {
-                process.Kill();
-            }
-
-            Assert.True(process.WaitForExit(WaitInMS));
-        }
-
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("hello", "world", true, false)]
         [InlineData("hello", "world", false, false)]
         [InlineData("just output", "", true, false)]
@@ -477,6 +446,83 @@ namespace System.Diagnostics.Tests
 
             Assert.Equal(largeByteArray, standardOutput);
             Assert.Empty(standardError);
+            Assert.True(process.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        public async Task ReadAllAsync_ThrowsAllAvailableExceptions(bool multiple, bool bytes)
+        {
+            using Process process = CreateProcess(RemotelyInvokable.Dummy);
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.Start();
+
+            try
+            {
+                // Close the underlying pipe streams to force both async reads to fail.
+                // We access the internal fields directly via reflection to avoid going through
+                // the StandardOutput/StandardError properties, which would set the StreamReadMode
+                // and prevent ReadAllBytesAsync from being called.
+                FieldInfo stdoutField = typeof(Process).GetField("_standardOutput", BindingFlags.NonPublic | BindingFlags.Instance)!;
+                FieldInfo stderrField = typeof(Process).GetField("_standardError", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+                StreamReader stdoutReader = (StreamReader)stdoutField.GetValue(process)!;
+                StreamReader stderrReader = (StreamReader)stderrField.GetValue(process)!;
+
+                stdoutReader.BaseStream.Dispose();
+
+                if (multiple)
+                {
+                    stderrReader.BaseStream.Dispose();
+
+                    AggregateException aggregate = await Assert.ThrowsAsync<AggregateException>(() => bytes ? process.ReadAllBytesAsync() : process.ReadAllTextAsync());
+                    Assert.Equal(2, aggregate.InnerExceptions.Count);
+                    Assert.All(aggregate.InnerExceptions, ex => Assert.IsType<ObjectDisposedException>(ex));
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<ObjectDisposedException>(() => bytes ? process.ReadAllBytesAsync() : process.ReadAllTextAsync());
+                }
+            }
+            finally
+            {
+                process.Kill();
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAllAsync_ThrowsOperationCanceledOnCancellation(bool bytes)
+        {
+            Process process = CreateProcess(RemotelyInvokable.ReadLine);
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.RedirectStandardInput = true;
+            process.Start();
+
+            try
+            {
+                using CancellationTokenSource cts = new(TimeSpan.FromMilliseconds(100));
+
+                if (bytes)
+                {
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => process.ReadAllBytesAsync(cts.Token));
+                }
+                else
+                {
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => process.ReadAllTextAsync(cts.Token));
+                }
+            }
+            finally
+            {
+                process.Kill();
+            }
+
             Assert.True(process.WaitForExit(WaitInMS));
         }
 

@@ -11,7 +11,7 @@ namespace System.Diagnostics
 {
     public partial class Process
     {
-        private static SafePipeHandle GetSafeFileHandleFromStreamReader(StreamReader reader) => ((AnonymousPipeClientStream)reader.BaseStream).SafePipeHandle;
+        private static SafePipeHandle GetSafeHandleFromStreamReader(StreamReader reader) => ((AnonymousPipeClientStream)reader.BaseStream).SafePipeHandle;
 
         /// <summary>
         /// Reads from both standard output and standard error pipes using Unix poll-based multiplexing

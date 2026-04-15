@@ -134,37 +134,19 @@ namespace System.Diagnostics
         /// </exception>
         public async Task<(string StandardOutput, string StandardError)> ReadAllTextAsync(CancellationToken cancellationToken = default)
         {
-            ValidateReadAllState();
-
-            Task<ArraySegment<byte>> outputTask = ReadPipeToBufferAsync(_standardOutput!.BaseStream, cancellationToken);
-            Task<ArraySegment<byte>> errorTask = ReadPipeToBufferAsync(_standardError!.BaseStream, cancellationToken);
+            (ArraySegment<byte> standardOutput, ArraySegment<byte> standardError) = await ReadAllBytesIntoRentedArraysAsync(cancellationToken).ConfigureAwait(false);
 
             try
             {
-                await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
-
-                ArraySegment<byte> output = outputTask.Result;
-                ArraySegment<byte> error = errorTask.Result;
-
                 Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();
                 Encoding errorEncoding = _startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding();
 
-                string standardOutput = outputEncoding.GetString(output.AsSpan());
-                string standardError = errorEncoding.GetString(error.AsSpan());
-
-                return (standardOutput, standardError);
+                return (outputEncoding.GetString(standardOutput.AsSpan()), errorEncoding.GetString(standardError.AsSpan()));
             }
             finally
             {
-                if (outputTask.IsCompletedSuccessfully)
-                {
-                    ArrayPool<byte>.Shared.Return(outputTask.Result.Array!);
-                }
-
-                if (errorTask.IsCompletedSuccessfully)
-                {
-                    ArrayPool<byte>.Shared.Return(errorTask.Result.Array!);
-                }
+                ArrayPool<byte>.Shared.Return(standardOutput.Array!);
+                ArrayPool<byte>.Shared.Return(standardError.Array!);
             }
         }
 
@@ -191,22 +173,36 @@ namespace System.Diagnostics
         /// </exception>
         public async Task<(byte[] StandardOutput, byte[] StandardError)> ReadAllBytesAsync(CancellationToken cancellationToken = default)
         {
+            (ArraySegment<byte> standardOutput, ArraySegment<byte> standardError) = await ReadAllBytesIntoRentedArraysAsync(cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                return (standardOutput.AsSpan().ToArray(), standardError.AsSpan().ToArray());
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(standardOutput.Array!);
+                ArrayPool<byte>.Shared.Return(standardError.Array!);
+            }
+        }
+
+        private async Task<(ArraySegment<byte> StandardOutput, ArraySegment<byte> StandardError)> ReadAllBytesIntoRentedArraysAsync(CancellationToken cancellationToken)
+        {
             ValidateReadAllState();
 
             Task<ArraySegment<byte>> outputTask = ReadPipeToBufferAsync(_standardOutput!.BaseStream, cancellationToken);
             Task<ArraySegment<byte>> errorTask = ReadPipeToBufferAsync(_standardError!.BaseStream, cancellationToken);
 
+            Task whenAll = Task.WhenAll(outputTask, errorTask);
+
             try
             {
-                await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
-
-                ArraySegment<byte> output = outputTask.Result;
-                ArraySegment<byte> error = errorTask.Result;
-
-                return (output.AsSpan().ToArray(), error.AsSpan().ToArray());
+                await whenAll.ConfigureAwait(false);
             }
-            finally
+            catch
             {
+                // It's possible that one of the tasks have failed and other has succeeded.
+                // In such case, we need to return the array to the pool.
                 if (outputTask.IsCompletedSuccessfully)
                 {
                     ArrayPool<byte>.Shared.Return(outputTask.Result.Array!);
@@ -216,7 +212,18 @@ namespace System.Diagnostics
                 {
                     ArrayPool<byte>.Shared.Return(errorTask.Result.Array!);
                 }
+
+                // If there is an AggregateException with multiple exceptions, throw it.
+                if (whenAll.Exception?.InnerExceptions.Count > 1)
+                {
+                    throw whenAll.Exception;
+                }
+
+                throw;
             }
+
+            // If we got here, Task.WhenAll has suceeded and both results are available.
+            return (outputTask.Result, errorTask.Result);
         }
 
         /// <summary>
@@ -294,8 +301,8 @@ namespace System.Diagnostics
                 ? ToTimeoutMilliseconds(timeout.Value)
                 : Timeout.Infinite;
 
-            var outputHandle = GetSafeFileHandleFromStreamReader(_standardOutput!);
-            var errorHandle = GetSafeFileHandleFromStreamReader(_standardError!);
+            var outputHandle = GetSafeHandleFromStreamReader(_standardOutput!);
+            var errorHandle = GetSafeHandleFromStreamReader(_standardError!);
 
             bool outputRefAdded = false;
             bool errorRefAdded = false;
