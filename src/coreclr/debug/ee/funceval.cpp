@@ -1228,6 +1228,27 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     }
     CONTRACTL_END;
 
+    DebuggerIPCE_FuncEvalArgData *argData = pDE->GetArgData();
+
+    // GC-protect all arg addresses as interior pointers before any GC-triggering operations
+    // (ResolveFuncEvalGenericArgInfo, AllocateObject, GatherFuncEvalArgInfo, GetRetTypeHandleThrowing
+    // can all trigger GC). Some argAddr values may point into managed objects on the GC heap (e.g. fields
+    // of heap-allocated objects). Protecting them ensures the GC updates these pointers if objects move.
+    SIZE_T cbAllocSize;
+    if (!(ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(void *), cbAllocSize)) ||
+        (cbAllocSize != (size_t)(cbAllocSize)))
+    {
+        ThrowHR(COR_E_OVERFLOW);
+    }
+    void **pArgAddrs = (void **)_alloca(cbAllocSize);
+    memset(pArgAddrs, 0, cbAllocSize);
+    for (unsigned i = 0; i < pDE->m_argCount; i++)
+    {
+        if (argData[i].argAddr != NULL)
+            pArgAddrs[i] = (void *)(argData[i].argAddr);
+    }
+    GCPROTECT_BEGININTERIOR_ARRAY(*pArgAddrs, pDE->m_argCount);
+
     ResolveFuncEvalGenericArgInfo(pDE);
 
     MetaSig mSig(pDE->m_md);
@@ -1262,28 +1283,6 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     {
         COMPlusThrow(kTargetParameterCountException, W("Arg_ParmCnt"));
     }
-
-    DebuggerIPCE_FuncEvalArgData *argData = pDE->GetArgData();
-
-    // GC-protect all arg addresses as interior pointers before any GC-triggering
-    // operations (GatherFuncEvalArgInfo walks the signature, GetRetTypeHandleThrowing
-    // resolves types — both can trigger GC). Some argAddr values may point into
-    // managed objects on the GC heap (e.g. fields of heap-allocated objects).
-    // Protecting them ensures the GC updates these pointers if objects move.
-    SIZE_T cbAllocSize;
-    if (!(ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(void *), cbAllocSize)) ||
-        (cbAllocSize != (size_t)(cbAllocSize)))
-    {
-        ThrowHR(COR_E_OVERFLOW);
-    }
-    void **pArgAddrs = (void **)_alloca(cbAllocSize);
-    memset(pArgAddrs, 0, cbAllocSize);
-    for (unsigned i = 0; i < pDE->m_argCount; i++)
-    {
-        if (argData[i].argAddr != NULL)
-            pArgAddrs[i] = (void *)(argData[i].argAddr);
-    }
-    GCPROTECT_BEGININTERIOR_ARRAY(*pArgAddrs, pDE->m_argCount);
 
     // Gather signature type info for each argument.
     if (!(ClrSafeInt<SIZE_T>::multiply(pDE->m_argCount, sizeof(FuncEvalArgInfo), cbAllocSize)) ||
@@ -1491,8 +1490,8 @@ static void DoNormalFuncEval(DebuggerEval *pDE)
     }
 
     GCPROTECT_END();    // ucoGc
-    GCPROTECT_END();    // pArgAddrs
     GCPROTECT_END();    // newObj
+    GCPROTECT_END();    // pArgAddrs
 }
 
 /*
