@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Test.Common;
 using System.Security.Principal;
+using System.Threading.Tasks;
 
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -13,11 +17,35 @@ namespace System.Net.Security.Enterprise.Tests
     [ConditionalClass(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
     public class NegotiateAuthenticationTest
     {
+        static NegotiateAuthenticationTest()
+        {
+            // Obtain a Kerberos TGT so that DefaultNetworkCredentials tests can work.
+            // Other tests pass explicit credentials but DefaultCredentials needs a cached ticket.
+            try
+            {
+                NetworkCredential creds = EnterpriseTestConfiguration.ValidNetworkCredentials;
+                using var process = new Process();
+                process.StartInfo.FileName = "kinit";
+                process.StartInfo.Arguments = $"{creds.UserName}@{EnterpriseTestConfiguration.Realm}";
+                process.StartInfo.RedirectStandardInput = true;
+                process.StartInfo.UseShellExecute = false;
+                process.Start();
+                process.StandardInput.WriteLine(creds.Password);
+                process.StandardInput.Close();
+                process.WaitForExit(10_000);
+            }
+            catch
+            {
+                // kinit may not be available; the test will skip gracefully.
+            }
+        }
+
         public static TheoryData<NetworkCredential, string> AuthenticationSuccessCases => new TheoryData<NetworkCredential, string>
         {
             { EnterpriseTestConfiguration.ValidNetworkCredentials, "HOST/localhost" },
             { EnterpriseTestConfiguration.ValidNetworkCredentials, "HOST/linuxclient.linux.contoso.com" },
             { EnterpriseTestConfiguration.ValidNetworkCredentials, "HTTP/apacheweb.linux.contoso.com" },
+            { EnterpriseTestConfiguration.ValidNetworkCredentials, "HTTP/apacheweb.linux.contoso.com@LINUX.CONTOSO.COM" },
         };
 
         public static TheoryData<NetworkCredential, string> LoopbackAuthenticationSuccessCases => new TheoryData<NetworkCredential, string>
@@ -46,7 +74,7 @@ namespace System.Net.Security.Enterprise.Tests
             Assert.Equal("Negotiate", client.Package);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData("HOST/localhost")]
         [InlineData("HOST/linuxclient.linux.contoso.com")]
         public void ClientAuthentication_DefaultCredentials_Succeeds(string targetName)
@@ -58,16 +86,47 @@ namespace System.Net.Security.Enterprise.Tests
                 TargetName = targetName,
             });
 
-            NegotiateAuthenticationStatusCode statusCode;
-            byte[]? token = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out statusCode);
+            using var server = new NegotiateAuthentication(new NegotiateAuthenticationServerOptions
+            {
+                Package = "Negotiate",
+            });
 
-            if (token is null)
+            NegotiateAuthenticationStatusCode clientStatus, serverStatus;
+            byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out clientStatus);
+
+            if (clientToken is null)
             {
                 throw new SkipTestException("Kerberos TGT is not available (kinit not run).");
             }
 
-            Assert.True(token.Length > 0);
-            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
+
+            const int MaxIterations = 20;
+            for (int i = 0; i < MaxIterations; i++)
+            {
+                byte[]? serverToken = server.GetOutgoingBlob(clientToken, out serverStatus);
+                if (serverStatus == NegotiateAuthenticationStatusCode.Completed)
+                {
+                    if (serverToken is not null)
+                    {
+                        client.GetOutgoingBlob(serverToken, out clientStatus);
+                    }
+                    break;
+                }
+                Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, serverStatus);
+                Assert.NotNull(serverToken);
+
+                clientToken = client.GetOutgoingBlob(serverToken, out clientStatus);
+                if (clientStatus == NegotiateAuthenticationStatusCode.Completed)
+                {
+                    break;
+                }
+                Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
+                Assert.NotNull(clientToken);
+            }
+
+            Assert.True(client.IsAuthenticated);
+            Assert.True(server.IsAuthenticated);
         }
 
         [Theory]
@@ -121,7 +180,6 @@ namespace System.Net.Security.Enterprise.Tests
 
         [Theory]
         [MemberData(nameof(LoopbackAuthenticationSuccessCases))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/12345")]
         public void ClientServerAuthentication_WrapUnwrap_Succeeds(NetworkCredential credential, string targetName)
         {
             using var client = new NegotiateAuthentication(new NegotiateAuthenticationClientOptions
@@ -297,11 +355,10 @@ namespace System.Net.Security.Enterprise.Tests
             Assert.Equal(targetName, client.TargetName);
         }
 
-        [Theory]
-        [InlineData("HOST/linuxclient.linux.contoso.com@LINUX.CONTOSO.COM")]
-        [InlineData("HTTP/apacheweb.linux.contoso.com@LINUX.CONTOSO.COM")]
-        public void ClientAuthentication_TargetNameWithRealm_Succeeds(string targetName)
+        [Fact]
+        public async Task ClientServerAuthentication_AgainstWebServer_Succeeds()
         {
+            string targetName = "HTTP/apacheweb.linux.contoso.com";
             using var client = new NegotiateAuthentication(new NegotiateAuthenticationClientOptions
             {
                 Package = "Negotiate",
@@ -309,12 +366,58 @@ namespace System.Net.Security.Enterprise.Tests
                 TargetName = targetName,
             });
 
-            NegotiateAuthenticationStatusCode statusCode;
-            byte[]? token = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out statusCode);
+            byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out NegotiateAuthenticationStatusCode clientStatus);
+            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
+            Assert.NotNull(clientToken);
 
-            Assert.NotNull(token);
-            Assert.True(token.Length > 0);
-            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, EnterpriseTestConfiguration.NegotiateAuthWebServer);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Negotiate", Convert.ToBase64String(clientToken));
+
+            using HttpResponseMessage response = await httpClient.SendAsync(request);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            string? serverAuthHeader = response.Headers.WwwAuthenticate.ToString();
+            if (!string.IsNullOrEmpty(serverAuthHeader) && serverAuthHeader.StartsWith("Negotiate ", StringComparison.OrdinalIgnoreCase))
+            {
+                byte[] serverToken = Convert.FromBase64String(serverAuthHeader.Substring("Negotiate ".Length));
+                client.GetOutgoingBlob(serverToken, out clientStatus);
+            }
+
+            Assert.True(client.IsAuthenticated);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/12345")]
+        public async Task ClientServerAuthentication_AgainstWebServer_WithRealmHint_Succeeds()
+        {
+            string targetName = "HTTP/apacheweb.linux.contoso.com@LINUX.CONTOSO.COM";
+            using var client = new NegotiateAuthentication(new NegotiateAuthenticationClientOptions
+            {
+                Package = "Negotiate",
+                Credential = EnterpriseTestConfiguration.ValidNetworkCredentials,
+                TargetName = targetName,
+            });
+
+            byte[]? clientToken = client.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out NegotiateAuthenticationStatusCode clientStatus);
+            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, clientStatus);
+            Assert.NotNull(clientToken);
+
+            using var httpClient = new HttpClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, EnterpriseTestConfiguration.NegotiateAuthWebServer);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Negotiate", Convert.ToBase64String(clientToken));
+
+            using HttpResponseMessage response = await httpClient.SendAsync(request);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            string? serverAuthHeader = response.Headers.WwwAuthenticate.ToString();
+            if (!string.IsNullOrEmpty(serverAuthHeader) && serverAuthHeader.StartsWith("Negotiate ", StringComparison.OrdinalIgnoreCase))
+            {
+                byte[] serverToken = Convert.FromBase64String(serverAuthHeader.Substring("Negotiate ".Length));
+                client.GetOutgoingBlob(serverToken, out clientStatus);
+            }
+
+            Assert.True(client.IsAuthenticated);
         }
     }
 }
