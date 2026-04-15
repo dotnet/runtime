@@ -136,14 +136,16 @@ namespace System.Diagnostics
         {
             ValidateReadAllState();
 
-            (ArraySegment<byte> output, ArraySegment<byte> error) = await ReadPipesToBuffersAsync(
-                _standardOutput!.BaseStream, _standardError!.BaseStream, cancellationToken).ConfigureAwait(false);
+            Task<ArraySegment<byte>> outputTask = ReadPipeToBufferAsync(_standardOutput!.BaseStream, cancellationToken);
+            Task<ArraySegment<byte>> errorTask = ReadPipeToBufferAsync(_standardError!.BaseStream, cancellationToken);
+
+            ArraySegment<byte> output = await outputTask.ConfigureAwait(false);
+            ArraySegment<byte> error = await errorTask.ConfigureAwait(false);
 
             Debug.Assert(output.Array is not null && error.Array is not null);
 
             try
             {
-
                 Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();
                 Encoding errorEncoding = _startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding();
 
@@ -184,8 +186,11 @@ namespace System.Diagnostics
         {
             ValidateReadAllState();
 
-            (ArraySegment<byte> output, ArraySegment<byte> error) = await ReadPipesToBuffersAsync(
-                _standardOutput!.BaseStream, _standardError!.BaseStream, cancellationToken).ConfigureAwait(false);
+            Task<ArraySegment<byte>> outputTask = ReadPipeToBufferAsync(_standardOutput!.BaseStream, cancellationToken);
+            Task<ArraySegment<byte>> errorTask = ReadPipeToBufferAsync(_standardError!.BaseStream, cancellationToken);
+
+            ArraySegment<byte> output = await outputTask.ConfigureAwait(false);
+            ArraySegment<byte> error = await errorTask.ConfigureAwait(false);
 
             Debug.Assert(output.Array is not null && error.Array is not null);
 
@@ -201,81 +206,31 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Asynchronously reads from both standard output and standard error streams into the provided buffers
-        /// using <see cref="Task.WhenAny(Task, Task)"/> for multiplexing.
-        /// Returns the (possibly resized) buffers along with the byte counts, since async methods cannot use ref parameters.
+        /// Asynchronously reads the entire content of a stream into a pooled buffer.
+        /// The caller is responsible for returning the buffer to the pool after use.
         /// </summary>
-        private static async Task<(ArraySegment<byte> output, ArraySegment<byte> error)> ReadPipesToBuffersAsync(
-            Stream outputStream, Stream errorStream, CancellationToken cancellationToken)
+        private static async Task<ArraySegment<byte>> ReadPipeToBufferAsync(Stream stream, CancellationToken cancellationToken)
         {
-            int outputBytesRead = 0;
-            int errorBytesRead = 0;
-
-            byte[] outputBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
-            byte[] errorBuffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
+            int bytesRead = 0;
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialReadAllBufferSize);
 
             try
             {
-                Task<int>? outputRead = outputStream.ReadAsync(outputBuffer, outputBytesRead, outputBuffer.Length - outputBytesRead, cancellationToken);
-                Task<int>? errorRead = errorStream.ReadAsync(errorBuffer, errorBytesRead, errorBuffer.Length - errorBytesRead, cancellationToken);
-
-                while (outputRead is not null || errorRead is not null)
+                int read;
+                while ((read = await stream.ReadAsync(buffer.AsMemory(bytesRead), cancellationToken).ConfigureAwait(false)) > 0)
                 {
-                    Task<int> finished;
-                    if (outputRead is not null && errorRead is not null)
+                    bytesRead += read;
+                    if (bytesRead == buffer.Length)
                     {
-                        finished = await Task.WhenAny(outputRead, errorRead).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        finished = (outputRead ?? errorRead)!;
-                    }
-
-                    bool isError = finished == errorRead;
-                    int bytesRead = await finished.ConfigureAwait(false);
-
-                    if (bytesRead > 0)
-                    {
-                        if (isError)
-                        {
-                            errorBytesRead += bytesRead;
-                            if (errorBytesRead == errorBuffer.Length)
-                            {
-                                RentLargerBuffer(ref errorBuffer, errorBytesRead);
-                            }
-                            errorRead = errorStream.ReadAsync(errorBuffer, errorBytesRead, errorBuffer.Length - errorBytesRead, cancellationToken);
-                        }
-                        else
-                        {
-                            outputBytesRead += bytesRead;
-                            if (outputBytesRead == outputBuffer.Length)
-                            {
-                                RentLargerBuffer(ref outputBuffer, outputBytesRead);
-                            }
-                            outputRead = outputStream.ReadAsync(outputBuffer, outputBytesRead, outputBuffer.Length - outputBytesRead, cancellationToken);
-                        }
-                    }
-                    else
-                    {
-                        // EOF: pipe write end was closed.
-                        if (isError)
-                        {
-                            errorRead = null;
-                        }
-                        else
-                        {
-                            outputRead = null;
-                        }
+                        RentLargerBuffer(ref buffer, bytesRead);
                     }
                 }
 
-                return (new ArraySegment<byte>(outputBuffer, 0, outputBytesRead), new ArraySegment<byte>(errorBuffer, 0, errorBytesRead));
+                return new ArraySegment<byte>(buffer, 0, bytesRead);
             }
             catch
             {
-                ArrayPool<byte>.Shared.Return(outputBuffer);
-                ArrayPool<byte>.Shared.Return(errorBuffer);
-
+                ArrayPool<byte>.Shared.Return(buffer);
                 throw;
             }
         }
