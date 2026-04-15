@@ -327,12 +327,25 @@ internal sealed class R2RTestRunner
 
         paths.Add(Path.Combine(_paths.RuntimePackDir, "*.dll"));
 
-        string nativeDir = _paths.RuntimePackNativeDir;
-        string spcl = Path.Combine(nativeDir, "System.Private.CoreLib.dll");
+        // SPCL lives in the runtime pack native/ dir in full builds (placed by
+        // externals.csproj BinPlace during libs.pretest).  In partial CI builds
+        // that skip libs.pretest, the runtime pack layout may not exist, but the
+        // CoreCLR artifacts directory always has SPCL after clr.nativecorelib.
+        string spcl = Path.Combine(_paths.RuntimePackNativeDir, "System.Private.CoreLib.dll");
+        if (!File.Exists(spcl))
+        {
+            string fallback = Path.Combine(_paths.CoreCLRArtifactsDir, "System.Private.CoreLib.dll");
+            if (File.Exists(fallback))
+            {
+                _output.WriteLine($"[R2RTestRunner] SPCL not found at '{spcl}'; using CoreCLR artifacts fallback '{fallback}'");
+                spcl = fallback;
+            }
+        }
+
         Assert.True(File.Exists(spcl),
             $"System.Private.CoreLib.dll not found at '{spcl}'. " +
-            $"Ensure the runtime pack native directory exists and contains CoreLib. " +
-            $"RuntimePackNativeDir='{nativeDir}', RuntimePackDir='{_paths.RuntimePackDir}'");
+            $"Searched RuntimePackNativeDir='{_paths.RuntimePackNativeDir}' and " +
+            $"CoreCLRArtifactsDir='{_paths.CoreCLRArtifactsDir}'");
         paths.Add(spcl);
 
         return paths;
