@@ -409,6 +409,7 @@ NESTED_END TheUMEntryPrestub, _TEXT
 
 GenerateRedirectedStubWithFrame RedirectForThreadAbort, ThrowControlForThread
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
 //
@@ -496,6 +497,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
     EPILOG_BRANCH_REG  t4
 NESTED_END ResolveWorkerAsmStub, _TEXT
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_HIJACK
 // ------------------------------------------------------------------
@@ -515,10 +517,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // save any integral return value(s)
     sd  a0, 120(sp)
     sd  a1, 128(sp)
+    // save async continuation return value
+    sd  a2, 136(sp)
 
     // save any FP/HFA return value(s)
-    fsd  f0, 136(sp)
-    fsd  f1, 144(sp)
+    fsd  f0, 144(sp)
+    fsd  f1, 152(sp)
 
     addi  a0, sp, 0
     call  C_FUNC(OnHijackWorker)
@@ -528,10 +532,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore any integral return value(s)
     ld  a0, 120(sp)
     ld  a1, 128(sp)
+    // restore async continuation return value
+    ld  a2, 136(sp)
 
     // restore any FP/HFA return value(s)
-    fld  f0, 136(sp)
-    fld  f1, 144(sp)
+    fld  f0, 144(sp)
+    fld  f1, 152(sp)
 
     EPILOG_RESTORE_REG_PAIR   s1, s2, 16
     EPILOG_RESTORE_REG_PAIR   s3, s4, 32
@@ -638,31 +644,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
     EPILOG_RETURN
 NESTED_END CallEHFilterFunclet, _TEXT
-
-#ifdef FEATURE_COMINTEROP
-// Function used by COM interop to get floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-// On entry//
-//   a0          : size of the FP result (4 or 8 bytes)
-//   a1          : pointer to 64-bit buffer to receive result
-//
-// On exit:
-//   buffer pointed to by a1 on entry contains the float or double argument as appropriate
-//
-LEAF_ENTRY getFPReturn, _TEXT
-    fsd  f0, 0(a1)
-LEAF_END getFPReturn, _TEXT
-
-// ------------------------------------------------------------------
-// Function used by COM interop to set floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-LEAF_ENTRY setFPReturn, _TEXT
-    fmv.d.x f0, a1
-LEAF_END setFPReturn, _TEXT
-
-#endif // FEATURE_COMINTEROP
 
 // ------------------------------------------------------------------
 // void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)

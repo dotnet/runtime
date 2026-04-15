@@ -390,7 +390,21 @@ namespace System.Text.RegularExpressions
                 // to implementations that don't support backtracking.
                 rootNode.EliminateEndingBacktracking();
 
+                // Re-run reduction passes to clean up structures created by the optimizations above.
+                // FinalOptimize can create patterns like Atomic(Alternate(X, Empty)) that ReduceAtomic
+                // would simplify to Loop?(X), or Concatenate(X, Empty) that ReduceConcatenation would
+                // simplify to X. A single re-reduce pass catches all known cases.
+                // This is only done for Compiled/source generator, where the one-time construction cost
+                // is amortized over many matches and simpler trees produce better generated code.
+                // The source generator explicitly sets Compiled when parsing (RegexGenerator.cs).
+                if ((rootNode.Options & RegexOptions.Compiled) != 0)
+                {
+                    rootNode.FinalReduce();
+                }
+
                 // Optimization: unnecessary re-processing of starting loops.
+                // This runs after FinalReduce so it operates on the final tree structure, since
+                // FinalReduce may restructure alternations into concatenations with a leading loop.
                 // If an expression is guaranteed to begin with a single-character unbounded loop that isn't part of an alternation (in which case it
                 // wouldn't be guaranteed to be at the beginning) or a capture (in which case a back reference could be influenced by its length), then we
                 // can update the tree with a temporary node to indicate that the implementation should use that node's ending position in the input text
@@ -440,6 +454,39 @@ namespace System.Text.RegularExpressions
             rootNode.ValidateFinalTreeInvariants();
 #endif
             return rootNode;
+        }
+
+        /// <summary>
+        /// Walks the tree bottom-up and re-calls <see cref="Reduce"/> on each child node,
+        /// replacing any child that reduces to a simpler form. This cleans up structures
+        /// created by the <see cref="FinalOptimize"/> passes, e.g. Concatenate(X, Empty)
+        /// or Atomic wrappers that became redundant.
+        /// </summary>
+        private void FinalReduce()
+        {
+            int childCount = ChildCount();
+            if (childCount == 0)
+            {
+                return;
+            }
+
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return;
+            }
+
+            for (int i = 0; i < childCount; i++)
+            {
+                RegexNode child = Child(i);
+                child.FinalReduce();
+
+                RegexNode reduced = child.Reduce();
+                if (!ReferenceEquals(reduced, child))
+                {
+                    reduced.Parent = this;
+                    UnsafeReplaceChild(i, reduced);
+                }
+            }
         }
 
         /// <summary>Converts nodes at the end of the node tree to be atomic.</summary>
@@ -671,6 +718,14 @@ namespace System.Text.RegularExpressions
                 // node can simply be removed.
                 case RegexNodeKind.Empty:
                 case RegexNodeKind.Nothing:
+                    return child;
+
+                // If the child is a single character match or a multi-char string, it inherently
+                // can't backtrack, so the Atomic wrapper is unnecessary.
+                case RegexNodeKind.One:
+                case RegexNodeKind.Notone:
+                case RegexNodeKind.Set:
+                case RegexNodeKind.Multi:
                     return child;
 
                 // If the child is already atomic, we can just remove the atomic node.
@@ -1332,8 +1387,10 @@ namespace System.Text.RegularExpressions
 
                 // To keep things relatively simple, we currently only handle:
                 // - Left to right (e.g. we don't process alternations in lookbehinds)
-                // - Branches that are one or multi nodes, or that are concatenations beginning with one or multi nodes.
-                // - All branches having the same options.
+                // - Consecutive runs of branches that are one or multi nodes, or concatenations beginning with
+                //   one or multi nodes. Non-text branches (e.g. sets, loops) are skipped but don't prevent
+                //   later consecutive text branches from being factored.
+                // - All branches in a factored run having the same options.
 
                 // Only extract left-to-right prefixes.
                 if ((alternation.Options & RegexOptions.RightToLeft) != 0)
@@ -1348,7 +1405,8 @@ namespace System.Text.RegularExpressions
                     RegexNode? startingNode = children[startingIndex].FindBranchOneOrMultiStart();
                     if (startingNode is null)
                     {
-                        return alternation;
+                        // Skip non-text branches; later consecutive text branches may still share a prefix.
+                        continue;
                     }
 
                     RegexOptions startingNodeOptions = startingNode.Options;
@@ -2357,9 +2415,13 @@ namespace System.Text.RegularExpressions
                         // Find the node that follows the literal in the tree and check whether
                         // the loop would be atomic with respect to it. If nothing follows (end of
                         // pattern), we can't reduce — earlier positions could still succeed.
+                        // We must not iterate past nullable nodes to the end of the pattern: if the
+                        // entire post-literal sequence is nullable, any backtrack position could
+                        // succeed (the nullable part matches empty and the branch completes), so
+                        // reducing to a single position would be incorrect.
                         return
                             FindNextNodeInSequence(literal, out _) is RegexNode afterLiteral &&
-                            CanBeMadeAtomic(loopNode, afterLiteral, iterateNullableSubsequent: true, allowLazy: false);
+                            CanBeMadeAtomic(loopNode, afterLiteral, iterateNullableSubsequent: false, allowLazy: false);
 
                     case RegexNodeKind.Multi when CharInLoopSet(loopNode, literal.Str![0]) && !CharInLoopSet(loopNode, literal.Str[1]):
                         // For a multi-character literal (e.g. \d+0x), treat it as two single characters:
@@ -3299,6 +3361,14 @@ namespace System.Text.RegularExpressions
             newChild.Parent = this; // so that the child can see its parent while being reduced
             newChild = newChild.Reduce();
             newChild.Parent = this; // in case Reduce returns a different node that needs to be reparented
+
+            UnsafeReplaceChild(index, newChild);
+        }
+
+        /// <summary>Replaces the child at the specified index without reducing or reparenting.</summary>
+        private void UnsafeReplaceChild(int index, RegexNode newChild)
+        {
+            Debug.Assert(Children != null);
 
             if (Children is RegexNode)
             {

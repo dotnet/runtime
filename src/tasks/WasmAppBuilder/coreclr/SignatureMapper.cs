@@ -6,7 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using WasmAppBuilder;
+
+namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 internal static class SignatureMapper
 {

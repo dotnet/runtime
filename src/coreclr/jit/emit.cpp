@@ -1328,15 +1328,6 @@ void emitter::emitBegFN(bool hasFramePtr
     emitCntStackDepth = sizeof(int);
 #endif
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    // for random NOP insertion
-
-    emitEnableRandomNops();
-    m_compiler->info.compRNG.Init(m_compiler->info.compChecksum);
-    emitNextNop           = emitNextRandomNop();
-    emitInInstrumentation = false;
-#endif // PSEUDORANDOM_NOP_INSERTION
-
     /* Create the first IG, it will be used for the prolog */
 
     emitNxtIGnum = 1;
@@ -1361,13 +1352,6 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitNewIG();
 }
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-int emitter::emitNextRandomNop()
-{
-    return m_compiler->info.compRNG.Next(1, 9);
-}
-#endif
 
 /*****************************************************************************
  *
@@ -1615,39 +1599,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         emitNxtIG(true);
     }
 #endif
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    // TODO-ARM-Bug?: PSEUDORANDOM_NOP_INSERTION is not defined for TARGET_ARM
-    //     ARM - This is currently broken on TARGET_ARM
-    //     When nopSize is odd we misalign emitCurIGsize
-    //
-    if (!m_compiler->IsAot() && !emitInInstrumentation &&
-        !emitIGisInProlog(emitCurIG) && // don't do this in prolog or epilog
-        !emitIGisInEpilog(emitCurIG) &&
-        emitRandomNops // sometimes we turn off where exact codegen is needed (pinvoke inline)
-    )
-    {
-        if (emitNextNop == 0)
-        {
-            int nopSize           = 4;
-            emitInInstrumentation = true;
-            instrDesc* idnop      = emitNewInstr();
-            emitInInstrumentation = false;
-            idnop->idInsFmt(IF_NONE);
-            idnop->idIns(INS_nop);
-#if defined(TARGET_XARCH)
-            idnop->idCodeSize(nopSize);
-#else
-#error "Undefined target for pseudorandom NOP insertion"
-#endif
-
-            emitCurIGsize += nopSize;
-            emitNextNop = emitNextRandomNop();
-        }
-        else
-            emitNextNop--;
-    }
-#endif // PSEUDORANDOM_NOP_INSERTION
 
     assert(IsCodeAligned(emitCurIGsize));
 
@@ -2275,7 +2226,7 @@ void emitter::emitGeneratePrologEpilog()
             case IGPT_FUNCLET_EPILOG:
                 INDEBUG(++funcletEpilogCnt);
                 emitBegFuncletEpilog(igPh);
-                codeGen->genFuncletEpilog();
+                codeGen->genFuncletEpilog(igPhBB);
                 emitEndFuncletEpilog();
                 break;
 
@@ -6595,7 +6546,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
             assert(tgtEH->HasFinallyHandler());
 
             // Only to the first block of the finally (which is properly marked)
-            BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
+            BasicBlock* tgtBlk = tgtFunc->GetStartBlock(m_compiler);
             assert(m_compiler->bbIsFuncletBeg(tgtBlk));
 
             // And now we made it back to where we started
@@ -8440,12 +8391,43 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 BYTE* target           = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
                 aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
+
                 if (m_compiler->opts.compReloc)
                 {
-                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
+#ifdef TARGET_ARM
+                    // The runtime and ILC will handle setting the thumb bit on the async resumption stub entrypoint,
+                    // either directly in the emitAsyncResumeStubEntryPoint value (runtime) or will add the thumb bit
+                    // to the symbol definition (ilc). ReadyToRun is different here: it emits method symbols without the
+                    // thumb bit, then during fixups, the runtime adds the thumb bit. This works for all cases where
+                    // the method entrypoint is fixed up at runtime, but doesn't hold for the resumption stub, which is
+                    // emitted as a direct call without the typical indirection cell + fixup. This is okay in this case
+                    // (while regular method calls could not do this) because the async method and its resumption stub
+                    // are tightly coupled and effectively funclets of the same method. However, this means that
+                    // crossgen needs the reloc for the resumption stubs entrypoint to include the thumb bit. Until we
+                    // unify the behavior of crossgen with the runtime and ilc, we will work around this by emitting the
+                    // reloc with the addend for the thumb bit.
+                    if (m_compiler->IsReadyToRun())
+                    {
+                        emitRecordRelocationWithAddlDelta(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint,
+                                                          CorInfoReloc::DIRECT, 1);
+                    }
+                    else
+#endif
+                    {
+                        emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
+                    }
                     if (target != nullptr)
                     {
-                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
+#ifdef TARGET_ARM
+                        if (m_compiler->IsReadyToRun())
+                        {
+                            emitRecordRelocationWithAddlDelta(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT, 1);
+                        }
+                        else
+#endif
+                        {
+                            emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
+                        }
                     }
                 }
 

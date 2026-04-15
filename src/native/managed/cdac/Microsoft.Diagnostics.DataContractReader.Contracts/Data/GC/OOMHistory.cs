@@ -10,15 +10,15 @@ internal sealed class OomHistory : IData<OomHistory>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.OomHistory);
 
-        Reason = target.Read<int>(address + (ulong)type.Fields[nameof(Reason)].Offset);
-        AllocSize = target.ReadNUInt(address + (ulong)type.Fields[nameof(AllocSize)].Offset);
-        Reserved = target.ReadPointer(address + (ulong)type.Fields[nameof(Reserved)].Offset);
-        Allocated = target.ReadPointer(address + (ulong)type.Fields[nameof(Allocated)].Offset);
-        GcIndex = target.ReadNUInt(address + (ulong)type.Fields[nameof(GcIndex)].Offset);
-        Fgm = target.Read<int>(address + (ulong)type.Fields[nameof(Fgm)].Offset);
-        Size = target.ReadNUInt(address + (ulong)type.Fields[nameof(Size)].Offset);
-        AvailablePagefileMb = target.ReadNUInt(address + (ulong)type.Fields[nameof(AvailablePagefileMb)].Offset);
-        LohP = target.Read<uint>(address + (ulong)type.Fields[nameof(LohP)].Offset);
+        Reason = target.ReadField<int>(address, type, nameof(Reason));
+        AllocSize = target.ReadNUIntField(address, type, nameof(AllocSize));
+        Reserved = target.ReadPointerField(address, type, nameof(Reserved));
+        Allocated = target.ReadPointerField(address, type, nameof(Allocated));
+        GcIndex = target.ReadNUIntField(address, type, nameof(GcIndex));
+        Fgm = target.ReadField<int>(address, type, nameof(Fgm));
+        Size = target.ReadNUIntField(address, type, nameof(Size));
+        AvailablePagefileMb = target.ReadNUIntField(address, type, nameof(AvailablePagefileMb));
+        LohP = target.ReadField<uint>(address, type, nameof(LohP));
     }
 
     public int Reason { get; }

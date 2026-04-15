@@ -625,7 +625,7 @@ namespace System.Runtime.Loader
                 {
                     TraceResolvingHandlerInvoked(
                         assemblyName.FullName,
-                        handler.Method.Name,
+                        handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
                         this != Default ? ToString() : Name,
                         resolvedAssembly?.FullName,
                         resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
@@ -722,7 +722,7 @@ namespace System.Runtime.Loader
                 {
                     TraceAssemblyResolveHandlerInvoked(
                         name,
-                        handler.Method.Name,
+                        handler.Method.DeclaringType is Type declaringType ? $"{declaringType.FullName}.{handler.Method.Name}" : handler.Method.Name,
                         asm?.FullName,
                         asm != null && !asm.IsDynamic ? asm.Location : null);
                 }
@@ -740,6 +740,7 @@ namespace System.Runtime.Loader
         // These methods provide efficient reverse P/Invoke entry points for the VM.
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void OnAssemblyLoad(RuntimeAssembly* pAssembly, Exception* pException)
         {
             try
@@ -753,6 +754,7 @@ namespace System.Runtime.Loader
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void OnTypeResolve(RuntimeAssembly* pAssembly, byte* typeName, RuntimeAssembly* ppResult, Exception* pException)
         {
             try
@@ -767,6 +769,7 @@ namespace System.Runtime.Loader
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void OnResourceResolve(RuntimeAssembly* pAssembly, byte* resourceName, RuntimeAssembly* ppResult, Exception* pException)
         {
             try
@@ -781,6 +784,7 @@ namespace System.Runtime.Loader
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void OnAssemblyResolve(RuntimeAssembly* pAssembly, char* assemblyFullName, RuntimeAssembly* ppResult, Exception* pException)
         {
             try
@@ -794,6 +798,7 @@ namespace System.Runtime.Loader
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void Resolve(IntPtr gchAssemblyLoadContext, AssemblyName* pAssemblyName, Assembly* ppResult, Exception* pException)
         {
             try
@@ -808,6 +813,7 @@ namespace System.Runtime.Loader
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void ResolveSatelliteAssembly(IntPtr gchAssemblyLoadContext, AssemblyName* pAssemblyName, Assembly* ppResult, Exception* pException)
         {
             try
@@ -822,6 +828,7 @@ namespace System.Runtime.Loader
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void ResolveUsingEvent(IntPtr gchAssemblyLoadContext, AssemblyName* pAssemblyName, Assembly* ppResult, Exception* pException)
         {
             try
