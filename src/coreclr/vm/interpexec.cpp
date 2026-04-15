@@ -1119,6 +1119,24 @@ static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* p
     EEPolicy::HandleFatalStackOverflow(&exceptionInfo);
 }
 
+// Shifts delegate call arguments down by one slot to remove the delegate object pointer,
+// preserving 16-byte alignment for V128 arguments.
+static void ShiftDelegateCallArgs(int8_t* stack, int32_t callArgsOffset, int32_t sizeOfArgsUpto16ByteAlignment, int32_t totalArgsSize)
+{
+    int8_t* argsBase = stack + callArgsOffset;
+    if (sizeOfArgsUpto16ByteAlignment != 0)
+    {
+        memmove(argsBase, argsBase + INTERP_STACK_SLOT_SIZE, sizeOfArgsUpto16ByteAlignment);
+    }
+
+    if (sizeOfArgsUpto16ByteAlignment != totalArgsSize)
+    {
+        size_t firstAlignedDstOffset = ALIGN_UP(sizeOfArgsUpto16ByteAlignment, INTERP_STACK_ALIGNMENT);
+        size_t firstAlignedSrcOffset = ALIGN_UP(INTERP_STACK_SLOT_SIZE + sizeOfArgsUpto16ByteAlignment, INTERP_STACK_ALIGNMENT);
+        memmove(argsBase + firstAlignedDstOffset, argsBase + firstAlignedSrcOffset, totalArgsSize - firstAlignedDstOffset);
+    }
+}
+
 static void UpdateFrameForTailCall(InterpMethodContextFrame *pFrame, PTR_InterpByteCodeStart targetIp, int8_t *callArgsAddress)
 {
     InterpMethod *pTargetMethod = targetIp->Method;
@@ -1260,7 +1278,7 @@ SWITCH_OPCODE:
                     InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
 
                     int32_t bypassOpcode = 0;
-                    
+
                     // After debugger callback, check if bypass was set on the thread context
                     if (pThreadContext->HasBypass(ip, &bypassOpcode))
                     {
@@ -3106,17 +3124,11 @@ SWITCH_OPCODE:
 
                     int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
 
-                    // Used only for INTOP_CALLDELEGATE to allow removal of the delegate object from the argument list
-                    int32_t sizeOfArgsUpto16ByteAlignment = 0;
-                    if (opcode == INTOP_CALLDELEGATE)
-                    {
-                        sizeOfArgsUpto16ByteAlignment = ip[4];
-                        ip += 5;
-                    }
-                    else
-                    {
-                        ip += 4;
-                    }
+                    // Argument sizes used for open virtual delegate dispatch to remove the delegate object
+                    // from the argument list while preserving 16-byte alignment for V128 arguments.
+                    int32_t sizeOfArgsUpto16ByteAlignment = ip[4];
+                    int32_t targetArgsSize = ip[5];
+                    ip += 6;
 
                     DELEGATEREF* delegateObj = LOCAL_VAR_ADDR(callArgsOffset, DELEGATEREF);
                     NULL_CHECK(*delegateObj);
@@ -3169,26 +3181,13 @@ SWITCH_OPCODE:
                             InterpMethod* pTargetMethod = targetIp->Method;
                             if (frameNeedsTailcallUpdate)
                             {
-                                UpdateFrameForTailCall(pFrame, targetIp, LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int8_t));
+                                ShiftDelegateCallArgs(stack, callArgsOffset, sizeOfArgsUpto16ByteAlignment, pTargetMethod->argsSize);
+                                UpdateFrameForTailCall(pFrame, targetIp, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
                                 frameNeedsTailcallUpdate = false;
                             }
                             else
                             {
-                                // Shift args down by one slot to remove the delegate obj pointer.
-                                // We need to preserve alignment of arguments that require 16-byte alignment.
-                                // The sizeOfArgsUpto16ByteAlignment is the size of all the target method args starting at the first argument up to (but not including) the first argument that requires 16-byte alignment.
-                                if (sizeOfArgsUpto16ByteAlignment != 0)
-                                {
-                                    memmove(LOCAL_VAR_ADDR(callArgsOffset, int8_t), LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int8_t), sizeOfArgsUpto16ByteAlignment);
-                                }
-
-                                if (sizeOfArgsUpto16ByteAlignment != pTargetMethod->argsSize)
-                                {
-                                    // There are arguments that require 16-byte alignment
-                                    size_t firstAlignedTargetArgDstOffset = ALIGN_UP(sizeOfArgsUpto16ByteAlignment, INTERP_STACK_ALIGNMENT);
-                                    size_t firstAlignedTargetArgSrcOffset = ALIGN_UP(INTERP_STACK_SLOT_SIZE + sizeOfArgsUpto16ByteAlignment, INTERP_STACK_ALIGNMENT);
-                                    memmove(LOCAL_VAR_ADDR(callArgsOffset + firstAlignedTargetArgDstOffset, int8_t), LOCAL_VAR_ADDR(callArgsOffset + firstAlignedTargetArgSrcOffset, int8_t), pTargetMethod->argsSize - sizeOfArgsUpto16ByteAlignment);
-                                }
+                                ShiftDelegateCallArgs(stack, callArgsOffset, sizeOfArgsUpto16ByteAlignment, pTargetMethod->argsSize);
 
                                 // Allocate child frame.
                                 InterpMethodContextFrame *pChildFrame = pFrame->pNext;
@@ -3209,6 +3208,12 @@ SWITCH_OPCODE:
                             ip = pFrame->startIp->GetByteCodes();
                             pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                             break;
+                        }
+                        else if (isOpenVirtual)
+                        {
+                            ShiftDelegateCallArgs(stack, callArgsOffset, sizeOfArgsUpto16ByteAlignment, targetArgsSize);
+
+                            goto CALL_INTERP_METHOD;
                         }
                     }
 
