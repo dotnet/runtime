@@ -98,12 +98,22 @@ internal partial class StackWalk_1 : IStackWalk
         /// - After a frameless frame: isFirst = false
         /// - After a ResumableFrame: isFirst = true
         /// - After other Frames: isFirst = false
+        /// - After a skipped frame: isFirst unchanged (native never modifies isFirst
+        ///   in the SFITER_SKIPPED_FRAME_FUNCTION path — it keeps the value from Init)
         /// </summary>
         public void AdvanceIsFirst()
         {
             if (State == StackWalkState.SW_FRAMELESS)
             {
                 IsFirst = false;
+            }
+            else if (State == StackWalkState.SW_SKIPPED_FRAME)
+            {
+                // Native SFITER_SKIPPED_FRAME_FUNCTION (stackwalk.cpp:2086-2128) does NOT
+                // modify isFirst. It stays true from Init() so the subsequent managed frame
+                // gets IsActiveFunc()=true. This is important because skipped frames are
+                // explicit Frames embedded within the active managed frame (e.g. InlinedCallFrame
+                // from PInvoke), and the managed frame should still be treated as the leaf.
             }
             else
             {
