@@ -51,7 +51,7 @@ internal sealed class Module : IData<Module>
 
     public TargetPointer Assembly { get; init; }
     public TargetPointer PEAssembly { get; init; }
-    public uint Flags { get; set; }
+    public uint Flags { get; private set; }
     public TargetPointer Base { get; init; }
     public TargetPointer LoaderAllocator { get; init; }
     public TargetPointer DynamicMetadata { get; init; }
