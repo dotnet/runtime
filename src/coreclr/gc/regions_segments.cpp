@@ -1835,6 +1835,12 @@ void gc_heap::distribute_free_regions()
                     if (end_space > 0)
                     {
                         virtual_decommit (aligned_allocated, end_space, gen_to_oh (i), hn);
+                        // Large pages: virtual_decommit is a no-op so the memory retains stale data.
+                        // Clear it before lowering used, matching what decommit_region does.
+                        if (use_large_pages_p && (heap_segment_used (region) > aligned_allocated))
+                        {
+                            memclr (aligned_allocated, heap_segment_used (region) - aligned_allocated);
+                        }
                         heap_segment_committed (region) = aligned_allocated;
                         heap_segment_used (region) = min (heap_segment_used (region), heap_segment_committed (region));
                         assert (heap_segment_committed (region) > heap_segment_mem (region));
