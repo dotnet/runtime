@@ -206,7 +206,7 @@ namespace System.Reflection
         /// The core assembly is treated differently than other assemblies because references to these well-known types do
         /// not include the assembly reference, unlike normal types.
         ///
-        /// Typically, this assembly is named "mscorlib", or "netstandard".
+        /// Typically, this assembly is named "System.Runtime", "mscorlib", or "netstandard".
         ///
         /// The CoreAssembly is determined by passing the coreAssemblyName parameter passed to the MetadataAssemblyResolver constructor
         /// to the MetadataAssemblyResolver's Resolve method.
