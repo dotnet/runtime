@@ -1847,6 +1847,7 @@ namespace
         }
         case VT_I4:
         case VT_INT:
+        case VT_ERROR:
         {
             TypeHandle th = (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
                 ? CoreLibBinder::GetClass(CLASS__INTPTR)
@@ -1855,7 +1856,6 @@ namespace
         }
         case VT_UI4:
         case VT_UINT:
-        case VT_ERROR:
         {
             TypeHandle th = (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
                 ? CoreLibBinder::GetClass(CLASS__UINTPTR)
@@ -2002,12 +2002,12 @@ namespace
             return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT16));
         case VT_I4:
         case VT_INT:
+        case VT_ERROR:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__INTPTR))
                 return TypeHandle(CoreLibBinder::GetClass(CLASS__INTPTR));
             return TypeHandle(CoreLibBinder::GetClass(CLASS__INT32));
         case VT_UI4:
         case VT_UINT:
-        case VT_ERROR:
             if (pElementMT == CoreLibBinder::GetClass(CLASS__UINTPTR))
                 return TypeHandle(CoreLibBinder::GetClass(CLASS__UINTPTR));
             return TypeHandle(CoreLibBinder::GetClass(CLASS__UINT32));

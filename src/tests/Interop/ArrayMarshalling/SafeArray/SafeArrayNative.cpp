@@ -311,12 +311,13 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE XorBoolArrayInStruct(StructWithS
 }
 
 // Creates a 2D SAFEARRAY of VT_I4 with dimensions [rows x cols].
-// Data is filled with value = row * cols + col (column-major storage in SAFEARRAY).
+// Data is filled by logical indices with value = row * cols + col.
 extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Create2DIntSafeArray(int rows, int cols, SAFEARRAY** ppResult)
 {
+    if (rows < 0 || cols < 0)
+        return E_INVALIDARG;
+
     SAFEARRAYBOUND bounds[2];
-    // SAFEARRAY dimension order: first bound is leftmost dimension.
-    // In column-major (Fortran) layout, the first dimension varies fastest.
     bounds[0].lLbound = 0;
     bounds[0].cElements = (ULONG)rows;
     bounds[1].lLbound = 0;
@@ -378,6 +379,9 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Verify2DIntSafeArray(SAFEARRAY* 
 // Value at [r,c] = ((r + c) % 2 == 0) ? VARIANT_TRUE : VARIANT_FALSE.
 extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Create2DBoolSafeArray(int rows, int cols, SAFEARRAY** ppResult)
 {
+    if (rows < 0 || cols < 0)
+        return E_INVALIDARG;
+
     SAFEARRAYBOUND bounds[2];
     bounds[0].lLbound = 0;
     bounds[0].cElements = (ULONG)rows;
@@ -439,6 +443,9 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Verify2DBoolSafeArray(SAFEARRAY*
 // Value at [r,c] = "r,c".
 extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Create2DStringSafeArray(int rows, int cols, SAFEARRAY** ppResult)
 {
+    if (rows < 0 || cols < 0)
+        return E_INVALIDARG;
+
     SAFEARRAYBOUND bounds[2];
     bounds[0].lLbound = 0;
     bounds[0].cElements = (ULONG)rows;

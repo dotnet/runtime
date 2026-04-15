@@ -1283,9 +1283,11 @@ namespace System.StubHelpers
             else
             {
                 const nuint MaxSizeForInterop = 0x7ffffff0u;
-                nuint nativeBytes = (nuint)(uint)managedArray.Length * TSelf.UnmanagedSize;
-                if (nativeBytes > MaxSizeForInterop)
+                nuint elementCount = (nuint)(uint)managedArray.Length;
+                nuint elementSize = TSelf.UnmanagedSize;
+                if (elementCount != 0 && elementSize > MaxSizeForInterop / elementCount)
                     throw new ArgumentException(SR.Argument_StructArrayTooLarge);
+                nuint nativeBytes = elementCount * elementSize;
                 byte* pNative = (byte*)Marshal.AllocCoTaskMem((int)nativeBytes);
                 NativeMemory.Clear(pNative, nativeBytes);
                 return pNative;
@@ -1342,9 +1344,11 @@ namespace System.StubHelpers
                 return null;
 
             const nuint MaxSizeForInterop = 0x7ffffff0u;
-            nuint nativeBytes = (nuint)(uint)managedArray.Length * (nuint)sizeof(T);
-            if (nativeBytes > MaxSizeForInterop)
+            nuint elementCount = (nuint)(uint)managedArray.Length;
+            nuint elementSize = (nuint)sizeof(T);
+            if (elementCount != 0 && elementSize > MaxSizeForInterop / elementCount)
                 throw new ArgumentException(SR.Argument_StructArrayTooLarge);
+            nuint nativeBytes = elementCount * elementSize;
             byte* pNative = (byte*)Marshal.AllocCoTaskMem((int)nativeBytes);
             NativeMemory.Clear(pNative, nativeBytes);
 
