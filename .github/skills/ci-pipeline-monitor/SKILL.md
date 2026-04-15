@@ -1,9 +1,9 @@
 ---
 name: ci-pipeline-monitor
 description: >
-  Monitors .NET runtime CI test pipelines on Azure DevOps. Use this skill when
-  asked to check test failures, triage pipeline results, bisect regressions,
-  file GitHub issues for new failures, or generate weekly test reports.
+  Monitors .NET runtime CI test pipelines on Azure DevOps. Use this skill when asked to
+  monitor CI pipeline test results, triage CI test failures across ADO pipelines, or
+  generate CI test monitoring reports.
 ---
 
 # CI Pipeline Monitor
@@ -39,8 +39,8 @@ Use these scripts — do NOT write ad-hoc replacements. Do NOT create new files
 in `scripts/` — only the committed scripts below belong there. For ad-hoc
 queries during triage (e.g., DB lookups, grouping), prefer `python -c '...'`
 inline. If a query is too complex for inline (escaping issues, multi-line),
-write a temp file under `temp/` (e.g., `temp/_query.py`) and delete it after
-use. The `temp/` directory is gitignored.
+write a temp file under `temp/` (e.g., `temp/_query.py`). The `temp/`
+directory is gitignored; the user will clean it up when no longer needed.
 
 | Script | Step | What it does |
 |--------|------|-------------|
@@ -248,20 +248,9 @@ logs to disk.
 
 ### Step 4: Triage Failures (agent — non-deterministic)
 
-For detailed triage instructions, see [`references/triage-workflow.md`](references/triage-workflow.md).
-
-**Summary:** For each untriaged row in `test_results` (`WHERE failure_id IS NULL`):
-1. Read the full console log file at `console_log_path`
-2. Extract error_message and stack_trace verbatim (see [`references/verbatim-rules.md`](references/verbatim-rules.md))
-3. Classify (timeout/crash/assertion) using BOTH exit code and error message
-4. Group by root cause (compare error messages, not just exit codes)
-5. Search GitHub for matching issues (multi-pass: test name → class/method → error signature)
-6. Write analysis, INSERT into `failures`/`failure_pipelines`/`failure_tests`, UPDATE `test_results.failure_id`
+See [`references/triage-workflow.md`](references/triage-workflow.md) for full instructions.
 
 **⚠️ INSERT into `failures` table immediately after triaging each failure group.**
-
-**⚠️ Validation:** After all triage: `SELECT COUNT(*) FROM test_results WHERE failure_id IS NULL` must be 0.
-
 
 ### Step 5: Validate DB (deterministic — scripted)
 

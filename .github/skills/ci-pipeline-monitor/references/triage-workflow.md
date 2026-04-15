@@ -1,4 +1,20 @@
-# Triage Workflow — Detailed Instructions
+# Triage Workflow
+
+**Summary:** For each untriaged row in `test_results` (`WHERE failure_id IS NULL`):
+1. Read the full console log file at `console_log_path`
+2. Extract error_message and stack_trace verbatim (see [`verbatim-rules.md`](verbatim-rules.md))
+3. Classify (timeout/crash/assertion) using BOTH exit code and error message
+4. Group by root cause (compare error messages, not just exit codes)
+5. Search GitHub for matching issues (multi-pass: test name → class/method → error signature)
+6. Write analysis, INSERT into `failures`/`failure_pipelines`/`failure_tests`, UPDATE `test_results.failure_id`
+
+**⚠️ INSERT into `failures` table immediately after triaging each failure group.**
+
+**⚠️ Validation:** After all triage: `SELECT COUNT(*) FROM test_results WHERE failure_id IS NULL` must be 0.
+
+---
+
+## Detailed Instructions
 
 **Input:** `test_results` table — every individual failure with its exit code,
 `console_log_path` (path to the full Helix console log file on disk), and
@@ -8,9 +24,7 @@ have useful error/stack from the API; others have empty values (crashes,
 timeouts, generic Helix messages) and need the LLM to extract from the
 console log.
 
-**⚠️ INSERT into `monitor.db` immediately after triaging each failure group.**
-
-For each row in `test_results` (query: `SELECT * FROM test_results WHERE failure_id IS NULL`):
+For each row in `test_results` without a `failure_id` (query: `SELECT * FROM test_results WHERE failure_id IS NULL`):
 
 1.  **Check if the API already provided a useful error_message.** If
     `error_message` is non-empty and non-generic, use it as the starting
@@ -50,9 +64,11 @@ For each row in `test_results` (query: `SELECT * FROM test_results WHERE failure
 7.  **Search GitHub** for matching issues (`github-mcp-server-search_issues`
     in `dotnet/runtime`, open AND closed, no date restriction). Use multi-pass:
 
-    - **Pass 1 — Full test name** (most important — most issues are filed
-      with the exact test name): `System.Text.Json.Tests`, `Runtime_76219`,
-      `CharClassSubtraction_DeepNesting_DoesNotStackOverflow`
+    - **Pass 1 — Full test name from ADO Test Results** (most important — most
+      issues are filed with the exact test name as shown in ADO):
+      Assembly-level: `System.Text.RegularExpressions.Tests`
+      Path-style: `Interop/COM/NETClients/Events/NETClientEvents/NETClientEvents.cmd`
+      FQN method: `System.Diagnostics.Metrics.Tests.MetricsTests.PassingVariableTagsParametersTest`
     - **Pass 2 — Class/method name:** `StackTraceTests.ToString_ShowILOffset`
     - **Pass 3 — Work item name:** `System.Collections.Tests jitstress`
     - **Pass 4 — Error signature:** `fgprofile.cpp histogramSchemaIndex`,
@@ -83,7 +99,7 @@ For each row in `test_results` (query: `SELECT * FROM test_results WHERE failure
       console log. A test can fail for different reasons than what an existing
       issue describes (e.g., issue is about OOM but current failure is
       SIGSEGV). If the error patterns don't match, the issue is NOT a match
-      — continue searching or mark as NEW.
+      — continue searching.
     - **⚠️ Read issue comments when the body alone doesn't confirm a match.**
       Use `github-mcp-server-issue_read` with method `get_comments` when:
       (a) the issue title/body describes a different test or stack trace but
