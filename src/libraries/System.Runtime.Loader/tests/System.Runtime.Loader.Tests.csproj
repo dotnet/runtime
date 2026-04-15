@@ -112,12 +112,4 @@
       </ManagedAssemblyToLink>
     </ItemGroup>
   </Target>
-
-  <!-- Remove the Missing and Corrupt bind-failure test assemblies from the output directory
-       after build. They must remain in deps.json (so the host adds them to the TPA list)
-       but must not be physically present on disk, so the tests can verify load failure behavior. -->
-  <Target Name="RemoveBindFailureTestAssemblies" AfterTargets="Build">
-    <Delete Files="$(OutputPath)System.Runtime.Loader.Test.BindFailure.Missing.dll" />
-    <Delete Files="$(OutputPath)System.Runtime.Loader.Test.BindFailure.Corrupt.dll" />
-  </Target>
 </Project>
