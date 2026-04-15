@@ -59,6 +59,21 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void AssemblyGetLoadContext()
+        {
+            using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
+            {
+                Assembly a = lc.LoadFromByteArray(TestData.s_SimpleAssemblyImage);
+                MetadataLoadContext? loadContext = MetadataLoadContext.GetLoadContext(a);
+                Assert.Same(lc, loadContext);
+            }
+
+            Assembly coreLib = typeof(object).Assembly;
+            MetadataLoadContext? coreLibLoadContext = MetadataLoadContext.GetLoadContext(coreLib);
+            Assert.Null(coreLibLoadContext);
+        }
+
+        [Fact]
         public static void AssemblyGlobalAssemblyCache()
         {
             using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
