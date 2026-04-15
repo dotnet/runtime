@@ -13,6 +13,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Runtime.InteropServices;
@@ -109,22 +110,16 @@ namespace Microsoft.Win32.SafeHandles
             SafeFileHandle? childOutputHandle = startInfo.StandardOutputHandle;
             SafeFileHandle? childErrorHandle = startInfo.StandardErrorHandle;
 
+            using SafeFileHandle? nullDeviceHandle = startInfo.StartDetached
+                && (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
+                ? File.OpenNullHandle()
+                : null;
+
             if (!startInfo.UseShellExecute)
             {
-                if (childInputHandle is null && ProcessUtils.PlatformSupportsConsole)
-                {
-                    childInputHandle = Console.OpenStandardInputHandle();
-                }
-
-                if (childOutputHandle is null && ProcessUtils.PlatformSupportsConsole)
-                {
-                    childOutputHandle = Console.OpenStandardOutputHandle();
-                }
-
-                if (childErrorHandle is null && ProcessUtils.PlatformSupportsConsole)
-                {
-                    childErrorHandle = Console.OpenStandardErrorHandle();
-                }
+                childInputHandle ??= nullDeviceHandle ?? (ProcessUtils.PlatformSupportsConsole ? Console.OpenStandardInputHandle() : null);
+                childOutputHandle ??= nullDeviceHandle ?? (ProcessUtils.PlatformSupportsConsole ? Console.OpenStandardOutputHandle() : null);
+                childErrorHandle ??= nullDeviceHandle ?? (ProcessUtils.PlatformSupportsConsole ? Console.OpenStandardErrorHandle() : null);
 
                 ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
             }

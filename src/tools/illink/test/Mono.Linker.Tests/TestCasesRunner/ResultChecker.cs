@@ -24,7 +24,7 @@ using Mono.Linker.Tests.TestCasesRunner.ILVerification;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-    public class ResultChecker
+    public partial class ResultChecker
     {
         readonly BaseAssemblyResolver _originalsResolver;
         readonly BaseAssemblyResolver _linkedResolver;
@@ -317,7 +317,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
             bool checkRemainingErrors = !HasAttribute(linkResult.TestCase.FindTypeDefinition(original), nameof(SkipRemainingErrorsValidationAttribute));
             VerifyLoggedMessages(original, linkResult.Logger, checkRemainingErrors);
+#if !ILTRIM
             VerifyRecordedDependencies(original, linkResult.Customizations.DependencyRecorder);
+#endif
         }
 
         protected virtual void InitialChecking(TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
@@ -902,6 +904,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             yield return assembly;
         }
 
+#if !ILTRIM
         void VerifyLoggedMessages(AssemblyDefinition original, TrimmingTestLogger logger, bool checkRemainingErrors)
         {
             ImmutableArray<MessageContainer> allMessages = logger.GetLoggedMessages();
@@ -1272,6 +1275,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 return $"{dependency.Source} -> {dependency.Target} Marked: {dependency.Marked}";
             }
         }
+#endif
 
         void VerifyExpectedDependencyTrace(TestCaseMetadataProvider testCaseMetadata, NPath outputAssemblyPath)
         {

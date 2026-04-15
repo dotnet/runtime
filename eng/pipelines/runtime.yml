@@ -1157,8 +1157,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/125522
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1204,8 +1203,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/125522
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1248,8 +1246,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/125522
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange

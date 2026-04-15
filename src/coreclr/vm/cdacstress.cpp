@@ -570,9 +570,6 @@ static bool CollectStackRefs(ISOSDacInterface* pSosDac, DWORD osThreadId, SArray
         pRefs->Append(ref);
     }
 
-    // Release twice: once for the normal ref, and once for the extra ref-count
-    // leaked by SOSDacImpl.GetStackReferences for COM compat (see ConvertToUnmanaged call).
-    pEnum->Release();
     pEnum->Release();
     return true;
 }
