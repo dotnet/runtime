@@ -5728,8 +5728,12 @@ void Compiler::generatePatchpointInfo()
     //
     regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FPBASE;
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
     rsPushRegs |= RBM_LR;
+#elif defined(TARGET_LOONGARCH64)
+    rsPushRegs |= RBM_RA;
+#elif defined(TARGET_RISCV64)
+    rsPushRegs |= RBM_RA;
 #endif
     patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs.getLow());
     JITDUMP("--OSR-- Tier0 callee saves: ");

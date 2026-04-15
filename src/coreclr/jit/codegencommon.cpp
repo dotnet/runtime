@@ -5383,8 +5383,8 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_ARM
 #else  // TARGET_WASM
-    regNumber initReg       = REG_NA;
-    bool      initRegZeroed = false;
+    regNumber initReg             = REG_NA;
+    bool      initRegZeroed       = false;
     bool      inheritsCalleeSaves = false;
 #endif // TARGET_WASM
 

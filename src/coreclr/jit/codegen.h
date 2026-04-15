@@ -446,7 +446,10 @@ protected:
     void genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData);
 
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset);
-    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, regNumber baseReg, int lowestCalleeSavedOffset, bool reportUnwindData);
+    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
+                                            regNumber baseReg,
+                                            int       lowestCalleeSavedOffset,
+                                            bool      reportUnwindData);
 #endif
 
     void genOSRHandleTier0CalleeSavedRegistersAndFrame();

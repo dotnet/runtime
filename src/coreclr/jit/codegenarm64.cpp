@@ -594,7 +594,8 @@ void CodeGen::genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNum
 // Arguments:
 //    reg1                     - First register of pair to restore.
 //    reg2                     - Second register of pair to restore.
-//    spOffset                 - The offset from SP to load reg1 (must be positive or zero).
+//    baseReg                  - Base register to load values from
+//    spOffset                 - The offset from the base register to load reg1
 //    spDelta                  - If non-zero, the amount to add to SP after the register restores (must be positive or
 //                               zero).
 //    useSaveNextPair          - True if the last prolog instruction was to save the previous register pair. This
@@ -629,7 +630,7 @@ void CodeGen::genRestoreRegPair(regNumber reg1,
         {
             // Fold the SP change into this instruction.
             // ldp reg1, reg2, [SP], #spDelta
-            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spDelta, INS_OPTS_POST_INDEX);
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, baseReg, spDelta, INS_OPTS_POST_INDEX);
 
             if (reportUnwindData)
             {

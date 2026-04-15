@@ -265,7 +265,10 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, regNumber baseReg, int lowestCalleeSavedOffset, bool reportUnwindData)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
+                                                 regNumber baseReg,
+                                                 int       lowestCalleeSavedOffset,
+                                                 bool      reportUnwindData)
 {
     // The FP and RA are not in RBM_CALLEE_SAVED.
     assert(!(regsToRestoreMask & (~RBM_CALLEE_SAVED)));
@@ -337,9 +340,9 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
     JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
     JITDUMP("\nEmitting restores\n");
 
-    genRestoreCalleeSavedRegistersHelp(tier0CalleeSaves, REG_FPBASE, 16, /* reportUnwindData */ false);
-    emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_FPBASE, 8);
-    emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_FPBASE, 0);
+    genRestoreCalleeSavedRegistersHelp(tier0CalleeSaves & ~(RBM_FP | RBM_RA), REG_FP, 16, /* reportUnwindData */ false);
+    GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_FP, 8);
+    GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_FP, 0);
 
     m_compiler->unwindAllocStack(patchpointInfo->TotalFrameSize());
 }
@@ -527,7 +530,7 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
         FP_offset = FP_offset & 0xf;
     }
 
-    genRestoreCalleeSavedRegistersHelp(maskSaveRegs, FP_offset + 16);
+    genRestoreCalleeSavedRegistersHelp(maskSaveRegs, REG_SPBASE, FP_offset + 16, /* reportUnwindData */ true);
 
     GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
     m_compiler->unwindSaveReg(REG_RA, FP_offset + 8);
@@ -6569,7 +6572,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     }
 
     JITDUMP("    calleeSaveSPOffset=%d\n", FP_offset + 16);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, FP_offset + 16);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, REG_SPBASE, FP_offset + 16, /* reportUnwindData */ true);
 
     emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, FP_offset + 8);
     m_compiler->unwindSaveReg(REG_RA, FP_offset + 8);
