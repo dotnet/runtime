@@ -427,9 +427,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Materialized framework assets must be visible to referencing projects (e.g. Blazor WASM
          hosted scenarios where the server project serves the client's framework files).
          UpdatePackageStaticWebAssets defaults AssetMode to CurrentProject and CopyToOutputDirectory
-         to Never. Override both: AssetMode=All so assets flow through project references, and
-         CopyToOutputDirectory=PreserveNewest so they are copied from the intermediate materialized
-         path (obj/fx/{SourceId}/) to bin/wwwroot/_framework/ at build time. -->
+         to Never. Override AssetMode=All so assets flow through project references. Framework
+         files stay in obj/fx/{SourceId}/ and are served by the static web assets middleware
+         during dotnet run — they are not copied to bin/wwwroot/_framework/ at build time. -->
     <ItemGroup>
       <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)"
         AssetMode="All" CopyToOutputDirectory="Never" />

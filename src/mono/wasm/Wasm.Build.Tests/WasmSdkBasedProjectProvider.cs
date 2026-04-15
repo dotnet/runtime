@@ -239,13 +239,12 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         // For native builds (AOT/relink), they are rebuilt and placed in wasm/for-build/.
         string[] nativeFiles = ["dotnet.native.js", "dotnet.native.wasm"];
         var expectedFileType = isUsingWorkloads
-            ? GetExpectedFileType(config, buildOptions.AOT, isPublish: false, isUsingWorkloads, isNativeBuild)
+            ? GetExpectedFileType(config, buildOptions.AOT, isPublish: false, isUsingWorkloads: isUsingWorkloads, isNativeBuild: isNativeBuild)
             : NativeFilesType.FromRuntimePack;
         bool isNativeRebuild = expectedFileType is NativeFilesType.Relinked or NativeFilesType.AOT;
         string nativeDir = isNativeRebuild
             ? Path.Combine(objDir, "wasm", "for-build")
             : fxFrameworkDir;
-        string nativeDirLabel = isNativeRebuild ? "wasm/for-build" : "fx/_framework";
 
         foreach (string file in nativeFiles)
         {
