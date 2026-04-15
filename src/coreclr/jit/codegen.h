@@ -383,8 +383,7 @@ protected:
                               regNumber tmpReg,
                               bool*     pTmpRegIsZero);
 
-    void genPrologSaveReg(
-        regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData);
+    void genPrologSaveReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
 
     void genRestoreRegPair(regNumber reg1,
                            regNumber reg2,
@@ -432,14 +431,11 @@ protected:
 
     static int genGetSlotSizeForRegsInMask(regMaskTP regsMask);
 
-    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset, bool unwindOnly = false);
+    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
     void genRestoreCalleeSavedRegisterGroup(
         regMaskTP regsMask, regNumber baseReg, int spDelta, int spOffset, bool reportUnwindData);
 
-    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
-                                         int       lowestCalleeSavedOffset,
-                                         int       spDelta,
-                                         bool      unwindOnly = false);
+    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
                                             regNumber baseReg,
                                             int       lowestCalleeSavedOffset,
