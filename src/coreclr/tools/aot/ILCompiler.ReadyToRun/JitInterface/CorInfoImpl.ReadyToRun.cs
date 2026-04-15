@@ -1581,10 +1581,15 @@ namespace Internal.JitInterface
         /// </summary>
         private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
         {
-            Debug.Assert(_debugVarInfos == null);
+            // FIXME: This can erroneously trigger when a method fails compilation late and we
+            //  successfully retry compilation after the failure.
+            // Debug.Assert(_debugVarInfos == null);
 
             if (cVars == 0)
+            {
+                _debugVarInfos = null;
                 return;
+            }
 
             _debugVarInfos = new NativeVarInfo[cVars];
             for (int i = 0; i < cVars; i++)
@@ -1601,7 +1606,9 @@ namespace Internal.JitInterface
         /// </summary>
         private void setBoundaries(CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
         {
-            Debug.Assert(_debugLocInfos == null);
+            // FIXME: This can erroneously trigger when a method fails compilation late and we
+            //  successfully retry compilation after the failure.
+            // Debug.Assert(_debugLocInfos == null);
 
             _debugLocInfos = new OffsetMapping[cMap];
             for (int i = 0; i < cMap; i++)

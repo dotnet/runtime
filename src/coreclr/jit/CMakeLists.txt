@@ -23,7 +23,7 @@ function(create_standalone_jit)
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_${TARGETDETAILS_ARCH})
-  elseif(NOT ${TARGETDETAILS_ARCH} MATCHES "wasm")
+  else()
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
   endif()
 
@@ -292,6 +292,8 @@ set( JIT_RISCV64_SOURCES
 )
 
 set( JIT_WASM_SOURCES
+  gcdecode.cpp
+  gcencode.cpp
   codegenwasm.cpp
   emitwasm.cpp
   fgwasm.cpp
