@@ -303,7 +303,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                     // Skip the exception handling managed code, the debugger clients are not supposed to see them
                     // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
                     // and System.Runtime.StackFrameIterator.*
-                    if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
+                    if (pMT == g_pEHClass || pMT == g_pExceptionServicesInternalCallsClass || pMT == g_pStackFrameIteratorClass)
                     {
                         continue;
                     }
