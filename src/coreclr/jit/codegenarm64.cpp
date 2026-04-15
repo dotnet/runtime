@@ -208,8 +208,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     }
 
     JITDUMP("    calleeSaveSpOffset=%d, calleeSaveSpDelta=%d\n", calleeSaveSpOffset, calleeSaveSpDelta);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, REG_SPBASE, calleeSaveSpOffset, calleeSaveSpDelta,
-                                       /* reportUnwindData */ true);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset, calleeSaveSpDelta);
 
     switch (frameType)
     {
@@ -1000,7 +999,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 // Arguments:
 //   regsMask             - a mask of registers for epilog generation;
 //   spDelta              - if non-zero, the amount to add to SP after the last register restore (or together with it);
-//   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
+//   spOffset             - the offset from SP that is the top of the callee-saved register area;
 //
 void CodeGen::genRestoreCalleeSavedRegisterGroup(
     regMaskTP regsMask, regNumber baseReg, int spDelta, int spOffset, bool reportUnwindData)
@@ -1077,8 +1076,7 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(
-    regMaskTP regsToRestoreMask, regNumber baseReg, int lowestCalleeSavedOffset, int spDelta, bool reportUnwindData)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta)
 {
     assert(spDelta >= 0);
     unsigned regsToRestoreCount = genCountBits(regsToRestoreMask);
@@ -1114,20 +1112,23 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(
     {
         int spFrameDelta = (maskRestoreRegsFloat != RBM_NONE || maskRestoreRegsInt != RBM_NONE) ? 0 : spDelta;
         spOffset -= 2 * REGSIZE_BYTES;
-        genRestoreRegPair(REG_FP, REG_LR, baseReg, spOffset, spFrameDelta, false, REG_IP1, nullptr, reportUnwindData);
+        genRestoreRegPair(REG_FP, REG_LR, REG_SPBASE, spOffset, spFrameDelta, false, REG_IP1, nullptr,
+                          /* reportUnwindData */ true);
     }
 
     if (maskRestoreRegsInt != RBM_NONE)
     {
         int spIntDelta = (maskRestoreRegsFloat != RBM_NONE) ? 0 : spDelta; // should we delay the SP adjustment?
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, baseReg, spIntDelta, spOffset, reportUnwindData);
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, REG_SPBASE, spIntDelta, spOffset,
+                                           /* reportUnwindData */ true);
         spOffset -= genCountBits(maskRestoreRegsInt) * REGSIZE_BYTES;
     }
 
     if (maskRestoreRegsFloat != RBM_NONE)
     {
         // If there is any spDelta, it must be used here.
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, baseReg, spDelta, spOffset, reportUnwindData);
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, REG_SPBASE, spDelta, spOffset,
+                                           /* reportUnwindData */ true);
         // No need to update spOffset since it's not used after this.
     }
 }
@@ -1578,8 +1579,7 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
         regsToRestoreMask &= ~(RBM_LR | RBM_FP); // We restore FP/LR at the end
     }
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta + genFuncletInfo.fiSpDelta2;
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, REG_SPBASE, lowestCalleeSavedOffset, 0,
-                                       /* reportUnwindData */ true);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, lowestCalleeSavedOffset, 0);
 
     if (genFuncletInfo.fiFrameType == 1)
     {
@@ -5589,11 +5589,31 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
     // This happens in the transition helper. If transition helper is not used (e.g. because we directly jump into OSR)
     // then hijacking tier0 is not supported -- this is similar to tailcalls so the situation can be recorded via
     // SetHasTailCalls.
-    // FP is pointing to the FP/LR pair. That pair is always saved at the top,
-    // so add 2*REGSIZE_BYTES to get to the end of the callee saves, then
-    // subtract total size of callee saves to get to the beginning.
-    genRestoreCalleeSavedRegistersHelp(tier0CalleeSaves, REG_FPBASE, 2 * REGSIZE_BYTES - tier0CalleeSaveUsedSize,
-                                       /* spDelta */ 0, /* reportUnwindData */ false);
+
+    regMaskTP restoreRegsFrame = tier0CalleeSaves & (RBM_FP | RBM_LR);
+    regMaskTP restoreRegsFloat = tier0CalleeSaves & RBM_ALLFLOAT;
+    regMaskTP restoreRegsInt   = tier0CalleeSaves & ~restoreRegsFrame & ~restoreRegsFloat;
+
+    // FP is pointing to the FP/LR pair. That pair is always saved at the top.
+    int calleeSavesTop  = 2 * REGSIZE_BYTES;
+    int frameRegsBottom = calleeSavesTop - 2 * REGSIZE_BYTES;
+    int intRegsTop      = frameRegsBottom;
+    int floatRegsTop    = intRegsTop - genCountBits(restoreRegsInt) * REGSIZE_BYTES;
+
+    if (restoreRegsInt != RBM_NONE)
+    {
+        genRestoreCalleeSavedRegisterGroup(restoreRegsInt, REG_FPBASE, 0, intRegsTop, /* reportUnwindData */ false);
+    }
+
+    if (restoreRegsFloat != RBM_NONE)
+    {
+        genRestoreCalleeSavedRegisterGroup(restoreRegsFloat, REG_FPBASE, 0, floatRegsTop, /* reportUnwindData */ false);
+    }
+
+    assert(restoreRegsFrame == (RBM_FP | RBM_LR));
+    genRestoreRegPair(REG_FP, REG_LR, REG_FPBASE, frameRegsBottom, 0, false, REG_IP1, nullptr,
+                      /* reportUnwindData */ false);
+
     m_compiler->unwindPadding();
 
     m_compiler->unwindAllocStack(patchpointInfo->TotalFrameSize());

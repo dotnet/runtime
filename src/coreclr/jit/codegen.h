@@ -436,11 +436,7 @@ protected:
         regMaskTP regsMask, regNumber baseReg, int spDelta, int spOffset, bool reportUnwindData);
 
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
-    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
-                                            regNumber baseReg,
-                                            int       lowestCalleeSavedOffset,
-                                            int       spDelta,
-                                            bool      reportUnwindData);
+    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool genInstrWithConstant(instruction ins,
