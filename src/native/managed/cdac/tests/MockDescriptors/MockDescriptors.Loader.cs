@@ -171,7 +171,7 @@ internal sealed class MockLoaderBuilder
         byte[]? simpleNameBytes = null,
         uint flags = 0)
     {
-        MockLoaderModule module = ModuleLayout.Create(AllocateAndAdd((ulong)ModuleLayout.Size, "Module"));
+        MockLoaderModule module = ModuleLayout.Create(_allocator.Allocate((ulong)ModuleLayout.Size, "Module"));
 
         if (flags != 0)
         {
@@ -194,7 +194,7 @@ internal sealed class MockLoaderBuilder
             module.FileName = AddUtf16String(fileName, $"Module file name = {fileName}");
         }
 
-        MockLoaderAssembly assembly = AssemblyLayout.Create(AllocateAndAdd((ulong)AssemblyLayout.Size, "Assembly"));
+        MockLoaderAssembly assembly = AssemblyLayout.Create(_allocator.Allocate((ulong)AssemblyLayout.Size, "Assembly"));
         assembly.Module = module.Address;
         module.Assembly = assembly.Address;
         return module;
@@ -209,7 +209,7 @@ internal sealed class MockLoaderBuilder
 
     private ulong AddNullTerminatedUtf8(ReadOnlySpan<byte> bytes, string name)
     {
-        MockMemorySpace.HeapFragment fragment = AllocateAndAdd((ulong)bytes.Length + 1, name);
+        MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)bytes.Length + 1, name);
         bytes.CopyTo(fragment.Data);
         fragment.Data[^1] = 0;
         return fragment.Address;
@@ -219,15 +219,8 @@ internal sealed class MockLoaderBuilder
     {
         TargetTestHelpers helpers = Builder.TargetTestHelpers;
         Encoding encoding = helpers.Arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
-        MockMemorySpace.HeapFragment fragment = AllocateAndAdd((ulong)encoding.GetByteCount(value) + sizeof(char), name);
+        MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)encoding.GetByteCount(value) + sizeof(char), name);
         helpers.WriteUtf16String(fragment.Data, value);
         return fragment.Address;
-    }
-
-    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name)
-    {
-        MockMemorySpace.HeapFragment fragment = _allocator.Allocate(size, name);
-        Builder.AddHeapFragment(fragment);
-        return fragment;
     }
 }
