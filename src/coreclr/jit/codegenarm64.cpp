@@ -698,7 +698,6 @@ void CodeGen::genRestoreReg(regNumber reg1,
                             bool*     pTmpRegIsZero,
                             bool      reportUnwindData)
 {
-    assert(spOffset >= 0);
     assert(spDelta >= 0);
     assert((spDelta % 16) == 0); // SP changes must be 16-byte aligned
 
