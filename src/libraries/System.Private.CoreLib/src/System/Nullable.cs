@@ -104,7 +104,10 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(nullableType);
 
-            if (nullableType.IsGenericType && !nullableType.IsGenericTypeDefinition)
+            // COMPAT: Returns null for generic type definition
+            if (nullableType.IsGenericTypeDefinition)
+                return null;
+            return nullableType.GetNullableUnderlyingType();
                 return nullableType.GetNullableUnderlyingType();
             return null;
         }
