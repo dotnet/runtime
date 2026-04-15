@@ -718,19 +718,6 @@ configuration:
             assignMentionees: False
       - if:
         - hasLabel:
-            label: area-Host
-        then:
-        - mentionUsers:
-            mentionees:
-            - agocke
-            - elinor-fung
-            replyTemplate: >-
-              Tagging subscribers to this area: ${mentionees}
-
-              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
-            assignMentionees: False
-      - if:
-        - hasLabel:
             label: area-Meta
         then:
         - mentionUsers:
