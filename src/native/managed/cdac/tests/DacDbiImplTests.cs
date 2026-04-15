@@ -21,10 +21,14 @@ public class DacDbiImplTests
     {
         DacDbiImpl dbi = CreateDacDbi(arch);
 
-        Interop.BOOL result;
-        int hr = dbi.IsMatchingParentFrame(0x1000, 0x1000, &result);
-        Assert.Equal(System.HResults.S_OK, hr);
-        Assert.Equal(Interop.BOOL.TRUE, result);
+        ulong[] testValues = [0x1000, 0, ulong.MaxValue, 0x7FFF_FFFF_FFFF_FFFFul];
+        foreach (ulong value in testValues)
+        {
+            Interop.BOOL result;
+            int hr = dbi.IsMatchingParentFrame(value, value, &result);
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal(Interop.BOOL.TRUE, result);
+        }
     }
 
     [Theory]
@@ -33,33 +37,18 @@ public class DacDbiImplTests
     {
         DacDbiImpl dbi = CreateDacDbi(arch);
 
-        Interop.BOOL result;
-        int hr = dbi.IsMatchingParentFrame(0x1000, 0x2000, &result);
-        Assert.Equal(System.HResults.S_OK, hr);
-        Assert.Equal(Interop.BOOL.FALSE, result);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public unsafe void IsMatchingParentFrame_BothZero_ReturnsTrue(MockTarget.Architecture arch)
-    {
-        DacDbiImpl dbi = CreateDacDbi(arch);
-
-        Interop.BOOL result;
-        int hr = dbi.IsMatchingParentFrame(0, 0, &result);
-        Assert.Equal(System.HResults.S_OK, hr);
-        Assert.Equal(Interop.BOOL.TRUE, result);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public unsafe void IsMatchingParentFrame_MaxValue_ReturnsTrue(MockTarget.Architecture arch)
-    {
-        DacDbiImpl dbi = CreateDacDbi(arch);
-
-        Interop.BOOL result;
-        int hr = dbi.IsMatchingParentFrame(ulong.MaxValue, ulong.MaxValue, &result);
-        Assert.Equal(System.HResults.S_OK, hr);
-        Assert.Equal(Interop.BOOL.TRUE, result);
+        (ulong fpToCheck, ulong fpParent)[] testCases =
+        [
+            (0x1000, 0x2000),
+            (0, 1),
+            (ulong.MaxValue, 0),
+        ];
+        foreach ((ulong fpToCheck, ulong fpParent) in testCases)
+        {
+            Interop.BOOL result;
+            int hr = dbi.IsMatchingParentFrame(fpToCheck, fpParent, &result);
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal(Interop.BOOL.FALSE, result);
+        }
     }
 }
