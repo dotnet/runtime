@@ -46,14 +46,14 @@ void PortableEntryPoint::SetActualCode(PCODE addr, PCODE actualCode)
     // This is a lock free write. It can either be NULL, was already set to the same value, or be the interpreter entrypoint.
     _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode) || portableEntryPoint->PrefersInterpreterEntryPoint());
 
+    portableEntryPoint->_pActualCode = (void*)PCODEToPINSTR(actualCode);
+
     if (portableEntryPoint->PrefersInterpreterEntryPoint())
     {
         // We can "upgrade" a portable entrypoint from the interpreter entry point to the actual code. If we do so
         // we need to clear the PrefersInterpreterEntryPoint flag to allow future callers to use the actual code.
         portableEntryPoint->ClearPrefersInterpreterEntryPoint();
     }
-
-    portableEntryPoint->_pActualCode = (void*)PCODEToPINSTR(actualCode);
 }
 
 MethodDesc* PortableEntryPoint::GetMethodDesc(PCODE addr)
