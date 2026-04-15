@@ -674,7 +674,7 @@ public:
     // Arguments:
     //    vmModule - new module from the enumeration
     //    pUserData - user data passed to EnumerateModulesInAssembly
-    typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_Assembly vmModule, CALLBACK_DATA pUserData);
+    typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
 
     //
     // Enumerates all the code Modules in an assembly.
