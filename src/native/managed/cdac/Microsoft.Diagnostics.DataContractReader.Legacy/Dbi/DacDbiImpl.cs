@@ -16,7 +16,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 {
     private readonly Target _target;
     private readonly IDacDbiInterface? _legacy;
-    private readonly ulong _rcwMask = 1UL;
 
     // IStringHolder is a native C++ abstract class (not COM) with a single virtual method:
     //   virtual HRESULT AssignCopy(const WCHAR* psz) = 0;
@@ -575,13 +574,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetPointer ccw = builtInCOM.GetCCWFromInterfacePointer(ccwAddress);
                 if (ccw != TargetPointer.Null)
                 {
-                    objectHandle = builtInCOM.GetObjectHandle(ccw);
+                    ccw = ccwAddress;
                 }
-                else
-                {
-                    // not an interface pointer
-                    objectHandle = builtInCOM.GetObjectHandle(ccwAddress);
-                }
+                ccw = builtInCOM.GetStartWrapper(ccw);
+                objectHandle = builtInCOM.GetObjectFromCCW(ccw);
             }
 
             *pRetVal = objectHandle.Value;
@@ -884,7 +880,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             IObject obj = _target.Contracts.Object;
             _ = obj.GetBuiltInComData(new TargetPointer(vmObject), out TargetPointer rcw, out _, out _);
-            *pResult = (rcw & _rcwMask) != TargetPointer.Null ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            *pResult = rcw != TargetPointer.Null ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
