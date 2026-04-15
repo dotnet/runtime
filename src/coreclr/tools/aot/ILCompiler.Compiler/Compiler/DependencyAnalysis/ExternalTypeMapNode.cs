@@ -38,18 +38,20 @@ namespace ILCompiler.DependencyAnalysis
                 var (targetType, trimmingTargetType) = entry.Value;
                 if (trimmingTargetType is not null)
                 {
+                    TypeDesc effectiveTrimTargetType = GetEffectiveTrimTargetType(trimmingTargetType);
+
                     yield return new CombinedDependencyListEntry(
                         context.MetadataTypeSymbol(targetType),
-                        GetTrimTargetTypeNode(context, trimmingTargetType),
+                        context.NecessaryTypeSymbol(effectiveTrimTargetType),
                         "Type in external type map is cast target");
 
                     // If the trimming target type has a canonical form, it could be created at runtime by the type loader.
                     // If there is a type loader template for it, create the generic type instantiation eagerly.
-                    TypeDesc canonTrimmingType = trimmingTargetType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                    if (canonTrimmingType != trimmingTargetType && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonTrimmingType))
+                    TypeDesc canonTrimmingType = effectiveTrimTargetType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (canonTrimmingType != effectiveTrimTargetType && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonTrimmingType))
                     {
                         yield return new CombinedDependencyListEntry(
-                            context.NecessaryTypeSymbol(trimmingTargetType),
+                            context.NecessaryTypeSymbol(effectiveTrimTargetType),
                             context.NativeLayout.TemplateTypeLayout(canonTrimmingType),
                             "External type map trim target that could be loaded at runtime");
                     }
@@ -89,7 +91,7 @@ namespace ILCompiler.DependencyAnalysis
                 var (targetType, trimmingTargetType) = entry.Value;
 
                 if (trimmingTargetType is null
-                    || GetTrimTargetTypeNode(factory, trimmingTargetType).Marked)
+                    || factory.NecessaryTypeSymbol(GetEffectiveTrimTargetType(trimmingTargetType)).Marked)
                 {
                     IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
                     Debug.Assert(targetNode.Marked);
@@ -98,16 +100,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        // Array types (and other parameterized types) are tracked in the dependency graph via their
-        // constructed EEType node (which is what code marks when allocating or using an array).
-        // NecessaryTypeSymbol for arrays is never marked by normal code patterns, so we use
-        // MaximallyConstructableType for ParameterizedType (arrays/pointers/byrefs), which returns
-        // the ConstructedTypeSymbol for arrays and falls back to NecessaryTypeSymbol for pointer/byref.
-        private static IEETypeNode GetTrimTargetTypeNode(NodeFactory context, TypeDesc trimmingTargetType)
+        // Strip parameterized type wrappers (arrays, pointers, byrefs) to get the effective
+        // type for trimming purposes. If the trim target is Foo[], the TypeMap entry should be
+        // included when Foo is reachable, matching ILLink's TypeMapHandler stripping behavior.
+        private static TypeDesc GetEffectiveTrimTargetType(TypeDesc trimmingTargetType)
         {
-            if (trimmingTargetType is ParameterizedType)
-                return context.MaximallyConstructableType(trimmingTargetType);
-            return context.NecessaryTypeSymbol(trimmingTargetType);
+            while (trimmingTargetType is ParameterizedType parameterized)
+                trimmingTargetType = parameterized.ParameterType;
+            return trimmingTargetType;
         }
 
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
