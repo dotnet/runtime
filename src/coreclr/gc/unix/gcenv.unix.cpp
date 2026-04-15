@@ -579,14 +579,11 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     // Tell the kernel that the application doesn't need the pages in the range.
     // Freeing the pages can be delayed until a memory pressure occurs.
     st = madvise(address, size, MADV_FREE);
-#endif
-
-#if defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
+#elif defined(HAVE_POSIX_MADVISE)
     // DONTNEED is the nearest posix equivalent of FREE.
     // Prefer FREE as, since glibc2.6 DONTNEED is a nop.
     st = posix_madvise(address, size, POSIX_MADV_DONTNEED);
-
-#endif // defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
+#endif // HAVE_MADV_FREE
 
     return (st == 0);
 #endif // !TARGET_WASM
