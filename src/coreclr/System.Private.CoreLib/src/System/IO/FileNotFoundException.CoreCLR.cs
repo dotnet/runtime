@@ -14,12 +14,9 @@ namespace System.IO
         }
 
         internal FileNotFoundException(string? fileName, int hResult, string? diagnosticInfo)
-            : base(null)
+            : this(fileName, hResult)
         {
-            HResult = hResult;
-            FileName = fileName;
             FusionLog = diagnosticInfo;
-            SetMessageField();
         }
     }
 }
