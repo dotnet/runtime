@@ -328,7 +328,7 @@ namespace System.Reflection.TypeLoading
         public sealed override Array GetEnumValues() => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
         // Nullable methods
-#if NET
+#if NET11_0_OR_GREATER
         public sealed override Type? GetNullableUnderlyingType()
         {
             if (IsConstructedGenericType)
