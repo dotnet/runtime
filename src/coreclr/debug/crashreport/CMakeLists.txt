@@ -6,7 +6,6 @@ include_directories(${CLR_DIR})
 set(CRASHREPORT_SOURCES
     crashjsonwriter.cpp
     inproccrashreporter.cpp
-    moduleenumerator.cpp
 )
 
 add_library(inproccrashreport OBJECT ${CRASHREPORT_SOURCES})

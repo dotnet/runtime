@@ -7,7 +7,6 @@
 
 #include "inproccrashreporter.h"
 #include "crashjsonwriter.h"
-#include "moduleenumerator.h"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -89,6 +88,24 @@ BuildMethodName(
     int bufferSize,
     const char* className,
     const char* methodName);
+
+static
+const char*
+GetFilename(
+    const char* path);
+
+static
+void
+CopyString(
+    char* buffer,
+    int bufferSize,
+    const char* value);
+
+static
+int
+TryGetProcessName(
+    char* filename,
+    int filenameLen);
 
 static
 void
@@ -226,7 +243,7 @@ InProcCrashReportGenerate(
     CrashJsonCloseObject(&s_jsonWriter);
 
     char processName[256];
-    if (CrashModulesTryGetProcessName(processName, sizeof(processName)))
+    if (TryGetProcessName(processName, sizeof(processName)))
     {
         CrashJsonWriteString(&s_jsonWriter, "process_name", processName);
     }
@@ -786,6 +803,91 @@ BuildMethodName(
     }
 
     buffer[index] = '\0';
+}
+
+const char*
+GetFilename(
+    const char* path)
+{
+    const char* last = path;
+    for (const char* p = path; *p != '\0'; p++)
+    {
+        if (*p == '/')
+        {
+            last = p + 1;
+        }
+    }
+
+    return last;
+}
+
+void
+CopyString(
+    char* buffer,
+    int bufferSize,
+    const char* value)
+{
+    if (buffer == NULL || bufferSize <= 0)
+    {
+        return;
+    }
+
+    if (value == NULL)
+    {
+        buffer[0] = '\0';
+        return;
+    }
+
+    int index = 0;
+    while (value[index] != '\0' && index < bufferSize - 1)
+    {
+        buffer[index] = value[index];
+        index++;
+    }
+
+    buffer[index] = '\0';
+}
+
+int
+TryGetProcessName(
+    char* filename,
+    int filenameLen)
+{
+    if (filename == NULL || filenameLen <= 0)
+    {
+        return 0;
+    }
+
+    filename[0] = '\0';
+
+    int fd = open("/proc/self/cmdline", O_RDONLY);
+    if (fd != -1)
+    {
+        char cmdline[256];
+        ssize_t bytesRead = read(fd, cmdline, sizeof(cmdline) - 1);
+        close(fd);
+
+        if (bytesRead > 0)
+        {
+            cmdline[bytesRead] = '\0';
+            CopyString(filename, filenameLen, GetFilename(cmdline));
+            if (filename[0] != '\0')
+            {
+                return 1;
+            }
+        }
+    }
+
+    char exePath[256];
+    ssize_t pathLength = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
+    if (pathLength > 0)
+    {
+        exePath[pathLength] = '\0';
+        CopyString(filename, filenameLen, GetFilename(exePath));
+        return filename[0] != '\0';
+    }
+
+    return 0;
 }
 
 void
