@@ -196,10 +196,6 @@ CDAC_TYPE_FIELD(SyncBlock, T_POINTER, LinkNext, cdac_data<SyncBlock>::LinkNext)
 CDAC_TYPE_FIELD(SyncBlock, T_UINT32, HashCode, cdac_data<SyncBlock>::HashCode)
 CDAC_TYPE_END(SyncBlock)
 
-CDAC_TYPE_BEGIN(SLink)
-CDAC_TYPE_INDETERMINATE(SLink)
-CDAC_TYPE_FIELD(SLink, T_POINTER, Next, offsetof(SLink, m_pNext))
-CDAC_TYPE_END(SLink)
 
 #ifdef FEATURE_COMWRAPPERS
 CDAC_TYPE_BEGIN(NativeObjectWrapperObject)

@@ -452,7 +452,7 @@ private:
 
     struct FailedTypeInitCleanupListItem
     {
-        SLink m_Link;
+        DPTR(FailedTypeInitCleanupListItem) m_pNext;
         ListLockEntry *m_pListLockEntry;
         explicit FailedTypeInitCleanupListItem(ListLockEntry *pListLockEntry)
                 :
@@ -461,7 +461,9 @@ private:
         }
     };
 
-    SList<FailedTypeInitCleanupListItem> m_failedTypeInitCleanupList;
+    typedef SList<FailedTypeInitCleanupListItem, DefaultSListTraitsWithTail<FailedTypeInitCleanupListItem>> FailedTypeInitCleanupList;
+
+    FailedTypeInitCleanupList m_failedTypeInitCleanupList;
 
     SegmentedHandleIndexStack m_freeHandleIndexesStack;
 #ifdef FEATURE_COMINTEROP
@@ -1013,7 +1015,7 @@ public:
 private:
     struct HandleCleanupListItem
     {
-        SLink m_Link;
+        DPTR(HandleCleanupListItem) m_pNext;
         OBJECTHANDLE m_handle;
         explicit HandleCleanupListItem(OBJECTHANDLE handle)
                 :
@@ -1022,7 +1024,9 @@ private:
         }
     };
 
-    SList<HandleCleanupListItem> m_handleCleanupList;
+    typedef SList<HandleCleanupListItem, DefaultSListTraitsWithTail<HandleCleanupListItem>> HandleCleanupList;
+
+    HandleCleanupList m_handleCleanupList;
 #if !defined(DACCESS_COMPILE)
     CustomAssemblyBinder* m_binderToRelease;
 #endif

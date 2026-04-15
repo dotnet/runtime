@@ -9,7 +9,6 @@ internal readonly struct Thread_1 : IThread
 {
     private readonly Target _target;
     private readonly TargetPointer _threadStoreAddr;
-    private readonly ulong _threadLinkOffset;
 
     [Flags]
     private enum TLSIndexType
@@ -41,11 +40,6 @@ internal readonly struct Thread_1 : IThread
     {
         _target = target;
         _threadStoreAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore));
-
-        // Get the offset into Thread of the SLink. We use this to find the actual
-        // first thread from the linked list node contained by the first thread.
-        Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
-        _threadLinkOffset = (ulong)type.Fields[nameof(Data.Thread.LinkNext)].Offset;
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
@@ -157,13 +151,9 @@ internal readonly struct Thread_1 : IThread
         return threadPtr;
     }
 
-    private TargetPointer GetThreadFromLink(TargetPointer threadLink)
+    private static TargetPointer GetThreadFromLink(TargetPointer threadLink)
     {
-        if (threadLink == TargetPointer.Null)
-            return TargetPointer.Null;
-
-        // Get the address of the thread containing the link
-        return new TargetPointer(threadLink - _threadLinkOffset);
+        return threadLink;
     }
 
     TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr)

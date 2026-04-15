@@ -24,7 +24,7 @@ Data descriptors used:
 | `SyncTableEntry` | `SyncBlock` | Pointer to the sync block for a sync table entry |
 | `SyncTableEntry` | `Object` | Pointer to the object associated with a sync table entry |
 | `SyncBlockCache` | `FreeSyncTableIndex` | One past the highest sync table entry index allocated |
-| `SyncBlockCache` | `CleanupBlockList` | Head of the `SLink` cleanup list (points into `SyncBlock.m_Link`) |
+| `SyncBlockCache` | `CleanupBlockList` | Head of the cleanup list (points to the first `SyncBlock` in the chain) |
 | `SyncBlock` | `Lock` | Optional pointer to a `System.Threading.Lock` object payload |
 | `SyncBlock` | `ThinLock` | Thin-lock state bits |
 | `SyncBlock` | `LinkNext` | Head pointer for cleanup list link |

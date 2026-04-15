@@ -595,7 +595,7 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
         fDone = true;
     }
 
-    if (!fDone && ((NULL != m_pLastInserted->m_Link.m_pNext) || (idUpperLimit == m_pLastInserted->m_id)))
+    if (!fDone && ((NULL != m_pLastInserted->m_pNext) || (idUpperLimit == m_pLastInserted->m_id)))
     {
         //
         // Special case 2:  Last inserted is somewhere in the middle of the list or we last
@@ -621,7 +621,7 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
         ConnectionCookie* pLocationToStartSearchForInsertPoint = NULL;
         ConnectionCookie* pInsertionPoint = NULL;
 
-        if (NULL == m_pLastInserted->m_Link.m_pNext)
+        if (NULL == m_pLastInserted->m_pNext)
         {
             if (idUpperLimit == m_pLastInserted->m_id)
             {
@@ -656,7 +656,7 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
             //
             while (true)
             {
-                if (NULL == pCurrentNode->m_Link.m_pNext)
+                if (NULL == pCurrentNode->m_pNext)
                 {
                     if (pCurrentNode->m_id < idUpperLimit)
                     {
@@ -667,7 +667,7 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
                 }
                 else
                 {
-                    ConnectionCookie* pNext = CONTAINING_RECORD(pCurrentNode->m_Link.m_pNext, ConnectionCookie, m_Link);
+                    ConnectionCookie* pNext = pCurrentNode->m_pNext;
                     if ((pCurrentNode->m_id + 1) < pNext->m_id)
                     {
                         break;
@@ -691,7 +691,7 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
         CONSISTENCY_CHECK(idUpperLimit != pInsertionPoint->m_id);
 
 #ifdef _DEBUG
-        ConnectionCookie* pNextCookieNode = CONTAINING_RECORD(pInsertionPoint->m_Link.m_pNext, ConnectionCookie, m_Link);
+        ConnectionCookie* pNextCookieNode = pInsertionPoint->m_pNext;
         DWORD idNew = pInsertionPoint->m_id + 1;
         CONSISTENCY_CHECK(NULL == pNextCookieNode ||
             ((pInsertionPoint->m_id < idNew) &&
@@ -699,7 +699,8 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
 #endif // _DEBUG
 
         pConCookie->m_id = pInsertionPoint->m_id + 1;
-        pInsertionPoint->m_Link.InsertAfter(&pConCookie->m_Link);
+        pConCookie->m_pNext = pInsertionPoint->m_pNext;
+        pInsertionPoint->m_pNext = pConCookie;
     }
 
     m_pLastInserted = pConCookie;
@@ -718,7 +719,7 @@ ConnectionCookie* ConnectionPoint::FindWithLock(DWORD idOfCookie)
 
         while (pCurrentNode && (pCurrentNode->m_id != idOfCookie))
         {
-            pCurrentNode = CONTAINING_RECORD(pCurrentNode->m_Link.m_pNext, ConnectionCookie, m_Link);
+            pCurrentNode = pCurrentNode->m_pNext;
         }
     }
 
@@ -1122,7 +1123,7 @@ HRESULT __stdcall ConnectionEnum::Next(ULONG cConnections, CONNECTDATA* rgcd, UL
                     rgcd[cFetched].pUnk = GetComIPFromObjectRef((OBJECTREF*)(OBJECTHANDLE)m_CurrCookie->m_hndEventProvObj, ComIpType_Unknown, NULL);
                     rgcd[cFetched].dwCookie = m_CurrCookie->m_id;
                 }
-                m_CurrCookie = pConnectionList->GetNext(m_CurrCookie);
+                m_CurrCookie = m_CurrCookie->m_pNext;
             }
         }
 
@@ -1157,7 +1158,7 @@ HRESULT __stdcall ConnectionEnum::Skip(ULONG cConnections)
         // Try and skip the requested number of connections.
         while (m_CurrCookie && cConnections)
         {
-            m_CurrCookie = pConnectionList->GetNext(m_CurrCookie);
+            m_CurrCookie = m_CurrCookie->m_pNext;
             cConnections--;
         }
         // Leave the lock now that we are done traversing the list.

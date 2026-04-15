@@ -300,10 +300,12 @@ private:
     // CallCountingManager members
 
 public:
-    SLink m_Link;
+    DPTR(CallCountingManager) m_pNext;
 
 private:
-    static SList<CallCountingManager> s_callCountingManagers;
+    typedef SList<CallCountingManager, DefaultSListTraitsWithTail<CallCountingManager>> CallCountingManagerList;
+
+    static CallCountingManagerList s_callCountingManagers;
     static COUNT_T s_callCountingStubCount;
     static COUNT_T s_activeCallCountingStubCount;
     static COUNT_T s_completedCallCountingStubCount;

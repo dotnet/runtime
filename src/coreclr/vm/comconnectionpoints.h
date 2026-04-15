@@ -65,8 +65,7 @@ public:
 
         RETURN (new ConnectionCookie(std::move(hndEventProvObj)));
     }
-
-    SLink               m_Link;
+    DPTR(ConnectionCookie)   m_pNext;
     OBJECTHANDLEHolder  m_hndEventProvObj;
     DWORD               m_id;
 };
@@ -75,7 +74,7 @@ public:
 using ConnectionCookieHolder = NewHolder<ConnectionCookie>;
 
 // List of connection cookies.
-typedef SList<ConnectionCookie, true> CONNECTIONCOOKIELIST;
+typedef SList<ConnectionCookie> CONNECTIONCOOKIELIST;
 
 // ConnectionPoint class. This class implements IConnectionPoint and does the mapping
 // from a CP handler to a TCE provider.
