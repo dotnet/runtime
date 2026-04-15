@@ -789,6 +789,12 @@ namespace ILCompiler
                 MethodIL il = null!;
                 var methodDef = method.GetTypicalMethodDefinition();
                 il = ilProvider.GetMethodIL(methodDef);
+                // We shouldn't get null IL, but just in case, handle it gracefully
+                Debug.Assert(il is not null);
+                if (il is null)
+                {
+                    return;
+                }
                 try
                 {
                     NodeFactory.ManifestMetadataTable._mutableModule.CreatingTokensForAsyncMethod = true;
@@ -799,7 +805,7 @@ namespace ILCompiler
                         switch(il.GetObject(tok))
                         {
                             case TypeSystemEntity tse:
-                                _tokenManager.EnsureDefTokensAreAvailable(tse, ((EcmaMethod)methodDef.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module);
+                                _tokenManager.EnsureDefTokensAreAvailable(tse, ((EcmaMethod)methodDef.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
                                 break;
                             default:
                                 // We don't need to worry about string handles
@@ -815,12 +821,12 @@ namespace ILCompiler
                         if (region.Kind == ILExceptionRegionKind.Catch)
                         {
                             TypeSystemEntity catchType = (TypeSystemEntity)il.GetObject(region.ClassToken);
-                            _tokenManager.EnsureDefTokensAreAvailable(catchType, ((EcmaMethod)methodDef.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module);
+                            _tokenManager.EnsureDefTokensAreAvailable(catchType, ((EcmaMethod)methodDef.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
                         }
                     }
                     foreach (var local in il.GetLocals())
                     {
-                        _tokenManager.EnsureDefTokensAreAvailable(local.Type, ((EcmaMethod)methodDef.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module);
+                        _tokenManager.EnsureDefTokensAreAvailable(local.Type, ((EcmaMethod)methodDef.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
                     }
                 }
                 finally
@@ -1013,9 +1019,9 @@ namespace ILCompiler
             // have tokens.
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             foreach (var type in method.Instantiation)
-                _tokenManager.EnsureDefTokensAreAvailable(type, moduleForNewReferences);
+                _tokenManager.EnsureDefTokensAreAvailable(type, moduleForNewReferences, false);
             foreach (var type in method.OwningType.Instantiation)
-                _tokenManager.EnsureDefTokensAreAvailable(type, moduleForNewReferences);
+                _tokenManager.EnsureDefTokensAreAvailable(type, moduleForNewReferences, false);
         }
 
         private void AddNecessaryAsyncReferences(MethodDesc method)
@@ -1051,7 +1057,7 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
             ];
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
-            _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences);
+            _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
             _hasAddedAsyncReferences = true;
         }
 

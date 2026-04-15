@@ -2,26 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Internal.IL;
-using Internal.IL.Stubs;
-using Internal.JitInterface;
-using Internal.ReadyToRunConstants;
-using Internal.TypeSystem;
-
-using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
-using ILCompiler.DependencyAnalysisFramework;
-using ILCompiler.Reflection.ReadyToRun;
-using Internal.TypeSystem.Ecma;
 using ILCompiler.ReadyToRun.TypeSystem;
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.ReadyToRun
 {
@@ -43,24 +29,33 @@ namespace ILCompiler.ReadyToRun
         /// Ensures that all the tokens necessary for creating a ReadyToRun signature for the given entity are present in the MutableModule.
         /// Adds the necessary tokens for the given entity to the MutableModule if they are not already present.
         /// </summary>
-        public void EnsureDefTokensAreAvailable(IEnumerable<TypeSystemEntity> entities, ModuleDesc moduleForNewReferences)
+        public void EnsureDefTokensAreAvailable(IEnumerable<TypeSystemEntity> entities, ModuleDesc moduleForNewReferences, bool referencesAreForAsyncMethod)
         {
             _mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = moduleForNewReferences;
-            foreach (var entity in entities)
+            _mutableModule.CreatingTokensForAsyncMethod = referencesAreForAsyncMethod;
+            try
             {
-                EnsureDefTokensAreAvailableInternal(entity);
+                foreach (var entity in entities)
+                {
+                    EnsureDefTokensAreAvailableInternal(entity);
+                }
             }
-            _mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
+            finally
+            {
+                _mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
+                _mutableModule.CreatingTokensForAsyncMethod = false;
+            }
         }
 
         /// <summary>
         /// Ensures that all the tokens necessary for creating a ReadyToRun signature for the given entity are present in the MutableModule.
         /// Adds the necessary tokens for the given entity to the MutableModule if they are not already present.
         /// </summary>
-        public void EnsureDefTokensAreAvailable(TypeSystemEntity entity, ModuleDesc moduleForNewReferences)
+        public void EnsureDefTokensAreAvailable(TypeSystemEntity entity, ModuleDesc moduleForNewReferences, bool referencesAreForAsyncMethod)
         {
 
             _mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = moduleForNewReferences;
+            _mutableModule.CreatingTokensForAsyncMethod = referencesAreForAsyncMethod;
             try
             {
                 EnsureDefTokensAreAvailableInternal(entity);
@@ -68,6 +63,7 @@ namespace ILCompiler.ReadyToRun
             finally
             {
                 _mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
+                _mutableModule.CreatingTokensForAsyncMethod = false;
             }
         }
 
