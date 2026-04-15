@@ -1915,6 +1915,26 @@ namespace
                 TypeHandle thDispatch(vt == VT_DISPATCH ? pEnabledMT : pDisabledMT);
                 return TypeHandle(CoreLibBinder::GetClass(CLASS__INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDispatch, 1)).AsMethodTable();
             }
+            else if (!pElementMT->IsInterface())
+            {
+                // For class types, resolve the default COM interface.
+                BOOL bDispatch = FALSE;
+                MethodTable* pDefaultItfMT = GetDefaultInterfaceMTForClass(pElementMT, &bDispatch);
+                if (pDefaultItfMT != NULL)
+                {
+                    // Use the resolved interface type.
+                    TypeHandle thElement(pDefaultItfMT);
+                    return TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+                }
+                else
+                {
+                    // No specific interface — use untyped IDispatch or IUnknown.
+                    MethodTable* pEnabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_ENABLED);
+                    MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
+                    TypeHandle thDispatch(bDispatch ? pEnabledMT : pDisabledMT);
+                    return TypeHandle(CoreLibBinder::GetClass(CLASS__INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDispatch, 1)).AsMethodTable();
+                }
+            }
             else
             {
                 TypeHandle thElement(pElementMT);
@@ -1984,7 +2004,16 @@ namespace
         case VT_DISPATCH:
             if (pElementMT == NULL || pElementMT == g_pObjectClass)
                 return TypeHandle(g_pObjectClass);
-            return TypeHandle(pElementMT);
+            if (pElementMT->IsInterface())
+                return TypeHandle(pElementMT);
+            {
+                // For class types, resolve to the default interface type.
+                BOOL bDispatch = FALSE;
+                MethodTable* pDefaultItfMT = GetDefaultInterfaceMTForClass(pElementMT, &bDispatch);
+                if (pDefaultItfMT != NULL)
+                    return TypeHandle(pDefaultItfMT);
+                return TypeHandle(g_pObjectClass);
+            }
         case VT_RECORD:
             _ASSERTE(pElementMT != NULL);
             return TypeHandle(pElementMT);

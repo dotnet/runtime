@@ -1247,8 +1247,7 @@ namespace System.StubHelpers
     {
         static unsafe void IArrayMarshaler<T, TSelf>.ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
         {
-            if (managedArray is null || managedArray.GetType().GetElementType() != typeof(T))
-                throw new InvalidCastException();
+            Debug.Assert(managedArray is not null);
             Span<T> elements = new(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray)), managedArray.Length);
             for (int i = 0; i < length; i++)
             {
@@ -1259,8 +1258,7 @@ namespace System.StubHelpers
 
         static unsafe void IArrayMarshaler<T, TSelf>.ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
         {
-            if (managedArray is null || managedArray.GetType().GetElementType() != typeof(T))
-                throw new InvalidCastException();
+            Debug.Assert(managedArray is not null);
             Span<T> elements = new(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(managedArray)), managedArray.Length);
             for (int i = 0; i < length; i++)
             {
@@ -1328,15 +1326,13 @@ namespace System.StubHelpers
     {
         static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
         {
-            if (managedArray is null || managedArray.GetType().GetElementType() != typeof(T))
-                throw new InvalidCastException();
+            Debug.Assert(managedArray is not null);
             SpanHelpers.Memmove(ref *unmanaged, ref MemoryMarshal.GetArrayDataReference(managedArray), (nuint)length * (nuint)sizeof(T));
         }
 
         static unsafe void IArrayMarshaler<T, BlittableArrayMarshaler<T>>.ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
         {
-            if (managedArray is null || managedArray.GetType().GetElementType() != typeof(T))
-                throw new InvalidCastException();
+            Debug.Assert(managedArray is not null);
             SpanHelpers.Memmove(ref MemoryMarshal.GetArrayDataReference(managedArray), ref *unmanaged, (nuint)length * (nuint)sizeof(T));
         }
 

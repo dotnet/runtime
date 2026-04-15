@@ -4285,6 +4285,24 @@ namespace
             *pElementType = TypeHandle(g_pObjectClass);
             *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDispatch, 1)).AsMethodTable();
         }
+        else if (!arrayElementTypeHandle.IsInterface())
+        {
+            // For class types, resolve the default COM interface.
+            BOOL bDispatch = FALSE;
+            MethodTable* pDefaultItfMT = GetDefaultInterfaceMTForClass(arrayElementTypeHandle.AsMethodTable(), &bDispatch);
+            if (pDefaultItfMT != NULL)
+            {
+                TypeHandle thItf(pDefaultItfMT);
+                *pElementType = thItf;
+                *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thItf, 1)).AsMethodTable();
+            }
+            else
+            {
+                TypeHandle thDispatch(bDispatch ? pEnabledMT : pDisabledMT);
+                *pElementType = TypeHandle(g_pObjectClass);
+                *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDispatch, 1)).AsMethodTable();
+            }
+        }
         else
         {
             *pElementType = arrayElementTypeHandle;
