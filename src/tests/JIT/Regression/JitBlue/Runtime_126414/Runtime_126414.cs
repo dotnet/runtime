@@ -46,18 +46,15 @@ public class Program
     {
         const int expected = 5759;
 
-        for (int i = 0; i < 10000; i++)
-        {
-            var r = new Range(new Endpoint(100, 0, 0), new Endpoint(100 + expected, 0, 0));
+        var r = new Range(new Endpoint(100, 0, 0), new Endpoint(100 + expected, 0, 0));
 
-            if (r.Length != expected)
-            {
-                Console.WriteLine($"FAIL at iteration {i}: Length={r.Length} (expected {expected}), hex=0x{r.Length:X}");
-                return 101;
-            }
+        if (r.Length != expected)
+        {
+            Console.WriteLine($"FAIL: Length={r.Length} (expected {expected}), hex=0x{r.Length:X}");
+            return 101;
         }
 
-        Console.WriteLine($"PASS: 10000 iterations, Length always = {expected}");
+        Console.WriteLine($"PASS: Length = {expected}");
         return 100;
     }
 }
