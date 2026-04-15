@@ -32,9 +32,14 @@ Before analyzing anything, collect as much relevant **code** context as you can.
 7. **Detect new public API surface**: Check whether the PR introduces new public API surface. Look for:
    - Changes to `ref/` assembly source files (the strongest signal — these define the public API contract)
    - New `public` members (methods, properties, types, enum values) in `src/` files
-   - Note whether new public API was detected. If it was, the [API Approval Verification](#api-approval-verification) procedure is required during Step 2.
+   - Note whether new public API was detected. If it was, the [API Approval Verification](#api-approval-verification) procedure is required during Step 3.
+  
+### Step 1: Discover Area-Specific Agents
+- Study the agents available in  `.github/agents` folder that are capable of reviewing specific areas of the codebase. Their yaml frontmatter description tells when they apply.
+- When performing the review, invoke sub-agents to perform those area-specific reviews as subtasks during all subsequent steps, integrating those results.
+- Depending on the PR, more subagents might be launched. Launch them in parallel. Always continue regular review described here as well - the subagents are addons, not replacements.
 
-### Step 1: Form an Independent Assessment
+### Step 2: Form an Independent Assessment
 
 Based **only** on the code context gathered above (without the PR description or issue), answer these questions:
 
@@ -45,7 +50,7 @@ Based **only** on the code context gathered above (without the PR description or
 
 Write down your independent assessment before proceeding. You must produce a holistic assessment (see [Holistic PR Assessment](#holistic-pr-assessment)) at this stage.
 
-### Step 2: Incorporate PR Narrative and Reconcile
+### Step 3: Incorporate PR Narrative and Reconcile
 
 Now read the PR description, labels, linked issues (in full), author information, existing review comments, and any related open issues in the same area. Treat all of this as **claims to verify**, not facts to accept.
 
@@ -56,7 +61,7 @@ Now read the PR description, labels, linked issues (in full), author information
 5. **Update your holistic assessment** if the additional context reveals information that genuinely changes your evaluation (e.g., a linked issue proves the bug is real, or an existing review comment already identified the same concern). But do not soften findings just because the PR description sounds reasonable.
 6. **API Approval Verification.** If Step 0 detected new public API surface, execute the [API Approval Verification](#api-approval-verification) procedure now. This is a blocking step — if it fails, the review verdict must be ❌ Reject or ❌ Needs Changes regardless of other findings.
 
-### Step 3: Detailed Analysis
+### Step 4: Detailed Analysis
 
 1. **Focus on what matters.** Prioritize bugs, performance regressions, safety issues, race conditions, resource management problems, incorrect assumptions about data or state, and API design problems. Do not comment on trivial style issues unless they violate an explicit rule below.
 2. **Consider collateral damage.** For every changed code path, actively brainstorm: what other scenarios, callers, or inputs flow through this code? Could any of them break or behave differently after this change? If you identify any plausible risk — even one you can't fully confirm — surface it so the author can evaluate. Do not dismiss behavioral changes because you believe the fix justifies them. The tradeoff is the author's decision — your job is to make it visible.
@@ -227,7 +232,7 @@ Before reviewing individual lines of code, evaluate the PR as a whole. Consider 
 
 ## API Approval Verification
 
-When Step 0 detects that a PR introduces new public API surface (changes to `ref/` assembly source files or new `public` members in `src/` files), execute this procedure during Step 2. This is a **blocking** procedure — if any step fails, the review verdict must reflect it as ❌.
+When Step 0 detects that a PR introduces new public API surface (changes to `ref/` assembly source files or new `public` members in `src/` files), execute this procedure during Step 3. This is a **blocking** procedure — if any step fails, the review verdict must reflect it as ❌.
 
 ### 1. Locate the `api-approved` Issue
 
