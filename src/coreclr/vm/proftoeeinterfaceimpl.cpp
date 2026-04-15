@@ -8066,9 +8066,12 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     }
 
     //
-    // Skip runtime-invoked UCO entrypoint method (Environment.CallEntryPoint)
+    // Skip runtime-invoked UCO entrypoint methods
     //
-    if (pFunc != NULL && pFunc == g_pEnvironmentCallEntryPointMethodDesc)
+    if (pFunc != NULL && (
+        pFunc == g_pEnvironmentCallEntryPointMethodDesc ||
+        pFunc == g_pThreadStartCallbackMethodDesc ||
+        pFunc == g_pGCRunFinalizersMethodDesc))
     {
         return SWA_CONTINUE;
     }

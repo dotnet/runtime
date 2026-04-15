@@ -193,7 +193,9 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     //                       because we asked the stackwalker for it!
     MethodDesc* pFunc = pCf->GetFunction();
 
-    if (pFunc != nullptr && pFunc == g_pEnvironmentCallEntryPointMethodDesc)
+    if (pFunc != nullptr && (pFunc == g_pEnvironmentCallEntryPointMethodDesc ||
+                              pFunc == g_pThreadStartCallbackMethodDesc ||
+                              pFunc == g_pGCRunFinalizersMethodDesc))
     {
         return SWA_CONTINUE;
     }

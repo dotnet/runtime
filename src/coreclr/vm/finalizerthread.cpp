@@ -34,8 +34,6 @@ CLREvent * FinalizerThread::hEventFinalizerToShutDown = NULL;
 
 HANDLE FinalizerThread::MHandles[kHandleCount];
 
-MethodDesc* g_pGCRunFinalizersMethodDesc = nullptr;
-
 bool FinalizerThread::IsCurrentThreadFinalizer()
 {
     LIMITED_METHOD_CONTRACT;

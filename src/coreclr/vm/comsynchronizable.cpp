@@ -31,8 +31,6 @@
 #include "utilcode.h"
 #endif
 
-MethodDesc* g_pThreadStartCallbackMethodDesc = nullptr;
-
 
 // For the following helpers, we make no attempt to synchronize.  The app developer
 // is responsible for managing their own race conditions.

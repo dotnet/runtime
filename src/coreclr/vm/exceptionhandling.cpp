@@ -18,9 +18,6 @@
 #include "exinfo.h"
 #include "configuration.h"
 
-extern MethodDesc* g_pThreadStartCallbackMethodDesc;
-extern MethodDesc* g_pGCRunFinalizersMethodDesc;
-
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
 #endif // TARGET_X86
