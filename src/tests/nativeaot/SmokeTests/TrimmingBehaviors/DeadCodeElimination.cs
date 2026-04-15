@@ -1447,9 +1447,9 @@ class DeadCodeElimination
             ThrowIfUsableMethodTable(typeG);
 
             // D, E: element type is unreachable — entries must be absent
-            if (map.ContainsKey("D"))
+            if (map.TryGetValue("D", out _))
                 throw new Exception("Unexpected entry D");
-            if (map.ContainsKey("E"))
+            if (map.TryGetValue("E", out _))
                 throw new Exception("Unexpected entry E");
         }
     }
