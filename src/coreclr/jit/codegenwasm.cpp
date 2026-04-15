@@ -137,7 +137,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 //------------------------------------------------------------------------
 // genEnregisterOSRArgsAndLocals: enregister OSR args and locals.
 //
-void CodeGen::genEnregisterOSRArgsAndLocals()
+void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
 {
     unreached(); // OSR not supported on WASM.
 }

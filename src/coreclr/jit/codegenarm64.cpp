@@ -5568,6 +5568,11 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 
 #endif // FEATURE_SIMD
 
+//-----------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Handle the tier0 callee saves by restoring them from the original tier0 frame.
+//   Also report phantom unwind data for the allocated stack by the tier0 frame.
+//
 void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
     assert(m_compiler->compGeneratingProlog);

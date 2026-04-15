@@ -348,11 +348,7 @@ protected:
              unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& seg, class RegGraph* graph);
     void genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
     void genEnregisterIncomingStackArgs();
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
-#else
-    void genEnregisterOSRArgsAndLocals();
-#endif
 
     void genHomeStackSegment(unsigned lclNum, const ABIPassingSegment& seg, regNumber initReg, bool* pInitRegZeroed);
     void genHomeSwiftStructStackParameters();
@@ -450,7 +446,7 @@ protected:
     void genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData);
 
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset);
-    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset);
+    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, regNumber baseReg, int lowestCalleeSavedOffset, bool reportUnwindData);
 #endif
 
     void genOSRHandleTier0CalleeSavedRegistersAndFrame();

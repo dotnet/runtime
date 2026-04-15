@@ -4135,11 +4135,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 //    initReg -- scratch register to use if needed
 //    pInitRegZeroed -- [IN,OUT] if init reg is zero (on entry/exit)
 //
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
-#else
-void CodeGen::genEnregisterOSRArgsAndLocals()
-#endif
 {
     assert(m_compiler->opts.IsOSR());
     PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
@@ -5320,11 +5316,7 @@ void CodeGen::genFnProlog()
 
     const bool isRoot = (m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     const bool inheritsCalleeSaves = isRoot && m_compiler->opts.IsOSR();
-#else
-    const bool inheritsCalleeSaves = false;
-#endif // TARGET_AMD64
 
     regMaskTP tempMask = initRegs & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
 
@@ -5348,37 +5340,16 @@ void CodeGen::genFnProlog()
         }
     }
 
-#if defined(TARGET_AMD64)
-    // For x64 OSR root frames, we can't use any as of yet unsaved
+    // For OSR root frames, we can't use any as of yet unsaved
     // callee save as initReg, as we defer saving these until later in
     // the prolog, and we don't have normal arg regs.
     if (inheritsCalleeSaves)
     {
-        initReg = REG_SCRATCH; // REG_EAX
-    }
-#elif defined(TARGET_ARM64)
-    // For arm64 OSR root frames, we may need a scratch register for large
-    // offset addresses. Use a register that won't be allocated.
-    //
-    if (inheritsCalleeSaves)
-    {
-        initReg = REG_IP1;
-    }
-#elif defined(TARGET_LOONGARCH64)
-    // For LoongArch64 OSR root frames, we may need a scratch register for large
-    // offset addresses. Use a register that won't be allocated.
-    if (isRoot && m_compiler->opts.IsOSR())
-    {
         initReg = REG_SCRATCH;
-    }
-#elif defined(TARGET_RISCV64)
-    // For RISC-V64 OSR root frames, we may need a scratch register for large
-    // offset addresses. Use a register that won't be allocated.
-    if (isRoot && m_compiler->opts.IsOSR())
-    {
-        initReg = REG_SCRATCH; // REG_T0
-    }
+#if defined(TARGET_ARM64)
+        initReg = REG_IP1;
 #endif
+    }
 
 #if defined(TARGET_AMD64)
     // If we are a varargs call, in order to set up the arguments correctly this
@@ -5414,11 +5385,11 @@ void CodeGen::genFnProlog()
 #else  // TARGET_WASM
     regNumber initReg       = REG_NA;
     bool      initRegZeroed = false;
+    bool      inheritsCalleeSaves = false;
 #endif // TARGET_WASM
 
     unsigned extraFrameSize = 0;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (inheritsCalleeSaves)
     {
         // Account for the Tier0 callee saves
@@ -5433,7 +5404,6 @@ void CodeGen::genFnProlog()
         extraFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES;
 #endif
     }
-#endif
 
 #ifdef TARGET_XARCH
     if (doubleAlignOrFramePointerUsed())
@@ -5672,12 +5642,7 @@ void CodeGen::genFnProlog()
         // we've set the live-in regs with values from the Tier0 frame.
         //
         // Otherwise we'll do some of these fetches twice.
-
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
-#else
-        genEnregisterOSRArgsAndLocals();
-#endif
         // OSR functions take no parameters in registers. Ensure no mappings
         // are present.
         assert((m_compiler->m_paramRegLocalMappings == nullptr) || m_compiler->m_paramRegLocalMappings->Empty());
