@@ -6767,7 +6767,6 @@ bool DebuggerStepper::IsInterestingFrame(FrameInfo * pFrame)
 {
     LIMITED_METHOD_CONTRACT;
 
-    {
     if (pFrame->md != NULL)
     {
         MethodTable *pMT = pFrame->md->GetMethodTable();
