@@ -125,8 +125,8 @@ public abstract class CdacStressTestBase
 
     /// <summary>
     /// Asserts that GC stress verification produced a pass rate at or above the given threshold.
-    /// A small number of failures is expected due to unimplemented frame scanning for
-    /// dynamic method stubs (InvokeStub / PromoteCallerStack).
+    /// Useful for instruction-level stress where a small number of failures may occur
+    /// due to known limitations (e.g., ELEMENT_TYPE_INTERNAL in PromoteCallerStack).
     /// </summary>
     internal static void AssertHighPassRate(CdacStressResults results, string debuggeeName, double minPassRate)
     {

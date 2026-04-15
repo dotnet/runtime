@@ -502,7 +502,12 @@ internal sealed class FrameIterator
 
         // Compute RVA = indirection - imageBase
         ulong imageBase = r2rInfo.LoadedImageBase.Value;
-        uint rva = (uint)(indirection.Value - imageBase);
+        if (indirection.Value < imageBase)
+            return TargetPointer.Null;
+        ulong diff = indirection.Value - imageBase;
+        if (diff > uint.MaxValue)
+            return TargetPointer.Null;
+        uint rva = (uint)diff;
 
         // READYTORUN_IMPORT_SECTION layout:
         //   IMAGE_DATA_DIRECTORY Section (VirtualAddress:4, Size:4) = 8 bytes

@@ -857,7 +857,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // and StressHeap) to reduce overhead.
     if (CdacStress::IsInitialized() && CdacStress::ShouldSkipStressPoint())
     {
-        if(pThread->HasPendingGCStressInstructionUpdate())
+        if (pThread->HasPendingGCStressInstructionUpdate())
             UpdateGCStressInstructionWithoutGC();
 
         FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 4);
@@ -1200,7 +1200,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // breakpoint must be removed regardless.
     if (CdacStress::IsInitialized() && CdacStress::ShouldSkipStressPoint())
     {
-        if(pThread->HasPendingGCStressInstructionUpdate())
+        if (pThread->HasPendingGCStressInstructionUpdate())
             UpdateGCStressInstructionWithoutGC();
 
         FlushInstructionCache(GetCurrentProcess(), (LPCVOID)instrPtr, 4);

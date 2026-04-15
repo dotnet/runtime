@@ -1263,12 +1263,12 @@ void CdacStress::VerifyAtAllocPoint()
     RtlCaptureContext(&ctx);
     {
         ULONG64 imageBase = 0;
-        PRUNTIME_FUNCTION pFunctionEntry = RtlLookupFunctionEntry(ctx.Rip, &imageBase, nullptr);
+        PRUNTIME_FUNCTION pFunctionEntry = RtlLookupFunctionEntry(GetIP(&ctx), &imageBase, nullptr);
         if (pFunctionEntry != nullptr)
         {
             void* handlerData = nullptr;
             ULONG64 establisherFrame = 0;
-            RtlVirtualUnwind(UNW_FLAG_NHANDLER, imageBase, ctx.Rip,
+            RtlVirtualUnwind(UNW_FLAG_NHANDLER, imageBase, GetIP(&ctx),
                 pFunctionEntry, &ctx, &handlerData, &establisherFrame, nullptr);
         }
     }
