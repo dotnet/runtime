@@ -139,13 +139,13 @@ namespace System.Diagnostics
             Task<ArraySegment<byte>> outputTask = ReadPipeToBufferAsync(_standardOutput!.BaseStream, cancellationToken);
             Task<ArraySegment<byte>> errorTask = ReadPipeToBufferAsync(_standardError!.BaseStream, cancellationToken);
 
-            ArraySegment<byte> output = await outputTask.ConfigureAwait(false);
-            ArraySegment<byte> error = await errorTask.ConfigureAwait(false);
-
-            Debug.Assert(output.Array is not null && error.Array is not null);
-
             try
             {
+                await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
+
+                ArraySegment<byte> output = outputTask.Result;
+                ArraySegment<byte> error = errorTask.Result;
+
                 Encoding outputEncoding = _startInfo?.StandardOutputEncoding ?? GetStandardOutputEncoding();
                 Encoding errorEncoding = _startInfo?.StandardErrorEncoding ?? GetStandardOutputEncoding();
 
@@ -156,8 +156,15 @@ namespace System.Diagnostics
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(output.Array);
-                ArrayPool<byte>.Shared.Return(error.Array);
+                if (outputTask.IsCompletedSuccessfully)
+                {
+                    ArrayPool<byte>.Shared.Return(outputTask.Result.Array!);
+                }
+
+                if (errorTask.IsCompletedSuccessfully)
+                {
+                    ArrayPool<byte>.Shared.Return(errorTask.Result.Array!);
+                }
             }
         }
 
@@ -189,19 +196,26 @@ namespace System.Diagnostics
             Task<ArraySegment<byte>> outputTask = ReadPipeToBufferAsync(_standardOutput!.BaseStream, cancellationToken);
             Task<ArraySegment<byte>> errorTask = ReadPipeToBufferAsync(_standardError!.BaseStream, cancellationToken);
 
-            ArraySegment<byte> output = await outputTask.ConfigureAwait(false);
-            ArraySegment<byte> error = await errorTask.ConfigureAwait(false);
-
-            Debug.Assert(output.Array is not null && error.Array is not null);
-
             try
             {
+                await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
+
+                ArraySegment<byte> output = outputTask.Result;
+                ArraySegment<byte> error = errorTask.Result;
+
                 return (output.AsSpan().ToArray(), error.AsSpan().ToArray());
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(output.Array);
-                ArrayPool<byte>.Shared.Return(error.Array);
+                if (outputTask.IsCompletedSuccessfully)
+                {
+                    ArrayPool<byte>.Shared.Return(outputTask.Result.Array!);
+                }
+
+                if (errorTask.IsCompletedSuccessfully)
+                {
+                    ArrayPool<byte>.Shared.Return(errorTask.Result.Array!);
+                }
             }
         }
 
