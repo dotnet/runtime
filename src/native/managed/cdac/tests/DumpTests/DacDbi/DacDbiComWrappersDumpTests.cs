@@ -23,7 +23,6 @@ public class DacDbiComWrappersDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "ComWrappers cDAC support not available in .NET 10")]
-    [SkipOnOS(IncludeOnly = "windows", Reason = "COM/ComWrappers CCW scenarios are validated on Windows")]
     public unsafe void GetObjectForCCW_ComWrappersIdentityPointer_ReturnsManagedObjectWrapperHandle(TestConfiguration config)
     {
         InitializeDumpTest(config);
