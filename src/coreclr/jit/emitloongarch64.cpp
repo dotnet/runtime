@@ -5216,8 +5216,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         if (id->idInsOpt() == INS_OPTS_RC)
         {
             assert((CombinedInsCnt == 2) || (CombinedInsCnt == 3));
-            if (ins == INS_bl)
-            { // pcaddu12i + addi.d or lu12i.w + ori + lu32i.d
+            if (id->idInsIs(INS_b, INS_bl))
+            { // pcalau12i/pcaddu12i + addi.d or lu12i.w + ori + lu32i.d
                 result.insLatency    = (CombinedInsCnt == 2) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C;
                 result.insThroughput = (CombinedInsCnt == 2) ? PERFSCORE_THROUGHPUT_6C : PERFSCORE_THROUGHPUT_9C;
             }
