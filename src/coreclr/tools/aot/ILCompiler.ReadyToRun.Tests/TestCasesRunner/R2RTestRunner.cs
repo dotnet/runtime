@@ -165,10 +165,12 @@ internal sealed class R2RTestCase(string name, List<CrossgenCompilation> compila
 internal sealed class R2RTestRunner
 {
     private readonly ITestOutputHelper _output;
+    private readonly TestPaths _paths;
 
     public R2RTestRunner(ITestOutputHelper output)
     {
         _output = output;
+        _paths = new TestPaths(output);
     }
 
     /// <summary>
@@ -191,7 +193,7 @@ internal sealed class R2RTestRunner
             var assemblyPaths = CompileAllAssemblies(assembliesToCompile);
 
             // Step 2: Run each crossgen2 compilation and validate
-            var driver = new R2RDriver(_output);
+            var driver = new R2RDriver(_output, _paths);
             var refPaths = BuildReferencePaths();
 
             foreach(var compilation in testCase.Compilations)
@@ -203,7 +205,7 @@ internal sealed class R2RTestRunner
                 {
                     Assert.True(File.Exists(outputPath), $"R2R image not found: {outputPath}");
                     _output.WriteLine($"  Validating R2R image: {outputPath}");
-                    var reader = new ReadyToRunReader(new SimpleAssemblyResolver(), outputPath);
+                    var reader = new ReadyToRunReader(new SimpleAssemblyResolver(_paths), outputPath);
                     compilation.Validate(reader);
                 }
             }
@@ -221,7 +223,7 @@ internal sealed class R2RTestRunner
     private Dictionary<string, string> CompileAllAssemblies(
         IEnumerable<CompiledAssembly> assemblies)
     {
-        var compiler = new R2RTestCaseCompiler();
+        var compiler = new R2RTestCaseCompiler(_paths);
         var paths = new Dictionary<string, string>();
 
         foreach (var asm in assemblies)
@@ -319,20 +321,19 @@ internal sealed class R2RTestRunner
         }
     }
 
-    private static List<string> BuildReferencePaths()
+    private List<string> BuildReferencePaths()
     {
         var paths = new List<string>();
 
-        paths.Add(Path.Combine(TestPaths.RuntimePackDir, "*.dll"));
+        paths.Add(Path.Combine(_paths.RuntimePackDir, "*.dll"));
 
-        string runtimePackDir = TestPaths.RuntimePackDir;
-        string nativeDir = Path.GetFullPath(Path.Combine(runtimePackDir, "..", "..", "native"));
-        if (Directory.Exists(nativeDir))
-        {
-            string spcl = Path.Combine(nativeDir, "System.Private.CoreLib.dll");
-            if (File.Exists(spcl))
-                paths.Add(spcl);
-        }
+        string nativeDir = _paths.RuntimePackNativeDir;
+        string spcl = Path.Combine(nativeDir, "System.Private.CoreLib.dll");
+        Assert.True(File.Exists(spcl),
+            $"System.Private.CoreLib.dll not found at '{spcl}'. " +
+            $"Ensure the runtime pack native directory exists and contains CoreLib. " +
+            $"RuntimePackNativeDir='{nativeDir}', RuntimePackDir='{_paths.RuntimePackDir}'");
+        paths.Add(spcl);
 
         return paths;
     }

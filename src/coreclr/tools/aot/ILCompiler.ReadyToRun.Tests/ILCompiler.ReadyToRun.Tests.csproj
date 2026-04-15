@@ -38,6 +38,9 @@
     <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackDir">
       <Value>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</Value>
     </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackNativeDir">
+      <Value>$(MicrosoftNetCoreAppRuntimePackNativeDir)</Value>
+    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="R2RTest.RefPackDir">
       <Value>$(MicrosoftNetCoreAppRefPackRefDir)</Value>
     </RuntimeHostConfigurationOption>

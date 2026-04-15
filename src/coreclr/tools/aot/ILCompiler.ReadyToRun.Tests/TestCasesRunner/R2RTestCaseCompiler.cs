@@ -19,12 +19,12 @@ internal sealed class R2RTestCaseCompiler
 {
     private readonly List<MetadataReference> _frameworkReferences;
 
-    public R2RTestCaseCompiler()
+    public R2RTestCaseCompiler(TestPaths paths)
     {
         _frameworkReferences = new List<MetadataReference>();
 
         // Add reference assemblies from the ref pack (needed for Roslyn compilation)
-        string refPackDir = TestPaths.RefPackDir;
+        string refPackDir = paths.RefPackDir;
         if (Directory.Exists(refPackDir))
         {
             foreach (string refPath in Directory.EnumerateFiles(refPackDir, "*.dll"))
@@ -35,7 +35,7 @@ internal sealed class R2RTestCaseCompiler
         else
         {
             // Fallback to runtime pack implementation assemblies
-            foreach (string refPath in TestPaths.GetFrameworkReferencePaths())
+            foreach (string refPath in paths.GetFrameworkReferencePaths())
             {
                 _frameworkReferences.Add(MetadataReference.CreateFromFile(refPath));
             }
