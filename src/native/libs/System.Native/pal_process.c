@@ -341,7 +341,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t inheritedFdCount,
                                       int32_t startDetached)
 {
-#if HAVE_FORK || defined(TARGET_OSX)
+#if HAVE_FORK || defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
             (groupsLength == 0 || groups != NULL) && "null argument.");
 
@@ -358,9 +358,27 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     }
 #endif
 
-#if defined(TARGET_OSX)
-    // Use posix_spawn on macOS when credentials don't need to be set,
-    // since macOS does not support setuid/setgid with posix_spawn.
+#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST)
+#if !HAVE_FORK
+    // On MacCatalyst, fork(2) exists in the SDK but is blocked by the kernel at runtime (EPERM).
+    // setuid/setgid-based credential changes require fork.
+    if (setCredentials)
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
+#if !HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
+    // posix_spawn_file_actions_addchdir_np is not available on all Apple platforms (e.g. MacCatalyst).
+    if (cwd != NULL)
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+    // Use posix_spawn on macOS/MacCatalyst when credentials don't need to be set,
+    // since posix_spawn does not support setuid/setgid.
     if (!setCredentials)
     {
         pid_t spawnedPid;
@@ -438,7 +456,10 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         if ((stdinFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdinFd, STDIN_FILENO)) != 0)
             || (stdoutFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdoutFd, STDOUT_FILENO)) != 0)
             || (stderrFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stderrFd, STDERR_FILENO)) != 0)
-            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0)) // Change working directory if specified
+#if HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
+            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0) // Change working directory if specified
+#endif
+            )
         {
             int saved_errno = result;
             posix_spawn_file_actions_destroy(&file_actions);
