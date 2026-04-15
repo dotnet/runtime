@@ -235,7 +235,7 @@ namespace System
             ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
             if (previousThreadId == 0)
             {
-                bool minimalFailFast = (exception == PreallocatedOutOfMemoryException.Instance);
+                bool minimalFailFast = (exception is OutOfMemoryException);
                 if (minimalFailFast)
                 {
                     // Minimal OOM fail-fast path: avoid heap allocations as much as possible, but still

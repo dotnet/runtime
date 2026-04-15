@@ -30,9 +30,12 @@ class OomHandlingTest
         if (args.Length > 0 && args[0] == AllocateArg)
         {
             // Subprocess mode: allocate until OOM is triggered.
-            List<byte[]> list = new();
-            while (true)
-                list.Add(new byte[128 * 1024]);
+            // Phase 1: fill quickly with large blocks to use most of the heap.
+            // Phase 2: exhaust remaining scraps with small allocations so that
+            // virtually no memory is left when OOM is finally thrown.
+            var list = new List<object>();
+            try { while (true) list.Add(new byte[16 * 1024]); } catch (OutOfMemoryException) { }
+            while (true) list.Add(new object());
         }
 
         // Controller mode: launch a subprocess with a GC heap limit and verify its output.
@@ -48,8 +51,8 @@ class OomHandlingTest
             RedirectStandardError = true,
             UseShellExecute = false,
         };
-        // A 20 MB GC heap limit is small enough to exhaust quickly but large enough for startup.
-        psi.Environment["DOTNET_GCHeapHardLimit"] = "20000000";
+        // A 32 MB GC heap limit is small enough to exhaust quickly but large enough for startup.
+        psi.Environment["DOTNET_GCHeapHardLimit"] = "2000000";
 
         using Process? p = Process.Start(psi);
         if (p == null)
