@@ -406,22 +406,17 @@ public unsafe class LoaderTests
             helpers.Write(webcilImage.Data.AsSpan().Slice(baseOffset + sf[nameof(Data.WebcilSectionHeader.PointerToRawData)].Offset, sizeof(uint)), sections[i].PointerToRawData);
         }
 
-        builder.AddHeapFragment(webcilImage);
-
         var layoutFrag = allocator.Allocate(imageLayoutLayout.Stride, "PEImageLayout");
         helpers.WritePointer(layoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Base)].Offset, helpers.PointerSize), webcilImage.Address);
         helpers.Write(layoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Size)].Offset, sizeof(uint)), webcilImageSize);
         helpers.Write(layoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Flags)].Offset, sizeof(uint)), 0u);
         helpers.Write(layoutFrag.Data.AsSpan().Slice(imageLayoutLayout.Fields[nameof(Data.PEImageLayout.Format)].Offset, sizeof(uint)), 1u);
-        builder.AddHeapFragment(layoutFrag);
 
         var peImageFrag = allocator.Allocate(peImageLayout.Stride, "PEImage");
         helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.LoadedImageLayout)].Offset, helpers.PointerSize), layoutFrag.Address);
-        builder.AddHeapFragment(peImageFrag);
 
         var peAssemblyFrag = allocator.Allocate(peAssemblyLayout.Stride, "PEAssembly");
         helpers.WritePointer(peAssemblyFrag.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.PEImage)].Offset, helpers.PointerSize), peImageFrag.Address);
-        builder.AddHeapFragment(peAssemblyFrag);
 
         var target = targetBuilder
             .AddTypes(types)

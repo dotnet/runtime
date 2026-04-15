@@ -833,7 +833,7 @@ void DestroyThread(Thread *th)
         th->UnmarkThreadForAbort();
     }
 
-    th->SetThreadState(Thread::TS_ReportDead);
+    th->SetThreadState(Thread::TS_Stopped);
     th->OnThreadTerminate(FALSE);
 }
 
@@ -911,7 +911,7 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     // We need to make sure that TLS are touched last here.
     SetThread(NULL);
 
-    SetThreadState((Thread::ThreadState)(Thread::TS_Detached | Thread::TS_ReportDead));
+    SetThreadState((Thread::ThreadState)(Thread::TS_Detached | Thread::TS_Stopped));
     // Do not touch Thread object any more.  It may be destroyed.
 
     // These detached threads will be cleaned up by finalizer thread.
@@ -1512,8 +1512,6 @@ void Thread::InitThread()
     // Set floating point mode to round to nearest
 #ifndef TARGET_UNIX
     (void) _controlfp_s( NULL, _RC_NEAR, _RC_CHOP|_RC_UP|_RC_DOWN|_RC_NEAR );
-
-    m_pTEB = (struct _NT_TIB*)NtCurrentTeb();
 
 #endif // !TARGET_UNIX
 
@@ -2575,14 +2573,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     }
     CONTRACTL_END;
 
-    // #ReportDeadOnThreadTerminate
-    // Caller should have put the TS_ReportDead bit on by now.
+    // #StoppedOnThreadTerminate
+    // Caller should have put the TS_Stopped bit on by now.
     // We don't want any windows after the exit event but before the thread is marked dead.
     // If a debugger attached during such a window (or even took a dump at the exit event),
     // then it may not realize the thread is dead.
     // So ensure we mark the thread as dead before we send the tool notifications.
-    // The TS_ReportDead bit will cause the debugger to view this as TS_Dead.
-    _ASSERTE(HasThreadState(TS_ReportDead));
+    _ASSERTE(HasThreadState(TS_Stopped));
 
     // Should not use OSThreadId:
     // OSThreadId may change for the current thread is the thread is blocked and rescheduled
@@ -4291,33 +4288,6 @@ Thread *ThreadStore::GetThreadList(Thread *cursor)
     return GetAllThreadList(cursor, (Thread::TS_Unstarted | Thread::TS_Dead), 0);
 }
 
-//---------------------------------------------------------------------------------------
-//
-// Grab a consistent snapshot of the thread's state, for reporting purposes only.
-//
-// Return Value:
-//    the current state of the thread
-//
-
-Thread::ThreadState Thread::GetSnapshotState()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    ThreadState res = m_State;
-
-    if (res & TS_ReportDead)
-    {
-        res = (ThreadState) (res | TS_Dead);
-    }
-
-    return res;
-}
-
 #ifndef DACCESS_COMPILE
 
 BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, DWORD *pStatus)
@@ -4368,7 +4338,7 @@ void ThreadStore::WaitForOtherThreads()
     {
         TSLockHolder.Release();
 
-        pCurThread->SetThreadState(Thread::TS_ReportDead);
+        pCurThread->SetThreadState(Thread::TS_Stopped);
 
         DWORD ret = WAIT_OBJECT_0;
         while (CLREventWaitWithTry(&m_TerminationEvent, INFINITE, TRUE, &ret))

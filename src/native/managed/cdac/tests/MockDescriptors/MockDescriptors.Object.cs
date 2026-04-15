@@ -200,7 +200,6 @@ internal partial class MockDescriptors
             MockMemorySpace.HeapFragment fragment = ManagedObjectAllocator.Allocate((uint)(ObjectLayout.Size + prefixSize), $"Object : MT = '{methodTable}'");
             MockObjectData mockObject = ObjectLayout.Create(fragment.Data.AsMemory((int)prefixSize, ObjectLayout.Size), fragment.Address + prefixSize);
             mockObject.MethodTable = methodTable;
-            Builder.AddHeapFragment(fragment);
             return mockObject.Address;
         }
 
@@ -233,7 +232,6 @@ internal partial class MockDescriptors
             mockString.MethodTable = TestStringMethodTableAddress;
             mockString.StringLength = (uint)value.Length;
             MemoryMarshal.Cast<char, byte>(value).CopyTo(fragment.Data.AsSpan((int)(mockString.FirstCharAddress - fragment.Address)));
-            Builder.AddHeapFragment(fragment);
             return fragment.Address;
         }
 
@@ -273,7 +271,6 @@ internal partial class MockDescriptors
             MockArrayObjectData arrayObject = ArrayLayout.Create(fragment);
             arrayObject.MethodTable = methodTable.Address;
             arrayObject.NumComponents = (uint)array.Length;
-            Builder.AddHeapFragment(fragment);
             return fragment.Address;
         }
 
