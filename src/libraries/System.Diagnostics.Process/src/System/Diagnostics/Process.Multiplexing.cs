@@ -307,10 +307,8 @@ namespace System.Diagnostics
             catch
             {
                 // On failure, return the current (possibly resized) buffers to the pool.
-                // These are this method's local variables, which RentLargerBuffer keeps
-                // up-to-date via ref. The caller cannot do this cleanup because its locals
-                // still reference the originally rented arrays that RentLargerBuffer may
-                // have already returned.
+                // The caller's locals still reference the original buffers, which may have
+                // already been returned to the pool by RentLargerBuffer.
                 ArrayPool<byte>.Shared.Return(outputBuffer);
                 ArrayPool<byte>.Shared.Return(errorBuffer);
                 throw;
