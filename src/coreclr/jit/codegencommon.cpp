@@ -5058,7 +5058,7 @@ void CodeGen::genFnProlog()
     // in the tier0 frame that impact FP and SP on entry to the OSR method.
     //
     // x64/arm64 handle this differently; the phantom prolog unwind is emitted in
-    // genOSRRecordTier0CalleeSavedRegistersAndFrame.
+    // genOSRHandleTier0CalleeSavedRegistersAndFrame.
     //
     if (m_compiler->opts.IsOSR())
     {
@@ -5414,7 +5414,6 @@ void CodeGen::genFnProlog()
 #else  // TARGET_WASM
     regNumber initReg       = REG_NA;
     bool      initRegZeroed = false;
-    bool      isOSRx64Root  = false;
 #endif // TARGET_WASM
 
     unsigned extraFrameSize = 0;

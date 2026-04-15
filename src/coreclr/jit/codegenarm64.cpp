@@ -5574,12 +5574,8 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
     assert(m_compiler->opts.IsOSR());
     assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
-    // Figure out which set of int callee saves was already saved by Tier0.
-    // Emit appropriate unwind.
-    //
-    PatchpointInfo* const patchpointInfo          = m_compiler->info.compPatchpointInfo;
-    regMaskTP const       tier0CalleeSaves        = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
-    int const             tier0CalleeSaveUsedSize = genCountBits(tier0CalleeSaves) * REGSIZE_BYTES;
+    PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
+    regMaskTP const       tier0CalleeSaves(patchpointInfo->CalleeSaveRegisters());
 
     JITDUMP("--OSR--- tier0 has already saved ");
     JITDUMPEXEC(dspRegMask(tier0CalleeSaves));

@@ -5731,9 +5731,9 @@ void Compiler::generatePatchpointInfo()
 #ifdef TARGET_ARM64
     rsPushRegs |= RBM_LR;
 #endif
-    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs.GetIntRegSet());
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs.getLow());
     JITDUMP("--OSR-- Tier0 callee saves: ");
-    JITDUMPEXEC(dspRegMask(regMaskTP::FromIntRegSet((SingleTypeRegSet)patchpointInfo->CalleeSaveRegisters())));
+    JITDUMPEXEC(dspRegMask(regMaskTP((regMaskSmall)patchpointInfo->CalleeSaveRegisters())));
     JITDUMP("\n");
 
     // Register this with the runtime.
