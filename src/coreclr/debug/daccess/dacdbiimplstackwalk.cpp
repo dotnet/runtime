@@ -299,7 +299,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                 {
                     // Skip the new exception handling managed code, the debugger clients are not supposed to see them
                     MethodDesc *pMD = pIter->m_crawl.GetFunction();
-                    MethodDesc *pMD = pIter->m_crawl.GetFunction();
 
                     // Skip the exception handling managed code, the debugger clients are not supposed to see them
                     // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
