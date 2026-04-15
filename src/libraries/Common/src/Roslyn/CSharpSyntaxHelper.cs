@@ -99,7 +99,9 @@ namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
                 // in which case Name will be null. Skip those.
                 var name = usingDirective.Name;
                 if (name?.GetUnqualifiedName() is not SimpleNameSyntax simpleName)
+                {
                     continue;
+                }
 
                 var aliasName = usingDirective.Alias.Name.Identifier.ValueText;
                 var symbolName = simpleName.Identifier.ValueText;
