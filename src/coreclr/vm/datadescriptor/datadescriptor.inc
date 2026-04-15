@@ -53,7 +53,6 @@ CDAC_TYPE_FIELD(Thread, TYPE(GCHandle), LastThrownObject, cdac_data<Thread>::Las
 CDAC_TYPE_FIELD(Thread, T_POINTER, LinkNext, cdac_data<Thread>::Link)
 CDAC_TYPE_FIELD(Thread, T_POINTER, ThreadLocalDataPtr, cdac_data<Thread>::ThreadLocalDataPtr)
 #ifndef TARGET_UNIX
-CDAC_TYPE_FIELD(Thread, T_POINTER, TEB, cdac_data<Thread>::TEB)
 CDAC_TYPE_FIELD(Thread, T_POINTER, UEWatsonBucketTrackerBuckets, cdac_data<Thread>::UEWatsonBucketTrackerBuckets)
 #endif
 CDAC_TYPE_END(Thread)
