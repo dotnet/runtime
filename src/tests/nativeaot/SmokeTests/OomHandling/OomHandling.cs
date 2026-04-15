@@ -17,6 +17,7 @@ class OomHandlingTest
 {
     const int Pass = 100;
     const int Fail = -1;
+    const int TimeoutMilliseconds = 30 * 1000;
 
     const string AllocateArg = "--allocate";
     // Both the minimal OOM fail-fast path ("Process is terminating due to OutOfMemoryException.")
@@ -63,7 +64,12 @@ class OomHandlingTest
 
         // Read stderr before waiting to avoid deadlock.
         string stderr = p.StandardError.ReadToEnd();
-        p.WaitForExit();
+        if (!p.WaitForExit(TimeoutMilliseconds))
+        {
+            p.Kill(true);
+            Console.WriteLine($"Subprocess timed out after {TimeoutMilliseconds / 1000} seconds.");
+            return Fail;
+        }
 
         Console.WriteLine($"Subprocess exit code: {p.ExitCode}");
         Console.WriteLine($"Subprocess stderr: {stderr}");
