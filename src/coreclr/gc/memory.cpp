@@ -176,7 +176,7 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
     // Large pages: the decommit above is a no-op so memory retains stale data.
     // Clear up to end_of_data if the caller provided it so that the heap never
     // observes leftover object references after the region is reused.
-    if (use_large_pages_p && (end_of_data > address))
+    if (use_large_pages_p && (end_of_data != nullptr) && (end_of_data > address))
     {
         memclr ((uint8_t*)address, (uint8_t*)end_of_data - (uint8_t*)address);
     }
