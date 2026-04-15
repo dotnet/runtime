@@ -6,6 +6,7 @@ endif ()
 
 set(NATIVE_SOURCES
     pal_errno.c
+    pal_getosinfo.c
     pal_io.c
     pal_maphardwaretype.c
     pal_memory.c

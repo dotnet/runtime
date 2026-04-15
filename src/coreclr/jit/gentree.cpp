@@ -1948,16 +1948,15 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
         {
             // A few special cases exist that can't be found by signature alone, so we handle
             // those explicitly here instead.
-            needsVzeroupper = IsHelperCall(comp, CORINFO_HELP_BULK_WRITEBARRIER);
+            needsVzeroupper = IsHelperCall(CORINFO_HELP_BULK_WRITEBARRIER);
 
             // Most other helpers are well known to not use any floating-point or SIMD logic internally, but
             // a few do exist so we need to ensure they are handled. They are identified by taking or
             // returning a floating-point or SIMD type, regardless of how it is actually passed/returned but
             // are excluded if we know they are implemented in managed.
-            checkSignature = !needsVzeroupper && !IsHelperCall(comp, CORINFO_HELP_DBL2INT_OVF) &&
-                             !IsHelperCall(comp, CORINFO_HELP_DBL2LNG_OVF) &&
-                             !IsHelperCall(comp, CORINFO_HELP_DBL2UINT_OVF) &&
-                             !IsHelperCall(comp, CORINFO_HELP_DBL2ULNG_OVF);
+            checkSignature = !needsVzeroupper && !IsHelperCall(CORINFO_HELP_DBL2INT_OVF) &&
+                             !IsHelperCall(CORINFO_HELP_DBL2LNG_OVF) && !IsHelperCall(CORINFO_HELP_DBL2UINT_OVF) &&
+                             !IsHelperCall(CORINFO_HELP_DBL2ULNG_OVF);
             break;
         }
 
@@ -2039,7 +2038,7 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 {
     if (IsHelperCall())
     {
-        return compiler->s_helperCallProperties.IsPure(compiler->eeGetHelperNum(gtCallMethHnd));
+        return compiler->s_helperCallProperties.IsPure(GetHelperNum());
     }
     // If needed, we can annotate other special intrinsic methods as pure as well.
     return IsSpecialIntrinsic(compiler, NI_System_Type_GetTypeFromHandle);
@@ -2067,7 +2066,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
 
         if (call->IsHelperCall())
         {
-            CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+            CorInfoHelpFunc helper = call->GetHelperNum();
             switch (helper)
             {
                 case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
@@ -2233,7 +2232,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
         return true;
     }
 
-    CorInfoHelpFunc       helper           = compiler->eeGetHelperNum(gtCallMethHnd);
+    CorInfoHelpFunc       helper           = GetHelperNum();
     HelperCallProperties& helperProperties = compiler->s_helperCallProperties;
 
     // We definitely care about the side effects if MutatesHeap is true
@@ -2388,14 +2387,14 @@ bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler) const
 // IsHelperCall: Determine if this GT_CALL node is a specific helper call.
 //
 // Arguments:
-//     compiler - the compiler instance so that we can call eeFindHelper
+//     helper - the CorInfoFunc helper
 //
 // Return Value:
 //     Returns true if this GT_CALL node is a call to the specified helper.
 //
-bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
+bool GenTreeCall::IsHelperCall(unsigned helper) const
 {
-    return IsHelperCall(compiler->eeFindHelper(helper));
+    return IsHelperCall(Compiler::eeFindHelper(helper));
 }
 
 //-------------------------------------------------------------------------
@@ -2409,12 +2408,7 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
 //
 bool GenTreeCall::IsRuntimeLookupHelperCall(Compiler* compiler) const
 {
-    if (!IsHelperCall())
-    {
-        return false;
-    }
-
-    switch (compiler->eeGetHelperNum(gtCallMethHnd))
+    switch (GetHelperNum())
     {
         case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
         case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
@@ -2503,7 +2497,7 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     }
     else
     {
-        if (!Compare(c1->gtCallAddr, c2->gtCallAddr))
+        if (!Compare(c1->gtControlExpr, c2->gtControlExpr))
         {
             return false;
         }
@@ -3543,7 +3537,7 @@ AGAIN:
 
             if (tree->AsCall()->gtCallType == CT_INDIRECT)
             {
-                temp = tree->AsCall()->gtCallAddr;
+                temp = tree->AsCall()->gtControlExpr;
                 assert(temp);
                 hash = genTreeHashAdd(hash, gtHashValue(temp));
             }
@@ -6149,7 +6143,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             if (call->gtCallType == CT_INDIRECT)
             {
-                GenTree* indirect = call->gtCallAddr;
+                GenTree* indirect = call->gtControlExpr;
 
                 lvl2 = gtSetEvalOrder(indirect);
                 if (level < lvl2)
@@ -6970,11 +6964,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
                 *pUse = &call->gtControlExpr;
                 return true;
             }
-            if ((call->gtCallType == CT_INDIRECT) && (operand == call->gtCallAddr))
-            {
-                *pUse = &call->gtCallAddr;
-                return true;
-            }
             for (CallArg& arg : call->gtArgs.Args())
             {
                 if (arg.GetEarlyNode() == operand)
@@ -7310,7 +7299,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
         case GT_CALL:
             CorInfoHelpFunc helper;
-            helper = comp->eeGetHelperNum(this->AsCall()->gtCallMethHnd);
+            helper = AsCall()->GetHelperNum();
             if (helper == CORINFO_HELP_UNDEF)
             {
                 return ExceptionSetFlags::UnknownException;
@@ -8565,22 +8554,23 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     if (callType == CT_INDIRECT || callType == CT_HELPER)
         node->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
-    node->gtCallType    = callType;
-    node->gtCallMethHnd = callHnd;
+    node->gtCallType = callType;
     INDEBUG(node->callSig = nullptr;)
     node->tailCallInfo    = nullptr;
     node->gtRetClsHnd     = nullptr;
-    node->gtControlExpr   = nullptr;
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
     INDEBUG(node->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     node->gtInlineInfoCount = 0;
 
     if (callType == CT_INDIRECT)
     {
-        node->gtCallCookie = nullptr;
+        node->gtCallCookie  = nullptr;
+        node->gtControlExpr = (GenTree*)callHnd;
     }
     else
     {
+        node->gtCallMethHnd = callHnd;
+        node->gtControlExpr = nullptr;
         node->ClearInlineInfo();
     }
     node->gtReturnType = type;
@@ -10182,7 +10172,6 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     if (tree->gtCallType == CT_INDIRECT)
     {
         copy->gtCallCookie = tree->gtCallCookie;
-        copy->gtCallAddr   = gtCloneExpr(tree->gtCallAddr);
     }
     else
     {
@@ -10899,31 +10888,12 @@ void GenTreeUseEdgeIterator::AdvanceCall()
         case CALL_CONTROL_EXPR:
             if (call->gtControlExpr != nullptr)
             {
-                if (call->gtCallType == CT_INDIRECT)
-                {
-                    m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ADDRESS>;
-                }
-                else
-                {
-                    m_advance = &GenTreeUseEdgeIterator::Terminate;
-                }
-                m_edge = &call->gtControlExpr;
-                return;
+                m_edge    = &call->gtControlExpr;
+                m_advance = &GenTreeUseEdgeIterator::Terminate;
             }
-            else if (call->gtCallType != CT_INDIRECT)
+            else
             {
                 m_state = -1;
-                return;
-            }
-            FALLTHROUGH;
-
-        case CALL_ADDRESS:
-            assert(call->gtCallType == CT_INDIRECT);
-
-            m_advance = &GenTreeUseEdgeIterator::Terminate;
-            if (call->gtCallAddr != nullptr)
-            {
-                m_edge = &call->gtCallAddr;
             }
             return;
 
@@ -11616,20 +11586,11 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         /* Then print the general purpose flags */
         GenTreeFlags flags = tree->gtFlags;
 
-        if (tree->OperIsBinary() || tree->OperIsMultiOp())
+        if (tree->IsPartOfAddressMode())
         {
-            genTreeOps oper = tree->OperGet();
-
-            // Check for GTF_ADDRMODE_NO_CSE flag on add/mul/shl Binary Operators
-            if ((oper == GT_ADD) || (oper == GT_MUL) || (oper == GT_LSH))
-            {
-                if ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0)
-                {
-                    flags |= GTF_DONT_CSE; // Force the GTF_ADDRMODE_NO_CSE flag to print out like GTF_DONT_CSE
-                }
-            }
+            flags |= GTF_DONT_CSE; // Force the GTF_ADDRMODE_NO_CSE flag to print out like GTF_DONT_CSE
         }
-        else // !(tree->OperIsBinary() || tree->OperIsMultiOp())
+        if (!(tree->OperIsBinary() || tree->OperIsMultiOp()))
         {
             // the GTF_REVERSE flag only applies to binary operations (which some MultiOp nodes are).
             flags &= ~GTF_REVERSE_OPS;
@@ -13191,23 +13152,17 @@ void Compiler::gtDispTree(GenTree*                    tree,
 
                 gtDispArgList(call, lastChild, indentStack);
 
-                if (call->gtCallType == CT_INDIRECT)
+                for (CallArg& arg : call->gtArgs.LateArgs())
                 {
-                    gtDispChild(call->gtCallAddr, indentStack, (call->gtCallAddr == lastChild) ? IIArcBottom : IIArc,
-                                "calli tgt", topOnly);
+                    IndentInfo arcType = (arg.GetLateNode() == lastChild) ? IIArcBottom : IIArc;
+                    gtGetLateArgMsg(call, &arg, buf, sizeof(buf));
+                    gtDispChild(arg.GetLateNode(), indentStack, arcType, buf, topOnly);
                 }
 
                 if (call->gtControlExpr != nullptr)
                 {
                     gtDispChild(call->gtControlExpr, indentStack,
                                 (call->gtControlExpr == lastChild) ? IIArcBottom : IIArc, "control expr", topOnly);
-                }
-
-                for (CallArg& arg : call->gtArgs.LateArgs())
-                {
-                    IndentInfo arcType = (arg.GetLateNext() == nullptr) ? IIArcBottom : IIArc;
-                    gtGetLateArgMsg(call, &arg, buf, sizeof(buf));
-                    gtDispChild(arg.GetLateNode(), indentStack, arcType, buf, topOnly);
                 }
             }
         }
@@ -13717,11 +13672,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
         if (nodeIsCall)
         {
             GenTreeCall* call = node->AsCall();
-            if (operand == call->gtCallAddr)
-            {
-                displayOperand(operand, "calli tgt", operandArc, indentStack, prefixIndent);
-            }
-            else if (operand == call->gtControlExpr)
+            if (operand == call->gtControlExpr)
             {
                 displayOperand(operand, "control expr", operandArc, indentStack, prefixIndent);
             }
@@ -15201,7 +15152,7 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
 
     GenTreeCall* const call = op->AsCall();
 
-    if (!call->IsHelperCall(this, CORINFO_HELP_BOX_NULLABLE))
+    if (!call->IsHelperCall(CORINFO_HELP_BOX_NULLABLE))
     {
         return tree;
     }
@@ -15327,7 +15278,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
             // so we can't remove the box.
             if (newobjCall->gtArgs.IsEmpty())
             {
-                assert(newobjCall->IsHelperCall(this, CORINFO_HELP_READYTORUN_NEW));
+                assert(newobjCall->IsHelperCall(CORINFO_HELP_READYTORUN_NEW));
                 JITDUMP(" bailing; newobj via R2R helper\n");
                 return nullptr;
             }
@@ -17939,8 +17890,8 @@ Compiler::TypeProducerKind Compiler::gtGetTypeProducerKind(GenTree* tree)
 
 bool Compiler::gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call)
 {
-    return call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE) ||
-           call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL);
+    return call->IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE) ||
+           call->IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL);
 }
 
 //------------------------------------------------------------------------
@@ -17958,11 +17909,11 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInf
 {
     CorInfoHelpFunc helper = CORINFO_HELP_UNDEF;
 
-    if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE))
+    if (call->IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE))
     {
         helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
     }
-    else if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL))
+    else if (call->IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL))
     {
         helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL;
     }
@@ -31600,90 +31551,101 @@ bool GenTree::IsInvariant() const
 
 //-------------------------------------------------------------------
 // IsVectorPerElementMask: returns true if this node is a vector constant per-element mask
-//                         (every element has either all bits set or none of them).
+//                         (every element has either all bits set or none of them) for the
+//                         given simd size and base type.
 //
 // Arguments:
 //    simdBaseType - the base type of the constant being checked.
 //    simdSize     - the size of the SIMD type of the intrinsic.
 //
 // Returns:
-//     True if this node is a vector constant per-element mask.
+//     True if this node is a per-element mask compatible with simdBaseType and simdSize
 //
 bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const
 {
 #ifdef FEATURE_SIMD
+    // This should be kept in sync with ValueNumStore::IsVectorPerElementMask
+
+    var_types simdType     = TypeGet();
+    unsigned  elementCount = GenTreeVecCon::ElementCount(simdSize, simdBaseType);
+
+    assert(varTypeIsSIMD(simdType));
+    assert(genTypeSize(simdType) == simdSize);
+
     if (IsCnsVec())
     {
         const GenTreeVecCon* vecCon = AsVecCon();
-
-        int elementCount = vecCon->ElementCount(simdSize, simdBaseType);
-
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u8[0], elementCount);
-            case TYP_SHORT:
-            case TYP_USHORT:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u16[0], elementCount);
-            case TYP_INT:
-            case TYP_UINT:
-            case TYP_FLOAT:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u32[0], elementCount);
-            case TYP_LONG:
-            case TYP_ULONG:
-            case TYP_DOUBLE:
-                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u64[0], elementCount);
-            default:
-                unreached();
-        }
+        return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal, simdBaseType, elementCount);
     }
-    else if (OperIsHWIntrinsic())
+
+    if (!OperIsHWIntrinsic())
     {
-        const GenTreeHWIntrinsic* intrinsic   = AsHWIntrinsic();
-        const NamedIntrinsic      intrinsicId = intrinsic->GetHWIntrinsicId();
-
-        if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsicId))
-        {
-            // We directly return a per-element mask
-            return true;
-        }
-
-        bool       isScalar = false;
-        genTreeOps oper     = intrinsic->GetOperForHWIntrinsicId(&isScalar);
-
-        switch (oper)
-        {
-            case GT_AND:
-            case GT_AND_NOT:
-            case GT_OR:
-            case GT_OR_NOT:
-            case GT_XOR:
-            case GT_XOR_NOT:
-            {
-                // We are a binary bitwise operation where both inputs are per-element masks
-                return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize) &&
-                       intrinsic->Op(2)->IsVectorPerElementMask(simdBaseType, simdSize);
-            }
-
-            case GT_NOT:
-            {
-                // We are an unary bitwise operation where the input is a per-element mask
-                return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize);
-            }
-
-            default:
-            {
-                assert(!GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper));
-                break;
-            }
-        }
-
         return false;
     }
-    else if (IsCnsMsk())
+
+    const GenTreeHWIntrinsic* intrinsic = AsHWIntrinsic();
+
+    NamedIntrinsic intrinsicId           = intrinsic->GetHWIntrinsicId();
+    unsigned       intrinsicSimdSize     = intrinsic->GetSimdSize();
+    var_types      intrinsicSimdBaseType = intrinsic->GetSimdBaseType();
+
+    if (intrinsicSimdSize != simdSize)
     {
-        return true;
+        return false;
+    }
+
+    if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsicId))
+    {
+        // When producing a SIMD result, we need for it to
+        // have a base type that is the same size or larger
+        // as what we expect.
+        //
+        // Consider for example us expecting `byte` and the
+        // intrinsic here produces `ushort`. In that case we
+        // expect every byte to be either `0x00` or `0xFF`
+        // and the intrinsic produces either `0x0000` or `0xFFFF`
+        // and so it meets this need.
+        //
+        // However, the inverse is not safe as we would expect
+        // `0x0000` or `0xFFFF`, but the intrinsic could produce
+        // `0x00FF` or `0xFF00` which fails the expectation.
+
+        return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
+    }
+
+    bool       isScalar = false;
+    genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
+
+    switch (oper)
+    {
+        case GT_AND:
+        case GT_AND_NOT:
+        case GT_OR:
+        case GT_OR_NOT:
+        case GT_XOR:
+        case GT_XOR_NOT:
+        {
+            // We are a binary bitwise operation where both inputs are per-element masks
+            //
+            // While some cases like OR could combine in ways that produce a usable mask
+            // there isn't any way to statically determine this for non-constants and
+            // the constant cases should've already been folded.
+
+            return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize) &&
+                   intrinsic->Op(2)->IsVectorPerElementMask(simdBaseType, simdSize);
+        }
+
+        case GT_NOT:
+        {
+            // We are an unary bitwise operation where the input is a per-element mask
+            return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize);
+        }
+
+        default:
+        {
+            assert(!GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper));
+            break;
+        }
     }
 #endif // FEATURE_SIMD
 
@@ -33042,24 +33004,24 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             break;
                         }
                     }
-                    else if (otherNode->OperIsHWIntrinsic())
+                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
                     {
-                        GenTreeHWIntrinsic* otherIntrinsic   = otherNode->AsHWIntrinsic();
-                        NamedIntrinsic      otherIntrinsicId = otherIntrinsic->GetHWIntrinsicId();
-
-                        if (HWIntrinsicInfo::ReturnsPerElementMask(otherIntrinsicId) &&
-                            (genTypeSize(simdBaseType) == genTypeSize(otherIntrinsic->GetSimdBaseType())))
+                        // Handle `Equals(PerElementMask, AllBitsSet)` and `Equals(AllBitsSet, PerElementMask)` for
+                        // integrals
+                        if (cnsNode->IsVectorAllBitsSet())
                         {
-                            // This optimization is only safe if we know the other node produces
-                            // AllBitsSet or Zero per element and if the outer comparison is the
-                            // same size as what the other node produces for its mask
+                            // We are comparing something that is known per element to be either
+                            // AllBitsSet or Zero, with AllBitsSet.
+                            //
+                            // In such a case:
+                            // * `AllBitsSet == AllBitsSet` is true and so produces `AllBitsSet`
+                            // * `AllBitsSet == Zero` is false and so produces `Zero`
+                            //
+                            // This means that we are not changing anything and can just return
+                            // the per element mask
 
-                            // Handle `(Mask == AllBitsSet) == Mask` and `(AllBitsSet == Mask) == Mask` for integrals
-                            if (cnsNode->IsVectorAllBitsSet())
-                            {
-                                resultNode = otherNode;
-                                break;
-                            }
+                            resultNode = otherNode;
+                            break;
                         }
                     }
                     break;
@@ -33227,6 +33189,25 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             int64_t allBitsSet = -1;
                             cnsNode->AsVecCon()->EvaluateBroadcastInPlace(TYP_LONG, allBitsSet);
                             resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                            break;
+                        }
+                    }
+                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
+                    {
+                        // Handle `~Equals(PerElementMask, Zero)` and `~Equals(Zero, PerElementMask)` for integrals
+                        if (cnsNode->IsVectorZero())
+                        {
+                            // We are comparing something that is known per element to be either
+                            // AllBitsSet or Zero, with Zero.
+                            //
+                            // In such a case:
+                            // * `AllBitsSet != Zero` is true and so produces `AllBitsSet`
+                            // * `Zero != Zero` is false and so produces `Zero`
+                            //
+                            // This means that we are not changing anything and can just return
+                            // the per element mask
+
+                            resultNode = otherNode;
                             break;
                         }
                     }
