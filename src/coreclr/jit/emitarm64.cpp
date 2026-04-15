@@ -13687,6 +13687,8 @@ void emitter::emitDispInsHelp(
             {
                 emitDispReg(id->idReg3(), EA_PTRSIZE, false);
             }
+
+            emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, GTF_ICON_FTN_ADDR);
             break;
 
         case IF_LS_1A: // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)

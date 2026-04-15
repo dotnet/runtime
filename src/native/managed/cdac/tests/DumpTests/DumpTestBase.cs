@@ -106,7 +106,7 @@ public abstract class DumpTestBase : IDisposable
             _host.ReadFromTarget,
             writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
-            additionalFactories: [],
+            [Contracts.CoreCLRContracts.Register],
             out _target);
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
@@ -153,6 +153,12 @@ public abstract class DumpTestBase : IDisposable
                     if (string.Equals(attr.Os, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase))
                         throw new SkipTestException($"[{_dumpInfo.Os}] {attr.Reason}");
                 }
+            }
+
+            foreach (SkipOnArchAttribute attr in method.GetCustomAttributes<SkipOnArchAttribute>())
+            {
+                if (string.Equals(attr.Arch, _dumpInfo.Arch, StringComparison.OrdinalIgnoreCase))
+                    throw new SkipTestException($"[{_dumpInfo.Arch}] {attr.Reason}");
             }
         }
     }

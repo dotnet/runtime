@@ -632,6 +632,149 @@ namespace System.Threading.RateLimiting.Tests
             await disposeTcs.Task;
         }
 
+        [Fact]
+        public async Task ChainedLimiter_HeartbeatCallsTryReplenishOnInnerReplenishingLimiters()
+        {
+            var replenishCallCount = 0;
+            CustomizableReplenishingLimiter replenishLimiter = new CustomizableReplenishingLimiter
+            {
+                TryReplenishImpl = () => { replenishCallCount++; return true; }
+            };
+            CustomizableLimiter nonReplenishLimiter = new CustomizableLimiter();
+
+            using var limiter = Utils.CreatePartitionedLimiterWithoutTimer<string, int>(resource =>
+            {
+                return RateLimitPartition.Get(1, _ => RateLimiter.CreateChained(nonReplenishLimiter, replenishLimiter));
+            });
+
+            limiter.AttemptAcquire("");
+
+            await Utils.RunTimerFunc(limiter);
+
+            Assert.Equal(1, replenishCallCount);
+        }
+
+        [Fact]
+        public async Task ChainedLimiter_HeartbeatCallsTryReplenishOnAllInnerReplenishingLimiters()
+        {
+            var replenishCallCount1 = 0;
+            var replenishCallCount2 = 0;
+            CustomizableReplenishingLimiter replenishLimiter1 = new CustomizableReplenishingLimiter
+            {
+                TryReplenishImpl = () => { replenishCallCount1++; return true; }
+            };
+            CustomizableReplenishingLimiter replenishLimiter2 = new CustomizableReplenishingLimiter
+            {
+                TryReplenishImpl = () => { replenishCallCount2++; return true; }
+            };
+
+            using var limiter = Utils.CreatePartitionedLimiterWithoutTimer<string, int>(resource =>
+            {
+                return RateLimitPartition.Get(1, _ => RateLimiter.CreateChained(replenishLimiter1, replenishLimiter2));
+            });
+
+            limiter.AttemptAcquire("");
+
+            await Utils.RunTimerFunc(limiter);
+
+            Assert.Equal(1, replenishCallCount1);
+            Assert.Equal(1, replenishCallCount2);
+        }
+
+        [Fact]
+        public async Task ChainedLimiter_ThrowingTryReplenishStillReplenishesOtherLimiters()
+        {
+            var replenishCallCount = 0;
+            CustomizableReplenishingLimiter throwingLimiter = new CustomizableReplenishingLimiter
+            {
+                TryReplenishImpl = () => throw new Exception("replenish failed")
+            };
+            CustomizableReplenishingLimiter goodLimiter = new CustomizableReplenishingLimiter
+            {
+                TryReplenishImpl = () => { replenishCallCount++; return true; }
+            };
+
+            using var limiter = Utils.CreatePartitionedLimiterWithoutTimer<string, int>(resource =>
+            {
+                return RateLimitPartition.Get(1, _ => RateLimiter.CreateChained(throwingLimiter, goodLimiter));
+            });
+
+            limiter.AttemptAcquire("");
+
+            var ex = await Assert.ThrowsAsync<AggregateException>(() => Utils.RunTimerFunc(limiter));
+            Assert.Single(ex.InnerExceptions);
+            Assert.IsType<AggregateException>(ex.InnerExceptions[0]);
+
+            // The good limiter was still replenished despite the first one throwing
+            Assert.Equal(1, replenishCallCount);
+        }
+
+        [Fact]
+        public async Task ChainedLimiter_IdleChainedLimiterWithNullChildIdleDurationNotEvicted()
+        {
+            var factoryCallCount = 0;
+            CustomizableReplenishingLimiter replenishLimiter = null;
+            CustomizableLimiter idleLimiter = null;
+
+            using var limiter = Utils.CreatePartitionedLimiterWithoutTimer<string, int>(resource =>
+            {
+                return RateLimitPartition.Get(1, _ =>
+                {
+                    factoryCallCount++;
+                    replenishLimiter = new CustomizableReplenishingLimiter();
+                    idleLimiter = new CustomizableLimiter();
+                    return RateLimiter.CreateChained(idleLimiter, replenishLimiter);
+                });
+            });
+
+            limiter.AttemptAcquire("");
+            Assert.Equal(1, factoryCallCount);
+
+            // Idle limiter reports > 10s idle, but replenishing limiter reports null (still active)
+            idleLimiter.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
+            replenishLimiter.IdleDurationImpl = () => null;
+
+            await Utils.RunTimerFunc(limiter);
+
+            // Factory should not have been called again — limiter was not evicted
+            limiter.AttemptAcquire("");
+            Assert.Equal(1, factoryCallCount);
+        }
+
+        [Fact]
+        public async Task ChainedLimiter_FullyIdleChainedLimiterIsEvicted()
+        {
+            var factoryCallCount = 0;
+            CustomizableLimiter innerLimiter1 = null;
+            CustomizableLimiter innerLimiter2 = null;
+
+            using var limiter = Utils.CreatePartitionedLimiterWithoutTimer<string, int>(resource =>
+            {
+                return RateLimitPartition.Get(1, _ =>
+                {
+                    factoryCallCount++;
+                    innerLimiter1 = new CustomizableLimiter();
+                    innerLimiter2 = new CustomizableLimiter();
+                    return RateLimiter.CreateChained(innerLimiter1, innerLimiter2);
+                });
+            });
+
+            limiter.AttemptAcquire("");
+            Assert.Equal(1, factoryCallCount);
+
+            // Both children report idle > 10s, chain should be evicted
+            innerLimiter1.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
+            innerLimiter2.IdleDurationImpl = () => TimeSpan.FromMinutes(1);
+            innerLimiter1.DisposeAsyncCoreImpl = () => default;
+            innerLimiter2.DisposeAsyncCoreImpl = () => default;
+
+            await Utils.RunTimerFunc(limiter);
+
+            // Factory should be called again on next acquire — limiter was evicted and recreated
+            limiter.AttemptAcquire("");
+            Assert.Equal(2, factoryCallCount);
+        }
+
         // Translate
 
         [Fact]

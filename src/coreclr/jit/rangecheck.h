@@ -685,7 +685,8 @@ struct RangeOps
         const Limit& yUpper = y.UpperLimit();
 
         // For unsigned comparisons, we only support non-negative ranges.
-        if (isUnsigned)
+        // NOTE: it's not applicable for EQ and NE.
+        if (isUnsigned && (relop != GT_EQ) && (relop != GT_NE))
         {
             if (!xLower.IsConstant() || !yLower.IsConstant() || (xLower.GetConstant() < 0) ||
                 (yLower.GetConstant() < 0))
