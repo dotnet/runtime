@@ -1346,8 +1346,7 @@ namespace Internal.JitInterface
             info->devirtualizedMethod = null;
             info->exactContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
-            info->isInstantiatingStub = false;
-            info->needsMethodContext = false;
+            info->instParamLookup = default(CORINFO_LOOKUP);
 
             TypeDesc objType = HandleToObject(info->objClass);
 
@@ -1478,6 +1477,29 @@ namespace Internal.JitInterface
                 info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
             }
 
+            bool isArrayInterfaceDevirtualization = objType.IsArray && decl.OwningType.IsInterface;
+            bool isGenericVirtual = decl.HasInstantiation;
+
+            if (isGenericVirtual && originalImpl.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
+            if (!info->instParamLookup.lookupKind.needsRuntimeLookup &&
+                (isArrayInterfaceDevirtualization || isGenericVirtual) &&
+                impl.IsCanonicalMethod(CanonicalFormKind.Specific))
+            {
+#if READYTORUN
+                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodHandle, originalImplWithToken));
+#else
+                // TODO: Implement generic virtual method devirtualization constant lookup for NativeAOT
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+#endif
+            }
+
 #if READYTORUN
             // Testing has not shown that concerns about virtual matching are significant
             // Only generate verification for builds with the stress mode enabled
@@ -1492,8 +1514,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->isInstantiatingStub = false;
-            info->exactContext = contextFromType(owningType);
+            info->exactContext = (isArrayInterfaceDevirtualization || isGenericVirtual) ? contextFromMethod(originalImpl) : contextFromType(owningType);
 
             return true;
 

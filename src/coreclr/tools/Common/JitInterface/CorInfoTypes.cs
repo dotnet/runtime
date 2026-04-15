@@ -1183,19 +1183,15 @@ namespace Internal.JitInterface
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
         // - detail describes the computation done by the jit host
-        // - isInstantiatingStub is set to TRUE if the devirtualized method is a method instantiation stub
-        // - needsMethodContext is set TRUE if the devirtualized method may require a method context
-        //     (in which case the method handle and context will be a generic method)
+        // - instParamLookup contains all the information necessary to pass the instantiation parameter for
+        //   the devirtualized method.
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public CORINFO_CONTEXT_STRUCT* exactContext;
         public CORINFO_DEVIRTUALIZATION_DETAIL detail;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
-        public byte _isInstantiatingStub;
-        public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
-        public byte _needsMethodContext;
-        public bool needsMethodContext { get { return _needsMethodContext != 0; } set { _needsMethodContext = value ? (byte)1 : (byte)0; } }
+        public CORINFO_LOOKUP instParamLookup;
     }
 
     //----------------------------------------------------------------------------
