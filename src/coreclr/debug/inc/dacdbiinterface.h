@@ -1847,11 +1847,6 @@ public:
     // Check whether the argument is a runtime callable wrapper.
     virtual HRESULT STDMETHODCALLTYPE IsRcw(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
 
-    // retrieves the list of COM interfaces implemented by vmObject, as it is known at
-    // the time of the call (the list may change as new interface types become available
-    // in the runtime)
-    virtual HRESULT STDMETHODCALLTYPE GetRcwCachedInterfaceTypes(VMPTR_Object vmObject, VMPTR_AppDomain vmAppDomain, BOOL bIInspectableOnly, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pDacInterfaces) = 0;
-
     // retrieves the list of interfaces pointers implemented by vmObject, as it is known at
     // the time of the call (the list may change as new interface types become available
     // in the runtime)
@@ -1995,8 +1990,6 @@ public:
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
-    virtual HRESULT STDMETHODCALLTYPE EnableNGENPolicy(CorDebugNGENPolicy ePolicy) = 0;
-
     // Sets the NGEN compiler flags. This restricts NGEN to only use images with certain
     // types of pregenerated code. With respect to debugging this is used to specify that
     // the NGEN image must be debuggable aka non-optimized code. Note that these flags
@@ -2019,8 +2012,6 @@ public:
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
-    virtual HRESULT STDMETHODCALLTYPE SetNGENCompilerFlags(DWORD dwFlags) = 0;
-
     // Gets the NGEN compiler flags currently in effect. This accounts for settings that
     // were caused by SetDesiredNGENCompilerFlags as well as other configuration sources.
     // See SetDesiredNGENCompilerFlags for more info
@@ -2031,8 +2022,6 @@ public:
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
-    virtual HRESULT STDMETHODCALLTYPE GetNGENCompilerFlags(DWORD *pdwFlags) = 0;
-
     // Create a VMPTR_OBJECTHANDLE from a CORDB_ADDRESS pointing to an object handle
     //
     // Arguments:
@@ -2276,8 +2265,6 @@ public:
     //    S_OK regardless of whether a rejit request is active or not, as long as the answer is certain
     //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
     //
-    virtual HRESULT STDMETHODCALLTYPE GetReJitInfo(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ReJitInfo* pReJitInfo) = 0;
-
     // DEPRECATED - use GetNativeCodeVersionNode
     // Retrieves the ReJitInfo for a given MethodDesc/code address, if it exists.
     //
@@ -2293,8 +2280,6 @@ public:
     //    S_OK regardless of whether a rejit request is active or not, as long as the answer is certain
     //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
     //
-    virtual HRESULT STDMETHODCALLTYPE GetReJitInfoByAddress(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_ReJitInfo* pReJitInfo) = 0;
-
     // DEPRECATED - use GetILCodeVersion
     // Retrieves the SharedReJitInfo for a given ReJitInfo.
     //
@@ -2307,8 +2292,6 @@ public:
     //    S_OK if no error
     //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
     //
-    virtual HRESULT STDMETHODCALLTYPE GetSharedReJitInfo(VMPTR_ReJitInfo vmReJitInfo, VMPTR_SharedReJitInfo* pSharedReJitInfo) = 0;
-
     // DEPRECATED - use GetILCodeVersionData
     // Retrieves useful data from a SharedReJitInfo such as IL code and IL mapping.
     //
@@ -2321,8 +2304,6 @@ public:
     //    S_OK if no error
     //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
     //
-    virtual HRESULT STDMETHODCALLTYPE GetSharedReJitInfoData(VMPTR_SharedReJitInfo sharedReJitInfo, DacSharedReJitInfo* pData) = 0;
-
     // Retrieves a bool indicating whether or not a method's optimizations have been disabled
     // defined in Debugger::IsMethodDeoptimized
     //
