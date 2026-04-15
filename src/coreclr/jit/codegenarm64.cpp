@@ -38,17 +38,17 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
     regMaskTP rsRestoreRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
+    if (m_compiler->opts.IsOSR())
+    {
+        rsRestoreRegs &= ~m_compiler->info.compPatchpointInfo->CalleeSaveRegisters();
+    }
+
     if (isFramePointerUsed())
     {
         rsRestoreRegs |= RBM_FPBASE;
     }
 
     rsRestoreRegs |= RBM_LR; // We must save/restore the return address (in the LR register)
-
-    if (m_compiler->opts.IsOSR())
-    {
-        rsRestoreRegs &= ~m_compiler->info.compPatchpointInfo->CalleeSaveRegisters();
-    }
 
     regMaskTP regsToRestoreMask = rsRestoreRegs;
 
@@ -60,7 +60,6 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     const int calleeSaveSpOffset = m_compiler->compFrameInfo.calleeSaveSpOffset;
     const int calleeSaveSpDelta  = m_compiler->compFrameInfo.calleeSaveSpDelta;
     const int offsetSpToSavedFp  = m_compiler->compFrameInfo.offsetSpToSavedFp;
-    bool      restoreFplr        = (rsRestoreRegs & RBM_FP) != 0;
 
     switch (frameType)
     {
@@ -133,20 +132,13 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                 GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, alignmentAdjustment2);
                 m_compiler->unwindSetFrameReg(REG_FPBASE, alignmentAdjustment2);
 
-                if (restoreFplr)
-                {
-                    // Generate:
-                    //      ldp fp,lr,[sp]
-                    //      add sp,sp,#remainingFrameSz
+                // Generate:
+                //      ldp fp,lr,[sp]
+                //      add sp,sp,#remainingFrameSz
 
-                    JITDUMP("    alignmentAdjustment2=%d\n", alignmentAdjustment2);
-                    genEpilogRestoreRegPair(REG_FP, REG_LR, alignmentAdjustment2, spAdjustment2, false, REG_IP1,
-                                            nullptr);
-                }
-                else
-                {
-                    genStackPointerAdjustment(spAdjustment2, REG_IP1, nullptr, /* reportUnwindData */ true);
-                }
+                JITDUMP("    alignmentAdjustment2=%d\n", alignmentAdjustment2);
+                genRestoreRegPair(REG_FP, REG_LR, REG_SPBASE, alignmentAdjustment2, spAdjustment2, false, REG_IP1,
+                                        nullptr, /* reportUnwindData */ true);
             }
             else
             {
@@ -160,22 +152,15 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                     m_compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
                 }
 
-                if (restoreFplr)
-                {
-                    // Generate:
-                    //      ldp fp,lr,[sp,#outsz]
-                    //      add sp,sp,#remainingFrameSz     ; might need to load this constant in a scratch register if
-                    //                                      ; it's large
+                // Generate:
+                //      ldp fp,lr,[sp,#outsz]
+                //      add sp,sp,#remainingFrameSz     ; might need to load this constant in a scratch register if
+                //                                      ; it's large
 
-                    JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
+                JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
-                    genEpilogRestoreRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize, remainingFrameSz,
-                                            false, REG_IP1, nullptr);
-                }
-                else
-                {
-                    genStackPointerAdjustment(remainingFrameSz, REG_IP1, nullptr, /* reportUnwindData */ true);
-                }
+                genRestoreRegPair(REG_FP, REG_LR, REG_SPBASE, m_compiler->lvaOutgoingArgSpaceSize, remainingFrameSz,
+                                        false, REG_IP1, nullptr, /* reportUnwindData */ true);
             }
 
             // Unlike frameType=1 or frameType=2 that restore SP at the end,
@@ -228,26 +213,18 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     }
 
     JITDUMP("    calleeSaveSpOffset=%d, calleeSaveSpDelta=%d\n", calleeSaveSpOffset, calleeSaveSpDelta);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset, calleeSaveSpDelta);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, REG_SPBASE, calleeSaveSpOffset, calleeSaveSpDelta, /* reportUnwindData */ true);
 
     switch (frameType)
     {
         case 1:
         {
-            if (restoreFplr)
-            {
-                // Generate:
-                //      ldp fp,lr,[sp],#framesz
+            // Generate:
+            //      ldp fp,lr,[sp],#framesz
 
-                GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, totalFrameSize,
-                                              INS_OPTS_POST_INDEX);
-                m_compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
-            }
-            else
-            {
-                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
-                m_compiler->unwindAllocStack(totalFrameSize);
-            }
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, totalFrameSize,
+                                          INS_OPTS_POST_INDEX);
+            m_compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
             break;
         }
 
@@ -257,12 +234,9 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             //      ldp fp,lr,[sp,#outsz]
             //      add sp,sp,#framesz
 
-            if (restoreFplr)
-            {
-                GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
-                                              m_compiler->lvaOutgoingArgSpaceSize);
-                m_compiler->unwindSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize);
-            }
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
+                                          m_compiler->lvaOutgoingArgSpaceSize);
+            m_compiler->unwindSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize);
 
             GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
             m_compiler->unwindAllocStack(totalFrameSize);
@@ -282,32 +256,30 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         }
     }
 
-    // For OSR we must also restore callee saves from tier0 frame and pop it.
+    // For OSR, we must also adjust the SP to remove the Tier0 frame.
     //
     if (m_compiler->opts.IsOSR())
     {
         PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
-        regsToRestoreMask                    = patchpointInfo->CalleeSaveRegisters();
+        const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
+        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes\n", tier0FrameSize);
 
-        int frameSize         = patchpointInfo->TotalFrameSize();
-        int calleeSavesOffset = frameSize - genCountBits(regsToRestoreMask) * REGSIZE_BYTES;
-
-        if (frameSize >= 504)
+        // Tier0 size may exceed simple immediate. We're in the epilog so not clear if we can
+        // use a scratch reg. So just do two subtracts if necessary.
+        //
+        int spAdjust = tier0FrameSize;
+        if (!GetEmitter()->emitIns_valid_imm_for_add(tier0FrameSize, EA_PTRSIZE))
         {
-            // We cannot represent ldp x0, x1, [sp, #frameSize] because frameSize is too large.
-            // Do a separate restore up until the callee saved registers first.
-            int firstAdjustment = calleeSavesOffset;
-            if ((calleeSavesOffset % 16) != 0)
-            {
-                firstAdjustment = calleeSavesOffset - 8;
-            }
-
-            genStackPointerAdjustment(firstAdjustment, REG_IP1, nullptr, /* reportUnwindData */ true);
-            calleeSavesOffset -= firstAdjustment;
-            frameSize -= firstAdjustment;
+            const int lowPart  = spAdjust & 0xFFF;
+            const int highPart = spAdjust - lowPart;
+            assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+            m_compiler->unwindAllocStack(highPart);
+            spAdjust = lowPart;
         }
-
-        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSavesOffset, frameSize);
+        assert(GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE));
+        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
+        m_compiler->unwindAllocStack(spAdjust);
     }
 }
 
@@ -631,7 +603,7 @@ void CodeGen::genPrologSaveReg(
 }
 
 //------------------------------------------------------------------------
-// genEpilogRestoreRegPair: This is the opposite of genPrologSaveRegPair(), run in the epilog instead of the prolog.
+// genRestoreRegPair: This is the opposite of genPrologSaveRegPair(), run in the epilog instead of the prolog.
 // The stack pointer adjustment, if requested, is done after the register restore, using post-index addressing.
 // The caller must ensure that we can use the LDP instruction, and that spOffset will be in the legal range for that
 // instruction.
@@ -651,15 +623,17 @@ void CodeGen::genPrologSaveReg(
 // Return Value:
 //    None.
 
-void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
+void CodeGen::genRestoreRegPair(regNumber reg1,
                                       regNumber reg2,
+                                      regNumber baseReg,
                                       int       spOffset,
                                       int       spDelta,
                                       bool      useSaveNextPair,
                                       regNumber tmpReg,
-                                      bool*     pTmpRegIsZero)
+                                      bool*     pTmpRegIsZero,
+                                      bool      reportUnwindData)
 {
-    assert(spOffset >= 0);
+    assert((spOffset >= -512) && (spOffset <= 504));
     assert(spDelta >= 0);
     assert((spDelta % 16) == 0);                                  // SP changes must be 16-byte aligned
     assert(genIsValidFloatReg(reg1) == genIsValidFloatReg(reg2)); // registers must be both general-purpose, or both
@@ -673,42 +647,52 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
             // Fold the SP change into this instruction.
             // ldp reg1, reg2, [SP], #spDelta
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spDelta, INS_OPTS_POST_INDEX);
-            m_compiler->unwindSaveRegPairPreindexed(reg1, reg2, -spDelta);
+
+            if (reportUnwindData)
+            {
+                m_compiler->unwindSaveRegPairPreindexed(reg1, reg2, -spDelta);
+            }
         }
         else // (spOffset != 0) || (spDelta > 504)
         {
             // Can't fold in the SP change; need to use a separate ADD instruction.
 
             // ldp reg1, reg2, [SP, #offset]
-            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
-            m_compiler->unwindSaveRegPair(reg1, reg2, spOffset);
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, baseReg, spOffset);
+            if (reportUnwindData)
+            {
+                m_compiler->unwindSaveRegPair(reg1, reg2, spOffset);
+            }
 
             // generate add SP,SP,imm
-            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
+            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ reportUnwindData);
         }
     }
     else
     {
-        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
+        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, baseReg, spOffset);
 
-        if (TargetOS::IsUnix && m_compiler->generateCFIUnwindCodes())
+        if (reportUnwindData)
         {
-            useSaveNextPair = false;
-        }
+            if (TargetOS::IsUnix && m_compiler->generateCFIUnwindCodes())
+            {
+                useSaveNextPair = false;
+            }
 
-        if (useSaveNextPair)
-        {
-            m_compiler->unwindSaveNext();
-        }
-        else
-        {
-            m_compiler->unwindSaveRegPair(reg1, reg2, spOffset);
+            if (useSaveNextPair)
+            {
+                m_compiler->unwindSaveNext();
+            }
+            else
+            {
+                m_compiler->unwindSaveRegPair(reg1, reg2, spOffset);
+            }
         }
     }
 }
 
 //------------------------------------------------------------------------
-// genEpilogRestoreReg: The opposite of genPrologSaveReg(), run in the epilog instead of the prolog.
+// genRestoreReg: The opposite of genPrologSaveReg(), run in the epilog instead of the prolog.
 //
 // Arguments:
 //    reg1                     - Register to restore.
@@ -722,7 +706,7 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
 // Return Value:
 //    None.
 
-void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero)
+void CodeGen::genRestoreReg(regNumber reg1, regNumber baseReg, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData)
 {
     assert(spOffset >= 0);
     assert(spDelta >= 0);
@@ -734,24 +718,36 @@ void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, reg
         {
             // We can use post-index addressing.
             // ldr REG, [SP], #spDelta
-            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spDelta, INS_OPTS_POST_INDEX);
-            m_compiler->unwindSaveRegPreindexed(reg1, -spDelta);
+            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, baseReg, spDelta, INS_OPTS_POST_INDEX);
+
+            if (reportUnwindData)
+            {
+                m_compiler->unwindSaveRegPreindexed(reg1, -spDelta);
+            }
         }
         else // (spOffset != 0) || (spDelta > 255)
         {
             // ldr reg1, [SP, #offset]
-            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-            m_compiler->unwindSaveReg(reg1, spOffset);
+            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, baseReg, spOffset);
+
+            if (reportUnwindData)
+            {
+                m_compiler->unwindSaveReg(reg1, spOffset);
+            }
 
             // generate add SP,SP,imm
-            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, /* reportUnwindData */ true);
+            genStackPointerAdjustment(spDelta, tmpReg, pTmpRegIsZero, reportUnwindData);
         }
     }
     else
     {
         // ldr reg1, [SP, #offset]
-        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, REG_SPBASE, spOffset);
-        m_compiler->unwindSaveReg(reg1, spOffset);
+        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg1, baseReg, spOffset);
+
+        if (reportUnwindData)
+        {
+            m_compiler->unwindSaveReg(reg1, spOffset);
+        }
     }
 }
 
@@ -1023,7 +1019,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
 //   spDelta              - if non-zero, the amount to add to SP after the last register restore (or together with it);
 //   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
 //
-void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset)
+void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, regNumber baseReg, int spDelta, int spOffset, bool reportUnwindData)
 {
     const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
 
@@ -1049,18 +1045,18 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
 
             if (genReverseAndPairCalleeSavedRegisters)
             {
-                genEpilogRestoreRegPair(regPair.reg2, regPair.reg1, spOffset, stackDelta, false, REG_IP1, nullptr);
+                genRestoreRegPair(regPair.reg2, regPair.reg1, baseReg, spOffset, stackDelta, false, REG_IP1, nullptr, reportUnwindData);
             }
             else
             {
-                genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair,
-                                        REG_IP1, nullptr);
+                genRestoreRegPair(regPair.reg1, regPair.reg2, baseReg, spOffset, stackDelta, regPair.useSaveNextPair,
+                                        REG_IP1, nullptr, reportUnwindData);
             }
         }
         else
         {
             spOffset -= slotSize;
-            genEpilogRestoreReg(regPair.reg1, spOffset, stackDelta, REG_IP1, nullptr);
+            genRestoreReg(regPair.reg1, baseReg, spOffset, stackDelta, REG_IP1, nullptr, reportUnwindData);
         }
     }
 }
@@ -1096,7 +1092,7 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, regNumber baseReg, int lowestCalleeSavedOffset, int spDelta, bool reportUnwindData)
 {
     assert(spDelta >= 0);
     unsigned regsToRestoreCount = genCountBits(regsToRestoreMask);
@@ -1132,20 +1128,20 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     {
         int spFrameDelta = (maskRestoreRegsFloat != RBM_NONE || maskRestoreRegsInt != RBM_NONE) ? 0 : spDelta;
         spOffset -= 2 * REGSIZE_BYTES;
-        genEpilogRestoreRegPair(REG_FP, REG_LR, spOffset, spFrameDelta, false, REG_IP1, nullptr);
+        genRestoreRegPair(REG_FP, REG_LR, baseReg, spOffset, spFrameDelta, false, REG_IP1, nullptr, reportUnwindData);
     }
 
     if (maskRestoreRegsInt != RBM_NONE)
     {
         int spIntDelta = (maskRestoreRegsFloat != RBM_NONE) ? 0 : spDelta; // should we delay the SP adjustment?
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, spIntDelta, spOffset);
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, baseReg, spIntDelta, spOffset, reportUnwindData);
         spOffset -= genCountBits(maskRestoreRegsInt) * REGSIZE_BYTES;
     }
 
     if (maskRestoreRegsFloat != RBM_NONE)
     {
         // If there is any spDelta, it must be used here.
-        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, spDelta, spOffset);
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, baseReg, spDelta, spOffset, reportUnwindData);
         // No need to update spOffset since it's not used after this.
     }
 }
@@ -1596,7 +1592,7 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
         regsToRestoreMask &= ~(RBM_LR | RBM_FP); // We restore FP/LR at the end
     }
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta + genFuncletInfo.fiSpDelta2;
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, lowestCalleeSavedOffset, 0);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, REG_SPBASE, lowestCalleeSavedOffset, 0, /* reportUnwindData */ true);
 
     if (genFuncletInfo.fiFrameType == 1)
     {
@@ -5136,12 +5132,8 @@ int CodeGenInterface::genSPtoFPdelta() const
     {
         // The saved frame pointer is at the top of the frame, just beneath the saved varargs register space and the
         // saved LR.
-        delta = genTotalFrameSize() - (m_compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0);
-
-        if (!m_compiler->opts.IsOSR())
-        {
-            delta -= 2 /* FP, LR */ * REGSIZE_BYTES;
-        }
+        delta = genTotalFrameSize() - (m_compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
+                2 /* FP, LR */ * REGSIZE_BYTES;
     }
     else
     {
@@ -5589,7 +5581,7 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 
 #endif // FEATURE_SIMD
 
-void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
     assert(m_compiler->compGeneratingProlog);
     assert(m_compiler->opts.IsOSR());
@@ -5600,27 +5592,23 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     //
     PatchpointInfo* const patchpointInfo   = m_compiler->info.compPatchpointInfo;
     regMaskTP const       tier0CalleeSaves = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
-    assert((tier0CalleeSaves & RBM_ALLFLOAT) == RBM_NONE);
     int const tier0CalleeSaveUsedSize = genCountBits(tier0CalleeSaves) * REGSIZE_BYTES;
 
     JITDUMP("--OSR--- tier0 has already saved ");
     JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
-    JITDUMP("\n");
+    JITDUMP("\nEmitting restores\n");
 
-    // We do this stack allocation in two steps: first the space for the callee saves at the top,
-    // so that we know we can always report that unwinding information, and then the rest after.
-    m_compiler->unwindAllocStack(tier0CalleeSaveUsedSize);
+    // Note: the restore of LR relies on the tier0 method having been unhijacked when the OSR method prolog runs.
+    // This happens in the transition helper. If transition helper is not used (e.g. because we directly jump into OSR)
+    // then hijacking tier0 is not supported -- this is similar to tailcalls so the situation can be recorded via
+    // SetHasTailCalls.
+    // FP is pointing to the FP/LR pair. That pair is always saved at the top,
+    // so add 2*REGSIZE_BYTES to get to the end of the callee saves, then
+    // subtract total size of callee saves to get to the beginning.
+    genRestoreCalleeSavedRegistersHelp(tier0CalleeSaves, REG_FPBASE, 2 * REGSIZE_BYTES - tier0CalleeSaveUsedSize, /* spDelta */ 0, /* reportUnwindData */ false);
+    m_compiler->unwindPadding();
 
-    assert((tier0CalleeSaves & (RBM_FP | RBM_LR)) == (RBM_FP | RBM_LR));
-
-    genSaveCalleeSavedRegistersHelp(tier0CalleeSaves, 0, /* spDelta */ 0, /* unwindOnly */ true);
-
-    int remainingStack = patchpointInfo->TotalFrameSize() - tier0CalleeSaveUsedSize;
-    assert(remainingStack >= 0);
-    if (remainingStack > 0)
-    {
-        m_compiler->unwindAllocStack((unsigned)remainingStack);
-    }
+    m_compiler->unwindAllocStack(patchpointInfo->TotalFrameSize());
 }
 
 #ifdef PROFILING_SUPPORTED

@@ -9860,11 +9860,11 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #ifdef TARGET_AMD64
 
 //------------------------------------------------------------------------
-// genOSRRecordTier0CalleeSavedRegistersAndFrame: for OSR methods, record the
+// genOSRHandleTier0CalleeSavedRegistersAndFrame: for OSR methods, record the
 //  subset of callee saves already saved by the Tier0 method, and the frame
 //  created by Tier0.
 //
-void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
     assert(m_compiler->compGeneratingProlog);
     assert(m_compiler->opts.IsOSR());

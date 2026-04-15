@@ -4968,11 +4968,11 @@ void CodeGen::genFinalizeFrame()
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_ARM64)
-    // We inherit registers saved by tier0. Avoid saving those.
+    // We inherit registers saved by tier0. Avoid saving those, except FP/LR that we always save.
     if (m_compiler->opts.IsOSR())
     {
         PatchpointInfo* ppi = m_compiler->info.compPatchpointInfo;
-        maskCalleeRegsPushed &= ~ppi->CalleeSaveRegisters();
+        maskCalleeRegsPushed &= (~ppi->CalleeSaveRegisters()) | RBM_FPBASE | RBM_LR;
     }
 #endif
 
@@ -5433,7 +5433,7 @@ void CodeGen::genFnProlog()
     {
         // Account for the Tier0 callee saves
         //
-        genOSRRecordTier0CalleeSavedRegistersAndFrame();
+        genOSRHandleTier0CalleeSavedRegistersAndFrame();
 
 #ifdef TARGET_AMD64
         // We don't actually push any callee saves on the OSR frame,

@@ -385,17 +385,19 @@ protected:
                               bool      unwindOnly = false);
 
     void genPrologSaveReg(
-        regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool unwindOnly);
+        regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData);
 
-    void genEpilogRestoreRegPair(regNumber reg1,
+    void genRestoreRegPair(regNumber reg1,
                                  regNumber reg2,
+                                 regNumber baseReg,
                                  int       spOffset,
                                  int       spDelta,
                                  bool      useSaveNextPair,
                                  regNumber tmpReg,
-                                 bool*     pTmpRegIsZero);
+                                 bool*     pTmpRegIsZero,
+                                 bool      reportUnwindData);
 
-    void genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
+    void genRestoreReg(regNumber reg1, regNumber baseReg, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData);
 
     // A simple struct to keep register pairs for prolog and epilog.
     struct RegPair
@@ -426,13 +428,13 @@ protected:
     static int genGetSlotSizeForRegsInMask(regMaskTP regsMask);
 
     void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset, bool unwindOnly = false);
-    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
+    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, regNumber baseReg, int spDelta, int spOffset, bool reportUnwindData);
 
     void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
                                          int       lowestCalleeSavedOffset,
                                          int       spDelta,
                                          bool      unwindOnly = false);
-    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
+    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, regNumber baseReg, int lowestCalleeSavedOffset, int spDelta, bool reportUnwindData);
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool genInstrWithConstant(instruction ins,
@@ -449,7 +451,7 @@ protected:
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset);
 #endif
 
-    void genOSRRecordTier0CalleeSavedRegistersAndFrame();
+    void genOSRHandleTier0CalleeSavedRegistersAndFrame();
     void genOSRSaveRemainingCalleeSavedRegisters();
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
