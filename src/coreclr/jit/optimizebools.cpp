@@ -346,6 +346,9 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     optOptimizeBoolsUpdateTrees();
 
+    // There may be new opportunities for distributive arithmetic optimization
+    m_compiler->fgMorphBlockStmt(m_b1, s1 DEBUGARG(__FUNCTION__), false);
+
 #ifdef DEBUG
     if (m_compiler->verbose)
     {
