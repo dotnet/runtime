@@ -371,10 +371,11 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
         // Not a method impacted by generics, so this is the MethodDesc to use.
         pMethod->ResetCodeEntryPointForEnC();
 
-        // For runtime-async methods, also reset the async variant's entry point.
-        // The task-returning variant is stored in the module's method lookup, but
-        // its async counterpart also needs to be re-JITted with the new IL.
-        if (pMethod->HasAsyncOtherVariant())
+        // For runtime-async methods, ResetCodeEntryPointForEnC cascades from the
+        // thunk to the IL-owning variant automatically. Only do an explicit reset
+        // of the paired variant when pMethod is the IL-owning variant (not the thunk),
+        // since in that case the cascade doesn't reach the thunk.
+        if (!pMethod->IsAsyncThunkMethod() && pMethod->HasAsyncOtherVariant())
         {
             MethodDesc* pAsyncOther = pMethod->GetAsyncOtherVariantNoCreate();
             if (pAsyncOther != NULL)

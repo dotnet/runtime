@@ -560,30 +560,34 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     }
 #endif // _DEBUG
 
-    // Classify the method's return type to determine if it needs async variant handling.
     // For runtime-async methods (IsMiAsync) that return Task/ValueTask, we need to create
-    // two MethodDescs: the task-returning variant and the async call variant.
-    ULONG sigLen;
-    PCCOR_SIGNATURE pMemberSignature;
-    if (FAILED(pImport->GetSigOfMethodDef(methodDef, &sigLen, &pMemberSignature)))
-        return COR_E_BADIMAGEFORMAT;
+    // two MethodDescs: the task-returning variant and the async call variant. Only perform
+    // return-type classification when IsMiAsync is set to avoid the GC-triggering type
+    // resolution path for non-async methods.
+    bool isAsyncTaskReturning = false;
 
-    ULONG offsetOfAsyncDetails = 0;
-    bool returnsValueTask = false;
-    MethodReturnKind returnKind;
+    if (IsMiAsync(dwImplFlags))
     {
-        // ClassifyMethodReturnKind calls IsTypeDefOrRefImplementedInSystemModule which
-        // does type resolution that may trigger GC. We suppress GC_NOTRIGGER here because
-        // these types are typically referenced via System.Runtime which is likely already
-        // resolved at this point. However, if the TypeRef/AssemblyRef for Task or ValueTask
-        // has not been resolved yet, the resolution path could trigger GC. Accepted as
-        // Won't Fix given this is unlikely in practice.
-        CONTRACT_VIOLATION(GCViolation);
-        returnKind = ClassifyMethodReturnKind(
-            SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
-    }
+        ULONG sigLen;
+        PCCOR_SIGNATURE pMemberSignature;
+        if (FAILED(pImport->GetSigOfMethodDef(methodDef, &sigLen, &pMemberSignature)))
+            return COR_E_BADIMAGEFORMAT;
 
-    bool isAsyncTaskReturning = IsMiAsync(dwImplFlags) && IsTaskReturning(returnKind);
+        ULONG offsetOfAsyncDetails = 0;
+        bool returnsValueTask = false;
+        MethodReturnKind returnKind;
+        {
+            // ClassifyMethodReturnKind calls IsTypeDefOrRefImplementedInSystemModule which
+            // does type resolution that may trigger GC. We suppress GC_NOTRIGGER here because
+            // AddMethod runs during EnC with all managed threads suspended. Task and ValueTask
+            // are fundamental types that are virtually always already resolved at this point.
+            CONTRACT_VIOLATION(GCViolation);
+            returnKind = ClassifyMethodReturnKind(
+                SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
+        }
+
+        isAsyncTaskReturning = IsTaskReturning(returnKind);
+    }
 
     // For runtime-async task-returning methods, the primary MethodDesc is a thunk.
     // The async variant is created lazily by FindOrCreateAssociatedMethodDesc when
