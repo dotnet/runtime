@@ -15,7 +15,7 @@ Update OS version references in Helix queue definition files. These files contro
 
 ## Prerequisites
 
-> **Baseline build not required:** This skill is for YAML/docs-style queue and image reference updates, not product code changes. Do **not** start with the repo-wide baseline build workflow from [`copilot-instructions.md`](/.github/copilot-instructions.md) unless the task expands beyond image / queue metadata into code changes that actually need build or test validation.
+> **Baseline build not required:** This skill is for YAML/docs-style queue and image reference updates, not product code changes. Do **not** start with the repo-wide baseline build workflow from [`copilot-instructions.md`](../../copilot-instructions.md) unless the task expands beyond image / queue metadata into code changes that actually need build or test validation.
 
 ## When to use
 
@@ -49,7 +49,7 @@ OS version references appear in these pipeline files:
 | `eng/pipelines/common/templates/pipeline-with-resources.yml` | Build container definitions (not Helix queues, but OS version references for build images) |
 | `docs/workflow/using-docker.md` | Documents the official build/test Docker images — update only when build image versions change (cross-compilation images, not Helix test images) |
 
-The [OS onboarding guide](/docs/project/os-onboarding.md) is the authoritative reference for how OS versions are managed in this repo. Read it if more context is needed on our policies.
+The [OS onboarding guide](../../../docs/project/os-onboarding.md) is the authoritative reference for how OS versions are managed in this repo. Read it if more context is needed on our policies.
 
 ### helix-platforms.yml structure
 
@@ -297,7 +297,7 @@ When asked to audit all OS coverage:
 
 ## Reference
 
-- [OS onboarding guide](/docs/project/os-onboarding.md)
+- [OS onboarding guide](../../../docs/project/os-onboarding.md)
 - [.NET OS Support Tracking](https://github.com/dotnet/core/issues/9638)
 - [Prereq container image lifecycle](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/lifecycle.md)
 - [Container image registry (image-info)](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json)

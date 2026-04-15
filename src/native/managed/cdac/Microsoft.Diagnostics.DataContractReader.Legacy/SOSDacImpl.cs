@@ -1854,9 +1854,6 @@ public sealed unsafe partial class SOSDacImpl
             }
 #endif
             ppHandleEnum.Interface = new SOSHandleEnum(_target, supportedHandleTypes, legacyHandleEnum);
-            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
-            // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
-            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum.Interface);
         }
         catch (System.Exception ex)
         {
@@ -1884,9 +1881,6 @@ public sealed unsafe partial class SOSDacImpl
             IGC gc = _target.Contracts.GC;
             HandleType[] handleTypes = gc.GetHandleTypes(types);
             ppHandleEnum.Interface = new SOSHandleEnum(_target, handleTypes, legacyHandleEnum);
-            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
-            // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
-            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum.Interface);
         }
         catch (System.Exception ex)
         {
@@ -4252,7 +4246,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ThreadData threadData = contract.GetThreadData(thread.ToTargetPointer(_target));
             data->corThreadId = (int)threadData.Id;
             data->osThreadId = (int)threadData.OSId.Value;
-            data->state = (int)threadData.State;
+            data->state = 0; // Set to 0, nobody uses this
             data->preemptiveGCDisabled = (uint)(threadData.PreemptiveGCDisabled ? 1 : 0);
             data->allocContextPtr = threadData.AllocContextPointer.ToClrDataAddress(_target);
             data->allocContextLimit = threadData.AllocContextLimit.ToClrDataAddress(_target);

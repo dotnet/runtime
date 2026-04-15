@@ -4905,8 +4905,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateThreads(FP_THREAD_ENUMER
 
             // Don't want to publish threads via enumeration before they're ready to be inspected.
             // Use the same window that we used in whidbey.
-            Thread::ThreadState threadState = pThread->GetSnapshotState();
-            if (!((IsThreadMarkedDeadWorker(pThread)) || (threadState & Thread::TS_Unstarted)))
+            Thread::ThreadState threadState = pThread->GetState();
+            if (!((threadState & Thread::TS_Stopped) || (threadState & Thread::TS_Unstarted)))
             {
                 VMPTR_Thread vmThread = VMPTR_Thread::NullPtr();
                 vmThread.SetHostPtr(pThread);
@@ -4929,34 +4929,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsThreadMarkedDead(VMPTR_Thread v
     EX_TRY
     {
         Thread * pThread = vmThread.GetDacPtr();
-        *pResult = IsThreadMarkedDeadWorker(pThread);
+        *pResult = (pThread->GetState() & Thread::TS_Stopped) != 0;
     }
     EX_CATCH_HRESULT(hr);
     return hr;
 }
-
-// Private worker for IsThreadMarkedDead
-//
-// Arguments:
-//    pThread - valid thread to check if dead
-//
-// Returns:
-//    true iff thread is marked as dead.
-//
-// Notes:
-//    This is an internal method that skips public validation.
-//    See code:IDacDbiInterface::#IsThreadMarkedDead for purpose.
-bool DacDbiInterfaceImpl::IsThreadMarkedDeadWorker(Thread * pThread)
-{
-    _ASSERTE(pThread != NULL);
-
-    Thread::ThreadState threadState = pThread->GetSnapshotState();
-
-    bool fIsDead = (threadState & Thread::TS_Dead) != 0;
-
-    return fIsDead;
-}
-
 
 // Return the handle of the specified thread.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadHandle(VMPTR_Thread vmThread, OUT HANDLE * pRetVal)
@@ -4984,9 +4961,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadObject(VMPTR_Thread vmTh
     {
 
         Thread * pThread = vmThread.GetDacPtr();
-        Thread::ThreadState threadState = pThread->GetSnapshotState();
+        Thread::ThreadState threadState = pThread->GetState();
 
-        if ( (threadState & Thread::TS_Dead) ||
+        if ( (threadState & Thread::TS_Stopped) ||
              (threadState & Thread::TS_Unstarted) ||
              (threadState & Thread::TS_Detached) ||
              g_fProcessDetach )
@@ -5985,7 +5962,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread 
     {
 
         Thread * pThread = vmThread.GetDacPtr();
-        Thread::ThreadState ts = pThread->GetSnapshotState();
+        Thread::ThreadState ts = pThread->GetState();
 
         UINT result = 0;
         if (ts & Thread::TS_Background)
@@ -5999,7 +5976,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread 
         }
 
         // Don't report a StopRequested if the thread has actually stopped.
-        if (ts & Thread::TS_Dead)
+        if (ts & Thread::TS_Stopped)
         {
             result |= USER_STOPPED;
         }

@@ -39,6 +39,7 @@
     <Compile Include="RemotelyInvokable.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="SafeProcessHandleTests.cs" />
+    <Compile Include="KillOnParentExitTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="ProcessHandlesTests.Windows.cs" />
@@ -70,6 +71,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResumeThread.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ResumeThread.cs" />
     <!-- Helpers -->
     <Compile Include="$(CommonTestPath)TestUtilities\System\WindowsTestFileShare.cs" Link="Common\TestUtilities\System\WindowsTestFileShare.cs" />
   </ItemGroup>
