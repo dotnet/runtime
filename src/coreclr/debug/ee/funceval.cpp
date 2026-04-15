@@ -1163,7 +1163,24 @@ static OBJECTREF ReadAndBoxArgValue(DebuggerEval *pDE,
         }
 
         _ASSERTE(pData != NULL);
-        MethodTable *pMT = (pFEArgInfo != NULL) ? pFEArgInfo->sigTypeHandle.GetMethodTable() : pFallbackMT;
+        MethodTable *pMT = NULL;
+        if (pFEArgInfo != NULL)
+        {
+            pMT = pFEArgInfo->sigTypeHandle.GetMethodTable();
+        }
+        else if (pFEAD->fullArgType != NULL)
+        {
+            // For 'this' arg (pFEArgInfo == NULL), resolve the concrete value
+            // type from the debugger-provided type data.  This is needed because
+            // pFallbackMT (from m_md->GetMethodTable()) may be a base type like
+            // System.Object for inherited methods (e.g. ToString on a struct).
+            Debugger::TypeDataWalk walk((DebuggerIPCE_TypeArgData *)pFEAD->fullArgType, pFEAD->fullArgTypeNodeCount);
+            TypeHandle th = walk.ReadTypeHandle();
+            if (!th.IsNull())
+                pMT = th.GetMethodTable();
+        }
+        if (pMT == NULL)
+            pMT = pFallbackMT;
         if (pMT != NULL)
             return pMT->Box(pData);
         return NULL;
