@@ -144,6 +144,9 @@ This file should be imported by eng/Versions.props
     <MicrosoftDotNetXUnitConsoleRunnerVersion>$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>$(MicrosoftDotNetXUnitExtensionsPackageVersion)</MicrosoftDotNetXUnitExtensionsVersion>
     <XUnitV3Version>4.0.0-pre.81</XUnitV3Version>
+    <!-- xunit 4.0.0-pre.81 (MTP v2) requires Microsoft.Testing.Platform >= 2.2.1;
+         arcade defaults to 1.9.1 (MTP v1), causing NU1605 downgrade errors. -->
+    <MicrosoftTestingPlatformVersion>2.2.1</MicrosoftTestingPlatformVersion>
     <MicrosoftNetCompilersToolsetVersion>$(MicrosoftNetCompilersToolsetPackageVersion)</MicrosoftNetCompilersToolsetVersion>
     <MicrosoftNETSdkILVersion>$(MicrosoftNETSdkILPackageVersion)</MicrosoftNETSdkILVersion>
     <MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportPackageVersion)</MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion>
