@@ -525,7 +525,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            TargetPointer throwable = _target.Contracts.Thread.GetThrowableObject(new TargetPointer(vmThread));
+            TargetPointer throwable = _target.Contracts.Thread.GetCurrentExceptionHandle(new TargetPointer(vmThread))
             *pRetVal = throwable.Value;
         }
         catch (System.Exception ex)
@@ -660,8 +660,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.TypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
-            CorElementType corType = rts.GetSignatureCorElementType(th);
-            *pResult = corType == CorElementType.ValueType ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            *pResult = rts.IsValueType(th) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {

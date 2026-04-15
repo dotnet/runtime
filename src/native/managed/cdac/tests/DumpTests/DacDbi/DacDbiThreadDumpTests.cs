@@ -149,15 +149,8 @@ public class DacDbiThreadDumpTests : DumpTestBase
 
         ulong exception;
         int hr = dbi.GetCurrentException(current, &exception);
-
-        // GetCurrentException depends on Thread.GetThrowableObject which is not yet
-        // implemented in the Thread contract. Skip until the contract is available.
-        if (hr == unchecked((int)0x80004001)) // E_NOTIMPL — GetThrowableObject not yet in Thread contract
-        {
-            throw new SkipTestException("GetThrowableObject not yet implemented in Thread contract");
-        }
-
         Assert.Equal(System.HResults.S_OK, hr);
+        Assert.NotEqual(0ul, exception);
     }
 
     [UnmanagedCallersOnly]
