@@ -8066,14 +8066,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     }
 
     //
-    // Skip runtime-invoked UCO entrypoint method (Environment.CallEntryPoint)
-    //
-    if (pFunc != NULL && pFunc == g_pEnvironmentCallEntryPointMethodDesc)
-    {
-        return SWA_CONTINUE;
-    }
-
-    //
     // For Unmanaged-to-managed transitions we get a NativeMarker back, which we want
     // to return to the profiler as the context seed if it wants to walk the unmanaged
     // stack frame, so we report the functionId as NULL to indicate this.

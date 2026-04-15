@@ -299,7 +299,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                 {
                     // Skip the new exception handling managed code, the debugger clients are not supposed to see them
                     MethodDesc *pMD = pIter->m_crawl.GetFunction();
+                    MethodDesc *pMD = pIter->m_crawl.GetFunction();
 
+                    // Skip the exception handling managed code, the debugger clients are not supposed to see them
                     // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
                     // and System.Runtime.StackFrameIterator.*
                     if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
@@ -307,7 +309,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
                         continue;
                     }
 
-                    // Runtime-invoked UCO entrypoint method (Environment.CallEntryPoint)
+                    // Skip the runtime helper that invokes the main program entrypoint, the debuggers do not want to see it.
+                    // Environment.CallEntryPoint
                     if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
                     {
                         continue;
@@ -427,7 +430,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                         {
                             ftResult = kManagedExceptionHandlingCodeFrame;
                         }
-                        // Runtime-invoked UCO entrypoint method (Environment.CallEntryPoint)
+                        // Environment.CallEntryPoint
                         else if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
                         {
                             ftResult = kRuntimeEntryPointFrame;
