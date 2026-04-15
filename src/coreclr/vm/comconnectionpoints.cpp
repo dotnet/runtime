@@ -344,11 +344,8 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
         }
 
         // Allocate the object handle and the connection cookie.
-        OBJECTHANDLEHolder phndEventItfObj = GetAppDomain()->CreateHandle((OBJECTREF)pEventItfObj);
-        ConnectionCookieHolder pConCookie = ConnectionCookie::CreateConnectionCookie(phndEventItfObj);
-
-        // pConCookie owns the handle now and will destroy it on exception
-        phndEventItfObj.SuppressRelease();
+        OBJECTHANDLEHolder phndEventItfObj(GetAppDomain()->CreateHandle((OBJECTREF)pEventItfObj));
+        ConnectionCookieHolder pConCookie = ConnectionCookie::CreateConnectionCookie(std::move(phndEventItfObj));
 
         // Add the connection cookie to the list.
         InsertWithLock(pConCookie);
@@ -539,7 +536,17 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
         // Retrieve the EE class representing the argument.
         MethodTable *pDelegateCls = MethodSig.GetLastTypeHandleThrowing().GetMethodTable();
 
-        // Make sure we activate the assembly containing the target method desc
+        // Initialize the delegate using the arguments structure.
+        MethodDesc *pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_IntPtr_RetVoid);
+        if (pDlgCtorMD == NULL)
+            pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_UIntPtr_RetVoid);
+
+        // The loader is responsible for only accepting well-formed delegate classes.
+        _ASSERTE(pDlgCtorMD);
+
+        // Make sure we activate assemblies containing target method descs.
+        pProvMethodDesc->EnsureActive();
+        pDlgCtorMD->EnsureActive();
         pEventMethodDesc->EnsureActive();
 
         // Allocate an object based on the method table of the delegate class.
@@ -547,29 +554,16 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
 
         GCPROTECT_BEGIN( pDelegate );
         {
-            // Initialize the delegate using the arguments structure.
-            // <TODO>Generics: ensure we get the right MethodDesc here and in similar places</TODO>
-            // Accept both void (object, native int) and void (object, native uint)
-            MethodDesc *pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_IntPtr_RetVoid);
-            if (pDlgCtorMD == NULL)
-                pDlgCtorMD = MemberLoader::FindConstructor(pDelegateCls, &gsig_IM_Obj_UIntPtr_RetVoid);
+            UnmanagedCallersOnlyCaller invokeConnectionPointProviderMethod(METHOD__STUBHELPERS__INVOKE_CONNECTION_POINT_PROVIDER_METHOD);
 
-            // The loader is responsible for only accepting well-formed delegate classes.
-            _ASSERTE(pDlgCtorMD);
-
-            MethodDescCallSite dlgCtor(pDlgCtorMD);
-
-            ARG_SLOT CtorArgs[3] = { ObjToArgSlot(pDelegate),
-                                     ObjToArgSlot(pSubscriber),
-                                     (ARG_SLOT)pEventMethodDesc->GetMultiCallableAddrOfCode()
-                                   };
-            dlgCtor.Call(CtorArgs);
-
-            MethodDescCallSite prov(pProvMethodDesc, &pProvider);
-
-            // Do the actual invocation of the method method.
-            ARG_SLOT Args[2] = { ObjToArgSlot( pProvider ), ObjToArgSlot( pDelegate ) };
-            prov.Call(Args);
+            // Using GetMultiCallableAddrOfCode() for the event target since it is stored for future invokes.
+            invokeConnectionPointProviderMethod.InvokeThrowing(
+                &pProvider,
+                pProvMethodDesc->GetSingleCallableAddrOfCode(),
+                &pDelegate,
+                pDlgCtorMD->GetSingleCallableAddrOfCode(),
+                &pSubscriber,
+                pEventMethodDesc->GetMultiCallableAddrOfCode());
         }
         GCPROTECT_END();
     }
@@ -1118,14 +1112,14 @@ HRESULT __stdcall ConnectionEnum::Next(ULONG cConnections, CONNECTDATA* rgcd, UL
         ConnectionPoint::LockHolder lh(m_pConnectionPoint);
 
         {
-            // Switch to cooperative GC mode before we manipulate OBJCETREF's.
+            // Switch to cooperative GC mode before we manipulate OBJECTREF's.
             GCX_COOP();
 
             for (cFetched = 0; cFetched < cConnections && m_CurrCookie; cFetched++)
             {
                 {
                     CONTRACT_VIOLATION(ThrowsViolation);
-                    rgcd[cFetched].pUnk = GetComIPFromObjectRef((OBJECTREF*)m_CurrCookie->m_hndEventProvObj, ComIpType_Unknown, NULL);
+                    rgcd[cFetched].pUnk = GetComIPFromObjectRef((OBJECTREF*)(OBJECTHANDLE)m_CurrCookie->m_hndEventProvObj, ComIpType_Unknown, NULL);
                     rgcd[cFetched].dwCookie = m_CurrCookie->m_id;
                 }
                 m_CurrCookie = pConnectionList->GetNext(m_CurrCookie);

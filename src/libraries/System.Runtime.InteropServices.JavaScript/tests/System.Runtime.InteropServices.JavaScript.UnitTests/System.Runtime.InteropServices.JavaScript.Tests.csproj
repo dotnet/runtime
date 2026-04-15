@@ -9,8 +9,7 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
-    <FeatureWasmManagedThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
-    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(WasmEnableThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
@@ -56,13 +55,13 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(FeatureWasmManagedThreads)' != 'true'">
+  <ItemGroup Condition="'$(WasmEnableThreads)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(FeatureWasmManagedThreads)' == 'true'">
+  <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTest.Http.cs" />
