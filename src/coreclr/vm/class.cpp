@@ -560,10 +560,9 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     }
 #endif // _DEBUG
 
-    // For runtime-async methods (IsMiAsync) that return Task/ValueTask, we need to create
-    // two MethodDescs: the task-returning variant and the async call variant. Only perform
-    // return-type classification when IsMiAsync is set to avoid the GC-triggering type
-    // resolution path for non-async methods.
+    // Runtime-async methods (IsMiAsync) that return Task/ValueTask need two MethodDescs:
+    // the task-returning variant and the async call variant. Return-type classification
+    // is only needed for these methods to determine whether to create async variants.
     bool isAsyncTaskReturning = false;
 
     if (IsMiAsync(dwImplFlags))
@@ -577,10 +576,9 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
         bool returnsValueTask = false;
         MethodReturnKind returnKind;
         {
-            // ClassifyMethodReturnKind calls IsTypeDefOrRefImplementedInSystemModule which
-            // does type resolution that may trigger GC. We suppress GC_NOTRIGGER here because
-            // AddMethod runs during EnC with all managed threads suspended. Task and ValueTask
-            // are fundamental types that are virtually always already resolved at this point.
+            // ClassifyMethodReturnKind resolves TypeRefs which may trigger GC.
+            // AddMethod runs during EnC with all managed threads suspended, so
+            // GC is safe in practice even though the contract says GC_NOTRIGGER.
             CONTRACT_VIOLATION(GCViolation);
             returnKind = ClassifyMethodReturnKind(
                 SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
