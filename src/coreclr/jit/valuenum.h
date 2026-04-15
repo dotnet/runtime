@@ -387,6 +387,7 @@ public:
     float  GetConstantSingle(ValueNum argVN);
 
 #if defined(FEATURE_SIMD)
+    simd_t   GetConstantSimd(ValueNum argVN);
     simd8_t  GetConstantSimd8(ValueNum argVN);
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
@@ -1323,6 +1324,8 @@ public:
                                        ValueNum            arg1VN,
                                        ValueNum            arg2VN,
                                        ValueNum            resultTypeVN);
+
+    bool IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, unsigned simdSize);
 #endif // FEATURE_HW_INTRINSICS
 
     // Returns "true" iff "vn" represents a function application.
@@ -1336,10 +1339,8 @@ public:
     bool IsVNBinFunc(ValueNum vn, VNFunc func, ValueNum* op1 = nullptr, ValueNum* op2 = nullptr);
 
     // Returns "true" iff "vn" is a function application for a HWIntrinsic
-    bool IsVNHWIntrinsicFunc(ValueNum        vn,
-                             NamedIntrinsic* intrinsicId,
-                             unsigned*       simdSize,
-                             CorInfoType*    simdBaseJitType);
+    bool IsVNHWIntrinsicFunc(
+        ValueNum vn, VNFuncApp* funcApp, NamedIntrinsic* intrinsicId, unsigned* simdSize, var_types* simdBaseType);
 
     // Returns "true" iff "vn" is a function application of the form "func(op, cns)"
     // the cns can be on the left side if the function is commutative.
