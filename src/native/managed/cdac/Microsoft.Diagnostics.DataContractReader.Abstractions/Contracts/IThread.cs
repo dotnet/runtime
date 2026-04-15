@@ -39,7 +39,6 @@ public record struct ThreadData(
     TargetPointer AllocContextLimit,
     TargetPointer Frame,
     TargetPointer FirstNestedException,
-    TargetPointer TEB,
     TargetPointer ExposedObjectHandle,
     TargetPointer LastThrownObjectHandle,
     TargetPointer CurrentCustomDebuggerNotificationHandle,

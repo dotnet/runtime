@@ -614,7 +614,44 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     }
 
     int IXCLRDataProcess.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.E_INVALIDARG;
+
+        if (reqCode == (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION)
+        {
+            if (inBufferSize == 0 && inBuffer is null && outBufferSize == sizeof(uint) && outBuffer is not null)
+            {
+                // Revision 10: Fixed DefaultCOMImpl::Release() to use pre-decrement (--mRef).
+                // Consumers that previously compensated for the broken ref counting (e.g., ClrMD)
+                // should check this revision to avoid double-freeing.
+                *(uint*)outBuffer = 10;
+                hr = HResults.S_OK;
+            }
+        }
+        else
+        {
+            return _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+        }
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            byte[] localBuffer = new byte[(int)outBufferSize];
+            fixed (byte* localOutBuffer = localBuffer)
+            {
+                int hrLocal = _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, localOutBuffer);
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK && reqCode == (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION)
+                {
+                    Debug.Assert(outBufferSize == sizeof(uint) && outBuffer is not null);
+                    uint legacyRevision = *(uint*)localOutBuffer;
+                    uint revision = *(uint*)outBuffer;
+                    Debug.Assert(revision == legacyRevision);
+                }
+            }
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.CreateMemoryValue(
         IXCLRDataAppDomain? appDomain,

@@ -94,7 +94,7 @@ internal sealed class MockHashMapBuilder
     {
         ArgumentNullException.ThrowIfNull(entries);
 
-        MockHashMap map = HashMapLayout.Create(AllocateAndAdd((ulong)HashMapLayout.Size, "HashMap"));
+        MockHashMap map = HashMapLayout.Create(_allocator.Allocate((ulong)HashMapLayout.Size, "HashMap"));
         PopulateMap(map.Address, entries);
         return map.Address;
     }
@@ -112,7 +112,7 @@ internal sealed class MockHashMapBuilder
         // First bucket is the number of buckets
         uint numBuckets = size + 1;
         uint totalBucketsSize = checked(bucketSize * numBuckets);
-        MockMemorySpace.HeapFragment buckets = AllocateAndAdd(totalBucketsSize, $"Buckets[{numBuckets}]");
+        MockMemorySpace.HeapFragment buckets = _allocator.Allocate(totalBucketsSize, $"Buckets[{numBuckets}]");
         Builder.TargetTestHelpers.Write(buckets.Data.AsSpan().Slice(0, sizeof(uint)), size);
 
         const int MaxRetry = 8;
@@ -186,10 +186,4 @@ internal sealed class MockHashMapBuilder
         return false;
     }
 
-    private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name)
-    {
-        MockMemorySpace.HeapFragment fragment = _allocator.Allocate(size, name);
-        Builder.AddHeapFragment(fragment);
-        return fragment;
-    }
 }

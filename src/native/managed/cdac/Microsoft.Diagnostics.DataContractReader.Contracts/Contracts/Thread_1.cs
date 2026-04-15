@@ -119,7 +119,6 @@ internal readonly struct Thread_1 : IThread
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Limit ?? TargetPointer.Null,
             thread.Frame,
             firstNestedException,
-            thread.TEB,
             thread.ExposedObject,
             thread.LastThrownObject.Handle,
             thread.CurrentCustomDebuggerNotification,

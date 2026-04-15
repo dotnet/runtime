@@ -36,7 +36,6 @@ record struct ThreadData (
     TargetPointer AllocContextLimit;
     TargetPointer Frame;
     TargetPointer FirstNestedException;
-    TargetPointer TEB;
     TargetPointer ExposedObjectHandle;
     TargetPointer LastThrownObjectHandle;
     TargetPointer CurrentCustomDebuggerNotificationHandle;
@@ -101,7 +100,6 @@ The contract additionally depends on these data descriptors
 | `Thread` | `Frame` | Pointer to current frame |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
 | `Thread` | `CachedStackLimit` | Pointer to the limit of the stack |
-| `Thread` | `TEB` | Thread Environment Block pointer |
 | `Thread` | `ExposedObject` | Handle to the managed `Thread` object exposed to the debugger |
 | `Thread` | `LastThrownObject` | Handle to last thrown exception object |
 | `Thread` | `LastThrownObjectIsUnhandled` | Whether `LastThrownObject` should be treated as unhandled |
@@ -191,7 +189,6 @@ ThreadData GetThreadData(TargetPointer address)
         AllocContextPointer: allocContextPointer,
         AllocContextLimit: allocContextLimit,
         Frame: target.ReadPointer(address + /* Thread::Frame offset */),
-        TEB : /* Has Thread::TEB offset */ ? target.ReadPointer(address + /* Thread::TEB offset */) : TargetPointer.Null,
         LastThrownObjectHandle : target.ReadPointer(address + /* Thread::LastThrownObject offset */),
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
