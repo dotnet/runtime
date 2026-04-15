@@ -4260,7 +4260,7 @@ public sealed unsafe partial class SOSDacImpl
             data->lockCount = -1;   // Always set to -1 - lock count was .NET Framework and no longer needed
             data->pFrame = threadData.Frame.ToClrDataAddress(_target);
             data->firstNestedException = threadData.FirstNestedException.ToClrDataAddress(_target);
-            data->teb = threadData.TEB.ToClrDataAddress(_target);
+            data->teb = 0;    // TEB is no longer provided by the DAC - consumers should look it up from the OS thread ID
             data->lastThrownObjectHandle = threadData.LastThrownObjectHandle.ToClrDataAddress(_target);
             data->nextThread = threadData.NextThread.ToClrDataAddress(_target);
         }
@@ -4289,7 +4289,6 @@ public sealed unsafe partial class SOSDacImpl
                 Debug.Assert(data->lockCount == dataLocal.lockCount, $"cDAC: {data->lockCount}, DAC: {dataLocal.lockCount}");
                 Debug.Assert(data->pFrame == dataLocal.pFrame, $"cDAC: {data->pFrame:x}, DAC: {dataLocal.pFrame:x}");
                 Debug.Assert(data->firstNestedException == dataLocal.firstNestedException, $"cDAC: {data->firstNestedException:x}, DAC: {dataLocal.firstNestedException:x}");
-                Debug.Assert(data->teb == dataLocal.teb, $"cDAC: {data->teb:x}, DAC: {dataLocal.teb:x}");
                 Debug.Assert(data->lastThrownObjectHandle == dataLocal.lastThrownObjectHandle, $"cDAC: {data->lastThrownObjectHandle:x}, DAC: {dataLocal.lastThrownObjectHandle:x}");
                 Debug.Assert(data->nextThread == dataLocal.nextThread, $"cDAC: {data->nextThread:x}, DAC: {dataLocal.nextThread:x}");
             }
