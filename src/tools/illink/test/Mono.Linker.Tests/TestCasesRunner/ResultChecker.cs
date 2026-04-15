@@ -831,8 +831,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     expectedReferenceNames[i] = expectedReferenceNames[i].Substring(0, expectedReferenceNames[i].LastIndexOf("."));
 
             Assert.Equal(
-                assembly.MainModule.AssemblyReferences.Select(asm => asm.Name).OrderBy(n => n),
-                expectedReferenceNames.OrderBy(n => n));
+                expectedReferenceNames.OrderBy(n => n),
+                assembly.MainModule.AssemblyReferences.Select(asm => asm.Name).OrderBy(n => n));
         }
 
         void VerifyKeptResourceInAssembly(CustomAttribute inAssemblyAttribute)

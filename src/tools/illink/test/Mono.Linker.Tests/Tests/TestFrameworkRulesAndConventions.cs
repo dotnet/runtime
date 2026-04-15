@@ -39,7 +39,9 @@ namespace Mono.Linker.Tests.Tests
             })
                 .ToArray();
 
-            Assert.Empty(missing);
+            Assert.True(
+                missing.Length == 0,
+                $"Could not find a test case type for the following source file(s): {string.Join(", ", missing)}");
         }
 
         /// <summary>
