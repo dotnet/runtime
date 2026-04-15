@@ -439,6 +439,121 @@ public class MethodDescTests
         Assert.Equal(nativeCode, actualNativeCode);
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsDiagnosticsHidden_ReturnsCorrectValues(MockTarget.Architecture arch)
+    {
+        TargetPointer normalMethod = TargetPointer.Null;
+        TargetPointer ilStubMethod = TargetPointer.Null;
+        TargetPointer lcgMethod = TargetPointer.Null;
+        TargetPointer unboxingStubMethod = TargetPointer.Null;
+        TargetPointer instantiatingStubMethod = TargetPointer.Null;
+
+        IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
+        {
+            TargetPointer methodTable = AddMethodTable(methodDescBuilder.RTSBuilder);
+
+            // Normal IL method (not diagnostics hidden, not LCG)
+            {
+                byte methodDescSize = (byte)(methodDescBuilder.MethodDescLayout.Size / methodDescBuilder.MethodDescAlignment);
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("normal", methodDescSize);
+                chunk.MethodTable = methodTable.Value;
+                chunk.Size = methodDescSize;
+                chunk.Count = 1;
+                MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+                md.Flags = (ushort)MethodClassification.IL;
+                normalMethod = new TargetPointer(md.Address);
+            }
+
+            // IL stub (diagnostics hidden via IsILStub)
+            {
+                uint methodDescSize = (uint)methodDescBuilder.DynamicMethodDescLayout.Size;
+                uint methodDescSizeByAlignment = methodDescSize / methodDescBuilder.MethodDescAlignment;
+                byte chunkSize = (byte)(2 * methodDescSizeByAlignment);
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("dynamic", chunkSize);
+                chunk.MethodTable = methodTable.Value;
+                chunk.Size = chunkSize;
+                chunk.Count = 2;
+
+                MockDynamicMethodDesc ilStub = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.DynamicMethodDescLayout);
+                ilStub.Flags = (ushort)MethodClassification.Dynamic;
+                ilStub.ExtendedFlags = (uint)RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsILStub;
+                ilStubMethod = new TargetPointer(ilStub.Address);
+
+                // LCG method (not diagnostics hidden, is LCG)
+                MockDynamicMethodDesc lcg = chunk.GetMethodDescAtChunkIndex((int)methodDescSizeByAlignment, methodDescBuilder.DynamicMethodDescLayout);
+                lcg.ChunkIndex = (byte)methodDescSizeByAlignment;
+                lcg.Flags = (ushort)MethodClassification.Dynamic;
+                lcg.Slot = 1;
+                lcg.ExtendedFlags = (uint)RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsLCGMethod;
+                lcgMethod = new TargetPointer(lcg.Address);
+            }
+
+            // Unboxing stub (diagnostics hidden via IsWrapperStub -> IsUnboxingStub)
+            {
+                byte methodDescSize = (byte)(methodDescBuilder.MethodDescLayout.Size / methodDescBuilder.MethodDescAlignment);
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("unboxing", methodDescSize);
+                chunk.MethodTable = methodTable.Value;
+                chunk.Size = methodDescSize;
+                chunk.Count = 1;
+                MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+                md.Flags = (ushort)MethodClassification.IL;
+                md.Flags3AndTokenRemainder = (ushort)MethodDescFlags_1.MethodDescFlags3.IsUnboxingStub;
+                unboxingStubMethod = new TargetPointer(md.Address);
+            }
+
+            // Instantiating stub (diagnostics hidden via IsWrapperStub -> IsInstantiatingStub)
+            {
+                uint methodDescSize = (uint)methodDescBuilder.InstantiatedMethodDescLayout.Size;
+                uint methodDescSizeByAlignment = methodDescSize / methodDescBuilder.MethodDescAlignment;
+                byte chunkSize = (byte)methodDescSizeByAlignment;
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("instantiating", chunkSize);
+                chunk.MethodTable = methodTable.Value;
+                chunk.Size = chunkSize;
+                chunk.Count = 1;
+                MockInstantiatedMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.InstantiatedMethodDescLayout);
+                md.Flags = (ushort)MethodClassification.Instantiated;
+                md.Flags2 = (ushort)RuntimeTypeSystem_1.InstantiatedMethodDescFlags2.WrapperStubWithInstantiations;
+                instantiatingStubMethod = new TargetPointer(md.Address);
+            }
+        });
+
+        // Normal IL method: not diagnostics hidden, not LCG
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(normalMethod);
+            Assert.False(rts.IsDiagnosticsHidden(handle));
+            Assert.False(rts.IsDynamicMethod(handle));
+        }
+
+        // IL stub: diagnostics hidden
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(ilStubMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.False(rts.IsDynamicMethod(handle));
+        }
+
+        // LCG method: not diagnostics hidden, is LCG
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(lcgMethod);
+            Assert.False(rts.IsDiagnosticsHidden(handle));
+            Assert.True(rts.IsDynamicMethod(handle));
+        }
+
+        // Unboxing stub: diagnostics hidden (wrapper stub)
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(unboxingStubMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.False(rts.IsDynamicMethod(handle));
+        }
+
+        // Instantiating stub: diagnostics hidden (wrapper stub)
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(instantiatingStubMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.False(rts.IsDynamicMethod(handle));
+        }
+    }
+
     private static TargetPointer AddMethodTable(MockDescriptors.RuntimeTypeSystem rtsBuilder, ushort numVirtuals = 5)
     {
         MockEEClass eeClass = rtsBuilder.AddEEClass(string.Empty);

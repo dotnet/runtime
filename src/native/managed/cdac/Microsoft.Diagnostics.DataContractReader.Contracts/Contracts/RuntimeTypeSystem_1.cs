@@ -1320,13 +1320,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool IsILStub(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-
-        if (methodDesc.Classification != MethodClassification.Dynamic)
-        {
-            return false;
-        }
-
-        return AsDynamicMethodDesc(methodDesc).IsILStub;
+        return IsILStub(methodDesc);
     }
 
     public bool HasMDContextArg(MethodDescHandle methodDescHandle)
@@ -1725,6 +1719,26 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         return methodDesc.IsEligibleForTieredCompilation;
+    }
+
+    // [cDAC] Corresponds to MethodDesc::IsDiagnosticsHidden in the native VM (method.inl).
+    // In the native VM: IsILStub() || IsAsyncThunkMethod() || IsWrapperStub().
+    // Note: IsAsyncThunkMethod is not yet implemented because the AsyncMethodData.flags field
+    // is not exposed in the data descriptor. This will be addressed when the data descriptor is updated.
+    bool IRuntimeTypeSystem.IsDiagnosticsHidden(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return IsILStub(methodDesc) || IsWrapperStub(methodDesc);
+    }
+
+    private bool IsILStub(MethodDesc md)
+    {
+        if (md.Classification != MethodClassification.Dynamic)
+        {
+            return false;
+        }
+
+        return AsDynamicMethodDesc(md).IsILStub;
     }
 
     private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries

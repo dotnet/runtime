@@ -216,6 +216,11 @@ partial interface IRuntimeTypeSystem : IContract
     // Returns true if the method is eligible for tiered compilation
     public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
 
+    // [cDAC] Return true if the method should be hidden from diagnostic stack traces.
+    // In the native VM: IsILStub() || IsAsyncThunkMethod() || IsWrapperStub().
+    // Note: IsAsyncThunkMethod is not yet implemented in the cDAC.
+    public virtual bool IsDiagnosticsHidden(MethodDescHandle methodDesc);
+
 }
 ```
 
@@ -1494,6 +1499,20 @@ Determining if a method supports multiple code versions:
             return _target.Contracts.CodeVersions.CodeVersionManagerSupportsMethod(methodDesc.Address);
         }
         return false;
+    }
+```
+
+Determining if a method should be hidden from diagnostic stack traces:
+
+```csharp
+    // [cDAC] Corresponds to MethodDesc::IsDiagnosticsHidden in the native VM.
+    // In the native VM: IsILStub() || IsAsyncThunkMethod() || IsWrapperStub().
+    // Note: IsAsyncThunkMethod is not yet implemented because the AsyncMethodData.flags
+    // field is not exposed in the data descriptor.
+    public bool IsDiagnosticsHidden(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc md = _methodDescs[methodDescHandle.Address];
+        return IsILStub(md) || IsWrapperStub(md);
     }
 ```
 
