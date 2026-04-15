@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
@@ -72,6 +73,9 @@ namespace System.Security.Cryptography.Xml
         private string? _recipient;
         private int _xmlDsigSearchDepthCounter;
         private int _xmlDsigSearchDepth;
+
+        // Built in transform algorithm URIs
+        private static IList<string>? s_defaultSafeTransformMethods;
 
         //
         // public constructors
@@ -212,6 +216,11 @@ namespace System.Security.Cryptography.Xml
                     {
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
                     }
+                    if (!ReferenceUsesSafeTransformMethods(cipherData.CipherReference))
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_NotSupportedCryptographicTransform);
+                    }
+
                     decInputStream = tc.TransformToOctetStream(_document, _xmlResolver, baseUri);
                 }
                 else if (cipherData.CipherReference.Uri[0] == '#')
@@ -230,6 +239,11 @@ namespace System.Security.Cryptography.Xml
                     {
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
                     }
+                    if (!ReferenceUsesSafeTransformMethods(cipherData.CipherReference))
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_NotSupportedCryptographicTransform);
+                    }
+
                     decInputStream = tc.TransformToOctetStream(inputStream, _xmlResolver, baseUri);
                 }
                 else
@@ -1017,6 +1031,70 @@ namespace System.Security.Cryptography.Xml
             {
                 RSAPKCS1KeyExchangeDeformatter rsaDeformatter = new RSAPKCS1KeyExchangeDeformatter(rsa);
                 return rsaDeformatter.DecryptKeyExchange(keyData);
+            }
+        }
+
+        private static bool ReferenceUsesSafeTransformMethods(CipherReference reference)
+        {
+            // If the app context switch to enforce safe transforms is not enabled,
+            // then we consider all transforms to be safe.
+            if (LocalAppContextSwitches.AllowDangerousEncryptedXmlTransforms)
+            {
+                return true;
+            }
+
+            TransformChain transformChain = reference.TransformChain;
+            int transformCount = transformChain.Count;
+
+            for (int i = 0; i < transformCount; i++)
+            {
+                Transform transform = transformChain[i];
+
+                if (!IsSafeTransform(transform.Algorithm!))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsSafeTransform(string transformAlgorithm)
+        {
+            foreach (string safeAlgorithm in DefaultSafeTransformMethods)
+            {
+                if (string.Equals(safeAlgorithm, transformAlgorithm, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static IList<string> DefaultSafeTransformMethods
+        {
+            get
+            {
+                if (s_defaultSafeTransformMethods == null)
+                {
+                    List<string> safeAlgorithms = new List<string>();
+
+                    // Built in canonicalization algorithms
+                    safeAlgorithms.Add(SignedXml.XmlDsigC14NTransformUrl);
+                    safeAlgorithms.Add(SignedXml.XmlDsigC14NWithCommentsTransformUrl);
+                    safeAlgorithms.Add(SignedXml.XmlDsigExcC14NTransformUrl);
+                    safeAlgorithms.Add(SignedXml.XmlDsigExcC14NWithCommentsTransformUrl);
+
+                    // Other built in transform algorithms
+                    safeAlgorithms.Add(SignedXml.XmlDsigBase64TransformUrl);
+                    safeAlgorithms.Add(SignedXml.XmlLicenseTransformUrl);
+                    safeAlgorithms.Add(SignedXml.XmlDecryptionTransformUrl);
+
+                    s_defaultSafeTransformMethods = safeAlgorithms;
+                }
+
+                return s_defaultSafeTransformMethods;
             }
         }
     }
