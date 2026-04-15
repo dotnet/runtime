@@ -641,11 +641,20 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         *pResult = Interop.BOOL.FALSE;
         int hr = HResults.S_OK;
+        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
         try
         {
-            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle th = rts.GetTypeHandle(new TargetPointer(thExact));
-            *pResult = rts.RequiresAlign8(th) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            // Some 32-bit platform ABIs require 64-bit alignment (FEATURE_64BIT_ALIGNMENT).
+            if (arch == RuntimeInfoArchitecture.Arm || arch == RuntimeInfoArchitecture.Wasm)
+            {
+                Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                Contracts.TypeHandle th = rts.GetTypeHandle(new TargetPointer(thExact));
+                *pResult = rts.RequiresAlign8(th) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
         catch (System.Exception ex)
         {
