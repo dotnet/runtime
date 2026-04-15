@@ -5,16 +5,6 @@
 //
 // Unified singly linked list template.
 //
-// HISTORY:
-//   02/03/98:  Created helper classes SLink / SList for CoreCLR.
-//              Sentinel-based design with pointer-to-member customisation.
-//
-//   04/14/26:  Replaced with NativeAOT-style design: no sentinel node,
-//              NULL means empty, traits-based next-pointer access.
-//              Added tail tracking (HasTail in Traits), SListElem<T> wrapper,
-//              FindAndRemove, GetNext, DAC guards, cdac_data friend.
-//              Migrated all CoreCLR consumers from SLink to m_pNext.
-//
 //-----------------------------------------------------------------------------
 
 #ifndef _H_SLIST_
