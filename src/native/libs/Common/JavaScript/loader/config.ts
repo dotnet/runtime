@@ -29,27 +29,29 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
     // no need to merge the same object
     if (target === source || source === undefined || source === null) return target;
 
-    const mergedResources = mergeResources(target.resources!, source.resources || {} as any);
-    const mergedEnvironmentVariables = { ...target.environmentVariables, ...source.environmentVariables || {} };
-    const mergedRuntimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions || []];
-    const mergedConfigProperties = { ...target.runtimeConfig!.runtimeOptions!.configProperties!, ...source.runtimeConfig?.runtimeOptions?.configProperties || {} };
-    // Copy all remaining simple properties from source (e.g. maxParallelDownloads,
-    // applicationCulture, disableIntegrityCheck, etc.) that don't need special merge logic.
+    // Merge collections: target values first, then source values appended/spread on top.
+    mergeResources(target.resources!, source.resources!);
+    // For scalar fields with defaults, prefer source when defined, otherwise keep target default.
+    // We patch source so that Object.assign below copies the correct resolved value.
+    source.appendElementOnExit = source.appendElementOnExit !== undefined ? source.appendElementOnExit : target.appendElementOnExit;
+    source.logExitCode = source.logExitCode !== undefined ? source.logExitCode : target.logExitCode;
+    source.exitOnUnhandledError = source.exitOnUnhandledError !== undefined ? source.exitOnUnhandledError : target.exitOnUnhandledError;
+    source.loadAllSatelliteResources = source.loadAllSatelliteResources !== undefined ? source.loadAllSatelliteResources : target.loadAllSatelliteResources;
+    source.mainAssemblyName = source.mainAssemblyName !== undefined ? source.mainAssemblyName : target.mainAssemblyName;
+    source.virtualWorkingDirectory = source.virtualWorkingDirectory !== undefined ? source.virtualWorkingDirectory : target.virtualWorkingDirectory;
+    source.debugLevel = source.debugLevel !== undefined ? source.debugLevel : target.debugLevel;
+    source.diagnosticTracing = source.diagnosticTracing !== undefined ? source.diagnosticTracing : target.diagnosticTracing;
+    // Merge maps and arrays: target values first, source values merged on top.
+    source.environmentVariables = { ...target.environmentVariables, ...source.environmentVariables };
+    source.runtimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
+    source.runtimeConfig!.runtimeOptions!.configProperties = { ...target.runtimeConfig!.runtimeOptions!.configProperties!, ...source.runtimeConfig!.runtimeOptions!.configProperties! };
+    // Copy all properties from source into target, including any simple properties
+    // (e.g. maxParallelDownloads, applicationCulture, disableIntegrityCheck, etc.)
+    // that don't need special merge logic.
+    const mergedResources = target.resources;
     Object.assign(target, source);
-    // Restore the merged values that Object.assign would have overwritten.
+    // Restore merged resources that Object.assign would have overwritten.
     target.resources = mergedResources;
-    target.environmentVariables = mergedEnvironmentVariables;
-    target.runtimeOptions = mergedRuntimeOptions;
-    target.runtimeConfig!.runtimeOptions!.configProperties = mergedConfigProperties;
-    // For boolean/scalar fields, prefer source when defined, otherwise keep target default.
-    target.appendElementOnExit = source.appendElementOnExit !== undefined ? source.appendElementOnExit : target.appendElementOnExit;
-    target.logExitCode = source.logExitCode !== undefined ? source.logExitCode : target.logExitCode;
-    target.exitOnUnhandledError = source.exitOnUnhandledError !== undefined ? source.exitOnUnhandledError : target.exitOnUnhandledError;
-    target.loadAllSatelliteResources = source.loadAllSatelliteResources !== undefined ? source.loadAllSatelliteResources : target.loadAllSatelliteResources;
-    target.mainAssemblyName = source.mainAssemblyName !== undefined ? source.mainAssemblyName : target.mainAssemblyName;
-    target.virtualWorkingDirectory = source.virtualWorkingDirectory !== undefined ? source.virtualWorkingDirectory : target.virtualWorkingDirectory;
-    target.debugLevel = source.debugLevel !== undefined ? source.debugLevel : target.debugLevel;
-    target.diagnosticTracing = source.diagnosticTracing !== undefined ? source.diagnosticTracing : target.diagnosticTracing;
     return target;
 }
 
