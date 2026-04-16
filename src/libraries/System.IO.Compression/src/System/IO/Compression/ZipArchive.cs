@@ -635,6 +635,16 @@ namespace System.IO.Compression
             if (Mode == ZipArchiveMode.Update)
             {
                 _entries.Sort(ZipArchiveEntry.LocalHeaderOffsetComparer.Instance);
+
+                // Precompute EndOfLocalEntryData for each entry. At read time every entry is original
+                // and sorted by offset, so entry[i]'s end is entry[i+1]'s start (or the central directory
+                // for the last entry). This correctly includes any trailing data descriptor bytes.
+                for (int i = 0; i < _entries.Count; i++)
+                {
+                    _entries[i].EndOfLocalEntryData = i < _entries.Count - 1
+                        ? _entries[i + 1].OffsetOfLocalHeader
+                        : _centralDirectoryStart;
+                }
             }
         }
 
@@ -822,7 +832,9 @@ namespace System.IO.Compression
             {
                 // Keep track of the expected position of the file entry after the final untouched file entry so that when the loop completes,
                 // we'll know which position to start writing new entries from.
-                nextFileOffset = Math.Max(nextFileOffset, entry.GetOffsetOfCompressedData() + entry.CompressedLength);
+                // EndOfLocalEntryData includes any trailing data descriptor because it was pre-computed from the
+                // next entry's offset or the central directory start.
+                nextFileOffset = Math.Max(nextFileOffset, entry.EndOfLocalEntryData);
             }
             // When calculating the starting offset to load the files from, only look at changed entries which are already in the archive.
             else
@@ -909,7 +921,6 @@ namespace System.IO.Compression
                         }
                     }
                 }
-
                 WriteFileUpdateModeFinalWork(startingOffset, nextFileOffset);
             }
 

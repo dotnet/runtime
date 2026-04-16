@@ -31,6 +31,8 @@
 #include "utilcode.h"
 #endif
 
+MethodDesc* g_pThreadStartCallbackMethodDesc = nullptr;
+
 
 // For the following helpers, we make no attempt to synchronize.  The app developer
 // is responsible for managing their own race conditions.
@@ -133,10 +135,13 @@ static void KickOffThread_Worker(LPVOID ptr)
     OBJECTREF exposedObj = GetThread()->GetExposedObjectRaw();
     GCPROTECT_BEGIN(exposedObj);
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__START_CALLBACK);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(exposedObj);
-    CALL_MANAGED_METHOD_NORET(args);
+    if (g_pThreadStartCallbackMethodDesc == nullptr)
+    {
+        g_pThreadStartCallbackMethodDesc = CoreLibBinder::GetMethod(METHOD__THREAD__START_CALLBACK);
+    }
+
+    UnmanagedCallersOnlyCaller startCallback(METHOD__THREAD__START_CALLBACK);
+    startCallback.InvokeDirect(&exposedObj);
 
     GCPROTECT_END();
 }
@@ -401,9 +406,9 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     INT32 res = 0;
 
     // grab a snapshot
-    Thread::ThreadState state = thread->GetSnapshotState();
+    Thread::ThreadState state = thread->GetState();
 
-    if (state & Thread::TS_Dead)
+    if (state & Thread::TS_Stopped)
         res |= ThreadNative::ThreadStopped;
 
     if (state & Thread::TS_Background)

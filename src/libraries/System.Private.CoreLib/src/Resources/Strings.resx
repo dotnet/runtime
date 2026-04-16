@@ -4480,4 +4480,7 @@
   <data name="Argument_FunctionPointersInvalid">
     <value>Function pointer types are not valid.</value>
   </data>
+  <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
+    <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on the decimal type.</value>
+  </data>
 </root>

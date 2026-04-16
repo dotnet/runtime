@@ -29,6 +29,7 @@ namespace System.IO.Compression
         private long _uncompressedSize;
         private long _offsetOfLocalHeader;
         private long? _storedOffsetOfCompressedData;
+        private long _endOfLocalEntryData;
         private uint _crc32;
         // An array of buffers, each a maximum of MaxSingleBufferSize in size
         private byte[][]? _compressedBytes;
@@ -1493,6 +1494,17 @@ namespace System.IO.Compression
 
         private bool AreSizesTooLarge => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
 
+        /// <summary>
+        /// The position immediately after all entry data (including any trailing data descriptor).
+        /// Computed while reading the central directory from the next entry's local header offset
+        /// or, for the last entry, the central directory start offset.
+        /// </summary>
+        internal long EndOfLocalEntryData
+        {
+            get => _endOfLocalEntryData;
+            set => _endOfLocalEntryData = value;
+        }
+
         private static CompressionLevel MapCompressionLevel(BitFlagValues generalPurposeBitFlag, ZipCompressionMethod compressionMethod)
         {
             // Information about the Deflate compression option is stored in bits 1 and 2 of the general purpose bit flags.
@@ -1538,7 +1550,7 @@ namespace System.IO.Compression
         private bool ShouldUseZIP64 => AreSizesTooLarge || IsOffsetTooLarge;
         internal ZipEncryptionMethod Encryption { get => _encryptionMethod; private set => _encryptionMethod = value; }
 
-        private bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength)
+        private bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite)
         {
             // _entryname only gets set when we read in or call moveTo. MoveTo does a check, and
             // reading in should not be able to produce an entryname longer than ushort.MaxValue
@@ -1593,8 +1605,6 @@ namespace System.IO.Compression
                 }
                 else
                 {
-                    // Seekable mode: sizes and CRC are known, no data descriptor needed.
-                    _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
 
                     if (ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
@@ -1643,6 +1653,14 @@ namespace System.IO.Compression
                 extraFieldLength = (ushort)bigExtraFieldLength;
             }
 
+            crc32ToWrite = _crc32;
+
+            // For AE-2, CRC is always 0 in the local file header
+            if (UseAesEncryption())
+            {
+                crc32ToWrite = 0;
+            }
+
             // If this is an existing, unchanged entry then silently skip forwards.
             // If it's new or changed, write the header.
             if (_originallyInArchive && Changes == ZipArchive.ChangeState.Unchanged && !forceWrite)
@@ -1659,10 +1677,33 @@ namespace System.IO.Compression
                 return false;
             }
 
+            // We are writing the header. For seekable/empty-file paths the sizes are written
+            // directly into the header, so a data descriptor is not needed.
+            if (isEmptyFile || _archive.ArchiveStream.CanSeek)
+            {
+                if (preserveDataDescriptor)
+                {
+                    compressedSizeTruncated = 0;
+                    uncompressedSizeTruncated = 0;
+
+                    // zero the CRC/sizes since the real values live in the trailing descriptor that remains on disk.
+                    crc32ToWrite = 0;
+
+                    if (zip64ExtraField is not null)
+                    {
+                        zip64ExtraField = new() { CompressedSize = 0, UncompressedSize = 0 };
+                    }
+                }
+                else
+                {
+                    _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
+                }
+            }
+
             return true;
         }
 
-        private void WriteLocalFileHeaderPrepare(Span<byte> lfStaticHeader, uint compressedSizeTruncated, uint uncompressedSizeTruncated, ushort extraFieldLength)
+        private void WriteLocalFileHeaderPrepare(Span<byte> lfStaticHeader, uint crc32, uint compressedSizeTruncated, uint uncompressedSizeTruncated, ushort extraFieldLength)
         {
             ZipLocalFileHeader.SignatureConstantBytes.CopyTo(lfStaticHeader[ZipLocalFileHeader.FieldLocations.Signature..]);
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.VersionNeededToExtract..], (ushort)_versionToExtract);
@@ -1673,10 +1714,7 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressionMethod..], compressionMethodToWrite);
 
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.LastModified..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
-            // When using data descriptors, CRC must be 0 in the local header.
-            // For AE-2, CRC is always 0 regardless.
-            uint crcToWrite = (UseAesEncryption() || (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0) ? 0 : _crc32;
-            BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.Crc32..], crcToWrite);
+            BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.Crc32..], crc32);
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressedSize..], compressedSizeTruncated);
             BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.UncompressedSize..], uncompressedSizeTruncated);
             BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.FilenameLength..], (ushort)_storedEntryNameBytes.Length);
@@ -1684,12 +1722,12 @@ namespace System.IO.Compression
         }
 
         // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
-        private bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite)
+        private bool WriteLocalFileHeader(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor = false)
         {
-            if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength))
+            if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite))
             {
                 Span<byte> lfStaticHeader = stackalloc byte[ZipLocalFileHeader.SizeOfLocalHeader];
-                WriteLocalFileHeaderPrepare(lfStaticHeader, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength);
+                WriteLocalFileHeaderPrepare(lfStaticHeader, crc32ToWrite, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength);
 
                 // write header
                 _archive.ArchiveStream.Write(lfStaticHeader);
@@ -1901,13 +1939,17 @@ namespace System.IO.Compression
                 if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
                 {
                     _everOpenedForWrite = true;
-                    WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite);
+                    // Preserve the data descriptor flag for entries that originally had one,
+                    // since the descriptor bytes remain on disk after the compressed data.
+                    bool preserveDataDescriptor = _originallyInArchive
+                        && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
+                    WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor: preserveDataDescriptor);
 
-                    // If we know that we need to update the file header (but don't need to load and update the data itself)
-                    // then advance the position past it.
-                    if (_compressedSize != 0)
+                    // Advance the stream past the compressed data and any trailing data descriptor
+                    // by seeking to the pre-computed end-of-entry boundary.
+                    if (_endOfLocalEntryData > _archive.ArchiveStream.Position)
                     {
-                        _archive.ArchiveStream.Seek(_compressedSize, SeekOrigin.Current);
+                        _archive.ArchiveStream.Seek(_endOfLocalEntryData, SeekOrigin.Begin);
                     }
                 }
             }
@@ -2298,7 +2340,7 @@ namespace System.IO.Compression
                     {
                         _everWritten = true;
                         // write local header, we are good to go
-                        _usedZip64inLH = await _entry.WriteLocalFileHeaderAsync(isEmptyFile: false, forceWrite: true, cancellationToken).ConfigureAwait(false);
+                        _usedZip64inLH = await _entry.WriteLocalFileHeaderAsync(isEmptyFile: false, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
                     }
 
                     await _crcSizeStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
@@ -2374,7 +2416,7 @@ namespace System.IO.Compression
                         }
 
                         // write local header, no data, so we use stored
-                        await _entry.WriteLocalFileHeaderAsync(isEmptyFile: true, forceWrite: true, cancellationToken: default).ConfigureAwait(false);
+                        await _entry.WriteLocalFileHeaderAsync(isEmptyFile: true, forceWrite: true, preserveDataDescriptor: false, cancellationToken: default).ConfigureAwait(false);
                     }
                     else
                     {

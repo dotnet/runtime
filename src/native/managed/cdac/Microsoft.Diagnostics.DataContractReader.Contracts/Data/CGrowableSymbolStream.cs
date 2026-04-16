@@ -10,8 +10,8 @@ internal sealed class CGrowableSymbolStream : IData<CGrowableSymbolStream>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.CGrowableSymbolStream);
 
-        Buffer = target.ReadPointer(address + (ulong)type.Fields[nameof(Buffer)].Offset);
-        Size = target.Read<uint>(address + (ulong)type.Fields[nameof(Size)].Offset);
+        Buffer = target.ReadPointerField(address, type, nameof(Buffer));
+        Size = target.ReadField<uint>(address, type, nameof(Size));
     }
 
     public TargetPointer Buffer { get; init; }

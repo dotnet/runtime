@@ -6028,6 +6028,31 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
         }
+
+        if (JitConfig.EnableArm64Sha3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sha3);
+        }
+
+        if (JitConfig.EnableArm64Sm4() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sm4);
+        }
+
+        if (JitConfig.EnableArm64SveAes() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
+        }
+
+        if (JitConfig.EnableArm64SveSha3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveSha3);
+        }
+
+        if (JitConfig.EnableArm64SveSm4() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveSm4);
+        }
 #elif defined(TARGET_XARCH)
         if (info.compMatchedVM)
         {
@@ -10363,7 +10388,7 @@ bool Compiler::killGCRefs(GenTree* tree)
             return true;
         }
 
-        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_JIT_PINVOKE_BEGIN))
+        if (call->IsHelperCall(CORINFO_HELP_JIT_PINVOKE_BEGIN))
         {
             assert(opts.ShouldUsePInvokeHelpers());
             return true;

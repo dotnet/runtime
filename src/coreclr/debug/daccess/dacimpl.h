@@ -1538,7 +1538,7 @@ public:
 
     ULONG STDMETHODCALLTYPE Release()
     {
-        ULONG res = mRef--;
+        ULONG res = --mRef;
         if (res == 0)
             delete this;
         return res;

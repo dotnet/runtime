@@ -20,6 +20,7 @@
     <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
     <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
     <Compile Include="System\Diagnostics\Process.cs" />
+    <Compile Include="System\Diagnostics\Process.Multiplexing.cs" />
     <Compile Include="System\Diagnostics\ProcessExitStatus.cs" />
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
     <Compile Include="System\Diagnostics\ProcessModule.cs" />
@@ -105,6 +106,10 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetThreadTimes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CreateProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.JobObjects.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.JobObjects.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResumeThread.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ResumeThread.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TerminateProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.TerminateProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
@@ -220,6 +225,13 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\Process.Windows.cs" />
+    <Compile Include="System\Diagnostics\Process.Multiplexing.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CancelIoEx.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.CancelIoEx.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
@@ -232,6 +244,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\Process.Unix.cs" />
+    <Compile Include="System\Diagnostics\Process.Multiplexing.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
@@ -242,6 +255,14 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Poll.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Fcntl.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Read.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
              Link="Common\Interop\Unix\Interop.Close.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs"
@@ -402,6 +423,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.Extensions\src\System.Text.Encoding.Extensions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Overlapped\src\System.Threading.Overlapped.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\src\System.Threading.ThreadPool.csproj" />
   </ItemGroup>
