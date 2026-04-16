@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
@@ -9,6 +10,19 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class DebuggerTests
 {
+    /// <summary>
+    /// Provides all standard architectures paired with each bool value,
+    /// for testing write APIs that take a bool.
+    /// </summary>
+    public static IEnumerable<object[]> StdArchWithBool()
+    {
+        foreach (object[] archArgs in new MockTarget.StdArch())
+        {
+            yield return [archArgs[0], true];
+            yield return [archArgs[0], false];
+        }
+    }
+
     private static TargetTestHelpers.LayoutResult GetDebuggerLayout(TargetTestHelpers helpers)
     {
         return helpers.LayoutFields(
@@ -58,7 +72,6 @@ public class DebuggerTests
         {
             MockMemorySpace.HeapFragment debuggerRCThreadFrag = allocator.Allocate(debuggerRcThreadLayout.Stride, "DebuggerRCThread");
             helpers.WritePointer(debuggerRCThreadFrag.Data.AsSpan(debuggerRcThreadLayout.Fields[nameof(Data.DebuggerRCThread.DCB)].Offset, helpers.PointerSize), debuggerControlBlockAddress.Value);
-            memBuilder.AddHeapFragment(debuggerRCThreadFrag);
             debuggerRcThreadAddress = debuggerRCThreadFrag.Address;
         }
 
@@ -71,7 +84,6 @@ public class DebuggerTests
         helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.RSRequestedSync)].Offset, sizeof(int)), 0);
         helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.SendExceptionsOutsideOfJMC)].Offset, sizeof(int)), 0);
         helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.GCNotificationEventsEnabled)].Offset, sizeof(int)), 0);
-        memBuilder.AddHeapFragment(debuggerFrag);
 
         // g_pDebugger is a pointer-to-Debugger. The global stores the address of g_pDebugger,
         // so ReadGlobalPointer returns the location, and ReadPointer dereferences it.
@@ -264,5 +276,71 @@ public class DebuggerTests
         // Should not throw; null g_pDebugger is silently ignored
         debugger.EnableGCNotificationEvents(true);
         debugger.EnableGCNotificationEvents(false);
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers shared by write-verification tests
+    // -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Returns the address of the live <c>Debugger</c> struct by following the
+    /// same two-pointer indirection that <see cref="Debugger_1"/> uses:
+    /// <c>*ReadGlobalPointer("Debugger")</c>.
+    /// </summary>
+    private static TargetPointer GetDebuggerAddress(TestPlaceholderTarget target)
+    {
+        TargetPointer debuggerPtrPtr = target.ReadGlobalPointer(Constants.Globals.Debugger);
+        return target.ReadPointer(debuggerPtrPtr.Value);
+    }
+
+    // -----------------------------------------------------------------------
+    // Write-verification tests
+    // -----------------------------------------------------------------------
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void RequestSyncAtEvent_WritesSyncFlag(MockTarget.Architecture arch)
+    {
+        TestPlaceholderTarget target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        TargetPointer debuggerAddress = GetDebuggerAddress(target);
+        int fieldOffset = target.GetTypeInfo(DataType.Debugger).Fields[nameof(Data.Debugger.RSRequestedSync)].Offset;
+
+        Assert.Equal(0, target.Read<int>(debuggerAddress.Value + (ulong)fieldOffset));
+
+        debugger.RequestSyncAtEvent();
+
+        Assert.Equal(1, target.Read<int>(debuggerAddress.Value + (ulong)fieldOffset));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchWithBool))]
+    public void SetSendExceptionsOutsideOfJMC_WritesFlag(MockTarget.Architecture arch, bool value)
+    {
+        TestPlaceholderTarget target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        TargetPointer debuggerAddress = GetDebuggerAddress(target);
+        int fieldOffset = target.GetTypeInfo(DataType.Debugger).Fields[nameof(Data.Debugger.SendExceptionsOutsideOfJMC)].Offset;
+
+        debugger.SetSendExceptionsOutsideOfJMC(value);
+
+        Assert.Equal(value ? 1 : 0, target.Read<int>(debuggerAddress.Value + (ulong)fieldOffset));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchWithBool))]
+    public void EnableGCNotificationEvents_WritesFlag(MockTarget.Architecture arch, bool value)
+    {
+        TestPlaceholderTarget target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        TargetPointer debuggerAddress = GetDebuggerAddress(target);
+        int fieldOffset = target.GetTypeInfo(DataType.Debugger).Fields[nameof(Data.Debugger.GCNotificationEventsEnabled)].Offset;
+
+        debugger.EnableGCNotificationEvents(value);
+
+        Assert.Equal(value ? 1 : 0, target.Read<int>(debuggerAddress.Value + (ulong)fieldOffset));
     }
 }
