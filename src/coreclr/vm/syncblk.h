@@ -429,6 +429,7 @@ class SyncBlock
     //
     // We can't afford to use an SList<> here because we only want to burn
     // space for the minimum, which is the pointer within an SLink.
+    // Next pointer used by SyncBlockCache free and cleanup lists.
     PTR_SyncBlock  m_pNext;
 
     // This is the hash code for the object. It can either have been transferred

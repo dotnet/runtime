@@ -46,6 +46,7 @@ public:
     };
 
     // store next pointer and the entries - total of 16 pointers
+    // Next pointer for SList linkage.
     DPTR(CacheLine)  m_pNext;
     union
     {

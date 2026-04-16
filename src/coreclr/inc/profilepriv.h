@@ -158,6 +158,7 @@ struct StoredProfilerNode
 {
     CLSID guid;
     SString path;
+    // Next pointer for SList linkage.
     DPTR(StoredProfilerNode) m_pNext;
 };
 

@@ -452,6 +452,7 @@ private:
 
     struct FailedTypeInitCleanupListItem
     {
+        // Next pointer for SList linkage.
         DPTR(FailedTypeInitCleanupListItem) m_pNext;
         ListLockEntry *m_pListLockEntry;
         explicit FailedTypeInitCleanupListItem(ListLockEntry *pListLockEntry)
@@ -1015,6 +1016,7 @@ public:
 private:
     struct HandleCleanupListItem
     {
+        // Next pointer for SList linkage.
         DPTR(HandleCleanupListItem) m_pNext;
         OBJECTHANDLE m_handle;
         explicit HandleCleanupListItem(OBJECTHANDLE handle)

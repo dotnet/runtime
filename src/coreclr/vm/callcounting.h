@@ -300,6 +300,7 @@ private:
     // CallCountingManager members
 
 public:
+    // Next pointer for SList linkage.
     DPTR(CallCountingManager) m_pNext;
 
 private:

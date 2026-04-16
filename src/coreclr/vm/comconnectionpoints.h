@@ -65,6 +65,7 @@ public:
 
         RETURN (new ConnectionCookie(std::move(hndEventProvObj)));
     }
+    // Next pointer for SList linkage.
     DPTR(ConnectionCookie)   m_pNext;
     OBJECTHANDLEHolder  m_hndEventProvObj;
     DWORD               m_id;

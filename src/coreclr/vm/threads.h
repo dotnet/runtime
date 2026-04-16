@@ -2225,6 +2225,7 @@ public:
         return m_PreventAbort != 0;
     }
     // The ThreadStore manages a list of all the threads in the system.
+    // Next pointer for SList linkage (ThreadStore::m_ThreadList).
     PTR_Thread  m_pNext;
 
     // Debugger per-thread flag for enabling notification on "manual"
