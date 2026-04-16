@@ -1446,23 +1446,24 @@ namespace System.StubHelpers
         private static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetCOMIPFromRCWSlow")]
-        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
+        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pCPCMD, out IntPtr ppTarget, [MarshalAs(UnmanagedType.Bool)] out bool pfNeedsRelease);
 
         internal static IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
         {
             IntPtr rcw = GetCOMIPFromRCW(objSrc, pCPCMD, out ppTarget);
-            if (rcw == IntPtr.Zero)
+            if (rcw != IntPtr.Zero)
             {
-                // If we didn't find the COM interface pointer in the cache we need to release the pointer.
-                pfNeedsRelease = true;
-                return GetCOMIPFromRCWWorker(objSrc, pCPCMD, out ppTarget);
+                pfNeedsRelease = false;
+                return rcw;
             }
-            pfNeedsRelease = false;
-            return rcw;
+
+            // The slow path may create OLE TLS and then still resolve the interface via the RCW cache.
+            // Let the slow path tell us whether it returned an owned pointer that requires cleanup.
+            return GetCOMIPFromRCWWorker(objSrc, pCPCMD, out ppTarget, out pfNeedsRelease);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static IntPtr GetCOMIPFromRCWWorker(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget)
-                => GetCOMIPFromRCWSlow(ObjectHandleOnStack.Create(ref objSrc), pCPCMD, out ppTarget);
+            static IntPtr GetCOMIPFromRCWWorker(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
+                => GetCOMIPFromRCWSlow(ObjectHandleOnStack.Create(ref objSrc), pCPCMD, out ppTarget, out pfNeedsRelease);
         }
 #endif // FEATURE_COMINTEROP
 
