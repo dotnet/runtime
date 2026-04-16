@@ -4310,19 +4310,19 @@ namespace
 
         // The target MethodDesc may be NULL for field marshalling.
         // Forward P/Invoke stubs (non-CALLI, non-vararg) each target a specific method,
-        // so the hash blob is just the target MethodDesc pointer. This ensures racing
-        // threads for the same P/Invoke converge on the same DynamicMethodDesc in the
-        // ILStubCache, while different P/Invoke methods get distinct cache entries.
+        // so the hash blob includes the target MethodDesc pointer and the stub flags.
+        // This ensures racing threads for the same P/Invoke converge on the same
+        // DynamicMethodDesc in the ILStubCache, while different P/Invoke methods or
+        // differently flagged stubs get distinct cache entries.
         if (SF_IsForwardPInvokeStub(dwStubFlags)
             && !SF_IsCALLIStub(dwStubFlags)
             && !SF_IsVarArgStub(dwStubFlags))
         {
             isNonSharedStub = true;
         }
-
         // Late-bound COM stubs depend on metadata on the target MethodDesc (DispIdAttribute, associated properties) in addition to just the signature.
         // Cache based on the target MethodDesc and stub flags instead of the signature to avoid false sharing.
-        if (SF_IsCOMLateBoundStub(dwStubFlags))
+        else if (SF_IsCOMLateBoundStub(dwStubFlags))
         {
             isNonSharedStub = true;
         }
