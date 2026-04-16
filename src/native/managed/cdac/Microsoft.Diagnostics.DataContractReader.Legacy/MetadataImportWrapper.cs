@@ -134,25 +134,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                 hr = FillEnum(phEnum, tokens, rImpls, cMax, pcImpls);
             }
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
         return hr;
@@ -189,25 +173,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                 hr = FillEnum(phEnum, tokens, rFields, cMax, pcTokens);
             }
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
         return hr;
@@ -249,25 +217,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                 hr = FillEnum(phEnum, tokens, rGenericParams, cMax, pcGenericParams);
             }
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
     Done:
@@ -299,25 +251,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -362,25 +298,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -440,25 +360,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -536,25 +440,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -642,25 +530,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -698,25 +570,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = declaringType.IsNil ? CLDB_E_RECORD_NOTFOUND : HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -761,25 +617,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -835,25 +675,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.E_INVALIDARG;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -886,25 +710,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -953,25 +761,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_FALSE;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -1067,25 +859,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
             if (hr != HResults.S_OK)
                 hr = CLDB_E_RECORD_NOTFOUND;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -1172,25 +948,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -1252,25 +1012,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                 hr = HResults.S_OK;
             }
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -1313,25 +1057,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -1369,25 +1097,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -1423,25 +1135,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -1499,25 +1195,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
             if (hr != HResults.S_OK)
                 hr = CLDB_E_RECORD_NOTFOUND;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
@@ -1613,25 +1293,9 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
 
             hr = HResults.S_OK;
         }
-        catch (BadImageFormatException)
-        {
-            hr = HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            hr = HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            hr = HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        catch
-        {
-            hr = HResults.E_FAIL;
         }
 
 #if DEBUG
