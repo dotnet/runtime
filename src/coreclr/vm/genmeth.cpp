@@ -856,7 +856,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             MethodTable* pCanonMT = pExactMT->GetCanonicalMethodTable();
             MethodDesc* pPrimaryOnCanonMT = pCanonMT->GetParallelMethodDesc(pDefMD, AsyncVariantLookup::MatchingAsyncVariant);
 
-            if (pPrimaryOnCanonMT != NULL && pPrimaryOnCanonMT->IsEnCAddedMethod())
+            if (pPrimaryOnCanonMT != NULL && pPrimaryOnCanonMT->IsEnCAddedMethod()
+                && pPrimaryOnCanonMT->IsAsyncThunkMethod())
             {
                 Module* pModule = pDefMD->GetModule();
                 GCX_COOP();

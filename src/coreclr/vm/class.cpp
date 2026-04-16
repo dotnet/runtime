@@ -725,7 +725,11 @@ HRESULT EEClass::AddAsyncVariant(
     MethodReturnKind returnKind = ClassifyMethodReturnKind(
         SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
 
-    _ASSERTE(IsTaskReturning(returnKind));
+    if (!IsTaskReturning(returnKind))
+    {
+        _ASSERTE(!"AddAsyncVariant called on non-task-returning method");
+        return COR_E_BADIMAGEFORMAT;
+    }
 
     ULONG cAsyncVariantSig = 0;
     BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
