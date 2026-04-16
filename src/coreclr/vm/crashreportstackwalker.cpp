@@ -95,6 +95,11 @@ FrameCallbackAdapter(
         stackPointer = static_cast<uint64_t>(GetRegdisplaySP(pRD));
     }
 
+    if (ip == 0 && stackPointer == 0)
+    {
+        return SWA_CONTINUE;
+    }
+
     if (g_pDebugInterface != NULL && pMD != NULL)
     {
         DWORD resolvedILOffset = 0;
@@ -139,12 +144,12 @@ FrameCallbackAdapter(
 
 static
 void
-CrashReportWalkStack(
+CrashReportWalkThread(
+    Thread* pThread,
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
-    Thread* pThread = GetThreadAsyncSafe();
-    if (pThread == NULL)
+    if (pThread == NULL || frameCallback == NULL)
     {
         return;
     }
@@ -152,6 +157,15 @@ CrashReportWalkStack(
     WalkContext walkContext = { frameCallback, ctx };
     pThread->StackWalkFrames(FrameCallbackAdapter, &walkContext,
         QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
+}
+
+static
+void
+CrashReportWalkStack(
+    InProcCrashReportFrameCallback frameCallback,
+    void* ctx)
+{
+    CrashReportWalkThread(GetThreadAsyncSafe(), frameCallback, ctx);
 }
 
 static
@@ -179,6 +193,7 @@ CrashReportGetExceptionForThread(
         *hresult = 0;
     }
 
+    // Only inspect the managed throwable when the thread is already in cooperative mode.
     if (!pThread->PreemptiveGCDisabled())
     {
         return 0;
@@ -296,9 +311,7 @@ CrashReportEnumerateThreads(
 
             threadCallback(crashOsId, 1, hasException ? exceptionType : "", hresult, ctx);
 
-            WalkContext walkContext = { frameCallback, ctx };
-            pCrashThread->StackWalkFrames(FrameCallbackAdapter, &walkContext,
-                QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
+            CrashReportWalkThread(pCrashThread, frameCallback, ctx);
             crashThreadHandled = true;
         }
     }
@@ -327,19 +340,11 @@ CrashReportEnumerateThreads(
         threadCallback(osThreadId, isCrashThread ? 1 : 0, hasException ? exceptionType : "", hresult, ctx);
         if (isCrashThread)
         {
+            CrashReportWalkThread(pThread, frameCallback, ctx);
             crashThreadHandled = true;
         }
-
-        if (pThread->PreemptiveGCDisabled() == FALSE)
-        {
-            Frame* pFrame = pThread->GetFrame();
-            if (pFrame != NULL && pFrame != FRAME_TOP)
-            {
-                WalkContext walkContext = { frameCallback, ctx };
-                pThread->StackWalkFrames(FrameCallbackAdapter, &walkContext,
-                    QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
-            }
-        }
+        // Avoid walking live non-crashing threads here. Stack walking a running
+        // thread without suspending it is unreliable and can destabilize crash reporting.
 
         pThread = ThreadStore::GetThreadList(pThread);
     }
