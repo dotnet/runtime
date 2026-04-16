@@ -1028,10 +1028,10 @@ internal static partial class Interop
                 return Ssl.SSL_TLSEXT_ERR_ALERT_FATAL;
             }
 
-            bool success = WeakGCHandle<SslAuthenticationOptions>.FromIntPtr(sslData)
+            WeakGCHandle<SslAuthenticationOptions>.FromIntPtr(sslData)
                 .TryGetTarget(out SslAuthenticationOptions? options);
-            Debug.Assert(success && options != null, "Expected to get SslAuthenticationOptions from GCHandle");
-            if (!(options.ApplicationProtocols is List<SslApplicationProtocol> protocolList))
+            Debug.Assert(options != null, "Expected to get SslAuthenticationOptions from GCHandle");
+            if (!(options?.ApplicationProtocols is List<SslApplicationProtocol> protocolList))
             {
                 return Ssl.SSL_TLSEXT_ERR_ALERT_FATAL;
             }
