@@ -871,7 +871,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         break;
 
                     case TargetArchitecture.Wasm32:
-                        _wasmOfsStack = numRegistersUsed * 8;
+                        _wasmOfsStack = numRegistersUsed * _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
                         break;
 
                     case TargetArchitecture.ARM:
@@ -1707,7 +1707,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         stackElemSize = _transitionBlock.StackElemSize(GetArgSize(), IsValueType(), IsFloatHfa());
 
                         if (IsArgPassedByRef())
-                            stackElemSize = _transitionBlock.PointerSize;
+                            stackElemSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
                     }
 
                     int endOfs = ofs + stackElemSize;
@@ -1739,8 +1739,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            // arg stack size is rounded to the pointer size on all platforms.
-            nSizeOfArgStack = ALIGN_UP(nSizeOfArgStack, _transitionBlock.PointerSize);
+            // arg stack size is rounded to the stack slot size on all platforms.
+            nSizeOfArgStack = ALIGN_UP(nSizeOfArgStack, _transitionBlock.StackElemSize(_transitionBlock.PointerSize));
 
             // Cache the result
             _nSizeOfArgStack = nSizeOfArgStack;
