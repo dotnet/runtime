@@ -104,13 +104,13 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int CountEnum(nint hEnum, uint* pulCount)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.CountEnum(hEnum, pulCount) ?? HResults.E_NOTIMPL;
 
     public int ResetEnum(nint hEnum, uint ulPos)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.ResetEnum(hEnum, ulPos) ?? HResults.E_NOTIMPL;
 
     public int EnumTypeDefs(nint* phEnum, uint* rTypeDefs, uint cMax, uint* pcTypeDefs)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumTypeDefs(phEnum, rTypeDefs, cMax, pcTypeDefs) ?? HResults.E_NOTIMPL;
 
     public int EnumInterfaceImpls(nint* phEnum, uint td, uint* rImpls, uint cMax, uint* pcImpls)
     {
@@ -143,13 +143,13 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int EnumTypeRefs(nint* phEnum, uint* rTypeRefs, uint cMax, uint* pcTypeRefs)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumTypeRefs(phEnum, rTypeRefs, cMax, pcTypeRefs) ?? HResults.E_NOTIMPL;
 
     public int EnumMembers(nint* phEnum, uint cl, uint* rMembers, uint cMax, uint* pcTokens)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumMembers(phEnum, cl, rMembers, cMax, pcTokens) ?? HResults.E_NOTIMPL;
 
     public int EnumMethods(nint* phEnum, uint cl, uint* rMethods, uint cMax, uint* pcTokens)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumMethods(phEnum, cl, rMethods, cMax, pcTokens) ?? HResults.E_NOTIMPL;
 
     public int EnumFields(nint* phEnum, uint cl, uint* rFields, uint cMax, uint* pcTokens)
     {
@@ -182,7 +182,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int EnumCustomAttributes(nint* phEnum, uint tk, uint tkType, uint* rCustomAttributes, uint cMax, uint* pcCustomAttributes)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumCustomAttributes(phEnum, tk, tkType, rCustomAttributes, cMax, pcCustomAttributes) ?? HResults.E_NOTIMPL;
 
     public int EnumGenericParams(nint* phEnum, uint tk, uint* rGenericParams, uint cMax, uint* pcGenericParams)
     {
@@ -885,25 +885,25 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
         => _legacyImport?.ResolveTypeRef(tr, riid, ppIScope, ptd) ?? HResults.E_NOTIMPL;
 
     public int EnumMembersWithName(nint* phEnum, uint cl, char* szName, uint* rMembers, uint cMax, uint* pcTokens)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumMembersWithName(phEnum, cl, szName, rMembers, cMax, pcTokens) ?? HResults.E_NOTIMPL;
 
     public int EnumMethodsWithName(nint* phEnum, uint cl, char* szName, uint* rMethods, uint cMax, uint* pcTokens)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumMethodsWithName(phEnum, cl, szName, rMethods, cMax, pcTokens) ?? HResults.E_NOTIMPL;
 
     public int EnumFieldsWithName(nint* phEnum, uint cl, char* szName, uint* rFields, uint cMax, uint* pcTokens)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumFieldsWithName(phEnum, cl, szName, rFields, cMax, pcTokens) ?? HResults.E_NOTIMPL;
 
     public int EnumParams(nint* phEnum, uint mb, uint* rParams, uint cMax, uint* pcTokens)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumParams(phEnum, mb, rParams, cMax, pcTokens) ?? HResults.E_NOTIMPL;
 
     public int EnumMemberRefs(nint* phEnum, uint tkParent, uint* rMemberRefs, uint cMax, uint* pcTokens)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumMemberRefs(phEnum, tkParent, rMemberRefs, cMax, pcTokens) ?? HResults.E_NOTIMPL;
 
     public int EnumMethodImpls(nint* phEnum, uint td, uint* rMethodBody, uint* rMethodDecl, uint cMax, uint* pcTokens)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumMethodImpls(phEnum, td, rMethodBody, rMethodDecl, cMax, pcTokens) ?? HResults.E_NOTIMPL;
 
     public int EnumPermissionSets(nint* phEnum, uint tk, uint dwActions, uint* rPermission, uint cMax, uint* pcTokens)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumPermissionSets(phEnum, tk, dwActions, rPermission, cMax, pcTokens) ?? HResults.E_NOTIMPL;
 
     public int FindMember(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmb)
         => _legacyImport?.FindMember(td, szName, pvSigBlob, cbSigBlob, pmb) ?? HResults.E_NOTIMPL;
@@ -965,10 +965,10 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int EnumProperties(nint* phEnum, uint td, uint* rProperties, uint cMax, uint* pcProperties)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumProperties(phEnum, td, rProperties, cMax, pcProperties) ?? HResults.E_NOTIMPL;
 
     public int EnumEvents(nint* phEnum, uint td, uint* rEvents, uint cMax, uint* pcEvents)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumEvents(phEnum, td, rEvents, cMax, pcEvents) ?? HResults.E_NOTIMPL;
 
     public int GetEventProps(uint ev, uint* pClass, char* szEvent, uint cchEvent, uint* pchEvent,
         uint* pdwEventFlags, uint* ptkEventType, uint* pmdAddOn, uint* pmdRemoveOn, uint* pmdFire,
@@ -976,7 +976,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
         => _legacyImport?.GetEventProps(ev, pClass, szEvent, cchEvent, pchEvent, pdwEventFlags, ptkEventType, pmdAddOn, pmdRemoveOn, pmdFire, rmdOtherMethod, cMax, pcOtherMethod) ?? HResults.E_NOTIMPL;
 
     public int EnumMethodSemantics(nint* phEnum, uint mb, uint* rEventProp, uint cMax, uint* pcEventProp)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumMethodSemantics(phEnum, mb, rEventProp, cMax, pcEventProp) ?? HResults.E_NOTIMPL;
 
     public int GetMethodSemantics(uint mb, uint tkEventProp, uint* pdwSemanticsFlags)
         => _legacyImport?.GetMethodSemantics(mb, tkEventProp, pdwSemanticsFlags) ?? HResults.E_NOTIMPL;
@@ -1074,7 +1074,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int EnumModuleRefs(nint* phEnum, uint* rModuleRefs, uint cmax, uint* pcModuleRefs)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumModuleRefs(phEnum, rModuleRefs, cmax, pcModuleRefs) ?? HResults.E_NOTIMPL;
 
     public int GetTypeSpecFromToken(uint typespec, byte** ppvSig, uint* pcbSig)
     {
@@ -1117,7 +1117,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
         => _legacyImport?.GetNameFromToken(tk, pszUtf8NamePtr) ?? HResults.E_NOTIMPL;
 
     public int EnumUnresolvedMethods(nint* phEnum, uint* rMethods, uint cMax, uint* pcTokens)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumUnresolvedMethods(phEnum, rMethods, cMax, pcTokens) ?? HResults.E_NOTIMPL;
 
     public int GetUserString(uint stk, char* szString, uint cchString, uint* pchString)
     {
@@ -1156,13 +1156,13 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
         => _legacyImport?.GetPinvokeMap(tk, pdwMappingFlags, szImportName, cchImportName, pchImportName, pmrImportDLL) ?? HResults.E_NOTIMPL;
 
     public int EnumSignatures(nint* phEnum, uint* rSignatures, uint cmax, uint* pcSignatures)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumSignatures(phEnum, rSignatures, cmax, pcSignatures) ?? HResults.E_NOTIMPL;
 
     public int EnumTypeSpecs(nint* phEnum, uint* rTypeSpecs, uint cmax, uint* pcTypeSpecs)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumTypeSpecs(phEnum, rTypeSpecs, cmax, pcTypeSpecs) ?? HResults.E_NOTIMPL;
 
     public int EnumUserStrings(nint* phEnum, uint* rStrings, uint cmax, uint* pcStrings)
-        => HResults.E_NOTIMPL;
+        => _legacyImport?.EnumUserStrings(phEnum, rStrings, cmax, pcStrings) ?? HResults.E_NOTIMPL;
 
     public int GetParamForMethodIndex(uint md, uint ulParamSeq, uint* ppd)
     {
@@ -1327,7 +1327,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
         => _legacyImport2?.GetMethodSpecProps(mi, tkParent, ppvSigBlob, pcbSigBlob) ?? HResults.E_NOTIMPL;
 
     public int EnumGenericParamConstraints(nint* phEnum, uint tk, uint* rGenericParamConstraints, uint cMax, uint* pcGenericParamConstraints)
-        => HResults.E_NOTIMPL; // Enum method — HCORENUM handle incompatibility
+        => _legacyImport2?.EnumGenericParamConstraints(phEnum, tk, rGenericParamConstraints, cMax, pcGenericParamConstraints) ?? HResults.E_NOTIMPL;
 
     public int GetGenericParamConstraintProps(uint gpc, uint* ptGenericParam, uint* ptkConstraintType)
         => _legacyImport2?.GetGenericParamConstraintProps(gpc, ptGenericParam, ptkConstraintType) ?? HResults.E_NOTIMPL;
@@ -1339,6 +1339,6 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
         => _legacyImport2?.GetVersionString(pwzBuf, ccBufSize, pccBufSize) ?? HResults.E_NOTIMPL;
 
     public int EnumMethodSpecs(nint* phEnum, uint tk, uint* rMethodSpecs, uint cMax, uint* pcMethodSpecs)
-        => HResults.E_NOTIMPL; // Enum method — HCORENUM handle incompatibility
+        => _legacyImport2?.EnumMethodSpecs(phEnum, tk, rMethodSpecs, cMax, pcMethodSpecs) ?? HResults.E_NOTIMPL;
 
 }
