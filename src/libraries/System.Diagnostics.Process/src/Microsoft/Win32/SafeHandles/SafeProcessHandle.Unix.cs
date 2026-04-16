@@ -8,11 +8,13 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace Microsoft.Win32.SafeHandles
@@ -28,12 +30,14 @@ namespace Microsoft.Win32.SafeHandles
 
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
+        private ProcessWaitState? _waitState;
 
         private SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
             ProcessId = processId;
+            _waitState = waitStateHolder._state;
 
-            _handle = waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
+            _handle = _waitState.EnsureExitedEvent().GetSafeWaitHandle();
             _handle.DangerousAddRef(ref _releaseRef);
             SetHandle(_handle.DangerousGetHandle());
         }
@@ -87,6 +91,163 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return true;
+        }
+
+        private ProcessExitStatus WaitForExitCore()
+        {
+            ProcessWaitState waitState = GetWaitState();
+            waitState.WaitForExit(Timeout.Infinite);
+
+            return CreateExitStatus(waitState, canceled: false);
+        }
+
+        private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            ProcessWaitState waitState = GetWaitState();
+            if (!waitState.WaitForExit(milliseconds))
+            {
+                exitStatus = null;
+                return false;
+            }
+
+            exitStatus = CreateExitStatus(waitState, canceled: false);
+            return true;
+        }
+
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
+        {
+            ProcessWaitState waitState = GetWaitState();
+            bool wasKilled = false;
+
+            if (!waitState.WaitForExit(milliseconds))
+            {
+                wasKilled = KillCore();
+                waitState.WaitForExit(Timeout.Infinite);
+            }
+
+            return CreateExitStatus(waitState, canceled: wasKilled);
+        }
+
+        private async Task<ProcessExitStatus> WaitForExitAsyncCore(CancellationToken cancellationToken)
+        {
+            ProcessWaitState waitState = GetWaitState();
+            ManualResetEvent exitedEvent = waitState.EnsureExitedEvent();
+
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            CancellationTokenRegistration ctr = default;
+
+            try
+            {
+                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    exitedEvent,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    ctr = cancellationToken.UnsafeRegister(
+                        static state =>
+                        {
+                            var (taskSource, token) = ((TaskCompletionSource<bool> taskSource, CancellationToken token))state!;
+                            taskSource.TrySetCanceled(token);
+                        },
+                        (tcs, cancellationToken));
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                ctr.Dispose();
+                registeredWaitHandle?.Unregister(null);
+            }
+
+            return CreateExitStatus(waitState, canceled: false);
+        }
+
+        private async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsyncCore(CancellationToken cancellationToken)
+        {
+            ProcessWaitState waitState = GetWaitState();
+            ManualResetEvent exitedEvent = waitState.EnsureExitedEvent();
+
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            CancellationTokenRegistration ctr = default;
+            StrongBox<bool> wasKilledBox = new(false);
+
+            try
+            {
+                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    exitedEvent,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    ctr = cancellationToken.UnsafeRegister(
+                        static state =>
+                        {
+                            var (handle, wasCancelled) = ((SafeProcessHandle, StrongBox<bool>))state!;
+                            wasCancelled.Value = handle.KillCore();
+                        },
+                        (this, wasKilledBox));
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                ctr.Dispose();
+                registeredWaitHandle?.Unregister(null);
+            }
+
+            return CreateExitStatus(waitState, canceled: wasKilledBox.Value);
+        }
+
+        /// <summary>
+        /// Terminates the process by sending SIGKILL.
+        /// </summary>
+        /// <returns>true if the process was terminated; false if it had already exited.</returns>
+        internal bool KillCore()
+        {
+            int signalNumber = Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL);
+            int killResult = Interop.Sys.Kill(ProcessId, signalNumber);
+            if (killResult == 0)
+            {
+                return true;
+            }
+
+            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+            if (errorInfo.Error == Interop.Error.ESRCH)
+            {
+                return false; // Process already exited
+            }
+
+            throw new Win32Exception(errorInfo.RawErrno);
+        }
+
+        private ProcessWaitState GetWaitState()
+        {
+            if (_waitState is null)
+            {
+                throw new InvalidOperationException(SR.InvalidProcessHandle);
+            }
+
+            return _waitState;
+        }
+
+        private static ProcessExitStatus CreateExitStatus(ProcessWaitState waitState, bool canceled)
+        {
+            waitState.GetExited(out int? exitCode, refresh: false);
+            int? rawSignal = waitState.TerminatingSignal;
+            PosixSignal? signal = rawSignal.HasValue ? (PosixSignal)rawSignal.Value : null;
+
+            return new ProcessExitStatus(exitCode ?? 0, canceled, signal);
         }
 
         private delegate SafeProcessHandle StartWithShellExecuteDelegate(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder);

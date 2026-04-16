@@ -210,6 +210,8 @@ namespace System.Diagnostics
         private bool _exited;
         /// <summary>If the process exited, it's exit code, or null if we were unable to determine one.</summary>
         private int? _exitCode;
+        /// <summary>If the process was terminated by a signal, the raw signal number, or null if it was not.</summary>
+        private int? _terminatingSignal;
         /// <summary>
         /// The approximate time the process exited.  We do not have the ability to know exact time a process
         /// exited, so we approximate it by storing the time that we discovered it exited.
@@ -340,6 +342,18 @@ namespace System.Diagnostics
                 // and if we have, what the exit code is (if we were able to find out).
                 exitCode = _exitCode;
                 return _exited;
+            }
+        }
+
+        /// <summary>Gets the terminating signal if the process was killed by a signal.</summary>
+        internal int? TerminatingSignal
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _terminatingSignal;
+                }
             }
         }
 
@@ -539,13 +553,14 @@ namespace System.Diagnostics
             }
         }
 
-        private void ChildReaped(int exitCode, bool configureConsole)
+        private void ChildReaped(int exitCode, int terminatingSignal, bool configureConsole)
         {
             lock (_gate)
             {
                 Debug.Assert(!_exited);
 
                 _exitCode = exitCode;
+                _terminatingSignal = terminatingSignal != 0 ? terminatingSignal : null;
 
                 if (_usesTerminal)
                 {
@@ -568,11 +583,12 @@ namespace System.Diagnostics
 
                 // Try to get the state of the child process
                 int exitCode;
-                int waitResult = Interop.Sys.WaitPidExitedNoHang(_processId, out exitCode);
+                int terminatingSignal;
+                int waitResult = Interop.Sys.WaitPidExitedNoHang(_processId, out exitCode, out terminatingSignal);
 
                 if (waitResult == _processId)
                 {
-                    ChildReaped(exitCode, configureConsole);
+                    ChildReaped(exitCode, terminatingSignal, configureConsole);
                     return true;
                 }
                 else if (waitResult == 0)
@@ -673,7 +689,8 @@ namespace System.Diagnostics
                     do
                     {
                         int exitCode;
-                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out exitCode);
+                        int terminatingSignal;
+                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out exitCode, out terminatingSignal);
                         if (pid <= 0)
                         {
                             break;
@@ -682,7 +699,7 @@ namespace System.Diagnostics
                         // Check if the process is a child that has just terminated.
                         if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
                         {
-                            pws.ChildReaped(exitCode, configureConsole);
+                            pws.ChildReaped(exitCode, terminatingSignal, configureConsole);
                             pws.ReleaseRef();
                         }
                     } while (true);

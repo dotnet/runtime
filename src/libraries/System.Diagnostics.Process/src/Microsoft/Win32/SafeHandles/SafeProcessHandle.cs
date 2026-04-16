@@ -13,10 +13,13 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -169,12 +172,122 @@ namespace Microsoft.Win32.SafeHandles
             return SignalCore(signal);
         }
 
+        /// <summary>
+        /// Waits indefinitely for the process to exit.
+        /// </summary>
+        /// <returns>The exit status of the process.</returns>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public ProcessExitStatus WaitForExit()
+        {
+            Validate();
+
+            return WaitForExitCore();
+        }
+
+        /// <summary>
+        /// Waits for the process to exit within the specified timeout.
+        /// </summary>
+        /// <param name="timeout">The maximum time to wait for the process to exit.</param>
+        /// <param name="exitStatus">When this method returns <see langword="true"/>, contains the exit status of the process.</param>
+        /// <returns><see langword="true"/> if the process exited before the timeout; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan"/>,
+        /// or is greater than <see cref="int.MaxValue"/> milliseconds.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public bool TryWaitForExit(TimeSpan timeout, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            Validate();
+
+            return TryWaitForExitCore(ToTimeoutInMilliseconds(timeout), out exitStatus);
+        }
+
+        /// <summary>
+        /// Waits for the process to exit within the specified timeout.
+        /// If the process does not exit before the timeout, it is killed and then waited for exit.
+        /// </summary>
+        /// <param name="timeout">The maximum time to wait for the process to exit before killing it.</param>
+        /// <returns>The exit status of the process. If the process was killed due to timeout,
+        /// <see cref="ProcessExitStatus.Canceled"/> will be <see langword="true"/>.</returns>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan"/>,
+        /// or is greater than <see cref="int.MaxValue"/> milliseconds.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public ProcessExitStatus WaitForExitOrKillOnTimeout(TimeSpan timeout)
+        {
+            Validate();
+
+            return WaitForExitOrKillOnTimeoutCore(ToTimeoutInMilliseconds(timeout));
+        }
+
+        /// <summary>
+        /// Waits asynchronously for the process to exit.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the wait operation.</param>
+        /// <returns>A task that represents the asynchronous wait operation. The task result contains the exit status of the process.</returns>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled.</exception>
+        /// <remarks>
+        /// When the cancellation token is canceled, this method stops waiting and throws <see cref="OperationCanceledException"/>.
+        /// The process is NOT killed and continues running. If you want to kill the process on cancellation,
+        /// use <see cref="WaitForExitOrKillOnCancellationAsync"/> instead.
+        /// </remarks>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public Task<ProcessExitStatus> WaitForExitAsync(CancellationToken cancellationToken = default)
+        {
+            Validate();
+
+            return WaitForExitAsyncCore(cancellationToken);
+        }
+
+        /// <summary>
+        /// Waits asynchronously for the process to exit.
+        /// When cancelled, kills the process and then waits for it to exit.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the wait operation and kill the process.</param>
+        /// <returns>A task that represents the asynchronous wait operation. The task result contains the exit status of the process.
+        /// If the process was killed due to cancellation, <see cref="ProcessExitStatus.Canceled"/> will be <see langword="true"/>.</returns>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <remarks>
+        /// When the cancellation token is canceled, this method kills the process and waits for it to exit.
+        /// The returned exit status will have the <see cref="ProcessExitStatus.Canceled"/> property set to <see langword="true"/> if the process was killed.
+        /// If the cancellation token cannot be canceled (e.g., <see cref="CancellationToken.None"/>), this method behaves identically
+        /// to <see cref="WaitForExitAsync"/> and will wait indefinitely for the process to exit.
+        /// </remarks>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(CancellationToken cancellationToken)
+        {
+            Validate();
+
+            return WaitForExitOrKillOnCancellationAsyncCore(cancellationToken);
+        }
+
         private void Validate()
         {
             if (IsInvalid)
             {
                 throw new InvalidOperationException(SR.InvalidProcessHandle);
             }
+        }
+
+        internal static int ToTimeoutInMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
+
+            return (int)totalMilliseconds;
         }
     }
 }

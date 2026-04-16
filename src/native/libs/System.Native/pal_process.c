@@ -929,9 +929,10 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
     return result;
 }
 
-int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
+int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal)
 {
     assert(exitCode != NULL);
+    assert(terminatingSignal != NULL);
 
     int32_t result;
     int status;
@@ -942,11 +943,13 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
         {
             // the child terminated normally.
             *exitCode = WEXITSTATUS(status);
+            *terminatingSignal = 0;
         }
         else if (WIFSIGNALED(status))
         {
             // child process was terminated by a signal.
             *exitCode = 128 + WTERMSIG(status);
+            *terminatingSignal = WTERMSIG(status);
         }
         else
         {

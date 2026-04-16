@@ -5,10 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -623,6 +626,153 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
+
+        private ProcessExitStatus WaitForExitCore()
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            processWaitHandle.WaitOne(Timeout.Infinite);
+
+            return new ProcessExitStatus(GetExitCode(), false);
+        }
+
+        private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            if (!processWaitHandle.WaitOne(milliseconds))
+            {
+                exitStatus = null;
+                return false;
+            }
+
+            exitStatus = new ProcessExitStatus(GetExitCode(), false);
+            return true;
+        }
+
+        private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
+        {
+            bool wasKilledOnTimeout = false;
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            if (!processWaitHandle.WaitOne(milliseconds))
+            {
+                wasKilledOnTimeout = KillCore();
+                processWaitHandle.WaitOne(Timeout.Infinite);
+            }
+
+            return new ProcessExitStatus(GetExitCode(), wasKilledOnTimeout);
+        }
+
+        private async Task<ProcessExitStatus> WaitForExitAsyncCore(CancellationToken cancellationToken)
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            CancellationTokenRegistration ctr = default;
+
+            try
+            {
+                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    processWaitHandle,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    ctr = cancellationToken.UnsafeRegister(
+                        static state =>
+                        {
+                            var (taskSource, token) = ((TaskCompletionSource<bool> taskSource, CancellationToken token))state!;
+                            taskSource.TrySetCanceled(token);
+                        },
+                        (tcs, cancellationToken));
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                ctr.Dispose();
+                registeredWaitHandle?.Unregister(null);
+            }
+
+            return new ProcessExitStatus(GetExitCode(), false);
+        }
+
+        private async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsyncCore(CancellationToken cancellationToken)
+        {
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RegisteredWaitHandle? registeredWaitHandle = null;
+            CancellationTokenRegistration ctr = default;
+            StrongBox<bool> wasKilledBox = new(false);
+
+            try
+            {
+                registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(
+                    processWaitHandle,
+                    static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                    tcs,
+                    Timeout.Infinite,
+                    executeOnlyOnce: true);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    ctr = cancellationToken.UnsafeRegister(
+                        static state =>
+                        {
+                            var (handle, wasCancelled) = ((SafeProcessHandle, StrongBox<bool>))state!;
+                            wasCancelled.Value = handle.KillCore();
+                        },
+                        (this, wasKilledBox));
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                ctr.Dispose();
+                registeredWaitHandle?.Unregister(null);
+            }
+
+            return new ProcessExitStatus(GetExitCode(), wasKilledBox.Value);
+        }
+
+        /// <summary>
+        /// Terminates the process.
+        /// </summary>
+        /// <returns>true if the process was terminated; false if it had already exited.</returns>
+        internal bool KillCore()
+        {
+            if (Interop.Kernel32.TerminateProcess(this, -1))
+            {
+                return true;
+            }
+
+            int error = Marshal.GetLastPInvokeError();
+
+            // If the process has already exited, TerminateProcess fails with ERROR_ACCESS_DENIED.
+            if (error == Interop.Errors.ERROR_ACCESS_DENIED &&
+                Interop.Kernel32.GetExitCodeProcess(this, out int exitCode) &&
+                exitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
+            {
+                return false;
+            }
+
+            throw new Win32Exception(error);
+        }
+
+        private int GetExitCode()
+        {
+            if (!Interop.Kernel32.GetExitCodeProcess(this, out int exitCode))
+            {
+                throw new Win32Exception();
+            }
+
+            return exitCode;
+        }
 
         private bool SignalCore(PosixSignal signal)
         {
