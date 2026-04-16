@@ -161,6 +161,7 @@ PTR_uint8_t RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID Co
 }
 
 GPTR_IMPL_INIT(RuntimeInstance, g_pTheRuntimeInstance, NULL);
+GPTR_IMPL_INIT(ThreadStore, g_pThreadStore, NULL);
 
 // WARNING: This method is called by suspension while one thread is interrupted
 //          in a random location, possibly holding random locks.
@@ -319,6 +320,7 @@ bool RuntimeInstance::Initialize(HANDLE hPalInstance)
 
     ASSERT_MSG(g_pTheRuntimeInstance == NULL, "multi-instances are not supported");
     g_pTheRuntimeInstance = pRuntimeInstance;
+    g_pThreadStore = pThreadStore;
 
     return true;
 }

@@ -14,9 +14,10 @@ namespace ILCompiler
 {
     /// <summary>
     /// Compilation root provider that emits managed type layout descriptors for the cDAC.
-    /// Types annotated with [CdacType] will have their [CdacField]-annotated field offsets
-    /// computed at compile time and embedded in the final binary as a ContractDescriptor
-    /// that the cDAC reader merges as a sub-descriptor.
+    /// Types in the system module (System.Private.CoreLib) annotated with [CdacType] will
+    /// have their [CdacField]-annotated field offsets computed at compile time and embedded
+    /// in the final binary as a ContractDescriptor that the cDAC reader merges as a
+    /// sub-descriptor.
     /// </summary>
     /// <remarks>
     /// The descriptor is emitted as a symbol named "DotNetManagedContractDescriptor"

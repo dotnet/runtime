@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+GPTR_DECL(ThreadStore, g_pThreadStore);
+
 // ILC emits a ContractDescriptor named "DotNetManagedContractDescriptor" with
 // managed type layouts. We take its address so datadescriptor.inc can reference
 // it as a sub-descriptor via CDAC_GLOBAL_SUB_DESCRIPTOR.

@@ -15,7 +15,6 @@ include(${CLR_DIR}/clrdatadescriptors.cmake)
 add_library(nativeaot_descriptor_interface INTERFACE)
 target_include_directories(nativeaot_descriptor_interface INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR})
-add_dependencies(nativeaot_descriptor_interface Runtime.WorkstationGC)
 generate_data_descriptors(
     LIBRARY_NAME nativeaot_cdac_contract_descriptor
     CONTRACT_NAME "DotNetRuntimeContractDescriptor"
@@ -30,7 +29,6 @@ add_library(nativeaot_gc_wks_descriptor_interface INTERFACE)
 target_include_directories(nativeaot_gc_wks_descriptor_interface INTERFACE
     ${GC_DESCRIPTOR_DIR}
     ${GC_DIR})
-add_dependencies(nativeaot_gc_wks_descriptor_interface Runtime.WorkstationGC)
 generate_data_descriptors(
     LIBRARY_NAME nativeaot_gc_wks_descriptor
     CONTRACT_NAME "GCContractDescriptorWKS"
@@ -40,7 +38,6 @@ add_library(nativeaot_gc_svr_descriptor_interface INTERFACE)
 target_include_directories(nativeaot_gc_svr_descriptor_interface INTERFACE
     ${GC_DESCRIPTOR_DIR}
     ${GC_DIR})
-add_dependencies(nativeaot_gc_svr_descriptor_interface Runtime.WorkstationGC)
 target_compile_definitions(nativeaot_gc_svr_descriptor_interface INTERFACE -DSERVER_GC)
 generate_data_descriptors(
     LIBRARY_NAME nativeaot_gc_svr_descriptor

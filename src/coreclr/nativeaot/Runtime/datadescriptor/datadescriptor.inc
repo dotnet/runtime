@@ -84,15 +84,6 @@ CDAC_TYPE_FIELD(ExInfo, T_POINTER, PreviousNestedInfo, offsetof(ExInfo, m_pPrevE
 CDAC_TYPE_FIELD(ExInfo, T_POINTER, ThrownObject, offsetof(ExInfo, m_exception))
 CDAC_TYPE_END(ExInfo)
 
-// ========================
-// RuntimeInstance
-// ========================
-
-CDAC_TYPE_BEGIN(RuntimeInstance)
-CDAC_TYPE_INDETERMINATE(RuntimeInstance)
-CDAC_TYPE_FIELD(RuntimeInstance, T_POINTER, ThreadStore, cdac_data<RuntimeInstance>::ThreadStore)
-CDAC_TYPE_END(RuntimeInstance)
-
 CDAC_TYPES_END()
 
 // ========================
@@ -101,7 +92,7 @@ CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
 
-CDAC_GLOBAL_POINTER(RuntimeInstance, &g_pTheRuntimeInstance)
+CDAC_GLOBAL_POINTER(ThreadStore, &g_pThreadStore)
 
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &g_pFreeObjectEEType)
 
