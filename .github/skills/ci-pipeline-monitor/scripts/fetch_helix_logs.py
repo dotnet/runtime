@@ -86,8 +86,8 @@ def make_log_filename(pipeline_name, test_name, console_log_url):
     url_hash = hashlib.sha256(console_log_url.encode()).hexdigest()[:8]
     safe = re.sub(r'[^\w\-.]', '_', f"{pipeline_name}__{test_name}")
     # Leave room for _<hash>.log suffix (1 + 8 + 4 = 13 chars)
-    if len(safe) > 187:
-        safe = safe[:187]
+    if len(safe) > 100:
+        safe = safe[:100]
     return f"{safe}_{url_hash}.log"
 
 
