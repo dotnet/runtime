@@ -79,6 +79,7 @@ WasmValueType TypeToWasmValueType(var_types type)
         WasmValueType::Invalid, // TYP_ULONG,
         WasmValueType::F32,     // TYP_FLOAT,
         WasmValueType::F64,     // TYP_DOUBLE,
+        WasmValueType::Invalid, // TYP_HALF,
         WasmValueType::I,       // TYP_REF,
         WasmValueType::I,       // TYP_BYREF,
         WasmValueType::Invalid, // TYP_STRUCT
@@ -119,6 +120,7 @@ WasmValueType ActualTypeToWasmValueType(var_types type)
         WasmValueType::Invalid, // TYP_ULONG,
         WasmValueType::F32,     // TYP_FLOAT,
         WasmValueType::F64,     // TYP_DOUBLE,
+        WasmValueType::Invalid, // TYP_HALF,
         WasmValueType::I,       // TYP_REF,
         WasmValueType::I,       // TYP_BYREF,
         WasmValueType::Invalid, // TYP_STRUCT
