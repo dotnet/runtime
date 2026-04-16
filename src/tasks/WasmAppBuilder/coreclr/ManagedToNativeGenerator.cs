@@ -31,6 +31,12 @@ public class ManagedToNativeGenerator : Task
     public string? InterpToNativeOutputPath { get; set; }
     public string? CacheFilePath { get; set; }
 
+    // Unused, but needed to match Mono signatures
+    public string? RuntimeIcallTableFile { get; set; }
+
+    // Unused, but needed to match Mono signatures
+    public string? IcallOutputPath { get; set; }
+
     public bool IsLibraryMode { get; set; }
 
     [Output]
