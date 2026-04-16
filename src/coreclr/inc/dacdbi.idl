@@ -350,7 +350,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT IsExceptionObject([in] VMPTR_Object vmObject, [out] BOOL * pResult);
     HRESULT GetStackFramesFromException([in] VMPTR_Object vmObject, [out] DacDbiArrayList_DacExceptionCallStackData * pDacStackFrames);
     HRESULT IsRcw([in] VMPTR_Object vmObject, [out] BOOL * pResult);
-    HRESULT GetRcwCachedInterfaceTypes([in] VMPTR_Object vmObject, [in] VMPTR_AppDomain vmAppDomain, [in] BOOL bIInspectableOnly, [out] DacDbiArrayList_ExpandedTypeData * pDacInterfaces);
     HRESULT GetRcwCachedInterfacePointers([in] VMPTR_Object vmObject, [in] BOOL bIInspectableOnly, [out] DacDbiArrayList_CORDB_ADDRESS * pDacItfPtrs);
     HRESULT GetCachedWinRTTypesForIIDs([in] VMPTR_AppDomain vmAppDomain, [in] DacDbiArrayList_GUID * pIids, [out] DacDbiArrayList_ExpandedTypeData * pTypes);
     HRESULT GetCachedWinRTTypes([in] VMPTR_AppDomain vmAppDomain, [out] DacDbiArrayList_GUID * piids, [out] DacDbiArrayList_ExpandedTypeData * pTypes);
@@ -371,11 +370,6 @@ interface IDacDbiInterface : IUnknown
     // Object Handles
     HRESULT GetObjectFromRefPtr([in] CORDB_ADDRESS ptr, [out] VMPTR_Object * pRetVal);
     HRESULT GetObject([in] CORDB_ADDRESS ptr, [out] VMPTR_Object * pRetVal);
-
-    // NGEN
-    HRESULT EnableNGENPolicy([in] CorDebugNGENPolicy ePolicy);
-    HRESULT SetNGENCompilerFlags([in] DWORD dwFlags);
-    HRESULT GetNGENCompilerFlags([out] DWORD * pdwFlags);
 
     // VM Object Handle
     HRESULT GetVmObjectHandle([in] CORDB_ADDRESS handleAddress, [out] VMPTR_OBJECTHANDLE * pRetVal);
@@ -433,13 +427,6 @@ interface IDacDbiInterface : IUnknown
     // PE File
     HRESULT GetPEFileMDInternalRW([in] VMPTR_PEAssembly vmPEAssembly, [out] TADDR * pAddrMDInternalRW);
 
-    // ReJit
-    HRESULT GetReJitInfo([in] VMPTR_Module vmModule, [in] mdMethodDef methodTk, [out] VMPTR_ReJitInfo * pReJitInfo);
-    // Note: Named GetReJitInfoByAddress in IDL because COM does not support overloads.
-    // Corresponds to the second GetReJitInfo overload in dacdbiinterface.h.
-    HRESULT GetReJitInfoByAddress([in] VMPTR_MethodDesc vmMethod, [in] CORDB_ADDRESS codeStartAddress, [out] VMPTR_ReJitInfo * pReJitInfo);
-    HRESULT GetSharedReJitInfo([in] VMPTR_ReJitInfo vmReJitInfo, [out] VMPTR_SharedReJitInfo * pSharedReJitInfo);
-    HRESULT GetSharedReJitInfoData([in] VMPTR_SharedReJitInfo sharedReJitInfo, [out] struct DacSharedReJitInfo * pData);
     HRESULT AreOptimizationsDisabled([in] VMPTR_Module vmModule, [in] mdMethodDef methodTk, [out] BOOL * pOptimizationsDisabled);
 
     // Defines
