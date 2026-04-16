@@ -25,3 +25,10 @@
 
 #include <stdint.h>
 #include <stddef.h>
+
+// ILC emits a ContractDescriptor named "DotNetManagedContractDescriptor" with
+// managed type layouts. We take its address so datadescriptor.inc can reference
+// it as a sub-descriptor via CDAC_GLOBAL_SUB_DESCRIPTOR.
+struct ContractDescriptor;
+extern "C" ContractDescriptor DotNetManagedContractDescriptor;
+static const void* g_pManagedContractDescriptor = &DotNetManagedContractDescriptor;

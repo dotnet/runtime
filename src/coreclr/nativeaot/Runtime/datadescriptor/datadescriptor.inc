@@ -133,6 +133,12 @@ CDAC_GLOBAL_CONTRACT(Thread, 1001)
 CDAC_GLOBAL_CONTRACT(Exception, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1001)
 
+// Managed type sub-descriptor: ILC emits a ContractDescriptor with managed type layouts
+// that the cDAC reader merges as a sub-descriptor. This provides field offsets for managed
+// types (e.g., ConditionalWeakTable internals, IdDispenser) that are not exposed through
+// native C++ data descriptors.
+CDAC_GLOBAL_SUB_DESCRIPTOR(ManagedTypes, &g_pManagedContractDescriptor)
+
 // GC sub-descriptor: the GC populates gc_descriptor during GC_Initialize.
 // It is important for subdescriptor pointers to be the last pointers.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
