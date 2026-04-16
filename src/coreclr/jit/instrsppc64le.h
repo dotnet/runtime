@@ -33,9 +33,11 @@ INST(push,        "push",         0,      IUM_RD, 	0x0030FE)
 INST(pop,         "pop",          0,      IUM_WR, 	0x00008E)
 INST(blr,         "blr",          0,      IF_SN_0A,     0x4E800020)
 INST(mflr,        "mflr",         0,      XFX_FORM,     0x7C0802A6)
+INST(mtlr,        "mtlr",         0,      XFX_FORM,     0x7C0803A6)
 INST(bctr,        "bctr",         0,      XL_FORM,      0x4E800420)  // Branch to Count Register
 INST(bctrl,       "bctrl",        0,      XL_FORM,      0x4E800421)  // Branch to Count Register and Link
 INST(bl,          "bl",           0,      I_FORM,       0x48000001)  // Branch and Link
+INST(addi,        "addi",         0,      D_FORM,       0x38000000)
 INST(li,    	  "li",    	  0, 	  D_FORM,   	0x38000000)  // addi with RA=0
 INST(lis,   	  "lis",   	  0, 	  D_FORM,   	0x3C000000)  // addis with RA=0
 INST(ori,   	  "ori",   	  0, 	  D_FORM,   	0x60000000)
@@ -51,6 +53,7 @@ INST(lha,	  "lha",	  0,	  D_FORM,	0xA8000000)
 INST(lwz,	  "lwz",	  0,	  D_FORM,	0x80000000)
 INST(lwa,	  "lwa",	  0,	  DS_FORM,	0xE8000000)
 INST(ld,	  "ld",		  0,	  DS_FORM,	0xE8000000)
+INST(lfd,       "lfd",          0,      D_FORM,       0xC8000000)
 INST(stfd,      "stfd",         0,      D_FORM,       0xD8000000)
 INST(stb,	  "stb",	  0,	  D_FORM,	0x98000000)
 INST(sth,	  "sth",	  0,	  D_FORM,	0xB0000000)

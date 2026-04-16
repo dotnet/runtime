@@ -1372,8 +1372,81 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
 
 void CodeGen::genFnEpilog(BasicBlock* block)
 {
-    //_ASSERTE("!NYI");
-    GetEmitter()->emitIns(INS_blr);
+    assert(block != nullptr);
+
+    regMaskTP regsToRestoreMask = regSet.rsGetModifiedCalleeSavedRegsMask();
+
+    int totalFrameSize = genTotalFrameSize();
+    int localFrameSize = compiler->compLclFrameSize + 96;
+
+    if (compiler->lvaPSPSym != BAD_VAR_NUM)
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+
+    if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+
+    constexpr int LR_save_offset = 16;
+    constexpr int R2_save_offset = 24;
+
+    emitter* emit = GetEmitter();
+    int      offset;
+
+    regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
+    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & RBM_INT_CALLEE_SAVED;
+
+    offset = localFrameSize;
+    for (int regNum = REG_R14; regNum <= REG_R31; regNum++)
+    {
+        regNumber reg     = (regNumber)regNum;
+        regMaskTP regMask = genRegMask(reg);
+
+        if ((maskRestoreRegsInt & regMask) != RBM_NONE)
+        {
+            offset += REGSIZE_BYTES;
+        }
+    }
+
+    for (int regNum = REG_F31; regNum >= REG_F14; regNum--)
+    {
+        regNumber reg     = (regNumber)regNum;
+        regMaskTP regMask = genRegMask(reg);
+
+        if ((maskRestoreRegsFloat & regMask) != RBM_NONE)
+        {
+            offset -= REGSIZE_BYTES;
+            emit->emitIns_R_R_I(INS_lfd, EA_8BYTE, reg, REG_SPBASE, offset);
+            compiler->unwindSaveReg(reg, offset);
+        }
+    }
+
+    for (int regNum = REG_R31; regNum >= REG_R14; regNum--)
+    {
+        regNumber reg     = (regNumber)regNum;
+        regMaskTP regMask = genRegMask(reg);
+
+        if ((maskRestoreRegsInt & regMask) != RBM_NONE)
+        {
+            offset -= REGSIZE_BYTES;
+            emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, reg, REG_SPBASE, offset);
+            compiler->unwindSaveReg(reg, offset);
+        }
+    }
+
+    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
+    compiler->unwindAllocStack(totalFrameSize);
+
+    emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_R0, REG_SPBASE, LR_save_offset);
+    compiler->unwindSaveReg(REG_R0, LR_save_offset);
+
+    emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_R2, REG_SPBASE, R2_save_offset);
+    compiler->unwindSaveReg(REG_R2, R2_save_offset);
+
+    emit->emitIns_R(INS_mtlr, EA_PTRSIZE, REG_R0);
+    emit->emitIns(INS_blr);
 }
 
 //------------------------------------------------------------------------
