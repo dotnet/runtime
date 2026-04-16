@@ -26,34 +26,6 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         _legacyImport2 = legacyImport as IMetaDataImport2;
     }
 
-    private static int CatchHR(Func<int> action)
-    {
-        try
-        {
-            return action();
-        }
-        catch (BadImageFormatException)
-        {
-            return HResults.COR_E_BADIMAGEFORMAT;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            return HResults.E_INVALIDARG;
-        }
-        catch (InvalidOperationException)
-        {
-            return HResults.E_FAIL;
-        }
-        catch (Exception ex) when (ex.HResult < 0)
-        {
-            return ex.HResult;
-        }
-        catch
-        {
-            return HResults.E_FAIL;
-        }
-    }
-
     // Helper: get the full name of a type definition (Namespace.Name).
     // Only called when _reader is known non-null (after null guard).
     private string GetTypeDefFullName(TypeDefinition typeDef)
@@ -145,18 +117,45 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.EnumInterfaceImpls(phEnum, td, rImpls, cMax, pcImpls) ?? HResults.E_NOTIMPL;
 
-        return CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             if (phEnum is not null && *phEnum != 0)
-                return FillEnum(phEnum, GetEnum(*phEnum)!.Tokens, rImpls, cMax, pcImpls);
+            {
+                hr = FillEnum(phEnum, GetEnum(*phEnum)!.Tokens, rImpls, cMax, pcImpls);
+            }
+            else
+            {
+                TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(td & 0x00FFFFFF));
+                TypeDefinition typeDef = _reader!.GetTypeDefinition(typeHandle);
+                List<uint> tokens = new();
+                foreach (InterfaceImplementationHandle h in typeDef.GetInterfaceImplementations())
+                    tokens.Add((uint)MetadataTokens.GetToken(h));
+                hr = FillEnum(phEnum, tokens, rImpls, cMax, pcImpls);
+            }
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
-            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(td & 0x00FFFFFF));
-            TypeDefinition typeDef = _reader!.GetTypeDefinition(typeHandle);
-            List<uint> tokens = new();
-            foreach (InterfaceImplementationHandle h in typeDef.GetInterfaceImplementations())
-                tokens.Add((uint)MetadataTokens.GetToken(h));
-            return FillEnum(phEnum, tokens, rImpls, cMax, pcImpls);
-        });
+        return hr;
     }
 
     public int EnumTypeRefs(nint* phEnum, uint* rTypeRefs, uint cMax, uint* pcTypeRefs)
@@ -173,18 +172,45 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.EnumFields(phEnum, cl, rFields, cMax, pcTokens) ?? HResults.E_NOTIMPL;
 
-        return CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             if (phEnum is not null && *phEnum != 0)
-                return FillEnum(phEnum, GetEnum(*phEnum)!.Tokens, rFields, cMax, pcTokens);
+            {
+                hr = FillEnum(phEnum, GetEnum(*phEnum)!.Tokens, rFields, cMax, pcTokens);
+            }
+            else
+            {
+                TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(cl & 0x00FFFFFF));
+                TypeDefinition typeDef = _reader!.GetTypeDefinition(typeHandle);
+                List<uint> tokens = new();
+                foreach (FieldDefinitionHandle h in typeDef.GetFields())
+                    tokens.Add((uint)MetadataTokens.GetToken(h));
+                hr = FillEnum(phEnum, tokens, rFields, cMax, pcTokens);
+            }
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
-            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(cl & 0x00FFFFFF));
-            TypeDefinition typeDef = _reader!.GetTypeDefinition(typeHandle);
-            List<uint> tokens = new();
-            foreach (FieldDefinitionHandle h in typeDef.GetFields())
-                tokens.Add((uint)MetadataTokens.GetToken(h));
-            return FillEnum(phEnum, tokens, rFields, cMax, pcTokens);
-        });
+        return hr;
     }
 
     public int EnumCustomAttributes(nint* phEnum, uint tk, uint tkType, uint* rCustomAttributes, uint cMax, uint* pcCustomAttributes)
@@ -195,26 +221,57 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport2?.EnumGenericParams(phEnum, tk, rGenericParams, cMax, pcGenericParams) ?? HResults.E_NOTIMPL;
 
-        return CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             if (phEnum is not null && *phEnum != 0)
-                return FillEnum(phEnum, GetEnum(*phEnum)!.Tokens, rGenericParams, cMax, pcGenericParams);
-
-            EntityHandle owner = MetadataTokens.EntityHandle((int)tk);
-            GenericParameterHandleCollection genericParams;
-
-            if (owner.Kind == HandleKind.TypeDefinition)
-                genericParams = _reader!.GetTypeDefinition((TypeDefinitionHandle)owner).GetGenericParameters();
-            else if (owner.Kind == HandleKind.MethodDefinition)
-                genericParams = _reader!.GetMethodDefinition((MethodDefinitionHandle)owner).GetGenericParameters();
+            {
+                hr = FillEnum(phEnum, GetEnum(*phEnum)!.Tokens, rGenericParams, cMax, pcGenericParams);
+            }
             else
-                return HResults.E_INVALIDARG;
+            {
+                EntityHandle owner = MetadataTokens.EntityHandle((int)tk);
+                GenericParameterHandleCollection genericParams;
 
-            List<uint> tokens = new();
-            foreach (GenericParameterHandle h in genericParams)
-                tokens.Add((uint)MetadataTokens.GetToken(h));
-            return FillEnum(phEnum, tokens, rGenericParams, cMax, pcGenericParams);
-        });
+                if (owner.Kind == HandleKind.TypeDefinition)
+                    genericParams = _reader!.GetTypeDefinition((TypeDefinitionHandle)owner).GetGenericParameters();
+                else if (owner.Kind == HandleKind.MethodDefinition)
+                    genericParams = _reader!.GetMethodDefinition((MethodDefinitionHandle)owner).GetGenericParameters();
+                else
+                {
+                    hr = HResults.E_INVALIDARG;
+                    goto Done;
+                }
+
+                List<uint> tokens = new();
+                foreach (GenericParameterHandle h in genericParams)
+                    tokens.Add((uint)MetadataTokens.GetToken(h));
+                hr = FillEnum(phEnum, tokens, rGenericParams, cMax, pcGenericParams);
+            }
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
+
+    Done:
+        return hr;
     }
 
     public int GetTypeDefProps(uint td, char* szTypeDef, uint cchTypeDef, uint* pchTypeDef, uint* pdwTypeDefFlags, uint* ptkExtends)
@@ -222,7 +279,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetTypeDefProps(td, szTypeDef, cchTypeDef, pchTypeDef, pdwTypeDefFlags, ptkExtends) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(td & 0x00FFFFFF));
             TypeDefinition typeDef = _reader!.GetTypeDefinition(typeHandle);
@@ -239,8 +297,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                 *ptkExtends = baseType.IsNil ? 0 : (uint)MetadataTokens.GetToken(baseType);
             }
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -267,7 +345,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetTypeRefProps(tr, ptkResolutionScope, szName, cchName, pchName) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             TypeReferenceHandle refHandle = MetadataTokens.TypeReferenceHandle((int)(tr & 0x00FFFFFF));
             TypeReference typeRef = _reader!.GetTypeReference(refHandle);
@@ -281,8 +360,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                 *ptkResolutionScope = scope.IsNil ? 0 : (uint)MetadataTokens.GetToken(scope);
             }
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -308,7 +407,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetMethodProps(mb, pClass, szMethod, cchMethod, pchMethod, pdwAttr, ppvSigBlob, pcbSigBlob, pulCodeRVA, pdwImplFlags) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             MethodDefinitionHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)(mb & 0x00FFFFFF));
             MethodDefinition methodDef = _reader!.GetMethodDefinition(methodHandle);
@@ -338,8 +438,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
             if (pdwImplFlags is not null)
                 *pdwImplFlags = (uint)methodDef.ImplAttributes;
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -366,7 +486,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetFieldProps(mb, pClass, szField, cchField, pchField, pdwAttr, ppvSigBlob, pcbSigBlob, pdwCPlusTypeFlag, ppValue, pcchValue) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             FieldDefinitionHandle fieldHandle = MetadataTokens.FieldDefinitionHandle((int)(mb & 0x00FFFFFF));
             FieldDefinition fieldDef = _reader!.GetFieldDefinition(fieldHandle);
@@ -413,8 +534,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                 }
             }
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -472,7 +613,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetInterfaceImplProps(iiImpl, pClass, ptkIface) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             InterfaceImplementationHandle implHandle = MetadataTokens.InterfaceImplementationHandle((int)(iiImpl & 0x00FFFFFF));
             InterfaceImplementation impl = _reader!.GetInterfaceImplementation(implHandle);
@@ -498,8 +640,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
             if (ptkIface is not null)
                 *ptkIface = (uint)MetadataTokens.GetToken(impl.Interface);
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -524,7 +686,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetNestedClassProps(tdNestedClass, ptdEnclosingClass) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(tdNestedClass & 0x00FFFFFF));
             TypeDefinition typeDef = _reader!.GetTypeDefinition(typeHandle);
@@ -533,8 +696,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
             if (ptdEnclosingClass is not null)
                 *ptdEnclosingClass = declaringType.IsNil ? 0 : (uint)MetadataTokens.GetToken(declaringType);
 
-            return declaringType.IsNil ? CLDB_E_RECORD_NOTFOUND : HResults.S_OK;
-        });
+            hr = declaringType.IsNil ? CLDB_E_RECORD_NOTFOUND : HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -555,7 +738,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport2?.GetGenericParamProps(gp, pulParamSeq, pdwParamFlags, ptOwner, reserved, wzname, cchName, pchName) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             GenericParameterHandle gpHandle = MetadataTokens.GenericParameterHandle((int)(gp & 0x00FFFFFF));
             GenericParameter genericParam = _reader!.GetGenericParameter(gpHandle);
@@ -575,8 +759,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
             string name = _reader!.GetString(genericParam.Name);
             OutputBufferHelpers.CopyStringToBuffer(wzname, cchName, pchName, name);
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport2 is not null)
@@ -603,7 +807,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetRVA(tk, pulCodeRVA, pdwImplFlags) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             uint tableIndex = tk >> 24;
             if (tableIndex == 0x06) // MethodDef
@@ -614,7 +819,7 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                     *pulCodeRVA = (uint)methodDef.RelativeVirtualAddress;
                 if (pdwImplFlags is not null)
                     *pdwImplFlags = (uint)methodDef.ImplAttributes;
-                return HResults.S_OK;
+                hr = HResults.S_OK;
             }
 
             if (tableIndex == 0x04) // FieldDef
@@ -625,11 +830,31 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                     *pulCodeRVA = (uint)fieldDef.GetRelativeVirtualAddress();
                 if (pdwImplFlags is not null)
                     *pdwImplFlags = 0;
-                return HResults.S_OK;
+                hr = HResults.S_OK;
             }
 
-            return HResults.E_INVALIDARG;
-        });
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -647,7 +872,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetSigFromToken(mdSig, ppvSig, pcbSig) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             StandaloneSignatureHandle sigHandle = MetadataTokens.StandaloneSignatureHandle((int)(mdSig & 0x00FFFFFF));
             StandaloneSignature sig = _reader!.GetStandaloneSignature(sigHandle);
@@ -658,8 +884,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
             if (pcbSig is not null)
                 *pcbSig = (uint)blobReader.Length;
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -679,7 +925,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetCustomAttributeByName(tkObj, szName, ppData, pcbData) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             if (ppData is not null)
                 *ppData = null;
@@ -700,12 +947,32 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                         *ppData = blobReader.StartPointer;
                     if (pcbData is not null)
                         *pcbData = (uint)blobReader.Length;
-                    return HResults.S_OK;
+                    hr = HResults.S_OK;
                 }
             }
 
-            return HResults.S_FALSE;
-        });
+            hr = HResults.S_FALSE;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -767,7 +1034,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.FindTypeDefByName(szTypeDef, tkEnclosingClass, ptd) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             if (ptd is not null)
                 *ptd = 0;
@@ -792,11 +1060,33 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                 if (ptd is not null)
                     *ptd = (uint)MetadataTokens.GetToken(tdh);
 
-                return HResults.S_OK;
+                hr = HResults.S_OK;
+                break;
             }
 
-            return CLDB_E_RECORD_NOTFOUND;
-        });
+            if (hr != HResults.S_OK)
+                hr = CLDB_E_RECORD_NOTFOUND;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -859,7 +1149,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetMemberRefProps(mr, ptk, szMember, cchMember, pchMember, ppvSigBlob, pbSig) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             MemberReferenceHandle refHandle = MetadataTokens.MemberReferenceHandle((int)(mr & 0x00FFFFFF));
             MemberReference memberRef = _reader!.GetMemberReference(refHandle);
@@ -879,8 +1170,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                     *pbSig = (uint)blobReader.Length;
             }
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -917,25 +1228,50 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetClassLayout(td, pdwPackSize, rFieldOffset, cMax, pcFieldOffset, pulClassSize) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(td & 0x00FFFFFF));
             TypeLayout layout = _reader!.GetTypeDefinition(typeHandle).GetLayout();
 
             if (layout.IsDefault)
-                return CLDB_E_RECORD_NOTFOUND;
+            {
+                hr = CLDB_E_RECORD_NOTFOUND;
+            }
+            else
+            {
+                if (pdwPackSize is not null)
+                    *pdwPackSize = (uint)layout.PackingSize;
 
-            if (pdwPackSize is not null)
-                *pdwPackSize = (uint)layout.PackingSize;
+                if (pulClassSize is not null)
+                    *pulClassSize = (uint)layout.Size;
 
-            if (pulClassSize is not null)
-                *pulClassSize = (uint)layout.Size;
+                if (pcFieldOffset is not null)
+                    *pcFieldOffset = 0;
 
-            if (pcFieldOffset is not null)
-                *pcFieldOffset = 0;
-
-            return HResults.S_OK;
-        });
+                hr = HResults.S_OK;
+            }
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -966,7 +1302,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetModuleRefProps(mur, szName, cchName, pchName) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             ModuleReferenceHandle modRefHandle = MetadataTokens.ModuleReferenceHandle((int)(mur & 0x00FFFFFF));
             ModuleReference modRef = _reader!.GetModuleReference(modRefHandle);
@@ -974,8 +1311,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
             string name = _reader!.GetString(modRef.Name);
             OutputBufferHelpers.CopyStringToBuffer(szName, cchName, pchName, name);
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -998,7 +1355,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetTypeSpecFromToken(typespec, ppvSig, pcbSig) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             TypeSpecificationHandle tsHandle = MetadataTokens.TypeSpecificationHandle((int)(typespec & 0x00FFFFFF));
             TypeSpecification typeSpec = _reader!.GetTypeSpecification(tsHandle);
@@ -1009,8 +1367,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
             if (pcbSig is not null)
                 *pcbSig = (uint)blobReader.Length;
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -1036,14 +1414,35 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetUserString(stk, szString, cchString, pchString) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             UserStringHandle usHandle = MetadataTokens.UserStringHandle((int)(stk & 0x00FFFFFF));
             string value = _reader!.GetUserString(usHandle);
             OutputBufferHelpers.CopyStringToBuffer(szString, cchString, pchString, value);
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -1076,7 +1475,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetParamForMethodIndex(md, ulParamSeq, ppd) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             if (ppd is not null)
                 *ppd = 0;
@@ -1091,12 +1491,34 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                 {
                     if (ppd is not null)
                         *ppd = (uint)MetadataTokens.GetToken(ph);
-                    return HResults.S_OK;
+                    hr = HResults.S_OK;
+                    break;
                 }
             }
 
-            return CLDB_E_RECORD_NOTFOUND;
-        });
+            if (hr != HResults.S_OK)
+                hr = CLDB_E_RECORD_NOTFOUND;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
@@ -1129,7 +1551,8 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
         if (_reader is null)
             return _legacyImport?.GetParamProps(tk, pmd, pulSequence, szName, cchName, pchName, pdwAttr, pdwCPlusTypeFlag, ppValue, pcchValue) ?? HResults.E_NOTIMPL;
 
-        int hr = CatchHR(() =>
+        int hr = HResults.E_FAIL;
+        try
         {
             ParameterHandle paramHandle = MetadataTokens.ParameterHandle((int)(tk & 0x00FFFFFF));
             Parameter param = _reader!.GetParameter(paramHandle);
@@ -1188,8 +1611,28 @@ internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
                 }
             }
 
-            return HResults.S_OK;
-        });
+            hr = HResults.S_OK;
+        }
+        catch (BadImageFormatException)
+        {
+            hr = HResults.COR_E_BADIMAGEFORMAT;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        catch (InvalidOperationException)
+        {
+            hr = HResults.E_FAIL;
+        }
+        catch (Exception ex) when (ex.HResult < 0)
+        {
+            hr = ex.HResult;
+        }
+        catch
+        {
+            hr = HResults.E_FAIL;
+        }
 
 #if DEBUG
         if (_legacyImport is not null)
