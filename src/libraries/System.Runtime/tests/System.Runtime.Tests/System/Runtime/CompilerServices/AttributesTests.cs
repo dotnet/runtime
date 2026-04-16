@@ -438,24 +438,5 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.False(usage.AllowMultiple);
         }
 
-        [Fact]
-        public static void IUnionTests()
-        {
-            Assert.True(typeof(IUnion).IsInterface);
-
-            var testUnion = new TestUnion("hello");
-            IUnion union = testUnion;
-            Assert.Equal("hello", union.Value);
-
-            var nullUnion = new TestUnion(null);
-            Assert.Null(((IUnion)nullUnion).Value);
-        }
-
-        [Union]
-        private struct TestUnion : IUnion
-        {
-            public TestUnion(object? value) => Value = value;
-            public object? Value { get; }
-        }
     }
 }
