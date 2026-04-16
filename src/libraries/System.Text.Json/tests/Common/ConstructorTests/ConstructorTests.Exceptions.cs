@@ -350,5 +350,31 @@ namespace System.Text.Json.Serialization.Tests
                 UnsupportedDictionary = unsupportedDictionary;
             }
         }
+
+        [Fact]
+        public async Task ParameterizedConstructor_ExceptionMessage_ReportsPropertyType()
+        {
+            // Regression test: classes with parameterized constructors should report the
+            // property type (System.String), not the declaring class type, in the JsonException message.
+            // https://github.com/dotnet/runtime/pull/126575
+            JsonException e;
+
+            e = await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<ParameterizedClass_WithStringProperty>("""{"Text":{}}"""));
+            Assert.Contains("System.String", e.Message);
+            Assert.DoesNotContain(nameof(ParameterizedClass_WithStringProperty), e.Message);
+
+            e = await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<ParameterizedRecord_WithStringProperty>("""{"Text":{}}"""));
+            Assert.Contains("System.String", e.Message);
+            Assert.DoesNotContain(nameof(ParameterizedRecord_WithStringProperty), e.Message);
+        }
+
+        public class ParameterizedClass_WithStringProperty(string text)
+        {
+            public string Text { get; set; } = text;
+        }
+
+        public record ParameterizedRecord_WithStringProperty(string Text);
     }
 }

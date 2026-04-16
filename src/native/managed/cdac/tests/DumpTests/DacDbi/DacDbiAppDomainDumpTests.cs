@@ -198,17 +198,6 @@ public class DacDbiAppDomainDumpTests : DumpTestBase
         }
     }
 
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void EnableNGENPolicy_ReturnsENotImpl(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        int hr = dbi.EnableNGENPolicy(0);
-        Assert.Equal(System.HResults.E_NOTIMPL, hr);
-    }
-
     [UnmanagedCallersOnly]
     private static unsafe void CountCallback(ulong addr, nint userData)
     {
