@@ -2647,7 +2647,7 @@ PROCAbortInitialize()
     }
 
     const bool crashReportEnabled = enableCrashReport || enableCrashReportOnly;
-    const bool writeCrashReportToFile = dumpName != nullptr && dumpName[0] != '\0';
+    const bool writeCrashReportToFile = crashReportEnabled;
     g_inProcCrashReportEnabled = crashReportEnabled;
     InProcCrashReportInitialize(writeCrashReportToFile ? 1 : 0, dumpName, defaultReportDirectory);
 #endif

@@ -3,7 +3,7 @@
 
 // In-proc crash report generator.
 //
-// Emits a createdump-shaped JSON skeleton to logcat / stderr.
+// Streams a createdump-shaped JSON skeleton to a crashreport.json file.
 
 #include "inproccrashreporter.h"
 #include "crashjsonwriter.h"
@@ -14,7 +14,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <ucontext.h>
-#include <minipal/log.h>
 #include <minipal/thread.h>
 
 // Include the .NET version string instead of linking because it is "static".
@@ -50,7 +49,6 @@ struct MultiThreadJsonContext
 struct CrashReportOutputContext
 {
     int fd;
-    int writeToLog;
     int writeFailed;
 };
 
@@ -156,13 +154,6 @@ JsonThreadCallback(
     uint32_t exceptionHResult,
     void* ctx);
 
-static
-void
-WriteToLog(
-    const char* msg,
-    int len);
-
-static
 int
 WriteAllToFile(
     int fd,
@@ -195,9 +186,24 @@ InProcCrashReportGenerate(
     siginfo_t* siginfo,
     void* context)
 {
+    char reportPath[256];
+    reportPath[0] = '\0';
+
+    if (g_writeReportToFile == 0 || !BuildReportPath(reportPath, sizeof(reportPath), g_reportPath, g_defaultReportDirectory))
+    {
+        return;
+    }
+
+    int fd = open(reportPath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd == -1)
+    {
+        return;
+    }
+
     static volatile int s_generating = 0;
     if (__sync_val_compare_and_swap(&s_generating, 0, 1) != 0)
     {
+        close(fd);
         return;
     }
 
@@ -215,19 +221,9 @@ InProcCrashReportGenerate(
         hasException = g_getExceptionCallback(exTypeBuf, sizeof(exTypeBuf), exMsgBuf, sizeof(exMsgBuf), &exHresult);
     }
 
-    char reportPath[256];
-    reportPath[0] = '\0';
-
-    int fd = -1;
-    if (g_writeReportToFile != 0 && BuildReportPath(reportPath, sizeof(reportPath), g_reportPath, g_defaultReportDirectory))
-    {
-        fd = open(reportPath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    }
-
     CrashReportOutputContext outputContext =
     {
         fd,
-        fd == -1 ? 1 : 0,
         0
     };
 
@@ -401,44 +397,6 @@ InProcCrashReportSetThreadEnumerator(
     g_enumerateThreadsCallback = callback;
 }
 
-void
-WriteToLog(
-    const char* msg,
-    int len)
-{
-    if (msg == NULL)
-    {
-        return;
-    }
-
-    if (len < 0)
-    {
-        len = static_cast<int>(strlen(msg));
-    }
-
-#ifdef __ANDROID__
-    // Emit long payloads in chunks so the JSON is not truncated by Android's
-    // per-entry log size limit.
-    int offset = 0;
-    while (offset < len)
-    {
-        int chunk = len - offset;
-        if (chunk > 3000)
-        {
-            chunk = 3000;
-        }
-
-        char buffer[3001];
-        memcpy(buffer, msg + offset, static_cast<size_t>(chunk));
-        buffer[chunk] = '\0';
-        minipal_log_write_error(buffer);
-        offset += chunk;
-    }
-#else
-    (void)WriteAllToFile(STDERR_FILENO, msg, len);
-#endif
-}
-
 int
 WriteAllToFile(
     int fd,
@@ -473,17 +431,12 @@ WriteCrashReportChunk(
     void* ctx)
 {
     CrashReportOutputContext* outputContext = reinterpret_cast<CrashReportOutputContext*>(ctx);
-    if (outputContext == NULL)
+    if (outputContext == NULL || outputContext->fd == -1)
     {
         return 0;
     }
 
-    if (outputContext->writeToLog != 0)
-    {
-        WriteToLog(buffer, len);
-    }
-
-    if (outputContext->fd != -1 && !WriteAllToFile(outputContext->fd, buffer, len))
+    if (!WriteAllToFile(outputContext->fd, buffer, len))
     {
         outputContext->writeFailed = 1;
         return 0;

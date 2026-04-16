@@ -3,8 +3,8 @@
 
 // In-proc crash report generation.
 //
-// Emits a minimal createdump-shaped JSON payload to logcat / stderr and an
-// optional *.crashreport.json file on disk.
+// Emits a minimal createdump-shaped JSON payload to a *.crashreport.json file
+// on disk.
 
 #pragma once
 
