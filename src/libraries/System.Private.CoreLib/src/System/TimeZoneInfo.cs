@@ -649,7 +649,7 @@ namespace System
                 throw new ArgumentException(SR.Argument_ConvertMismatch, nameof(sourceTimeZone));
             }
 
-            bool isInvalidTime = !sourceTimeZone.TryLocalToUtc(dateTime, out DateTime utcDateTime);
+            bool isInvalidTime = !sourceTimeZone.TryLocalToUtc(dateTime, out long utcTicks);
 
             if (((flags & TimeZoneInfoOptions.NoThrowOnInvalidTime) == 0) && isInvalidTime)
             {
@@ -660,7 +660,7 @@ namespace System
             {
                 // This is not logical to do but we are keeping it for app compatibility reason.
                 // We get here if the dateTime is invalid in the source time zone.
-                utcDateTime = new DateTime(dateTime.Ticks + sourceTimeZone.BaseUtcOffset.Ticks, DateTimeKind.Utc);
+                utcTicks = dateTime.Ticks + sourceTimeZone.BaseUtcOffset.Ticks;
             }
 
             DateTimeKind targetKind = cachedData.GetCorrespondingKind(destinationTimeZone);
@@ -671,7 +671,15 @@ namespace System
                 return dateTime;
             }
 
-            DateTime targetConverted = destinationTimeZone.UtcToLocal(utcDateTime, out bool isDaylightSaving);
+            // Use a clamped DateTime for destination offset lookup (transition table lookups require a DateTime).
+            // The raw utcTicks may be outside DateTime range, but the clamped value is sufficient for offset lookup
+            // because near DateTime.MinValue/MaxValue there are no DST transitions that would differ.
+            DateTime utcForLookup = SafeCreateDateTimeFromTicks(utcTicks, DateTimeKind.Utc);
+            TimeSpan destOffset = destinationTimeZone.GetOffsetForUtcDate(utcForLookup, out bool isDaylightSaving);
+
+            // Compute the final result from raw ticks to avoid precision loss from double-clamping.
+            // The intermediate UTC ticks may be outside DateTime range, but the final local ticks may be valid.
+            DateTime targetConverted = SafeCreateDateTimeFromTicks(utcTicks + destOffset.Ticks);
 
             if (targetKind == DateTimeKind.Local)
             {
