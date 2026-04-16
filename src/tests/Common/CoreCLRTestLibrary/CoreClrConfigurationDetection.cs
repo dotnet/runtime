@@ -4,7 +4,9 @@
 
 using System;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -43,6 +45,40 @@ public static class CoreClrConfigurationDetection
     public static bool IsAnyJitStress => IsJitStress || IsJitStressRegs || IsJitMinOpts || IsTailCallStress;
 
     public static bool IsAnyJitOptimizationStress => IsAnyJitStress || IsTieredCompilation;
+
+    /// <summary>
+    /// Returns true if the given assembly file on disk contains a ReadyToRun header
+    /// (i.e. was precompiled to native code by crossgen2). Both single-file R2R and
+    /// composite R2R are detected: for composite images, crossgen2 rewrites each
+    /// component MSIL assembly with a real R2R header whose <c>Flags</c> has
+    /// <c>READYTORUN_FLAG_COMPONENT</c> set and whose only section is an
+    /// <c>OwnerCompositeExecutable</c> string referencing the composite file name
+    /// (see <c>docs/design/coreclr/botr/readytorun-format.md</c>). In both cases,
+    /// <c>CorHeader.ManagedNativeHeaderDirectory</c> has a non-zero size.
+    ///
+    /// Note: this reports whether the assembly file is R2R-compiled, not whether the
+    /// runtime is actually executing the R2R code (e.g. <c>DOTNET_ReadyToRun=0</c> leaves
+    /// the header intact but disables R2R use at runtime). That is the desired semantic
+    /// for skip attributes: if the test assembly was R2R'd, skip it even if the current
+    /// run happens to have disabled R2R execution.
+    /// </summary>
+    public static bool IsAssemblyReadyToRunCompiled(Assembly assembly)
+    {
+        string? location = assembly.Location;
+        if (string.IsNullOrEmpty(location))
+            return false;
+
+        try
+        {
+            using FileStream fs = File.OpenRead(location);
+            using PEReader pe = new PEReader(fs);
+            return pe.PEHeaders.CorHeader?.ManagedNativeHeaderDirectory.Size > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     public static bool IsCheckedRuntime => AssemblyConfigurationEquals("Checked");
     public static bool IsReleaseRuntime => AssemblyConfigurationEquals("Release");

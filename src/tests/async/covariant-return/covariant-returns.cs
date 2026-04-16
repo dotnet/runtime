@@ -8,25 +8,27 @@ using Xunit;
 
 public class CovariantReturns
 {
-    [Fact]
+    public static bool IsNotR2RCompiled => !TestLibrary.CoreClrConfigurationDetection.IsAssemblyReadyToRunCompiled(typeof(CovariantReturns).Assembly);
+
+    [ConditionalFact(typeof(CovariantReturns), nameof(IsNotR2RCompiled))]
     public static void Test0EntryPoint()
     {
         Test0().Wait();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(CovariantReturns), nameof(IsNotR2RCompiled))]
     public static void Test1EntryPoint()
     {
         Test1().Wait();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(CovariantReturns), nameof(IsNotR2RCompiled))]
     public static void Test2EntryPoint()
     {
         Test2().Wait();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(CovariantReturns), nameof(IsNotR2RCompiled))]
     public static void Test2AEntryPoint()
     {
         Test2A().Wait();
@@ -136,7 +138,9 @@ namespace AsyncMicro
     {
         internal static string Trace;
 
-        [Fact]
+        public static bool IsNotR2RCompiled => !TestLibrary.CoreClrConfigurationDetection.IsAssemblyReadyToRunCompiled(typeof(Program).Assembly);
+
+        [ConditionalFact(typeof(Program), nameof(IsNotR2RCompiled))]
         public static void TestPrRepro()
         {
             Derived2 test = new();
