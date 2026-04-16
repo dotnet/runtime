@@ -498,10 +498,12 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBl
     return 0;
 }
 
-extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref)
+extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
+FCIMPL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref)
 {
     PORTABILITY_ASSERT("JIT_WriteBarrier_Callable is not implemented on wasm");
 }
+FCIMPLEND
 
 EXTERN_C void JIT_WriteBarrier_End()
 {
@@ -548,10 +550,12 @@ extern "C" void STDCALL JIT_StackProbe()
     PORTABILITY_ASSERT("JIT_StackProbe is not implemented on wasm");
 }
 
-EXTERN_C FCDECL0(void, JIT_PollGC)
+EXTERN_C FCDECL0(void, JIT_PollGC);
+FCIMPL0(void, JIT_PollGC)
 {
     PORTABILITY_ASSERT("JIT_PollGC is not implemented on wasm");
 }
+FCIMPLEND
 
 void InitJITHelpers1()
 {
