@@ -891,7 +891,17 @@ public:
 #endif // DEBUG
 
 #define MAX_COST    UCHAR_MAX
-#define IND_COST_EX 3 // execution cost for an indirection
+
+// execution cost for an indirection
+#define IND_COST_EX 3
+
+#if defined(TARGET_XARCH)
+// floating-point indirections are slightly more expensive
+#define FLT_IND_COST_EX 5
+#else
+// TODO-CQ: Determine the appropriate cost of a floating-point indirection on other targets
+#define FLT_IND_COST_EX IND_COST_EX
+#endif
 
     unsigned char GetCostEx() const
     {
