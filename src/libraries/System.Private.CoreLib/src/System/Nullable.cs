@@ -108,7 +108,6 @@ namespace System
             if (nullableType.IsGenericTypeDefinition)
                 return null;
             return nullableType.GetNullableUnderlyingType();
-                return nullableType.GetNullableUnderlyingType();
             return null;
         }
 
