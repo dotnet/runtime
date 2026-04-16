@@ -78,25 +78,14 @@ internal static class Entrypoints
             return -1;
 
         object? legacyImpl = null;
-        object? prevent_release = null;
         if (legacyImplPtr != IntPtr.Zero)
         {
-            object legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
-            // When CDAC_NO_FALLBACK is set, we don't use the legacy impl for fallback
-            // but we must hold a reference to it because the native CDAC class stores
-            // a raw pointer (m_legacyImpl) that assumes it outlives the CDAC.
-            bool noFallback = Environment.GetEnvironmentVariable("CDAC_NO_FALLBACK") == "1";
-            if (noFallback)
-            {
-                prevent_release = legacyObj;
-            }
-            else
-            {
-                legacyImpl = legacyObj;
-            }
+            legacyImpl = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
         }
 
-        Legacy.SOSDacImpl impl = new(target, legacyImpl, prevent_release);
+        // Fallback gating is handled by LegacyFallbackHelper at each call site,
+        // so always pass the legacy impl. The helper checks CDAC_NO_FALLBACK.
+        Legacy.SOSDacImpl impl = new(target, legacyImpl);
         nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         *obj = ptr;
         return 0;
@@ -128,27 +117,18 @@ internal static class Entrypoints
 
         ComWrappers cw = new StrategyBasedComWrappers();
         object? legacyObj = null;
-        object? prevent_release = null;
         if (legacyImplPtr != IntPtr.Zero)
         {
-            object wrapped = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
-            bool noFallback = Environment.GetEnvironmentVariable("CDAC_NO_FALLBACK") == "1";
-            if (noFallback)
+            legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
+            if (legacyObj is not Legacy.IDacDbiInterface)
             {
-                prevent_release = wrapped;
-            }
-            else
-            {
-                legacyObj = wrapped;
-                if (legacyObj is not Legacy.IDacDbiInterface)
-                {
-                    *obj = IntPtr.Zero;
-                    return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
-                }
+                *obj = IntPtr.Zero;
+                return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
             }
         }
 
-        Legacy.DacDbiImpl impl = new(target, legacyObj, prevent_release);
+        // Fallback gating is handled by LegacyFallbackHelper at each call site.
+        Legacy.DacDbiImpl impl = new(target, legacyObj);
         *obj = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         return HResults.S_OK;
     }
