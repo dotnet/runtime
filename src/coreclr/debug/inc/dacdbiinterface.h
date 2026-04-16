@@ -652,7 +652,7 @@ public:
     // Returns an appropriate failure HRESULT on error.
     //
     // Arguments:
-    //    vmModule - new module from the enumeration
+    //    vmAssembly - new vmAssembly from the enumeration
     //    pUserData - user data passed to EnumerateModulesInAssembly
     typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_Assembly vmAssembly, CALLBACK_DATA pUserData);
 

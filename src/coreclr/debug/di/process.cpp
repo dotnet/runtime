@@ -4520,7 +4520,7 @@ public:
     // Callback invoked from DAC enumeration.
     //
     // arguments:
-    //    vmAssembly - VMPTR for Module
+    //    vmAssembly - VMPTR for Assembly
     //    pData - a 'this' pointer
     //
     static void Callback(VMPTR_Assembly vmAssembly, void * pData)
