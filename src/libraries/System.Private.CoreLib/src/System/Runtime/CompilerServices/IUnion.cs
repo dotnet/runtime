@@ -13,10 +13,6 @@ namespace System.Runtime.CompilerServices
     /// to participate in union behaviors such as implicit conversions, pattern matching,
     /// and switch exhaustiveness checking.
     /// </para>
-    /// <para>
-    /// The <see cref="Value" /> property is expected to return <see langword="null" /> or a value of
-    /// one of the union's case types.
-    /// </para>
     /// </remarks>
     /// <seealso cref="UnionAttribute" />
     public interface IUnion
@@ -27,11 +23,6 @@ namespace System.Runtime.CompilerServices
         /// <value>
         /// The current value of the union as one of its case types, or <see langword="null" />.
         /// </value>
-        /// <remarks>
-        /// The <see cref="Value" /> property provides access to the contents of a union regardless of the
-        /// case type. The property is expected to always evaluate to <see langword="null" /> or to an instance of
-        /// one of the union's case types.
-        /// </remarks>
         object? Value { get; }
     }
 }

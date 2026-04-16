@@ -12,23 +12,7 @@ namespace System.Runtime.CompilerServices
     /// Union types may support behaviors such as implicit conversions from case types, pattern matching
     /// that unwraps the union's contents, and switch exhaustiveness checking.
     /// </para>
-    /// <para>
-    /// Implementing <see cref="IUnion" /> is optional but recommended, as it provides runtime access to
-    /// the union's value and is automatically implemented by compiler-generated union declarations.
-    /// </para>
     /// </remarks>
-    /// <example>
-    /// The following example shows a manually declared union type:
-    /// <code language="csharp">
-    /// [Union]
-    /// public struct Pet : IUnion
-    /// {
-    ///     public Pet(Cat value) =&gt; Value = value;
-    ///     public Pet(Dog value) =&gt; Value = value;
-    ///     public object? Value { get; }
-    /// }
-    /// </code>
-    /// </example>
     /// <seealso cref="IUnion" />
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = true)]
     public sealed class UnionAttribute : Attribute
