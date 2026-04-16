@@ -38,7 +38,6 @@ public record struct ThreadData(
     TargetPointer AllocContextLimit,
     TargetPointer Frame,
     TargetPointer FirstNestedException,
-    TargetPointer TEB,
     TargetPointer LastThrownObjectHandle,
     TargetPointer NextThread);
 

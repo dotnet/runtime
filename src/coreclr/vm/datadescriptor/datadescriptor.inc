@@ -49,18 +49,17 @@ CDAC_TYPE_FIELD(Thread, T_POINTER, DebuggerFilterContext, cdac_data<Thread>::Deb
 CDAC_TYPE_FIELD(Thread, T_POINTER, ProfilerFilterContext, cdac_data<Thread>::ProfilerFilterContext)
 #endif // PROFILING_SUPPORTED
 CDAC_TYPE_FIELD(Thread, TYPE(GCHandle), GCHandle, cdac_data<Thread>::ExposedObject)
-CDAC_TYPE_FIELD(Thread, TYPE(GCHandle), LastThrownObject, cdac_data<Thread>::LastThrownObject)
+CDAC_TYPE_FIELD(Thread, T_POINTER, LastThrownObject, cdac_data<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, T_POINTER, LinkNext, cdac_data<Thread>::Link)
 CDAC_TYPE_FIELD(Thread, T_POINTER, ThreadLocalDataPtr, cdac_data<Thread>::ThreadLocalDataPtr)
 #ifndef TARGET_UNIX
-CDAC_TYPE_FIELD(Thread, T_POINTER, TEB, cdac_data<Thread>::TEB)
 CDAC_TYPE_FIELD(Thread, T_POINTER, UEWatsonBucketTrackerBuckets, cdac_data<Thread>::UEWatsonBucketTrackerBuckets)
 #endif
 CDAC_TYPE_END(Thread)
 
 CDAC_TYPE_BEGIN(ThreadStore)
 CDAC_TYPE_INDETERMINATE(ThreadStore)
-CDAC_TYPE_FIELD(ThreadStore, TYPE(SLink), FirstThreadLink, cdac_data<ThreadStore>::FirstThreadLink)
+CDAC_TYPE_FIELD(ThreadStore, T_POINTER, FirstThreadLink, cdac_data<ThreadStore>::FirstThreadLink)
 CDAC_TYPE_FIELD(ThreadStore, T_INT32, ThreadCount, cdac_data<ThreadStore>::ThreadCount)
 CDAC_TYPE_FIELD(ThreadStore, T_INT32, UnstartedCount, cdac_data<ThreadStore>::UnstartedCount)
 CDAC_TYPE_FIELD(ThreadStore, T_INT32, BackgroundCount, cdac_data<ThreadStore>::BackgroundCount)
@@ -174,7 +173,7 @@ CDAC_TYPE_END(String)
 
 CDAC_TYPE_BEGIN(Array)
 CDAC_TYPE_SIZE(sizeof(ArrayBase))
-CDAC_TYPE_FIELD(Array, T_POINTER, m_NumComponents, cdac_data<ArrayBase>::m_NumComponents)
+CDAC_TYPE_FIELD(Array, T_UINT32, m_NumComponents, cdac_data<ArrayBase>::m_NumComponents)
 CDAC_TYPE_END(Array)
 
 CDAC_TYPE_BEGIN(InteropSyncBlockInfo)
@@ -1279,6 +1278,11 @@ CDAC_TYPE_FIELD(AuxiliarySymbolInfo, T_POINTER, Address, offsetof(VMAUXILIARYSYM
 CDAC_TYPE_FIELD(AuxiliarySymbolInfo, T_POINTER, Name, offsetof(VMAUXILIARYSYMBOLDEF, name))
 CDAC_TYPE_END(AuxiliarySymbolInfo)
 
+CDAC_TYPE_BEGIN(EEConfig)
+CDAC_TYPE_INDETERMINATE(EEConfig)
+CDAC_TYPE_FIELD(EEConfig, T_UINT32, ModifiableAssemblies, cdac_data<EEConfig>::ModifiableAssemblies)
+CDAC_TYPE_END(EEConfig)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -1329,6 +1333,7 @@ CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomainPtr)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
+CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)

@@ -421,9 +421,6 @@ public unsafe partial interface IDacDbiInterface
     int IsRcw(ulong vmObject, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetRcwCachedInterfaceTypes(ulong vmObject, ulong vmAppDomain, Interop.BOOL bIInspectableOnly, nint pDacInterfaces);
-
-    [PreserveSig]
     int GetRcwCachedInterfacePointers(ulong vmObject, Interop.BOOL bIInspectableOnly, nint pDacItfPtrs);
 
     [PreserveSig]
@@ -458,15 +455,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetObject(ulong ptr, ulong* pRetVal);
-
-    [PreserveSig]
-    int EnableNGENPolicy(int ePolicy);
-
-    [PreserveSig]
-    int SetNGENCompilerFlags(uint dwFlags);
-
-    [PreserveSig]
-    int GetNGENCompilerFlags(uint* pdwFlags);
 
     [PreserveSig]
     int GetVmObjectHandle(ulong handleAddress, ulong* pRetVal);
@@ -551,19 +539,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW);
-
-    [PreserveSig]
-    int GetReJitInfo(ulong vmModule, uint methodTk, ulong* pReJitInfo);
-
-    [PreserveSig]
-    // DEPRECATED - use GetNativeCodeVersionNode
-    int GetReJitInfoByAddress(ulong vmMethod, ulong codeStartAddress, ulong* pReJitInfo);
-
-    [PreserveSig]
-    int GetSharedReJitInfo(ulong vmReJitInfo, ulong* pSharedReJitInfo);
-
-    [PreserveSig]
-    int GetSharedReJitInfoData(ulong sharedReJitInfo, DacDbiSharedReJitInfo* pData);
 
     [PreserveSig]
     int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled);
