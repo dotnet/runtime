@@ -2292,10 +2292,15 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
         pCode = PrepareInitialCode(callerGCMode);
 
+        // If we don't have a P/Invoke import precode, we need to resolve the target now.
+        // We can't wait until we're invoking the P/Invoke as we don't have a precode that
+        // can do the work then.
+#ifndef HAS_PINVOKE_IMPORT_PRECODE
         if (IsPInvoke())
         {
             PInvoke::ResolvePInvokeTarget(static_cast<PInvokeMethodDesc*>(this));
         }
+#endif // !HAS_PINVOKE_IMPORT_PRECODE
     } // end else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()))
     else if (IsPInvoke())
     {
