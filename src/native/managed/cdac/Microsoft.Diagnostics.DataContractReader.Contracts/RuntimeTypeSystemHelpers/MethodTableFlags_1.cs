@@ -94,7 +94,7 @@ internal struct MethodTableFlags_1
 
     public bool HasComponentSize => GetFlag(WFLAGS_HIGH.HasComponentSize) != 0;
     public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
-    public bool IsValueType => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_ValueType;
+    public bool IsValueType => GetFlag(WFLAGS_HIGH.Category_ValueType_Mask) == WFLAGS_HIGH.Category_ValueType;
     public bool IsString => HasComponentSize && !IsArray && ComponentSizeBits == 2;
     public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
     public bool IsStringOrArray => HasComponentSize;
