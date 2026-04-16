@@ -428,7 +428,7 @@ public class ObjectFileScraper
                 var globalName = GetPoolString(contract.NameIdx);
                 var version = GetPoolString(contract.VersionIdx);
                 builder.AddOrUpdateContract(globalName, version);
-                WriteVerbose($"Contract {globalName} has value {version}");
+                WriteVerbose($"Contract {globalName} has version {version}");
             }
         }
 
