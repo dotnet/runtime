@@ -388,7 +388,6 @@ namespace System.Net.Security.Enterprise.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/12345")]
         public async Task ClientServerAuthentication_AgainstWebServer_WithRealmHint_Succeeds()
         {
             string targetName = "HTTP/apacheweb.linux.contoso.com@LINUX.CONTOSO.COM";
