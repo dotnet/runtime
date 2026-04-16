@@ -82,6 +82,12 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMapAssemblyTarget<UsedTypeMapUniverse>("library")]
 [assembly: TypeMapAssemblyTarget<UnusedTypeMap2>("library")] // Should be removed
 
+// Verify that a type can be kept if it's used for both TypeMap and TypeMapAssociation
+[assembly: TypeMap<UsedExternalTypeMap>("BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxy))] // Kept
+[assembly: TypeMapAssociation<UsedExternalTypeMap>(typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))] // Kept
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedExternalTypeMap>), "BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxy))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedExternalTypeMap>), typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))]
+
 namespace Mono.Linker.Tests.Cases.Reflection
 {
     [SetupLinkerAction("link", "System.Private.CoreLib")] // Needed to get the RemoveAttributeInstances in embedded xml
@@ -227,6 +233,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
             _ = new int();
             _ = TypeMapping.GetOrCreateExternalTypeMapping<string>();
             _ = TypeMapping.GetOrCreateProxyTypeMapping<string>();
+
+            // Use BothInExternalAndProxy in a way that preserves any corresponding typemap entries.
+            Console.WriteLine(new BothInExternalAndProxy());
         }
 
         [ExpectBodyModified]
@@ -554,4 +563,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
     [Kept]
     class PreservedTargetType;
+
+    [Kept]
+    [KeptMember(".ctor()")]
+    class BothInExternalAndProxy;
+    [Kept]
+    class BothInExternalAndProxyTarget;
+
 }

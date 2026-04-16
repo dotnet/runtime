@@ -108,7 +108,41 @@ namespace Mono.Linker
 
             // Mark the target type as instantiated
             if (entry.TargetType is { } targetType && _context.Resolve(targetType) is TypeDefinition targetTypeDef)
+            {
                 _context.Annotations.MarkInstantiated(targetTypeDef);
+                if (entry.Attribute.AttributeType is GenericInstanceType { Name: "TypeMapAttribute`1", GenericArguments: [TypeReference typeMapGroup] })
+                    MarkAssociatedProxyTypeMapAttributes(targetTypeDef, typeMapGroup);
+            }
+        }
+
+        void MarkAssociatedProxyTypeMapAttributes(TypeDefinition sourceType, TypeReference typeMapGroup)
+        {
+            if (_unmarkedProxyTypeMapEntries.TryGetValue(sourceType, out Dictionary<TypeReference, List<CustomAttributeWithOrigin>>? entriesByGroup) &&
+                entriesByGroup.Remove(typeMapGroup, out List<CustomAttributeWithOrigin>? unmarkedAttributes))
+            {
+                foreach (var attr in unmarkedAttributes)
+                    MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, sourceType));
+
+                if (entriesByGroup.Count == 0)
+                    _unmarkedProxyTypeMapEntries.Remove(sourceType);
+            }
+
+            if (_pendingProxyTypeMapEntries.TryGetValue(typeMapGroup, out List<CustomAttributeWithOrigin>? pendingAttributes))
+            {
+                for (int i = pendingAttributes.Count - 1; i >= 0; i--)
+                {
+                    CustomAttributeWithOrigin attr = pendingAttributes[i];
+                    if (attr.Attribute.ConstructorArguments is [{ Value: TypeReference pendingSourceType }, _] &&
+                        _context.Resolve(pendingSourceType) == sourceType)
+                    {
+                        pendingAttributes.RemoveAt(i);
+                        MarkTypeMapAttribute(attr, new DependencyInfo(DependencyKind.TypeMapEntry, sourceType));
+                    }
+                }
+
+                if (pendingAttributes.Count == 0)
+                    _pendingProxyTypeMapEntries.Remove(typeMapGroup);
+            }
         }
 
         public void ProcessType(TypeDefinition definition)
