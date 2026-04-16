@@ -260,7 +260,11 @@ struct MethodDescCodeData final
 #endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
 #ifdef FEATURE_INTERPRETER
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    void* CalliCookie;
+#else
     CallStubHeader *CallStub;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 #endif // FEATURE_INTERPRETER
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
@@ -1981,8 +1985,13 @@ public:
 #endif //!DACCESS_COMPILE
 
 #if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    bool SetCalliCookie(void* cookie);
+    void* GetCalliCookie();
+#else
     bool SetCallStub(CallStubHeader *pHeader);
     CallStubHeader *GetCallStub();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 #endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
 
 #ifdef FEATURE_CODE_VERSIONING

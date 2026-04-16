@@ -277,6 +277,29 @@ void MethodDesc::SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTi
 #endif // FEATURE_CODE_VERSIONING
 
 #ifdef FEATURE_INTERPRETER
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+// Cache the calli cookie on the MethodDesc
+// Returns true if the current call set the cookie, false if it was already set.
+bool MethodDesc::SetCalliCookie(void* cookie)
+{
+    STANDARD_VM_CONTRACT;
+
+    IfFailThrow(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    return InterlockedCompareExchangeT(&m_codeData->CalliCookie, cookie, (void*)NULL) == NULL;
+}
+
+void* MethodDesc::GetCalliCookie()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NULL;
+    return VolatileLoadWithoutBarrier(&codeData->CalliCookie);
+}
+#else
 // Set the call stub for the interpreter to JIT/AOT calls
 // Returns true if the current call set the stub, false if it was already set
 bool MethodDesc::SetCallStub(CallStubHeader *pHeader)
@@ -298,6 +321,7 @@ CallStubHeader *MethodDesc::GetCallStub()
         return NULL;
     return VolatileLoadWithoutBarrier(&codeData->CallStub);
 }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 #endif // FEATURE_INTERPRETER
 
 #endif //!DACCESS_COMPILE
