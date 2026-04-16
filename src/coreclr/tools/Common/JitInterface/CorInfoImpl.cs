@@ -3062,12 +3062,15 @@ namespace Internal.JitInterface
             // to embed their MT as a constant and mis-read fields off it. Both types
             // are marked [Intrinsic] so that the cheap flag check filters out
             // non-candidates before we compare names.
-            if (type.IsIntrinsic && type is MetadataType mdType &&
-                mdType.Module == _compilation.TypeSystemContext.SystemModule &&
-                mdType.Namespace.SequenceEqual("System"u8) &&
-                (mdType.Name.SequenceEqual("SZArrayHelper"u8) || mdType.Name.SequenceEqual("Array`1"u8)))
+            if (type.IsIntrinsic && type is MetadataType mdType)
             {
-                return false;
+                ReadOnlySpan<byte> name = mdType.Name;
+                if ((name.SequenceEqual("SZArrayHelper"u8) || name.SequenceEqual("Array`1"u8)) &&
+                    mdType.Namespace.SequenceEqual("System"u8) &&
+                    mdType.Module == _compilation.TypeSystemContext.SystemModule)
+                {
+                    return false;
+                }
             }
 
             // Valuetypes are invariant. This assumes that introducing type equivalence to an existing type
