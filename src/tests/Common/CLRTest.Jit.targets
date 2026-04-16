@@ -337,6 +337,11 @@ def is_managed_exe_assembly(file):
 print("")
 print("ILASM RoundTrips")
 
+if os.environ.get("IlasmRoundTripUseManagedIlasm") == "1":
+  ilasm_path = os.path.join(os.environ["CORE_ROOT"], "managed-ilasm", "ilasm")
+else:
+  ilasm_path = os.path.join(os.environ["CORE_ROOT"], "ilasm")
+
 if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
@@ -367,7 +372,7 @@ for inputAssemblyName in glob.glob("*.dll"):
           proc.kill()
           sys.exit(1)
 
-      ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
+      ilasm_args = f'{ilasm_path} -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
       print(ilasm_args)
       proc = subprocess.Popen(ilasm_args, shell=True)
 
@@ -384,7 +389,7 @@ for inputAssemblyName in glob.glob("*.dll"):
 
         hash = hash_file(inputAssemblyName)
 
-        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
+        ilasm_args = f'{ilasm_path} -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
         print(ilasm_args)
         proc = subprocess.Popen(ilasm_args, shell=True)
 
@@ -407,7 +412,7 @@ for inputAssemblyName in glob.glob("*.dll"):
 
         pdbName = inputAssemblyName.replace('.dll', '.pdb')
 
-        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={pdbName} {ilasmSwitches} {disassemblyName}'
+        ilasm_args = f'{ilasm_path} -output={pdbName} {ilasmSwitches} {disassemblyName}'
         print(ilasm_args)
         proc = subprocess.Popen(ilasm_args, shell=True)
 
@@ -419,7 +424,7 @@ for inputAssemblyName in glob.glob("*.dll"):
 
         hash = hash_file(pdbName)
 
-        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={pdbName} {ilasmSwitches} {disassemblyName}'
+        ilasm_args = f'{ilasm_path} -output={pdbName} {ilasmSwitches} {disassemblyName}'
         print(ilasm_args)
         proc = subprocess.Popen(ilasm_args, shell=True)
 
