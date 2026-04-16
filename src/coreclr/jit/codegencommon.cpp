@@ -3708,7 +3708,7 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        if (m_compiler->lvaIsAllocatedOnUnknownSizeFrame(varNum))
         {
             continue;
         }
@@ -4070,7 +4070,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
             noway_assert(varDsc->lvOnFrame);
 
-            if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+            if (m_compiler->lvaIsAllocatedOnUnknownSizeFrame(varNum))
             {
                 // This local will belong on the UnknownSizeFrame, which will handle zeroing instead.
                 continue;
@@ -5147,7 +5147,7 @@ void CodeGen::genFnProlog()
             continue;
         }
 
-        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        if (m_compiler->lvaIsAllocatedOnUnknownSizeFrame(varNum))
         {
             continue;
         }

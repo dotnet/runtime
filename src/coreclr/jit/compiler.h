@@ -4308,6 +4308,7 @@ public:
 
     void lvaInitUnknownSizeFrame();
     void lvaAllocUnknownSizeLocal(unsigned varNum);
+    bool lvaIsAllocatedOnUnknownSizeFrame(unsigned varNum);
 
     bool compUsesUnknownSizeFrame;
 
