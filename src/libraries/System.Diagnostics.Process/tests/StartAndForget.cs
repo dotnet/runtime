@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false)]
         public void StartAndForget_StartsProcessAndReturnsValidPid(bool useProcessStartInfo)
         {
-            Process template = CreateSleepProcess((int)TimeSpan.FromHours(1).TotalMilliseconds);
+            using Process template = CreateSleepProcess((int)TimeSpan.FromHours(1).TotalMilliseconds);
             int pid = useProcessStartInfo
                 ? Process.StartAndForget(template.StartInfo)
                 : Process.StartAndForget(template.StartInfo.FileName, template.StartInfo.ArgumentList);
