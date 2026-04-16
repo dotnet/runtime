@@ -951,7 +951,7 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t
             // child process was terminated by a signal.
             int sig = WTERMSIG(status);
             *exitCode = 128 + sig;
-            PosixSignal posixSignal;
+            PosixSignal posixSignal = PosixSignalInvalid;
             TryConvertSignalCodeToPosixSignal(sig, &posixSignal);
             *terminatingSignal = (int32_t)posixSignal;
         }
