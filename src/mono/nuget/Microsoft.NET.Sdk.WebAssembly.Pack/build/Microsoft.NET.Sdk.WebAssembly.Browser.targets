@@ -203,6 +203,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
+      <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == ''">$(WasmWebcilVersion)</_WasmWebcilVersion>
+      <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">1</_WasmWebcilVersion>
+      <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == ''">0</_WasmWebcilVersion>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == '' and '$(_TargetingNET100OrLater)' == 'true'">true</_WasmInlineBootConfig>
@@ -353,7 +356,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
       <Output TaskParameter="WebcilCandidates" ItemName="_WebcilAssetsCandidates" />
       <Output TaskParameter="PassThroughCandidates" ItemName="_WasmFrameworkCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
@@ -791,7 +794,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>

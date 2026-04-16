@@ -3905,18 +3905,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsRcw(VMPTR_Object vmObject, OUT 
 #endif // FEATURE_COMINTEROP
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetRcwCachedInterfaceTypes(VMPTR_Object vmObject, VMPTR_AppDomain vmAppDomain, BOOL bIInspectableOnly, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pDacInterfaces)
-{
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        // Legacy WinRT API.
-        pDacInterfaces->Alloc(0);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetRcwCachedInterfacePointers(VMPTR_Object vmObject, BOOL bIInspectableOnly, OUT DacDbiArrayList<CORDB_ADDRESS> * pDacItfPtrs)
 {
 #ifdef FEATURE_COMINTEROP
@@ -6214,25 +6202,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetObject(CORDB_ADDRESS ptr, OUT 
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnableNGENPolicy(CorDebugNGENPolicy ePolicy)
-{
-    return E_NOTIMPL;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetNGENCompilerFlags(DWORD dwFlags)
-{
-    DD_ENTER_MAY_THROW;
-
-    return CORDBG_E_NGEN_NOT_SUPPORTED;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNGENCompilerFlags(DWORD *pdwFlags)
-{
-    DD_ENTER_MAY_THROW;
-
-    return CORDBG_E_NGEN_NOT_SUPPORTED;
-}
-
 typedef DPTR(OBJECTREF) PTR_ObjectRef;
 
 // Create a VMPTR_Object from an address which points to a reference to an object
@@ -7895,13 +7864,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPEFileMDInternalRW(VMPTR_PEAss
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetReJitInfo(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ReJitInfo* pvmReJitInfo)
-{
-    DD_ENTER_MAY_THROW;
-    _ASSERTE(!"You shouldn't be calling this - use GetActiveRejitILCodeVersionNode instead");
-    return S_OK;
-}
-
 #ifdef FEATURE_CODE_VERSIONING
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode)
 {
@@ -7999,13 +7961,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeVersionNodeData(VMPTR_IL
 }
 #endif // FEATURE_CODE_VERSIONING
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetReJitInfoByAddress(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_ReJitInfo* pvmReJitInfo)
-{
-    DD_ENTER_MAY_THROW;
-    _ASSERTE(!"You shouldn't be calling this - use GetNativeCodeVersionNode instead");
-    return S_OK;
-}
-
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled)
 {
     DD_ENTER_MAY_THROW;
@@ -8024,20 +7979,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Mo
     *pOptimizationsDisabled = FALSE;
 #endif
 
-    return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSharedReJitInfo(VMPTR_ReJitInfo vmReJitInfo, OUT VMPTR_SharedReJitInfo* pvmSharedReJitInfo)
-{
-    DD_ENTER_MAY_THROW;
-    _ASSERTE(!"You shouldn't be calling this - use GetILCodeVersionNode instead");
-    return S_OK;
-}
-
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetSharedReJitInfoData(VMPTR_SharedReJitInfo vmSharedReJitInfo, DacSharedReJitInfo* pData)
-{
-    DD_ENTER_MAY_THROW;
-    _ASSERTE(!"You shouldn't be calling this - use GetILCodeVersionNodeData instead");
     return S_OK;
 }
 
