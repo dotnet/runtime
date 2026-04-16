@@ -687,15 +687,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // VaSig cookie is after this and retbuf arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
 
                 if (HasThis)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 return ret;
@@ -729,15 +730,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // The hidden arg is after this and retbuf arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
 
                 if (HasThis)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 return ret;
@@ -778,20 +780,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // The hidden arg is after this, retbuf and param type arguments by default.
                 int ret = _transitionBlock.OffsetOfArgumentRegisters;
+                int slotSize = _transitionBlock.StackElemSize(_transitionBlock.PointerSize);
 
                 if (HasThis)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 if (HasParamType)
                 {
-                    ret += _transitionBlock.PointerSize;
+                    ret += slotSize;
                 }
 
                 return ret;

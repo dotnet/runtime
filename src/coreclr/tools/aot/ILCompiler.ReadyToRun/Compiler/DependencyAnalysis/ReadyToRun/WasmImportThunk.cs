@@ -142,8 +142,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // The general logic is...
             // Compute stack offset needed.
 
-            // Align stack to 16 byte boundaries
-            int sizeOfStoredLocals = AlignmentHelper.AlignUp(argit.SizeOfFrameArgumentArray(), 16) + transitionBlock.SizeOfTransitionBlock;
+            // Align total allocation (args + transition block) to 16 byte boundaries
+            int sizeOfStoredLocals = AlignmentHelper.AlignUp(argit.SizeOfFrameArgumentArray() + transitionBlock.SizeOfTransitionBlock, 16);
 
             List<WasmExpr> expressions = new List<WasmExpr>();
             // local.get 0
@@ -154,6 +154,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Sub);
             // local.set 0
             expressions.Add(Local.Set(0));
+
+            // Initialize m_ReturnAddress to 0 at offset 0 of the transition block
+            expressions.Add(Local.Get(0));
+            expressions.Add(I32.Const(0));
+            expressions.Add(I32.Store(0));
+
+            // Store the original caller's frame pointer (SP before allocation) at offset 4
+            expressions.Add(Local.Get(0));
+            expressions.Add(Local.Get(0));
+            expressions.Add(I32.Const(sizeOfStoredLocals));
+            expressions.Add(I32.Add);
+            expressions.Add(I32.Store(4));
 
             //
             // ; Stash all the locals away
