@@ -21,8 +21,7 @@ internal static class LegacyFallbackHelper
     private static readonly HashSet<string> s_allowlist = new(StringComparer.Ordinal)
     {
         // Dump creation — the cDAC does not implement memory enumeration.
-        "EnumMemoryRegion",
-        "EnumMemoryRegionsWrapper",
+        nameof(ICLRDataEnumMemoryRegions.EnumMemoryRegions),
     };
 
     /// <summary>
