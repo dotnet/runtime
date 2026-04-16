@@ -44,6 +44,7 @@ using ILCompiler;
 using ILogger = ILCompiler.ILogWriter;
 using DependencyNode = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
 using AssemblyRootNode = ILCompiler.DependencyAnalysis.AssemblyRootNode;
+using TrimmingDescriptorNode = ILCompiler.DependencyAnalysis.TrimmingDescriptorNode;
 #else
 using Mono.Cecil;
 using Mono.Linker.Steps;
@@ -772,7 +773,9 @@ namespace Mono.Linker
                                 return -1;
                             }
 
-#if !ILTRIM
+#if ILTRIM
+                            inputs.Add(new TrimmingDescriptorNode(xmlFile));
+#else
                             inputs.Add(new ResolveFromXmlStep(File.OpenRead(xmlFile), xmlFile));
 #endif
                             continue;
