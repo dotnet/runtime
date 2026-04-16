@@ -38,20 +38,31 @@ static void CleanupTestDirs(const char *dir1, const char *blockerDir,
         rmdir(dir2);
 }
 
+static void RestorePath(BOOL savedPathExists, const char *savedPath)
+{
+    if (savedPathExists)
+        SetEnvironmentVariableA("PATH", savedPath);
+    else
+        SetEnvironmentVariableA("PATH", NULL);
+}
+
 PALTEST(threading_CreateProcessW_test3_paltest_createprocessw_test3, "threading/CreateProcessW/test3/paltest_createprocessw_test3")
 {
     STARTUPINFOW si;
     PROCESS_INFORMATION pi;
     DWORD dwExitCode;
+    char tempBase[MAX_PATH];
     char tmpDir1[MAX_PATH];
     char tmpDir2[MAX_PATH];
     char blockerDir[MAX_PATH];
     char symlinkPath[MAX_PATH];
+    char resolvedArgv0[MAX_PATH];
     char savedPath[32768];
     char newPath[MAX_PATH * 2 + 2];
     WCHAR cmdLineW[MAX_PATH + 256];
     char cmdLineA[MAX_PATH + 256];
     DWORD savedPathLen;
+    BOOL savedPathExists;
     BOOL createResult;
 
     if (0 != PAL_Initialize(argc, argv))
@@ -59,10 +70,17 @@ PALTEST(threading_CreateProcessW_test3_paltest_createprocessw_test3, "threading/
         return FAIL;
     }
 
+    /* Use the platform temp directory instead of hardcoding /tmp */
+    DWORD tempBaseLen = GetTempPathA(sizeof(tempBase), tempBase);
+    if (tempBaseLen == 0 || tempBaseLen >= sizeof(tempBase))
+    {
+        Fail("GetTempPathA failed or buffer too small (returned %u)\n", tempBaseLen);
+    }
+
     /* Build unique temp directory names using the process ID */
     DWORD pid = GetCurrentProcessId();
-    snprintf(tmpDir1, sizeof(tmpDir1), "/tmp/paltest_cpw_t3_%u_d1", pid);
-    snprintf(tmpDir2, sizeof(tmpDir2), "/tmp/paltest_cpw_t3_%u_d2", pid);
+    snprintf(tmpDir1, sizeof(tmpDir1), "%spaltest_cpw_t3_%u_d1", tempBase, pid);
+    snprintf(tmpDir2, sizeof(tmpDir2), "%spaltest_cpw_t3_%u_d2", tempBase, pid);
     blockerDir[0] = '\0';
     symlinkPath[0] = '\0';
 
@@ -85,17 +103,31 @@ PALTEST(threading_CreateProcessW_test3_paltest_createprocessw_test3, "threading/
         Fail("CreateDirectoryA(%s) failed with error %u\n", blockerDir, GetLastError());
     }
 
-    /* Create a symlink named CHILD_EXE_NAME inside tmpDir2 pointing to paltests */
-    snprintf(symlinkPath, sizeof(symlinkPath), "%s/" CHILD_EXE_NAME, tmpDir2);
-    if (symlink(argv[0], symlinkPath) != 0)
+    /* Resolve argv[0] to an absolute path so the symlink target is valid
+     * regardless of the working directory. */
+    if (realpath(argv[0], resolvedArgv0) == NULL)
     {
         CleanupTestDirs(tmpDir1, blockerDir, tmpDir2, NULL);
-        Fail("symlink(%s -> %s) failed with errno %d\n", symlinkPath, argv[0], errno);
+        Fail("realpath(%s) failed with errno %d\n", argv[0], errno);
+    }
+
+    /* Create a symlink named CHILD_EXE_NAME inside tmpDir2 pointing to paltests */
+    snprintf(symlinkPath, sizeof(symlinkPath), "%s/" CHILD_EXE_NAME, tmpDir2);
+    if (symlink(resolvedArgv0, symlinkPath) != 0)
+    {
+        CleanupTestDirs(tmpDir1, blockerDir, tmpDir2, NULL);
+        Fail("symlink(%s -> %s) failed with errno %d\n", symlinkPath, resolvedArgv0, errno);
     }
 
     /* Save the current PATH */
+    savedPath[0] = '\0';
+    savedPathExists = TRUE;
     savedPathLen = GetEnvironmentVariableA("PATH", savedPath, sizeof(savedPath));
-    if (savedPathLen == 0 && GetLastError() != ERROR_ENVVAR_NOT_FOUND)
+    if (savedPathLen == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND)
+    {
+        savedPathExists = FALSE;
+    }
+    else if (savedPathLen == 0)
     {
         CleanupTestDirs(tmpDir1, blockerDir, tmpDir2, symlinkPath);
         Fail("GetEnvironmentVariableA(PATH) failed with error %u\n", GetLastError());
@@ -108,7 +140,11 @@ PALTEST(threading_CreateProcessW_test3_paltest_createprocessw_test3, "threading/
 
     /* Build the command line (wide): CHILD_EXE_NAME CHILD_TEST_NAME */
     snprintf(cmdLineA, sizeof(cmdLineA), CHILD_EXE_NAME " " CHILD_TEST_NAME);
-    MultiByteToWideChar(CP_ACP, 0, cmdLineA, -1, cmdLineW, (int)(sizeof(cmdLineW) / sizeof(WCHAR)));
+    if (MultiByteToWideChar(CP_ACP, 0, cmdLineA, -1, cmdLineW, (int)(sizeof(cmdLineW) / sizeof(WCHAR))) == 0)
+    {
+        CleanupTestDirs(tmpDir1, blockerDir, tmpDir2, symlinkPath);
+        Fail("MultiByteToWideChar failed with error %u\n", GetLastError());
+    }
 
     /*
      * Negative test: set PATH to contain only tmpDir1 (which has a directory
@@ -129,10 +165,14 @@ PALTEST(threading_CreateProcessW_test3_paltest_createprocessw_test3, "threading/
     if (createResult)
     {
         /* Unexpected success: a directory should not be treated as an executable */
-        WaitForSingleObject(pi.hProcess, 30000);
+        dwExitCode = WaitForSingleObject(pi.hProcess, 30000);
+        if (dwExitCode != WAIT_OBJECT_0)
+        {
+            TerminateProcess(pi.hProcess, 0);
+        }
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
-        SetEnvironmentVariableA("PATH", savedPath);
+        RestorePath(savedPathExists, savedPath);
         CleanupTestDirs(tmpDir1, blockerDir, tmpDir2, symlinkPath);
         Fail("CreateProcessW unexpectedly succeeded when PATH contains only a "
              "directory named " CHILD_EXE_NAME "\n");
@@ -140,7 +180,7 @@ PALTEST(threading_CreateProcessW_test3_paltest_createprocessw_test3, "threading/
     else if (GetLastError() != ERROR_FILE_NOT_FOUND)
     {
         DWORD err = GetLastError();
-        SetEnvironmentVariableA("PATH", savedPath);
+        RestorePath(savedPathExists, savedPath);
         CleanupTestDirs(tmpDir1, blockerDir, tmpDir2, symlinkPath);
         Fail("CreateProcessW failed with error %u; expected ERROR_FILE_NOT_FOUND (%u). "
              "A directory in PATH should be skipped, not treated as a match.\n",
@@ -156,7 +196,7 @@ PALTEST(threading_CreateProcessW_test3_paltest_createprocessw_test3, "threading/
     snprintf(newPath, sizeof(newPath), "%s:%s", tmpDir1, tmpDir2);
     if (!SetEnvironmentVariableA("PATH", newPath))
     {
-        SetEnvironmentVariableA("PATH", savedPath);
+        RestorePath(savedPathExists, savedPath);
         CleanupTestDirs(tmpDir1, blockerDir, tmpDir2, symlinkPath);
         Fail("SetEnvironmentVariableA failed with error %u\n", GetLastError());
     }
@@ -168,7 +208,7 @@ PALTEST(threading_CreateProcessW_test3_paltest_createprocessw_test3, "threading/
     createResult = CreateProcessW(NULL, cmdLineW, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
 
     /* Restore PATH before any potential Fail() calls */
-    SetEnvironmentVariableA("PATH", savedPath);
+    RestorePath(savedPathExists, savedPath);
 
     if (!createResult)
     {
