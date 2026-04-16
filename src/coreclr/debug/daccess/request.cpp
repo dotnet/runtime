@@ -890,11 +890,9 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
     threadData->context = PTR_CDADDR(AppDomain::GetCurrentDomain());
     threadData->domain = PTR_CDADDR(AppDomain::GetCurrentDomain());
     threadData->lockCount = (DWORD)-1;
-#ifndef TARGET_UNIX
-    threadData->teb = TO_CDADDR(thread->m_pTEB);
-#else
+    // TEB is no longer provided by the runtime. Consumers should look up the TEB
+    // from the OS thread ID via the debugger's native API (e.g., IDebuggerServices::GetThreadTeb).
     threadData->teb = (CLRDATA_ADDRESS)NULL;
-#endif
     threadData->lastThrownObjectHandle =
         TO_CDADDR(thread->m_LastThrownObjectHandle);
     threadData->nextThread =

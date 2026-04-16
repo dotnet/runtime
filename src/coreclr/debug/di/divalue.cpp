@@ -2785,37 +2785,7 @@ HRESULT CordbObjectValue::GetCachedInterfaceTypes(
     EX_TRY
     {
         *ppInterfacesEnum = NULL;
-
-        NewArrayHolder<CordbType*> pItfs(NULL);
-
-        // retrieve interface types
-        DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> dacInterfaces;
-
-        IDacDbiInterface* pDAC = GetProcess()->GetDAC();
-
-        CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
-        VMPTR_Object vmObj;
-        IfFailThrow(pDAC->GetObject(objAddr, &vmObj));
-
-        // retrieve type info from LS
-        IfFailThrow(pDAC->GetRcwCachedInterfaceTypes(vmObj, m_appdomain->GetADToken(),
-                        bIInspectableOnly, &dacInterfaces));
-
-        // synthesize CordbType instances
-        int cItfs = dacInterfaces.Count();
-        if (cItfs > 0)
-        {
-            pItfs = new CordbType*[cItfs];
-            for (int n = 0; n < cItfs; ++n)
-            {
-                hr = CordbType::TypeDataToType(m_appdomain,
-                                               &(dacInterfaces[n]),
-                                               &pItfs[n]);
-            }
-        }
-
-        // build a type enumerator
-        CordbTypeEnum* pTypeEnum = CordbTypeEnum::Build(m_appdomain, GetProcess()->GetContinueNeuterList(), cItfs, pItfs);
+        CordbTypeEnum* pTypeEnum = CordbTypeEnum::Build(m_appdomain, GetProcess()->GetContinueNeuterList(), 0, (CordbType**)nullptr);
         if ( pTypeEnum == NULL )
         {
             IfFailThrow(E_OUTOFMEMORY);
