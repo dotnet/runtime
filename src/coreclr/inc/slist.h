@@ -3,12 +3,32 @@
 //-----------------------------------------------------------------------------
 // @File: slist.h
 //
-// Unified singly linked list template.
+// Unified singly linked list template shared between CoreCLR VM and
+// NativeAOT Runtime.
 //
 //-----------------------------------------------------------------------------
 
 #ifndef _H_SLIST_
 #define _H_SLIST_
+
+// ---------------------------------------------------------------------------
+// Environment compatibility — define CoreCLR macros as no-ops for NativeAOT.
+// ---------------------------------------------------------------------------
+#if defined(FEATURE_NATIVEAOT)
+  #include "forward_declarations.h"
+  #ifndef _ASSERTE
+    #define _ASSERTE ASSERT
+  #endif
+  #ifndef LIMITED_METHOD_CONTRACT
+    #define LIMITED_METHOD_CONTRACT
+  #endif
+  #ifndef LIMITED_METHOD_DAC_CONTRACT
+    #define LIMITED_METHOD_DAC_CONTRACT
+  #endif
+  #ifndef WRAPPER_NO_CONTRACT
+    #define WRAPPER_NO_CONTRACT
+  #endif
+#endif
 
 #include "cdacdata.h"
 
@@ -18,12 +38,20 @@
 #endif
 
 // ---------------------------------------------------------------------------
+// DoNothingFailFastPolicy — default no-op FailFast for Iterator validation.
+// ---------------------------------------------------------------------------
+struct DoNothingFailFastPolicy
+{
+    static inline void FailFast() { }
+};
+
+// ---------------------------------------------------------------------------
 // DefaultSListTraits
 //
 // T must have a pointer-sized m_pNext field.
 // ---------------------------------------------------------------------------
-template <typename T>
-struct DefaultSListTraits
+template <typename T, typename FailFastPolicy = DoNothingFailFastPolicy>
+struct DefaultSListTraits : public FailFastPolicy
 {
     typedef DPTR(T) PTR_T;
     typedef DPTR(PTR_T) PTR_PTR_T;
@@ -45,10 +73,23 @@ struct DefaultSListTraits
 };
 
 // Convenience traits class that enables tail tracking on SList.
-template <typename T>
-struct DefaultSListTraitsWithTail : public DefaultSListTraits<T>
+template <typename T, typename FailFastPolicy = DoNothingFailFastPolicy>
+struct DefaultSListTraitsWithTail : public DefaultSListTraits<T, FailFastPolicy>
 {
     static constexpr bool HasTail = true;
+};
+
+// ---------------------------------------------------------------------------
+// SListTailBase — conditionally holds m_pTail when Traits::HasTail is true.
+// ---------------------------------------------------------------------------
+template <typename PTR_T, bool hasTail>
+struct SListTailBase { };
+
+template <typename PTR_T>
+struct SListTailBase<PTR_T, true>
+{
+    PTR_T m_pTail;
+    SListTailBase() { m_pTail = NULL; }
 };
 
 // ---------------------------------------------------------------------------
@@ -56,9 +97,12 @@ struct DefaultSListTraitsWithTail : public DefaultSListTraits<T>
 //
 // Intrusive singly linked list. Elements must have a pointer-sized m_pNext
 // field. Use DefaultSListTraitsWithTail<T> for O(1) tail insertion.
+//
+// PushHeadInterlocked provides lock-free head insertion via CAS. It must not
+// be mixed with non-interlocked mutation without external synchronisation.
 // ---------------------------------------------------------------------------
 template <typename T, typename Traits = DefaultSListTraits<T> >
-class SList : public Traits
+class SList : public Traits, protected SListTailBase<typename Traits::PTR_T, Traits::HasTail>
 {
 protected:
     typedef typename Traits::PTR_T PTR_T;
@@ -71,7 +115,6 @@ public:
     SList()
     {
         m_pHead = NULL;
-        m_pTail = NULL;
     }
 
     bool IsEmpty()
@@ -95,20 +138,189 @@ public:
         return *Traits::GetNextPtr(dac_cast<PTR_T>(pObj));
     }
 
+    // ---------------------------------------------------------------------------
+    // Pointer-to-pointer iterator — supports Insert and Remove at the current
+    // position. Used via Begin()/End().
+    // ---------------------------------------------------------------------------
+    class Iterator
+    {
+        friend class SList;
+
+      public:
+        Iterator(Iterator const &it)
+            : m_ppCur(it.m_ppCur)
+#ifdef _DEBUG
+              , m_fIsValid(it.m_fIsValid)
+#endif
+        { }
+
+        Iterator& operator=(Iterator const &it)
+        {
+            m_ppCur = it.m_ppCur;
+#ifdef _DEBUG
+            m_fIsValid = it.m_fIsValid;
+#endif
+            return *this;
+        }
+
+        PTR_T operator->()
+        { _Validate(e_HasValue); return _Value(); }
+
+        PTR_T operator*()
+        { _Validate(e_HasValue); return _Value(); }
+
+        Iterator & operator++()
+        {
+            _Validate(e_HasValue);
+            m_ppCur = Traits::GetNextPtr(_Value());
+            return *this;
+        }
+
+        Iterator operator++(int)
+        {
+            _Validate(e_HasValue);
+            PTR_PTR_T ppRet = m_ppCur;
+            ++(*this);
+            return Iterator(ppRet);
+        }
+
+        bool operator==(Iterator const &rhs)
+        {
+            _Validate(e_CanCompare);
+            rhs._Validate(e_CanCompare);
+            return Traits::Equals(_Value(), rhs._Value());
+        }
+
+        bool operator==(PTR_T pT)
+        {
+            _Validate(e_CanCompare);
+            return Traits::Equals(_Value(), pT);
+        }
+
+        bool operator!=(Iterator const &rhs)
+        { return !operator==(rhs); }
+
+      private:
+        Iterator(PTR_PTR_T ppItem)
+            : m_ppCur(ppItem)
+#ifdef _DEBUG
+              , m_fIsValid(true)
+#endif
+        { }
+
+        Iterator Insert(PTR_T pItem)
+        {
+            _Validate(e_CanInsert);
+            *Traits::GetNextPtr(pItem) = *m_ppCur;
+            *m_ppCur = pItem;
+            Iterator itRet(m_ppCur);
+            ++(*this);
+            return itRet;
+        }
+
+        Iterator Remove()
+        {
+            _Validate(e_HasValue);
+            *m_ppCur = *Traits::GetNextPtr(*m_ppCur);
+            PTR_PTR_T ppRet = m_ppCur;
+            *this = End();
+            return Iterator(ppRet);
+        }
+
+        static Iterator End()
+        { return Iterator(NULL); }
+
+        PTR_PTR_T m_ppCur;
+#ifdef _DEBUG
+        mutable bool m_fIsValid;
+#endif
+
+        PTR_T _Value() const
+        {
+            _ASSERTE(m_fIsValid);
+            return dac_cast<PTR_T>(m_ppCur == NULL ? NULL : *m_ppCur);
+        }
+
+        enum e_ValidateOperation
+        {
+            e_CanCompare,
+            e_CanInsert,
+            e_HasValue,
+        };
+
+        void _Validate(e_ValidateOperation op) const
+        {
+            _ASSERTE(m_fIsValid);
+            if ((op != e_CanCompare && m_ppCur == NULL) ||
+                (op == e_HasValue && *m_ppCur == NULL))
+            {
+                _ASSERTE(!"Invalid SList::Iterator use.");
+                Traits::FailFast();
+#ifdef _DEBUG
+                m_fIsValid = false;
+#endif
+            }
+        }
+    };
+
+    Iterator Begin()
+    {
+        typedef SList<T, Traits> T_THIS;
+        return Iterator(dac_cast<PTR_PTR_T>(
+            dac_cast<TADDR>(this) + offsetof(T_THIS, m_pHead)));
+    }
+
+    Iterator End()
+    { return Iterator::End(); }
+
+    // STL-compatible range-for support.
+    Iterator begin() { return Begin(); }
+    Iterator end()   { return End(); }
+
+    Iterator FindFirst(PTR_T pItem)
+    {
+        Iterator it = Begin();
+        for (; it != End(); ++it)
+        {
+            if (Traits::Equals(*it, pItem))
+                break;
+        }
+        return it;
+    }
+
+    // Inserts pItem *before* it. Returns iterator pointing to inserted item.
+    Iterator Insert(Iterator & it, PTR_T pItem)
+    { return it.Insert(pItem); }
+
+    // Removes item pointed to by it. Returns iterator to following item.
+    Iterator Remove(Iterator & it)
+    { return it.Remove(); }
+
 #ifndef DACCESS_COMPILE
 
     void InsertHead(PTR_T pItem)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pItem != NULL);
-        if (Traits::HasTail)
+        if constexpr (Traits::HasTail)
         {
             if (m_pHead == NULL)
-                m_pTail = pItem;
+                this->m_pTail = pItem;
         }
         *Traits::GetNextPtr(pItem) = m_pHead;
         m_pHead = pItem;
     }
+
+    // Alias used by NativeAOT consumers.
+    void PushHead(PTR_T pItem) { InsertHead(pItem); }
+
+    // Lock-free head insertion via CAS. Implemented in slist.inl which must
+    // be included after platform atomics are available (e.g., after Pal.h
+    // on NativeAOT or utilcode.h on CoreCLR).
+    void InsertHeadInterlocked(PTR_T pItem);
+
+    // Alias used by NativeAOT consumers.
+    void PushHeadInterlocked(PTR_T pItem) { InsertHeadInterlocked(pItem); }
 
     PTR_T RemoveHead()
     {
@@ -117,15 +329,18 @@ public:
         if (pRet != NULL)
         {
             m_pHead = *Traits::GetNextPtr(pRet);
-            if (Traits::HasTail)
+            if constexpr (Traits::HasTail)
             {
                 if (m_pHead == NULL)
-                    m_pTail = NULL;
+                    this->m_pTail = NULL;
             }
         }
 
         return pRet;
     }
+
+    // Alias used by NativeAOT consumers.
+    PTR_T PopHead() { return RemoveHead(); }
 
     void InsertTail(PTR_T pItem)
     {
@@ -133,11 +348,11 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pItem != NULL);
         *Traits::GetNextPtr(pItem) = NULL;
-        if (m_pTail != NULL)
-            *Traits::GetNextPtr(m_pTail) = pItem;
+        if (this->m_pTail != NULL)
+            *Traits::GetNextPtr(this->m_pTail) = pItem;
         else
             m_pHead = pItem;
-        m_pTail = pItem;
+        this->m_pTail = pItem;
     }
 
     PTR_T GetTail()
@@ -145,7 +360,7 @@ public:
         static_assert(Traits::HasTail, "GetTail requires Traits::HasTail to be true");
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return m_pTail;
+        return this->m_pTail;
     }
 
     bool RemoveFirst(PTR_T pItem)
@@ -165,8 +380,8 @@ public:
                 else
                     *Traits::GetNextPtr(prev) = next;
 
-                if (Traits::HasTail && cur == m_pTail)
-                    m_pTail = prev;
+                if constexpr (Traits::HasTail) if (cur == this->m_pTail)
+                    this->m_pTail = prev;
 
                 return true;
             }
@@ -196,48 +411,8 @@ public:
 
 #endif // !DACCESS_COMPILE
 
-    class Iterator
-    {
-    public:
-        Iterator()
-            : m_cur(NULL)
-        { }
-
-        Iterator(PTR_T p)
-            : m_cur(p)
-        { }
-
-        Iterator & operator++()
-        { m_cur = dac_cast<PTR_T>(GetNext(m_cur)); return *this; }
-
-        Iterator operator++(int)
-        { Iterator t(m_cur); ++(*this); return t; }
-
-        bool operator==(Iterator const & other) const
-        { return m_cur == other.m_cur; }
-
-        bool operator!=(Iterator const & other) const
-        { return m_cur != other.m_cur; }
-
-        PTR_T operator*() const
-        { return m_cur; }
-
-        PTR_T operator->() const
-        { return m_cur; }
-
-    private:
-        PTR_T m_cur;
-    };
-
-    Iterator begin()
-    { return Iterator(m_pHead); }
-
-    Iterator end()
-    { return Iterator(); }
-
 protected:
     PTR_T m_pHead;
-    PTR_T m_pTail;  // Only meaningful when Traits::HasTail is true.
 };
 
 // ---------------------------------------------------------------------------
