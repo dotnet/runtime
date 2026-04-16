@@ -488,8 +488,9 @@ internal static partial class Interop
                         X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
 
                         Debug.Assert(certList != null);
-                        Span<IntPtr> handles = certList.Count <= 256 ?
-                            stackalloc IntPtr[256] :
+                        const int StackAllocCertLimit = 32;
+                        Span<IntPtr> handles = certList.Count <= StackAllocCertLimit ?
+                            stackalloc IntPtr[StackAllocCertLimit] :
                             new IntPtr[certList.Count];
 
                         for (int i = 0; i < certList.Count; i++)
@@ -869,20 +870,11 @@ internal static partial class Interop
                 IntPtr ssl = Ssl.X509StoreCtxGetSslPtr(storeCtx);
                 IntPtr data = Ssl.SslGetData(ssl);
                 Debug.Assert(data != IntPtr.Zero, "Expected non-null data pointer from SslGetData");
-                bool success = WeakGCHandle<SslAuthenticationOptions>.FromIntPtr(data)
+                WeakGCHandle<SslAuthenticationOptions>.FromIntPtr(data)
                     .TryGetTarget(out SslAuthenticationOptions? options);
-                Debug.Assert(success && options != null, "Expected to get SslAuthenticationOptions from GCHandle");
+                Debug.Assert(options != null, "Expected to get SslAuthenticationOptions from GCHandle");
 
-                sslHandle = (SafeSslHandle)options.SslStream!._securityContext!;
-
-                using SafeX509StoreCtxHandle storeHandle = new(storeCtx, ownsHandle: false);
-
-                using X509Chain chain = new X509Chain();
-                if (options.CertificateChainPolicy is not null)
-                {
-                    chain.ChainPolicy = options.CertificateChainPolicy;
-                }
-                X509Certificate2? certificate = null;
+                sslHandle = (SafeSslHandle)options!.SslStream!._securityContext!;
 
                 // We need to note the number of certs in ExtraStore that were
                 // provided (by the user), we will add more from the received peer
@@ -891,45 +883,12 @@ internal static partial class Interop
                 // TODO: this forces allocation of X509Certificate2Collection
                 int preexistingExtraCertsCount = options.CertificateChainPolicy?.ExtraStore?.Count ?? 0;
 
-                using (SafeSharedX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetSharedUntrusted(storeHandle))
-                {
-                    if (!chainStack.IsInvalid)
-                    {
-                        int count = Interop.Crypto.GetX509StackFieldCount(chainStack);
-
-                        for (int i = 0; i < count; i++)
-                        {
-                            IntPtr certPtr = Interop.Crypto.GetX509StackField(chainStack, i);
-
-                            if (certPtr != IntPtr.Zero)
-                            {
-                                // X509Certificate2(IntPtr) calls X509_dup, so the reference is appropriately tracked.
-                                X509Certificate2 chainCert = new X509Certificate2(certPtr);
-
-                                if (certificate is null)
-                                {
-                                    // First cert in the stack is the leaf cert.
-                                    certificate = chainCert;
-                                    Interop.Ssl.SslUpdateOcspStaple(sslHandle, certificate.Handle);
-                                }
-                                else
-                                {
-                                    chain.ChainPolicy.ExtraStore.Add(chainCert);
-                                }
-                            }
-                        }
-                    }
-                }
+                (X509Certificate2 certificate, X509Chain chain) = GetPeerCertChainFromStoreCtx(sslHandle, storeCtx, options);
 
                 try
                 {
-
-                    Debug.Assert(certificate != null || options.IsServer, "Client-side certificate should not be null here.");
-
-                    SslCertificateTrust? trust = options.CertificateContext?.Trust;
-
                     ProtocolToken alertToken = default;
-                    if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+                    if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, options.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
                     {
                         Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);
                         return 1;
@@ -994,6 +953,8 @@ internal static partial class Interop
                             chain.ChainElements[i].Certificate.Dispose();
                         }
                     }
+
+                    chain.Dispose();
                 }
             }
             catch (Exception ex)
@@ -1005,6 +966,52 @@ internal static partial class Interop
 
                 Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_ERR_UNSPECIFIED);
                 return 0;
+            }
+
+            static (X509Certificate2 certificate, X509Chain chain) GetPeerCertChainFromStoreCtx(SafeSslHandle sslHandle, IntPtr storeCtx, SslAuthenticationOptions options)
+            {
+                X509Certificate2? certificate = null;
+                X509Chain chain = new X509Chain();
+
+                using SafeX509StoreCtxHandle storeHandle = new(storeCtx, ownsHandle: false);
+                if (options.CertificateChainPolicy is not null)
+                {
+                    chain.ChainPolicy = options.CertificateChainPolicy;
+                }
+
+                using (SafeSharedX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetSharedUntrusted(storeHandle))
+                {
+                    if (!chainStack.IsInvalid)
+                    {
+                        int count = Interop.Crypto.GetX509StackFieldCount(chainStack);
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            IntPtr certPtr = Interop.Crypto.GetX509StackField(chainStack, i);
+
+                            if (certPtr != IntPtr.Zero)
+                            {
+                                // X509Certificate2(IntPtr) calls X509_dup, so the reference is appropriately tracked.
+                                X509Certificate2 chainCert = new X509Certificate2(certPtr);
+
+                                if (certificate is null)
+                                {
+                                    // First cert in the stack is the leaf cert.
+                                    certificate = chainCert;
+                                    Interop.Ssl.SslUpdateOcspStaple(sslHandle, certificate.Handle);
+                                }
+                                else
+                                {
+                                    chain.ChainPolicy.ExtraStore.Add(chainCert);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Debug.Assert(certificate != null, "Remote certificate should not be null here.");
+
+                return (certificate, chain);
             }
         }
 
@@ -1021,8 +1028,10 @@ internal static partial class Interop
                 return Ssl.SSL_TLSEXT_ERR_ALERT_FATAL;
             }
 
-            GCHandle authOptionsHandle = GCHandle.FromIntPtr(sslData);
-            if (!((authOptionsHandle.Target as SslAuthenticationOptions)?.ApplicationProtocols is List<SslApplicationProtocol> protocolList))
+            bool success = WeakGCHandle<SslAuthenticationOptions>.FromIntPtr(sslData)
+                .TryGetTarget(out SslAuthenticationOptions? options);
+            Debug.Assert(success && options != null, "Expected to get SslAuthenticationOptions from GCHandle");
+            if (!(options.ApplicationProtocols is List<SslApplicationProtocol> protocolList))
             {
                 return Ssl.SSL_TLSEXT_ERR_ALERT_FATAL;
             }

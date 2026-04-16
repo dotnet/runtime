@@ -34,6 +34,8 @@ namespace System.Net.Security
                     throw OpenSsl.CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
+                // Create a client SSL object (so that we don't need to worry about certificates)
+                // and use it to get the OpenSSL names for the cipher suites.
                 using (SafeSslHandle ssl = SafeSslHandle.Create(innerContext, new SslAuthenticationOptions() { IsServer = false }))
                 {
                     if (ssl.IsInvalid)

@@ -1054,7 +1054,13 @@ namespace System.Net.Security
             }
         }
 
-        internal bool VerifyRemoteCertificate(X509Certificate2? certificate, X509Chain? chain, SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        internal bool VerifyRemoteCertificate(
+            X509Certificate2? certificate,
+            X509Chain? chain,
+            SslCertificateTrust? trust,
+            ref ProtocolToken alertToken,
+            out SslPolicyErrors sslPolicyErrors,
+            out X509ChainStatusFlags chainStatus)
         {
             sslPolicyErrors = SslPolicyErrors.None;
             chainStatus = X509ChainStatusFlags.NoError;
@@ -1067,8 +1073,10 @@ namespace System.Net.Security
                 certificate != null &&
                 certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
             {
-                // This is renegotiation or TLS 1.3 and the certificate did not change.
-                // There is no reason to process callback again as we already established trust.
+                // This is renegotiation or TLS 1.3 post-handshake auth and the (remote) certificate did not change.
+                // Revalidating the same certificate MAY fail for a couple of reasons (expiration, revocation,
+                // change in system trust, ...), but we have already established trust on this particular
+                // connection to even get this far.
                 certificate.Dispose();
                 return true;
             }
@@ -1077,7 +1085,10 @@ namespace System.Net.Security
 
             if (certificate == null)
             {
-                if (NetEventSource.Log.IsEnabled() && RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
+                if (NetEventSource.Log.IsEnabled() && RemoteCertRequired)
+                {
+                    NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
+                }
                 sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
             }
             else
@@ -1180,14 +1191,15 @@ namespace System.Net.Security
             return success;
         }
 
-        private void CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain chain, ref ProtocolToken alertToken)
+        private void CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain? chain, ref ProtocolToken alertToken)
         {
             TlsAlertMessage alertMessage;
 
             switch (sslPolicyErrors)
             {
                 case SslPolicyErrors.RemoteCertificateChainErrors:
-                    alertMessage = GetAlertMessageFromChain(chain);
+                    Debug.Assert(chain != null);
+                    alertMessage = GetAlertMessageFromChain(chain!);
                     break;
                 case SslPolicyErrors.RemoteCertificateNameMismatch:
                     alertMessage = TlsAlertMessage.BadCertificate;

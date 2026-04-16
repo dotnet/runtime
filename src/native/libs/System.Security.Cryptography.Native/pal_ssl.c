@@ -1360,7 +1360,7 @@ void CryptoNative_X509StoreCtxSetError(X509_STORE_CTX* storeCtx, int32_t error)
 /*
 Shims SSL_get_SSL_CTX to retrieve the SSL_CTX from the SSL.
 */
-PALEXPORT SSL_CTX* CryptoNative_SslGetSslCtx(SSL* ssl)
+SSL_CTX* CryptoNative_SslGetSslCtx(SSL* ssl)
 {
     // No error queue impact.
     return SSL_get_SSL_CTX(ssl);
