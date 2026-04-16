@@ -100,37 +100,20 @@ internal static class Entrypoints
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_dacdbi_interface")]
     private static unsafe int CreateDacDbiInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
     {
-        if (obj == null)
-            return HResults.E_INVALIDARG;
-        if (handle == IntPtr.Zero)
-        {
-            *obj = IntPtr.Zero;
-            return HResults.E_NOTIMPL;
-        }
-
+        ComWrappers cw = new StrategyBasedComWrappers();
         Target? target = GCHandle.FromIntPtr(handle).Target as Target;
         if (target is null)
-        {
-            *obj = IntPtr.Zero;
-            return HResults.E_INVALIDARG;
-        }
+            return -1;
 
-        ComWrappers cw = new StrategyBasedComWrappers();
         object? legacyObj = null;
         if (legacyImplPtr != IntPtr.Zero)
         {
             legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
-            if (legacyObj is not Legacy.IDacDbiInterface)
-            {
-                *obj = IntPtr.Zero;
-                return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
-            }
         }
 
-        // Fallback gating is handled by LegacyFallbackHelper at each call site.
         Legacy.DacDbiImpl impl = new(target, legacyObj);
         *obj = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
-        return HResults.S_OK;
+        return 0;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstanceWithFallback")]
