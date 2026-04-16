@@ -137,7 +137,7 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size TRANSITION_
 }
 
 EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size);
-EXTERN_C FCIMPL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
+FCIMPL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -265,7 +265,7 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
 FCIMPLEND
 
 EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT);
-EXTERN_C FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
+FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -309,7 +309,7 @@ FCIMPLEND
 #define MAX_STRING_LENGTH 0x3FFFFFDF
 
 EXTERN_C FCDECL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength);
-EXTERN_C FCIMPL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength)
+FCIMPL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
