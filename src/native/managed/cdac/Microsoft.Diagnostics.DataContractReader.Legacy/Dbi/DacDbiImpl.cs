@@ -577,7 +577,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     ccw = ccwAddress;
                 }
                 ccw = builtInCOM.GetStartWrapper(ccw);
-                objectHandle = builtInCOM.GetObjectFromCCW(ccw);
+                objectHandle = builtInCOM.GetObjectHandle(ccw);
             }
 
             *pRetVal = objectHandle.Value;
