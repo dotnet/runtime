@@ -291,6 +291,15 @@ endif(CLR_CMAKE_TARGET_APPLE)
 
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
+# Force the linker to pull in MetaDataGetDispenser from coreclr_static even though
+# nothing in singlefilehost references it directly. Without this, the linker's
+# dead code elimination drops mscoree.o and the export is missing from the binary.
+if(CLR_CMAKE_TARGET_APPLE)
+    target_link_options(singlefilehost PRIVATE -Wl,-u,_MetaDataGetDispenser)
+elseif(NOT CLR_CMAKE_TARGET_WIN32)
+    target_link_options(singlefilehost PRIVATE -Wl,-u,MetaDataGetDispenser)
+endif()
+
 target_link_libraries(
     singlefilehost
     PRIVATE
