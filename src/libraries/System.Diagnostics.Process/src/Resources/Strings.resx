@@ -223,7 +223,7 @@
     <value>The KillOnParentExit property cannot be used with UseShellExecute.</value>
   </data>
   <data name="CantSetRedirectForSafeProcessHandleStart" xml:space="preserve">
-    <value>The RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties cannot be used by SafeProcessHandle.Start. Use the StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties.</value>
+    <value>The RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties cannot be used by SafeProcessHandle.Start or Process.StartAndForget. Use the StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties.</value>
   </data>
   <data name="StartDetachedNotCompatible" xml:space="preserve">
     <value>The StartDetached property cannot be used with UseShellExecute set to true.</value>
