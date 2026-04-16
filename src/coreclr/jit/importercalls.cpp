@@ -5229,8 +5229,14 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 
                 bool                 isExact, isNonNull;
                 CORINFO_CLASS_HANDLE oldClass = gtGetClassHandle(op, &isExact, &isNonNull);
+                // Only keep the old class if it is provably at least as specific as 'inst'.
+                // For unrelated types (e.g. `this` in SZArrayHelper methods where `this` is
+                // typed SZArrayHelper but is actually a T[] at runtime), we must spill to a
+                // new temp whose class is 'inst' so that downstream type-tracking and VN
+                // based constant folding of invariant loads (such as GetMethodTable) uses
+                // the correct type rather than the phantom SZArrayHelper MethodTable.
                 if ((oldClass != NO_CLASS_HANDLE) &&
-                    ((oldClass == inst) || !info.compCompHnd->isMoreSpecificType(oldClass, inst)))
+                    ((oldClass == inst) || info.compCompHnd->isMoreSpecificType(inst, oldClass)))
                 {
                     JITDUMP("Unsafe.As: Keep using old '%s' type\n", eeGetClassName(oldClass));
                     return op;
