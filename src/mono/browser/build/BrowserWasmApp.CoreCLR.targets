@@ -163,7 +163,7 @@
 
     <!-- Resolve managed assembly TFM directory -->
     <ItemGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
-      <_SystemRuntimePathItem Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib$(WasmDirSep)net*$(WasmDirSep)System.Runtime.dll" />
+      <_SystemRuntimePathItem Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net*\System.Runtime.dll" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == '' and @(_SystemRuntimePathItem->Count()) > 0">
