@@ -3053,6 +3053,22 @@ namespace Internal.JitInterface
             if (type.HasTypeEquivalence || type.HasVariance)
                 return false;
 
+            // SZArrayHelper is a phantom dispatch target: CoreCLR maps generic
+            // array interface methods (IList<T>.set_Item, etc.) to sealed
+            // SZArrayHelper methods, but no runtime object ever has SZArrayHelper
+            // as its MethodTable - `this` inside those methods is always a T[].
+            // Reporting it as exact would allow the JIT (e.g. VN-based invariant-
+            // load folding of GetMethodTable) to embed SZArrayHelper's MT as a
+            // constant and mis-read fields off it. NativeAOT has no SZArrayHelper
+            // type, so the lookup below is harmless there.
+            if (type is MetadataType mdType &&
+                mdType.Name == "SZArrayHelper" &&
+                mdType.Namespace == "System" &&
+                mdType.Module == _compilation.TypeSystemContext.SystemModule)
+            {
+                return false;
+            }
+
             // Valuetypes are invariant. This assumes that introducing type equivalence to an existing type
             // is not compatible change.
             if (type.IsValueType)

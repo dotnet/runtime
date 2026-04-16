@@ -4459,6 +4459,16 @@ static bool isExactTypeHelper(TypeHandle th)
     if (pMT->HasTypeEquivalence() || pMT->HasVariance())
         return false;
 
+    // SZArrayHelper is a phantom dispatch target: the VM maps generic
+    // array interface methods (IList<T>.set_Item, etc.) to sealed
+    // SZArrayHelper methods, but no runtime object ever has
+    // SZArrayHelper as its MethodTable - `this` inside those methods
+    // is always a T[]. Reporting it as exact would allow the JIT (e.g.
+    // VN-based invariant-load folding of GetMethodTable) to embed
+    // SZArrayHelper's MT as a constant and mis-read fields off it.
+    if (pMT == g_pSZArrayHelperClass)
+        return false;
+
     return pMT->IsSealed();
 }
 
