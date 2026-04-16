@@ -86,6 +86,7 @@ namespace
         if (!pal::load_library(&sdk_aot_path, &aot_dll))
             return false;
 
+        // See docs/design/features/sharedfx-lookup.md#sdk-search
         typedef int (*dotnet_execute_fn)(
             const pal::char_t* host_path,
             const pal::char_t* dotnet_root,
@@ -93,6 +94,7 @@ namespace
             const pal::char_t* hostfxr_path,
             int argc,
             const pal::char_t** argv);
+
         auto dotnet_execute = reinterpret_cast<dotnet_execute_fn>(pal::get_symbol(aot_dll, "dotnet_execute"));
         if (dotnet_execute == nullptr)
         {
