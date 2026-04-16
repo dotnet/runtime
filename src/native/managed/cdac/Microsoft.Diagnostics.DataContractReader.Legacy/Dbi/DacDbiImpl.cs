@@ -572,7 +572,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 IBuiltInCOM builtInCOM = _target.Contracts.BuiltInCOM;
                 TargetPointer ccw = builtInCOM.GetCCWFromInterfacePointer(ccwAddress);
-                if (ccw != TargetPointer.Null)
+                if (ccw == TargetPointer.Null)
                 {
                     ccw = ccwAddress;
                 }
