@@ -3302,6 +3302,22 @@ uint64_t BitOperations::DoubleToUInt64Bits(double value)
 }
 
 //------------------------------------------------------------------------
+// BitOperations::HalfToUInt16Bits: Gets the underlying bits for a half-precision floating-point value.
+//
+// Arguments:
+//    value - The number to convert
+//
+// Return Value:
+//    The underlying bits for value.
+//
+uint16_t BitOperations::HalfToUInt16Bits(float16_t value)
+{
+    uint16_t result;
+    memcpy(&result, &value, sizeof(float16_t));
+    return result;
+}
+
+//------------------------------------------------------------------------
 // BitOperations::LeadingZeroCount: Count the number of leading zero bits in a mask.
 //
 // Arguments:
@@ -3650,6 +3666,22 @@ uint32_t BitOperations::TrailingZeroCount(uint64_t value)
     int32_t result = __builtin_ctzll(value);
     return static_cast<uint32_t>(result);
 #endif
+}
+
+//------------------------------------------------------------------------
+// BitOperations::UInt16BitsToHalf: Gets a half-precision floating-point from its underlying bit value.
+//
+// Arguments:
+//    value - The underlying bit value.
+//
+// Return Value:
+//    The half-precision floating-point from value.
+//
+float16_t BitOperations::UInt16BitsToHalf(uint16_t value)
+{
+    float16_t result;
+    memcpy(&result, &value, sizeof(uint16_t));
+    return result;
 }
 
 //------------------------------------------------------------------------

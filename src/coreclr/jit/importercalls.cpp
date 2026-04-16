@@ -4660,13 +4660,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #ifdef TARGET_XARCH
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                 {
-                    NamedIntrinsic opId = lookupHalfConversionIntrinsic(TYP_INT, TYP_HALF);
-                    if (opId == NI_Illegal)
-                    {
-                        break;
-                    }
+                    uint16_t halfBits = 0;
 
-                    int halfBits = 0;
                     switch (ni)
                     {
                         case NI_System_Half_get_MaxValue:
@@ -4697,9 +4692,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             noway_assert(!"Unknown Half static property");
                     }
 
-                    GenTree* zeroVec = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_HALF, 16);
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, gtNewIconNode(halfBits, TYP_INT), opId,
-                                                       TYP_INT, 16);
+                    retNode = gtNewSimdCreateScalarNode(TYP_SIMD16, gtNewIconNode(halfBits, TYP_INT), TYP_USHORT, 16);
                     retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                 }
 #endif
