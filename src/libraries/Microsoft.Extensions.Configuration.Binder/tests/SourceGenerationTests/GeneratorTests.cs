@@ -545,7 +545,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         /// is passed directly as a method argument (e.g. Some.Method(config.Get&lt;T&gt;())).
         /// Regression test for https://github.com/dotnet/runtime/issues/94544.
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [Fact]
         public async Task Suppressor_SuppressesWarnings_WhenBindingCallIsMethodArgument()
         {
             string source = """
@@ -581,7 +581,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         /// Verifies that the suppressor also works for the straightforward assignment case,
         /// ensuring no regression in existing behavior.
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [Fact]
         public async Task Suppressor_SuppressesWarnings_ForSimpleBindingCall()
         {
             string source = """
@@ -593,6 +593,35 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     {
                         IConfigurationSection c = new ConfigurationBuilder().Build().GetSection("Options");
                         var options = c.Get<MyOptions>();
+                    }
+                }
+
+                public class MyOptions
+                {
+                    public int MaxRetries { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+        }
+
+        [Fact]
+        public async Task Suppressor_SuppressesWarnings_WithLineDirective()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfigurationSection c = new ConfigurationBuilder().Build().GetSection("Options");
+                #line 100 "Remapped.cs"
+                        var options = c.Get<MyOptions>();
+                #line default
                     }
                 }
 
@@ -730,13 +759,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 new DynamicallyAccessedMembersAnalyzer(),
                 new ConfigurationBindingGenerator.Suppressor());
 
-            var globalOptions = ImmutableDictionary.CreateRange(
+            var globalOptions = ImmutableDictionary.CreateRange<string, string>(
                 StringComparer.OrdinalIgnoreCase,
-                new[]
-                {
-                    new KeyValuePair<string, string>("build_property.EnableTrimAnalyzer", "true"),
-                    new KeyValuePair<string, string>("build_property.EnableAotAnalyzer", "true"),
-                });
+                [
+                    new("build_property.EnableTrimAnalyzer", "true"),
+                    new("build_property.EnableAotAnalyzer", "true"),
+                ]);
             var analyzerOptions = new AnalyzerOptions(
                 ImmutableArray<AdditionalText>.Empty,
                 new SimpleAnalyzerConfigOptionsProvider(globalOptions));

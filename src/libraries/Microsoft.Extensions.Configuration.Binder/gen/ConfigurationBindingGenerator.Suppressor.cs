@@ -121,6 +121,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     SyntaxNode root = tree.GetRoot(cancellationToken);
                     foreach (AttributeSyntax attr in root.DescendantNodes().OfType<AttributeSyntax>())
                     {
+                        // Matching the name like this is somewhat brittle, but it's okay as long as we match what the generator emits.
                         if (attr.Name.ToString() != "InterceptsLocation")
                         {
                             continue;
