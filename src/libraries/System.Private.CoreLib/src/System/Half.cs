@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -16,6 +17,7 @@ namespace System
     /// <summary>
     /// Represents a half-precision floating-point number.
     /// </summary>
+    [Intrinsic]
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Half
         : IComparable,
@@ -86,19 +88,43 @@ namespace System
 
         // Well-defined and commonly used values
 
-        public static Half Epsilon => new Half(EpsilonBits);                        //  5.9604645E-08
+        public static Half Epsilon
+        {
+            [Intrinsic]
+            get => new Half(EpsilonBits);                        //  5.9604645E-08
+        }
 
-        public static Half PositiveInfinity => new Half(PositiveInfinityBits);      //  1.0 / 0.0;
+        public static Half PositiveInfinity
+        {
+            [Intrinsic]
+            get => new Half(PositiveInfinityBits);      //  1.0 / 0.0;
+        }
 
-        public static Half NegativeInfinity => new Half(NegativeInfinityBits);      // -1.0 / 0.0
+        public static Half NegativeInfinity
+        {
+            [Intrinsic]
+            get => new Half(NegativeInfinityBits);      // -1.0 / 0.0
+        }
 
-        public static Half NaN => new Half(NegativeQNaNBits);                       //  0.0 / 0.0
+        public static Half NaN
+        {
+            [Intrinsic]
+            get => new Half(NegativeQNaNBits);                       //  0.0 / 0.0
+        }
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
-        public static Half MinValue => new Half(MinValueBits);                      // -65504
+        public static Half MinValue
+        {
+            [Intrinsic]
+            get => new Half(MinValueBits);                      // -65504
+        }
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
-        public static Half MaxValue => new Half(MaxValueBits);                      //  65504
+        public static Half MaxValue
+        {
+            [Intrinsic]
+            get => new Half(MaxValueBits);                      //  65504
+        }
 
         internal readonly ushort _value;
 
@@ -154,6 +180,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator <(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -176,12 +203,14 @@ namespace System
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator >(Half left, Half right)
         {
             return right < left;
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator <=(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -204,12 +233,14 @@ namespace System
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator >=(Half left, Half right)
         {
             return right <= left;
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator ==(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -223,6 +254,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator !=(Half left, Half right)
         {
             return !(left == right);
@@ -550,7 +582,6 @@ namespace System
         {
             return Number.TryFormatFloat(this, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
-
         //
         // Explicit Convert To Half
         //
@@ -568,6 +599,7 @@ namespace System
         /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [Intrinsic]
         public static explicit operator Half(double value)
         {
             const int DoubleMaxExponent = 0x7FF;
@@ -602,11 +634,13 @@ namespace System
         /// <summary>Explicitly converts a <see cref="int" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [Intrinsic]
         public static explicit operator Half(int value) => (Half)(float)value;
 
         /// <summary>Explicitly converts a <see cref="long" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [Intrinsic]
         public static explicit operator Half(long value) => (Half)(float)value;
 
         /// <summary>Explicitly converts a <see cref="nint" /> value to its nearest representable half-precision floating-point value.</summary>
@@ -617,6 +651,7 @@ namespace System
         /// <summary>Explicitly converts a <see cref="float" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [Intrinsic]
         public static explicit operator Half(float value)
         {
             #region Explanation of this algorithm
@@ -790,12 +825,14 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static explicit operator Half(uint value) => (Half)(float)value;
 
         /// <summary>Explicitly converts a <see cref="ulong" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static explicit operator Half(ulong value) => (Half)(float)value;
 
         /// <summary>Explicitly converts a <see cref="nuint" /> value to its nearest representable half-precision floating-point value.</summary>
@@ -849,6 +886,7 @@ namespace System
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="int" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="int" /> value.</returns>
+        [Intrinsic]
         public static explicit operator int(Half value) => (int)(float)value;
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="int" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
@@ -860,6 +898,7 @@ namespace System
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="long" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="long" /> value.</returns>
+        [Intrinsic]
         public static explicit operator long(Half value) => (long)(float)value;
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="long" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
@@ -920,6 +959,7 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="uint" /> value.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static explicit operator uint(Half value) => (uint)(float)value;
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="uint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
@@ -933,6 +973,7 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ulong" /> value.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static explicit operator ulong(Half value) => (ulong)(float)value;
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="ulong" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
@@ -990,6 +1031,7 @@ namespace System
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="double" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="double" /> value.</returns>
+        [Intrinsic]
         public static explicit operator double(Half value)
         {
             bool sign = IsNegative(value);
@@ -1021,6 +1063,7 @@ namespace System
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="float" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="float" /> value.</returns>
+        [Intrinsic]
         public static explicit operator float(Half value)
         {
             #region Explanation of this algorithm
@@ -1184,6 +1227,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        [Intrinsic]
         public static Half operator +(Half left, Half right) => (Half)((float)left + (float)right);
 
         //
@@ -1265,6 +1309,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        [Intrinsic]
         public static Half operator --(Half value)
         {
             var tmp = (float)value;
@@ -1277,6 +1322,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
+        [Intrinsic]
         public static Half operator /(Half left, Half right) => (Half)((float)left / (float)right);
 
         //
@@ -1306,6 +1352,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        [Intrinsic]
         public static Half Ceiling(Half x) => (Half)MathF.Ceiling((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
@@ -1317,9 +1364,11 @@ namespace System
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        [Intrinsic]
         public static Half Floor(Half x) => (Half)MathF.Floor((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        [Intrinsic]
         public static Half Round(Half x) => (Half)MathF.Round((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
@@ -1332,6 +1381,7 @@ namespace System
         public static Half Round(Half x, int digits, MidpointRounding mode) => (Half)MathF.Round((float)x, digits, mode);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        [Intrinsic]
         public static Half Truncate(Half x) => (Half)MathF.Truncate((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
@@ -1505,6 +1555,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
         public static Half FusedMultiplyAdd(Half left, Half right, Half addend) => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
@@ -1542,9 +1593,11 @@ namespace System
         public static Half Lerp(Half value1, Half value2, Half amount) => (Half)float.Lerp((float)value1, (float)value2, (float)amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        [Intrinsic]
         public static Half ReciprocalEstimate(Half x) => (Half)MathF.ReciprocalEstimate((float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        [Intrinsic]
         public static Half ReciprocalSqrtEstimate(Half x) => (Half)MathF.ReciprocalSqrtEstimate((float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
@@ -1580,6 +1633,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        [Intrinsic]
         public static Half operator ++(Half value)
         {
             var tmp = (float)value;
@@ -1628,6 +1682,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
+        [Intrinsic]
         public static Half operator *(Half left, Half right) => (Half)((float)left * (float)right);
 
         //
@@ -1661,6 +1716,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        [Intrinsic]
         public static Half Max(Half x, Half y) => (Half)float.Max((float)x, (float)y);
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
@@ -1689,6 +1745,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        [Intrinsic]
         public static Half Min(Half x, Half y) => (Half)float.Min((float)x, (float)y);
 
         /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
@@ -1741,13 +1798,21 @@ namespace System
         //
 
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        public static Half One => new Half(PositiveOneBits);
+        public static Half One
+        {
+            [Intrinsic]
+            get => new Half(PositiveOneBits);
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
         static int INumberBase<Half>.Radix => 2;
 
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        public static Half Zero => new Half(PositiveZeroBits);
+        public static Half Zero
+        {
+            [Intrinsic]
+            get => new Half(PositiveZeroBits);
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static Half Abs(Half value) => new Half((ushort)(value._value & ~SignMask));
@@ -2192,6 +2257,7 @@ namespace System
         public static Half RootN(Half x, int n) => (Half)float.RootN((float)x, n);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        [Intrinsic]
         public static Half Sqrt(Half x) => (Half)MathF.Sqrt((float)x);
 
         //
@@ -2216,6 +2282,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
+        [Intrinsic]
         public static Half operator -(Half left, Half right) => (Half)((float)left - (float)right);
 
         //
@@ -2229,6 +2296,7 @@ namespace System
         public static Half AcosPi(Half x) => (Half)float.AcosPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Half Asin(Half x) => (Half)MathF.Asin((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
