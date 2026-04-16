@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
@@ -269,9 +270,9 @@ namespace System.Diagnostics
         /// read from standard output and standard error.
         /// </returns>
         /// <remarks>
-        /// When both standard output and standard error have data available at the same time,
-        /// standard error lines are yielded first. This is by design to ensure that error output
-        /// is not delayed behind standard output.
+        /// Lines from standard output and standard error are yielded as they become available.
+        /// When the consumer stops enumerating early (for example, by breaking out of
+        /// <see langword="await foreach" />), any pending read operations are canceled.
         /// </remarks>
         /// <exception cref="InvalidOperationException">
         /// Standard output or standard error has not been redirected.
@@ -291,93 +292,52 @@ namespace System.Diagnostics
             StreamReader outputReader = _standardOutput!;
             StreamReader errorReader = _standardError!;
 
-            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            CancellationToken linkedToken = linkedCts.Token;
+            Channel<ProcessOutputLine> channel = Channel.CreateBounded<ProcessOutputLine>(0);
+            int completedCount = 0;
 
-            Task<string?> readOutput = outputReader.ReadLineAsync(linkedToken).AsTask();
-            Task<string?> readError = errorReader.ReadLineAsync(linkedToken).AsTask();
-            bool isError;
+            CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+            Task outputTask = ReadToChannelAsync(outputReader, standardError: false, linkedCts.Token);
+            Task errorTask = ReadToChannelAsync(errorReader, standardError: true, linkedCts.Token);
 
             try
             {
-                while (true)
+                await foreach (ProcessOutputLine line in channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    Task completedTask = await Task.WhenAny(readOutput, readError).ConfigureAwait(false);
-
-                    // When there is data available in both, handle error first.
-                    isError = completedTask == readError || (readOutput.IsCompleted && readError.IsCompleted);
-
-                    string? line = isError
-                        ? await readError.ConfigureAwait(false)
-                        : await readOutput.ConfigureAwait(false);
-
-                    if (line is not null)
-                    {
-                        yield return new ProcessOutputLine(line, isError);
-
-                        // Continue reading from the same stream while data is immediately available.
-                        StreamReader activeReader = isError ? errorReader : outputReader;
-                        while (true)
-                        {
-                            ValueTask<string?> nextRead = activeReader.ReadLineAsync(linkedToken);
-
-                            if (nextRead.IsCompleted)
-                            {
-                                line = await nextRead.ConfigureAwait(false);
-                                if (line is null)
-                                {
-                                    break;
-                                }
-
-                                yield return new ProcessOutputLine(line, isError);
-                            }
-                            else
-                            {
-                                if (isError)
-                                {
-                                    readError = nextRead.AsTask();
-                                }
-                                else
-                                {
-                                    readOutput = nextRead.AsTask();
-                                }
-
-                                break;
-                            }
-                        }
-                    }
-
-                    if (line is null)
-                    {
-                        break;
-                    }
-                }
-
-                // One stream ended. Drain the remaining data from the other stream.
-                // isError tells us which stream returned null, so we drain the opposite stream.
-                string? moreData = await (isError ? readOutput : readError).ConfigureAwait(false);
-                StreamReader remainingReader = isError ? outputReader : errorReader;
-                bool remainingIsError = !isError;
-
-                while (moreData is not null)
-                {
-                    yield return new ProcessOutputLine(moreData, remainingIsError);
-                    moreData = await remainingReader.ReadLineAsync(linkedToken).ConfigureAwait(false);
+                    yield return line;
                 }
             }
             finally
             {
-                // Cancel any in-flight reads when the consumer stops enumerating early
-                // (e.g., breaks out of await foreach without cancellation).
                 await linkedCts.CancelAsync().ConfigureAwait(false);
 
-                // Observe the pending tasks to prevent unobserved task exceptions.
-                // OperationCanceledException is expected from the cancellation above.
-                try { await readOutput.ConfigureAwait(false); }
-                catch (OperationCanceledException) { }
+                // Ensure both tasks complete before disposing the CancellationTokenSource.
+                // The tasks handle all exceptions internally, so they always run to completion.
+                await outputTask.ConfigureAwait(false);
+                await errorTask.ConfigureAwait(false);
 
-                try { await readError.ConfigureAwait(false); }
-                catch (OperationCanceledException) { }
+                linkedCts.Dispose();
+            }
+
+            async Task ReadToChannelAsync(StreamReader reader, bool standardError, CancellationToken ct)
+            {
+                try
+                {
+                    while (await reader.ReadLineAsync(ct).ConfigureAwait(false) is string line)
+                    {
+                        await channel.Writer.WriteAsync(new ProcessOutputLine(line, standardError), ct).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    channel.Writer.TryComplete(ex);
+                    return;
+                }
+
+                if (Interlocked.Exchange(ref completedCount, 1) != 0)
+                {
+                    channel.Writer.TryComplete();
+                }
             }
         }
 

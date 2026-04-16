@@ -228,6 +228,8 @@ namespace System.Diagnostics
     }
     public readonly partial struct ProcessOutputLine
     {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ProcessOutputLine(string content, bool standardError) { throw null; }
         public string Content { get { throw null; } }
         public bool StandardError { get { throw null; } }
