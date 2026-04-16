@@ -671,9 +671,9 @@ namespace System
                 return dateTime;
             }
 
-            // Use a clamped DateTime for destination offset lookup (transition table lookups require a DateTime).
-            // The raw utcTicks may be outside DateTime range, but the clamped value is sufficient for offset lookup
-            // because near DateTime.MinValue/MaxValue there are no DST transitions that would differ.
+            // Use a clamped DateTime for destination offset lookup because transition-table lookups require
+            // an in-range DateTime. This preserves the existing offset-selection behavior for the lookup,
+            // while the final local ticks are still computed from the raw utcTicks to avoid double-clamping.
             DateTime utcForLookup = SafeCreateDateTimeFromTicks(utcTicks, DateTimeKind.Utc);
             TimeSpan destOffset = destinationTimeZone.GetOffsetForUtcDate(utcForLookup, out bool isDaylightSaving);
 
