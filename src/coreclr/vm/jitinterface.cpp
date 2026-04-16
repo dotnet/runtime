@@ -7732,9 +7732,13 @@ CEEInfo::getMethodInfo(
         getMethodInfoWorker(ftn, &header, methInfo, context);
         result = true;
     }
-    else if (ftn->IsIL() || ftn->IsPInvoke() || ftn->IsDynamicMethod())
+    else if (ftn->IsIL() || ftn->IsDynamicMethod())
     {
         // IL methods with no IL header indicate there is no implementation defined in metadata.
+        // NOTE: P/Invoke methods are also IL methods with no IL header,
+        // but it is generally not profitable to inline the marshalling IL.
+        // As a result, we skip inlining the marshalling IL.
+        // P/Invokes that don't require marshalling can still be inlined directly by the JIT.
         getMethodInfoWorker(ftn, NULL, methInfo, context);
         result = true;
     }
