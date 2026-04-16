@@ -3594,21 +3594,16 @@ namespace System
 
         public override unsafe Type? GetNullableUnderlyingType()
         {
-            if (IsConstructedGenericType)
+            TypeHandle th = GetNativeTypeHandle();
+            if (!th.IsTypeDesc)
             {
-                TypeHandle th = GetNativeTypeHandle();
-                if (!th.IsTypeDesc)
+                MethodTable* pMT = th.AsMethodTable();
+                if (pMT->IsNullable)
                 {
-                    MethodTable* pMT = th.AsMethodTable();
-                    if (pMT->IsNullable)
-                    {
-                        RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->InstantiationArg0());
-                        GC.KeepAlive(this);
-                        return result;
-                    }
+                    RuntimeType result = RuntimeTypeHandle.GetRuntimeTypeFromHandle((IntPtr)pMT->InstantiationArg0());
+                    GC.KeepAlive(this);
+                    return result;
                 }
-                if (typeof(Nullable<>) == GetGenericTypeDefinition())
-                    return GetGenericArguments()[0];
             }
             return null;
         }
