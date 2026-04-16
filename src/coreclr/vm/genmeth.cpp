@@ -849,10 +849,10 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         if (asyncVariantLookup == AsyncVariantLookup::AsyncOtherVariant
             && allowCreate
             && pDefMD->IsEnCAddedMethod()
-            && (pMDescInCanonMT == NULL ||
-                (pMDescInCanonMT->IsEnCAddedMethod()
-                 && pMDescInCanonMT->GetMethodTable() != pExactMT->GetCanonicalMethodTable())))
+            && pMDescInCanonMT == NULL)
         {
+            _ASSERTE(pMDescInCanonMT == NULL || pMDescInCanonMT->GetMethodTable() == pExactMT->GetCanonicalMethodTable());
+
             MethodTable* pCanonMT = pExactMT->GetCanonicalMethodTable();
             MethodDesc* pPrimaryOnCanonMT = pCanonMT->GetParallelMethodDesc(pDefMD, AsyncVariantLookup::MatchingAsyncVariant);
 
@@ -865,9 +865,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
                 // Double-check: another thread may have created the variant while we waited for the lock.
                 pMDescInCanonMT = pCanonMT->GetParallelMethodDesc(pDefMD, asyncVariantLookup);
-                if (pMDescInCanonMT == NULL ||
-                    (pMDescInCanonMT->IsEnCAddedMethod()
-                     && pMDescInCanonMT->GetMethodTable() != pCanonMT))
+                _ASSERTE(pMDescInCanonMT == NULL || pMDescInCanonMT->IsEnCAddedMethod());
+                if (pMDescInCanonMT == NULL)
                 {
                     MethodDesc* pNewAsyncVariant = NULL;
                     HRESULT hr = EEClass::AddAsyncVariant(pPrimaryOnCanonMT, &pNewAsyncVariant);
