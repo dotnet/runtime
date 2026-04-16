@@ -9,38 +9,35 @@ namespace System.Runtime.Loader.Tests
 {
     public class TpaLoadFailureTest
     {
-        private static string GetAssemblyPath(string assemblyFileName)
+        private static string GetAssemblyPath(string assemblyName)
         {
             string appDir = Path.GetDirectoryName(AssemblyPathHelper.GetAssemblyLocation(typeof(TpaLoadFailureTest).Assembly));
-            return Path.Combine(appDir, assemblyFileName);
-        }
-
-        // Ensure the DLL is not present on disk. The assembly is still listed in deps.json
-        // so the host adds it to the TPA list, but the physical file is absent.
-        private static void EnsureAssemblyRemoved(string dllPath)
-        {
-            if (File.Exists(dllPath))
-                File.Delete(dllPath);
+            return Path.Combine(appDir, assemblyName + ".dll");
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string UseMissingAssembly() => global::BindFailureTest.Missing.TestClass.GetMessage();
+        private static string UseMissingAssembly() => BindFailureTest.Missing.TestClass.GetMessage();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string UseLockedAssembly() => global::BindFailureTest.Locked.TestClass.GetMessage();
+        private static string UseLockedAssembly() => BindFailureTest.Locked.TestClass.GetMessage();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string UseCorruptAssembly() => global::BindFailureTest.Corrupt.TestClass.GetMessage();
+        private static string UseCorruptAssembly() => BindFailureTest.Corrupt.TestClass.GetMessage();
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
         public void NotFound_ExceptionContainsAssemblyPath()
         {
-            const string assemblyFileName = "System.Runtime.Loader.Test.BindFailure.Missing.dll";
-            string dllPath = GetAssemblyPath(assemblyFileName);
-            EnsureAssemblyRemoved(dllPath);
+            // The Missing assembly is listed in deps.json (so the host adds it to the TPA
+            // list) but deleted from the output directory by the RemoveBindFailureTestAssemblies
+            // MSBuild target, so it will not be found at runtime.
+            const string assemblyName = "System.Runtime.Loader.Test.BindFailure.Missing";
+            string dllPath = GetAssemblyPath(assemblyName);
+            Assert.False(File.Exists(dllPath), $"Test assembly should not be present at {dllPath}");
 
             var ex = Assert.Throws<FileNotFoundException>(() => UseMissingAssembly());
-            Assert.Contains("System.Runtime.Loader.Test.BindFailure.Missing", ex.FusionLog);
+            Assert.NotNull(ex.FileName);
+            Assert.Contains(assemblyName, ex.FileName);
+            Assert.NotNull(ex.FusionLog);
             Assert.Contains(dllPath, ex.FusionLog);
             Assert.Contains(HResults.COR_E_FILENOTFOUND.ToString("X8"), ex.FusionLog);
         }
@@ -48,15 +45,30 @@ namespace System.Runtime.Loader.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.HasAssemblyFiles))]
         public void SharingViolation_ExceptionContainsPathAndHResult()
         {
-            const string assemblyFileName = "System.Runtime.Loader.Test.BindFailure.Locked.dll";
-            string dllPath = GetAssemblyPath(assemblyFileName);
-            Assert.True(File.Exists(dllPath), $"Test assembly not found at {dllPath}");
+            // The Locked assembly is listed in deps.json but deleted from the output
+            // directory by the RemoveBindFailureTestAssemblies MSBuild target.
+            // We write a file and lock it before the load attempt.
+            const string assemblyName = "System.Runtime.Loader.Test.BindFailure.Locked";
+            string dllPath = GetAssemblyPath(assemblyName);
+            Assert.False(File.Exists(dllPath), $"Test assembly should not be present at {dllPath}");
 
-            using FileStream _ = new FileStream(dllPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            try
+            {
+                File.WriteAllBytes(dllPath, new byte[] { 0x4D, 0x5A, 0x90, 0x00 });
 
-            var ex = Assert.Throws<FileNotFoundException>(() => UseLockedAssembly());
-            Assert.Contains(dllPath, ex.FusionLog);
-            Assert.Contains(HResults.ERROR_SHARING_VIOLATION.ToString("X8"), ex.FusionLog);
+                using FileStream _ = new FileStream(dllPath, FileMode.Open, FileAccess.Read, FileShare.None);
+
+                var ex = Assert.Throws<FileNotFoundException>(() => UseLockedAssembly());
+                Assert.NotNull(ex.FileName);
+                Assert.Contains(assemblyName, ex.FileName);
+                Assert.NotNull(ex.FusionLog);
+                Assert.Contains(dllPath, ex.FusionLog);
+                Assert.Contains(HResults.ERROR_SHARING_VIOLATION.ToString("X8"), ex.FusionLog);
+            }
+            finally
+            {
+                File.Delete(dllPath);
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.HasAssemblyFiles))]
@@ -64,15 +76,21 @@ namespace System.Runtime.Loader.Tests
         {
             const int COR_E_ASSEMBLYEXPECTED = unchecked((int)0x80131018);
 
-            const string assemblyFileName = "System.Runtime.Loader.Test.BindFailure.Corrupt.dll";
-            string dllPath = GetAssemblyPath(assemblyFileName);
-            EnsureAssemblyRemoved(dllPath);
+            // The Corrupt assembly is listed in deps.json but deleted from the output
+            // directory by the RemoveBindFailureTestAssemblies MSBuild target.
+            // We write a corrupt file in its place before the load attempt.
+            const string assemblyName = "System.Runtime.Loader.Test.BindFailure.Corrupt";
+            string dllPath = GetAssemblyPath(assemblyName);
+            Assert.False(File.Exists(dllPath), $"Test assembly should not be present at {dllPath}");
 
             try
             {
                 File.WriteAllBytes(dllPath, new byte[] { 0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x00, 0x00, 0x00 });
 
                 var ex = Assert.Throws<FileNotFoundException>(() => UseCorruptAssembly());
+                Assert.NotNull(ex.FileName);
+                Assert.Contains(assemblyName, ex.FileName);
+                Assert.NotNull(ex.FusionLog);
                 Assert.Contains(dllPath, ex.FusionLog);
                 Assert.Contains(COR_E_ASSEMBLYEXPECTED.ToString("X8"), ex.FusionLog);
             }

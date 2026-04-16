@@ -112,4 +112,14 @@
       </ManagedAssemblyToLink>
     </ItemGroup>
   </Target>
+
+  <!-- Remove the bind-failure test assemblies from the output directory.
+       They must remain in deps.json (so the host adds them to the TPA list) but must not be
+       physically present on disk when the test process starts. The tests recreate the files
+       they need (e.g., corrupt or locked versions) before attempting the load. -->
+  <Target Name="RemoveBindFailureTestAssemblies" AfterTargets="Build" BeforeTargets="PrepareForRun">
+    <Delete Files="$(OutDir)System.Runtime.Loader.Test.BindFailure.Missing.dll" />
+    <Delete Files="$(OutDir)System.Runtime.Loader.Test.BindFailure.Locked.dll" />
+    <Delete Files="$(OutDir)System.Runtime.Loader.Test.BindFailure.Corrupt.dll" />
+  </Target>
 </Project>
