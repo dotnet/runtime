@@ -112,11 +112,11 @@ namespace System.Tests
         public static IEnumerable<object[]> Parse_Preserve_TrailingZero_TestData()
         {
             yield return new object[] { "0.00", "0.00" };
-            yield return new object[] { "0." + new string('0', 6143), "0." + new string('0', 6143) };
-            yield return new object[] { "0." + new string('0', 10000), "0." + new string('0', 6143) };
+            yield return new object[] { "0." + new string('0', 6176), "0." + new string('0', 6176) };
+            yield return new object[] { "0." + new string('0', 10000), "0." + new string('0', 6176) };
             yield return new object[] { "0e-2", "0.00" };
-            yield return new object[] { "0e-6143", "0." + new string('0', 6143) };
-            yield return new object[] { "0e-10000", "0." + new string('0', 6143) };
+            yield return new object[] { "0e-6176", "0." + new string('0', 6176) };
+            yield return new object[] { "0e-10000", "0." + new string('0', 6176) };
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
