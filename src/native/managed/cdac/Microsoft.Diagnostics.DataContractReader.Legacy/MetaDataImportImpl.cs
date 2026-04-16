@@ -104,20 +104,20 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int CountEnum(nint hEnum, uint* pulCount)
-        => _legacyImport?.CountEnum(hEnum, pulCount) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.CountEnum(hEnum, pulCount) : HResults.E_NOTIMPL;
 
     public int ResetEnum(nint hEnum, uint ulPos)
-        => _legacyImport?.ResetEnum(hEnum, ulPos) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.ResetEnum(hEnum, ulPos) : HResults.E_NOTIMPL;
 
     public int EnumTypeDefs(nint* phEnum, uint* rTypeDefs, uint cMax, uint* pcTypeDefs)
-        => _legacyImport?.EnumTypeDefs(phEnum, rTypeDefs, cMax, pcTypeDefs) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumTypeDefs(phEnum, rTypeDefs, cMax, pcTypeDefs) : HResults.E_NOTIMPL;
 
     public int EnumInterfaceImpls(nint* phEnum, uint td, uint* rImpls, uint cMax, uint* pcImpls)
     {
         if (_reader is null)
-            return _legacyImport?.EnumInterfaceImpls(phEnum, td, rImpls, cMax, pcImpls) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.EnumInterfaceImpls(phEnum, td, rImpls, cMax, pcImpls) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             if (phEnum is not null && *phEnum != 0)
@@ -143,20 +143,20 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int EnumTypeRefs(nint* phEnum, uint* rTypeRefs, uint cMax, uint* pcTypeRefs)
-        => _legacyImport?.EnumTypeRefs(phEnum, rTypeRefs, cMax, pcTypeRefs) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumTypeRefs(phEnum, rTypeRefs, cMax, pcTypeRefs) : HResults.E_NOTIMPL;
 
     public int EnumMembers(nint* phEnum, uint cl, uint* rMembers, uint cMax, uint* pcTokens)
-        => _legacyImport?.EnumMembers(phEnum, cl, rMembers, cMax, pcTokens) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumMembers(phEnum, cl, rMembers, cMax, pcTokens) : HResults.E_NOTIMPL;
 
     public int EnumMethods(nint* phEnum, uint cl, uint* rMethods, uint cMax, uint* pcTokens)
-        => _legacyImport?.EnumMethods(phEnum, cl, rMethods, cMax, pcTokens) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumMethods(phEnum, cl, rMethods, cMax, pcTokens) : HResults.E_NOTIMPL;
 
     public int EnumFields(nint* phEnum, uint cl, uint* rFields, uint cMax, uint* pcTokens)
     {
         if (_reader is null)
-            return _legacyImport?.EnumFields(phEnum, cl, rFields, cMax, pcTokens) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.EnumFields(phEnum, cl, rFields, cMax, pcTokens) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             if (phEnum is not null && *phEnum != 0)
@@ -182,14 +182,14 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int EnumCustomAttributes(nint* phEnum, uint tk, uint tkType, uint* rCustomAttributes, uint cMax, uint* pcCustomAttributes)
-        => _legacyImport?.EnumCustomAttributes(phEnum, tk, tkType, rCustomAttributes, cMax, pcCustomAttributes) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumCustomAttributes(phEnum, tk, tkType, rCustomAttributes, cMax, pcCustomAttributes) : HResults.E_NOTIMPL;
 
     public int EnumGenericParams(nint* phEnum, uint tk, uint* rGenericParams, uint cMax, uint* pcGenericParams)
     {
         if (_reader is null)
-            return _legacyImport2?.EnumGenericParams(phEnum, tk, rGenericParams, cMax, pcGenericParams) ?? HResults.E_NOTIMPL;
+            return _legacyImport2 is not null ? _legacyImport2.EnumGenericParams(phEnum, tk, rGenericParams, cMax, pcGenericParams) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             if (phEnum is not null && *phEnum != 0)
@@ -227,9 +227,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     public int GetTypeDefProps(uint td, char* szTypeDef, uint cchTypeDef, uint* pchTypeDef, uint* pdwTypeDefFlags, uint* ptkExtends)
     {
         if (_reader is null)
-            return _legacyImport?.GetTypeDefProps(td, szTypeDef, cchTypeDef, pchTypeDef, pdwTypeDefFlags, ptkExtends) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetTypeDefProps(td, szTypeDef, cchTypeDef, pchTypeDef, pdwTypeDefFlags, ptkExtends) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(td & 0x00FFFFFF));
@@ -277,9 +277,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     public int GetTypeRefProps(uint tr, uint* ptkResolutionScope, char* szName, uint cchName, uint* pchName)
     {
         if (_reader is null)
-            return _legacyImport?.GetTypeRefProps(tr, ptkResolutionScope, szName, cchName, pchName) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetTypeRefProps(tr, ptkResolutionScope, szName, cchName, pchName) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             TypeReferenceHandle refHandle = MetadataTokens.TypeReferenceHandle((int)(tr & 0x00FFFFFF));
@@ -323,9 +323,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
         uint* pdwAttr, byte** ppvSigBlob, uint* pcbSigBlob, uint* pulCodeRVA, uint* pdwImplFlags)
     {
         if (_reader is null)
-            return _legacyImport?.GetMethodProps(mb, pClass, szMethod, cchMethod, pchMethod, pdwAttr, ppvSigBlob, pcbSigBlob, pulCodeRVA, pdwImplFlags) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetMethodProps(mb, pClass, szMethod, cchMethod, pchMethod, pdwAttr, ppvSigBlob, pcbSigBlob, pulCodeRVA, pdwImplFlags) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             MethodDefinitionHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)(mb & 0x00FFFFFF));
@@ -386,9 +386,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
         void** ppValue, uint* pcchValue)
     {
         if (_reader is null)
-            return _legacyImport?.GetFieldProps(mb, pClass, szField, cchField, pchField, pdwAttr, ppvSigBlob, pcbSigBlob, pdwCPlusTypeFlag, ppValue, pcchValue) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetFieldProps(mb, pClass, szField, cchField, pchField, pdwAttr, ppvSigBlob, pcbSigBlob, pdwCPlusTypeFlag, ppValue, pcchValue) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             FieldDefinitionHandle fieldHandle = MetadataTokens.FieldDefinitionHandle((int)(mb & 0x00FFFFFF));
@@ -466,7 +466,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
         uint* pdwCPlusTypeFlag, void** ppValue, uint* pcchValue)
     {
         if (_reader is null)
-            return _legacyImport?.GetMemberProps(mb, pClass, szMember, cchMember, pchMember, pdwAttr, ppvSigBlob, pcbSigBlob, pulCodeRVA, pdwImplFlags, pdwCPlusTypeFlag, ppValue, pcchValue) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetMemberProps(mb, pClass, szMember, cchMember, pchMember, pdwAttr, ppvSigBlob, pcbSigBlob, pulCodeRVA, pdwImplFlags, pdwCPlusTypeFlag, ppValue, pcchValue) : HResults.E_NOTIMPL;
 
         uint tableIndex = mb >> 24;
         if (tableIndex == 0x06) // MethodDef
@@ -497,9 +497,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     public int GetInterfaceImplProps(uint iiImpl, uint* pClass, uint* ptkIface)
     {
         if (_reader is null)
-            return _legacyImport?.GetInterfaceImplProps(iiImpl, pClass, ptkIface) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetInterfaceImplProps(iiImpl, pClass, ptkIface) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             InterfaceImplementationHandle implHandle = MetadataTokens.InterfaceImplementationHandle((int)(iiImpl & 0x00FFFFFF));
@@ -554,9 +554,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     public int GetNestedClassProps(uint tdNestedClass, uint* ptdEnclosingClass)
     {
         if (_reader is null)
-            return _legacyImport?.GetNestedClassProps(tdNestedClass, ptdEnclosingClass) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetNestedClassProps(tdNestedClass, ptdEnclosingClass) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(tdNestedClass & 0x00FFFFFF));
@@ -590,9 +590,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
         uint* reserved, char* wzname, uint cchName, uint* pchName)
     {
         if (_reader is null)
-            return _legacyImport2?.GetGenericParamProps(gp, pulParamSeq, pdwParamFlags, ptOwner, reserved, wzname, cchName, pchName) ?? HResults.E_NOTIMPL;
+            return _legacyImport2 is not null ? _legacyImport2.GetGenericParamProps(gp, pulParamSeq, pdwParamFlags, ptOwner, reserved, wzname, cchName, pchName) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             GenericParameterHandle gpHandle = MetadataTokens.GenericParameterHandle((int)(gp & 0x00FFFFFF));
@@ -643,9 +643,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     public int GetRVA(uint tk, uint* pulCodeRVA, uint* pdwImplFlags)
     {
         if (_reader is null)
-            return _legacyImport?.GetRVA(tk, pulCodeRVA, pdwImplFlags) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetRVA(tk, pulCodeRVA, pdwImplFlags) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             uint tableIndex = tk >> 24;
@@ -692,9 +692,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     public int GetSigFromToken(uint mdSig, byte** ppvSig, uint* pcbSig)
     {
         if (_reader is null)
-            return _legacyImport?.GetSigFromToken(mdSig, ppvSig, pcbSig) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetSigFromToken(mdSig, ppvSig, pcbSig) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             StandaloneSignatureHandle sigHandle = MetadataTokens.StandaloneSignatureHandle((int)(mdSig & 0x00FFFFFF));
@@ -729,9 +729,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     public int GetCustomAttributeByName(uint tkObj, char* szName, void** ppData, uint* pcbData)
     {
         if (_reader is null)
-            return _legacyImport?.GetCustomAttributeByName(tkObj, szName, ppData, pcbData) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetCustomAttributeByName(tkObj, szName, ppData, pcbData) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             if (ppData is not null)
@@ -778,7 +778,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     public int IsValidToken(uint tk)
     {
         if (_reader is null)
-            return _legacyImport?.IsValidToken(tk) ?? 0;
+            return _legacyImport is not null ? _legacyImport.IsValidToken(tk) : 0;
 
         int rid = (int)(tk & 0x00FFFFFF);
         int table = (int)(tk >> 24);
@@ -822,9 +822,9 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     public int FindTypeDefByName(char* szTypeDef, uint tkEnclosingClass, uint* ptd)
     {
         if (_reader is null)
-            return _legacyImport?.FindTypeDefByName(szTypeDef, tkEnclosingClass, ptd) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.FindTypeDefByName(szTypeDef, tkEnclosingClass, ptd) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             if (ptd is not null)
@@ -832,6 +832,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
 
             string targetName = new string(szTypeDef);
 
+            bool found = false;
             foreach (TypeDefinitionHandle tdh in _reader!.TypeDefinitions)
             {
                 TypeDefinition typeDef = _reader!.GetTypeDefinition(tdh);
@@ -850,11 +851,11 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
                 if (ptd is not null)
                     *ptd = (uint)MetadataTokens.GetToken(tdh);
 
-                hr = HResults.S_OK;
+                found = true;
                 break;
             }
 
-            if (hr != HResults.S_OK)
+            if (!found)
                 hr = CLDB_E_RECORD_NOTFOUND;
         }
         catch (System.Exception ex)
@@ -876,54 +877,54 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int GetScopeProps(char* szName, uint cchName, uint* pchName, Guid* pmvid)
-        => _legacyImport?.GetScopeProps(szName, cchName, pchName, pmvid) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.GetScopeProps(szName, cchName, pchName, pmvid) : HResults.E_NOTIMPL;
 
     public int GetModuleFromScope(uint* pmd)
-        => _legacyImport?.GetModuleFromScope(pmd) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.GetModuleFromScope(pmd) : HResults.E_NOTIMPL;
 
     public int ResolveTypeRef(uint tr, Guid* riid, void** ppIScope, uint* ptd)
-        => _legacyImport?.ResolveTypeRef(tr, riid, ppIScope, ptd) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.ResolveTypeRef(tr, riid, ppIScope, ptd) : HResults.E_NOTIMPL;
 
     public int EnumMembersWithName(nint* phEnum, uint cl, char* szName, uint* rMembers, uint cMax, uint* pcTokens)
-        => _legacyImport?.EnumMembersWithName(phEnum, cl, szName, rMembers, cMax, pcTokens) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumMembersWithName(phEnum, cl, szName, rMembers, cMax, pcTokens) : HResults.E_NOTIMPL;
 
     public int EnumMethodsWithName(nint* phEnum, uint cl, char* szName, uint* rMethods, uint cMax, uint* pcTokens)
-        => _legacyImport?.EnumMethodsWithName(phEnum, cl, szName, rMethods, cMax, pcTokens) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumMethodsWithName(phEnum, cl, szName, rMethods, cMax, pcTokens) : HResults.E_NOTIMPL;
 
     public int EnumFieldsWithName(nint* phEnum, uint cl, char* szName, uint* rFields, uint cMax, uint* pcTokens)
-        => _legacyImport?.EnumFieldsWithName(phEnum, cl, szName, rFields, cMax, pcTokens) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumFieldsWithName(phEnum, cl, szName, rFields, cMax, pcTokens) : HResults.E_NOTIMPL;
 
     public int EnumParams(nint* phEnum, uint mb, uint* rParams, uint cMax, uint* pcTokens)
-        => _legacyImport?.EnumParams(phEnum, mb, rParams, cMax, pcTokens) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumParams(phEnum, mb, rParams, cMax, pcTokens) : HResults.E_NOTIMPL;
 
     public int EnumMemberRefs(nint* phEnum, uint tkParent, uint* rMemberRefs, uint cMax, uint* pcTokens)
-        => _legacyImport?.EnumMemberRefs(phEnum, tkParent, rMemberRefs, cMax, pcTokens) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumMemberRefs(phEnum, tkParent, rMemberRefs, cMax, pcTokens) : HResults.E_NOTIMPL;
 
     public int EnumMethodImpls(nint* phEnum, uint td, uint* rMethodBody, uint* rMethodDecl, uint cMax, uint* pcTokens)
-        => _legacyImport?.EnumMethodImpls(phEnum, td, rMethodBody, rMethodDecl, cMax, pcTokens) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumMethodImpls(phEnum, td, rMethodBody, rMethodDecl, cMax, pcTokens) : HResults.E_NOTIMPL;
 
     public int EnumPermissionSets(nint* phEnum, uint tk, uint dwActions, uint* rPermission, uint cMax, uint* pcTokens)
-        => _legacyImport?.EnumPermissionSets(phEnum, tk, dwActions, rPermission, cMax, pcTokens) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumPermissionSets(phEnum, tk, dwActions, rPermission, cMax, pcTokens) : HResults.E_NOTIMPL;
 
     public int FindMember(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmb)
-        => _legacyImport?.FindMember(td, szName, pvSigBlob, cbSigBlob, pmb) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.FindMember(td, szName, pvSigBlob, cbSigBlob, pmb) : HResults.E_NOTIMPL;
 
     public int FindMethod(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmb)
-        => _legacyImport?.FindMethod(td, szName, pvSigBlob, cbSigBlob, pmb) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.FindMethod(td, szName, pvSigBlob, cbSigBlob, pmb) : HResults.E_NOTIMPL;
 
     public int FindField(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmb)
-        => _legacyImport?.FindField(td, szName, pvSigBlob, cbSigBlob, pmb) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.FindField(td, szName, pvSigBlob, cbSigBlob, pmb) : HResults.E_NOTIMPL;
 
     public int FindMemberRef(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmr)
-        => _legacyImport?.FindMemberRef(td, szName, pvSigBlob, cbSigBlob, pmr) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.FindMemberRef(td, szName, pvSigBlob, cbSigBlob, pmr) : HResults.E_NOTIMPL;
 
     public int GetMemberRefProps(uint mr, uint* ptk, char* szMember, uint cchMember, uint* pchMember,
         byte** ppvSigBlob, uint* pbSig)
     {
         if (_reader is null)
-            return _legacyImport?.GetMemberRefProps(mr, ptk, szMember, cchMember, pchMember, ppvSigBlob, pbSig) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetMemberRefProps(mr, ptk, szMember, cchMember, pchMember, ppvSigBlob, pbSig) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             MemberReferenceHandle refHandle = MetadataTokens.MemberReferenceHandle((int)(mr & 0x00FFFFFF));
@@ -965,28 +966,28 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int EnumProperties(nint* phEnum, uint td, uint* rProperties, uint cMax, uint* pcProperties)
-        => _legacyImport?.EnumProperties(phEnum, td, rProperties, cMax, pcProperties) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumProperties(phEnum, td, rProperties, cMax, pcProperties) : HResults.E_NOTIMPL;
 
     public int EnumEvents(nint* phEnum, uint td, uint* rEvents, uint cMax, uint* pcEvents)
-        => _legacyImport?.EnumEvents(phEnum, td, rEvents, cMax, pcEvents) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumEvents(phEnum, td, rEvents, cMax, pcEvents) : HResults.E_NOTIMPL;
 
     public int GetEventProps(uint ev, uint* pClass, char* szEvent, uint cchEvent, uint* pchEvent,
         uint* pdwEventFlags, uint* ptkEventType, uint* pmdAddOn, uint* pmdRemoveOn, uint* pmdFire,
         uint* rmdOtherMethod, uint cMax, uint* pcOtherMethod)
-        => _legacyImport?.GetEventProps(ev, pClass, szEvent, cchEvent, pchEvent, pdwEventFlags, ptkEventType, pmdAddOn, pmdRemoveOn, pmdFire, rmdOtherMethod, cMax, pcOtherMethod) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.GetEventProps(ev, pClass, szEvent, cchEvent, pchEvent, pdwEventFlags, ptkEventType, pmdAddOn, pmdRemoveOn, pmdFire, rmdOtherMethod, cMax, pcOtherMethod) : HResults.E_NOTIMPL;
 
     public int EnumMethodSemantics(nint* phEnum, uint mb, uint* rEventProp, uint cMax, uint* pcEventProp)
-        => _legacyImport?.EnumMethodSemantics(phEnum, mb, rEventProp, cMax, pcEventProp) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumMethodSemantics(phEnum, mb, rEventProp, cMax, pcEventProp) : HResults.E_NOTIMPL;
 
     public int GetMethodSemantics(uint mb, uint tkEventProp, uint* pdwSemanticsFlags)
-        => _legacyImport?.GetMethodSemantics(mb, tkEventProp, pdwSemanticsFlags) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.GetMethodSemantics(mb, tkEventProp, pdwSemanticsFlags) : HResults.E_NOTIMPL;
 
     public int GetClassLayout(uint td, uint* pdwPackSize, void* rFieldOffset, uint cMax, uint* pcFieldOffset, uint* pulClassSize)
     {
         if (_reader is null)
-            return _legacyImport?.GetClassLayout(td, pdwPackSize, rFieldOffset, cMax, pcFieldOffset, pulClassSize) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetClassLayout(td, pdwPackSize, rFieldOffset, cMax, pcFieldOffset, pulClassSize) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle((int)(td & 0x00FFFFFF));
@@ -1034,17 +1035,17 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int GetFieldMarshal(uint tk, byte** ppvNativeType, uint* pcbNativeType)
-        => _legacyImport?.GetFieldMarshal(tk, ppvNativeType, pcbNativeType) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.GetFieldMarshal(tk, ppvNativeType, pcbNativeType) : HResults.E_NOTIMPL;
 
     public int GetPermissionSetProps(uint pm, uint* pdwAction, void** ppvPermission, uint* pcbPermission)
-        => _legacyImport?.GetPermissionSetProps(pm, pdwAction, ppvPermission, pcbPermission) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.GetPermissionSetProps(pm, pdwAction, ppvPermission, pcbPermission) : HResults.E_NOTIMPL;
 
     public int GetModuleRefProps(uint mur, char* szName, uint cchName, uint* pchName)
     {
         if (_reader is null)
-            return _legacyImport?.GetModuleRefProps(mur, szName, cchName, pchName) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetModuleRefProps(mur, szName, cchName, pchName) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             ModuleReferenceHandle modRefHandle = MetadataTokens.ModuleReferenceHandle((int)(mur & 0x00FFFFFF));
@@ -1074,14 +1075,14 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int EnumModuleRefs(nint* phEnum, uint* rModuleRefs, uint cmax, uint* pcModuleRefs)
-        => _legacyImport?.EnumModuleRefs(phEnum, rModuleRefs, cmax, pcModuleRefs) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumModuleRefs(phEnum, rModuleRefs, cmax, pcModuleRefs) : HResults.E_NOTIMPL;
 
     public int GetTypeSpecFromToken(uint typespec, byte** ppvSig, uint* pcbSig)
     {
         if (_reader is null)
-            return _legacyImport?.GetTypeSpecFromToken(typespec, ppvSig, pcbSig) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetTypeSpecFromToken(typespec, ppvSig, pcbSig) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             TypeSpecificationHandle tsHandle = MetadataTokens.TypeSpecificationHandle((int)(typespec & 0x00FFFFFF));
@@ -1114,17 +1115,17 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int GetNameFromToken(uint tk, byte** pszUtf8NamePtr)
-        => _legacyImport?.GetNameFromToken(tk, pszUtf8NamePtr) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.GetNameFromToken(tk, pszUtf8NamePtr) : HResults.E_NOTIMPL;
 
     public int EnumUnresolvedMethods(nint* phEnum, uint* rMethods, uint cMax, uint* pcTokens)
-        => _legacyImport?.EnumUnresolvedMethods(phEnum, rMethods, cMax, pcTokens) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumUnresolvedMethods(phEnum, rMethods, cMax, pcTokens) : HResults.E_NOTIMPL;
 
     public int GetUserString(uint stk, char* szString, uint cchString, uint* pchString)
     {
         if (_reader is null)
-            return _legacyImport?.GetUserString(stk, szString, cchString, pchString) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetUserString(stk, szString, cchString, pchString) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             UserStringHandle usHandle = MetadataTokens.UserStringHandle((int)(stk & 0x00FFFFFF));
@@ -1153,23 +1154,23 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
 
     public int GetPinvokeMap(uint tk, uint* pdwMappingFlags, char* szImportName, uint cchImportName,
         uint* pchImportName, uint* pmrImportDLL)
-        => _legacyImport?.GetPinvokeMap(tk, pdwMappingFlags, szImportName, cchImportName, pchImportName, pmrImportDLL) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.GetPinvokeMap(tk, pdwMappingFlags, szImportName, cchImportName, pchImportName, pmrImportDLL) : HResults.E_NOTIMPL;
 
     public int EnumSignatures(nint* phEnum, uint* rSignatures, uint cmax, uint* pcSignatures)
-        => _legacyImport?.EnumSignatures(phEnum, rSignatures, cmax, pcSignatures) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumSignatures(phEnum, rSignatures, cmax, pcSignatures) : HResults.E_NOTIMPL;
 
     public int EnumTypeSpecs(nint* phEnum, uint* rTypeSpecs, uint cmax, uint* pcTypeSpecs)
-        => _legacyImport?.EnumTypeSpecs(phEnum, rTypeSpecs, cmax, pcTypeSpecs) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumTypeSpecs(phEnum, rTypeSpecs, cmax, pcTypeSpecs) : HResults.E_NOTIMPL;
 
     public int EnumUserStrings(nint* phEnum, uint* rStrings, uint cmax, uint* pcStrings)
-        => _legacyImport?.EnumUserStrings(phEnum, rStrings, cmax, pcStrings) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.EnumUserStrings(phEnum, rStrings, cmax, pcStrings) : HResults.E_NOTIMPL;
 
     public int GetParamForMethodIndex(uint md, uint ulParamSeq, uint* ppd)
     {
         if (_reader is null)
-            return _legacyImport?.GetParamForMethodIndex(md, ulParamSeq, ppd) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetParamForMethodIndex(md, ulParamSeq, ppd) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             if (ppd is not null)
@@ -1178,6 +1179,7 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
             MethodDefinitionHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)(md & 0x00FFFFFF));
             MethodDefinition methodDef = _reader!.GetMethodDefinition(methodHandle);
 
+            bool found = false;
             foreach (ParameterHandle ph in methodDef.GetParameters())
             {
                 Parameter param = _reader!.GetParameter(ph);
@@ -1185,12 +1187,12 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
                 {
                     if (ppd is not null)
                         *ppd = (uint)MetadataTokens.GetToken(ph);
-                    hr = HResults.S_OK;
+                    found = true;
                     break;
                 }
             }
 
-            if (hr != HResults.S_OK)
+            if (!found)
                 hr = CLDB_E_RECORD_NOTFOUND;
         }
         catch (System.Exception ex)
@@ -1212,24 +1214,24 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int GetCustomAttributeProps(uint cv, uint* ptkObj, uint* ptkType, void** ppBlob, uint* pcbSize)
-        => _legacyImport?.GetCustomAttributeProps(cv, ptkObj, ptkType, ppBlob, pcbSize) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.GetCustomAttributeProps(cv, ptkObj, ptkType, ppBlob, pcbSize) : HResults.E_NOTIMPL;
 
     public int FindTypeRef(uint tkResolutionScope, char* szName, uint* ptr)
-        => _legacyImport?.FindTypeRef(tkResolutionScope, szName, ptr) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.FindTypeRef(tkResolutionScope, szName, ptr) : HResults.E_NOTIMPL;
 
     public int GetPropertyProps(uint prop, uint* pClass, char* szProperty, uint cchProperty, uint* pchProperty,
         uint* pdwPropFlags, byte** ppvSig, uint* pbSig, uint* pdwCPlusTypeFlag,
         void** ppDefaultValue, uint* pcchDefaultValue, uint* pmdSetter, uint* pmdGetter,
         uint* rmdOtherMethod, uint cMax, uint* pcOtherMethod)
-        => _legacyImport?.GetPropertyProps(prop, pClass, szProperty, cchProperty, pchProperty, pdwPropFlags, ppvSig, pbSig, pdwCPlusTypeFlag, ppDefaultValue, pcchDefaultValue, pmdSetter, pmdGetter, rmdOtherMethod, cMax, pcOtherMethod) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.GetPropertyProps(prop, pClass, szProperty, cchProperty, pchProperty, pdwPropFlags, ppvSig, pbSig, pdwCPlusTypeFlag, ppDefaultValue, pcchDefaultValue, pmdSetter, pmdGetter, rmdOtherMethod, cMax, pcOtherMethod) : HResults.E_NOTIMPL;
 
     public int GetParamProps(uint tk, uint* pmd, uint* pulSequence, char* szName, uint cchName, uint* pchName,
         uint* pdwAttr, uint* pdwCPlusTypeFlag, void** ppValue, uint* pcchValue)
     {
         if (_reader is null)
-            return _legacyImport?.GetParamProps(tk, pmd, pulSequence, szName, cchName, pchName, pdwAttr, pdwCPlusTypeFlag, ppValue, pcchValue) ?? HResults.E_NOTIMPL;
+            return _legacyImport is not null ? _legacyImport.GetParamProps(tk, pmd, pulSequence, szName, cchName, pchName, pdwAttr, pdwCPlusTypeFlag, ppValue, pcchValue) : HResults.E_NOTIMPL;
 
-        int hr = HResults.E_FAIL;
+        int hr = HResults.S_OK;
         try
         {
             ParameterHandle paramHandle = MetadataTokens.ParameterHandle((int)(tk & 0x00FFFFFF));
@@ -1317,28 +1319,28 @@ internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
     }
 
     public int GetNativeCallConvFromSig(void* pvSig, uint cbSig, uint* pCallConv)
-        => _legacyImport?.GetNativeCallConvFromSig(pvSig, cbSig, pCallConv) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.GetNativeCallConvFromSig(pvSig, cbSig, pCallConv) : HResults.E_NOTIMPL;
 
     public int IsGlobal(uint pd, int* pbGlobal)
-        => _legacyImport?.IsGlobal(pd, pbGlobal) ?? HResults.E_NOTIMPL;
+        => _legacyImport is not null ? _legacyImport.IsGlobal(pd, pbGlobal) : HResults.E_NOTIMPL;
 
     // IMetaDataImport2 methods — delegate to legacy via _legacyImport2
     public int GetMethodSpecProps(uint mi, uint* tkParent, byte** ppvSigBlob, uint* pcbSigBlob)
-        => _legacyImport2?.GetMethodSpecProps(mi, tkParent, ppvSigBlob, pcbSigBlob) ?? HResults.E_NOTIMPL;
+        => _legacyImport2 is not null ? _legacyImport2.GetMethodSpecProps(mi, tkParent, ppvSigBlob, pcbSigBlob) : HResults.E_NOTIMPL;
 
     public int EnumGenericParamConstraints(nint* phEnum, uint tk, uint* rGenericParamConstraints, uint cMax, uint* pcGenericParamConstraints)
-        => _legacyImport2?.EnumGenericParamConstraints(phEnum, tk, rGenericParamConstraints, cMax, pcGenericParamConstraints) ?? HResults.E_NOTIMPL;
+        => _legacyImport2 is not null ? _legacyImport2.EnumGenericParamConstraints(phEnum, tk, rGenericParamConstraints, cMax, pcGenericParamConstraints) : HResults.E_NOTIMPL;
 
     public int GetGenericParamConstraintProps(uint gpc, uint* ptGenericParam, uint* ptkConstraintType)
-        => _legacyImport2?.GetGenericParamConstraintProps(gpc, ptGenericParam, ptkConstraintType) ?? HResults.E_NOTIMPL;
+        => _legacyImport2 is not null ? _legacyImport2.GetGenericParamConstraintProps(gpc, ptGenericParam, ptkConstraintType) : HResults.E_NOTIMPL;
 
     public int GetPEKind(uint* pdwPEKind, uint* pdwMachine)
-        => _legacyImport2?.GetPEKind(pdwPEKind, pdwMachine) ?? HResults.E_NOTIMPL;
+        => _legacyImport2 is not null ? _legacyImport2.GetPEKind(pdwPEKind, pdwMachine) : HResults.E_NOTIMPL;
 
     public int GetVersionString(char* pwzBuf, uint ccBufSize, uint* pccBufSize)
-        => _legacyImport2?.GetVersionString(pwzBuf, ccBufSize, pccBufSize) ?? HResults.E_NOTIMPL;
+        => _legacyImport2 is not null ? _legacyImport2.GetVersionString(pwzBuf, ccBufSize, pccBufSize) : HResults.E_NOTIMPL;
 
     public int EnumMethodSpecs(nint* phEnum, uint tk, uint* rMethodSpecs, uint cMax, uint* pcMethodSpecs)
-        => _legacyImport2?.EnumMethodSpecs(phEnum, tk, rMethodSpecs, cMax, pcMethodSpecs) ?? HResults.E_NOTIMPL;
+        => _legacyImport2 is not null ? _legacyImport2.EnumMethodSpecs(phEnum, tk, rMethodSpecs, cMax, pcMethodSpecs) : HResults.E_NOTIMPL;
 
 }
