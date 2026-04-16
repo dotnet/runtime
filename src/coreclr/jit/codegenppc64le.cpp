@@ -1386,8 +1386,128 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 //
 void CodeGen::genPushCalleeSavedRegisters()
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(compiler->compGeneratingProlog);
+
+    regMaskTP rsPushRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
+
+#if ETW_EBP_FRAMED
+    if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
+    {
+        noway_assert(!"Used register RBM_FPBASE as a scratch register!");
+    }
+#endif
+
+    // PPC64LE currently always uses the frame pointer in the same style as the
+    // simpler fixed-frame LoongArch64/RISC-V64 implementations.
+    assert(isFramePointerUsed());
+
+    regSet.rsMaskCalleeSaved = rsPushRegs;
+
+#ifdef DEBUG
+    JITDUMP("Frame info. #outsz=%d; #framesz=%d; LclFrameSize=%d;\n", unsigned(compiler->lvaOutgoingArgSpaceSize),
+            genTotalFrameSize(), compiler->compLclFrameSize);
+
+    if (compiler->compCalleeRegsPushed != genCountBits(regSet.rsMaskCalleeSaved))
+    {
+        printf("Error: unexpected number of callee-saved registers to push. Expected: %d. Got: %d ",
+               compiler->compCalleeRegsPushed, genCountBits(rsPushRegs));
+        dspRegMask(rsPushRegs);
+        printf("\n");
+        assert(compiler->compCalleeRegsPushed == genCountBits(rsPushRegs | RBM_FPBASE));
+    }
+
+    if (verbose)
+    {
+        regMaskTP maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
+        regMaskTP maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
+        printf("Save float regs: ");
+        dspRegMask(maskSaveRegsFloat);
+        printf("\n");
+        printf("Save int   regs: ");
+        dspRegMask(maskSaveRegsInt);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    int totalFrameSize = genTotalFrameSize();
+    int localFrameSize = compiler->compLclFrameSize + 96;
+
+    if (compiler->lvaPSPSym != BAD_VAR_NUM)
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+
+    if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+
+#ifdef DEBUG
+    if (compiler->opts.disAsm)
+    {
+        printf("Frame info. #outsz=%d; #framesz=%d; lcl=%d\n", unsigned(compiler->lvaOutgoingArgSpaceSize),
+               genTotalFrameSize(), localFrameSize);
+    }
+#endif
+
+    constexpr int FP_backchain_save_offset = -8;
+    constexpr int LR_save_offset           = 16;
+    constexpr int R2_save_offset           = 24;
+
+    GetEmitter()->emitIns_R_R_I(INS_std, EA_PTRSIZE, REG_R2, REG_SPBASE, R2_save_offset);
+    GetEmitter()->emitIns_R(INS_mflr, EA_PTRSIZE, REG_R0);
+    GetEmitter()->emitIns_R_R_I(INS_std, EA_PTRSIZE, REG_R0, REG_SPBASE, LR_save_offset);
+    GetEmitter()->emitIns_R_R_I(INS_std, EA_PTRSIZE, REG_FP, REG_SPBASE, FP_backchain_save_offset);
+
+    // Keep the implementation simple and ABI-conformant: save the ABI linkage
+    // area entries first, then allocate the full frame with an updating store,
+    // establish the frame pointer from SP, save FP at the top of the callee-save
+    // area, then save the rest of the modified callee-saved registers in
+    // ascending register order.
+    GetEmitter()->emitIns_R_R_I(INS_stdu, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -totalFrameSize);
+    compiler->unwindAllocStack(totalFrameSize);
+
+    GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_FP, REG_SPBASE, /* canSkip */ false);
+
+    int offset = localFrameSize;
+
+    regMaskTP maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
+    regMaskTP maskSaveRegsInt   = rsPushRegs & RBM_INT_CALLEE_SAVED;
+
+    for (int regNum = REG_R14; regNum <= REG_R31; regNum++)
+    {
+        regNumber reg     = (regNumber)regNum;
+        regMaskTP regMask = genRegMask(reg);
+
+        if ((maskSaveRegsInt & regMask) != RBM_NONE)
+        {
+            GetEmitter()->emitIns_R_R_I(INS_std, EA_PTRSIZE, reg, REG_SPBASE, offset);
+            compiler->unwindSaveReg(reg, offset);
+            offset += REGSIZE_BYTES;
+        }
+    }
+
+    for (int regNum = REG_F14; regNum <= REG_F31; regNum++)
+    {
+        regNumber reg     = (regNumber)regNum;
+        regMaskTP regMask = genRegMask(reg);
+
+        if ((maskSaveRegsFloat & regMask) != RBM_NONE)
+        {
+            GetEmitter()->emitIns_R_R_I(INS_stfd, EA_8BYTE, reg, REG_SPBASE, offset);
+            compiler->unwindSaveReg(reg, offset);
+            offset += REGSIZE_BYTES;
+        }
+    }
+
+    JITDUMP("    offsetSpToSavedFp=%d\n", FP_backchain_save_offset);
+    compiler->unwindSetFrameReg(REG_FPBASE, FP_backchain_save_offset);
+
+    if (compiler->info.compIsVarArgs)
+    {
+        JITDUMP("    compIsVarArgs=true\n");
+        NYI_POWERPC64("genPushCalleeSavedRegisters does not yet support compIsVarArgs");
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1472,8 +1592,18 @@ int CodeGenInterface::genSPtoFPdelta() const
 
 int CodeGenInterface::genTotalFrameSize() const
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(!IsUninitialized(compiler->compCalleeRegsPushed));
+
+    // PPC64LE ABI-specific fixed frame addition currently required by this
+    // backend:
+    //   - 112 bytes fixed frame reservation
+    //
+    // The fixed pre-allocation FP backchain save at -8(sp) is not part of the
+    // post-allocation frame size.
+    int totalFrameSize = compiler->compCalleeRegsPushed * REGSIZE_BYTES + compiler->compLclFrameSize + 112;
+
+    assert(totalFrameSize >= 0);
+    return totalFrameSize;
 }
 
 //-----------------------------------------------------------------------------------

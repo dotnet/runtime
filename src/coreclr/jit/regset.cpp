@@ -259,9 +259,9 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
 
     rsMaskResvd = RBM_NONE;
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64)
     rsMaskCalleeSaved = RBM_NONE;
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_POWERPC64
 
 #ifdef TARGET_ARM
     rsMaskPreSpillRegArg = RBM_NONE;
