@@ -357,6 +357,10 @@ public:
 
     bool IsFloatHfa() const;
 
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+    bool IsNativeHalfType() const;
+#endif // TARGET_XARCH
+
 #ifdef FEATURE_64BIT_ALIGNMENT
     bool RequiresAlign8() const;
 #endif // FEATURE_64BIT_ALIGNMENT

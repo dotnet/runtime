@@ -469,6 +469,7 @@ public:
     ValueNum VNForIntCon(INT32 cnsVal);
     ValueNum VNForIntPtrCon(ssize_t cnsVal);
     ValueNum VNForLongCon(INT64 cnsVal);
+    ValueNum VNForHalfCon(float16_t cnsVal);
     ValueNum VNForFloatCon(float cnsVal);
     ValueNum VNForDoubleCon(double cnsVal);
     ValueNum VNForByrefCon(target_size_t byrefVal);
@@ -1210,6 +1211,7 @@ private:
 
             case TYP_INT:
             case TYP_LONG:
+            case TYP_HALF:
             case TYP_FLOAT:
             case TYP_DOUBLE:
                 if (c->m_attribs == CEA_Handle)
@@ -1692,6 +1694,17 @@ private:
     typedef SmallHashTable<ValueNum, FieldSeq*> FieldAddressToFieldSeqMap;
     FieldAddressToFieldSeqMap                   m_fieldAddressToFieldSeqMap;
 
+    typedef VNMap<float16_t> HalfToValueNumMap;
+    HalfToValueNumMap*       m_halfCnsMap;
+    HalfToValueNumMap*       GetHalfCnsMap()
+    {
+        if (m_halfCnsMap == nullptr)
+        {
+            m_halfCnsMap = new (m_alloc) HalfToValueNumMap(m_alloc);
+        }
+        return m_halfCnsMap;
+    }
+
     struct LargePrimitiveKeyFuncsFloat : public JitLargePrimitiveKeyFuncs<float>
     {
         static bool Equals(float x, float y)
@@ -2073,6 +2086,14 @@ struct ValueNumStore::VarTypConv<TYP_INT>
     typedef INT32 Type;
     typedef int   Lang;
 };
+
+template <>
+struct ValueNumStore::VarTypConv<TYP_HALF>
+{
+    typedef float16_t Type;
+    typedef float16_t Lang;
+};
+
 template <>
 struct ValueNumStore::VarTypConv<TYP_FLOAT>
 {
@@ -2164,6 +2185,8 @@ FORCEINLINE T ValueNumStore::SafeGetConstantValue(Chunk* c, unsigned offset)
             return static_cast<T>(reinterpret_cast<VarTypConv<TYP_INT>::Type*>(c->m_defs)[offset]);
         case TYP_LONG:
             return static_cast<T>(reinterpret_cast<VarTypConv<TYP_LONG>::Type*>(c->m_defs)[offset]);
+        case TYP_HALF:
+            return static_cast<T>(reinterpret_cast<VarTypConv<TYP_HALF>::Type*>(c->m_defs)[offset]);
         case TYP_FLOAT:
             return static_cast<T>(reinterpret_cast<VarTypConv<TYP_FLOAT>::Lang*>(c->m_defs)[offset]);
         case TYP_DOUBLE:
