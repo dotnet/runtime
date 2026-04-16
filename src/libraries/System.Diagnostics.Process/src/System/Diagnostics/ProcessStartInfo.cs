@@ -350,8 +350,6 @@ namespace System.Diagnostics
             set => _verb = value;
         }
 
-        internal bool SupportsHandleInheritanceRestriction => !UseShellExecute && string.IsNullOrEmpty(UserName);
-
         [DefaultValueAttribute(System.Diagnostics.ProcessWindowStyle.Normal)]
         public ProcessWindowStyle WindowStyle
         {
@@ -445,7 +443,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.StartDetachedNotCompatible);
             }
 
-            if (InheritedHandles is not null && !SupportsHandleInheritanceRestriction)
+            if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
             {
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
             }

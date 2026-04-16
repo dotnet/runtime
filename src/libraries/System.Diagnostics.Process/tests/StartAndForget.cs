@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false)]
         public void StartAndForget_StartsProcessAndReturnsValidPid(bool useProcessStartInfo)
         {
-            Process template = CreateProcessLong();
+            Process template = CreateSleepProcess((int)TimeSpan.FromHours(1).TotalMilliseconds);
             int pid = useProcessStartInfo
                 ? Process.StartAndForget(template.StartInfo)
                 : Process.StartAndForget(template.StartInfo.FileName, template.StartInfo.ArgumentList);
@@ -32,12 +32,13 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        // This test does not use RemoteExecutor, but it's a simple way to filter to OSes that support Process.Start.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StartAndForget_WithNullArguments_StartsProcess()
         {
-            // hostname is not available on Android or Azure Linux.
-            // ls is available on every Unix.
-            int pid = Process.StartAndForget(OperatingSystem.IsWindows() ? "hostname" : "ls", null);
+            // cmd is available on every Windows, including Nano. When run with no parameters, it displays the Windows version/copyright banner.
+            // true is available on every Unix. When invoked with no arguments, it does nothing and exits successfully.
+            int pid = Process.StartAndForget(OperatingSystem.IsWindows() ? "cmd.exe" : "true", null);
 
             Assert.True(pid > 0);
         }

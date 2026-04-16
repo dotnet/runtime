@@ -41,9 +41,6 @@ namespace System.Diagnostics
         /// <see cref="ProcessStartInfo.StandardOutputHandle"/>, or <see cref="ProcessStartInfo.StandardErrorHandle"/>)
         /// is not provided, it is redirected to the null file by default.
         /// </para>
-        /// <para>
-        /// When possible, handle inheritance in the new process is limited to the standard handles only.
-        /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -57,34 +54,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.StartAndForget_UseShellExecuteNotSupported);
             }
 
-            startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
-
-            if (anyRedirection)
-            {
-                throw new InvalidOperationException(SR.StartAndForget_RedirectNotSupported);
-            }
-
-            using SafeFileHandle? nullFile = startInfo.StandardInputHandle is null || startInfo.StandardOutputHandle is null || startInfo.StandardErrorHandle is null
-                ? File.OpenNullHandle()
-                : null;
-
-            SafeFileHandle childInputHandle = startInfo.StandardInputHandle ?? nullFile!;
-            SafeFileHandle childOutputHandle = startInfo.StandardOutputHandle ?? nullFile!;
-            SafeFileHandle childErrorHandle = startInfo.StandardErrorHandle ?? nullFile!;
-
-            if (inheritedHandles is null && startInfo.SupportsHandleInheritanceRestriction)
-            {
-                // In case user has not provided their own allow list,
-                // the inheritance is restricted to standard handles only.
-                inheritedHandles = [];
-            }
-
-            ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
-
-            // Use internal StartCore to avoid the need of modifying provided ProcessStartInfo
-            using SafeProcessHandle processHandle = SafeProcessHandle.StartCore(startInfo,
-                childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
-
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo, redirectToNull: true);
             return processHandle.ProcessId;
         }
 
@@ -109,9 +79,6 @@ namespace System.Diagnostics
         /// <para>
         /// Standard handles are redirected to the null file by default.
         /// </para>
-        /// <para>
-        /// No handles are inherited by the new process.
-        /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -120,7 +87,7 @@ namespace System.Diagnostics
         {
             ArgumentNullException.ThrowIfNull(fileName);
 
-            ProcessStartInfo startInfo = new ProcessStartInfo(fileName);
+            ProcessStartInfo startInfo = new(fileName);
             if (arguments is not null)
             {
                 foreach (string argument in arguments)
@@ -128,9 +95,6 @@ namespace System.Diagnostics
                     startInfo.ArgumentList.Add(argument);
                 }
             }
-
-            // Limit the inheritance to standard handles only.
-            startInfo.InheritedHandles = [];
 
             return StartAndForget(startInfo);
         }

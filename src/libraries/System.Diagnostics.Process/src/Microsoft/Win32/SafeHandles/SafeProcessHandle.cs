@@ -88,6 +88,15 @@ namespace Microsoft.Win32.SafeHandles
         public static SafeProcessHandle Start(ProcessStartInfo startInfo)
         {
             ArgumentNullException.ThrowIfNull(startInfo);
+
+            return Start(startInfo, redirectToNull: startInfo.StartDetached);
+        }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        internal static SafeProcessHandle Start(ProcessStartInfo startInfo, bool redirectToNull)
+        {
             startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
 
             if (anyRedirection)
@@ -104,11 +113,13 @@ namespace Microsoft.Win32.SafeHandles
                 throw new PlatformNotSupportedException();
             }
 
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
+
             SafeFileHandle? childInputHandle = startInfo.StandardInputHandle;
             SafeFileHandle? childOutputHandle = startInfo.StandardOutputHandle;
             SafeFileHandle? childErrorHandle = startInfo.StandardErrorHandle;
 
-            using SafeFileHandle? nullDeviceHandle = startInfo.StartDetached
+            using SafeFileHandle? nullDeviceHandle = redirectToNull
                 && (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
                 ? File.OpenNullHandle()
                 : null;

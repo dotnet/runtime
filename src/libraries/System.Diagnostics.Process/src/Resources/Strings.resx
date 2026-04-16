@@ -363,9 +363,6 @@
   <data name="InheritedHandles_MustNotContainDuplicates" xml:space="preserve">
     <value>InheritedHandles must not contain duplicates.</value>
   </data>
-  <data name="StartAndForget_RedirectNotSupported" xml:space="preserve">
-    <value>Stream redirection is not supported by StartAndForget. Redirected streams must be drained to avoid deadlocks, which is incompatible with fire-and-forget semantics.</value>
-  </data>
   <data name="StartAndForget_UseShellExecuteNotSupported" xml:space="preserve">
     <value>UseShellExecute is not supported by StartAndForget. On Windows, shell execution may not create a new process, which would make it impossible to return a valid process ID.</value>
   </data>

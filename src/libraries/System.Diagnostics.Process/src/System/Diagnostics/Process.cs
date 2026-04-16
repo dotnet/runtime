@@ -1172,6 +1172,8 @@ namespace System.Diagnostics
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
 
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
+
             SafeFileHandle? parentInputPipeHandle = null;
             SafeFileHandle? parentOutputPipeHandle = null;
             SafeFileHandle? parentErrorPipeHandle = null;
