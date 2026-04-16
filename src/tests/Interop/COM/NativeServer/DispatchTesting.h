@@ -548,6 +548,7 @@ private:
         if (pVarResult == nullptr)
             return E_POINTER;
 
+        HRESULT hr = S_OK;
         RETURN_IF_FAILED(::VariantChangeType(pVarResult, pVarResult, 0, VT_BSTR));
         BSTR result = nullptr;
         RETURN_IF_FAILED(GetDispIdAsString(&result));
@@ -560,6 +561,7 @@ private:
         if (pVarResult == nullptr)
             return E_POINTER;
 
+        HRESULT hr = S_OK;
         RETURN_IF_FAILED(::VariantChangeType(pVarResult, pVarResult, 0, VT_BSTR));
         BSTR result = nullptr;
         RETURN_IF_FAILED(GetDispIdAsString2(&result));
