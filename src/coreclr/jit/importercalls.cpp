@@ -3646,7 +3646,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             {
                 GenTree* val = impPopStack().val;
                 GenTree* dst = impPopStack().val;
-                retNode      = gtNewStoreIndNode(TYP_REF, dst, val, GTF_IND_TGT_HEAP);
+                retNode      = gtNewStoreIndNode(TYP_REF, dst, val);
                 break;
             }
 
