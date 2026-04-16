@@ -8,11 +8,14 @@
 #include "dbginterface.h"
 #include "method.hpp"
 #include "peassembly.h"
+#include <clrconfignocache.h>
 #include <minipal/guid.h>
 
 #ifdef HOST_ANDROID
 
 #include "debug/crashreport/inproccrashreporter.h"
+
+extern "C" void PROCEnableInProcCrashReport();
 
 struct WalkContext
 {
@@ -353,6 +356,40 @@ CrashReportEnumerateThreads(
 void
 CrashReportRegisterStackWalker()
 {
+    // Read crash report configuration here rather than in PROCAbortInitialize
+    // because on Android the DOTNET_* environment variables are set via JNI
+    // after PAL_Initialize has already run.
+    CLRConfigNoCache enabledReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
+    DWORD reportEnabled = 0;
+    bool enableCrashReport = enabledReportCfg.IsSet() && enabledReportCfg.TryAsInteger(10, reportEnabled) && reportEnabled == 1;
+
+    CLRConfigNoCache enabledReportOnlyCfg = CLRConfigNoCache::Get("EnableCrashReportOnly", /*noprefix*/ false, &getenv);
+    DWORD reportOnlyEnabled = 0;
+    bool enableCrashReportOnly = enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, reportOnlyEnabled) && reportOnlyEnabled == 1;
+
+    if (!enableCrashReport && !enableCrashReportOnly)
+    {
+        return;
+    }
+
+    CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
+    const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
+
+    const char* defaultReportDirectory = getenv("HOME");
+    if (defaultReportDirectory == nullptr || defaultReportDirectory[0] == '\0')
+    {
+        defaultReportDirectory = getenv("TMPDIR");
+    }
+    if (defaultReportDirectory == nullptr || defaultReportDirectory[0] == '\0')
+    {
+        defaultReportDirectory = "/data/local/tmp";
+    }
+
+    InProcCrashReportInitialize(1, dumpName, defaultReportDirectory);
+
+    // Set the PAL flag so PROCCreateCrashDumpIfEnabled knows to call the reporter.
+    PROCEnableInProcCrashReport();
+
     InProcCrashReportSetCurrentThreadManagedResolver(CrashReportIsCurrentThreadManaged);
     InProcCrashReportSetStackWalker(CrashReportWalkStack);
     InProcCrashReportSetExceptionResolver(CrashReportGetException);

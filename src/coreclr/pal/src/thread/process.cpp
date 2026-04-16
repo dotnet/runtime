@@ -2639,19 +2639,6 @@ PROCAbortInitialize()
     DWORD reportOnlyEnabled = 0;
     bool enableCrashReportOnly = enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, reportOnlyEnabled) && reportOnlyEnabled == 1;
 
-#ifdef HOST_ANDROID
-    const char* defaultReportDirectory = getenv("HOME");
-    if (defaultReportDirectory == nullptr || defaultReportDirectory[0] == '\0')
-    {
-        defaultReportDirectory = getenv("TMPDIR");
-    }
-
-    const bool crashReportEnabled = enableCrashReport || enableCrashReportOnly;
-    const bool writeCrashReportToFile = crashReportEnabled;
-    g_inProcCrashReportEnabled = crashReportEnabled;
-    InProcCrashReportInitialize(writeCrashReportToFile ? 1 : 0, dumpName, defaultReportDirectory);
-#endif
-
     if (enableMiniDump)
     {
         CLRConfigNoCache dmpLogToFileCfg = CLRConfigNoCache::Get("CreateDumpLogToFile", /*noprefix*/ false, &getenv);
@@ -2815,6 +2802,12 @@ Parameters:
 --*/
 #ifdef HOST_ANDROID
 #include <minipal/log.h>
+void
+PROCEnableInProcCrashReport()
+{
+    g_inProcCrashReportEnabled = true;
+}
+
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
