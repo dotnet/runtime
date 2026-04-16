@@ -338,6 +338,7 @@ convert_to_absolute_path(VXSORT_SOURCES ${VXSORT_SOURCES})
 convert_to_absolute_path(DUMMY_VXSORT_SOURCES ${DUMMY_VXSORT_SOURCES})
 
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  add_subdirectory(datadescriptor)
   add_subdirectory(Full)
 else()
   add_subdirectory(Portable)

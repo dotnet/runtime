@@ -11,6 +11,7 @@ class TypeManager;
 enum GenericVarianceType : uint8_t;
 
 #include "ICodeManager.h"
+#include "cdacdata.h"
 
 extern "C" void PopulateDebugHeaders();
 
@@ -20,6 +21,7 @@ class RuntimeInstance
     friend struct DefaultSListTraits<RuntimeInstance>;
     friend class Thread;
     friend void PopulateDebugHeaders();
+    friend struct ::cdac_data<RuntimeInstance>;
 
     PTR_ThreadStore             m_pThreadStore;
     HANDLE                      m_hPalInstance; // this is the HANDLE passed into DllMain
@@ -114,6 +116,10 @@ public:
 };
 typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
 
+template<> struct cdac_data<RuntimeInstance>
+{
+    static constexpr size_t ThreadStore = offsetof(RuntimeInstance, m_pThreadStore);
+};
 
 PTR_RuntimeInstance GetRuntimeInstance();
 
