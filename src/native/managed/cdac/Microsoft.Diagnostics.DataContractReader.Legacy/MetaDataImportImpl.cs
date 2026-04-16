@@ -12,14 +12,14 @@ using System.Runtime.InteropServices.Marshalling;
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
-internal sealed unsafe partial class MetadataImportWrapper : IMetaDataImport2
+internal sealed unsafe partial class MetaDataImportImpl : IMetaDataImport2
 {
     private const int CLDB_E_RECORD_NOTFOUND = unchecked((int)0x80131130);
     private readonly MetadataReader? _reader;
     private readonly IMetaDataImport? _legacyImport;
     private readonly IMetaDataImport2? _legacyImport2;
 
-    public MetadataImportWrapper(MetadataReader? reader, IMetaDataImport? legacyImport = null)
+    public MetaDataImportImpl(MetadataReader? reader, IMetaDataImport? legacyImport = null)
     {
         _reader = reader;
         _legacyImport = legacyImport;

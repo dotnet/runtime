@@ -10,7 +10,6 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata;
 using System.Collections.Generic;
-using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -51,7 +50,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     private const uint CORDEBUG_JIT_DEFAULT = 0x1;
     private const uint CORDEBUG_JIT_DISABLE_OPTIMIZATION = 0x3;
     private static readonly Guid IID_IMetaDataImport = Guid.Parse("7DAC8207-D3AE-4c75-9B67-92801A497D44");
-    private MetadataImportWrapper? _metadataImportWrapper;
+    private MetaDataImportImpl? _metaDataImportImpl;
 
     CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
     {
@@ -62,7 +61,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         // It simply returns a completely separate object. See ClrDataModule::QueryInterface in task.cpp
         if (iid == IID_IMetaDataImport)
         {
-            MetadataImportWrapper? wrapper = _metadataImportWrapper;
+            MetaDataImportImpl? wrapper = _metaDataImportImpl;
             if (wrapper is null)
             {
                 MetadataReader? reader = null;
@@ -93,9 +92,8 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
                 if (reader is not null || legacyImport is not null)
                 {
-                    wrapper = new MetadataImportWrapper(reader, legacyImport);
-                    Interlocked.CompareExchange(ref _metadataImportWrapper, wrapper, null);
-                    wrapper = _metadataImportWrapper;
+                    wrapper = new MetaDataImportImpl(reader, legacyImport);
+                    _metaDataImportImpl ??= wrapper;
                 }
             }
 

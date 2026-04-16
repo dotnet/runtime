@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-public unsafe class MetadataImportWrapperTests
+public unsafe class MetaDataImportImplTests
 {
     // Build a minimal assembly metadata with types, methods, and fields.
     private static MetadataReader CreateTestMetadata()
@@ -129,16 +129,16 @@ public unsafe class MetadataImportWrapperTests
         return provider.GetMetadataReader();
     }
 
-    private static MetadataImportWrapper CreateWrapper()
+    private static MetaDataImportImpl CreateWrapper()
     {
         MetadataReader reader = CreateTestMetadata();
-        return new MetadataImportWrapper(reader);
+        return new MetaDataImportImpl(reader);
     }
 
     [Fact]
     public void EnumFields_Pagination()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         nint hEnum = 0;
         uint token;
@@ -155,7 +155,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetTypeDefProps_ReturnsNameAndFlags()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         // Find TestClass token (should be row 2 = 0x02000002)
         uint testClassToken = 0x02000002;
@@ -176,7 +176,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetTypeRefProps_ReturnsName()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         // System.Object TypeRef should be row 1 = 0x01000001
         uint objectRefToken = 0x01000001;
@@ -194,7 +194,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetMethodProps_ReturnsNameAndSignature()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         // DoWork should be MethodDef row 1 = 0x06000001
         uint methodToken = 0x06000001;
@@ -220,7 +220,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetFieldProps_ReturnsNameAndSignature()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         // _value should be FieldDef row 1 = 0x04000001
         uint fieldToken = 0x04000001;
@@ -243,7 +243,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetMemberProps_DispatchesToMethodOrField()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint parentClass;
         char* nameBuf = stackalloc char[256];
@@ -270,7 +270,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void EnumFields_ReturnsFieldsForType()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         nint hEnum = 0;
         uint* tokens = stackalloc uint[10];
@@ -286,7 +286,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void EnumInterfaceImpls_ReturnsImplementations()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         nint hEnum = 0;
         uint* tokens = stackalloc uint[10];
@@ -301,7 +301,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetInterfaceImplProps_ReturnsClassAndInterface()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         // Get the interface impl token first
         nint hEnum = 0;
@@ -321,7 +321,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetNestedClassProps_ReturnsEnclosingClass()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         // NestedType is TypeDef row 3 = 0x02000003
         uint enclosingClass;
@@ -333,7 +333,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetNestedClassProps_NonNestedReturnsRecordNotFound()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         // TestClass (row 2) is not nested
         uint enclosingClass;
@@ -344,7 +344,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void EnumGenericParams_ReturnsParams()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         nint hEnum = 0;
         uint* tokens = stackalloc uint[10];
@@ -359,7 +359,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetGenericParamProps_ReturnsNameAndOwner()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         // Get generic param token
         nint hEnum = 0;
@@ -384,7 +384,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void IsValidToken_ValidAndInvalid()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         // Valid TypeDef token
         Assert.Equal(1, wrapper.IsValidToken(0x02000001));
@@ -400,7 +400,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void InvalidToken_ReturnsError()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         // Invalid TypeDef token (way out of range)
         char* nameBuf = stackalloc char[256];
@@ -412,7 +412,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void NotImplementedMethods_ReturnENotImpl()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         Assert.Equal(HResults.E_NOTIMPL, wrapper.GetScopeProps(null, 0, null, null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.ResolveTypeRef(0, null, null, null));
@@ -425,7 +425,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void FindTypeDefByName_FindsType()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint td;
         fixed (char* name = "TestNamespace.TestClass")
@@ -439,7 +439,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void FindTypeDefByName_NotFound()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint td;
         fixed (char* name = "DoesNotExist")
@@ -452,7 +452,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetMemberRefProps_ReturnsNameAndParent()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint memberRefToken = 0x0A000001; // MemberRef row 1
         uint parentToken;
@@ -473,7 +473,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetModuleRefProps_ReturnsName()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint moduleRefToken = 0x1A000001; // ModuleRef row 1
         char* nameBuf = stackalloc char[256];
@@ -489,7 +489,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetTypeSpecFromToken_ReturnsSig()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint typeSpecToken = 0x1B000001; // TypeSpec row 1
         byte* sigBlob;
@@ -504,7 +504,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetUserString_ReturnsString()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint userStringToken = 0x70000001; // UserString heap offset 1
         char* strBuf = stackalloc char[256];
@@ -520,7 +520,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetParamProps_ReturnsNameAndSequence()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint paramToken = 0x08000001; // Param row 1
         uint parentMethod;
@@ -542,7 +542,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetParamForMethodIndex_FindsParam()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint paramToken;
         int hr = wrapper.GetParamForMethodIndex(0x06000001, 1, &paramToken);
@@ -553,7 +553,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetParamForMethodIndex_NotFound()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint paramToken;
         int hr = wrapper.GetParamForMethodIndex(0x06000001, 99, &paramToken);
@@ -563,7 +563,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetClassLayout_ReturnsLayout()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint packSize;
         uint classSize;
@@ -576,7 +576,7 @@ public unsafe class MetadataImportWrapperTests
     [Fact]
     public void GetClassLayout_NoLayout_ReturnsRecordNotFound()
     {
-        MetadataImportWrapper wrapper = CreateWrapper();
+        MetaDataImportImpl wrapper = CreateWrapper();
 
         uint packSize;
         uint classSize;
@@ -588,7 +588,7 @@ public unsafe class MetadataImportWrapperTests
     public void NullReader_ImplementedMethods_ReturnENotImpl()
     {
         // When both reader and legacy are null, all methods should return E_NOTIMPL (or 0 for IsValidToken)
-        MetadataImportWrapper wrapper = new(reader: null);
+        MetaDataImportImpl wrapper = new(reader: null);
 
         char* nameBuf = stackalloc char[256];
         uint nameLen;
@@ -612,7 +612,7 @@ public unsafe class MetadataImportWrapperTests
     public void NullReader_DelegatedMethods_ReturnENotImpl()
     {
         // Non-enum delegated methods return E_NOTIMPL when no legacy is available
-        MetadataImportWrapper wrapper = new(reader: null);
+        MetaDataImportImpl wrapper = new(reader: null);
 
         Assert.Equal(HResults.E_NOTIMPL, wrapper.GetScopeProps(null, 0, null, null));
         Assert.Equal(HResults.E_NOTIMPL, wrapper.GetModuleFromScope(null));
@@ -628,7 +628,7 @@ public unsafe class MetadataImportWrapperTests
     {
         // When only reader is available (no legacy), implemented methods should still work
         MetadataReader reader = CreateTestMetadata();
-        MetadataImportWrapper wrapper = new(reader, legacyImport: null);
+        MetaDataImportImpl wrapper = new(reader, legacyImport: null);
 
         uint flags;
         char* nameBuf = stackalloc char[256];
