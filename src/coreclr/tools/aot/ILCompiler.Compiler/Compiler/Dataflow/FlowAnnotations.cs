@@ -36,7 +36,9 @@ namespace ILLink.Shared.TrimAnalysis
 
         public FlowAnnotations(Logger logger, ILProvider ilProvider, CompilerGeneratedState compilerGeneratedState)
         {
+#if !ILTRIM
             ilProvider = new AsyncMaskingILProvider(ilProvider);
+#endif
 
             _hashtable = new TypeAnnotationsHashtable(logger, ilProvider, compilerGeneratedState);
             _logger = logger;

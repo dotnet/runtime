@@ -9,27 +9,20 @@ using ILCompiler.DependencyAnalysis;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace ILCompiler
 {
-    public sealed class ObjectDataInterner
+    public sealed class MethodBodyDeduplicator : IObjectDataDeduplicator
     {
         private readonly bool _genericsOnly;
-        private Dictionary<ISymbolNode, ISymbolNode> _symbolRemapping;
+        private int _previousHashCount;
 
-        public static ObjectDataInterner Null { get; } = new ObjectDataInterner(genericsOnly: false) { _symbolRemapping = new() };
-
-        public ObjectDataInterner(bool genericsOnly)
+        public MethodBodyDeduplicator(bool genericsOnly)
         {
             _genericsOnly = genericsOnly;
         }
 
         public bool CanFold(MethodDesc method)
         {
-            if (this == Null)
-                return false;
-
             if (!_genericsOnly || method.HasInstantiation || method.OwningType.HasInstantiation)
                 return true;
 
@@ -39,63 +32,36 @@ namespace ILCompiler
             return false;
         }
 
-        private void EnsureMap(NodeFactory factory)
+        public void DeduplicatePass(NodeFactory factory, Dictionary<ISymbolNode, ISymbolNode> previousSymbolRemapping, Dictionary<ISymbolNode, ISymbolNode> symbolRemapping)
         {
-            Debug.Assert(factory.MarkingComplete);
+            var methodHash = new HashSet<MethodInternKey>(_previousHashCount, new MethodInternComparer(factory, previousSymbolRemapping, _genericsOnly));
 
-            if (_symbolRemapping != null)
-                return;
-
-            HashSet<MethodInternKey> previousMethodHash;
-            HashSet<MethodInternKey> methodHash = null;
-            Dictionary<ISymbolNode, ISymbolNode> previousSymbolRemapping;
-            Dictionary<ISymbolNode, ISymbolNode> symbolRemapping = null;
-
-            do
+            foreach (IMethodBodyNode body in factory.MetadataManager.GetCompiledMethodBodies())
             {
-                previousMethodHash = methodHash;
-                previousSymbolRemapping = symbolRemapping;
-                methodHash = new HashSet<MethodInternKey>(previousMethodHash?.Count ?? 0, new MethodInternComparer(factory, previousSymbolRemapping, _genericsOnly));
-                symbolRemapping = new Dictionary<ISymbolNode, ISymbolNode>((int)(1.05 * (previousSymbolRemapping?.Count ?? 0)));
+                if (!CanFold(body.Method))
+                    continue;
 
-                foreach (IMethodBodyNode body in factory.MetadataManager.GetCompiledMethodBodies())
+                // We don't track special unboxing thunks as virtual method use related so ignore them
+                if (body is ISpecialUnboxThunkNode unboxThunk && unboxThunk.IsSpecialUnboxingThunk)
+                    continue;
+
+                // Bodies that are visible from outside should not be folded because we don't know
+                // if they're address taken.
+                if (!factory.GetSymbolAlternateName(body, out _).IsNull)
+                    continue;
+
+                var key = new MethodInternKey(body, factory);
+                if (methodHash.TryGetValue(key, out MethodInternKey found))
                 {
-                    if (!CanFold(body.Method))
-                        continue;
-
-                    // We don't track special unboxing thunks as virtual method use related so ignore them
-                    if (body is ISpecialUnboxThunkNode unboxThunk && unboxThunk.IsSpecialUnboxingThunk)
-                        continue;
-
-                    // Bodies that are visible from outside should not be folded because we don't know
-                    // if they're address taken.
-                    if (!factory.GetSymbolAlternateName(body, out _).IsNull)
-                        continue;
-
-                    var key = new MethodInternKey(body, factory);
-                    if (methodHash.TryGetValue(key, out MethodInternKey found))
-                    {
-                        symbolRemapping.Add(body, found.Method);
-                    }
-                    else
-                    {
-                        methodHash.Add(key);
-                    }
+                    symbolRemapping.TryAdd(body, found.Method);
                 }
-            } while (previousSymbolRemapping == null || previousSymbolRemapping.Count < symbolRemapping.Count);
+                else
+                {
+                    methodHash.Add(key);
+                }
+            }
 
-            _symbolRemapping = symbolRemapping;
-        }
-
-        public ISymbolNode GetDeduplicatedSymbol(NodeFactory factory, ISymbolNode original)
-        {
-            EnsureMap(factory);
-
-            ISymbolNode target = original;
-            if (target is ISymbolNodeWithLinkage symbolWithLinkage)
-                target = symbolWithLinkage.NodeForLinkage(factory);
-
-            return _symbolRemapping.TryGetValue(target, out ISymbolNode result) ? result : original;
+            _previousHashCount = methodHash.Count;
         }
 
         private sealed class MethodInternKey
@@ -218,7 +184,7 @@ namespace ILCompiler
                 if (o1eh == o2eh)
                     return true;
 
-                if (o1eh == null || o2eh == null)
+                if (o1eh is null || o2eh is null)
                     return false;
 
                 return AreSame(o1eh.GetData(_factory, relocsOnly: false), o2eh.GetData(_factory, relocsOnly: false));

@@ -263,6 +263,17 @@ namespace System.Reflection
         }
 
         /// <summary>
+        /// Returns the <see cref="MetadataLoadContext"/> that an <see cref="Assembly"/> was loaded into,
+        /// or <see langword="null"/> if the assembly was not loaded by a <see cref="MetadataLoadContext"/>.
+        /// </summary>
+        /// <param name="assembly">The assembly object to examine.</param>
+        public static MetadataLoadContext? GetLoadContext(Assembly assembly)
+        {
+            ArgumentNullException.ThrowIfNull(assembly);
+            return (assembly as RoAssembly)?.Loader;
+        }
+
+        /// <summary>
         /// Releases any native resources (such as file locks on assembly files.) After disposal, it is not safe to use
         /// any Assembly objects dispensed by the MetadataLoadContext, nor any Reflection objects dispensed by those Assembly objects.
         /// Though objects provided by the MetadataLoadContext strive to throw an ObjectDisposedException, this is not guaranteed.
