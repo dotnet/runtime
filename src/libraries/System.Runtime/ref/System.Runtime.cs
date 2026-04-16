@@ -14494,7 +14494,7 @@ namespace System.Runtime.CompilerServices
         public UnsafeValueTypeAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=true)]
-    public partial class UnionAttribute : System.Attribute
+    public sealed partial class UnionAttribute : System.Attribute
     {
         public UnionAttribute() { }
     }

@@ -32,6 +32,28 @@ namespace System.Runtime.CompilerServices
         /// <value>
         /// The current value of the union as one of its case types, or <see langword="null" />.
         /// </value>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="Value" /> property provides access to the contents of a union regardless of the
+        /// case type. The compiler uses this property when performing union pattern matching: patterns applied
+        /// to a union value are implicitly applied to its <see cref="Value" /> property rather than to the
+        /// union wrapper itself.
+        /// </para>
+        /// <para>
+        /// The property is expected to satisfy the following well-formedness invariants:
+        /// </para>
+        /// <list type="bullet">
+        /// <item><description>
+        /// Soundness: <see cref="Value" /> always evaluates to <see langword="null" /> or to an instance of
+        /// one of the union's case types, including for the default value of the union type.
+        /// </description></item>
+        /// <item><description>
+        /// Stability: if the union is created from a case type value, <see cref="Value" /> returns that value
+        /// (or <see langword="null" />). If the union is created from <see langword="null" />,
+        /// <see cref="Value" /> returns <see langword="null" />.
+        /// </description></item>
+        /// </list>
+        /// </remarks>
         object? Value { get; }
     }
 }
