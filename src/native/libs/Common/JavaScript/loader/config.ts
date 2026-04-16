@@ -29,11 +29,10 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
     // no need to merge the same object
     if (target === source || source === undefined || source === null) return target;
 
-    mergeResources(target.resources!, source.resources!);
-    const mergedResources = target.resources;
-    const mergedEnvironmentVariables = { ...target.environmentVariables, ...source.environmentVariables };
-    const mergedRuntimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
-    const mergedConfigProperties = { ...target.runtimeConfig!.runtimeOptions!.configProperties!, ...source.runtimeConfig!.runtimeOptions!.configProperties! };
+    const mergedResources = mergeResources(target.resources!, source.resources || {} as any);
+    const mergedEnvironmentVariables = { ...target.environmentVariables, ...source.environmentVariables || {} };
+    const mergedRuntimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions || []];
+    const mergedConfigProperties = { ...target.runtimeConfig!.runtimeOptions!.configProperties!, ...source.runtimeConfig?.runtimeOptions?.configProperties || {} };
     // Copy all remaining simple properties from source (e.g. maxParallelDownloads,
     // applicationCulture, disableIntegrityCheck, etc.) that don't need special merge logic.
     Object.assign(target, source);
@@ -58,25 +57,25 @@ function mergeResources(target: Assets, source: Assets): Assets {
     // no need to merge the same object
     if (target === source || source === undefined || source === null) return target;
 
-    target.hash = source.hash ?? target.hash;
-    target.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly!];
-    target.assembly = [...target.assembly!, ...source.assembly!];
-    target.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly!];
-    target.corePdb = [...target.corePdb!, ...source.corePdb!];
-    target.pdb = [...target.pdb!, ...source.pdb!];
-    target.jsModuleWorker = [...target.jsModuleWorker!, ...source.jsModuleWorker!];
-    target.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative!];
-    target.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics!];
-    target.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime!];
-    target.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols!];
-    target.wasmNative = [...target.wasmNative!, ...source.wasmNative!];
-    target.icu = [...target.icu!, ...source.icu!];
-    target.vfs = [...target.vfs!, ...source.vfs!];
-    target.coreVfs = [...target.coreVfs!, ...source.coreVfs!];
-    target.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded!];
-    target.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady!];
-    target.extensions = { ...target.extensions!, ...source.extensions! };
-    for (const key in source.satelliteResources) {
+    target.hash = source.hash ?? target.hash ?? "";
+    target.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly || []];
+    target.assembly = [...target.assembly!, ...source.assembly || []];
+    target.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly || []];
+    target.corePdb = [...target.corePdb!, ...source.corePdb || []];
+    target.pdb = [...target.pdb!, ...source.pdb || []];
+    target.jsModuleWorker = [...target.jsModuleWorker!, ...source.jsModuleWorker || []];
+    target.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative || []];
+    target.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics || []];
+    target.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime || []];
+    target.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols || []];
+    target.wasmNative = [...target.wasmNative!, ...source.wasmNative || []];
+    target.icu = [...target.icu!, ...source.icu || []];
+    target.vfs = [...target.vfs!, ...source.vfs || []];
+    target.coreVfs = [...target.coreVfs!, ...source.coreVfs || []];
+    target.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded || []];
+    target.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady || []];
+    target.extensions = { ...target.extensions!, ...source.extensions || {} };
+    for (const key in source.satelliteResources || {}) {
         target.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
     }
     return target;
