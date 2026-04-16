@@ -10,6 +10,7 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata;
 using System.Collections.Generic;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -50,18 +51,57 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     private const uint CORDEBUG_JIT_DEFAULT = 0x1;
     private const uint CORDEBUG_JIT_DISABLE_OPTIMIZATION = 0x3;
     private static readonly Guid IID_IMetaDataImport = Guid.Parse("7DAC8207-D3AE-4c75-9B67-92801A497D44");
+    private MetadataImportWrapper? _metadataImportWrapper;
 
     CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
     {
         ppv = default;
-        if (!LegacyFallbackHelper.CanFallback() || _legacyModulePointer == 0)
-            return CustomQueryInterfaceResult.NotHandled;
 
-        // Legacy DAC implementation of IXCLRDataModule handles QIs for IMetaDataImport by creating and
+        // Legacy DAC implementationof IXCLRDataModule handles QIs for IMetaDataImport by creating and
         // passing out an implementation of IMetaDataImport. Note that it does not do COM aggregation.
         // It simply returns a completely separate object. See ClrDataModule::QueryInterface in task.cpp
-        if (iid == IID_IMetaDataImport && Marshal.QueryInterface(_legacyModulePointer, iid, out ppv) >= 0)
-            return CustomQueryInterfaceResult.Handled;
+        if (iid == IID_IMetaDataImport)
+        {
+            if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, iid, out ppv) >= 0)
+                return CustomQueryInterfaceResult.Handled;
+
+            // In no-fallback mode, create a managed wrapper over MetadataReader
+            MetadataImportWrapper? wrapper = _metadataImportWrapper;
+            if (wrapper is null)
+            {
+                try
+                {
+                    ILoader loader = _target.Contracts.Loader;
+                    Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_address);
+                    MetadataReader? reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+                    if (reader is not null)
+                    {
+                        wrapper = new MetadataImportWrapper(reader);
+                        Interlocked.CompareExchange(ref _metadataImportWrapper, wrapper, null);
+                        wrapper = _metadataImportWrapper;
+                    }
+                }
+                catch
+                {
+                    // If we can't create the wrapper, return NotHandled
+                }
+            }
+
+            if (wrapper is not null)
+            {
+                StrategyBasedComWrappers cw = new();
+                nint pUnk = cw.GetOrCreateComInterfaceForObject(wrapper, CreateComInterfaceFlags.None);
+                try
+                {
+                    if (Marshal.QueryInterface(pUnk, iid, out ppv) >= 0)
+                        return CustomQueryInterfaceResult.Handled;
+                }
+                finally
+                {
+                    Marshal.Release(pUnk);
+                }
+            }
+        }
 
         return CustomQueryInterfaceResult.NotHandled;
     }
