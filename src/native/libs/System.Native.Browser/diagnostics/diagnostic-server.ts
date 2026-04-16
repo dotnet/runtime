@@ -7,7 +7,7 @@ import { createDiagConnectionJs, initializeJsClient, serverSession } from "./dia
 import { createDiagConnectionWs } from "./diagnostic-server-ws";
 import { advertise } from "./client-commands";
 import { IDiagnosticConnection } from "./types";
-import { dotnetApi, dotnetBrowserUtilsExports } from "./cross-module";
+import { dotnetApi, Module } from "./cross-module";
 
 let socketHandles: Map<number, IDiagnosticConnection> = undefined as any;
 let nextSocketHandle = 1;
@@ -19,10 +19,7 @@ export function ds_rt_websocket_create(urlPtr: CharPtr): number {
     }
     let url;
     if (!urlOverride) {
-        const heapU8 = dotnetApi.localHeapViewU8();
-        const bufferPtr = urlPtr as any >>> 0;
-        const buff = heapU8.subarray(bufferPtr, Math.min(bufferPtr + 1000, heapU8.length));
-        url = dotnetBrowserUtilsExports.utf8ToStringRelaxed(buff);
+        url = Module.UTF8ToString(urlPtr);
     } else {
         url = urlOverride;
     }

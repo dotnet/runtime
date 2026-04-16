@@ -54,4 +54,8 @@ SystemJS_ExecuteDiagnosticServerCallback (void)
             jobs = cur;
         }
     }
+
+    if (jobs) {
+        SystemJS_ScheduleDiagnosticServer ();
+    }
 }
