@@ -2798,16 +2798,6 @@ PROCLogManagedCallstackForSignal(int signal)
     }
 }
 
-BOOL
-PROCIsCrashReportEnabled()
-{
-#ifdef HOST_ANDROID
-    return g_inProcCrashReportEnabled ? TRUE : FALSE;
-#else
-    return FALSE;
-#endif
-}
-
 /*++
 Function:
   PROCCreateCrashDumpIfEnabled

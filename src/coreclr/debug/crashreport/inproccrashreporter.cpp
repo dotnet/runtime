@@ -186,6 +186,12 @@ InProcCrashReportGenerate(
     siginfo_t* siginfo,
     void* context)
 {
+    static volatile int s_generating = 0;
+    if (__sync_val_compare_and_swap(&s_generating, 0, 1) != 0)
+    {
+        return;
+    }
+
     char reportPath[256];
     reportPath[0] = '\0';
 
@@ -194,16 +200,9 @@ InProcCrashReportGenerate(
         return;
     }
 
-    int fd = open(reportPath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    int fd = open(reportPath, O_WRONLY | O_CREAT | O_TRUNC, 0600);
     if (fd == -1)
     {
-        return;
-    }
-
-    static volatile int s_generating = 0;
-    if (__sync_val_compare_and_swap(&s_generating, 0, 1) != 0)
-    {
-        close(fd);
         return;
     }
 
@@ -445,6 +444,72 @@ WriteCrashReportChunk(
     return 1;
 }
 
+// Expand a subset of the coredump template patterns used by createdump's
+// FormatDumpName: %%  %p  %d (PID).  Other specifiers are passed through
+// literally since the remaining createdump patterns (%e, %h, %t) are not
+// meaningful for in-proc crash reports.
+static
+int
+ExpandDumpTemplate(
+    char* buffer,
+    int bufferSize,
+    const char* pattern)
+{
+    if (buffer == NULL || bufferSize <= 0 || pattern == NULL)
+    {
+        return 0;
+    }
+
+    int pos = 0;
+    unsigned pid = static_cast<unsigned>(getpid());
+
+    while (*pattern != '\0' && pos < bufferSize - 1)
+    {
+        if (*pattern == '%')
+        {
+            pattern++;
+            if (*pattern == '%')
+            {
+                buffer[pos++] = '%';
+            }
+            else if (*pattern == 'p' || *pattern == 'd')
+            {
+                char pidBuf[16];
+                int pidLen = snprintf(pidBuf, sizeof(pidBuf), "%u", pid);
+                if (pidLen > 0 && pos + pidLen < bufferSize)
+                {
+                    memcpy(buffer + pos, pidBuf, static_cast<size_t>(pidLen));
+                    pos += pidLen;
+                }
+            }
+            else
+            {
+                // Unknown specifier — pass through literally.
+                if (pos < bufferSize - 1)
+                {
+                    buffer[pos++] = '%';
+                }
+                if (*pattern != '\0' && pos < bufferSize - 1)
+                {
+                    buffer[pos++] = *pattern;
+                }
+            }
+
+            if (*pattern != '\0')
+            {
+                pattern++;
+            }
+        }
+        else
+        {
+            buffer[pos++] = *pattern++;
+        }
+    }
+
+    buffer[pos] = '\0';
+    return pos;
+}
+
 int
 BuildReportPath(
     char* buffer,
@@ -457,13 +522,22 @@ BuildReportPath(
         return 0;
     }
 
-    const char* directory = (defaultDirectory != NULL && defaultDirectory[0] != '\0') ? defaultDirectory : "/tmp";
     if (dumpPath != NULL && dumpPath[0] != '\0')
     {
-        int written = snprintf(buffer, static_cast<size_t>(bufferSize), "%s.crashreport.json", dumpPath);
+        // Expand template patterns in the configured dump path, then append
+        // the crashreport.json suffix.
+        char expanded[256];
+        int expandedLen = ExpandDumpTemplate(expanded, sizeof(expanded), dumpPath);
+        if (expandedLen <= 0)
+        {
+            return 0;
+        }
+
+        int written = snprintf(buffer, static_cast<size_t>(bufferSize), "%s.crashreport.json", expanded);
         return written > 0 && written < bufferSize;
     }
 
+    const char* directory = (defaultDirectory != NULL && defaultDirectory[0] != '\0') ? defaultDirectory : "/tmp";
     size_t directoryLength = strnlen(directory, static_cast<size_t>(bufferSize));
     const char* separator = (directoryLength > 0 && directory[directoryLength - 1] == '/') ? "" : "/";
     int written = snprintf(buffer, static_cast<size_t>(bufferSize), "%s%sdotnet_crash_%u.crashreport.json",
