@@ -12,77 +12,12 @@
 
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 
-#define WASM_WRAPPER_FUNC_INITIAL \
-{ \
-    asm ("local.get 0\n" /* Capture callersStackPointer onto the stack for calling _IMPL function*/ \
-         "local.get 0\n" /* Capture callersStackPointer onto the stack for setting the __stack_pointer */ \
-         "global.get __stack_pointer\n" /* Get current value of stack global */ \
-         "local.set 0\n"  /* Store current stack global into callersStackPointer local */ \
-         "global.set __stack_pointer\n" /* Set stack global to the initial value of callersStackPointer, which is the current stack pointer for the interpreter call */
-
-#define WASM_WRAPPER_FUNC_EPILOG(_method) \
-             "call %0\n" /* Call the actual implementation function*/ \
-             "local.get 0\n" /* Load the original stack pointer from stack Arg local */ \
-             "global.set __stack_pointer\n" /* Restore the original stack pointer to the stack global */ \
-             "return" :: "i" (_method ## _IMPL)); \
-}
-
-#define WASM_WRAPPER_FUNC_0(_rettype, _method) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer) WASM_WRAPPER_FUNC_INITIAL WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_1(_rettype, _method, a) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a) WASM_WRAPPER_FUNC_INITIAL "local.get 1\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_2(_rettype, _method, a, b) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_3(_rettype, _method, a, b, c) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_4(_rettype, _method, a, b, c, d) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_5(_rettype, _method, a, b, c, d, e) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_6(_rettype, _method, a, b, c, d, e, f) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_7(_rettype, _method, a, b, c, d, e, f, g) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f, g) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_8(_rettype, _method, a, b, c, d, e, f, g, h) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f, g, h) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\nlocal.get 8\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-#define WASM_WRAPPER_FUNC_9(_rettype, _method, a, b, c, d, e, f, g, h, i) __attribute__((naked)) _rettype _method(uintptr_t callersStackPointer, a, b, c, d, e, f, g, h, i) WASM_WRAPPER_FUNC_INITIAL "local.get 1\nlocal.get 2\nlocal.get 3\nlocal.get 4\nlocal.get 5\nlocal.get 6\nlocal.get 7\nlocal.get 8\nlocal.get 9\n" WASM_WRAPPER_FUNC_EPILOG(_method)
-
-#define WASM_CALLABLE_FUNC_0(_rettype, _method) _rettype _method ## _IMPL (uintptr_t callersStackPointer); \
-    WASM_WRAPPER_FUNC_0(_rettype, _method) \
-    _rettype _method ## _IMPL (uintptr_t callersStackPointer)
-
-#define WASM_CALLABLE_FUNC_1(_rettype, _method, a) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a); \
-    WASM_WRAPPER_FUNC_1(_rettype, _method, a) \
-    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a)
-
-#define WASM_CALLABLE_FUNC_2(_rettype, _method, a, b) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b); \
-    WASM_WRAPPER_FUNC_2(_rettype, _method, a, b) \
-    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b)
-
-#define WASM_CALLABLE_FUNC_3(_rettype, _method, a, b, c) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c); \
-    WASM_WRAPPER_FUNC_3(_rettype, _method, a, b, c) \
-    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c)
-
-#define WASM_CALLABLE_FUNC_4(_rettype, _method, a, b, c, d) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d); \
-    WASM_WRAPPER_FUNC_4(_rettype, _method, a, b, c, d) \
-    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d)
-
-#define WASM_CALLABLE_FUNC_5(_rettype, _method, a, b, c, d, e) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e); \
-    WASM_WRAPPER_FUNC_5(_rettype, _method, a, b, c, d, e) \
-    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e)
-
-#define WASM_CALLABLE_FUNC_6(_rettype, _method, a, b, c, d, e, f) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f); \
-    WASM_WRAPPER_FUNC_6(_rettype, _method, a, b, c, d, e, f) \
-    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f)
-
-#define WASM_CALLABLE_FUNC_7(_rettype, _method, a, b, c, d, e, f, g) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g); \
-    WASM_WRAPPER_FUNC_7(_rettype, _method, a, b, c, d, e, f, g) \
-    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g)
-
-#define WASM_CALLABLE_FUNC_8(_rettype, _method, a, b, c, d, e, f, g, h) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g, h); \
-    WASM_WRAPPER_FUNC_8(_rettype, _method, a, b, c, d, e, f, g, h) \
-    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g, h)
-
-#define WASM_CALLABLE_FUNC_9(_rettype, _method, a, b, c, d, e, f, g, h, i) _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g, h, i); \
-    WASM_WRAPPER_FUNC_9(_rettype, _method, a, b, c, d, e, f, g, h, i) \
-    _rettype _method ## _IMPL (uintptr_t callersStackPointer, a, b, c, d, e, f, g, h, i)
-
 // -------------------------------------------------
 // Logic that will eventually mostly be pregenerated for R2R to interpreter code
 // -------------------------------------------------
 namespace
 {
+    FCDECL0(void, CallInterpreter_RetVoid);
     WASM_CALLABLE_FUNC_1(void, CallInterpreter_RetVoid, PCODE portableEntrypoint)
     {
         struct
@@ -96,6 +31,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, 0, (int8_t*)&result);
         return;
     }
+    FCDECL1(void, CallInterpreter_I32_RetVoid, int32_t);
     WASM_CALLABLE_FUNC_2(void, CallInterpreter_I32_RetVoid, int32_t arg0, PCODE portableEntrypoint)
     {
         struct
@@ -112,6 +48,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return;
     }
+    FCDECL2(void, CallInterpreter_I32_I32_RetVoid, int32_t, int32_t);
     WASM_CALLABLE_FUNC_3(void, CallInterpreter_I32_I32_RetVoid, int32_t arg0, int32_t arg1, PCODE portableEntrypoint)
     {
         struct
@@ -129,6 +66,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return;
     }
+    FCDECL3(void, CallInterpreter_I32_I32_I32_RetVoid, int32_t, int32_t, int32_t);
     WASM_CALLABLE_FUNC_4(void, CallInterpreter_I32_I32_I32_RetVoid, int32_t arg0, int32_t arg1, int32_t arg2, PCODE portableEntrypoint)
     {
         struct
@@ -148,6 +86,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return;
     }
+    FCDECL4(void, CallInterpreter_I32_I32_I32_I32_RetVoid, int32_t, int32_t, int32_t, int32_t);
     WASM_CALLABLE_FUNC_5(void, CallInterpreter_I32_I32_I32_I32_RetVoid, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, PCODE portableEntrypoint)
     {
         struct
@@ -167,6 +106,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return;
     }
+    FCDECL0(int32_t, CallInterpreter_RetI32);
     WASM_CALLABLE_FUNC_1(int32_t, CallInterpreter_RetI32, PCODE portableEntrypoint)
     {
         struct
@@ -179,6 +119,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, 0, (int8_t*)&result);
         return (int32_t)result;
     }
+    FCDECL1(int32_t, CallInterpreter_I32_RetI32, int32_t);
     WASM_CALLABLE_FUNC_2(int32_t, CallInterpreter_I32_RetI32, int32_t arg0, PCODE portableEntrypoint)
     {
         struct
@@ -195,6 +136,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return (int32_t)result;
     }
+    FCDECL2(int32_t, CallInterpreter_I32_I32_RetI32, int32_t, int32_t);
     WASM_CALLABLE_FUNC_3(int32_t, CallInterpreter_I32_I32_RetI32, int32_t arg0, int32_t arg1, PCODE portableEntrypoint)
     {
         struct
@@ -212,6 +154,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return (int32_t)result;
     }
+    FCDECL3(int32_t, CallInterpreter_I32_I32_I32_RetI32, int32_t, int32_t, int32_t);
     WASM_CALLABLE_FUNC_4(int32_t, CallInterpreter_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, PCODE portableEntrypoint)
     {
         struct
@@ -230,6 +173,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return (int32_t)result;
     }
+    FCDECL4(int32_t, CallInterpreter_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t);
     WASM_CALLABLE_FUNC_5(int32_t, CallInterpreter_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, PCODE portableEntrypoint)
     {
         struct
@@ -249,6 +193,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return (int32_t)result;
     }
+    FCDECL5(int32_t, CallInterpreter_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t);
     WASM_CALLABLE_FUNC_6(int32_t, CallInterpreter_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, PCODE portableEntrypoint)
     {
         struct
@@ -269,6 +214,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return (int32_t)result;
     }
+    FCDECL6(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
     WASM_CALLABLE_FUNC_7(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, PCODE portableEntrypoint)
     {
         struct
@@ -290,6 +236,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return (int32_t)result;
     }
+    FCDECL7(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
     WASM_CALLABLE_FUNC_8(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, PCODE portableEntrypoint)
     {
         struct
@@ -312,6 +259,7 @@ namespace
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return (int32_t)result;
     }
+    FCDECL8(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
     WASM_CALLABLE_FUNC_9(int32_t, CallInterpreter_I32_I32_I32_I32_I32_I32_I32_I32_RetI32, int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, int32_t arg7, PCODE portableEntrypoint)
     {
         struct

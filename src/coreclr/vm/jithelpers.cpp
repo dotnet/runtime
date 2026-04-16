@@ -777,7 +777,11 @@ HCIMPLEND
 /*************************************************************/
 
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
+#ifdef TARGET_WASM
+void IL_Throw_Impl(Object* obj, TransitionBlock* transitionBlock)
+#else
 EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -803,12 +807,18 @@ EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionB
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
+#ifndef TARGET_WASM
 HCIMPLEND
+#endif
 
 /*************************************************************/
 
 EXTERN_C FCDECL0(void, IL_Rethrow);
+#ifdef TARGET_WASM
+void IL_Rethrow_Impl(TransitionBlock* transitionBlock)
+#else
 EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -825,10 +835,17 @@ EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
+#ifndef TARGET_WASM
 HCIMPLEND
+#endif
+
 
 EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
+#ifdef TARGET_WASM
+void IL_ThrowExact_Impl(Object* obj, TransitionBlock* transitionBlock)
+#else
 EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -850,7 +867,10 @@ EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transi
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
+#ifndef TARGET_WASM
 HCIMPLEND
+#endif
+
 
 #ifdef TARGET_WASM
 // WASM doesn't have assembly stubs, but the FCALL calling convention passes the callersStackPointer in as a hidden argument.
@@ -864,7 +884,7 @@ HCIMPL1(void, IL_Throw, Object* obj)
     block.m_ReturnAddress = 0;
     block.m_StackPointer = callersStackPointer;
 
-    IL_Throw_Impl(0, obj, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block, 0);
+    IL_Throw_Impl(obj, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block);
 }
 HCIMPLEND
 
@@ -876,7 +896,7 @@ HCIMPL0(void, IL_Rethrow)
     block.m_ReturnAddress = 0;
     block.m_StackPointer = callersStackPointer;
 
-    IL_Rethrow_Impl(0, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block, 0);
+    IL_Rethrow_Impl((callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block);
 }
 HCIMPLEND
 
@@ -887,7 +907,7 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     block.m_ReturnAddress = 0;
     block.m_StackPointer = callersStackPointer;
 
-    IL_ThrowExact_Impl(0, obj, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block, 0);
+    IL_ThrowExact_Impl(obj, (callersStackPointer == 0 || *(int*)callersStackPointer == TERMINATE_R2R_STACK_WALK) ? NULL : &block);
 }
 HCIMPLEND
 #endif // TARGET_WASM
