@@ -39,6 +39,7 @@ namespace System
         private static int s_invalidateCachedSettings = 1; // Tracks whether we should invalidate the cached settings.
         private static SafeFileHandle? s_terminalHandle; // Tracks the handle used for writing to the terminal.
         private static FileStream? s_terminalFileStream; // FileStream wrapping s_terminalHandle for use with Write(FileStream, ...).
+        private static FileStream? s_stdoutFileStream; // Cached FileStream for stdout, used by WriteTerminalAnsiColorString.
 
         /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
         public static TerminalFormatStrings TerminalFormatStringsInstance { get { return s_terminalFormatStringsInstance.Value; } }
@@ -902,6 +903,7 @@ namespace System
                                        !Console.IsInputRedirected  ? OpenStandardInputHandle() :
                                        null;
                     s_terminalFileStream = s_terminalHandle != null ? new FileStream(s_terminalHandle, FileAccess.Write, bufferSize: 0) : null;
+                    s_stdoutFileStream = new FileStream(OpenStandardOutputHandle(), FileAccess.Write, bufferSize: 0);
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
                     // "application mode".  This will both transition it immediately, as well as allow
@@ -941,21 +943,12 @@ namespace System
             }
         }
 
-        internal static void WriteToTerminal(ReadOnlySpan<byte> buffer, SafeFileHandle? handle = null, bool mayChangeCursorPosition = true)
+        internal static void WriteToTerminal(ReadOnlySpan<byte> buffer, bool useStdout = false, bool mayChangeCursorPosition = true)
         {
             lock (Console.Out) // synchronize with other writers
             {
-                if (handle is null)
-                {
-                    Debug.Assert(s_terminalFileStream is not null);
-                    Write(s_terminalFileStream, buffer, mayChangeCursorPosition);
-                }
-                else
-                {
-                    // handle is always a freshly-obtained non-owning handle; safe to wrap in a FileStream and dispose.
-                    using FileStream fs = new FileStream(handle, FileAccess.Write, bufferSize: 0);
-                    Write(fs, buffer, mayChangeCursorPosition);
-                }
+                FileStream fs = useStdout ? s_stdoutFileStream! : s_terminalFileStream!;
+                Write(fs, buffer, mayChangeCursorPosition);
             }
         }
 
@@ -1080,13 +1073,13 @@ namespace System
         // FORCE_COLOR is set, or when DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is set.
         // In all cases, they are written to stdout.
         internal static void WriteTerminalAnsiColorString(string? value)
-            => WriteTerminalAnsiString(value, OpenStandardOutputHandle(), mayChangeCursorPosition: false);
+            => WriteTerminalAnsiString(value, useStdout: true, mayChangeCursorPosition: false);
 
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>
-        /// <param name="handle">Handle to use instead of s_terminalHandle.</param>
+        /// <param name="useStdout">Whether to write to stdout instead of the terminal handle.</param>
         /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-        internal static void WriteTerminalAnsiString(string? value, SafeFileHandle? handle = null, bool mayChangeCursorPosition = true)
+        internal static void WriteTerminalAnsiString(string? value, bool useStdout = false, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
@@ -1104,7 +1097,7 @@ namespace System
             }
 
             EnsureConsoleInitialized();
-            WriteToTerminal(data, handle, mayChangeCursorPosition);
+            WriteToTerminal(data, useStdout, mayChangeCursorPosition);
         }
     }
 }
