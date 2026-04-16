@@ -1134,7 +1134,7 @@ public:
     bool IsVNTypeHandle(ValueNum vn);
 
     // Returns true iff the VN represents a relop
-    bool IsVNRelop(ValueNum vn);
+    bool IsVNRelop(ValueNum vn, VNFuncApp* pFuncApp = nullptr);
 
     enum class VN_RELATION_KIND
     {
