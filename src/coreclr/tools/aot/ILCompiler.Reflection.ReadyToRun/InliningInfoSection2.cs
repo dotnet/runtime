@@ -14,12 +14,28 @@ namespace ILCompiler.Reflection.ReadyToRun
         private readonly ReadyToRunReader _r2r;
         private readonly int _startOffset;
         private readonly int _endOffset;
+        private readonly uint _ownerModuleIndex;
 
         public InliningInfoSection2(ReadyToRunReader reader, int offset, int endOffset)
+            : this(reader, offset, endOffset, ownerModuleIndex: 0)
+        {
+        }
+
+        /// <summary>
+        /// Creates a reader for an InliningInfo2 section.
+        /// </summary>
+        /// <param name="ownerModuleIndex">
+        /// Module index (composite-relative) that owns this section's "local" methods
+        /// (i.e. methods encoded without a module index). For non-composite images
+        /// or the global InliningInfo2 section this is 0; for per-assembly sections
+        /// inside a composite image this is <c>assemblyIndex + ComponentAssemblyIndexOffset</c>.
+        /// </param>
+        public InliningInfoSection2(ReadyToRunReader reader, int offset, int endOffset, uint ownerModuleIndex)
         {
             _r2r = reader;
             _startOffset = offset;
             _endOffset = endOffset;
+            _ownerModuleIndex = ownerModuleIndex;
         }
 
         /// <summary>
@@ -125,7 +141,13 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return $"{moduleName}!{ResolveMethodInModule(rid, moduleIndex)}";
             }
 
-            if (_localMethodMap.TryGetValue((0, (uint)rid), out string name))
+            if (_localMethodMap.TryGetValue((_ownerModuleIndex, (uint)rid), out string name))
+                return name;
+
+            // Fallback: in composite images the same RID may have been recorded under
+            // module index 0 when the image's own module is the owner.
+            if (_ownerModuleIndex != 0 &&
+                _localMethodMap.TryGetValue((0, (uint)rid), out name))
                 return name;
 
             return $"<MethodDef 0x{RidToMethodDef(rid):X8}>";

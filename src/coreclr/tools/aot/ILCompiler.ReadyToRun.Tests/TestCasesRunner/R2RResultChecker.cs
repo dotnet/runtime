@@ -208,14 +208,18 @@ internal static class R2RAssert
         // In composite images, InliningInfo2 is per-assembly
         if (reader.ReadyToRunAssemblyHeaders is not null)
         {
-            foreach (var asmHeader in reader.ReadyToRunAssemblyHeaders)
+            for (int asmIndex = 0; asmIndex < reader.ReadyToRunAssemblyHeaders.Count; asmIndex++)
             {
+                var asmHeader = reader.ReadyToRunAssemblyHeaders[asmIndex];
                 if (asmHeader.Sections.TryGetValue(
                         ReadyToRunSectionType.InliningInfo2, out ReadyToRunSection asmSection))
                 {
                     int offset = reader.GetOffset(asmSection.RelativeVirtualAddress);
                     int endOffset = offset + asmSection.Size;
-                    yield return new InliningInfoSection2(reader, offset, endOffset);
+                    uint ownerModuleIndex = reader.Composite
+                        ? (uint)(asmIndex + reader.ComponentAssemblyIndexOffset)
+                        : 0;
+                    yield return new InliningInfoSection2(reader, offset, endOffset, ownerModuleIndex);
                 }
             }
         }
